@@ -7,19 +7,17 @@ from tbears.libs.scoretest.score_test_case import ScoreTestCase
 from tbears.libs.icon_integrate_test import IconIntegrateTestBase
 from typing import List
 import secrets
-import secp256k1
 import hashlib
+from coincurve import PrivateKey
 
 
 class Key(object):
-    def __init__(self, base: secp256k1.Base = None) -> None:
-        self.private_key = secp256k1.PrivateKey(base)
-        self.addr = address_by_public_key(self.private_key.pubkey.serialize(False))
+    def __init__(self, secret=None) -> None:
+        self.private_key = PrivateKey(secret)
+        self.addr = address_by_public_key(self.private_key.public_key.format(False))
 
     def sign(self, _hash: bytes) -> bytes:
-        recoverable = self.private_key.ecdsa_sign_recoverable(_hash, True)
-        signature, recovery_id = self.private_key.ecdsa_recoverable_serialize(recoverable)
-        return bytes(bytearray(signature) + recovery_id.to_bytes(1, 'big'))
+        return self.private_key.sign_recoverable(_hash, None)
 
 
 class Dummy(object):
