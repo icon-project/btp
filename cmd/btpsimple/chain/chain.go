@@ -64,10 +64,6 @@ Loop:
 				s.l.Debugln("stop relayLoop")
 				return
 			}
-			if rm == nil {
-				s.l.Debugln("relayMessage is nil, ignore")
-				continue Loop
-			}
 
 			s.rmBufMtx.Lock()
 			if len(s.rmBuffer) > 0 {
@@ -76,10 +72,10 @@ Loop:
 				})
 				for _, trm := range s.rmBuffer {
 					s.l.Debugf("relayLoop.rmBuffer from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-						rm.From.NetworkAddress(), relayMessageHeight(trm),
-						len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+						trm.From.NetworkAddress(), relayMessageHeight(trm),
+						len(trm.BlockUpdates), trm.BlockProof != nil, len(trm.ReceiptProofs))
 
-					if p, err := s.s.Relay(rm); err != nil {
+					if p, err := s.s.Relay(trm); err != nil {
 						s.l.Panicf("fail to Relay err:%+v", err)
 					} else {
 						go s._result(p, rm)
@@ -88,6 +84,11 @@ Loop:
 				s.rmBuffer = s.rmBuffer[:0]
 			}
 			s.rmBufMtx.Unlock()
+
+			if rm == nil {
+				s.l.Debugln("relayMessage is nil, ignore")
+				continue Loop
+			}
 
 			s.l.Debugf("relayLoop from:%s, height:%s, bu:%d, bp:%v, rps:%d",
 				rm.From.NetworkAddress(), relayMessageHeight(rm),
