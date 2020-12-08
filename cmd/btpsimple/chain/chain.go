@@ -78,7 +78,7 @@ Loop:
 					if p, err := s.s.Relay(trm); err != nil {
 						s.l.Panicf("fail to Relay err:%+v", err)
 					} else {
-						go s._result(p, rm)
+						go s.result(p, trm)
 					}
 				}
 				s.rmBuffer = s.rmBuffer[:0]
@@ -97,13 +97,13 @@ Loop:
 				//TODO retry
 				s.l.Panicf("fail to Relay err:%+v", err)
 			} else {
-				go s._result(p, rm)
+				go s.result(p, rm)
 			}
 		}
 	}
 }
 
-func (s *SimpleChain) _result(p module.GetResultParam, rm *module.RelayMessage) {
+func (s *SimpleChain) result(p module.GetResultParam, rm *module.RelayMessage) {
 	_, err := s.s.GetResult(p)
 	if err != nil {
 		if ec, ok := errors.CoderOf(err); ok {
@@ -115,6 +115,9 @@ func (s *SimpleChain) _result(p module.GetResultParam, rm *module.RelayMessage) 
 				s.l.Debugf("revert by BMVRevertInvalidBlockWitnessOld from:%s, height:%s, bu:%d, bp:%v, rps:%d",
 					rm.From.NetworkAddress(), relayMessageHeight(rm),
 					len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+				if err = s.RefreshStatus(); err != nil {
+					s.l.Panicf("fail to RefreshStatus err:%+v", err)
+				}
 				if rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header); err != nil {
 					s.l.Panicf("fail to newBlockProof err:%+v", err)
 				}
@@ -123,6 +126,7 @@ func (s *SimpleChain) _result(p module.GetResultParam, rm *module.RelayMessage) 
 				s.rmBufMtx.Lock()
 				s.rmBuffer = append(s.rmBuffer, rm)
 				s.rmBufMtx.Unlock()
+				s.relayCh <- nil
 			case module.BMVRevertInvalidSequence:
 				s.l.Infof("drop by BMVRevertInvalidSequence from:%s, height:%s, bu:%d, bp:%v, rps:%d",
 					rm.From.NetworkAddress(), relayMessageHeight(rm),
@@ -156,6 +160,9 @@ func (s *SimpleChain) _relayWithLimit(limit, buSize int, bu *module.BlockUpdate,
 		if rmSize == 0 {
 			if rm.BlockProof == nil {
 				var err error
+				if err = s.RefreshStatus(); err != nil {
+					s.l.Panicf("fail to RefreshStatus err:%+v", err)
+				}
 				if rm.BlockProof, err = s.newBlockProof(bu.Height, bu.Header); err != nil {
 					s.l.Panicf("fail to newBlockProof err:%+v", err)
 				}
@@ -353,34 +360,40 @@ func (s *SimpleChain) relay(bu *module.BlockUpdate, rps []*module.ReceiptProof, 
 	s.ts = time.Now()
 }
 
-func (s *SimpleChain) OnBlock(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
-	s.l.Tracef("onBlock height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
-
-	var bp *module.BlockProof
+func (s *SimpleChain) updateMTA(bu *module.BlockUpdate) {
 	next := s.acc.Height() + 1
 	if next < bu.Height {
 		s.l.Panicf("found missing block next:%d bu:%d", next, bu.Height)
 	}
 	if next == bu.Height {
-		//s.l.Debugf("onBlock acc.AddHash %d, %s", bu.Height, hex.EncodeToString(bu.BlockHash))
 		s.acc.AddHash(bu.BlockHash)
 		if err := s.acc.Flush(); err != nil {
 			//TODO MTA Flush error handling
 			s.l.Panicf("fail to MTA Flush err:%+v", err)
 		}
 	}
+}
 
+func (s *SimpleChain) OnBlock(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+	s.l.Tracef("onBlock height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
+
+	s.updateMTA(bu)
+
+	var bp *module.BlockProof
 	if s.bmcStatus.Verifier.Height >= bu.Height { //old blocks
 		if len(rps) > 0 {
 			s.l.Debugf("onBlock relay old block dst:%s, bu.Height:%d, len(rps):%d",
 				s.dst.NetworkAddress(), bu.Height, len(rps))
 			var err error
+			if err = s.RefreshStatus(); err != nil {
+				s.l.Panicf("fail to RefreshStatus err:%+v", err)
+			}
 			if bp, err = s.newBlockProof(bu.Height, bu.Header); err != nil {
 				s.l.Panicf("fail to newBlockProof err:%+v", err)
 			}
 			if err = s.acc.VerifyAt(mta.HashesToWitness(bp.BlockWitness.Witness, bu.Height-1-s.acc.Offset()),
 				bu.BlockHash, s.bmcStatus.Verifier.Height, s.bmcStatus.Verifier.Offset); err != nil {
-				s.l.Panicf("fail to VerifyAt hash:%s err:%+v",hex.EncodeToString(bu.BlockHash), err)
+				s.l.Panicf("fail to VerifyAt hash:%s err:%+v", hex.EncodeToString(bu.BlockHash), err)
 			}
 		} else {
 			if s.d == nil {
@@ -396,33 +409,7 @@ func (s *SimpleChain) OnBlock(bu *module.BlockUpdate, rps []*module.ReceiptProof
 	s.relay(bu, rps, bp)
 }
 
-func dumpBlockProof(bp *module.BlockProof) string {
-	fmt.Print("dumpBlockProof.height:", bp.BlockWitness.Height, ",witness:[")
-	for _, w := range bp.BlockWitness.Witness {
-		fmt.Print(hex.EncodeToString(w), ",")
-	}
-	fmt.Println("]")
-	b, _ := codec.RLP.MarshalToBytes(bp)
-	return base64.URLEncoding.EncodeToString(b)
-}
-
 func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockProof, error) {
-	if _, err := s.GetStatus(); err != nil {
-		return nil, err
-	}
-
-	if n, err := s.acc.GetNode(height); err != nil {
-		s.l.Debugf("height:%d, accLen:%d, err:%+v",
-			height,
-			s.acc.Len(),
-			err)
-	} else {
-		s.l.Debugf("height:%d, accLen:%d, hash:%s\n",
-			height,
-			s.acc.Len(),
-			hex.EncodeToString(n.Hash()))
-	}
-
 	//at := s.bmcStatus.Verifier.Height
 	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bmcStatus.Verifier.Offset)
 	at, w, err := s.acc.WitnessForAt(height, s.bmcStatus.Verifier.Height, s.bmcStatus.Verifier.Offset)
@@ -431,20 +418,19 @@ func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockP
 	}
 
 	s.l.Debugf("newBlockProof height:%d, at:%d, w:%d", height, at, len(w))
-	bw := &module.BlockWitness{
-		Height:  at,
-		Witness: mta.WitnessesToHashes(w),
-	}
 	bp := &module.BlockProof{
-		Header:       header,
-		BlockWitness: bw,
+		Header: header,
+		BlockWitness: &module.BlockWitness{
+			Height:  at,
+			Witness: mta.WitnessesToHashes(w),
+		},
 	}
-	fmt.Println(dumpBlockProof(bp))
+	dumpBlockProof(s.acc, height, bp)
 	return bp, nil
 }
 
 func (s *SimpleChain) prepareDatabase(offset int64) error {
-	s.l.Debugln("open database",filepath.Join(s.cfg.AbsBaseDir(),s.cfg.Dst.Address.NetworkAddress()))
+	s.l.Debugln("open database", filepath.Join(s.cfg.AbsBaseDir(), s.cfg.Dst.Address.NetworkAddress()))
 	database, err := db.Open(s.cfg.AbsBaseDir(), string(DefaultDBType), s.cfg.Dst.Address.NetworkAddress())
 	if err != nil {
 		return errors.Wrap(err, "fail to open database")
@@ -487,11 +473,11 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 	return nil
 }
 
-func (s *SimpleChain) GetStatus() (*module.BMCLinkStatus, error) {
+func (s *SimpleChain) RefreshStatus() error {
 	if s.d != nil {
 		if s.c == nil {
 			if c, err := s.d.Dial(s); err != nil {
-				return nil, err
+				return err
 			} else {
 				s.c = c
 			}
@@ -500,26 +486,26 @@ func (s *SimpleChain) GetStatus() (*module.BMCLinkStatus, error) {
 		pkt := p2p.NewPacket(ProtoGetLinkStatus, s.encode(req))
 		rpkt, err := s.c.SendAndReceive(pkt)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		resp := &GetLinkStatusResponse{}
 		s.decode(rpkt.Payload(), resp)
 		if resp.Error != "" {
-			return nil, fmt.Errorf(resp.Error)
+			return fmt.Errorf(resp.Error)
 		}
 		s.bmcStatus = resp.LinkStatus
 	} else {
 		bmcStatus, err := s.s.GetStatus()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		s.bmcStatus = bmcStatus
 	}
-	return s.bmcStatus, nil
+	return nil
 }
 
-func (s *SimpleChain) _init() error {
-	if _, err := s.GetStatus(); err != nil {
+func (s *SimpleChain) init() error {
+	if err := s.RefreshStatus(); err != nil {
 		return err
 	}
 	if s.relayCh == nil {
@@ -547,7 +533,7 @@ func (s *SimpleChain) receiveHeight() int64 {
 }
 
 func (s *SimpleChain) Serve() error {
-	if err := s._init(); err != nil {
+	if err := s.init(); err != nil {
 		return err
 	}
 	if s.srv != nil {
@@ -562,7 +548,7 @@ func (s *SimpleChain) Serve() error {
 }
 
 func (s *SimpleChain) Start() error {
-	if err := s._init(); err != nil {
+	if err := s.init(); err != nil {
 		return err
 	}
 	errCh := make(chan error)
@@ -647,12 +633,11 @@ func (s *SimpleChain) OnPacket(pkt *p2p.Packet, c *p2p.Conn) {
 			if s.cfg.Src.Address.String() != req.Link {
 				resp.Error = fmt.Sprintf("mismatch address")
 			} else {
-				bmcStatus, sErr := s.GetStatus()
-				if sErr != nil {
-					resp.Error = sErr.Error()
+				if err := s.RefreshStatus(); err != nil {
+					resp.Error = err.Error()
 				} else {
 					resp.LinkStatus = &module.BMCLinkStatus{}
-					*resp.LinkStatus = *bmcStatus
+					*resp.LinkStatus = *s.bmcStatus
 					if resp.LinkStatus.Verifier.LastHeight > s.acc.Height() {
 						resp.LinkStatus.Verifier.LastHeight = s.acc.Height()
 					}
@@ -726,4 +711,20 @@ func relayMessageHeight(rm *module.RelayMessage) string {
 		height = fmt.Sprintf("%d", rm.BlockProof.BlockWitness.Height)
 	}
 	return height
+}
+
+func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof) {
+	if n, err := acc.GetNode(height); err != nil {
+		fmt.Printf("height:%d, accLen:%d, err:%+v", height, acc.Len(), err)
+	} else {
+		fmt.Printf("height:%d, accLen:%d, hash:%s\n", height, acc.Len(), hex.EncodeToString(n.Hash()))
+	}
+
+	fmt.Print("dumpBlockProof.height:", bp.BlockWitness.Height, ",witness:[")
+	for _, w := range bp.BlockWitness.Witness {
+		fmt.Print(hex.EncodeToString(w), ",")
+	}
+	fmt.Println("]")
+	b, _ := codec.RLP.MarshalToBytes(bp)
+	fmt.Println(base64.URLEncoding.EncodeToString(b))
 }
