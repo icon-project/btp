@@ -84,7 +84,7 @@ func TestMTAccumulator_Dump(t *testing.T) {
 			fmt.Println("Witness", j, data[j])
 
 			bs := []byte(data[j])
-			fmt.Println(dumpData(j, bs))
+			fmt.Println(dumpData(j+1, bs))
 
 			ws, _ := acc.WitnessFor(j)
 			fmt.Println(dumpWitness(acc.length, ws))

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package main
 
 import (
@@ -95,9 +111,20 @@ func main() {
 	cfg := &Config{}
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	//rootVc.Debug()
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print btpsimple version",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("btpsimple version", version, build)
+		},
+	})
+
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		rootVc.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 		baseDir := rootVc.GetString("base_dir")
+		logfile := rootVc.GetString("log_writer.filename")
 		cfg.FilePath = rootVc.GetString("config")
 		if cfg.FilePath != "" {
 			f, err := os.Open(cfg.FilePath)
@@ -116,6 +143,9 @@ func main() {
 		}
 		if baseDir != "" {
 			cfg.BaseDir = cfg.ResolveRelative(baseDir)
+		}
+		if logfile != "" {
+			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
 		}
 		return nil
 	}
@@ -165,6 +195,13 @@ func main() {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			saveFilePath := args[0]
+			cfg.FilePath, _ = filepath.Abs(saveFilePath)
+			cfg.BaseDir = cfg.ResolveRelative(cfg.BaseDir)
+
+			if cfg.LogWriter != nil {
+				cfg.LogWriter.Filename = cfg.ResolveRelative(cfg.LogWriter.Filename)
+			}
+
 			if err := cli.JsonPrettySaveFile(saveFilePath, 0644, cfg); err != nil {
 				return err
 			}
@@ -195,20 +232,20 @@ func main() {
 
 			var (
 				err error
-				dw  wallet.Wallet
+				w   wallet.Wallet
 			)
-			if dw, err = cfg.Wallet(); err != nil {
+			if w, err = cfg.Wallet(); err != nil {
 				return err
 			}
 			modLevels, _ := cmd.Flags().GetStringToString("mod_level")
-			l := setLogger(cfg, dw, modLevels)
+			l := setLogger(cfg, w, modLevels)
 			l.Debugln(cfg.FilePath, cfg.BaseDir)
 			if cfg.BaseDir == "" {
 				cfg.BaseDir = path.Join(".", ".btpsimple", cfg.Src.Address.NetworkAddress())
 			}
 
 			var sr *chain.SimpleChain
-			if sr, err = chain.NewSimpleChain(&cfg.Config, dw, l); err != nil {
+			if sr, err = chain.NewSimpleChain(&cfg.Config, w, l); err != nil {
 				return err
 			}
 			return sr.Serve()
@@ -228,7 +265,7 @@ func main() {
 
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {
-		//rootCmd.Printf("%+v\n", err)
+		fmt.Printf("%+v",err)
 		os.Exit(1)
 	}
 }

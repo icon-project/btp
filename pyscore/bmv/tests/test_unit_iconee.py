@@ -35,17 +35,20 @@ class Dummy(object):
     def block_header(height: int, next_validators_hash: bytes) -> BlockHeader:
         pack = []
         pack.append(bytes(0))  # version
-        pack.append(type_converter.convert_to_bytes(height))
-        for i in range(4):
-            pack.append(bytes(0))
+        pack.append(height)
+        pack.append(int(0))  # timestamp
+        pack.append(bytes(0))  # proposer
+        pack.append(bytes(0))  # prev_hash
+        pack.append(bytes(0))  # vote_hash
         pack.append(next_validators_hash)
-        for i in range(3):
-            pack.append(bytes(0))
-        mpt_roots = []
-        for i in range(2):
-            mpt_roots.append(bytes(0))
-        mpt_roots.append(bytes(0))  # receipt_hash
-        pack.append(rlp.rlp_encode(mpt_roots))
+        pack.append(bytes(0))  # patch_tx_hash
+        pack.append(bytes(0))  # tx_hash
+        pack.append(bytes(0))  # logs_bloom
+        result = []
+        result.append(bytes(0))  # state_hash
+        result.append(bytes(0))  # patch_receipt_hash
+        result.append(bytes(0))  # receipt_hash
+        pack.append(rlp.rlp_encode(result))  # result
         return BlockHeader(rlp.rlp_encode(pack))
 
     class ValidatorsWithKey(object):
@@ -62,20 +65,20 @@ class Dummy(object):
             _keys.append(k)
             _addresses.append(k.addr.to_bytes())
         _validators = rlp.rlp_encode(_addresses)
-        return Dummy.ValidatorsWithKey(Validators.from_bytes(_validators), _keys)
+        return Dummy.ValidatorsWithKey(Validators(_validators), _keys)
 
     @staticmethod
     def votes(block_header: BlockHeader, validators_with_key: ValidatorsWithKey) -> Votes:
-        _round = type_converter.convert_to_bytes(0)
-        _part_count = type_converter.convert_to_bytes(1)
+        _round = int(0)
+        _part_count = int(1)
         _part_hash = secrets.token_bytes(32)
         _block_part_set_id = [_part_count, _part_hash]
-        _timestamp = type_converter.convert_to_bytes(int("0x598c2d9aaf5de", 0))
+        _timestamp = int("0x598c2d9aaf5de", 0)
         vote_items = []
         vote_msg = []
-        vote_msg.append(type_converter.convert_to_bytes(block_header.height))
+        vote_msg.append(block_header.height)
         vote_msg.append(_round)
-        vote_msg.append(type_converter.convert_to_bytes(Votes.VOTE_TYPE_PRECOMMIT))
+        vote_msg.append(Votes.VOTE_TYPE_PRECOMMIT)
         vote_msg.append(block_header.hash)
         vote_msg.append(_block_part_set_id)
         for k in validators_with_key.keys:
@@ -105,7 +108,7 @@ class DummyTest(unittest.TestCase):
     def test_block_header(self):
         self._validators_with_key = Dummy.validators_with_key(4)
         self._validators = self._validators_with_key.validators
-        self._mta = MerkleTreeAccumulator(0)
+        self._mta = MerkleTreeAccumulator()
         self._block_header = Dummy.block_header(1, self._validators.hash)
 
         for i in range(150):
@@ -118,7 +121,7 @@ class DummyTest(unittest.TestCase):
             if self._mta.height < 0:
                 raise Exception(f'invalid height {self._mta.height}')
             bs = bytes(self._mta)
-            self._mta = MerkleTreeAccumulator.from_bytes(bs)
+            self._mta = MerkleTreeAccumulator(bs)
             #self._mta.dump()
 
 
@@ -137,11 +140,11 @@ class BlockWitnessTest(unittest.TestCase):
         # Data ["dog", "cat", "elephant", "bird", "monkey", "lion", "tiger", "last"]
         # Accumulator 5 dog,cat,elephant,bird,monkey
         _mta = "-EcF-ESgLRW8UPg-kGpGwRkzumLmCqfvZJ_97J7DYioRPCizgcH4AKAUevyJu0uatfNpHBb_AJs5WDRfAtrOsbGsMXLamB2Alw=="
-        self.mta = MerkleTreeAccumulator.from_bytes(base64.urlsafe_b64decode(_mta))
+        self.mta = MerkleTreeAccumulator(base64.urlsafe_b64decode(_mta))
         self.mta.dump()
 
         # Witness 0 dog
-        _data = "4gCgBc2Y_ezHRTgYKhI_PZHgMYM9o-mwolWNZlLki_MYobI="
+        _data = "4gGgBc2Y_ezHRTgYKhI_PZHgMYM9o-mwolWNZlLki_MYobI="
         self.data = Dummy.Data(base64.urlsafe_b64decode(_data))
 
         _block_witness = "-EUF-EKg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kSgQPQJm3foiaGDDqEJM3EWYtW1RWXcM0PmPhEdvYzfwZ4="
@@ -156,7 +159,7 @@ class BlockWitnessTest(unittest.TestCase):
         # Prepare for test_witness_old
         self.mta.set_cache_size(2)
         # Witness 5 lion at Accumulator 6
-        _data = "4gWgAB7_6SlDr-8ReDBwNuRqYGuZv5c_A1k6006BIm765hQ="
+        _data = "4gagAB7_6SlDr-8ReDBwNuRqYGuZv5c_A1k6006BIm765hQ="
         self.data = Dummy.Data(base64.urlsafe_b64decode(_data))
         _block_witness = "4wbhoC0VvFD4PpBqRsEZM7pi5gqn72Sf_eyew2IqETwos4HB"
         self.block_witness = BlockWitness.from_bytes(base64.urlsafe_b64decode(_block_witness))
@@ -172,7 +175,7 @@ class BlockWitnessTest(unittest.TestCase):
         #  test_witness_old
         # ================================================
         # Witness 6 tiger at Accumulator 7
-        _data = "4gagG7APaC4bJqueNu5_n4dJR7wAtZJsaUUaItyZ_oz9IcY="
+        _data = "4gegG7APaC4bJqueNu5_n4dJR7wAtZJsaUUaItyZ_oz9IcY="
         data = Dummy.Data(base64.urlsafe_b64decode(_data))
         # Accumulator 7 dog,cat,elephant,bird,monkey,lion,tiger
         self.mta.add(data.hash)
@@ -186,7 +189,8 @@ class BlockWitnessTest(unittest.TestCase):
         # verify MTARoots:7 for Witness:7 Data:tiger
         self.block_witness.verify(self.mta, self.data.hash, self.data.height)
 
-        _data = "4gegwkLCSvS1XhxXRtw8MlvCm15yH6bJdC5zixIhRyIssEY="
+        # Witness 7 last at Accumulator 8
+        _data = "4gigwkLCSvS1XhxXRtw8MlvCm15yH6bJdC5zixIhRyIssEY="
         self.data = Dummy.Data(base64.urlsafe_b64decode(_data))
         _block_witness = "-GYI-GOgG7APaC4bJqueNu5_n4dJR7wAtZJsaUUaItyZ_oz9IcagC0625ghZePK1aO09juXkQVLKj1_6yEUZbJ22fPVoEX2gFHr8ibtLmrXzaRwW_wCbOVg0XwLazrGxrDFy2pgdgJc="
         self.block_witness = BlockWitness.from_bytes(base64.urlsafe_b64decode(_block_witness))
@@ -270,26 +274,44 @@ class ReceiptProofTest(unittest.TestCase):
 
 class RelayMessageTest(unittest.TestCase):
     def test_decode(self):
-        _msg = "-QS0wLkBrvkBq7j_-P0CLYcFqPXCmEudlQCrRSf1elua_hXCZx5U6ujisSJNzqBIwtSGS81-queSeGQlfs_YPZpl_1_7FaDJHrI7jn_eraAWPMeTq70t6qpoA_R4nxXNFT74QJpXxEkuO3FNYb5wF6Cpn2Fx05SUw6Tzv4_M5i0VX-lcAUFkwf92ZijMso4F-vgA-ACtAIAgcEgsGg8GQEIhcGAUMhAgh4AhUSisWh8Oi8aiURjcGA0PgUMIEDkUegsBuEb4RKBVBB_yVpf8QhzWQpja3K8x2WbW1XJSaQ4o9isrBPRgfPgAoMfzd8Hfo7bPBLzwUrHKUnoAm_SiDgRZeA-YouBr6bxl-Kgt-KWgerT74rjiDRI_hwraLW7nv0gxc0LiXzzSDBzBGKBk7Xmg0s2GxHcdcQtzjLzG_2YiUjxinUiBQtxlVL8kTDg9RjegeJV8VAcMOTNj-NceQOnJUtQW5GgZmSw36jTr2lZN-N2ggkQBFKx0kITXRXNwXI2IkrmfRVnXnzdlkQuc4xikBaCgTj63EPwOlG5AjjiSTlnBFEuc5ReY0U-2JEl7EWPXZYX5Av-5Avz5AvkAuQFC-QE_uQE8-QE5giAAuQEz-QEwAJUBdmBZ5vhff4-tSwbXrBoDY7vPI0wAAAC47wEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAEAAAAAAAAAAAAAQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-AD4AKCszRxTcIlpI2YsC7E6P8E9ajU9hkxlz7sDfA1_V5vrWvkBsPkBrQC5Aan5Aaa5AaP5AaCCIAC5AZr5AZeVAXZgWeb4X3-PrUsG16waA2O7zyNM-FqWTWVzc2FnZShzdHIsaW50LGJ5dGVzKbhAYnRwOi8vMHg3N2JiODQuaWNvbmVlL2N4MjJmN2MwYWIwZjU5N2ViZmQ5NDQxZGM5ZDgzNDZiMTk3MDhkZjg3MQH5ASK5AR_5ARy4QGJ0cDovLzB4ZDU3ODc1Lmljb25lZS9jeDc2NjA1OWU2Zjg1ZjdmOGZhZDRiMDZkN2FjMWEwMzYzYmJjZjIzNGO4QGJ0cDovLzB4NzdiYjg0Lmljb25lZS9jeDIyZjdjMGFiMGY1OTdlYmZkOTQ0MWRjOWQ4MzQ2YjE5NzA4ZGY4NzGGX2V2ZW50ALiO-IyETGlua_iFuEBidHA6Ly8weGQ1Nzg3NS5pY29uZWUvY3g3NjYwNTllNmY4NWY3ZjhmYWQ0YjA2ZDdhYzFhMDM2M2JiY2YyMzRjuEBidHA6Ly8weDc3YmI4NC5pY29uZWUvY3gyMmY3YzBhYjBmNTk3ZWJmZDk0NDFkYzlkODM0NmIxOTcwOGRmODcxgA=="
+        _msg = "-Ra7-RO5uQI6-QI3uNL40AKCNp-HBbenu2HrrJUA-exb-cGMOyWH7TXKUKquGXtQ_6Kg9fgLrNxNF6moajLZ36xk6INKlWW0f6no1WFJ0lUM3MagyX44V7xcJdRQBH5e0BtVQew7g7_Jyr9TlLXgdFaIOl-gqZ9hcdOUlMOk87-PzOYtFV_pXAFBZMH_dmYozLKOBfr4AKAFeujZxHKhxq-Je39r8Jx7H_L-PoGWrzdwlvTVeNDxcICm5aAQC2Yv1F4qceTyFPZwWPA7ZrSnF51KjN9ItAevSbQhSfgA-AC5AV75AVsA4gGgUC2lKjr_GQboZrwdfdC527ML1XoE-2vt5tjeGjU_d035ATT4S4cFt6e7cYNLuEHCw15-paAZ7tzyS7Zi2RincV4Uh6_Yb-43sNflNqk6Vwessluw_HRzMoq_Dfz4a7GPXfztXgi1TIA-cwBdOxU4AfhLhwW3p7tyAH24QRgZBkxx3XBNkRStzbHjC5g0wJsJFxB48WCC1Q9lhiQvNIK29-5D5R877QJjaQ43JCSTowCWmCfn9OmDSQOhAdkA-EuHBbenu3GrzrhBOoPA0JU6eq7Z-8PzUfYlc9l89B-l9Yc39hCheGy4yyNtvOOAM4_ULQ3RihO_abAAuQ35I6T5iRfCEfR3IB8mzwH4S4cFt6e7cd1RuEHK0AhvlMfmUMO8tuMg8dKepefIGyPEuSY-XLaCQHER5jdpFxAHtB-XA4uCdlGGgR4HpvDvDZ1fTJJJ5J1RGagTAfgAuQI8-QI5uNT40gKCNqCHBbenu3HEj5UAEYWEKQgUkNoqJKu0FW1XCYOaJ6Ggc3PcHGD25S9K2vadHmz9hCLGu2X1wGUbfv6HmhQSDtGg5NBCmJsE36f1rmLbjKmQ7fK5xV4tR3aC20oLF8ywtLKgqZ9hcdOUlMOk87-PzOYtFV_pXAFBZMH_dmYozLKOBfr4APgAgLhG-ESgp1mH7SwqivrPD_LEyfVmgwn8OjFbrRs3j5ymAxrr_gv4AKCQtJdjaoWzOm-3Q4aoG7u5tkjh3swNZizjem-8VDqK6LkBXvkBWwDiAaA6Nu43WkG_08KjmFl5ADmIb2K2taheCFU2WjfM2-JkYfkBNPhLhwW3p7uAVTm4Qe1eNtjWaAKZC84pIlPKUlEYhaJHBPCInkID1BErHbf5TY8AFkrDkxOYg3SGo2l72hkXKd8ltRXqQPQtfdARGVwA-EuHBbenu4BrNLhBQ_l3OSifwSigHbF-H2O1m6fxoTYatqolJKy6rNOVph5iveLi-hxpxTYw-qtO_T7p8wbPq92y9C1L4bNNaIXtQgH4S4cFt6e7gFVMuEHH2T-FjJA4XKrazfTtK5cUxEiFLug-pWUWm-DYCD3ashsxUP1irR2OHItzuExFfgvhcK0ODo_NP3klB31cLBHPAfhLhwW3p7uAVU24Qc25N7Dk1avRaWysv7m0bU8bTbpLeQswjFSOkbhlJj1QH_9CdDQ4LZH_37Kdr64pAy_00GMsVOs7QvADqBFdhZEB-AC5Ahv5Ahi4s_ixAoI2oYcFt6e7gFVMlQCrRSf1elua_hXCZx5U6ujisSJNzqCEzQC9LseCLAm_R9B-KR_BeSOSEtjgkCSW4d-7F5DGrKDC9V-amG8QwARMl1DZ4l8slICX3VLz0jIkq3sgbIMKbqCpn2Fx05SUw6Tzv4_M5i0VX-lcAUFkwf92ZijMso4F-vgA-ACApuWgp1mH7SwqivrPD_LEyfVmgwn8OjFbrRs3j5ymAxrr_gv4APgAuQFe-QFbAOIBoDplJqW_vby0x60FeKnq_CYAT5vzPpkBjq3Flv7W9Y8R-QE0-EuHBbenu4-QEbhBayKh96IJVn4tirHEtRPPfhi_oEcd0aICDxfer7rphtlQlKVEExYxtHAOW06t4nX4kfC0FdQhiEaKUNURAhYurwH4S4cFt6e7j5BjuEFuSmuSGFpethcKmFcRJS5KnBo1zfusO_bUL7wS3t8j2Wn7vsI4pId6oagp887VQgTKHnLLf3yMyYs9b1cQ-PNXAPhLhwW3p7uPkBG4QTDae0mldNhhnqyeXmrKFu8QrxGzl3TqjdzEDhpszNhVVBFrTdDVrUlndUR6r61ho7FxkY_EDSIblXK7u7k_b-EB-EuHBbenu4-lubhBCFNndMldeUmKc4V9HFRzlAE51OfL0Nt3HQRsMHED7CpEaM5reS7nm8ZuWhqvfqMDxw9xx3b_q27YZCndQXasPgD4ALkCG_kCGLiz-LECgjaihwW3p7uPkDqVACd3pGmi7tabtFow9Fe1Ez4Q8RAYoOnTQ13IXvuLzy5ryzeIYy4hPhlPlJEItatauPKMtvTRoD4D3mosTFrYHCHnZXoDMxoixVASr6iHYXY8epfd1GS_oKmfYXHTlJTDpPO_j8zmLRVf6VwBQWTB_3ZmKMyyjgX6-AD4AICm5aCnWYftLCqK-s8P8sTJ9WaDCfw6MVutGzePnKYDGuv-C_gA-AC5AV75AVsA4gGgpNHEqZSjvJKbfR22EMLZzTuKRdWMG4AvjZmQQW2guNf5ATT4S4cFt6e7nwh1uEEE-sZxvy464K9ZgiJr9RSSb9IS80FtD3NMPfQvijFOgwpaObx0QTw7Q35ChLwioGhWkI0BE6AKSgWoCgl-p-N5AfhLhwW3p7ue4Ji4Qf12NgbdzfNsJY3PDfz6L5XksqXG-7On0Hi-XO2Dh8ppR20zvTQFL7JppEivnZmQzqZ2INmQzPSC2mb4CaEZJJcB-EuHBbenu57gu7hBOkbsbJkXVQI7FsdlQT0nb53k4NSJMLf8_JmrY6ppHLMRjI07lSACcTb0UEYM-LGyPYY143P-whvorb2Xi3ipSQD4S4cFt6e7nsKKuEGv7-EdL9xl0tMdbaoFBUw9XDS8EGeTQrEiOqnRLRm21Vp6rYlq0eXGP7_EX48E4De0I_2P5cHu8DlAVugqFkdnAPgAuQIb-QIYuLP4sQKCNqOHBbenu57gqZUA-exb-cGMOyWH7TXKUKquGXtQ_6KgRFR1na35y8IhIxb2kxSyHbZdXXkOsUxnWIr1qNgKEcagE6VtZRKZZ7PMrA_-_Sy5Hn8EzlFFe6qS7nn6PWJaqmSgqZ9hcdOUlMOk87-PzOYtFV_pXAFBZMH_dmYozLKOBfr4APgAgKbloKdZh-0sKor6zw_yxMn1ZoMJ_DoxW60bN4-cpgMa6_4L-AD4ALkBXvkBWwDiAaCnjm-Wwr4Bgamxyrou8NdKLH552BHiwtUWLZKQco-wovkBNPhLhwW3p7uuF9i4Qfbatg2cuRz7TVdLM1y096FyQU-ThKD6IisvCFhTBjhNMQIbxJJbRqyktTmmUF-iQlJSEaf8E1F_Z_3GJtUuqq4B-EuHBbenu642bLhBb-DK5ewsiOmT7f6Y4rEazMqr16Yk7jokfieBXp_tFUUgp0qS9LinOo_LQEvRvWYbE9PKpM_c-zaoPbKY7wfStgD4S4cFt6e7rmaKuEGSBswJh2r02-Mt4CaOv1014jopb7aBNe_wX2wWTlDdIDZBnbU8x2b_kan0uv-OYD-KdGb5z0n-kQnLBxjAMtnqAfhLhwW3p7uuNmq4QaW_38L5-pHEk4KUoy7xLcunt2VvD6pBmSWwycxMmHlJcOKK0NZ5aWHDNLHBvFXOLZc0XhxoulCuuBpg6ilrH7MA-AC5Ahv5Ahi4s_ixAoI2pIcFt6e7rjZrlQARhYQpCBSQ2iokq7QVbVcJg5onoaD_mbOKpv-eZi5g2CMyL_oiSLcDYSm8AotFX-ub-XxaTKDsTKAD7IDMPZk0WJNvmfJmxSYjs-S1Z_AiEMs6dFjD5qCpn2Fx05SUw6Tzv4_M5i0VX-lcAUFkwf92ZijMso4F-vgA-ACApuWgp1mH7SwqivrPD_LEyfVmgwn8OjFbrRs3j5ymAxrr_gv4APgAuQFe-QFbAOIBoHLHy1fNW4NVHVk4--gwrkxoKRC-ziBhaGtO2JQVWPnL-QE0-EuHBbenu71yfbhBbsuJVwelEghF1cMENVisINOXl-QW2ruDjJKg3BJadHBeiA5ZALp6Y3Dy6Wb0LvmQ_sgeUpwRos3ROEzkJp0w6wD4S4cFt6e7vZequEE7llZ6nFVjL73ps-LS4vVzxesZuc3Fbkwi04he_WRlviqBZjpOrU_x93mmJt6jfh4TAhH-NuKmCGob_tL5PvJRAfhLhwW3p7u9rce4QcYd4Z_oHvdpaHqxlRCeYeM3i9m_EuJKWvs5RRE2-TsBOhIkS0S_mqSda9aaSrpOye_RchM3lW0ZNxXQKPdJntQA-EuHBbenu72XkLhBJo5yZbSRJt7rmWTzWGp-J7OhtiaNMoLOcRGDsJyN0owjoSmBFRZCNFsDMnIDJHuiT81uBisIHmiiszWUw7f9xwH4ALkCG_kCGLiz-LECgjalhwW3p7u9l52VAKtFJ_V6W5r-FcJnHlTq6OKxIk3OoKeSETM4zrNxpVvtT-M6hR4WiI8CoSdPUEFZz7PUyDlHoKsrHspGmVYGEHRMw3WKABapGXTL35c2aCQw5ikxEYsEoKmfYXHTlJTDpPO_j8zmLRVf6VwBQWTB_3ZmKMyyjgX6-AD4AICm5aCnWYftLCqK-s8P8sTJ9WaDCfw6MVutGzePnKYDGuv-C_gA-AC5AV75AVsA4gGgTD73RNJZYU7Ml8-JxLmwSvvAMSBl6Mjo5e-1z4iHS6v5ATT4S4cFt6e7zNYsuEHMjx-h8VO5v3etE6J2SVfGtHrbFeoFS4WE9y008AjNVSvhfogrTy8W1-Zj21hZgUvAdc9Byt-djCN48GuygcVjAPhLhwW3p7vMuqC4QbNPsQ9Y4Ob40vcBZo-qMBiYqY89wqH-fKAKC-_dnsi1PuBM4BCguGxPsrCTDPOqUJ81G4LZxO7WiAktKIpSoLQB-EuHBbenu8y6oLhBHpCPRRBEVpnDoaLJV_bzb2kZ5WIjo4Cx2odBqkXd3INqtHXUN9TMPTSctPtPgkGtB641_aasBOR133GbUIOmkQH4S4cFt6e7zLqHuEEeskFTlypUKJ9ObDlDgQ_Lwfv5r1ckzC4twEjg3saur1dUCnqwcYl1arcUi5-QkxrbrqhGkNuPrIhwz9SXO8hwAfgAuQI6-QI3uNL40AKCNqaHBbenu8y6oJUAJ3ekaaLu1pu0WjD0V7UTPhDxEBigIs9e4ATWfTrt28qlij3odgYpYji4Zqt6uJ63hll_vm6gz0QhXULi-4hcuGcSYUWExNl5zY2It0FhU9-vR3Q_qGagqZ9hcdOUlMOk87-PzOYtFV_pXAFBZMH_dmYozLKOBfr4AKCHMupPOBoM9WpVtt6EsAipVZg28CWVExs4-62SHd3RVoCm5aCnWYftLCqK-s8P8sTJ9WaDCfw6MVutGzePnKYDGuv-C_gA-AC5AV75AVsA4gGgBe3x6bLtaIhoNoZ2L-zH6V3Bq-vRl2TkOpcNTXJcXbP5ATT4S4cFt6e73D1MuEEDMlPtWXo0jsa2QYql5jwi6L9M76mFkeugs3fnXdIsDDwnqTZzCUy-xkYHGIohe_AF53OlfrUoHL4xnZVX8tquAPhLhwW3p7vcVJy4QU7qdcLnMlS2PfQoGDmoU2v6OOBlDmDFd8656gNYttK7AbCDOnFbt2LyR7hxClcsv2XHGvlraWIavDZM7743LQMA-EuHBbenu9wltLhBVlbghhHBdbUSK52MKXeBTdJ1-QehM_QFPaFs5PJcM9woH83qluSLjL3n6imBY7xV6RwnirRjJvmJOxQIx0_s9gH4S4cFt6e73A9NuEF0K-OSuv4WOnxmrev33tBMweYrYFnXlR2rzUccpDTchynu--LGNtGeG9kl-vmi4ibFrmaflfSNXsWxSVS1zjeTAfgAuQJn-QJkuP_4_QKCNqeHBbenu9wxgJUA-exb-cGMOyWH7TXKUKquGXtQ_6Kgpe6pNXJcpLGLE40vQX80rom2q3FJ8Jf8ou8i5ClBLCigBXQ-P0b84I3DTeTeNVPavQHEJsnoYa49HF1IA7X3obygqZ9hcdOUlMOk87-PzOYtFV_pXAFBZMH_dmYozLKOBfr4APgAqxCAIHBILBoPCITCoGAoXBxBDoUgIjFIdEIbFYQAYSBIzHgABo_IoJG4TAS4RvhEoCvEqOlmMQqEyeumrTIjL1w0tm2teDabJyAEAlT9hexy-ACgjwcuRPHLBtMx3_Q8Pz4vTLcOMV3rJOU4YItbcqtru-C5AV75AVsA4gGgD9OhmT4GU32xdHcI0H0IbbdvfZL8uSruwhlgC209DVb5ATT4S4cFt6e760SzuEFOmlBNT7zSI2KznWI8wWEw09EbK_c_h2NQfPtF4hwaVGcgG-pCi4668mrynXsx7XjZtAZo-BhSaVWLU6pcA_oEAfhLhwW3p7vriiW4Qd8jNpIXAqU6rfiktfvP9WvLhIeaWmGBUwei01GGDWbvM7PuI96sHMPTWMXDKQLfMmrta4wQ2Yd5r1o-5nZREVIB-EuHBbenu-thy7hBi3nGrGa73ylxv6F6iFv307K2RTrO_2sh2gRRQh-v4LoFZTL2QO810wnfEElseeG6nEDj0GcYildPCeX2subj1QD4S4cFt6e762HbuEHNwgkaWcd3tm0Ikn7-IG3cB06yUYjGXvusw1OOCP8HvG4ZfuuBdrq6zqIu22937I6HgtzmG5xUXMqburgYAu1EAfgA-AD5Avq5Avf5AvQAuQFC-QE_uQE8-QE5giAAuQEz-QEwAJUBAxL7YOZIYMJPHeJFpf96porU2IoAAAC47yEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAA-AD4AKDrCVhpZQU22XyF4HU6o5zrh-um5wM3I27LKwINhDFUuPkBq_kBqAC5AaT5AaG5AZ75AZuCIAC5AZX5AZKVAQMS-2DmSGDCTx3iRaX_eqaK1NiK-FqWTWVzc2FnZShzdHIsaW50LGJ5dGVzKbhAYnRwOi8vMHhkNTBhZjIuaWNvbmVlL2N4ZTE5NDdhM2NhYzkwNzZlYjNhMTUzODI5Zjc5ZDU1NDE2YTU1OTNhMwH5AR25ARr5ARe4PmJ0cDovLzB4ZTkxZi5pY29uZWUvY3gwMzEyZmI2MGU2NDg2MGMyNGYxZGUyNDVhNWZmN2FhNjhhZDRkODhhuEBidHA6Ly8weGQ1MGFmMi5pY29uZWUvY3hlMTk0N2EzY2FjOTA3NmViM2ExNTM4MjlmNzlkNTU0MTZhNTU5M2Ezhl9ldmVudAC4i_iJhExpbmv4grg-YnRwOi8vMHhlOTFmLmljb25lZS9jeDAzMTJmYjYwZTY0ODYwYzI0ZjFkZTI0NWE1ZmY3YWE2OGFkNGQ4OGG4QGJ0cDovLzB4ZDUwYWYyLmljb25lZS9jeGUxOTQ3YTNjYWM5MDc2ZWIzYTE1MzgyOWY3OWQ1NTQxNmE1NTkzYTM="
         serialized = base64.urlsafe_b64decode(_msg)
         rm = RelayMessage(serialized)
-        for block_update in rm.block_updates:
-            print(block_update.height)
+        bh: BlockHeader = None
+        for bu in rm.block_updates:
+            bu: BlockUpdate = bu
+            print(f'bu.height:{bu.height}')
+            bh = bu.block_header
+        for rp in rm.receipt_proofs:
+            rp: ReceiptProof = rp
+            print(f'rp.index:{rp.index}')
+            for ep in rp.event_proofs:
+                ep: EventProof = ep
+                print(f'ep.index:{ep.index}')
+            r = rp.prove(bh.receipt_hash)
+            for el in r.event_logs:
+                el: EventLog = el
+                msg = el.to_message_event()
+                if msg is not None:
+                    print(f'msg.next_bmc:{msg.next_bmc}')
+                    print(f'msg.seq:{msg.seq}')
 
 
 class BTPMessageVerifierTest(ScoreTestCase):
     def setUp(self):
         super().setUp()
-        self._bmc_addr = Dummy.score_address()
+        self._bmc = Dummy.score_address()
+        self._btp_bmc = BTPAddress(BTPAddress.PROTOCOL_BTP, '0x1.iconee', str(self._bmc))
         self._validators_with_key = Dummy.validators_with_key(4)
         self._validators = self._validators_with_key.validators
         self._mta = Dummy.mta()
+        self.register_interface_score(self._bmc)
         self.score = self.get_score_instance(BTPMessageVerifier, self.test_account1,
                                              on_install_params={
-                                                  '_bmc': self._bmc_addr,
-                                                 '_net_addr': '0x1.iconee',
+                                                 '_bmc': self._bmc,
+                                                 '_net': self._btp_bmc.net,
                                                  '_validators': base64.urlsafe_b64encode(self._validators.to_bytes()),
-                                                 '_mta_offset': 0
+                                                 '_offset': 0
                                              })
 
     def test_handleRelayMessage(self):
@@ -297,15 +319,18 @@ class BTPMessageVerifierTest(ScoreTestCase):
         #  test_block_update
         # ================================================
 
-        block_proofs = []
+        block_updates = []
         _block_header = Dummy.block_header(1, self._validators.hash)
         _votes = Dummy.votes(_block_header, self._validators_with_key)
-        block_proof = rlp.rlp_encode([_block_header._bytes, _votes._bytes, bytes(0), bytes(0)])
-        block_proofs.append(block_proof)
+        _next_validators = None
+        block_update = rlp.rlp_encode([_block_header._bytes, _votes._bytes, _next_validators])
+        block_updates.append(block_update)
+        block_proof = None
         receipt_proofs = []
-        _msgs = rlp.rlp_encode([block_proofs, receipt_proofs])
-
-        self.score.handleRelayMessage("", "", 0, base64.urlsafe_b64encode(_msgs))
+        _msgs = rlp.rlp_encode([block_updates, block_proof, receipt_proofs])
+        self.set_msg(Address.from_string(self._btp_bmc.contract))
+        btp_msgs = self.score.handleRelayMessage(str(self._btp_bmc), str(self._btp_bmc), 1, base64.urlsafe_b64encode(_msgs))
+        print(btp_msgs)
 
 
 if __name__ == '__main__':

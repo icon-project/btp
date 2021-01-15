@@ -1,11 +1,29 @@
+/*
+ * Copyright 2021 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package iconee
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -161,8 +179,7 @@ type BMCRelayMethodParams struct {
 }
 
 type BMCLinkMethodParams struct {
-	Target    string `json:"_link"`
-	Reachable string `json:"_reachable"`
+	Target string `json:"_link"`
 }
 type BMCUnlinkMethodParams struct {
 	Target string `json:"_link"`
@@ -193,6 +210,21 @@ type BMCStatus struct {
 		Offset     HexInt `json:"offset"`
 		LastHeight HexInt `json:"last_height"`
 	} `json:"verifier"`
+	BMRs []struct {
+		Address      Address `json:"address"`
+		BlockCount   HexInt  `json:"block_count"`
+		MessageCount HexInt  `json:"msg_count"`
+	} `json:"relays"`
+	BMRIndex         HexInt `json:"relay_idx"`
+	RotateHeight     HexInt `json:"rotate_height"`
+	RotateTerm       HexInt `json:"rotate_term"`
+	DelayLimit       HexInt `json:"delay_limit"`
+	MaxAggregation   HexInt `json:"max_agg"`
+	CurrentHeight    HexInt `json:"cur_height"`
+	RxHeight         HexInt `json:"rx_height"`
+	RxHeightSrc      HexInt `json:"rx_height_src"`
+	BlockIntervalSrc HexInt `json:"block_interval_src"`
+	BlockIntervalDst HexInt `json:"block_interval_dst"`
 }
 
 type TransactionHashParam struct {
@@ -247,6 +279,7 @@ type EventNotification struct {
 }
 
 type WSEvent string
+
 const (
 	WSEventInit WSEvent = "WSEventInit"
 )
@@ -279,6 +312,16 @@ func (i HexInt) Value() (int64, error) {
 	}
 	return strconv.ParseInt(s, 16, 64)
 }
+
+func (i HexInt) Int() (int, error) {
+	s := string(i)
+	if strings.HasPrefix(s, "0x") {
+		s = s[2:]
+	}
+	v, err := strconv.ParseInt(s, 16, 32)
+	return int(v), err
+}
+
 func NewHexInt(v int64) HexInt {
 	return HexInt("0x" + strconv.FormatInt(v, 16))
 }
@@ -304,6 +347,7 @@ func (a Address) Value() ([]byte, error) {
 	}
 	return b[:], nil
 }
+
 func NewAddress(b []byte) Address {
 	if len(b) != 21 {
 		return ""
@@ -331,4 +375,40 @@ type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte
 	ReceiptProofs [][]byte
+	//
+	height              int64
+	numberOfBlockUpdate int
+	eventSequence       int64
+	numberOfEvent       int
+}
+
+type ReceiptProof struct {
+	Index       int
+	Proof       []byte
+	EventProofs []*module.EventProof
+}
+
+type Block struct {
+	//BlockHash              HexBytes  `json:"block_hash" validate:"required,t_hash"`
+	//Version                HexInt    `json:"version" validate:"required,t_int"`
+	Height int64 `json:"height" validate:"required,t_int"`
+	//Timestamp              int64             `json:"time_stamp" validate:"required,t_int"`
+	//Proposer               HexBytes  `json:"peer_id" validate:"optional,t_addr_eoa"`
+	//PrevID                 HexBytes  `json:"prev_block_hash" validate:"required,t_hash"`
+	//NormalTransactionsHash HexBytes  `json:"merkle_tree_root_hash" validate:"required,t_hash"`
+	NormalTransactions []struct {
+		TxHash HexBytes `json:"txHash"`
+		//Version   HexInt   `json:"version"`
+		From Address `json:"from"`
+		To   Address `json:"to"`
+		//Value     HexInt   `json:"value,omitempty" `
+		//StepLimit HexInt   `json:"stepLimit"`
+		//TimeStamp HexInt   `json:"timestamp"`
+		//NID       HexInt   `json:"nid,omitempty"`
+		//Nonce     HexInt   `json:"nonce,omitempty"`
+		//Signature HexBytes `json:"signature"`
+		DataType string          `json:"dataType,omitempty"`
+		Data     json.RawMessage `json:"data,omitempty"`
+	} `json:"confirmed_transaction_list"`
+	//Signature              HexBytes  `json:"signature" validate:"optional,t_hash"`
 }

@@ -15,14 +15,20 @@ type BlockProof struct {
 	BlockWitness *BlockWitness
 }
 type ReceiptProof struct {
-	Index int
-	Proof []byte
-	//TODO [TBD] support blockchain which not serve EventProof
+	Index       int
+	Proof       []byte
 	EventProofs []*EventProof
+	Events      []*Event
 }
 type EventProof struct {
 	Index int
 	Proof []byte
+}
+
+type Event struct {
+	Next     BtpAddress
+	Sequence int64
+	Message  []byte
 }
 
 type RelayMessage struct {
@@ -31,6 +37,20 @@ type RelayMessage struct {
 	BlockProof    *BlockProof
 	ReceiptProofs []*ReceiptProof
 	Seq           uint64
+	HeightOfDst   int64
+
+	Segments []*Segment
+}
+
+type Segment struct {
+	TransactionParam  TransactionParam
+	GetResultParam    GetResultParam
+	TransactionResult TransactionResult
+	//
+	Height              int64
+	NumberOfBlockUpdate int
+	EventSequence       int64
+	NumberOfEvent       int
 }
 
 type BMCLinkStatus struct {
@@ -41,16 +61,40 @@ type BMCLinkStatus struct {
 		Offset     int64
 		LastHeight int64
 	}
+	//BMR rotate
+	BMRs []struct {
+		Address      string
+		BlockCount   int64
+		MessageCount int64
+	}
+	BMRIndex         int
+	RotateHeight     int64
+	RotateTerm       int
+	DelayLimit       int
+	MaxAggregation   int
+	CurrentHeight    int64
+	RxHeight         int64
+	RxHeightSrc      int64
+	BlockIntervalSrc int
+	BlockIntervalDst int
 }
 
+type TransactionParam interface{}
 type GetResultParam interface{}
 type TransactionResult interface{}
 
+type MonitorCallback func(height int64) error
+
 type Sender interface {
-	Relay(rm *RelayMessage) (GetResultParam, error)
+	Segment(rm *RelayMessage) ([]*Segment, error)
+	UpdateSegment(bp *BlockProof, segment *Segment) error
+	Relay(segment *Segment) (GetResultParam, error)
 	GetResult(p GetResultParam) (TransactionResult, error)
 	GetStatus() (*BMCLinkStatus, error)
-	LimitOfTransactionSize() int
+	//
+	MonitorLoop(height int64, cb MonitorCallback, scb func()) error
+	StopMonitorLoop()
+	FinalizeLatency() int
 }
 
 type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
@@ -58,8 +102,4 @@ type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
 type Receiver interface {
 	ReceiveLoop(height int64, seq int64, cb ReceiveCallback, scb func()) error
 	StopReceiveLoop()
-}
-
-type RelayChain interface {
-	Serve() error
 }

@@ -1,272 +1,70 @@
+#  Copyright 2020 ICON Foundation
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from iconservice import *
-from ..lib import BTPAddress
-from ..lib.btp_interface import BMVInterface, BSHInterface
-from ..lib.btp_exception import BTPException, BTPExceptionCode, BMCException
-from ..lib.iconee import rlp, BytesDictDB, StringDictDB, AddressDictDB
+
+from .exception import *
+from .link import *
+from .message import *
+from .permission import *
+from .relayer import *
+from .route import *
+from ..lib import *
+from ..lib.iconee import AddressDictDB, PropertiesDB
 
 TAG = 'BTPMessageCenter'
-
-
-class BMCExceptionCode(BTPExceptionCode):
-    UNAUTHORIZED = 1
-    INVALID_SN = 2
-    ALREADY_EXISTS_BMV = 3
-    NOT_EXISTS_BMV = 4
-    ALREADY_EXISTS_BSH = 5
-    NOT_EXISTS_BSH = 6
-    ALREADY_EXISTS_LINK = 7
-    NOT_EXISTS_LINK = 8
-    UNREACHABLE = 9
-    NOT_EXISTS_PERMISSION = 10
-
-
-class UnauthorizedException(BMCException):
-    def __init__(self, message: str):
-        super().__init__(message, BMCExceptionCode.UNAUTHORIZED)
-
-
-class BTPLink(object):
-    def __init__(self, addr: BTPAddress, rx_seq: int = 0, reachable: list = None) -> None:
-        self.addr = addr
-        self.rx_seq = rx_seq
-        if reachable is None:
-            self.reachable = []
-        else:
-            self.reachable = reachable
-
-    def __bytes__(self) -> bytes:
-        msg = [str(self.addr), self.rx_seq, self.reachable]
-        return rlp.rlp_encode(msg)
-
-    def to_bytes(self) -> bytes:
-        return bytes(self)
-
-    @staticmethod
-    def from_bytes(serialized: bytes) -> 'BTPLink':
-        if not isinstance(serialized, bytes) or len(serialized) < 1:
-            return None
-        unpacked = rlp.rlp_decode(serialized, [str, int, {list: str}])
-        return BTPLink(BTPAddress.from_string(unpacked[0]), unpacked[1], unpacked[2])
-
-
-class BTPLinks(BytesDictDB):
-
-    def __getitem__(self, key: object) -> BTPLink:
-        return super().__getitem__(key)
-
-    def bytes_to_object(self, bs: bytes):
-        return BTPLink.from_bytes(bs)
-
-
-class BTPRoutes(StringDictDB):
-    def __getitem__(self, key) -> str:
-        return super().__getitem__(key)
-
-    def str_to_object(self, s: str):
-        return s
-
-
-class Permission(object):
-    _APIS = [
-        "addPermission", "removePermission",
-        "addService", "removeService",
-        "addVerifier", "removeVerifier",
-        "addLink", "removeLink",
-        "addRoute", "removeRoute",
-        "handleRelayMessage", "sendMessage"
-    ]
-
-    def __init__(self, apis: str = None):
-        if apis is None:
-            self.apis = []
-        else:
-            self.apis = apis.split(",")
-
-    def __str__(self):
-        return ",".join(self.apis)
-
-    def has(self, api: str) -> bool:
-        if api in self.apis:
-            return True
-        else:
-            return False
-
-    def is_valid(self) -> bool:
-        if len(self.apis) == 0:
-            return False
-        for api in self.apis:
-            if api not in self._APIS:
-                return False
-        return True
-
-    def merge(self, other: 'Permission'):
-        for api in other.apis:
-            if api not in self.apis:
-                self.apis.append(api)
-
-    def remove(self, other: 'Permission'):
-        for api in other.apis:
-            if api in self.apis:
-                self.apis.remove(api)
-
-    def __iter__(self):
-        return self.apis.__iter__()
-
-    def __len__(self):
-        return len(self.apis)
-
-    @staticmethod
-    def from_string(s: str) -> 'Permission':
-        if s is None or len(s) == 0:
-            return None
-        return Permission(s)
-
-    @staticmethod
-    def from_string_with_validation(s: str) -> 'Permission':
-        v = Permission.from_string(s)
-        if v is None or not v.is_valid():
-            raise BMCException("invalid Permission")
-        return v
-
-
-class Permissions(StringDictDB):
-    def __getitem__(self, key: object) -> Permission:
-        return super().__getitem__(key)
-
-    def str_to_object(self, s: str):
-        return Permission.from_string(s)
-
-
-class BTPMessage(object):
-    def __init__(self, src: BTPAddress, dst: BTPAddress, svc: str, sn: int, payload: bytes) -> None:
-        self.src = src
-        self.dst = dst
-        self.svc = svc
-        self.sn = sn
-        self.payload = payload
-
-    def to_bytes(self) -> bytes:
-        msg = [str(self.src), str(self.dst), self.svc, self.sn, self.payload]
-        return rlp.rlp_encode(msg)
-
-    @staticmethod
-    def from_bytes(bs: bytes) -> 'BTPMessage':
-        unpacked = rlp.rlp_decode(bs, [str, str, str, int, bytes])
-        src = BTPAddress.from_string(unpacked[0])
-        dst = BTPAddress.from_string(unpacked[1])
-        svc = unpacked[2]
-        sn = unpacked[3]
-        payload = unpacked[4]
-        return BTPMessage(src, dst, svc, sn, payload)
-
-
-class ErrorMessage(object):
-    def __init__(self, code: int, msg: str) -> None:
-        self.code = code
-        self.msg = msg
-
-    def to_bytes(self) -> bytes:
-        msg = [self.code, self.msg]
-        return rlp.rlp_encode(msg)
-
-    @staticmethod
-    def from_bytes(bs: bytes) -> 'ErrorMessage':
-        unpacked = rlp.rlp_decode(bs, [int, str])
-        code = unpacked[0]
-        msg = unpacked[1]
-        return ErrorMessage(code, msg)
-
-
-class EventMessage(object):
-    def __init__(self, evt: str, values: list) -> None:
-        self.evt = evt
-        self.values = values
-
-    def to_bytes(self) -> bytes:
-        msg = [self.evt, self.values]
-        return rlp.rlp_encode(msg)
-
-    @staticmethod
-    def from_bytes(bs: bytes) -> 'EventMessage':
-        unpacked = rlp.rlp_decode(bs, [str, {list: str}])
-        evt = unpacked[0]
-        values = unpacked[1]
-        return EventMessage(evt, values)
-
-
-class Properties(object):
-    _PROPERTIES = 'properties'
-    _BTP_ADDR = "btp_addr"
-    _ACCESS_CONTROL = "access_control"
-
-    def __init__(self, db: IconScoreDatabase, key: str = _PROPERTIES) -> None:
-        self.__db = DictDB(key, db, value_type=bytes)
-        self.__btp_addr = None
-        self.__access_control = None
-
-    @property
-    def btp_addr(self) -> BTPAddress:
-        if self.__btp_addr is None:
-            self.__btp_addr = BTPAddress.from_bytes(self.__db[self._BTP_ADDR])
-        return self.__btp_addr
-
-    @btp_addr.setter
-    def btp_addr(self, btp_addr: BTPAddress) -> None:
-        self.__db[self._BTP_ADDR] = bytes(btp_addr)
-        self.__btp_addr = btp_addr
-
-    @property
-    def access_control(self) -> bool:
-        if self.__access_control is None:
-            if str(self.__db[self._ACCESS_CONTROL]) == "1":
-                self.__access_control = True
-            else:
-                self.__access_control = False
-        return self.__access_control
-
-    @access_control.setter
-    def access_control(self, access_control: bool) -> None:
-        if access_control:
-            self.__db[self._ACCESS_CONTROL] = bytes("1", 'utf-8')
-        else:
-            self.__db[self._ACCESS_CONTROL] = bytes("0", 'utf-8')
-        self.__access_control = access_control
+BLOCK_INTERVAL_MSEC = 1000
 
 
 class BTPMessageCenter(IconScoreBase):
+    _PROPS = 'props'
     _VERIFIERS = 'verifiers'
     _SERVICES = 'services'
-    _SEQUENCES = 'sequences'
     _LINKS = 'links'
     _ROUTES = 'routes'
     _PERMISSIONS = 'permissions'
+    _RELAYERS = 'relayers'
+
+    class Props(PropertiesDB):
+        def __init__(self, prefix, db: IconScoreDatabase) -> None:
+            self.btp_addr: BTPAddress = None
+            self.access_control = False
+            super().__init__(prefix, db)
 
     def __init__(self, db: IconScoreDatabase) -> None:
         super().__init__(db)
 
-        # Initialize here
-        self.__properties = Properties(db)
-
+        self._props = BTPMessageCenter.Props(self._PROPS, db)
         self._verifiers = AddressDictDB(self._VERIFIERS, db)
         self._services = AddressDictDB(self._SERVICES, db)
-        # TODO support BigInt
-        self._sequences = DictDB(self._SEQUENCES, db, value_type=int)
         self._links = BTPLinks(self._LINKS, db)
         self._routes = BTPRoutes(self._ROUTES, db)
+        self._relayers = BTPRelayers(self._RELAYERS, db)
         self._permissions = Permissions(self._PERMISSIONS, db)
 
     def on_install(self, _net: str) -> None:
         super().on_install()
         # TODO how to check mismatch chain?
-        self.__properties.btp_addr = BTPAddress("btp", _net, str(self.address))
-        self.__properties.access_control = False
+        self._props.btp_addr = BTPAddress(BTPAddress.PROTOCOL_BTP, _net, str(self.address))
+        self._props.access_control = False
 
     def on_update(self) -> None:
         super().on_update()
 
     @external(readonly=True)
     def btpAddress(self) -> str:
-        return str(self.__properties.btp_addr)
+        return str(self._props.btp_addr)
 
     # ================================================
     #  Permission Management
@@ -274,29 +72,29 @@ class BTPMessageCenter(IconScoreBase):
     @external
     def setAccessControl(self, enable: bool):
         if self.owner == self.msg.sender:
-            self.__properties.access_control = enable
+            self._props.access_control = enable
         else:
-            raise UnauthorizedException
+            raise UnauthorizedException("setAccessControl")
 
     @external
     def getAccessControl(self) -> bool:
         if self.owner == self.msg.sender:
-            return self.__properties.access_control
+            return self._props.access_control
         else:
-            raise UnauthorizedException
+            raise UnauthorizedException("getAccessControl")
 
     def _has_permission(self, api: str):
-        if self.__properties.access_control:
+        if self._props.access_control:
             caller = self.msg.sender
             if caller not in self._permissions:
                 if self.tx.origin in self._permissions:
                     caller = self.tx.origin
                 else:
-                    raise UnauthorizedException
+                    raise UnauthorizedException(api)
 
             permission = self._permissions[caller]
             if not permission.has(api):
-                raise UnauthorizedException
+                raise UnauthorizedException(api)
 
     @external
     def addPermission(self, _addr: Address, _apis: str):
@@ -322,10 +120,8 @@ class BTPMessageCenter(IconScoreBase):
 
     @external(readonly=True)
     def getPermissions(self) -> dict:
-        # FIXME return self._permissions[sender]
         d = {}
         try:
-            # FIXME self._has_permission("getPermissions")
             for addr in self._permissions:
                 d[addr] = self._permissions[addr]
         except UnauthorizedException as e:  # FIXME unreachable code
@@ -371,7 +167,7 @@ class BTPMessageCenter(IconScoreBase):
     @external
     def removeService(self, _svc: str):
         """
-        De-registers the smart contract for the service.
+        Unregisters the smart contract for the service.
         Called by the operator to manage the BTP network.
 
         :param _svc: String (the name of the service)
@@ -397,7 +193,6 @@ class BTPMessageCenter(IconScoreBase):
             "token": "cx72eaed466599ca5ea377637c6fa2c5c0978537da"
         }
         """
-        # FIXME self._has_permission("getServices")
         d = {}
         for svc in self._services:
             d[svc] = self._services[svc]
@@ -423,7 +218,7 @@ class BTPMessageCenter(IconScoreBase):
         """
         self._has_permission("addVerifier")
         # TODO validation _net_addr
-        if _net == self.__properties.btp_addr.net:
+        if _net == self._props.btp_addr.net:
             raise BMCException("invalid argument, net_addr")
         if _net in self._verifiers:
             raise BMCException("already exists verifier", BMCExceptionCode.ALREADY_EXISTS_BMV)
@@ -432,7 +227,7 @@ class BTPMessageCenter(IconScoreBase):
     @external
     def removeVerifier(self, _net: str):
         """
-        De-registers BMV for the network.
+        Unregisters BMV for the network.
         May fail if it's referred by the link.
         Called by the operator to manage the BTP network.
 
@@ -458,7 +253,6 @@ class BTPMessageCenter(IconScoreBase):
             "0x1.iconee": "cx72eaed466599ca5ea377637c6fa2c5c0978537da"
         }
         """
-        # FIXME self._has_permission("getVerifiers")
         d = {}
         for net_addr in self._verifiers.keys():
             d[net_addr] = self._verifiers[net_addr]
@@ -467,36 +261,23 @@ class BTPMessageCenter(IconScoreBase):
     # ================================================
     #  Link Management
     # ================================================
-    def _add_link(self, _target: str, _reachable: str):
-        target = BTPAddress.from_string_with_validation(_target)
+    def _add_link(self, target: BTPAddress):
         if target.net not in self._verifiers:
             raise BMCException("not exists verifier", BMCExceptionCode.NOT_EXISTS_BMV)
-
-        if len(_reachable) > 0:
-            reachable = _reachable.split(",")
-        else:
-            reachable = []
-
         if target in self._links:
-            link = self._links[target]
-            # TODO [TBD] overwrite reachable?
-            link.reachable = reachable
-        else:
-            link = BTPLink(target, 0, reachable)
-            self._sequences[_target] = 0
-
+            raise BMCException("already exists link", BMCExceptionCode.ALREADY_EXISTS_LINK)
+        link = self._links.new_btp_link(target)
+        link.block_interval_src = BLOCK_INTERVAL_MSEC
         self._links[target] = link
-        evt_msg = EventMessage("Link", [str(self.__properties.btp_addr), _target, _reachable])
+        evt_msg = EventMessage("Link", [str(self._props.btp_addr), str(target)])
         self._propagate_event(evt_msg)
 
-    def _remove_link(self, _target: str):
-        target = BTPAddress.from_string_with_validation(_target)
+    def _remove_link(self, target: BTPAddress):
         if target not in self._links:
             raise BMCException("not exists link", BMCExceptionCode.NOT_EXISTS_LINK)
-        evt_msg = EventMessage("Unlink", [str(self.__properties.btp_addr), _target, self._links.keys()])
+        evt_msg = EventMessage("Unlink", [str(self._props.btp_addr), str(target)])
         self._propagate_event(evt_msg)
         self._links.remove(target)
-        self._sequences.remove(_target)
 
     def _get_link(self, target: BTPAddress) -> BTPLink:
         if target in self._links:
@@ -513,7 +294,7 @@ class BTPMessageCenter(IconScoreBase):
         return False
 
     @external
-    def addLink(self, _link: str, _reachable: str):
+    def addLink(self, _link: str):
         """
         If it generates the event related to the link, the relay shall handle the event to deliver BTP Message to the BMC.
         If the link is already registered, or its network is already registered then it fails.
@@ -522,12 +303,10 @@ class BTPMessageCenter(IconScoreBase):
         Called by the operator to manage the BTP network.
 
         :param _link: String (BTP Address of connected BMC)
-        :param _reachable:
         """
         self._has_permission("addLink")
-        if _link in self._links:
-            raise BMCException("already exists link", BMCExceptionCode.ALREADY_EXISTS_LINK)
-        self._add_link(_link, _reachable)
+        target = BTPAddress.from_string_with_validation(_link)
+        self._add_link(target)
 
     @external
     def removeLink(self, _link: str):
@@ -538,7 +317,34 @@ class BTPMessageCenter(IconScoreBase):
         :param _link: String (BTP Address of connected BMC)
         """
         self._has_permission("removeLink")
-        self._remove_link(_link)
+        target = BTPAddress.from_string_with_validation(_link)
+        self._remove_link(target)
+
+    @external
+    def setLink(self, _link: str, _block_interval: int, _max_agg: int, _delay_limit: int):
+        """
+        Removes the link and status information.
+        Called by the operator to manage the BTP network.
+
+        :param _link: String (BTP Address of connected BMC)
+        :param _block_interval: Integer
+        :param _max_agg: Integer
+        :param _delay_limit: Integer
+        """
+        self._has_permission("setLink")
+        target = BTPAddress.from_string_with_validation(_link)
+        link = self._get_link(target)
+        if _max_agg < 1 or _delay_limit < 1:
+            raise BMCException("invalid param")
+        reset_rotate_height = True if link.rotate_term() == 0 else False
+        link.block_interval_dst = _block_interval
+        link.max_aggregation = _max_agg
+        link.delay_limit = _delay_limit
+        if reset_rotate_height and link.rotate_term() > 0:
+            link.rotate_height = self.block_height + link.rotate_term()
+            link.rx_height = self.block_height
+            verifier = self._get_verifier(link.addr.net)
+            link.rx_height_src = verifier.getStatus()["height"]
 
     @external(readonly=True)
     def getStatus(self, _link: str) -> dict:
@@ -550,20 +356,64 @@ class BTPMessageCenter(IconScoreBase):
         :param _link: String ( BTP Address of the connected BMC )
         :return: The object contains followings fields.
 
-            +----------+---------+--------------------------------------------------+
-            | Field    | Type    | Description                                      |
-            +==========+=========+==================================================+
-            | tx_seq   | Integer | next sequence number of the next sending message |
-            +----------+---------+--------------------------------------------------+
-            | rx_seq   | Integer | next sequence number of the message to receive   |
-            +----------+---------+--------------------------------------------------+
-            | verifier | Object  | status information of the BMV                    |
-            +----------+---------+--------------------------------------------------+
+            +---------------+---------+--------------------------------------------------+
+            | Field         | Type    | Description                                      |
+            +===============+=========+==================================================+
+            | tx_seq        | Integer | next sequence number of the next sending message |
+            +---------------+---------+--------------------------------------------------+
+            | rx_seq        | Integer | next sequence number of the message to receive   |
+            +---------------+---------+--------------------------------------------------+
+            | verifier      | Object  | status information of the BMV                    |
+            +---------------+---------+--------------------------------------------------+
+            | relays        | List    | list of status information of BMR                |
+            +---------------+---------+--------------------------------------------------+
+            | relay_idx     | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | rotate_height | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | rotate_term   | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | delay_limit   | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | max_agg       | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | rx_height_src | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | rx_height     | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | block_interval_dst | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | block_interval_src | Integer | |
+            +---------------+---------+--------------------------------------------------+
+            | cur_height    | Integer | |
+            +---------------+---------+--------------------------------------------------+
         """
-        # FIXME self._has_permission("getStatus")
         target = BTPAddress.from_string_with_validation(_link)
         link = self._get_link(target)
-        status = {"tx_seq": self._sequences[_link], "rx_seq": link.rx_seq}
+        status = {}
+        status["tx_seq"] = link.tx_seq
+        status["rx_seq"] = link.rx_seq
+        status["relay_idx"] = link.relay_idx
+        status["rotate_height"] = link.rotate_height
+        status["rotate_term"] = link.rotate_term()
+        status["delay_limit"] = link.delay_limit
+        status["max_agg"] = link.max_aggregation
+        status["rx_height_src"] = link.rx_height_src
+        status["rx_height"] = link.rx_height
+        status["block_interval_dst"] = link.block_interval_dst
+        status["block_interval_src"] = link.block_interval_src
+        status["cur_height"] = self.block_height
+
+        relays = []
+        for relay_addr in link.relays:
+            relay = link.relays[relay_addr]
+            relay_status = {}
+            relay_status["address"] = relay_addr
+            relay_status["block_count"] = relay.block_count
+            relay_status["msg_count"] = relay.msg_count
+            relays.append(relay_status)
+        status["relays"] = relays
+
         verifier = self._get_verifier(target.net)
         status["verifier"] = verifier.getStatus()
         return status
@@ -581,34 +431,31 @@ class BTPMessageCenter(IconScoreBase):
                 "btp://0x1.iconee/cx9f8a75111fd611710702e76440ba9adaffef8656"
             ]
         """
-        # FIXME self._has_permission("getLinks")
         return self._links.keys()
 
     def _propagate_event(self, evt_msg: EventMessage):
         for target in self._links:
-            src = self.__properties.btp_addr
+            src = self._props.btp_addr
             dst = BTPAddress.from_string(target)
-            btp_msg = BTPMessage(src, dst, "_event", 0, evt_msg.to_bytes())
-            seq = self._increase_seq(dst)
-            self.Message(str(dst), seq, btp_msg.to_bytes())
+            msg = BTPMessage(src, dst, "_event", 0, evt_msg.to_bytes())
+            self._send_message(dst, msg.to_bytes())
 
-    def _on_link(self, _from: str, _target: str, _reachable: str):
+    def _on_link(self, _from: str, _target: str):
         src = BTPAddress.from_string(_from)
-        link = self._links[src]
-        if link is None:
-            self._add_link(_from, _target)
-        else:
-            link.reachable.append(_target)
-            self._links[src] = link
+        if src in self._links:
+            link = self._links[src]
+            if _target not in link.reachable:
+                link.reachable.put(_target)
+        # elif enable_link_by_event and _target == str(self._props.btp_addr):
+        #     self._add_link(src)
 
-    def _on_unlink(self, _from: str, _target: str, _reachable: str):
+    def _on_unlink(self, _from: str, _target: str):
         src = BTPAddress.from_string(_from)
-        link = self._links[src]
-        if _target == str(self.__properties.btp_addr):
-            self._remove_link(_from)
-        else:
-            link.reachable = _reachable.split(",")
-            self._links[src] = link
+        if src in self._links:
+            link = self._links[src]
+            remove_from_array_db(link.reachable, _target)
+        # elif enable_link_by_event and _target == str(self._props.btp_addr):
+        #     self._remove_link(src)
 
     # ================================================
     #  Route Management
@@ -626,7 +473,8 @@ class BTPMessageCenter(IconScoreBase):
         self._has_permission("addRoute")
         if _dst in self._routes:
             raise BTPException("already exists route")
-        self._routes[_dst] = _link
+        target = BTPAddress.from_string_with_validation(_link)
+        self._routes[_dst] = target
 
     @external
     def removeRoute(self, _dst: str):
@@ -654,95 +502,82 @@ class BTPMessageCenter(IconScoreBase):
                 "btp://0x2.iconee/cx1d6e4decae8160386f4ecbfc7e97a1bc5f74d35b": "btp://0x1.iconee/cx9f8a75111fd611710702e76440ba9adaffef8656"
             }
         """
-        # FIXME self._has_permission("getRoutes")
         d = {}
         for dst in self._routes:
             d[dst] = self._routes[dst]
         return d
 
     def _resolve_route(self, dst_net: str) -> tuple:
-        # dst is BTPAddress.net
-        route = self._routes[dst_net]
+        # dst_net is BTPAddress.net
+        route = self._routes.resolve(dst_net)
         if route is None:
             keys = self._links.keys()
             for key in keys:
-                addr = BTPAddress.from_string(key)
-                if addr.net == dst_net:
-                    return self._links[key], addr
+                dst = BTPAddress.from_string(key)
+                if dst.net == dst_net:
+                    return self._links[key], dst
             for key in keys:
                 link = self._links[key]
                 for reachable in link.reachable:
                     addr = BTPAddress.from_string(reachable)
                     if addr.net == dst_net:
-                        return self._links[key], link.addr
+                        return link, link.addr
             raise BMCException(f"unreachable {dst_net}", BMCExceptionCode.UNREACHABLE)
         else:
-            return self._links[route], BTPAddress.from_string(route)
+            return self._links[route], route
 
     # ================================================
     #  BTP Relay
     # ================================================
-    def _get_btp_messages(self, prev: BTPAddress, _msg: str):
-        seq = self._get_rx_seq(prev)
-        verifier = self._get_verifier(prev.net)
-        return verifier.handleRelayMessage(str(self.__properties.btp_addr), str(prev), seq, _msg)
-
-    def _get_rx_seq(self, target: BTPAddress) -> int:
-        if target in self._links:
-            return self._links[target].rx_seq
-        else:
-            return 0
-
-    def _increase_seq(self, target: BTPAddress, value: int = 1, rx: bool = False) -> int:
-        if value < 1:
-            return -1
-        if rx:
-            link = self._links[target]
-            link.rx_seq = link.rx_seq + value
-            self._links[target] = link
-            return link.rx_seq
-        else:
-            key = str(target)
-            tx_seq = self._sequences[key] + value
-            self._sequences[key] = tx_seq
-            return tx_seq
-
-    def _handle_btp_message(self, prev: BTPAddress, btp_msg: BTPMessage) -> list:
-        svc = btp_msg.svc
+    def _handle_msg(self, prev: BTPAddress, msg: BTPMessage) -> list:
+        svc = msg.svc
         if svc == "_event":
-            evt_msg = EventMessage.from_bytes(btp_msg.payload)
+            evt_msg = EventMessage.from_bytes(msg.payload)
             evt = evt_msg.evt
             values = evt_msg.values
             if evt == "Link":
-                self._on_link(values[0], values[1], values[2])
+                self._on_link(values[0], values[1])
             elif evt == "Unlink":
-                self._on_unlink(values[0], values[1], values[2])
+                self._on_unlink(values[0], values[1])
             else:
                 raise BMCException("not exists event handler")
+        elif svc == "_sack":
+            sack = SACKMessage.from_bytes(msg.payload)
+            link = self._links[prev]
+            link.sack_height = sack.height
+            link.sack_seq = sack.seq
         else:
-            if btp_msg.sn >= 0:
+            if msg.sn >= 0:
                 try:
-                    service = self._get_service(btp_msg.svc)
-                    service.handleBTPMessage(btp_msg.src.net, btp_msg.svc, btp_msg.sn, btp_msg.payload)
+                    service = self._get_service(msg.svc)
+                    service.handleBTPMessage(msg.src.net, msg.svc, msg.sn, msg.payload)
                 except BTPException as e:
-                    self._send_error(prev, btp_msg, e)
-            elif btp_msg.sn < 0:
-                err_msg = ErrorMessage.from_bytes(btp_msg.payload)
+                    self._send_error(prev, msg, e)
+            elif msg.sn < 0:
+                err_msg = ErrorMessage.from_bytes(msg.payload)
                 try:
-                    service = self._get_service(btp_msg.svc)
-                    service.handleBTPError(str(btp_msg.src), btp_msg.svc, btp_msg.sn * -1, err_msg.code, err_msg.msg)
+                    service = self._get_service(msg.svc)
+                    service.handleBTPError(str(msg.src), msg.svc, msg.sn * -1, err_msg.code, err_msg.msg)
                 except BTPException as e:
                     # [TBD] revert or ignore?
-                    self.ErrorOnBTPError(btp_msg.svc, btp_msg.sn * -1, err_msg.code, err_msg.msg, e.code, e.message)
+                    self.ErrorOnBTPError(msg.svc, msg.sn * -1, err_msg.code, err_msg.msg, e.code, e.message)
 
-    def _send_error(self, prev: BTPAddress, btp_msg: BTPMessage, e: BTPException):
-        if btp_msg.sn != 0:
+    def _send_message(self, to: BTPAddress, serialized_msg: bytes):
+        link = self._links[to]
+        link.tx_seq = link.tx_seq + 1
+        self.Message(str(to), link.tx_seq, serialized_msg)
+
+    def _send_error(self, prev: BTPAddress, msg: BTPMessage, e: BTPException):
+        if msg.sn != 0:
             err_msg = ErrorMessage(e.code, e.message)
-            btp_msg = BTPMessage(self.__properties.btp_addr, btp_msg.src, btp_msg.svc, btp_msg.sn * -1,
-                                 err_msg.to_bytes())
-            link = self._get_link(prev)
-            seq = self._increase_seq(link.addr)
-            self.Message(str(link.addr), seq, btp_msg.to_bytes())
+            msg = BTPMessage(self._props.btp_addr, msg.src, msg.svc, msg.sn * -1,
+                             err_msg.to_bytes())
+            self._send_message(prev, msg.to_bytes())
+
+    def _send_sack(self, _link: BTPAddress, height: int, seq: int):
+        sack = SACKMessage(height, seq)
+        msg = BTPMessage(self._props.btp_addr, _link, "_sack", 0, sack.to_bytes())
+        self._send_message(_link, msg.to_bytes())
 
     @external
     def handleRelayMessage(self, _prev: str, _msg: str):
@@ -753,28 +588,50 @@ class BTPMessageCenter(IconScoreBase):
         :param _prev: String ( BTP Address of the previous BMC )
         :param _msg: String ( base64 encoded string of serialized bytes of Relay Message )
         """
-        self._has_permission("handleRelayMessage")
+
         prev = BTPAddress.from_string(_prev)
-        serialized_btp_msgs = self._get_btp_messages(prev, _msg)
+        link = self._get_link(prev)
+        verifier = self._get_verifier(link.addr.net)
+        prev_status = verifier.getStatus()
+        # decode and verify relay message
+        serialized_msgs = verifier.handleRelayMessage(str(self._props.btp_addr), str(prev), link.rx_seq, _msg)
+
+        # rotate and check valid relay
+        status = verifier.getStatus()
+        relay = link.rotate(self.block_height,
+                            status["last_height"],
+                            len(serialized_msgs) > 0)
+        if relay is None:
+            if self.tx.origin not in link.relays:
+                raise UnauthorizedException("not registered relay")
+            else:
+                relay = link.relays[self.tx.origin]
+        elif not relay.addr == self.tx.origin:
+            raise UnauthorizedException("invalid relay")
+
+        relay.block_count = relay.block_count + status["height"] - prev_status["height"]
+        relay.msg_count = relay.msg_count + len(serialized_msgs)
 
         # dispatch BTPMessages
-        for serialized_btp_msg in serialized_btp_msgs:
+        for serialized_msg in serialized_msgs:
             try:
-                btp_msg = BTPMessage.from_bytes(serialized_btp_msg)
+                msg = BTPMessage.from_bytes(serialized_msg)
             except BaseException as e:
                 # TODO [TBD] ignore BTPMessage parse failure?
                 Logger.warning(f"fail to parse BTPMessage err:{e}", TAG)
             else:
-                if btp_msg.dst == self.__properties.btp_addr:
-                    self._handle_btp_message(prev, btp_msg)
+                if msg.dst == self._props.btp_addr:
+                    self._handle_msg(prev, msg)
                 else:
                     try:
-                        link, dst = self._resolve_route(btp_msg.dst.net)
-                        seq = self._increase_seq(link.addr)
-                        self.Message(str(link.addr), seq, serialized_btp_msg)
+                        next_link, dst = self._resolve_route(msg.dst.net)
+                        self._send_message(next_link.addr, serialized_msg)
                     except BTPException as e:
-                        self._send_error(prev, btp_msg, e)
-        self._increase_seq(prev, len(serialized_btp_msgs), rx=True)
+                        self._send_error(prev, msg, e)
+        link.rx_seq = link.rx_seq + len(serialized_msgs)
+        if link.sack_term > 0 and link.sack_next <= self.block_height:
+            self._send_sack(prev, status["height"], link.rx_seq)
+            link.sack_next = link.sack_next + link.sack_term
 
     @external
     def sendMessage(self, _to: str, _svc: str, _sn: int, _msg: bytes):
@@ -788,12 +645,11 @@ class BTPMessageCenter(IconScoreBase):
         :param _msg: Bytes ( serialized bytes of Service Message )
         """
         self._has_permission("sendMessage")
-        link, dst = self._resolve_route(_to)
         if _sn < 0:
             raise BMCException("invalid sn", BMCExceptionCode.INVALID_SN)
-        seq = self._increase_seq(link.addr)
-        btp_msg = BTPMessage(self.__properties.btp_addr, dst, _svc, _sn, _msg)
-        self.Message(str(link.addr), seq, btp_msg.to_bytes())
+        link, dst = self._resolve_route(_to)
+        msg = BTPMessage(self._props.btp_addr, dst, _svc, _sn, _msg)
+        self._send_message(link.addr, msg.to_bytes())
 
     @eventlog(indexed=2)
     def Message(self, _next: str, _seq: int, _msg: bytes):
@@ -822,3 +678,136 @@ class BTPMessageCenter(IconScoreBase):
         :param _emsg: String ( BTPException message )
         """
         pass
+
+    # ================================================
+    #  Relayer Management
+    # ================================================
+    @external
+    def addRelayer(self, _addr: Address, _desc: str):
+        """
+        Registers Relayer for the network.
+
+        :param _addr: Address (the address of Relayer)
+        :param _desc: String (description of Relayer)
+        """
+        # self._vote_request("addRelayer", _addr, _desc)
+        if _addr in self._relayers:
+            raise BTPException("already exists relayer")
+        relayer = self._relayers.new_relayer(_addr)
+        relayer.desc = _desc
+        self._relayers[_addr] = relayer
+
+    @external
+    def removeRelayer(self, _addr: Address):
+        """
+        Unregisters Relayer for the network.
+        May fail if it's referred by the BMR.
+
+        :param _addr: Address (the address of Relayer)
+        """
+        # self._vote_request("unregisterRelayer", _addr)
+        if _addr not in self._relayers:
+            raise BTPException("not found relayer")
+        self._relayers.remove(_addr)
+
+    @external(readonly=True)
+    def getRelayers(self) -> dict:
+        """
+        Get registered Relayer.
+
+        :return: A dictionary with the address of relayer as key and description of relayer as value.
+
+        For Example::
+
+        {
+            "hx..." : "description of relayer..."
+            ...
+        }
+        """
+        d = {}
+        for addr in self._relayers:
+            relayer = self._relayers[addr]
+            d[addr] = relayer.to_dict()
+        return d
+
+    # ================================================
+    #  Relay Management
+    # ================================================
+    @external
+    def addRelay(self, _link: str, _addr: Address):
+        """
+        Registers relay for the network.
+        Called by the Relay-Operator to manage the BTP network.
+
+        :param _link: String (BTP Address of connected BMC)
+        :param _addr: Address (the address of Relay)
+        """
+        if self.tx.origin not in self._relayers:
+            raise UnauthorizedException("not registered relayer")
+        target = BTPAddress.from_string_with_validation(_link)
+        relayer = self._relayers[self.tx.origin]
+        relayer.add_relay(target, _addr)
+        link = self._get_link(target)
+        link.add_relay(_addr)
+
+    @external
+    def removeRelay(self, _link: str, _addr: Address):
+        """
+        Unregisters relay for the network.
+        Called by the Relay-Operator to manage the BTP network.
+
+        :param _link: String (BTP Address of connected BMC)
+        :param _addr: Address (the address of Relay)
+        """
+        if self.tx.origin not in self._relayers:
+            raise UnauthorizedException("not registered relayer")
+        target = BTPAddress.from_string_with_validation(_link)
+        relayer = self._relayers[self.tx.origin]
+        relayer.remove_relay(target)
+        link = self._get_link(target)
+        link.remove_relay(_addr, self.block_height)
+
+    @external(readonly=True)
+    def getRelays(self, _link: str) -> list:
+        """
+        Get registered relays.
+
+        :return: A list of relays.
+
+        For Example::
+
+        [
+           "hx..."
+            ...
+        ]
+        """
+        target = BTPAddress.from_string_with_validation(_link)
+        link = self._get_link(target)
+        return link.relays.keys()
+
+    @external
+    def nextRelays(self, _link: str, _term: int):
+        self._has_permission("nextRelays")
+        target = BTPAddress.from_string_with_validation(_link)
+        link = self._get_link(target)
+        if link.next_relays_term != _term:
+            link.next_relays_term = _term
+        link.next_relays(self.block_height)
+
+    @external(readonly=True)
+    def getNextRelays(self, _link: str) -> list:
+        """
+        Get registered next relays.
+
+        :return: A list of next relays.
+
+        For Example::
+
+        [
+            "hx..."
+            ...
+        ]
+        """
+        target = BTPAddress.from_string_with_validation(_link)
+        link = self._get_link(target)
+        return link.get_next_relays()

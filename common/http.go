@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -418,10 +419,10 @@ func NewHttpError(r *http.Response) *HttpError {
 		status:   r.StatusCode,
 		message:  "HTTP " + r.Status,
 	}
-	if r.ContentLength > 0 {
-		if rb, err := ioutil.ReadAll(r.Body); err == nil {
-			hErr.response = rb
-		}
+	if rb, err := ioutil.ReadAll(r.Body); err == nil {
+		hErr.response = rb
+	} else {
+		hErr.message += fmt.Sprintf("\nfail to read response body err:%+v", err)
 	}
 	return hErr
 }
@@ -432,6 +433,16 @@ func EqualsSyscallErrno(err error, sen syscall.Errno) bool {
 			if en, ok := se.Err.(syscall.Errno); ok && en == sen {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func HasContentType(h http.Header, mimetype string) bool {
+	l := strings.Split(h.Get(echo.HeaderContentType), ",")
+	for _, v := range l {
+		if t, _, _ := mime.ParseMediaType(v); t == mimetype {
+			return true
 		}
 	}
 	return false

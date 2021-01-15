@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/icon-project/btp/common"
 )
 
@@ -72,12 +74,14 @@ func (c *Client) Do(method string, reqPtr, respPtr interface{}) (jrResp *Respons
 	resp, err = c._do(req)
 	if err != nil {
 		if hErr, ok := err.(*common.HttpError); ok && len(hErr.Response()) > 0{
-			if dErr := json.Unmarshal(hErr.Response(), &jrResp); dErr != nil {
-				err = fmt.Errorf("fail to decode response body err:%+v, httpErr:%+v, httpResp:%+v",
-					dErr, err, resp)
-			} else {
-				err = jrResp.Error
-				//fmt.Printf("jrResp.Error:%+v in HttpError", err)
+			if resp != nil && common.HasContentType(resp.Header, echo.MIMEApplicationJSON) {
+				if dErr := json.Unmarshal(hErr.Response(), &jrResp); dErr != nil {
+					err = fmt.Errorf("fail to decode response body err:%+v, httpErr:%+v, httpResp:%+v, responseBody:%s",
+						dErr, err, resp, string(hErr.Response()))
+				} else {
+					err = jrResp.Error
+					//fmt.Printf("jrResp.Error:%+v in HttpError", err)
+				}
 			}
 			return
 		}

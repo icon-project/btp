@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package iconee
 
 import (
@@ -111,15 +127,9 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 			if !r.isFoundOffsetBySeq {
 			EpLoop:
 				for j := 0; j < len(p.Events); j++ {
-					mp, err := mpt.NewMptProof(proofs[j+1])
-					if err != nil {
+					if el, err := toEventLog(proofs[j+1]); err != nil {
 						return nil, err
-					}
-					el := &EventLog{}
-					if _, err := codec.RLP.UnmarshalFromBytes(mp.Leaf().Data, el); err != nil {
-						return nil, fmt.Errorf("fail to parse EventLog on leaf err:%+v", err)
-					}
-					if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
+					} else if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
 						bytes.Equal(el.Indexed[EventIndexSignature], r.evtLogRawFilter.signature) &&
 						bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) &&
 						bytes.Equal(el.Indexed[EventIndexSequence], r.evtLogRawFilter.seq) {
@@ -144,13 +154,18 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 				return nil, err
 			}
 			for k := nextEp; k < len(p.Events); k++ {
-				evt, _ := p.Events[k].Value()
+				eIdx, _ := p.Events[k].Value()
 				ep := &module.EventProof{
-					Index: int(evt),
+					Index: int(eIdx),
 				}
 				if ep.Proof, err = codec.RLP.MarshalToBytes(proofs[k+1]); err != nil {
 					return nil, err
 				}
+				var evt *module.Event
+				if evt, err = r.toEvent(proofs[k+1]); err != nil {
+					return nil, err
+				}
+				rp.Events = append(rp.Events, evt)
 				rp.EventProofs = append(rp.EventProofs, ep)
 			}
 			rps = append(rps, rp)
@@ -158,6 +173,38 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 		}
 	}
 	return rps, nil
+}
+
+func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
+	el, err := toEventLog(proof)
+	if err != nil {
+		return nil, err
+	}
+	if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
+		bytes.Equal(el.Indexed[EventIndexSignature], r.evtLogRawFilter.signature) &&
+		bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) {
+		var i common.HexInt
+		i.SetBytes(el.Indexed[EventIndexSequence])
+		evt := &module.Event{
+			Next: module.BtpAddress(el.Indexed[EventIndexNext]),
+			Sequence: i.Int64(),
+			Message: el.Data[0],
+		}
+		return evt, nil
+	}
+	return nil, fmt.Errorf("invalid event")
+}
+
+func toEventLog(proof [][]byte) (*EventLog, error) {
+	mp, err := mpt.NewMptProof(proof)
+	if err != nil {
+		return nil, err
+	}
+	el := &EventLog{}
+	if _, err := codec.RLP.UnmarshalFromBytes(mp.Leaf().Data, el); err != nil {
+		return nil, fmt.Errorf("fail to parse EventLog on leaf err:%+v", err)
+	}
+	return el, nil
 }
 
 func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallback, scb func()) error {

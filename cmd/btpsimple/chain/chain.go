@@ -1,12 +1,27 @@
+/*
+ * Copyright 2020 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package chain
 
 import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,330 +49,276 @@ const (
 )
 
 type SimpleChain struct {
-	s         module.Sender
-	r         module.Receiver
-	srv       *p2p.Server
-	d         *p2p.Dialer
-	c         *p2p.Conn
-	src       module.BtpAddress
-	acc       *mta.ExtAccumulator
-	dst       module.BtpAddress
-	bmcStatus *module.BMCLinkStatus //getstatus(dst.src)
-	rm        *module.RelayMessage
-	relayCh   chan *module.RelayMessage
-	relaySeq  uint64
-	rmBuffer  []*module.RelayMessage
-	rmBufMtx  sync.Mutex
-	ts        time.Time
-	l         log.Logger
-	cfg       *Config
+	s       module.Sender
+	r       module.Receiver
+	w       wallet.Wallet
+	srv     *p2p.Server
+	d       *p2p.Dialer
+	c       *p2p.Conn
+	src     module.BtpAddress
+	acc     *mta.ExtAccumulator
+	dst     module.BtpAddress
+	bs      *module.BMCLinkStatus //getstatus(dst.src)
+	relayCh chan *module.RelayMessage
+	l       log.Logger
+	cfg     *Config
+
+	rms             []*module.RelayMessage
+	rmsMtx          sync.RWMutex
+	rmSeq           uint64
+	heightOfDst     int64
+	lastBlockUpdate *module.BlockUpdate
+
+	bmrIndex       int
+	relayble       bool
+	relaybleIndex  int
+	relaybleHeight int64
 }
 
-//TODO change to normal func with mutex
-func (s *SimpleChain) relayLoop() {
-	s.l.Debugln("start relayLoop")
-Loop:
-	for {
-		select {
-		case rm, ok := <-s.relayCh:
-			if !ok {
-				s.l.Debugln("stop relayLoop")
-				return
-			}
+func (s *SimpleChain) _relayble(rm *module.RelayMessage) bool {
+	return s.relayble && (s._overMaxAggregation(rm) || s._lastRelaybleHeight())
+}
+func (s *SimpleChain) _overMaxAggregation(rm *module.RelayMessage) bool {
+	return len(rm.BlockUpdates) >= s.bs.MaxAggregation
+}
+func (s *SimpleChain) _lastRelaybleHeight() bool {
+	return s.relaybleHeight == (s.monitorHeight() + 1)
+}
+func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
+	for _, segment := range rm.Segments {
+		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
+			return true
+		}
+	}
+	return false
+}
 
-			s.rmBufMtx.Lock()
-			if len(s.rmBuffer) > 0 {
-				sort.Slice(s.rmBuffer, func(i, j int) bool {
-					return s.rmBuffer[i].Seq < s.rmBuffer[j].Seq
-				})
-				for _, trm := range s.rmBuffer {
-					s.l.Debugf("relayLoop.rmBuffer from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-						trm.From.NetworkAddress(), relayMessageHeight(trm),
-						len(trm.BlockUpdates), trm.BlockProof != nil, len(trm.ReceiptProofs))
+func (s *SimpleChain) _log(prefix string, rm *module.RelayMessage, segment *module.Segment, segmentIdx int) {
+	if segment == nil {
+		s.l.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
+			prefix,
+			rm.Seq,
+			rm.BlockUpdates[0].Height,
+			rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
+			len(rm.ReceiptProofs))
+	} else {
+		s.l.Debugf("%s rm:%d [i:%d,h:%d,bu:%d,seq:%d,evt:%d,txh:%v]",
+			prefix,
+			rm.Seq,
+			segmentIdx,
+			segment.Height,
+			segment.NumberOfBlockUpdate,
+			segment.EventSequence,
+			segment.NumberOfEvent,
+			segment.GetResultParam)
+	}
+}
 
-					if p, err := s.s.Relay(trm); err != nil {
-						s.l.Panicf("fail to Relay err:%+v", err)
-					} else {
-						go s.result(p, trm)
-					}
+func (s *SimpleChain) _relay() {
+	s.rmsMtx.RLock()
+	defer s.rmsMtx.RUnlock()
+	var err error
+	for _, rm := range s.rms {
+		if (len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0) ||
+			s._hasWait(rm) || (!s._skippable(rm) && !s._relayble(rm)) {
+			break
+		} else {
+			if len(rm.Segments) == 0 {
+				if rm.Segments, err = s.s.Segment(rm); err != nil {
+					s.l.Panicf("fail to segment err:%+v", err)
 				}
-				s.rmBuffer = s.rmBuffer[:0]
 			}
-			s.rmBufMtx.Unlock()
+			s._log("before relay", rm, nil, -1)
+			reSegment := true
+			for j, segment := range rm.Segments {
+				if segment == nil {
+					continue
+				}
+				reSegment = false
 
-			if rm == nil {
-				s.l.Debugln("relayMessage is nil, ignore")
-				continue Loop
+				if segment.GetResultParam == nil {
+					segment.TransactionResult = nil
+					if segment.GetResultParam, err = s.s.Relay(segment); err != nil {
+						s.l.Panicf("fail to Relay err:%+v", err)
+					}
+					s._log("after relay", rm, segment, j)
+					go s.result(rm, segment)
+				}
 			}
-
-			s.l.Debugf("relayLoop from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-				rm.From.NetworkAddress(), relayMessageHeight(rm),
-				len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
-			if p, err := s.s.Relay(rm); err != nil {
-				//TODO retry
-				s.l.Panicf("fail to Relay err:%+v", err)
-			} else {
-				go s.result(p, rm)
+			if reSegment {
+				rm.Segments = rm.Segments[:0]
 			}
 		}
 	}
 }
 
-func (s *SimpleChain) result(p module.GetResultParam, rm *module.RelayMessage) {
-	_, err := s.s.GetResult(p)
+func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
+	var err error
+	segment.TransactionResult, err = s.s.GetResult(segment.GetResultParam)
 	if err != nil {
 		if ec, ok := errors.CoderOf(err); ok {
-			s.l.Debugf("result revert by %s from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-				module.BMVRevertCodeNames[ec.ErrorCode()], rm.From.NetworkAddress(), relayMessageHeight(rm),
-				len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
+				segment.GetResultParam, ec)
 			switch ec.ErrorCode() {
+			case module.BMVRevertInvalidSequence, module.BMVRevertInvalidBlockUpdateLower:
+				for i := 0; i < len(rm.Segments); i++ {
+					if rm.Segments[i] == segment {
+						rm.Segments[i] = nil
+						break
+					}
+				}
 			case module.BMVRevertInvalidBlockWitnessOld:
-				s.l.Debugf("revert by BMVRevertInvalidBlockWitnessOld from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-					rm.From.NetworkAddress(), relayMessageHeight(rm),
-					len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
-				if err = s.RefreshStatus(); err != nil {
-					s.l.Panicf("fail to RefreshStatus err:%+v", err)
-				}
-				if rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header); err != nil {
-					s.l.Panicf("fail to newBlockProof err:%+v", err)
-				}
-				fallthrough
+				rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
+				s.s.UpdateSegment(rm.BlockProof, segment)
+				segment.GetResultParam = nil
 			case module.BMVRevertInvalidSequenceHigher, module.BMVRevertInvalidBlockUpdateHigher, module.BMVRevertInvalidBlockProofHigher:
-				s.rmBufMtx.Lock()
-				s.rmBuffer = append(s.rmBuffer, rm)
-				s.rmBufMtx.Unlock()
-				s.relayCh <- nil
-			case module.BMVRevertInvalidSequence:
-				s.l.Infof("drop by BMVRevertInvalidSequence from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-					rm.From.NetworkAddress(), relayMessageHeight(rm),
-					len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
-			case module.BMVRevertInvalidBlockUpdateLower:
-				s.l.Infof("drop by BMVRevertInvalidBlockUpdateLower from:%s, height:%s by %s, bu:%d, bp:%v, rps:%d",
-					rm.From.NetworkAddress(), relayMessageHeight(rm),
-					len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+				segment.GetResultParam = nil
+			case module.BMCRevertUnauthorized:
+				segment.GetResultParam = nil
 			default:
-				s.l.Panicf("fail to GetResult err:%+v, txHash:%v from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-					err, p, rm.From.NetworkAddress(), relayMessageHeight(rm),
-					len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
+					segment.GetResultParam, ec)
 			}
 		} else {
-			s.l.Panicf("fail to GetResult txHash:%v from:%s, height:%s by err:%+v, bu:%d, bp:%v, rps:%d",
-				p, rm.From.NetworkAddress(), relayMessageHeight(rm), err,
-				len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
+			s.l.Panicf("fail to GetResult GetResultParam:%v err:%+v",
+				segment.GetResultParam, err)
 		}
-	} else {
-		s.l.Debugf("GetResult finish from:%s, height:%s, bu:%d, bp:%v, rps:%d",
-			rm.From.NetworkAddress(), relayMessageHeight(rm),
-			len(rm.BlockUpdates), rm.BlockProof != nil, len(rm.ReceiptProofs))
-	}
-	return
-}
-
-func (s *SimpleChain) _relayWithLimit(limit, buSize int, bu *module.BlockUpdate, rm *module.RelayMessage) {
-	bpSize := 0
-	for buSize > 0 || len(rm.ReceiptProofs) > 0 {
-		rmSize := buSize + bpSize
-		if rmSize == 0 {
-			if rm.BlockProof == nil {
-				var err error
-				if err = s.RefreshStatus(); err != nil {
-					s.l.Panicf("fail to RefreshStatus err:%+v", err)
-				}
-				if rm.BlockProof, err = s.newBlockProof(bu.Height, bu.Header); err != nil {
-					s.l.Panicf("fail to newBlockProof err:%+v", err)
-				}
-			}
-			bpSize += len(rm.BlockProof.Header)
-			bpSize += 8 //rm.BlockProof.BlockWitness.Height
-			bpSize += len(rm.BlockProof.BlockWitness.Witness) * mta.HashSize
-		}
-		lastRp := -1
-		lastEp := -1
-	RpLoop:
-		for i, rp := range rm.ReceiptProofs {
-			rpSize := len(rp.Proof)
-			rmSize += rpSize
-			if rmSize > limit {
-				rmSize -= rpSize
-				break RpLoop
-			}
-			for j, ep := range rp.EventProofs {
-				epSize := len(ep.Proof)
-				rmSize += epSize
-				if rmSize > limit {
-					lastEp = j - 1
-					rmSize -= epSize
-					if lastEp < 0 {
-						rmSize -= rpSize
-						if lastRp < 0 && buSize == 0 {
-							s.l.Panicf("invalid ReceiptProof, rpSize:%d + epSize:%d greater than limit:%d",
-								rpSize, epSize, limit)
-						}
-					}
-					break RpLoop
-				}
-			}
-			lastEp = -1
-			lastRp = i
-		}
-
-		trm := &module.RelayMessage{
-			From: rm.From,
-		}
-
-		if buSize > 0 {
-			if buSize > limit {
-				lastBu := len(rm.BlockUpdates) - 1
-				trm.BlockUpdates = rm.BlockUpdates[:lastBu]
-				rm.BlockUpdates = rm.BlockUpdates[lastBu:]
-				//ignored bu.Height, bu.BlockHash, bu.Header
-				buSize = len(bu.Proof)
-			} else {
-				trm.BlockUpdates = rm.BlockUpdates[:]
-				rm.BlockUpdates = rm.BlockUpdates[:0]
-				buSize = 0
-			}
-		} else {
-			trm.BlockProof = rm.BlockProof
-		}
-
-		if lastRp >= 0 {
-			lastRp += 1
-			trm.ReceiptProofs = rm.ReceiptProofs[:lastRp]
-			rm.ReceiptProofs = rm.ReceiptProofs[lastRp:]
-			if len(trm.BlockUpdates) == 0 {
-				trm.BlockProof = rm.BlockProof
-			}
-		}
-
-		if lastEp >= 0 {
-			lastEp += 1
-			if trm.ReceiptProofs == nil {
-				trm.ReceiptProofs = make([]*module.ReceiptProof, 0)
-			}
-			rp := &module.ReceiptProof{
-				Index:       rm.ReceiptProofs[0].Index,
-				Proof:       rm.ReceiptProofs[0].Proof,
-				EventProofs: rm.ReceiptProofs[0].EventProofs[:lastEp],
-			}
-			trm.ReceiptProofs = append(trm.ReceiptProofs, rp)
-			rm.ReceiptProofs[0].EventProofs = rm.ReceiptProofs[0].EventProofs[lastEp:]
-		}
-		trm.Seq = atomic.AddUint64(&s.relaySeq, 1)
-		s.relayCh <- trm
 	}
 }
 
-func (s *SimpleChain) relay(bu *module.BlockUpdate, rps []*module.ReceiptProof, bp *module.BlockProof) {
-	if s.d != nil {
-		if s.c == nil {
-			var err error
-			for {
-				if s.c, err = s.d.Dial(s); err != nil {
-					s.l.Infof("fail to dial err:%+v", err)
-					<-time.After(DefaultReconnectDelay)
-				} else {
-					break
-				}
-			}
-		}
-		req := &RelayRequest{
-			From:          s.src.String(),
-			BlockUpdate:   bu,
-			ReceiptProofs: rps,
-			BlockProof:    bp,
-		}
-		pkt := p2p.NewPacket(ProtoRelay, s.encode(req))
-		for {
-			s.l.Debugf("RelayRequest from:%s, height:%d, bp:%v, rps:%d",
-				s.src.NetworkAddress(), bu.Height, req.BlockProof != nil, len(req.ReceiptProofs))
-			rpkt, err := s.c.SendAndReceive(pkt)
-			if err != nil {
-				s.c.CloseByError(err)
-				s.l.Panicf("fail to send and receive err:%+v", err)
-			}
-			resp := &RelayResponse{}
-			s.decode(rpkt.Payload(), resp)
-			if resp.Error != "" {
-				s.l.Debugf("RelayResponse.Error:%s", resp.Error)
-				<-time.After(DefaultRelayReSendInterval)
-			} else {
-				break
-			}
-		}
-		return
+func (s *SimpleChain) _rm() *module.RelayMessage {
+	rm := &module.RelayMessage{
+		From:         s.src,
+		BlockUpdates: make([]*module.BlockUpdate, 0),
+		Seq:          s.rmSeq,
 	}
+	s.rms = append(s.rms, rm)
+	s.rmSeq += 1
+	return rm
+}
 
-	rm := s.rm
-	if rm == nil {
-		rm = &module.RelayMessage{
-			From:          s.src,
-			BlockUpdates:  make([]*module.BlockUpdate, 0),
-			BlockProof:    nil,
-			ReceiptProofs: nil,
+func (s *SimpleChain) addRelayMessage(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+	s.rmsMtx.Lock()
+	defer s.rmsMtx.Unlock()
+
+	if s.lastBlockUpdate != nil {
+		//TODO consider remained bu when reconnect
+		if s.lastBlockUpdate.Height+1 != bu.Height {
+			s.l.Panicf("invalid bu")
 		}
-		s.rm = rm
 	}
-	rm.ReceiptProofs = rps
-	limit := int(float64(s.s.LimitOfTransactionSize()) * DefaultBufferScaleOfBlockProof)
-	if bp == nil {
-		nbu := len(rm.BlockUpdates)
-		if nbu > 0 {
-			next := rm.BlockUpdates[nbu-1].Height + 1
-			if next < bu.Height {
-				s.l.Panicf("found missing blockUpdate dst:%s bu:%d expected:%d ",
-					s.dst.String(), bu.Height, next)
-			} else if next > bu.Height {
-				if len(rps) > 0 {
-					trm := &module.RelayMessage{
-						From:          rm.From,
-						BlockUpdates:  make([]*module.BlockUpdate, 0),
-						ReceiptProofs: rps,
-					}
-					min := rm.BlockUpdates[0].Height
-					if min > bu.Height {
-						trm.BlockUpdates = append(trm.BlockUpdates, bu)
-					} else {
-						trm.BlockUpdates = append(trm.BlockUpdates, rm.BlockUpdates[0:bu.Height-min+1]...)
-						rm.BlockUpdates = rm.BlockUpdates[bu.Height-min+1:]
-					}
-					buSize := 0
-					for _, u := range trm.BlockUpdates {
-						//ignored u.Height, u.BlockHash, u.Header
-						buSize += len(u.Proof)
-					}
-					s._relayWithLimit(limit, buSize, bu, trm)
-					bu = rm.BlockUpdates[len(rm.BlockUpdates)-1]
-					rps = rps[:0]
+	s.lastBlockUpdate = bu
+	rm := s.rms[len(s.rms)-1]
+	if len(rm.Segments) > 0 {
+		rm = s._rm()
+	}
+	if len(rps) > 0 {
+		rm.BlockUpdates = append(rm.BlockUpdates, bu)
+		rm.ReceiptProofs = rps
+		rm.HeightOfDst = s.monitorHeight()
+		if s.bs.BlockIntervalDst > 0 {
+			scale := float64(s.bs.BlockIntervalSrc) / float64(s.bs.BlockIntervalDst)
+			guessHeightOfDst := s.bs.RxHeight + int64(math.Ceil(float64(bu.Height-s.bs.RxHeightSrc)/scale)) - 1
+			if guessHeightOfDst < rm.HeightOfDst {
+				rm.HeightOfDst = guessHeightOfDst
+			}
+		}
+		s.l.Debugf("addRelayMessage rms:%d bu:%d rps:%d HeightOfDst:%d", len(s.rms), bu.Height, len(rps), rm.HeightOfDst)
+		rm = s._rm()
+	} else {
+		if bu.Height <= s.bs.Verifier.Height {
+			return
+		}
+		rm.BlockUpdates = append(rm.BlockUpdates, bu)
+		s.l.Debugf("addRelayMessage rms:%d bu:%d ~ %d", len(s.rms), rm.BlockUpdates[0].Height, bu.Height)
+	}
+}
+
+func (s *SimpleChain) updateRelayMessage(h int64, seq int64) (err error) {
+	s.rmsMtx.Lock()
+	defer s.rmsMtx.Unlock()
+
+	s.l.Debugf("updateRelayMessage h:%d seq:%d monitorHeight:%d", h, seq, s.monitorHeight())
+
+	rrm := 0
+rmLoop:
+	for i, rm := range s.rms {
+		if len(rm.ReceiptProofs) > 0 {
+			rrp := 0
+		rpLoop:
+			for j, rp := range rm.ReceiptProofs {
+				revt := seq - rp.Events[0].Sequence + 1
+				if revt < 1 {
+					break rpLoop
+				}
+				if revt >= int64(len(rp.Events)) {
+					rrp = j + 1
 				} else {
-					s.l.Infof("ignore duplicated blockUpdate dst:%s height:%d expected:%d",
-						s.dst.String(), bu.Height, next)
+					s.l.Debugf("updateRelayMessage rm:%d bu:%d rp:%d removeEventProofs %d ~ %d",
+						rm.Seq,
+						rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
+						rp.Index,
+						rp.Events[0].Sequence,
+						rp.Events[revt-1].Sequence)
+					rp.Events = rp.Events[revt:]
+					if len(rp.EventProofs) > 0 {
+						rp.EventProofs = rp.EventProofs[revt:]
+					}
+				}
+			}
+			if rrp > 0 {
+				s.l.Debugf("updateRelayMessage rm:%d bu:%d removeReceiptProofs %d ~ %d",
+					rm.Seq,
+					rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
+					rm.ReceiptProofs[0].Index,
+					rm.ReceiptProofs[rrp-1].Index)
+				rm.ReceiptProofs = rm.ReceiptProofs[rrp:]
+			}
+		}
+		if rm.BlockProof != nil {
+			if len(rm.ReceiptProofs) > 0 {
+				if rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header); err != nil {
+					return
 				}
 			} else {
-				rm.BlockUpdates = append(rm.BlockUpdates, bu)
+				rrm = i + 1
 			}
-		} else {
-			rm.BlockUpdates = append(rm.BlockUpdates, bu)
 		}
-	} else {
-		if len(bp.Header) == 0 || bp.BlockWitness == nil {
-			s.l.Panicf("invalid BlockProof")
+		if len(rm.BlockUpdates) > 0 {
+			rbu := h - rm.BlockUpdates[0].Height + 1
+			if rbu < 1 {
+				break rmLoop
+			}
+			if rbu >= int64(len(rm.BlockUpdates)) {
+				if len(rm.ReceiptProofs) > 0 {
+					lbu := rm.BlockUpdates[len(rm.BlockUpdates)-1]
+					if rm.BlockProof, err = s.newBlockProof(lbu.Height, lbu.Header); err != nil {
+						return
+					}
+					rm.BlockUpdates = rm.BlockUpdates[:0]
+				} else {
+					rrm = i + 1
+				}
+			} else {
+				s.l.Debugf("updateRelayMessage rm:%d removeBlockUpdates %d ~ %d",
+					rm.Seq,
+					rm.BlockUpdates[0].Height,
+					rm.BlockUpdates[rbu-1].Height)
+				rm.BlockUpdates = rm.BlockUpdates[rbu:]
+			}
 		}
-		rm.BlockProof = bp
 	}
-	buSize := 0
-	for _, u := range rm.BlockUpdates {
-		//ignored u.Height, u.BlockHash, u.Header
-		buSize += len(u.Proof)
+	if rrm > 0 {
+		s.l.Debugf("updateRelayMessage rms:%d removeRelayMessage %d ~ %d",
+			len(s.rms),
+			s.rms[0].Seq,
+			s.rms[rrm-1].Seq)
+		s.rms = s.rms[rrm:]
+		if len(s.rms) == 0 {
+			s._rm()
+		}
 	}
-	now := time.Now()
-	if len(rps) < 1 && len(rm.BlockUpdates) < DefaultBufferNumberOfBlockProof &&
-		buSize < limit && now.Sub(s.ts) < DefaultBufferInterval {
-		return
-	}
-	s.rm = nil
-	s._relayWithLimit(limit, buSize, bu, rm)
-	s.ts = time.Now()
+	return nil
 }
 
 func (s *SimpleChain) updateMTA(bu *module.BlockUpdate) {
@@ -371,48 +332,42 @@ func (s *SimpleChain) updateMTA(bu *module.BlockUpdate) {
 			//TODO MTA Flush error handling
 			s.l.Panicf("fail to MTA Flush err:%+v", err)
 		}
+		//s.l.Debugf("updateMTA %d", bu.Height)
 	}
 }
 
-func (s *SimpleChain) OnBlock(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
-	s.l.Tracef("onBlock height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
-
-	s.updateMTA(bu)
-
-	var bp *module.BlockProof
-	if s.bmcStatus.Verifier.Height >= bu.Height { //old blocks
-		if len(rps) > 0 {
-			s.l.Debugf("onBlock relay old block dst:%s, bu.Height:%d, len(rps):%d",
-				s.dst.NetworkAddress(), bu.Height, len(rps))
-			var err error
-			if err = s.RefreshStatus(); err != nil {
-				s.l.Panicf("fail to RefreshStatus err:%+v", err)
-			}
-			if bp, err = s.newBlockProof(bu.Height, bu.Header); err != nil {
-				s.l.Panicf("fail to newBlockProof err:%+v", err)
-			}
-			if err = s.acc.VerifyAt(mta.HashesToWitness(bp.BlockWitness.Witness, bu.Height-1-s.acc.Offset()),
-				bu.BlockHash, s.bmcStatus.Verifier.Height, s.bmcStatus.Verifier.Offset); err != nil {
-				s.l.Panicf("fail to VerifyAt hash:%s err:%+v", hex.EncodeToString(bu.BlockHash), err)
-			}
-		} else {
-			if s.d == nil {
-				s.l.Tracef("onBlock ignore old block dst:%s, bu.Height:%d, dst.Verifier:%d",
-					s.dst.NetworkAddress(), bu.Height, s.bmcStatus.Verifier.Height)
-				return
-			}
-		}
-	} else {
-		s.l.Tracef("onBlock relay dst:%s, bu.Height:%d, rps:%d",
-			s.dst.NetworkAddress(), bu.Height, len(rps))
+func (s *SimpleChain) OnBlockOfDst(height int64) error {
+	s.l.Tracef("OnBlockOfDst height:%d", height)
+	atomic.StoreInt64(&s.heightOfDst, height)
+	h, seq := s.bs.Verifier.Height, s.bs.RxSeq
+	if err := s.RefreshStatus(); err != nil {
+		return err
 	}
-	s.relay(bu, rps, bp)
+	if h != s.bs.Verifier.Height || seq != s.bs.RxSeq {
+		h, seq = s.bs.Verifier.Height, s.bs.RxSeq
+		if err := s.updateRelayMessage(h, seq); err != nil {
+			return err
+		}
+		s.relayCh <- nil
+	}
+	return nil
+}
+
+func (s *SimpleChain) OnBlockOfSrc(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
+	s.updateMTA(bu)
+	if s.d != nil {
+		s.sendRelayRequest(bu, rps)
+	} else {
+		s.addRelayMessage(bu, rps)
+	}
+	s.relayCh <- nil
 }
 
 func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockProof, error) {
-	//at := s.bmcStatus.Verifier.Height
-	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bmcStatus.Verifier.Offset)
-	at, w, err := s.acc.WitnessForAt(height, s.bmcStatus.Verifier.Height, s.bmcStatus.Verifier.Offset)
+	//at := s.bs.Verifier.Height
+	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bs.Verifier.Offset)
+	at, w, err := s.acc.WitnessForAt(height, s.bs.Verifier.Height, s.bs.Verifier.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -452,7 +407,7 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 	if bk.Has(k) {
 		//offset will be ignore
 		if err = s.acc.Recover(); err != nil {
-			err = errors.Wrap(err, "fail to acc.Recover")
+			err = errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
 			//TODO MTA Recover error handling
 			return err
 		}
@@ -471,6 +426,83 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 		//}
 	}
 	return nil
+}
+
+func (s *SimpleChain) _skippable(rm *module.RelayMessage) bool {
+	bs := s.bs
+	if len(rm.ReceiptProofs) > 0 {
+		if bs.RotateTerm > 0 {
+			rotate := 0
+			relaybleHeightStart := bs.RotateHeight - int64(bs.RotateTerm+1)
+			if rm.HeightOfDst > bs.RotateHeight {
+				rotate = int(math.Ceil(float64(rm.HeightOfDst-bs.RotateHeight) / float64(bs.RotateTerm)))
+				if rotate > 0 {
+					relaybleHeightStart += int64(bs.RotateTerm * (rotate - 1))
+				}
+			}
+			skip := int(math.Ceil(float64(s.monitorHeight()+1-rm.HeightOfDst)/float64(bs.DelayLimit))) - 1
+			if skip > 0 {
+				rotate += skip
+				relaybleHeightStart = rm.HeightOfDst + int64(bs.DelayLimit*skip)
+			}
+			relaybleIndex := bs.BMRIndex
+			if rotate > 0 {
+				relaybleIndex += rotate
+				if relaybleIndex >= len(bs.BMRs) {
+					relaybleIndex = relaybleIndex % len(bs.BMRs)
+				}
+			}
+			prevFinalizeHeight := relaybleHeightStart + int64(s.s.FinalizeLatency())
+			return (relaybleIndex == s.bmrIndex) && (prevFinalizeHeight <= s.monitorHeight())
+		} else {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *SimpleChain) _rotate() {
+	bs := s.bs
+	a := s.w.Address()
+	if bs.RotateTerm > 0 {
+		//update own bmrIndex of BMRs
+		bmrIndex := -1
+		for i, bmr := range bs.BMRs {
+			if bmr.Address == a {
+				bmrIndex = i
+				break
+			}
+		}
+		s.bmrIndex = bmrIndex
+
+		//predict index and height of rotate on next block
+		rotate := int(math.Ceil(float64(s.monitorHeight()+1-bs.RotateHeight) / float64(bs.RotateTerm)))
+		relaybleIndex := bs.BMRIndex
+		relaybleHeightEnd := bs.RotateHeight
+		if rotate > 0 {
+			relaybleIndex += rotate
+			if relaybleIndex >= len(bs.BMRs) {
+				relaybleIndex = relaybleIndex % len(bs.BMRs)
+			}
+			relaybleHeightEnd += int64(bs.RotateTerm * rotate)
+		}
+		prevFinalizeHeight := relaybleHeightEnd - int64(s.bs.RotateTerm) + int64(s.s.FinalizeLatency())
+		s.relayble = (relaybleIndex == s.bmrIndex) && (prevFinalizeHeight <= s.monitorHeight())
+		s.relaybleIndex = relaybleIndex
+		s.relaybleHeight = relaybleHeightEnd
+		//b7214314876a73397c07}]
+		s.l.Debugf("RefreshStatus %d si:%d status[i:%d rh:%d rxh:%d rxhs:%d] relayble[%v i:%d rh:%d r:%d]",
+			s.monitorHeight(),
+			s.bmrIndex,
+			bs.BMRIndex,
+			bs.RotateHeight,
+			bs.RxHeight,
+			bs.RxHeightSrc,
+			s.relayble,
+			relaybleIndex,
+			relaybleHeightEnd,
+			rotate)
+	}
 }
 
 func (s *SimpleChain) RefreshStatus() error {
@@ -493,14 +525,15 @@ func (s *SimpleChain) RefreshStatus() error {
 		if resp.Error != "" {
 			return fmt.Errorf(resp.Error)
 		}
-		s.bmcStatus = resp.LinkStatus
+		s.bs = resp.LinkStatus
 	} else {
 		bmcStatus, err := s.s.GetStatus()
 		if err != nil {
 			return err
 		}
-		s.bmcStatus = bmcStatus
+		s.bs = bmcStatus
 	}
+	s._rotate()
 	return nil
 }
 
@@ -508,81 +541,93 @@ func (s *SimpleChain) init() error {
 	if err := s.RefreshStatus(); err != nil {
 		return err
 	}
+	atomic.StoreInt64(&s.heightOfDst, s.bs.CurrentHeight)
 	if s.relayCh == nil {
-		s.relayCh = make(chan *module.RelayMessage)
-		s.rmBuffer = make([]*module.RelayMessage, 0)
-		go s.relayLoop()
+		s.relayCh = make(chan *module.RelayMessage, 2)
+		go func() {
+			s.l.Debugln("start relayLoop")
+			defer func() {
+				s.l.Debugln("stop relayLoop")
+			}()
+			for {
+				select {
+				case _, ok := <-s.relayCh:
+					if !ok {
+						return
+					}
+					s._relay()
+				}
+			}
+		}()
 	}
 	s.l.Debugf("_init height:%d, dst(%s, height:%d, seq:%d, last:%d), receive:%d",
-		s.acc.Height(), s.dst, s.bmcStatus.Verifier.Height, s.bmcStatus.RxSeq, s.bmcStatus.Verifier.LastHeight, s.receiveHeight())
+		s.acc.Height(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.LastHeight, s.receiveHeight())
 	return nil
 }
 
 func (s *SimpleChain) receiveHeight() int64 {
-	//min(max(s.acc.Height(), s.bmcStatus.Verifier.Offset), s.bmcStatus.Verifier.LastHeight)
+	//min(max(s.acc.Height(), s.bs.Verifier.Offset), s.bs.Verifier.LastHeight)
 	max := s.acc.Height()
-	if max < s.bmcStatus.Verifier.Offset {
-		max = s.bmcStatus.Verifier.Offset
+	if max < s.bs.Verifier.Offset {
+		max = s.bs.Verifier.Offset
 	}
 	max += 1
-	min := s.bmcStatus.Verifier.LastHeight
+	min := s.bs.Verifier.LastHeight
 	if max < min {
 		min = max
 	}
 	return min
 }
 
-func (s *SimpleChain) Serve() error {
-	if err := s.init(); err != nil {
-		return err
-	}
-	if s.srv != nil {
-		return s.srv.ListenAndServe()
-	} else {
-		return s.r.ReceiveLoop(
-			s.receiveHeight(),
-			s.bmcStatus.RxSeq,
-			s.OnBlock,
-			nil)
-	}
+func (s *SimpleChain) monitorHeight() int64 {
+	return atomic.LoadInt64(&s.heightOfDst)
 }
 
-func (s *SimpleChain) Start() error {
+func (s *SimpleChain) Serve() error {
 	if err := s.init(); err != nil {
 		return err
 	}
 	errCh := make(chan error)
 	go func() {
-		if s.srv != nil {
-			errCh <- s.srv.Start()
-		} else {
-			err := s.r.ReceiveLoop(
-				s.receiveHeight(),
-				s.bmcStatus.RxSeq,
-				s.OnBlock,
-				func() {
-					errCh <- nil
-				})
-			select {
-			case errCh <- err:
-			default:
-			}
+		err := s.s.MonitorLoop(
+			s.bs.CurrentHeight,
+			s.OnBlockOfDst,
+			func() {
+				s.l.Debugf("Connect MonitorLoop")
+				errCh <- nil
+			})
+		select {
+		case errCh <- err:
+		default:
 		}
 	}()
-	return <-errCh
-}
-
-func (s *SimpleChain) Stop() error {
-	if s.srv != nil {
-		if s.c != nil {
-			s.c.Close("stop")
+	go func() {
+		err := s.r.ReceiveLoop(
+			s.receiveHeight(),
+			s.bs.RxSeq,
+			s.OnBlockOfSrc,
+			func() {
+				s.l.Debugf("Connect ReceiveLoop")
+				errCh <- nil
+			})
+		select {
+		case errCh <- err:
+		default:
 		}
-		return s.srv.Stop()
+	}()
+
+	if s.srv != nil {
+		return s.srv.ListenAndServe()
 	} else {
-		s.r.StopReceiveLoop()
+		for {
+			select {
+			case err := <-errCh:
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
-	s.rm = nil
-	return nil
 }
 
 func (s *SimpleChain) encode(v interface{}) []byte {
@@ -591,6 +636,43 @@ func (s *SimpleChain) encode(v interface{}) []byte {
 
 func (s *SimpleChain) decode(b []byte, v interface{}) {
 	codec.MP.MustUnmarshalFromBytes(b, v)
+}
+
+func (s *SimpleChain) sendRelayRequest(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+	if s.c == nil {
+		var err error
+		for {
+			if s.c, err = s.d.Dial(s); err != nil {
+				s.l.Infof("fail to dial err:%+v", err)
+				<-time.After(DefaultReconnectDelay)
+			} else {
+				break
+			}
+		}
+	}
+	req := &RelayRequest{
+		From:          s.src.String(),
+		BlockUpdate:   bu,
+		ReceiptProofs: rps,
+	}
+	pkt := p2p.NewPacket(ProtoRelay, s.encode(req))
+	for {
+		s.l.Debugf("RelayRequest from:%s, height:%d, rps:%d",
+			s.src.NetworkAddress(), bu.Height, len(req.ReceiptProofs))
+		rpkt, err := s.c.SendAndReceive(pkt)
+		if err != nil {
+			s.c.CloseByError(err)
+			s.l.Panicf("fail to send and receive err:%+v", err)
+		}
+		resp := &RelayResponse{}
+		s.decode(rpkt.Payload(), resp)
+		if resp.Error != "" {
+			s.l.Debugf("RelayResponse.Error:%s", resp.Error)
+			<-time.After(DefaultRelayReSendInterval)
+		} else {
+			break
+		}
+	}
 }
 
 func (s *SimpleChain) OnConn(c *p2p.Conn) {
@@ -612,13 +694,18 @@ func (s *SimpleChain) OnPacket(pkt *p2p.Packet, c *p2p.Conn) {
 	if c.Incoming() && pkt.Sn() > 0 {
 		switch pkt.Protocol() {
 		case ProtoRelay:
+			//TODO handshake with acc.Height
+			//  if sender.acc.Height < sender.bs.Verifier.Height
+			//  receiver.ReceiveLoop(sender.acc.Height)
+			//  handshake with sender.receiveHeight()
+			//  or receiver provide BlockProof
 			req := &RelayRequest{}
 			resp := &RelayResponse{}
 			s.decode(pkt.Payload(), req)
 			if s.cfg.Src.Address.String() != req.From {
 				resp.Error = fmt.Sprintf("mismatch address")
 			} else {
-				s.OnBlock(req.BlockUpdate, req.ReceiptProofs)
+				s.OnBlockOfSrc(req.BlockUpdate, req.ReceiptProofs)
 			}
 			rpkt := pkt.Response(s.encode(resp))
 			if err := c.Send(rpkt); err != nil {
@@ -637,7 +724,7 @@ func (s *SimpleChain) OnPacket(pkt *p2p.Packet, c *p2p.Conn) {
 					resp.Error = err.Error()
 				} else {
 					resp.LinkStatus = &module.BMCLinkStatus{}
-					*resp.LinkStatus = *s.bmcStatus
+					*resp.LinkStatus = *s.bs
 					if resp.LinkStatus.Verifier.LastHeight > s.acc.Height() {
 						resp.LinkStatus.Verifier.LastHeight = s.acc.Height()
 					}
@@ -667,10 +754,14 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
-		cfg: cfg,
+		w:   w,
 		l: l.WithFields(log.Fields{log.FieldKeyChain:
-		fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
+		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
+		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
+		cfg: cfg,
+		rms: make([]*module.RelayMessage, 0),
 	}
+	s._rm()
 
 	if IsP2PAddress(cfg.Src.Endpoint) {
 		s.srv = &p2p.Server{
@@ -697,20 +788,6 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 		return nil, err
 	}
 	return s, nil
-}
-
-func relayMessageHeight(rm *module.RelayMessage) string {
-	var height string
-	if len(rm.BlockUpdates) > 0 {
-		ss := make([]string, 0)
-		for _, bu := range rm.BlockUpdates {
-			ss = append(ss, fmt.Sprintf("%d", bu.Height))
-		}
-		height = strings.Join(ss, ",")
-	} else {
-		height = fmt.Sprintf("%d", rm.BlockProof.BlockWitness.Height)
-	}
-	return height
 }
 
 func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof) {

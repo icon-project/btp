@@ -1,4 +1,18 @@
-from . import rlp
+#  Copyright 2021 ICON Foundation
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+from . import rlp, Serializable
 from .wrap import get_hash
 
 
@@ -17,29 +31,32 @@ class InvalidWitnessNewerException(MTAException):
         super().__init__(message)
 
 
-class MerkleTreeAccumulator(object):
-    def __init__(self, offset: int = 0,
-                 roots: list = None,
-                 height: int = 0,
-                 roots_size: int = 0,
-                 cache_size: int = 0,
-                 cache: list = None,
-                 is_allow_newer_witness: bool = False) -> None:
-        self.__offset = offset
-        if cache is None:
-            self.__roots = []
+class MerkleTreeAccumulator(Serializable):
+    def __init__(self, serialized: bytes = None) -> None:
+        self.__bytes = serialized
+
+        if serialized is not None:
+            unpacked = rlp.rlp_decode(serialized, list)
         else:
-            self.__roots = roots
-        self.__height = height
-        if height == 0 and offset > 0:
-            self.__height = offset
-        self.__roots_size = roots_size
-        self.__cache_size = cache_size
-        if cache is None:
-            self.__cache = []
-        else:
-            self.__cache = cache
-        self.__is_allow_newer_witness = is_allow_newer_witness
+            unpacked = []
+        self.__height = rlp.rlp_decode(unpacked[0], int) if len(unpacked) > 0 else 0
+        self.__roots = []
+        if len(unpacked) > 1:
+            serialized_roots = rlp.rlp_decode(unpacked[1], {list: bytes})
+            for serialized_root in serialized_roots:
+                self.__roots.append(serialized_root)
+        self.__offset = rlp.rlp_decode(unpacked[2], int) if len(unpacked) > 2 else 0
+        self.__roots_size = rlp.rlp_decode(unpacked[3], int) if len(unpacked) > 3 else 0
+        self.__cache_size = rlp.rlp_decode(unpacked[4], int) if len(unpacked) > 4 else 0
+        self.__cache = []
+        if len(unpacked) > 5:
+            serialized_caches = rlp.rlp_decode(unpacked[5], {list: bytes})
+            for serialized_cache in serialized_caches:
+                self.__cache.append(serialized_cache)
+        self.__is_allow_newer_witness = rlp.rlp_decode(unpacked[6], bool) if len(unpacked) > 6 else False
+
+        if self.__height == 0 and self.__offset > 0:
+            self.__height = self.__offset
 
     @property
     def height(self) -> int:
@@ -48,6 +65,12 @@ class MerkleTreeAccumulator(object):
     @property
     def offset(self) -> int:
         return self.__offset
+
+    @offset.setter
+    def offset(self, offset: int):
+        self.__offset = offset
+        if self.__height == 0 and self.__offset > 0:
+            self.__height = self.__offset
 
     @property
     def roots_size(self) -> int:
@@ -214,25 +237,7 @@ class MerkleTreeAccumulator(object):
             else:
                 print(f'root[{i}]:{root.hex()}')
 
-    @staticmethod
-    def from_bytes(serialized: bytes) -> 'MerkleTreeAccumulator':
-        if isinstance(serialized, bytes):
-            unpacked = rlp.rlp_decode(serialized, list)
-        else:
-            unpacked = []
-        height = rlp.rlp_decode(unpacked[0], int) if len(unpacked) > 0 else 0
-        roots = []
-        if len(unpacked) > 1:
-            serialized_roots = rlp.rlp_decode(unpacked[1], {list: bytes})
-            for serialized_root in serialized_roots:
-                roots.append(serialized_root)
-        offset = rlp.rlp_decode(unpacked[2], int) if len(unpacked) > 2 else 0
-        roots_size = rlp.rlp_decode(unpacked[3], int) if len(unpacked) > 3 else 0
-        cache_size = rlp.rlp_decode(unpacked[4], int) if len(unpacked) > 4 else 0
-        cache = []
-        if len(unpacked) > 5:
-            serialized_caches = rlp.rlp_decode(unpacked[5], {list: bytes})
-            for serialized_cache in serialized_caches:
-                cache.append(serialized_cache)
-        is_allow_newer_witness = rlp.rlp_decode(unpacked[6], bool) if len(unpacked) > 6 else False
-        return MerkleTreeAccumulator(offset, roots, height, roots_size, cache_size, cache, is_allow_newer_witness)
+    def from_bytes(self, serialized: bytes) -> 'MerkleTreeAccumulator':
+        if not isinstance(serialized, bytes) or len(serialized) < 1:
+            return None
+        return MerkleTreeAccumulator(serialized)
