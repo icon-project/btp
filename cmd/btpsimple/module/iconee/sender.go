@@ -87,7 +87,7 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 	return p, nil
 }
 
-func (s *sender) Segment(rm *module.RelayMessage) ([]*module.Segment, error) {
+func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segment, error) {
 	segments := make([]*module.Segment, 0)
 	var err error
 	msg := &RelayMessage{
@@ -98,6 +98,9 @@ func (s *sender) Segment(rm *module.RelayMessage) ([]*module.Segment, error) {
 	//TODO rm.BlockUpdates[len(rm.BlockUpdates)-1].Height <= s.bmcStatus.Verifier.Height
 	//	using only rm.BlockProof
 	for _, bu := range rm.BlockUpdates {
+		if bu.Height <= height {
+			continue
+		}
 		buSize := len(bu.Proof)
 		if s.isOverLimit(buSize) {
 			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")

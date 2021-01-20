@@ -124,7 +124,7 @@ func (s *SimpleChain) _relay() {
 			break
 		} else {
 			if len(rm.Segments) == 0 {
-				if rm.Segments, err = s.s.Segment(rm); err != nil {
+				if rm.Segments, err = s.s.Segment(rm, s.bs.Verifier.Height); err != nil {
 					s.l.Panicf("fail to segment err:%+v", err)
 				}
 			}

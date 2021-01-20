@@ -86,7 +86,7 @@ type TransactionResult interface{}
 type MonitorCallback func(height int64) error
 
 type Sender interface {
-	Segment(rm *RelayMessage) ([]*Segment, error)
+	Segment(rm *RelayMessage, height int64) ([]*Segment, error)
 	UpdateSegment(bp *BlockProof, segment *Segment) error
 	Relay(segment *Segment) (GetResultParam, error)
 	GetResult(p GetResultParam) (TransactionResult, error)
