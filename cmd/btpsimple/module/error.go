@@ -23,17 +23,11 @@ import (
 )
 
 var (
-	ErrAlreadyExists = fmt.Errorf("already exists")
-)
-
-var (
-	//TODO ErrorCodes
 	ErrConnectFail            = fmt.Errorf("fail to connect")
 	ErrSendFailByExpired      = fmt.Errorf("reject by expired")
 	ErrSendFailByFuture       = fmt.Errorf("reject by future")
 	ErrSendFailByOverflow     = fmt.Errorf("reject by overflow")
 	ErrGetResultFailByPending = fmt.Errorf("fail to getresult by pending")
-	ErrDelegatorNotAvailable  = fmt.Errorf("fail to delegate relay")
 )
 
 const (

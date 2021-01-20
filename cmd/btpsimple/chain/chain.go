@@ -407,13 +407,11 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 	if bk.Has(k) {
 		//offset will be ignore
 		if err = s.acc.Recover(); err != nil {
-			err = errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
-			//TODO MTA Recover error handling
-			return err
+			return errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
 		}
 		s.l.Debugf("recover Accumulator offset:%d, height:%d", s.acc.Offset(), s.acc.Height())
 
-		////TODO sync offset
+		//TODO [TBD] sync offset
 		//if s.acc.Offset() > offset {
 		//	hashes := make([][]byte, s.acc.Offset() - offset)
 		//	for i := 0; i < len(hashes); i++ {

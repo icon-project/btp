@@ -78,8 +78,6 @@ class BTPMessageVerifier(IconScoreBase):
     def _check_accessible(self, cur_addr: BTPAddress, from_addr: BTPAddress) -> None:
         if self._props.net_addr != from_addr.net:
             raise BMVException("not acceptable from")
-        # TODO caller access control for self.__bmc_addrs = ArrayDB
-        # self.msg.sender
         if self.msg.sender != self._props.bmc:
             raise BMVException("not acceptable bmc")
         if Address.from_string(cur_addr.contract) != self._props.bmc:

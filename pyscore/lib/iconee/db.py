@@ -100,7 +100,9 @@ class IterableDictDB(ABC):
         return self.__keys
 
     def _add_key(self, key: str) -> None:
-        # TODO encode or validation digit_alpha
+        # TODO [TBD] encode with escape for delimiter(',')
+        if not all(c.isalnum() or c == '_' for c in key):
+            raise Exception('key could be only alphabet, number, underscore')
         self._load_keys()
         self.__keys.append(key)
         if not self.__with_flush:
@@ -595,7 +597,6 @@ class Serializable(ABC):
         return self.to_bytes().hex()
 
 
-# TODO remove and shift
 def remove_from_array_db(array_db: ArrayDB, value) -> int:
     last_idx = len(array_db) - 1
     for i in range(last_idx+1):

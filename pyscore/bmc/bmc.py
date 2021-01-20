@@ -55,7 +55,7 @@ class BTPMessageCenter(IconScoreBase):
 
     def on_install(self, _net: str) -> None:
         super().on_install()
-        # TODO how to check mismatch chain?
+        # TODO [TBD] validation _net
         self._props.btp_addr = BTPAddress(BTPAddress.PROTOCOL_BTP, _net, str(self.address))
         self._props.access_control = False
 
@@ -121,14 +121,8 @@ class BTPMessageCenter(IconScoreBase):
     @external(readonly=True)
     def getPermissions(self) -> dict:
         d = {}
-        try:
-            for addr in self._permissions:
-                d[addr] = self._permissions[addr]
-        except UnauthorizedException as e:  # FIXME unreachable code
-            if self.msg.sender in self._permissions:
-                d[self.msg.sender] = self._permissions[self.msg.sender]
-            else:
-                raise e
+        for addr in self._permissions:
+            d[addr] = self._permissions[addr]
         return d
 
     # ================================================
@@ -217,7 +211,7 @@ class BTPMessageCenter(IconScoreBase):
         :param _addr: Address (the address of BMV)
         """
         self._has_permission("addVerifier")
-        # TODO validation _net_addr
+        # TODO [TBD] validation _net
         if _net == self._props.btp_addr.net:
             raise BMCException("invalid argument, net_addr")
         if _net in self._verifiers:
@@ -559,8 +553,9 @@ class BTPMessageCenter(IconScoreBase):
                     service = self._get_service(msg.svc)
                     service.handleBTPError(str(msg.src), msg.svc, msg.sn * -1, err_msg.code, err_msg.msg)
                 except BTPException as e:
-                    # [TBD] revert or ignore?
                     self.ErrorOnBTPError(msg.svc, msg.sn * -1, err_msg.code, err_msg.msg, e.code, e.message)
+                except BaseException as e:
+                    self.ErrorOnBTPError(msg.svc, msg.sn * -1, err_msg.code, err_msg.msg, BTPExceptionCode.UNKNOWN, e.__repr__())
 
     def _send_message(self, to: BTPAddress, serialized_msg: bytes):
         link = self._links[to]
@@ -665,9 +660,10 @@ class BTPMessageCenter(IconScoreBase):
         """
         pass
 
+    # TODO [TBD] add 'ErrorOnBTPError' to IIP-25.BMC.Events
     @eventlog(indexed=2)
     def ErrorOnBTPError(self, _svc: str, _sn: int, _code: int, _msg: str, _ecode: int, _emsg: str):
-        """ TODO
+        """
         raised BTPException while BSH.handleBTPError
 
         :param _svc:  String ( name of the service )

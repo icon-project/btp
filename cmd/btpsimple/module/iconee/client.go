@@ -126,7 +126,6 @@ txLoop:
 					switch re.Code {
 					case JsonrpcErrorCodeSystem:
 						if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
-							//TODO return JsonRPC Error
 							switch subEc {
 							case 2000: //DuplicateTransactionError
 								//Ignore
@@ -388,7 +387,7 @@ func (c *Client) wsReadJSONLoop(conn *websocket.Conn, respPtr interface{}, cb ws
 }
 
 func NewClient(uri string, l log.Logger) *Client {
-	//TODO options {MaxIdleConnsPerHost, Debug, Dump}
+	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
 	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
 	c := &Client{
 		Client: jsonrpc.NewJsonRpcClient(&http.Client{Transport:tr}, uri),

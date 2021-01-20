@@ -29,8 +29,8 @@ class BTPLink(PropertiesDB):
 
         self.block_interval_src = 0
         self.block_interval_dst = 0
-        self.max_aggregation = 10  # TODO: define default max_aggregation
-        self.delay_limit = 2  # TODO: define default delay_limit
+        self.max_aggregation = 10  # TODO define default max_aggregation
+        self.delay_limit = 3  # if delay_limit < 3, too sensitive
 
         self.relay_idx = 0
         self.rotate_height = 0

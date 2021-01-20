@@ -29,7 +29,6 @@ import (
 
 const (
 	JsonrpcApiVersion                                = 3
-	JsonrpcDeployToAddress                           = "cx0000000000000000000000000000000000000000"
 	JsonrpcErrorCodeSystem         jsonrpc.ErrorCode = -31000
 	JsonrpcErrorCodeTxPoolOverflow jsonrpc.ErrorCode = -31001
 	JsonrpcErrorCodePending        jsonrpc.ErrorCode = -31002
@@ -57,28 +56,14 @@ const (
 )
 
 const (
-	//refer service/txresult/receipt (*receipt)ToJSON
 	ResultStatusSuccess = "0x1"
-	//refer module/service.go StatusReverted
 	ResultStatusFailureCodeRevert = 32
-	//refer pyexec/base/exception.py ExceptionCode.END
 	ResultStatusFailureCodeEnd = 99
 )
 
 const (
 	BMCRelayMethod       = "handleRelayMessage"
-	BMCLinkMethod        = "addLink"
-	BMCUnlinkMethod      = "removeLink"
 	BMCGetStatusMethod   = "getStatus"
-	BMCAddRouteMethod    = "addRoute"
-	BMCRemoveRouteMethod = "removeRoute"
-	BMCGetRoutesMethod   = "getRoutes"
-)
-
-const (
-	//TODO define revert code
-	ScoreRevertByWitnessHeightTooLow = iota
-	ScoreRevertByInvalidSequence
 )
 
 type BlockHeader struct {
