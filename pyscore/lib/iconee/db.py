@@ -101,8 +101,8 @@ class IterableDictDB(ABC):
 
     def _add_key(self, key: str) -> None:
         # TODO [TBD] encode with escape for delimiter(',')
-        if not all(c.isalnum() or c == '_' for c in key):
-            raise Exception('key could be only alphabet, number, underscore')
+        if "," in key:
+            raise Exception('key could not contains comma')
         self._load_keys()
         self.__keys.append(key)
         if not self.__with_flush:
