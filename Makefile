@@ -6,7 +6,7 @@
 # Configuration
 BUILD_ROOT = $(abspath ./)
 BIN_DIR = ./bin
-LINUX_BIN_DIR = ./linux
+LINUX_BIN_DIR = ./build/linux
 
 GOBUILD = go build
 GOBUILD_TAGS =
@@ -55,6 +55,47 @@ BUILD_TARGETS += btpsimple
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
+PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/pyscore
+
+$(PYSCORE_DIST_DIR)/%:
+	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%,%,$@))
+	mkdir -p $@ ; \
+	cp -r pyscore/lib pyscore/$(MODULE) $@/
+
+dist-py-bmc: $(PYSCORE_DIST_DIR)/bmc
+	cd $(PYSCORE_DIST_DIR)/bmc ; \
+	echo '{"version": "0.0.1","main_module": "bmc.bmc","main_score": "BTPMessageCenter"}' > package.json ; \
+	zip -r -v $(PYSCORE_DIST_DIR)/bmc.zip bmc lib package.json -x *__pycache__* -x *tests*
+
+dist-py-bmv: $(PYSCORE_DIST_DIR)/bmv
+	cd $(PYSCORE_DIST_DIR)/bmv ; \
+	echo '{"version": "0.0.1","main_module": "bmv.iconee","main_score": "BTPMessageVerifier"}' > package.json ; \
+	zip -r -v $(PYSCORE_DIST_DIR)/bmv.zip bmv lib package.json -x *__pycache__* -x *tests*
+
+dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
+	cd $(PYSCORE_DIST_DIR)/token_bsh ; \
+	echo '{"version": "0.0.1","main_module": "token_bsh.token_bsh","main_score": "TokenBSH"}' > package.json ; \
+	zip -r -v $(PYSCORE_DIST_DIR)/token_bsh.zip token_bsh lib package.json -x *__pycache__* -x *tests* -x *sample* ; \
+	cd token_bsh/sample/irc2_token ; \
+    zip -r -v $(PYSCORE_DIST_DIR)/irc2_token.zip * -x *__pycache__* -x *tests*
+
+dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
+
+clean-dist-py:
+	rm -rf $(PYSCORE_DIST_DIR)/*
+
+BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
+BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
+
+btpsimple-image: btpsimple-linux dist-py
+	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
+	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
+	@ \
+	BIN_DIR=$(abspath $(LINUX_BIN_DIR)) \
+	BIN_VERSION=$(GL_VERSION) \
+	BUILD_TAGS="$(GOBUILD_TAGS)" \
+	DIST_DIR="$(PYSCORE_DIST_DIR)" \
+	$(BUILD_ROOT)/docker/btpsimple/build.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
 
 .PHONY: test
 
