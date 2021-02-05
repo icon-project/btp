@@ -34,7 +34,6 @@ import (
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
 	"github.com/icon-project/btp/common/wallet"
-	"github.com/icon-project/btp/p2p"
 )
 
 const (
@@ -52,9 +51,6 @@ type SimpleChain struct {
 	s       module.Sender
 	r       module.Receiver
 	w       wallet.Wallet
-	srv     *p2p.Server
-	d       *p2p.Dialer
-	c       *p2p.Conn
 	src     module.BtpAddress
 	acc     *mta.ExtAccumulator
 	dst     module.BtpAddress
@@ -356,11 +352,7 @@ func (s *SimpleChain) OnBlockOfDst(height int64) error {
 func (s *SimpleChain) OnBlockOfSrc(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
 	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
 	s.updateMTA(bu)
-	if s.d != nil {
-		s.sendRelayRequest(bu, rps)
-	} else {
-		s.addRelayMessage(bu, rps)
-	}
+	s.addRelayMessage(bu, rps)
 	s.relayCh <- nil
 }
 
@@ -504,33 +496,11 @@ func (s *SimpleChain) _rotate() {
 }
 
 func (s *SimpleChain) RefreshStatus() error {
-	if s.d != nil {
-		if s.c == nil {
-			if c, err := s.d.Dial(s); err != nil {
-				return err
-			} else {
-				s.c = c
-			}
-		}
-		req := &GetLinkStatusRequest{Link: s.src.String()}
-		pkt := p2p.NewPacket(ProtoGetLinkStatus, s.encode(req))
-		rpkt, err := s.c.SendAndReceive(pkt)
-		if err != nil {
-			return err
-		}
-		resp := &GetLinkStatusResponse{}
-		s.decode(rpkt.Payload(), resp)
-		if resp.Error != "" {
-			return fmt.Errorf(resp.Error)
-		}
-		s.bs = resp.LinkStatus
-	} else {
-		bmcStatus, err := s.s.GetStatus()
-		if err != nil {
-			return err
-		}
-		s.bs = bmcStatus
+	bmcStatus, err := s.s.GetStatus()
+	if err != nil {
+		return err
 	}
+	s.bs = bmcStatus
 	s._rotate()
 	return nil
 }
@@ -613,139 +583,14 @@ func (s *SimpleChain) Serve() error {
 		default:
 		}
 	}()
-
-	if s.srv != nil {
-		return s.srv.ListenAndServe()
-	} else {
-		for {
-			select {
-			case err := <-errCh:
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-}
-
-func (s *SimpleChain) encode(v interface{}) []byte {
-	return codec.MP.MustMarshalToBytes(v)
-}
-
-func (s *SimpleChain) decode(b []byte, v interface{}) {
-	codec.MP.MustUnmarshalFromBytes(b, v)
-}
-
-func (s *SimpleChain) sendRelayRequest(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
-	if s.c == nil {
-		var err error
-		for {
-			if s.c, err = s.d.Dial(s); err != nil {
-				s.l.Infof("fail to dial err:%+v", err)
-				<-time.After(DefaultReconnectDelay)
-			} else {
-				break
-			}
-		}
-	}
-	req := &RelayRequest{
-		From:          s.src.String(),
-		BlockUpdate:   bu,
-		ReceiptProofs: rps,
-	}
-	pkt := p2p.NewPacket(ProtoRelay, s.encode(req))
 	for {
-		s.l.Debugf("RelayRequest from:%s, height:%d, rps:%d",
-			s.src.NetworkAddress(), bu.Height, len(req.ReceiptProofs))
-		rpkt, err := s.c.SendAndReceive(pkt)
-		if err != nil {
-			s.c.CloseByError(err)
-			s.l.Panicf("fail to send and receive err:%+v", err)
-		}
-		resp := &RelayResponse{}
-		s.decode(rpkt.Payload(), resp)
-		if resp.Error != "" {
-			s.l.Debugf("RelayResponse.Error:%s", resp.Error)
-			<-time.After(DefaultRelayReSendInterval)
-		} else {
-			break
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
 		}
 	}
-}
-
-func (s *SimpleChain) OnConn(c *p2p.Conn) {
-	s.l.Debugln("OnConn", c)
-	if c.Incoming() {
-		if s.cfg.Dst.Address.String() != c.Channel() {
-			c.Close(fmt.Sprintf("mismatch connection %s", c.String()))
-			return
-		}
-		if s.c != nil {
-			s.c.Close(fmt.Sprintf("duplicated connection %s", c.String()))
-		}
-		s.c = c
-	}
-}
-
-func (s *SimpleChain) OnPacket(pkt *p2p.Packet, c *p2p.Conn) {
-	s.l.Traceln("OnPacket", pkt, c)
-	if c.Incoming() && pkt.Sn() > 0 {
-		switch pkt.Protocol() {
-		case ProtoRelay:
-			//TODO handshake with acc.Height
-			//  if sender.acc.Height < sender.bs.Verifier.Height
-			//  receiver.ReceiveLoop(sender.acc.Height)
-			//  handshake with sender.receiveHeight()
-			//  or receiver provide BlockProof
-			req := &RelayRequest{}
-			resp := &RelayResponse{}
-			s.decode(pkt.Payload(), req)
-			if s.cfg.Src.Address.String() != req.From {
-				resp.Error = fmt.Sprintf("mismatch address")
-			} else {
-				s.OnBlockOfSrc(req.BlockUpdate, req.ReceiptProofs)
-			}
-			rpkt := pkt.Response(s.encode(resp))
-			if err := c.Send(rpkt); err != nil {
-				s.l.Debugf("fail to send ProtoRelay response height:%d sn:%d resp.Error:%s err:%+v",
-					req.BlockUpdate.Height, rpkt.Sn(), resp.Error, err)
-			}
-		case ProtoGetLinkStatus:
-			req := &GetLinkStatusRequest{}
-			resp := &GetLinkStatusResponse{}
-			s.decode(pkt.Payload(), req)
-			resp.Link = req.Link
-			if s.cfg.Src.Address.String() != req.Link {
-				resp.Error = fmt.Sprintf("mismatch address")
-			} else {
-				if err := s.RefreshStatus(); err != nil {
-					resp.Error = err.Error()
-				} else {
-					resp.LinkStatus = &module.BMCLinkStatus{}
-					*resp.LinkStatus = *s.bs
-					if resp.LinkStatus.Verifier.LastHeight > s.acc.Height() {
-						resp.LinkStatus.Verifier.LastHeight = s.acc.Height()
-					}
-				}
-			}
-			rpkt := pkt.Response(s.encode(resp))
-			if err := c.Send(rpkt); err != nil {
-				s.l.Debugf("fail to send ProtoGetLinkStatus response sn:%d resp.Error:%s err:%+v",
-					rpkt.Sn(), resp.Error, err)
-			}
-		default:
-			//Ignore
-		}
-	}
-}
-
-func (s *SimpleChain) OnError(err error, c *p2p.Conn, pkt *p2p.Packet) {
-	panic("implement me")
-}
-
-func (s *SimpleChain) OnClose(c *p2p.Conn) {
-	s.l.Debugln("OnClose", c, c.CloseInfo())
-	s.c = nil
 }
 
 func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, error) {
@@ -761,27 +606,9 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	}
 	s._rm()
 
-	if IsP2PAddress(cfg.Src.Endpoint) {
-		s.srv = &p2p.Server{
-			Address:       ResolveP2PAddress(cfg.Src.Endpoint),
-			Logger:        l,
-			Handler:       s,
-			Authenticator: p2p.NewAuthenticator(w, s.l),
-		}
-	} else {
-		s.r = iconee.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
-	}
+	s.r = iconee.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
+	s.s = iconee.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
 
-	if IsP2PAddress(cfg.Dst.Endpoint) {
-		s.d = &p2p.Dialer{
-			Chain:         cfg.Dst.Address.String(),
-			Address:       ResolveP2PAddress(cfg.Dst.Endpoint),
-			Logger:        l,
-			Authenticator: p2p.NewAuthenticator(w, s.l),
-		}
-	} else {
-		s.s = iconee.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
-	}
 	if err := s.prepareDatabase(cfg.Offset); err != nil {
 		return nil, err
 	}
