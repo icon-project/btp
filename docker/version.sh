@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ALPINE_VERSION=${ALPINE_VERSION:-3.12}
