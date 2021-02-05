@@ -2,9 +2,9 @@
 
 ## Introduction
 
-Monitor BTP events  
-Gather proofs for the events  
-Send BTP Relay Message
+* Unidirectional relay
+* Monitor BTP events  
+* Gather proofs for the events
 
 ## Integrated blockchain
 * [ICON](icon.md)
@@ -15,6 +15,4 @@ Send BTP Relay Message
 * [Tutorial](tutorial.md)
 
 ## Management
-* [BTPRelay Administration APIs](btprelay_admin_api.md)
-* [BTPRelay command line](btprelay_cli.md)
-* [Metric](metric.md)
+* [btpsimple command line](btpsimple_cli.md)
