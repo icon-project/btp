@@ -59,6 +59,7 @@ func NewCommand(parentCmd *cobra.Command, parentVc *viper.Viper, use, short stri
 
 	var pFlags *pflag.FlagSet
 	envPrefix := strings.ReplaceAll(c.CommandPath(), " ", "_")
+	var envReplacer *strings.Replacer
 	if parentVc != nil {
 		if v := parentVc.Get("env_prefix"); v != nil {
 			envPrefix = v.(string)
@@ -66,10 +67,14 @@ func NewCommand(parentCmd *cobra.Command, parentVc *viper.Viper, use, short stri
 		if v := parentVc.Get("pflags"); v != nil {
 			pFlags = v.(*pflag.FlagSet)
 		}
+		envReplacer = GetEnvKeyReplacer(parentVc)
 	}
 	vc := NewViper(envPrefix)
 	if pFlags != nil {
 		BindPFlags(vc, pFlags)
+	}
+	if envReplacer != nil {
+		SetEnvKeyReplacer(vc, envReplacer)
 	}
 	if parentVc != nil {
 		vc.Set("_parentvc_", parentVc)
@@ -124,6 +129,20 @@ func BindPFlags(vc *viper.Viper, pFlags *pflag.FlagSet) error {
 	bindPFlags.AddFlagSet(pFlags)
 
 	return vc.BindPFlags(pFlags)
+}
+
+func SetEnvKeyReplacer(vc *viper.Viper, r *strings.Replacer) {
+	vc.Set("key_replacer", r)
+	vc.SetEnvKeyReplacer(r)
+}
+
+func GetEnvKeyReplacer(vc *viper.Viper) *strings.Replacer {
+	if v := vc.Get("key_replacer"); v != nil {
+		if r, ok := v.(*strings.Replacer); ok {
+			return r
+		}
+	}
+	return nil
 }
 
 func MarkAnnotationCustom(fs *pflag.FlagSet, names ...string) error {
@@ -461,6 +480,9 @@ func FlagToMarkdown(buf *bytes.Buffer, vcs ...*viper.Viper) func(f *pflag.Flag) 
 					if bindPFlags, ok := v.(*pflag.FlagSet); ok {
 						if bindPFlags.Lookup(f.Name) != nil {
 							envKey = strings.ToUpper(vc.GetString("env_prefix") + "_" + f.Name)
+							if r := GetEnvKeyReplacer(vc); r != nil {
+								envKey = r.Replace(envKey)
+							}
 						}
 					}
 				}

@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/icon-project/btp/cmd/btpsimple/chain"
-	"github.com/icon-project/btp/cmd/cli"
+	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
@@ -110,6 +110,7 @@ func main() {
 	rootCmd, rootVc := cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
 	cfg := &Config{}
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
+	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
 	//rootVc.Debug()
 
 	rootCmd.AddCommand(&cobra.Command{
@@ -122,7 +123,6 @@ func main() {
 	})
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		rootVc.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 		baseDir := rootVc.GetString("base_dir")
 		logfile := rootVc.GetString("log_writer.filename")
 		cfg.FilePath = rootVc.GetString("config")
@@ -260,7 +260,7 @@ func main() {
 
 	cli.BindPFlags(rootVc, startFlags)
 
-	genMdCmd := cli.NewGenerateMarkdownCommand(rootCmd, nil)
+	genMdCmd := cli.NewGenerateMarkdownCommand(rootCmd, rootVc)
 	genMdCmd.Hidden = true
 
 	rootCmd.SilenceUsage = true
