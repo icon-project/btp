@@ -16,8 +16,8 @@ Terminologies
 | BTP Message     | A verified message which is delivered by the relay                                                     |
 | Service Message | A payload in a BTP message                                                                             |
 | Relay Message   | A message including BTPMessages with proofs for that, and other block update messages.                 |
-| NetworkAddress  | Network Type and Network ID <br/> *0x1.icon* <br/> *0x1.iconee*                                        |
-| ContractAddress | Addressing contract in the network <br/> *btp://0x1.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b* |
+| NetworkAddress  | Network Type and Network ID <br/> *0x1.icon* <br/> *0x1.icon*                                        |
+| ContractAddress | Addressing contract in the network <br/> *btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b* |
 
 > BTP Standard
 
@@ -59,23 +59,30 @@ Terminologies
 | /cmd/btpsimple           |   Reference implement of BMR. only provide unidirectional relay. (golang) |
 | /cmd/btpsimple/chain    |   Implement of common logic of BMR, use module |
 | /cmd/btpsimple/module    |   BMR module interface and common codes |
-| /cmd/btpsimple/module/`<src>`    | Implement of BMR module (`Sender`,`Receiver`), `<src>` is name of source blockchain |
+| /cmd/btpsimple/module/`<chain>`    | Implement of BMR module (`Sender`,`Receiver`), `<chain>` is name of blockchain |
 | /common | Common codes (golang) |
 | /doc | Documents |
 | /docker | Docker related resources |
-| /`<env>` | Root of implement of BTP smart contracts, `<env>` is name of smart contract environment |
-| /`<env>`/bmc | Implement of BMC |
-| /`<env>`/bmv | Root of implement of BMV |
-| /`<env>`/bmv/`<src>` | Implement of BMV, `<src>` is name of source blockchain |
-| /`<env>`/`<svc>` | Root of implement of BSH, `<svc>` is name of BTP service |
-| /`<env>`/token_bsh | Reference implement of BSH for Interchain-Token transfer service |
-| /`<env>`/token_bsh/sample/irc2_token | Implement of IRC-2.0, example for support legacy smart contract |
+| /`<env>` | Root of implement of BTP smart contracts, `<env>` is name of smart contract execution environment |
+| /`<env>`/bmc | Implement of BMC smart contract |
+| /`<env>`/bmv | Root of implement of BMV smart contract |
+| /`<env>`/bmv/`<src>` | Implement of BMV smart contract, `<src>` is name of source blockchain |
+| /`<env>`/lib | Library for execution environment |
+| /`<env>`/`<svc>` | Root of implement of BSH smart contract, `<svc>` is name of BTP service |
+| /`<env>`/token_bsh | Reference implement of BSH smart contract for Interchain-Token transfer service |
+| /`<env>`/token_bsh/sample/irc2_token | Implement of IRC-2.0 smart contract, example for support legacy smart contract |
 
 ### BTP implement for ICON blockchain
 
+#### BMR module
 | Directory                | Description  |
 |:--------------------|:-------|
-| /cmd/btpsimple/module/iconee    | Module for ICON blockchain |
+| /cmd/btpsimple/module/icon    | BMR module for ICON blockchain |
+
+#### Python SCORE of ICON
+| Directory                | Description  |
+|:--------------------|:-------|
 | /pyscore | Implement of BTP smart contracts for Python SCORE of ICON blockchain |
-| /pyscore/bmv/icon | Implement of BMV for ICON blockchain |
+| /pyscore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
+| /pyscore/lib | BTP interface and common codes for Python SCORE |
 | /pyscore/lib/icon | ICON related common codes |
