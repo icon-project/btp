@@ -18,7 +18,7 @@ from iconservice import Address, IconScoreDatabase
 
 from .relay import BTPRelays, BTPRelay
 from ..lib import BTPAddress, BTPException
-from ..lib.iconee import PropertiesDB, IterableDictDB, remove_from_array_db
+from ..lib.icon import PropertiesDB, IterableDictDB, remove_from_array_db
 
 
 class BTPLink(PropertiesDB):

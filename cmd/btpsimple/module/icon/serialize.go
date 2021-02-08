@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package iconee
+package icon
 
 import (
 	"bytes"

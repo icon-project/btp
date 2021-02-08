@@ -21,7 +21,7 @@ from .permission import *
 from .relayer import *
 from .route import *
 from ..lib import *
-from ..lib.iconee import AddressDictDB, PropertiesDB
+from ..lib.icon import AddressDictDB, PropertiesDB
 
 TAG = 'BTPMessageCenter'
 BLOCK_INTERVAL_MSEC = 1000

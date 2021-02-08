@@ -69,7 +69,7 @@ dist-py-bmc: $(PYSCORE_DIST_DIR)/bmc
 
 dist-py-bmv: $(PYSCORE_DIST_DIR)/bmv
 	cd $(PYSCORE_DIST_DIR)/bmv ; \
-	echo '{"version": "0.0.1","main_module": "bmv.iconee","main_score": "BTPMessageVerifier"}' > package.json ; \
+	echo '{"version": "0.0.1","main_module": "bmv.icon.icon","main_score": "BTPMessageVerifier"}' > package.json ; \
 	zip -r -v $(PYSCORE_DIST_DIR)/bmv.zip bmv lib package.json -x *__pycache__* -x *tests*
 
 dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh

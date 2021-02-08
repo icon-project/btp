@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from ..lib import BTPAddress
-from ..lib.iconee import rlp
+from ..lib.icon import rlp
 
 
 class BTPMessage(object):

@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/cmd/btpsimple/module/iconee"
+	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
@@ -606,8 +606,8 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	}
 	s._rm()
 
-	s.r = iconee.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
-	s.s = iconee.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
+	s.r = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
+	s.s = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
 
 	if err := s.prepareDatabase(cfg.Offset); err != nil {
 		return nil, err

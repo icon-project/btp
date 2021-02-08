@@ -1,7 +1,7 @@
 import unittest
-from ..iconee import *
-from ...lib.iconee import rlp, base64
-from ...lib.iconee.mta import MerkleTreeAccumulator
+from ..icon import *
+from ....lib.icon import rlp, base64
+from ....lib.icon.mta import MerkleTreeAccumulator
 from iconservice import Address, AddressPrefix
 from tbears.libs.scoretest.score_test_case import ScoreTestCase
 from tbears.libs.icon_integrate_test import IconIntegrateTestBase

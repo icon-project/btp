@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from ..lib import BMCException
-from ..lib.iconee import StringDictDB
+from ..lib.icon import StringDictDB
 
 
 class Permission(object):

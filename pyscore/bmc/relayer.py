@@ -11,7 +11,7 @@
 from iconservice import IconScoreDatabase, Address
 
 from ..lib import BTPException, BTPAddress
-from ..lib.iconee import IterableDictDB, PropertiesDB
+from ..lib.icon import IterableDictDB, PropertiesDB
 
 
 class BTPRelayer(PropertiesDB):

@@ -14,7 +14,7 @@
 
 from iconservice import IconScoreDatabase, Address
 
-from ..lib.iconee import PropertiesDB, IterableDictDB
+from ..lib.icon import PropertiesDB, IterableDictDB
 
 
 class BTPRelay(PropertiesDB):
