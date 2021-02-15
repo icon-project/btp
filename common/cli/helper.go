@@ -404,16 +404,16 @@ func GenerateMarkdown(cmd *cobra.Command, parentVc *viper.Viper, w io.Writer) {
 
 	if cmd.HasLocalFlags() || cmd.HasPersistentFlags() {
 		buf.WriteString(fmt.Sprintln("###", "Options"))
-		buf.WriteString(fmt.Sprintln("|Name,shorthand | Environment Variable | Default | Description|"))
-		buf.WriteString(fmt.Sprintln("|---|---|---|---|"))
+		buf.WriteString(fmt.Sprintln("|Name,shorthand | Environment Variable | Required | Default | Description|"))
+		buf.WriteString(fmt.Sprintln("|---|---|---|---|---|"))
 		cmd.NonInheritedFlags().VisitAll(FlagToMarkdown(buf, vc))
 		buf.WriteString("\n")
 	}
 
 	if cmd.HasInheritedFlags() {
 		buf.WriteString(fmt.Sprintln("###", "Inherited Options"))
-		buf.WriteString(fmt.Sprintln("|Name,shorthand | Environment Variable | Default | Description|"))
-		buf.WriteString(fmt.Sprintln("|---|---|---|---|"))
+		buf.WriteString(fmt.Sprintln("|Name,shorthand | Environment Variable | Required | Default | Description|"))
+		buf.WriteString(fmt.Sprintln("|---|---|---|---|---|"))
 		cmd.InheritedFlags().VisitAll(FlagToMarkdown(buf, getVipers(parentVc)...))
 		buf.WriteString("\n")
 	}
@@ -467,6 +467,9 @@ func CommandPathToMarkdown(buf *bytes.Buffer, cmd *cobra.Command) {
 
 func FlagToMarkdown(buf *bytes.Buffer, vcs ...*viper.Viper) func(f *pflag.Flag) {
 	return func(f *pflag.Flag) {
+		if f.Hidden {
+			return
+		}
 		name := ""
 		if f.Shorthand != "" && f.ShorthandDeprecated == "" {
 			name = fmt.Sprintf("--%s, -%s", f.Name, f.Shorthand)
@@ -488,7 +491,18 @@ func FlagToMarkdown(buf *bytes.Buffer, vcs ...*viper.Viper) func(f *pflag.Flag) 
 				}
 			}
 		}
-		buf.WriteString(fmt.Sprintln("|", name, "|", envKey, "|", f.DefValue, "|", f.Usage, "|"))
+		required := true
+		if ann, found := f.Annotations[cobra.BashCompOneRequiredFlag]; !found || (ann[0] != "true") {
+			if ann, found = f.Annotations[cobra.BashCompCustom]; !found || (ann[0] != FlagAnnotationCustom) {
+				required = false
+			}
+		}
+
+		deprecated := ""
+		if f.Deprecated != "" {
+			deprecated = "[deprecated]"
+		}
+		buf.WriteString(fmt.Sprintln("|", name, "|", envKey, "|", required, "|", f.DefValue, "|", deprecated, f.Usage, "|"))
 	}
 }
 
@@ -503,6 +517,7 @@ Loop:
 		name := entry.Name()
 		for _, exclude := range excludes {
 			if exclude.MatchString(name) {
+				log.Printf("Exclude %s/%s", p, name)
 				continue Loop
 			}
 		}
@@ -590,7 +605,6 @@ func IsDirectory(p string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-
 var cpuProfileCnt int32 = 0
 
 func startCPUProfile(name string) (*os.File, error) {
@@ -660,6 +674,20 @@ func JsonPrettyPrintln(w io.Writer, v interface{}) error {
 		return errors.Errorf("failed JsonPrettyPrintln v=%+v, err=%+v", v, err)
 	}
 	_, err = fmt.Fprintln(w, string(b))
+	return err
+}
+
+func JsonPrettyCopyAndClose(w io.Writer, r io.ReadCloser) error {
+	defer r.Close()
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer(nil)
+	if err := json.Indent(buf, bs, "", "  "); err != nil {
+		return err
+	}
+	_, err = io.Copy(w, buf)
 	return err
 }
 
