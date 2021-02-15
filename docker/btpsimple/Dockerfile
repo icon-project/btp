@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 LABEL MAINTAINER="t_arch@iconloop.com"
 
 # install dependencies
-#RUN apk add --no-cache git bash jq
+#RUN apk add --no-cache jq
 
 ARG VERSION
 LABEL BTPSIMPLE_VERSION="$VERSION"
@@ -17,7 +17,6 @@ COPY dist/pyscore/*.zip /btpsimple/contracts/pyscore/
 WORKDIR /btpsimple
 
 # container configuration
-#EXPOSE 9080/tcp
 VOLUME ["/btpsimple/data"]
 
 # goloop entrypoint
@@ -25,7 +24,6 @@ ENV BTPSIMPLE_BASE_DIR=/btpsimple/data
 ENV BTPSIMPLE_CONFIG=/btpsimple/config/config.json
 ENV BTPSIMPLE_KEY_STORE=/btpsimple/config/keystore.json
 ENV BTPSIMPLE_KEY_SECRET=/btpsimple/config/keysecret
-#ENV BTPSIMPLE_BMRP_ADDR=":9080"
 ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
 
 # entrypoint
@@ -42,6 +40,21 @@ RUN { \
         echo '  if [ "$BTPSIMPLE_KEY_STORE" != "" ] && [ ! -f "$BTPSIMPLE_KEY_STORE" ]; then'; \
         echo '    UNSET="$UNSET BTPSIMPLE_KEY_STORE"' ; \
         echo '    CMD="$CMD --save_key_store=$BTPSIMPLE_KEY_STORE"' ; \
+        echo '  fi'; \
+        echo '  if [ "$BTPSIMPLE_SRC_ADDRESS" != "" ] && [ -f "$BTPSIMPLE_SRC_ADDRESS" ]; then'; \
+        echo '    export BTPSIMPLE_SRC_ADDRESS=$(cat ${BTPSIMPLE_SRC_ADDRESS})' ; \
+        echo '  fi'; \
+        echo '  if [ "$BTPSIMPLE_SRC_ENDPOINT" != "" ] && [ -f "$BTPSIMPLE_SRC_ENDPOINT" ]; then'; \
+        echo '    export BTPSIMPLE_SRC_ENDPOINT=$(cat ${BTPSIMPLE_SRC_ENDPOINT})' ; \
+        echo '  fi'; \
+        echo '  if [ "$BTPSIMPLE_DST_ADDRESS" != "" ] && [ -f "$BTPSIMPLE_DST_ADDRESS" ]; then'; \
+        echo '    export BTPSIMPLE_DST_ADDRESS=$(cat ${BTPSIMPLE_DST_ADDRESS})' ; \
+        echo '  fi'; \
+        echo '  if [ "$BTPSIMPLE_DST_ENDPOINT" != "" ] && [ -f "$BTPSIMPLE_DST_ENDPOINT" ]; then'; \
+        echo '    export BTPSIMPLE_DST_ENDPOINT=$(cat ${BTPSIMPLE_DST_ENDPOINT})' ; \
+        echo '  fi'; \
+        echo '  if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then'; \
+        echo '    export BTPSIMPLE_OFFSET=$(cat ${BTPSIMPLE_OFFSET})' ; \
         echo '  fi'; \
         echo '  sh -c "unset $UNSET ; $CMD"' ; \
         echo 'fi'; \

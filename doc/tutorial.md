@@ -52,7 +52,7 @@ cp build/pyscore/*.zip ${CONFIG_DIR}/pyscore/
 ### Environment for JSON-RPC
 To use `goloop` as json-rpc client, execute shell via `docker exec -ti --workdir /goloop/config goloop sh` on goloop container.  
 For parse json-rpc response, install jq via `apk add jq` to goloop container.  
-Prepare 'rpc.env' file as below, and apply by `source rpc.env`.  
+Prepare 'rpc.sh' file as below, and apply by `source rpc.sh`.  
 Set keystore for json-rpc by `rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET`
 ````shell
 rpchelp() {
@@ -68,8 +68,6 @@ rpcch() {
     export GOLOOP_RPC_NID=$(goloop chain inspect $GOLOOP_RPC_CHANNEL --format {{.NID}})
     export GOLOOP_DEBUG_URI=$URI_PREFIX/v3d/$GOLOOP_RPC_CHANNEL
     export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-1}
-    #GOLOOP_RPC_WAIT
-    #GOLOOP_RPC_DEBUG
   fi
   echo $GOLOOP_RPC_CHANNEL
 }
@@ -136,7 +134,7 @@ goloop rpc sendtx deploy pyscore/bmv.zip \
     --param _net=$(cat net.btp.dst) \
     --param _validators=$(cat validators.dst) \
     --param _offset=$(cat offset.dst) \
-     | jq -r . > tx.bmv.src
+     | jq -r . > tx.bmv.$(rpcch)
 goloop rpc txresult $(cat tx.bmv.$(rpcch)) | jq -r .scoreAddress > bmv.$(rpcch)
 ````
 
@@ -199,8 +197,8 @@ rpcch dst
 goloop rpc sendtx deploy pyscore/irc2_token.zip \
     --param _name=IRC2Token \
     --param _symbol=I2T \
-    --param _initialSupply=1000 \
-    --param _decimals=18 \
+    --param _initialSupply=0x3E8 \
+    --param _decimals=0x12 \
     --param _owner=$(cat token_bsh.$(rpcch)) \
     | jq -r . > tx.irc2_token.$(rpcch)
 goloop rpc txresult $(cat tx.irc2_token.$(rpcch)) | jq -r .scoreAddress > irc2_token.$(rpcch)
@@ -214,7 +212,8 @@ Register BTP-Address of 'dst' chain to 'src' chain
 rpcch src
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addLink \
-    --param _link=$(cat btp.dst) > tx.link.$(rpcch)
+    --param _link=$(cat btp.dst) \
+    | jq -r . > tx.link.$(rpcch)
 ````
 
 Register BTP-Address of 'src' chain to 'dst' chain
@@ -222,13 +221,45 @@ Register BTP-Address of 'src' chain to 'dst' chain
 rpcch dst
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addLink \
-    --param _link=$(cat btp.src) > tx.link.$(rpcch)
+    --param _link=$(cat btp.src) \
+    | jq -r . > tx.link.$(rpcch)
 ````
 
 > To retrieve list of registered links, use `getLinks` method of BMC.  
 > `goloop rpc call --to $(cat bmc.$(rpcch)) --method getLinks`
 
-### Register Relay
+### Configure Link
+To use multiple-BMR for relay, should set properties of link via `BMC.setLink`
+
+Set properties of 'dst' link to 'src' chain
+````shell
+rpcch src
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method setLink \
+    --param _link=$(cat btp.dst) \
+    --param _block_interval=0x3e8 \
+    --param _max_agg=0x10 \
+    --param _delay_limit=3 \
+    | jq -r . > tx.setlink.$(rpcch)
+````
+
+Set properties of 'src' link to 'dst' chain
+````shell
+rpcch dst
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method setLink \
+    --param _link=$(cat btp.src) \
+    --param _block_interval=0x3e8 \
+    --param _max_agg=0x10 \
+    --param _delay_limit=3 \
+    | jq -r . > tx.setlink.$(rpcch)
+````
+
+> To retrieve properties of link, use `getStatus(_link)` method of BMC.
+> `goloop rpc call --to $(cat bmc.src) --method getStatus --param _link=$(cat btp.dst)`
+> `goloop rpc call --to $(cat bmc.dst) --method getStatus --param _link=$(cat btp.src)`
+
+### Register Relayer and Relay
 Create key store for relay of 'src' chain
 ````shell
 echo -n $(date|md5sum|head -c16) > src.secret
@@ -241,7 +272,8 @@ rpcch dst
 rpcks src.ks.json src.secret
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addRelayer \
-    --param _addr=$(jq -r .address src.ks.json)
+    --param _addr=$(jq -r .address src.ks.json) \
+    --param _desc="$(rpcch) relayer"
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addRelay \
     --param _link=$(cat btp.src) \
@@ -256,7 +288,8 @@ rpcch src
 rpcks dst.ks.json dst.secret
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addRelayer \
-    --param _addr=$(jq -r .address dst.ks.json)
+    --param _addr=$(jq -r .address dst.ks.json) \
+    --param _desc="$(rpcch) relayer"
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addRelay \
     --param _link=$(cat btp.dst) \
@@ -296,6 +329,7 @@ Start relay 'src' chain to 'dst' chain
 ````shell
 docker run -d --name btpsimple_src --link goloop \
   -v ${CONFIG_DIR}:/btpsimple/config \
+  -e BTPSIMPLE_CONFIG=/btpsimple/config/src.config.json \
   -e BTPSIMPLE_SRC_ADDRESS=$(cat ${CONFIG_DIR}/btp.src) \
   -e BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src \
   -e BTPSIMPLE_DST_ADDRESS=$(cat ${CONFIG_DIR}/btp.dst) \
@@ -310,6 +344,7 @@ For relay of 'dst' chain, same flows with replace 'src' to 'dst' and 'dst' to 's
 ````shell
 docker run -d --name btpsimple_dst --link goloop \
   -v ${CONFIG_DIR}:/btpsimple/config \
+  -e BTPSIMPLE_CONFIG=/btpsimple/config/dst.config.json \
   -e BTPSIMPLE_SRC_ADDRESS=$(cat ${CONFIG_DIR}/btp.dst) \
   -e BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/dst \
   -e BTPSIMPLE_DST_ADDRESS=$(cat ${CONFIG_DIR}/btp.src) \
@@ -388,5 +423,69 @@ goloop rpc sendtx call --to $(cat token_bsh.dst) \
 > To retrieve transferred balance of Bob which is , use `balanceOf(_owner)` method of Token-BSH.  
 > `goloop rpc call --to $(cat token_bsh.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json) | jq -r .IRC2Token.usable`
 
-## Future work
-* docker-compose
+## Docker-compose
+
+Tutorial with [Docker-compose](https://docs.docker.com/compose/)
+
+### Preparation
+Prepare 'btpsimple' docker image via `make btpsimple-image` and Copy files from project source to `/path/to/tutorial`
+````shell
+make btpsimple-image
+mkdir -p /path/to/tutorial
+cp docker-compose/* /path/to/tutorial/
+```` 
+
+### Run chain and relay
+`docker-compose up` will build `tutorial_goloop` docker image that provisioned of belows
+
+* scripts files in `/goloop/bin`
+* source chain and destination chain (channel name : `src`, `dst`) 
+* transaction related files in `/goloop/config`
+  - Transaction hash : `tx.<method>.<chain>`
+  - SCORE Address : `<score>.<chain>`
+  - BTP Address : `btp.<chain>`, `net.btp.<chain>`
+    
+And It creates containers for `goloop`, `btpsimple_src`, `btpsimple_dst` services
+
+### Interchain Token Transfer
+> To use `goloop` as json-rpc client, execute shell via `docker-compose exec goloop sh`  
+> And apply `source token.sh` for transfer and retrieve balance
+
+Create key store for Alice and Bob
+````shell
+source keystore.sh
+ensure_key_store alice.ks.json alice.secret
+ensure_key_store bob.ks.json bob.secret
+````
+
+Mint token to Alice
+````shell
+rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
+irc2_transfer src 0x10 alice.ks.json
+````
+
+> To retrieve balance of Alice, use `irc2_balance src alice.ks.json`
+
+Alice transfer token to Token-BSH
+````shell
+rpcks alice.ks.json alice.secret
+irc2_transfer src 0x10
+````
+
+> To retrieve balance of Alice which is able to interchain-transfer, use `bsh_balance src alice.ks.json | jq -r .IRC2Token.usable`
+
+Alice transfer token to Bob via Token-BSH
+````shell
+rpcks alice.ks.json alice.secret
+bsh_transfer src dst 0x10 bob.ks.json
+````
+
+> To retrieve locked-balance of Alice, `bsh_balance src alice.ks.json | jq -r .IRC2Token.locked`
+
+Bob reclaim token from Token-BSH
+````shell
+rpcks bob.ks.json bob.secret
+bsh_reclaim dst 0x10
+````
+
+> To retrieve transferred balance of Bob, use `bsh_balance dst bob.ks.json | jq -r .IRC2Token.usable`
