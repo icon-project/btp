@@ -578,7 +578,7 @@ class BTPMessageCenter(IconScoreBase):
     def handleRelayMessage(self, _prev: str, _msg: str):
         """
         It verifies and decodes the Relay Message with BMV and dispatches BTP Messages to registered BSHs.
-        It's allowed to be called by the BMC.
+        It's allowed to be called by registered Relay.
 
         :param _prev: String ( BTP Address of the previous BMC )
         :param _msg: String ( base64 encoded string of serialized bytes of Relay Message )

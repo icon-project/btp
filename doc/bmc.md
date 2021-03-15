@@ -65,7 +65,7 @@ BTP Message for error reply is composed of followings.
 * Description:
   - It verify and decode RelayMessage with BMV, and dispatch BTP Messages
     to registered BSHs
-  - It's allowed to be called by the BMC.
+  - It's allowed to be called by registered Relay.
 
 #### sendMessage
 * Params
