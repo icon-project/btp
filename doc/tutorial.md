@@ -85,8 +85,6 @@ rpcks() {
   fi
   echo $GOLOOP_RPC_KEY_STORE
 }
-
-export GOLOOP_CHAINSCORE=cx0000000000000000000000000000000000000000
 ```` 
 
 ### BMC
@@ -114,7 +112,8 @@ rpcch dst
 echo "$GOLOOP_RPC_NID.icon" > net.btp.$(rpcch)
 goloop rpc sendtx deploy pyscore/bmc.zip \
     --param _net=$(cat net.btp.$(rpcch)) | jq -r . > tx.bmc.$(rpcch)
-goloop rpc txresult $(cat tx.bmc.dst) | jq -r .scoreAddress > bmc.$(rpcch)
+sleep 2
+goloop rpc txresult $(cat tx.bmc.$(rpcch)) | jq -r .scoreAddress > bmc.$(rpcch)
 echo "btp://$(cat net.btp.$(rpcch))/$(cat bmc.$(rpcch))" > btp.$(rpcch)
 ````
 
@@ -123,10 +122,10 @@ To create parameters for deploy BMV contract
 ````shell
 rpcch dst
 goloop rpc call --to $GOLOOP_CHAINSCORE --method getValidators| jq -r 'map(.)|join(",")' > validators.$(rpcch)
-goloop chain inspect $(rpcch) --format {{.Height}} > offset.$(rpcch)
+echo "0x$(printf %x $(goloop chain inspect $(rpcch) --format {{.Height}}))" > offset.$(rpcch)
 ````
 
-Deploy BMV contract to 'src' chain and check deploy result  
+Deploy BMV contract to 'src' chain  
 ````shell
 rpcch src
 goloop rpc sendtx deploy pyscore/bmv.zip \
@@ -135,6 +134,10 @@ goloop rpc sendtx deploy pyscore/bmv.zip \
     --param _validators=$(cat validators.dst) \
     --param _offset=$(cat offset.dst) \
      | jq -r . > tx.bmv.$(rpcch)
+````
+
+Extract BMV contract address from deploy result
+````shell
 goloop rpc txresult $(cat tx.bmv.$(rpcch)) | jq -r .scoreAddress > bmv.$(rpcch)
 ````
 
@@ -142,7 +145,7 @@ For 'dst' chain, same flows with replace 'src' to 'dst' and 'dst' to 'src'.
 ````shell
 rpcch src
 goloop rpc call --to $GOLOOP_CHAINSCORE --method getValidators| jq -r 'map(.)|join(",")' > validators.$(rpcch)
-goloop chain inspect $(rpcch) --format {{.Height}} > offset.$(rpcch)
+echo "0x$(printf %x $(goloop chain inspect $(rpcch) --format {{.Height}}))" > offset.$(rpcch)
 rpcch dst
 goloop rpc sendtx deploy pyscore/bmv.zip \
     --param _bmc=$(cat bmc.$(rpcch)) \
@@ -150,6 +153,7 @@ goloop rpc sendtx deploy pyscore/bmv.zip \
     --param _validators=$(cat validators.src) \
     --param _offset=$(cat offset.src) \
      | jq -r . > tx.bmv.$(rpcch)
+sleep 2
 goloop rpc txresult $(cat tx.bmv.$(rpcch)) | jq -r .scoreAddress > bmv.$(rpcch)
 ````
 
@@ -259,6 +263,24 @@ goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
 > `goloop rpc call --to $(cat bmc.src) --method getStatus --param _link=$(cat btp.dst)`
 > `goloop rpc call --to $(cat bmc.dst) --method getStatus --param _link=$(cat btp.src)`
 
+### Register Token
+Register IRC 2.0 Token contract to Token-BSH
+````shell
+rpcch src
+goloop rpc sendtx call --to $(cat token_bsh.src) \
+  --method register \
+  --param _name=IRC2Token \
+  --param _addr=$(cat irc2_token.src)
+rpcch dst
+goloop rpc sendtx call --to $(cat token_bsh.dst) \
+  --method register \
+  --param _name=IRC2Token \
+  --param _addr=$(cat irc2_token.dst)
+````
+
+> To retrieve list of registered token, use `tokenNames` method of Token-BSH.  
+> `goloop rpc call --to $(cat token_bsh.$(rpcch)) --method tokenNames`
+
 ### Register Relayer and Relay
 Create key store for relay of 'src' chain
 ````shell
@@ -303,24 +325,6 @@ goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
 > `goloop rpc call --to $(cat bmc.src) --method getRelays --param _link=$(cat btp.dst)`
 > `goloop rpc call --to $(cat bmc.dst) --method getRelays --param _link=$(cat btp.src)`
 
-### Register Token
-Register IRC 2.0 Token contract to Token-BSH
-````shell
-rpcch src
-goloop rpc sendtx call --to $(cat token_bsh.src) \
-  --method register \
-  --param _name=IRC2Token \
-  --param _addr=$(cat irc2_token.src)
-rpcch dst
-goloop rpc sendtx call --to $(cat token_bsh.dst) \
-  --method register \
-  --param _name=IRC2Token \
-  --param _addr=$(cat irc2_token.dst)
-````
-
-> To retrieve list of registered token, use `tokenNames` method of Token-BSH.  
-> `goloop rpc call --to $(cat token_bsh.$(rpcch)) --method tokenNames`
-
 ## Start relay
 
 Prepare 'btpsimple' docker image via `make btpsimple-image`
@@ -351,7 +355,7 @@ docker run -d --name btpsimple_dst --link goloop \
   -e BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/src \
   -e BTPSIMPLE_OFFSET=$(cat ${CONFIG_DIR}/offset.dst) \
   -e BTPSIMPLE_KEY_STORE=/btpsimple/config/dst.ks.json \
-  -e BTPSIMPLE_KEY_SECRET=/btpsimple/config/dst.secret) \
+  -e BTPSIMPLE_KEY_SECRET=/btpsimple/config/dst.secret \
   btpsimple
 ````
 
