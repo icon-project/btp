@@ -1,0 +1,186 @@
+import java.util.concurrent.TimeUnit
+
+group 'foundation.icon.btp'
+version '1.0-SNAPSHOT'
+
+allprojects {
+    apply plugin: 'java'
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    compileJava {
+        options.compilerArgs += ['-parameters']
+    }
+}
+
+dependencies {
+    implementation project(':btp-api')
+    implementation project(':bmv')
+    implementation project(':bsh')
+    implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
+    implementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    implementation 'foundation.icon:javaee-rt:0.8.7-SNAPSHOT'
+    implementation 'foundation.icon:javaee-tooling:0.8.7-SNAPSHOT'
+    implementation 'org.msgpack:msgpack-core:0.8.17'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+    implementation 'org.web3j:rlp:5.0.0'
+
+    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+}
+
+class ChainTest extends Test {
+    String configFile = "./data/config.json"
+    String logFile = ".chain/normal.log"
+    String envFile = "./data/env.properties"
+    String chainDir = ".chain/normal"
+    String gsFile = null
+    String gsDir = null
+    String dockerEnv = null
+    Process process = null
+
+    void startServer() {
+        List<String> commands = new LinkedList<String>()
+        commands.add("../bin/gochain")
+        commands.add("--config")
+        commands.add(configFile)
+        commands.add("--chain_dir")
+        commands.add(chainDir)
+        if (gsFile != null) {
+            commands.add("--genesis_storage")
+            commands.add(gsFile)
+        } else if (gsDir != null) {
+            commands.add("--genesis")
+            commands.add(gsDir)
+        }
+        def logLevel = System.getProperty("LOG_LEVEL")
+        if (logLevel != null && logLevel.length() != 0) {
+            commands.add("--log_level=" + logLevel)
+        }
+
+        Runtime.getRuntime().exec("rm -rf " + chainDir)
+
+        ProcessBuilder pb = new ProcessBuilder(commands)
+
+        // adding PYTHONPATH for using pyee directly.
+        def env = pb.environment()
+        env.put("PYTHONPATH", "../pyee")
+
+        // set working directory
+        pb.directory(new File("."))
+
+        File log_file = new File(logFile)
+        pb.redirectError(log_file)
+        pb.redirectOutput(log_file)
+
+        process = pb.start()
+
+        // Hook shutdown for kill the process for sure
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            void run() {
+                stopServer()
+            }
+        }))
+    }
+
+    void startDocker(String serverPort) {
+        List<String> commands = new LinkedList<String>()
+        commands.add("docker")
+        commands.add("run")
+        commands.add("-dit")
+        commands.add("-v")
+        commands.add(getWorkingDir().toString() + ":" + "/testsuite")
+        commands.add("-p")
+        commands.add("${serverPort}:${serverPort}")
+        commands.add("--env-file")
+        commands.add("data/dockerenv/" + dockerEnv)
+        commands.add("--name")
+        commands.add("gochain-" + dockerEnv)
+        commands.add("goloop/gochain")
+        process = commands.execute()
+    }
+
+    @TaskAction
+    @Override
+    void executeTests() {
+        def noServer = System.getProperty("NO_SERVER")
+        if (noServer == null || noServer != "true") {
+            def useDocker = System.getProperty("USE_DOCKER", "false")
+            logging.println("STARTING Stand-alone server")
+            logging.println("Docker: ${useDocker}")
+            logging.println("Config: ${configFile}")
+            logging.println("Log   : ${logFile}")
+            logging.println("Env   : ${envFile}")
+            if (gsFile != null) {
+                logging.println("GSFile: ${gsFile}")
+            }
+            if (useDocker != null && useDocker == "true") {
+                startDocker(getServerPort())
+            } else {
+                startServer()
+            }
+            systemProperty("CHAIN_ENV", envFile)
+
+            // wait for a while to get ready.
+            sleep(1000)
+        } else {
+            systemProperty("CHAIN_ENV", System.getProperty("CHAIN_ENV"))
+        }
+        try {
+            super.executeTests()
+        } finally {
+            stopServer()
+            stopDocker()
+        }
+    }
+
+    private String getServerPort() {
+        def stdout = new ByteArrayOutputStream()
+        def proc = ['sh', '-c', "grep localhost ${envFile} | cut -d \':\' -f 3"].execute()
+        proc.waitForProcessOutput(stdout, System.err)
+        def serverPort = stdout.toString().trim()
+        logging.println("ServerPort: ${serverPort}")
+        return serverPort
+    }
+
+    synchronized void stopServer() {
+        if (process != null && process.isAlive()) {
+            logging.println("STOPPING Stand-alone server")
+            process.destroy()
+            process.waitFor(1, TimeUnit.SECONDS)
+            process = null
+        }
+    }
+
+    synchronized void stopDocker() {
+        if (process != null && process.exitValue() == 0) {
+            logging.println("STOPPING docker container")
+            ["docker", "stop", "gochain-${dockerEnv}"].execute().waitFor()
+            ["docker", "rm", "gochain-${dockerEnv}"].execute().waitFor()
+            process = null
+        }
+    }
+}
+
+task testJavaScore(type: ChainTest) {
+    useJUnitPlatform {
+        includeTags "javaScore"
+    }
+    configFile = "./data/config/java.json"
+    chainDir = ".chain/javascore"
+    logFile = ".chain/javascore.log"
+    envFile = "./data/chainenv/java.props"
+    dockerEnv = "javascore"
+
+    dependsOn 'cleanTestJavaScore'
+    testLogging.showStandardStreams = true
+}
+
+// need to add this option to retrieve formal parameter names
+compileJava {
+    options.compilerArgs += ['-parameters']
+}

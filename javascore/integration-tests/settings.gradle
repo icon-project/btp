@@ -1,0 +1,5 @@
+rootProject.name = 'integration-tests'
+include 'btp-api', 'bmv', 'bsh'
+project(':btp-api').projectDir = new File(settingsDir, '../api')
+project(':bmv').projectDir = new File(settingsDir, '../bmv')
+project(':bsh').projectDir = new File(settingsDir, '../bsh')

@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
+    implementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    implementation 'foundation.icon:javaee-rt:0.8.7-SNAPSHOT'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+    implementation 'org.msgpack:msgpack-core:0.8.17'
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
+
+    //Temporarily rlp for some unit testing against the official ICON SDK API
+    implementation 'org.web3j:rlp:5.0.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntime 'org.slf4j:slf4j-api:1.7.26'
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+}
+
+test {
+    useJUnitPlatform()
+}

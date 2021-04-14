@@ -1,0 +1,10 @@
+dependencies {
+    implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
+
+    testRuntime 'org.slf4j:slf4j-api:1.7.26'
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+
+    compileOnly 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
+    compileOnly 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    implementation 'foundation.icon:javaee-rt:0.8.7-SNAPSHOT'
+    compileOnly 'foundation.icon:javaee-tooling:0.8.7-SNAPSHOT'
+    implementation 'com.github.sink772:javaee-scorex:0.5.1'
+    implementation 'com.github.sink772:minimal-json:0.9.6'
+
+    implementation 'org.msgpack:msgpack-core:0.8.17'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+
+    testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
+    testImplementation fileTree(dir: '../lib', include: 'testsvc.jar')
+
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+}
+
+test {
+    useJUnitPlatform()
+}

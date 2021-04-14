@@ -1,0 +1,37 @@
+/*
+ * Copyright 2021 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package foundation.icon.btp.test;
+
+import org.web3j.rlp.RlpList;
+import org.web3j.rlp.RlpString;
+
+import java.math.BigInteger;
+
+public class RlpUtil {
+
+    public static BigInteger getBigInteger(RlpList unpacked, int idx){
+        return  ((RlpString)unpacked.getValues().get(idx)).asPositiveBigInteger();
+    }
+
+    public static int getInt(RlpList unpacked, int idx){
+        return getBigInteger(unpacked, idx).intValue();
+    }
+
+    public static byte[] getBytes(RlpList unpacked, int idx){
+        return  ((RlpString)unpacked.getValues().get(idx)).getBytes();
+    }
+
+}

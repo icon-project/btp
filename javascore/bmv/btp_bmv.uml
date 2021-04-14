@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>foundation.icon.btp</OriginalElement>
+  <nodes>
+    <node x="" y="">foundation.icon.btp.BasicRpLTest</node>
+    <node x="" y="">foundation.icon.btp.BlockProof</node>
+    <node x="" y="">foundation.icon.btp.MerkleTreeAccumulator</node>
+    <node x="" y="">foundation.icon.btp.MessageDecoderTests</node>
+    <node x="" y="">foundation.icon.btp.ReceiptProof</node>
+    <node x="" y="">foundation.icon.btp.BTPAddress</node>
+    <node x="" y="">foundation.icon.btp.RelayMessage</node>
+    <node x="" y="">foundation.icon.btp.Codec</node>
+    <node x="" y="">foundation.icon.btp.Votes</node>
+    <node x="" y="">foundation.icon.btp.BTPMessageVerifier</node>
+    <node x="" y="">foundation.icon.btp.EventProof</node>
+    <node x="" y="">foundation.icon.btp.BlockWitness</node>
+    <node x="" y="">foundation.icon.btp.Votes2</node>
+    <node x="" y="">foundation.icon.btp.MerklePatriciaTree</node>
+    <node x="" y="">foundation.icon.btp.BTPMessage</node>
+    <node x="" y="">foundation.icon.btp.VerifyTests</node>
+    <node x="" y="">foundation.icon.btp.Receipt</node>
+    <node x="" y="">foundation.icon.btp.SampleData</node>
+    <node x="" y="">foundation.icon.btp.ValidatorList2</node>
+    <node x="" y="">foundation.icon.btp.ClassDecoderUtil</node>
+    <node x="" y="">foundation.icon.btp.BlockUpdate</node>
+    <node x="" y="">foundation.icon.btp.BlockHeader</node>
+    <node x="" y="">foundation.icon.btp.ValidatorList</node>
+  </nodes>
+  <notes />
+  <edges />
+  <settings layout="Hierarchic Group" zoom="1.0" x="595.5" y="442.0" />
+  <SelectedNodes />
+  <Categories />
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
