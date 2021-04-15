@@ -21,10 +21,11 @@ import com.iconloop.testsvc.Score;
 import com.iconloop.testsvc.ServiceManager;
 import com.iconloop.testsvc.TestBase;
 import foundation.icon.btp.bsh.ServiceHandler;
-import foundation.icon.ee.io.DataWriter;
-import foundation.icon.test.common.Codec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import score.ByteArrayObjectWriter;
+import score.Context;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -78,20 +79,20 @@ class ServiceHandlerTest extends TestBase {
         assertEquals(BigInteger.TEN, tokenBalance[0]);
 
         //Step 3: invoke ShouldHandleBTP message
-        DataWriter writer = Codec.rlp.newWriter();
-        writer.writeListHeader(2);
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
+        writer.beginList(2);
         writer.write(ActionTypes.REQUEST_TOKEN_TRANSFER.value);//ActionType
         //Action Data writer -start
         //DataWriter dataWriter = Codec.rlp.newWriter();
-        writer.writeListHeader(4);
+        writer.beginList(4);
         writer.write(owners[0].getAddress().toString());
         writer.write(owners[0].getAddress().toString());
         writer.write("BNB");
         writer.write(BigInteger.TWO);
-        writer.writeFooter();
+        writer.end();
         //Action Data - end
         //writer.write(dataWriter.toByteArray());//Action Data
-        writer.writeFooter();
+        writer.end();
         bshScore.invoke(owners[0], "handleBTPMessage",
                 owners[0].getAddress().toString(),
                 "BMC",

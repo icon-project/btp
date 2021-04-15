@@ -178,7 +178,7 @@ public class ServiceHandler {
         if (balance[BD_USABLE_IDX].compareTo(value) == -1) {
             throw new UserRevertedException("Overdrawn");
         }
-        setBalance(sender, tokenName, balance[BD_USABLE_IDX].negate(), balance[BD_LOCKED_IDX]);
+        setBalance(sender, tokenName, value.negate(), value);
         BigInteger sn = generateSerialNumber();
         byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, sender.toString(), to, tokenName, value);
         putPending(sn, msg);
