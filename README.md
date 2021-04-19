@@ -7,6 +7,7 @@ We need to build a usable [BTP](doc/btp.md) Relay System which can deliver digit
 Target chains
 * ICON (goloop)
 * Polkadot parachain
+* NEAR Protocol
 
 Terminologies
 
