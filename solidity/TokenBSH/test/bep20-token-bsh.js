@@ -1,4 +1,4 @@
-const Mock = artifacts.require("Mock");
+const BEP20Mock = artifacts.require("BEP20Mock");
 const Holder = artifacts.require("Holder");
 const truffleAssert = require('truffle-assertions');
 
@@ -7,13 +7,13 @@ var _net = 'bsc';
 var tokenName = 'CAKE'
 
 
-
-contract('Receiving ERC20 from ICON blockchain', function () {
+contract('Receiving BEP20 from ICON blockchain', function () {
     let mock, accounts, token;
     beforeEach(async () => {
-        mock = await Mock.deployed();
+        mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
-        accounts = await web3.eth.getAccounts()
+        accounts = await web3.eth.getAccounts();
+        web3.eth.defaultAccount = accounts[0];
     });
 
     it("Scenario 1: Receiving address is an invalid address - fail", async () => {
@@ -26,7 +26,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
     });
 
 
-    it("Scenario 3: All requirements are qualified - Success", async () => {
+    it("Scenario 2: All requirements are qualified - Success", async () => {
         var _from = '0x12345678';
         var _value = 5
         await mock.register(tokenName, token.address);
@@ -37,17 +37,18 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         var balanceAfter = await mock.balanceOf(token.address);
         assert(
             web3.utils.hexToNumber(balanceAfter) ==
-            web3.utils.hexToNumber(balanceBefore) + 5
+            web3.utils.hexToNumber(balanceBefore) + 5, "Invalid balance after handle request"
         );
     });
 });
 
-contract('Sending ERC20 to ICON blockchain', function () {
+contract('Sending BEP20 to ICON blockchain', function () {
     let mock, accounts, token;
     beforeEach(async () => {
-        mock = await Mock.deployed();
+        mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
+        web3.eth.defaultAccount = accounts[0];
     });
 
 
@@ -59,7 +60,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         await token.setApprove(mock.address, 10);
         await truffleAssert.reverts(
             token.callTransfer(tokenName, 5, _to),
-            "VM Exception while processing transaction: revert Token is not registered -- Reason given: Token is not registered."
+            "Token is not registered"
         );
     });
 
@@ -70,7 +71,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         await mock.register(tokenName, token.address);
         await truffleAssert.reverts(
             token.callTransfer(tokenName, 15, _to),
-            "VM Exception while processing transaction: revert ERC20: transfer amount exceeds balance -- Reason given: ERC20: transfer amount exceeds balance."
+            "transfer amount exceeds balance"
         );
     });
 
@@ -78,7 +79,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var _to = 'btp://bsc:0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
         await truffleAssert.reverts(
             token.callTransfer(tokenName, 5, _to),
-            "VM Exception while processing transaction: revert"
+            "exited with an error"
         );
     });
 
@@ -86,7 +87,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var _to = 'btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
         await truffleAssert.reverts(
             token.callTransfer(tokenName, 0, _to),
-            "VM Exception while processing transaction: revert Invalid amount specified. -- Reason given: Invalid amount specified."
+            "Invalid amount specified"
         );
     });
 
@@ -116,11 +117,10 @@ contract('Sending ERC20 to ICON blockchain', function () {
     });
 
     it("Scenario 7:All requirements are qualified and BSH receives a successful message - Success", async () => {
-        var _code = 0;
         var _to = 'btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
         await token.callTransfer(tokenName, 5, _to);
         var balanceBefore = await mock.getBalanceOf(token.address, tokenName)
-        await mock.handleResponse(_net, _svc, 0, _code, "Transfer Success")
+        await mock.handleResponse(_net, _svc, 0, 0, "Transfer Success")
         var balanceAfter = await mock.getBalanceOf(token.address, tokenName)
         //Reason: the amount is burned from the tokenBSH and locked balance is reduced for the set amount
         assert(
@@ -133,15 +133,16 @@ contract('Sending ERC20 to ICON blockchain', function () {
 });
 
 
-contract('ERC20 - Complete flow tests', function () {
+contract('BEP20 - Complete flow tests', function () {
     let mock, accounts, token;
     beforeEach(async () => {
-        mock = await Mock.deployed();
+        mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
+        web3.eth.defaultAccount = accounts[0];
     });
 
-    it("should register ERC20 Token", async () => {
+    it("should register BEP20 Token", async () => {
         var _to = 'btp://bsc/0x12345678';
         var tokeNames = await mock.tokenNames();
         assert.equal(tokeNames.length, 0, "The size of the token names should be 0");
@@ -165,15 +166,15 @@ contract('ERC20 - Complete flow tests', function () {
 });
 
 
-contract('ERC20 - Basic BSH unit tests', function () {
+contract('BEP20 - Basic BSH unit tests', function () {
     let mock, accounts, token;
     beforeEach(async () => {
-        mock = await Mock.deployed();
+        mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
     });
 
-    it("Register Coin - With Permission - Success", async () => {
+    it("1. Register Coin - With Permission - Success", async () => {
         var output = await mock.tokenNames();
         await mock.register(tokenName, token.address);
         output = await mock.tokenNames();
@@ -182,25 +183,26 @@ contract('ERC20 - Basic BSH unit tests', function () {
         );
     });
 
-    it('Register Coin - Without Permission - Failure', async () => {
+    it('2. Register Coin - Without Permission - Failure', async () => {
         var _name = "ICON";
         var _symbol = "ICX";
         var _decimal = 0;
 
         await truffleAssert.reverts(
             mock.register(tokenName, token.address, { from: accounts[1] }),
-            "VM Exception while processing transaction: revert No permission -- Reason given: No permission"
+            "No permission"
         );
     });
 
-    it('Register Coin - Token already exists - Failure', async () => {
+    it('3. Register Coin - Token already exists - Failure', async () => {
+        //await mock.register(tokenName,token.address)  
         await truffleAssert.reverts(
             mock.register(tokenName, token.address),
-            "VM Exception while processing transaction: revert Token with same name exists already. -- Reason given: Token with same name exists already.."
+            "Token with same name exists already"
         );
     });
 
-    /*  it("Scenario 2: Receiving contract is not ERC20 - fail", async () => {
+    /*  it("Scenario 2: Receiving contract is not BEP20 - fail", async () => {
      var _from = '0x12345678';
      var _value = 5
      var _to = '0x1234567890123456789'; 

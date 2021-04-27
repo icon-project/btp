@@ -18,19 +18,10 @@
 
 pragma solidity >=0.5.0 <=0.8.5;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../TokenBSH.sol";
 
-contract Token is ERC20 {
+contract Holder {
     TokenBSH private bsh;
-
-    constructor(string memory name, string memory symbol)
-        public
-        ERC20(name, symbol)
-    {
-        uint256 INITIAL_SUPPLY = 10000;
-        _mint(msg.sender, INITIAL_SUPPLY);
-    }
 
     function addBSHContract(address _bsh) external {
         bsh = TokenBSH(_bsh);

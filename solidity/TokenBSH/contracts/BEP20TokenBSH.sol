@@ -21,15 +21,16 @@ pragma solidity >=0.4.22 <0.8.5;
 import "./IBSH.sol";
 import "./IBMC.sol";
 import "./Libraries/TypesLib.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+//import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+//import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./Libraries/RLPEncodeStructLib.sol";
 import "./Libraries/RLPDecodeStructLib.sol";
 import "./Libraries/StringsLib.sol";
 import "./Libraries/ParseAddressLib.sol";
-import "./Libraries/Owner.sol";
+//import "./Libraries/Owner.sol";
+import "./BEP20/BEP20.sol";
 
-contract TokenBSH is IBSH, ERC20, Owner {
+contract BEP20TokenBSH is IBSH, BEP20Token {
     using SafeMath for uint256;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.TransferToken;
@@ -74,10 +75,13 @@ contract TokenBSH is IBSH, ERC20, Owner {
         string _response
     );
 
-    constructor(address _bmc, string memory _serviceName)
-        ERC20("", "")
-        Owner()
-    {
+    constructor(
+        address _bmc,
+        string memory _serviceName,
+        string memory _tokenName,
+        string memory _symbol,
+        uint8 _decimals
+    ) BEP20Token(_tokenName, _symbol, _decimals, 0) Owner() {
         //bmc = IBMC(_bmc);
         serviceName = _serviceName;
         serialNo = 0;
@@ -122,6 +126,14 @@ contract TokenBSH is IBSH, ERC20, Owner {
             balances[_owner][_tokenName].lockedBalance
         );
     }
+
+    // function tokenFallBack(address _from, uint256 _value) external onlyOwner {
+    //     require(_value >= 0, "Invalid amount specified.");
+    //     string memory token = tokenName[_from];
+    //     require(bytes(token).length != 0, "Token is not registered");
+
+    //     sendServiceMessage(address(this).toString(), token, _value);
+    // }
 
     function transfer(
         string calldata _tokenName,
@@ -240,21 +252,6 @@ contract TokenBSH is IBSH, ERC20, Owner {
         );
     }
 
-    function withdraw(string calldata _tokenName, uint256 _value) external {
-        require(tokenAddr[_tokenName] != address(0), "Token not supported");
-        require(
-            balances[msg.sender][_tokenName].refundableBalance >= _value,
-            "Insufficient balance"
-        );
-
-        balances[msg.sender][_tokenName].refundableBalance = balances[
-            msg.sender
-        ][_tokenName]
-            .refundableBalance
-            .sub(_value);
-        this.transferFrom(address(this), msg.sender, _value);
-    }
-
     function handleRequestService(
         string memory _tokenName,
         string memory _toAddress,
@@ -354,31 +351,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
         address caller = requests[_sn].request.from.parseAddress();
         string memory _tokenName = requests[_sn].request.tokenName;
         uint256 value = requests[_sn].request.value;
-        try this.tryToTransferToken(caller, value) {} catch Error(
-            string memory
-        ) {
-            balances[caller][_tokenName].refundableBalance = balances[caller][
-                _tokenName
-            ]
-                .refundableBalance
-                .add(value);
-            emit HandleBTPMessageEvent(
-                _sn,
-                _code,
-                "Transfer Token Failed, Money in Refundable Balance"
-            );
-        } catch (bytes memory) {
-            balances[caller][_tokenName].refundableBalance = balances[caller][
-                _tokenName
-            ]
-                .refundableBalance
-                .add(value);
-            emit HandleBTPMessageEvent(
-                _sn,
-                _code,
-                "Transfer Token Failed, Money in Refundable Balance"
-            );
-        }
+        this.transfer(caller, value);
         balances[caller][_tokenName].lockedBalance = balances[caller][
             _tokenName
         ]
@@ -409,7 +382,6 @@ contract TokenBSH is IBSH, ERC20, Owner {
 
     function tryToTransferToken(address _to, uint256 _amount) external {
         require(msg.sender == address(this), "Only BSH");
-        this.approve(address(this), _amount);
         this.transferFrom(address(this), _to, _amount);
     }
 

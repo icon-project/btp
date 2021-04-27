@@ -22,6 +22,16 @@ $ truffle develop
 ```
 In another new terminal, run 
 
-```
-$ npm test
-``` 
+``` truffle test --network development test/token-bsh.js ``` 
+
+##### To test BEP20 against BSC
+Ensure there are two accounts created with balance in the BSC node.
+
+For More details on BSC setup
+https://docs.binance.org/smart-chain/developer/deploy/local.html
+https://docs.binance.org/smart-chain/developer/fullnode.html
+
+1. start up the local BSC node 
+2. add the private keys of the two accounts in the truffle-config.js 
+3. run the command to test
+``` truffle test --network testnet test/bep20-token-bsh.js ```
