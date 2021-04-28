@@ -28,6 +28,7 @@ import (
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
+	"github.com/icon-project/btp/cmd/btpsimple/module/pra"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
@@ -598,7 +599,7 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
 		w:   w,
-		l: l.WithFields(log.Fields{log.FieldKeyChain:
+		l:   l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
@@ -606,13 +607,37 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	}
 	s._rm()
 
-	s.r = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
-	s.s = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
+	s.s, s.r = newSenderAndReceiver(cfg, w, l)
 
 	if err := s.prepareDatabase(cfg.Offset); err != nil {
 		return nil, err
 	}
 	return s, nil
+}
+
+func newSenderAndReceiver(cfg *Config, w wallet.Wallet, l log.Logger) (module.Sender, module.Receiver) {
+	var s module.Sender
+	var r module.Receiver
+
+	switch srcNetwork := cfg.Src.Address.BlockChain(); srcNetwork {
+	case "icon":
+		s = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, l)
+	case "pra":
+		s = pra.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, l)
+	default:
+		fmt.Printf("not supported blockchain:%s", srcNetwork)
+		return nil, nil
+	}
+
+	switch dstNetwork := cfg.Dst.Address.BlockChain(); dstNetwork {
+	case "icon":
+		r = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
+	default:
+		fmt.Printf("not supported blockchain:%s", dstNetwork)
+		return nil, nil
+	}
+
+	return s, r
 }
 
 func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof) {

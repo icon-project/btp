@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package icon
+package pra
 
 import (
+	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -24,13 +25,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
-
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/common"
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 const (
@@ -45,7 +46,7 @@ type sender struct {
 	c   *Client
 	src module.BtpAddress
 	dst module.BtpAddress
-	w   Wallet
+	pk  *ecdsa.PrivateKey
 	l   log.Logger
 	opt struct {
 		StepLimit int64
@@ -57,32 +58,26 @@ type sender struct {
 		next      []byte
 		seq       []byte
 	}
-	evtReq             *BlockRequest
-	bh                 *BlockHeader
 	isFoundOffsetBySeq bool
 	cb                 module.ReceiveCallback
 }
 
 func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
-	b, err := codec.RLP.MarshalToBytes(rm)
+	privateKey, err := crypto.HexToECDSA("1111111111111111111111111111111111111111111111111111111111111111")
 	if err != nil {
-		return nil, err
+		log.Panic(err)
 	}
-	rmp := BMCRelayMethodParams{
-		Prev:     prev,
-		Messages: base64.URLEncoding.EncodeToString(b),
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Panic("error casting public key to ECDSA")
 	}
-	p := &TransactionParam{
-		Version:     NewHexInt(JsonrpcApiVersion),
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.ContractAddress()),
-		NetworkID:   HexInt(s.dst.NetworkID()),
-		StepLimit:   NewHexInt(s.opt.StepLimit),
-		DataType:    "call",
-		Data: CallData{
-			Method: BMCRelayMethod,
-			Params: rmp,
-		},
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	signer := func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		return types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	}
+	if err != nil {
+		log.Panic(err)
 	}
 	return p, nil
 }
@@ -95,8 +90,14 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 		ReceiptProofs: make([][]byte, 0),
 	}
 	size := 0
+	var bmcStatus *module.BMCLinkStatus
+	bmcStatus, err = s.GetStatus()
 
-	if rm.BlockUpdates[len(rm.BlockUpdates)-1].Height > height {
+	if err != nil {
+		return nil, err
+	}
+
+	if rm.BlockUpdates[len(rm.BlockUpdates)-1].Height > bmcStatus.Verifier.Height {
 		for _, bu := range rm.BlockUpdates {
 			if bu.Height <= height {
 				continue
@@ -111,32 +112,21 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 				}
-				buSize := len(bu.Proof)
-				if s.isOverLimit(buSize) {
-					return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+					return nil, err
 				}
-				size += buSize
-				if s.isOverLimit(size) {
-					segment := &module.Segment{
-						Height:              msg.height,
-						NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-					}
-					if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-						return nil, err
-					}
-					segments = append(segments, segment)
-					msg = &RelayMessage{
-						BlockUpdates:  make([][]byte, 0),
-						ReceiptProofs: make([][]byte, 0),
-					}
-					size = buSize
+				segments = append(segments, segment)
+				msg = &RelayMessage{
+					BlockUpdates:  make([][]byte, 0),
+					ReceiptProofs: make([][]byte, 0),
 				}
-				msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
-				msg.height = bu.Height
-				msg.numberOfBlockUpdate += 1
+				size = buSize
 			}
+			msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
+			msg.height = bu.Height
+			msg.numberOfBlockUpdate += 1
 		}
-	}
+	} // TODO haven't test the case where Blocks is missing on BMC
 
 	var bp []byte
 	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
@@ -251,7 +241,7 @@ SignLoop:
 		}
 	SendLoop:
 		for {
-			txh, err := s.c.SendTransaction(p)
+			txh, err := s.c.SendSignedTransaction(p)
 			if txh != nil {
 				thp.Hash = *txh
 			}
@@ -301,17 +291,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 }
 
 func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
-	p := &CallParam{
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.ContractAddress()),
-		DataType:    "call",
-		Data: CallData{
-			Method: BMCGetStatusMethod,
-			Params: BMCStatusParams{
-				Target: s.src.String(),
-			},
-		},
-	}
+	// TODO: implement this
 	bs := &BMCStatus{}
 	err := mapError(s.c.Call(p, bs))
 	if err != nil {
@@ -349,31 +329,11 @@ func (s *sender) isOverLimit(size int) bool {
 }
 
 func (s *sender) MonitorLoop(height int64, cb module.MonitorCallback, scb func()) error {
-	br := &BlockRequest{
-		Height: NewHexInt(height),
-	}
-	return s.c.MonitorBlock(br,
-		func(conn *websocket.Conn, v *BlockNotification) error {
-			if h, err := v.Height.Value(); err != nil {
-				return err
-			} else {
-				return cb(h)
-			}
-		},
-		func(conn *websocket.Conn) {
-			s.l.Debugf("MonitorLoop connected %s", conn.LocalAddr().String())
-			if scb != nil {
-				scb()
-			}
-		},
-		func(conn *websocket.Conn, err error) {
-			s.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
-			_ = conn.Close()
-		})
+	// TODO: implement this
 }
 
 func (s *sender) StopMonitorLoop() {
-	s.c.CloseAllMonitor()
+	// TODO: implement this
 }
 func (s *sender) FinalizeLatency() int {
 	//on-the-next

@@ -327,7 +327,7 @@ public class FeeAggregationSCORE {
 
         // Send ICX to CPS
         if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
-            Context.transfer(this.addressCPS.get(), _auction.bidAmount());
+            Context.call(_auction.bidAmount(), this.addressCPS.get(), "add_fund");
         }
 
         // Reset auction

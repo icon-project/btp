@@ -1,0 +1,120 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  goloop:
+    build:
+      dockerfile: Dockerfile.icon-2-icon-5-bmrs
+      context: .
+      args:
+        BTPSIMPLE_VERSION: latest
+        GOLOOP_IMAGE: iconloop/goloop:0.9.5
+    ports:
+      - "9080:9080"
+    volumes:
+      - config:/goloop/config
+      - data:/goloop/data
+    environment:
+      - GOLOOP_NODE_DIR=/goloop/data/goloop
+      - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
+  btpsimple_src_1:
+    image: btpsimple:latest
+    volumes:
+      - config:/btpsimple/config
+      - data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src_1
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src_1.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src_1.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src_1.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src_1.log
+    links:
+      - goloop
+    depends_on: 
+      - goloop
+  btpsimple_src_2:
+    image: btpsimple:latest
+    volumes:
+      - config:/btpsimple/config
+      - data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src_2
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src_2.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src_2.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src_2.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src_2.log
+    links:
+      - goloop
+    depends_on: 
+      - goloop
+  btpsimple_src_3:
+    image: btpsimple:latest
+    volumes:
+      - config:/btpsimple/config
+      - data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src_3
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src_3.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src_3.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src_3.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src_3.log
+    links:
+      - goloop
+    depends_on: 
+      - goloop
+  btpsimple_src_4:
+    image: btpsimple:latest
+    volumes:
+      - config:/btpsimple/config
+      - data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src_4
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src_4.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src_4.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src_4.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src_4.log
+    links:
+      - goloop
+    depends_on: 
+      - goloop
+  btpsimple_src_5:
+    image: btpsimple:latest
+    volumes:
+      - config:/btpsimple/config
+      - data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src_5
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src_5.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src_5.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src_5.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src_5.log
+    links:
+      - goloop
+    depends_on: 
+      - goloop
+volumes:
+  config: {}
+  data: {}

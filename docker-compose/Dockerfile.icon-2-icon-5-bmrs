@@ -14,5 +14,5 @@ COPY --from=btpsimple /btpsimple/contracts/pyscore ${GOLOOP_PROVISION_CONFIG}/py
 COPY ./*.sh /goloop/bin/
 COPY ./entrypoint /
 
-RUN provision.sh
+RUN provision.icon-2-icon-5-bmrs.sh
 WORKDIR /goloop/config
