@@ -83,9 +83,8 @@ contract('Sending BEP20 to ICON blockchain', function () {
 
     it("Scenario 3: User transfers to an invalid BTP address - fail", async () => {
         var _to = 'btp://bsc:0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
-        await truffleAssert.reverts(
-            token.callTransfer(tokenName, 5, _to),
-            "exited with an error"
+        await truffleAssert.fails(
+            token.callTransfer(tokenName, 5, _to),           
         );
     });
 

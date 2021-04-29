@@ -24,7 +24,6 @@ contract BMC is IBMC, Owner {
         uint256 _seq, //  a sequence number of BMC (NOT sequence number of BSH)
         bytes _msg
     );
-    event BMCError(string message,address user);
 
     //  emit EVENT to announce link/unlink service
     event Event(string _next, uint256 _seq, bytes _msg);
@@ -73,8 +72,7 @@ contract BMC is IBMC, Owner {
         string memory _svc,
         uint256 _sn,
         bytes memory _msg
-    ) external override {   
-        emit BMCError(_svc, msg.sender);    
+    ) external override {            
        require(
             msg.sender == address(this) || bshServices[_svc] == msg.sender,
             "No permission"
@@ -107,8 +105,7 @@ contract BMC is IBMC, Owner {
         public
         override
         owner
-    {
-         emit BMCError(_svc,_addr);
+    {        
         require(bshServices[_svc] == address(0), "BSH service existed");
         bshServices[_svc] = _addr;
         listBSHNames.push(_svc);
