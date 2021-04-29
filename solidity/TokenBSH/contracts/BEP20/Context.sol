@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity >=0.4.22 <0.8.5;
+pragma solidity >=0.5.0 <=0.8.0;
 
 /*
  * @dev Provides information about the current execution context, including the

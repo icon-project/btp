@@ -2,10 +2,10 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 var privKeys=[
-  "17800d306fe7711cf7b68b644758341639a49cb9804b5155e49966cbc0f561a4","df4cf5e6dc6df55bc86a84d2095f85d61572a772eaf431ccc4056718fce9af77"
+  "529926ee50bc91ea6c93bf9fcc1d77349ffa3423ce905bb1ea78945a4996d702","a5fc0e1ff7cc16c0d7ed54597413c5063a9dc56209a64603065cf0093cd5efc1"
 ]
 module.exports = {
-  networks: {
+  networks: {   
     testnet: {      
       provider: () => new HDWalletProvider(privKeys,
            `http://127.0.0.1:8545`),
@@ -17,19 +17,20 @@ module.exports = {
     development: {
       host: "localhost",
       port: 9545,
-      network_id: "*", // Match any network id
-      gas: 5000000
+      network_id: "*", // Match any network id 
     }
   },
   compilers: {
     solc: {
-      version: "^0.8.0",
+      version: "0.8.0",
       settings: {
         optimizer: {
           enabled: true, // Default: false
           runs: 200      // Default: 200
         },
+        evmVersion: "petersburg"
       }
     }
-  }
+  },
+  plugins: ["truffle-contract-size"]
 };

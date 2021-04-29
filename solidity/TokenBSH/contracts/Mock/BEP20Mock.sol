@@ -23,17 +23,18 @@ import "../BEP20TokenBSH.sol";
 contract BEP20Mock is BEP20TokenBSH {
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
-    using RLPEncodeStruct for Types.TransferToken;
+    using RLPEncodeStruct for Types.TransferCoin;
     using ParseAddress for address;
 
     constructor(
+        address bmc,
         string memory _serviceName,
         string memory _tokenName,
         string memory _symbol,
         uint8 _decimal
     )
         BEP20TokenBSH(
-            address(this),
+            bmc,
             _serviceName,
             _tokenName,
             _symbol,
@@ -63,7 +64,7 @@ contract BEP20Mock is BEP20TokenBSH {
                     .ServiceType
                     .REQUEST_TOKEN_TRANSFER,
                 Types
-                    .TransferToken(_from, _to.toString(), _tokenName, _value)
+                    .TransferCoin(_from, _to.toString(), _tokenName, _value)
                     .encodeData()
             )
                 .encodeServiceMessage()
@@ -109,7 +110,7 @@ contract BEP20Mock is BEP20TokenBSH {
                 Types
                     .ServiceType
                     .REQUEST_TOKEN_TRANSFER,
-                Types.TransferToken(_from, _to, _tokenName, _value).encodeData()
+                Types.TransferCoin(_from, _to, _tokenName, _value).encodeData()
             )
                 .encodeServiceMessage()
         );

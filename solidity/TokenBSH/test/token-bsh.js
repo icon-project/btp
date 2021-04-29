@@ -1,8 +1,9 @@
 const Mock = artifacts.require("Mock");
 const Holder = artifacts.require("Holder");
+const BMC = artifacts.require("BMC");
 const truffleAssert = require('truffle-assertions');
 
-var _svc = 'tokenBSH';
+var _svc = 'TokenBSH';
 var _net = 'bsc';
 var tokenName = 'CAKE'
 
@@ -13,6 +14,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
     beforeEach(async () => {
         mock = await Mock.deployed();
         token = await Holder.deployed();
+        bmc = await BMC.deployed();
         accounts = await web3.eth.getAccounts()
     });
 
@@ -20,13 +22,16 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         var _from = '0x12345678';
         var _value = 5
         var _to = '0x1234567890123456789';
+        console.log(mock.address)
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         var transfer = await mock.handleRequestWithStringAddress(
             _net, _svc, _from, _to, tokenName, _value
         );
     });
+    //todo it('Receive Request Token Mint - Invalid Token Name - Failure', async () => {
 
-
-    it("Scenario 3: All requirements are qualified - Success", async () => {
+    it("Scenario 2: All requirements are qualified - Success", async () => {
         var _from = '0x12345678';
         var _value = 5
         await mock.register(tokenName, token.address);
@@ -41,6 +46,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         );
     });
 });
+
 
 contract('Sending ERC20 to ICON blockchain', function () {
     let mock, accounts, token;
@@ -93,11 +99,13 @@ contract('Sending ERC20 to ICON blockchain', function () {
     it("Scenario 5: All requirements are qualified and BSH initiates Transfer start - Success", async () => {
         var _to = 'btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
         var balanceBefore = await mock.getBalanceOf(token.address, tokenName)
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         await token.callTransfer(tokenName, 5, _to)
         var balanceafter = await mock.getBalanceOf(token.address, tokenName)
         assert(
             web3.utils.hexToNumber(balanceafter[1]) ==
-            web3.utils.hexToNumber(balanceBefore[1]) + 5, "Error response Handler failed "
+            web3.utils.hexToNumber(balanceBefore[1]) + 5, "Initiate transfer failed"
         );
     });
 
@@ -146,7 +154,8 @@ contract('ERC20 - Complete flow tests', function () {
         var tokeNames = await mock.tokenNames();
         assert.equal(tokeNames.length, 0, "The size of the token names should be 0");
         await mock.setBalance(token.address, 999999999999999);
-
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         await mock.register("CAKE", token.address);
 
         var tokeNames = await mock.tokenNames();

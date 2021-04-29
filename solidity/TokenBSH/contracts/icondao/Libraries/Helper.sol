@@ -1,22 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
-
-/*
- * Copyright 2021 ICON Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-pragma solidity >=0.5.0 <=0.8.5;
+pragma solidity >=0.5.0 <=0.8.0;
 
 /*
  *  Change supporting solidity compiler version
@@ -117,6 +99,78 @@ contract Helper {
         require(!subIter.hasNext(), "Must end here");
 
         return result;
+    }
+
+    function toBlockHeader(bytes memory rlpHeader)
+        public
+        pure
+        returns (
+            bytes32 parentHash,
+            bytes32 sha3Uncles,
+            bytes32 stateRoot,
+            bytes32 transactionsRoot,
+            bytes32 receiptsRoot,
+            uint256 difficulty,
+            uint256 number,
+            uint256 gasLimit,
+            uint256 gasUsed,
+            uint256 timestamp,
+            uint256 nonce
+        )
+    {
+        RLPReader.Iterator memory it = rlpHeader.toRlpItem().iterator();
+        uint256 idx;
+        while (it.hasNext()) {
+            if (idx == 0) parentHash = bytes32(it.next().toUint());
+            else if (idx == 1) sha3Uncles = bytes32(it.next().toUint());
+            else if (idx == 3) stateRoot = bytes32(it.next().toUint());
+            else if (idx == 4) transactionsRoot = bytes32(it.next().toUint());
+            else if (idx == 5) receiptsRoot = bytes32(it.next().toUint());
+            else if (idx == 7) difficulty = it.next().toUint();
+            else if (idx == 8) number = it.next().toUint();
+            else if (idx == 9) gasLimit = it.next().toUint();
+            else if (idx == 10) gasUsed = it.next().toUint();
+            else if (idx == 11) timestamp = it.next().toUint();
+            else if (idx == 14) nonce = it.next().toUint();
+            else it.next();
+
+            idx++;
+        }
+    }
+
+    /* custom destructuring */
+
+    function customDestructure(bytes memory item)
+        public
+        pure
+        returns (
+            address,
+            bool,
+            uint256
+        )
+    {
+        // first three elements follow the return types in order. Ignore the rest
+        RLPReader.RLPItem[] memory items = item.toRlpItem().toList();
+        return (items[0].toAddress(), items[1].toBoolean(), items[2].toUint());
+    }
+
+    function customNestedDestructure(bytes memory item)
+        public
+        pure
+        returns (address, uint256)
+    {
+        RLPReader.RLPItem[] memory items = item.toRlpItem().toList();
+        items = items[0].toList();
+        return (items[0].toAddress(), items[1].toUint());
+    }
+
+    function customNestedToRlpBytes(bytes memory item)
+        public
+        pure
+        returns (bytes memory)
+    {
+        RLPReader.RLPItem[] memory items = item.toRlpItem().toList();
+        return items[0].toRlpBytes();
     }
 
     /* Copied verbatim from the reader contract due to scope */

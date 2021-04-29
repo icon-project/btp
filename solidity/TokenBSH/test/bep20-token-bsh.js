@@ -1,8 +1,9 @@
 const BEP20Mock = artifacts.require("BEP20Mock");
 const Holder = artifacts.require("Holder");
 const truffleAssert = require('truffle-assertions');
+const BMC = artifacts.require("BMC");
 
-var _svc = 'tokenBSH';
+var _svc = 'TokenBSH';
 var _net = 'bsc';
 var tokenName = 'CAKE'
 
@@ -10,8 +11,9 @@ var tokenName = 'CAKE'
 contract('Receiving BEP20 from ICON blockchain', function () {
     let mock, accounts, token;
     beforeEach(async () => {
+        token = await Holder.deployed();        
+        bmc = await BMC.deployed();        
         mock = await BEP20Mock.deployed();
-        token = await Holder.deployed();
         accounts = await web3.eth.getAccounts();
         web3.eth.defaultAccount = accounts[0];
     });
@@ -20,6 +22,9 @@ contract('Receiving BEP20 from ICON blockchain', function () {
         var _from = '0x12345678';
         var _value = 5
         var _to = '0x1234567890123456789';
+        console.log("Mock Address"+mock.address)
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         var transfer = await mock.handleRequestWithStringAddress(
             _net, _svc, _from, _to, tokenName, _value
         );
@@ -48,6 +53,7 @@ contract('Sending BEP20 to ICON blockchain', function () {
         mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
+        bmc = await BMC.deployed();
         web3.eth.defaultAccount = accounts[0];
     });
 
@@ -93,7 +99,9 @@ contract('Sending BEP20 to ICON blockchain', function () {
 
     it("Scenario 5: All requirements are qualified and BSH initiates Transfer start - Success", async () => {
         var _to = 'btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8';
-        var balanceBefore = await mock.getBalanceOf(token.address, tokenName)
+        var balanceBefore = await mock.getBalanceOf(token.address, tokenName)       
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         await token.callTransfer(tokenName, 5, _to)
         var balanceafter = await mock.getBalanceOf(token.address, tokenName)
         assert(
@@ -131,8 +139,7 @@ contract('Sending BEP20 to ICON blockchain', function () {
 
 
 });
-
-
+ 
 contract('BEP20 - Complete flow tests', function () {
     let mock, accounts, token;
     beforeEach(async () => {
@@ -140,6 +147,7 @@ contract('BEP20 - Complete flow tests', function () {
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
         web3.eth.defaultAccount = accounts[0];
+        bmc = await BMC.deployed();
     });
 
     it("should register BEP20 Token", async () => {
@@ -147,7 +155,12 @@ contract('BEP20 - Complete flow tests', function () {
         var tokeNames = await mock.tokenNames();
         assert.equal(tokeNames.length, 0, "The size of the token names should be 0");
         await mock.setBalance(token.address, 999999999999999);
-
+        let services=await bmc.getServices();
+        console.log(services)
+        let verifiers=await bmc.getVerifiers();
+        console.log(verifiers)
+        await bmc.addService(_svc, mock.address);
+        await bmc.addVerifier(_net, accounts[1]);
         await mock.register("CAKE", token.address);
 
         var tokeNames = await mock.tokenNames();
@@ -164,7 +177,7 @@ contract('BEP20 - Complete flow tests', function () {
     });
 
 });
-
+ 
 
 contract('BEP20 - Basic BSH unit tests', function () {
     let mock, accounts, token;
@@ -172,6 +185,7 @@ contract('BEP20 - Basic BSH unit tests', function () {
         mock = await BEP20Mock.deployed();
         token = await Holder.deployed();
         accounts = await web3.eth.getAccounts()
+        bmc = await BMC.deployed();
     });
 
     it("1. Register Coin - With Permission - Success", async () => {
@@ -212,5 +226,4 @@ contract('BEP20 - Basic BSH unit tests', function () {
      );
  });
 */
-
 });

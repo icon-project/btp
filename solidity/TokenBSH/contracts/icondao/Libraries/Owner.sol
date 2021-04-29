@@ -1,22 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
-
-/*
- * Copyright 2021 ICON Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-pragma solidity >=0.5.0 <=0.8.5;
+pragma solidity >=0.5.0 <=0.8.0;
 
 contract Owner {
     mapping(address => bool) private _owners;
@@ -65,20 +47,5 @@ contract Owner {
     function isOwner(address _owner) external view returns (bool) {
         return _owners[_owner];
     }
-
-    /**
-       @notice Return a list of addresses of Operators.
-       @dev Caller can be ANY
-    */
-    // function getOperators() external view returns (address[] memory) {
-    //     address[] memory res = new address[](numOfOperator);
-    //     uint temp;
-    //     for (uint i = 0; i < list_addresses.length; i++) {
-    //         if (operators[list_addresses[i]]) {
-    //             res[temp] = list_addresses[i];
-    //             temp++;
-    //         }
-    //     }
-    //     return res;
-    // }
+  
 }

@@ -16,6 +16,7 @@
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l"
   },
   "dependencies": {
-    "ethlint": "^1.2.5"
+    "ethlint": "^1.2.5",
+    "truffle-contract-size": "^2.0.1"
   }
 }
