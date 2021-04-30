@@ -1,13 +1,13 @@
 pragma solidity >=0.5.0 <=0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../icondao/Interfaces/IBMC.sol";
-import "../icondao/Libraries/ParseAddressLib.sol";
-import "../icondao/Libraries/RLPEncodeStructLib.sol";
-import "../icondao/Libraries/StringsLib.sol";
-import "../icondao/Libraries/Owner.sol";
-import "../icondao/Libraries/EncodeBase64Lib.sol";
-import "../icondao/Libraries/DecodeBase64Lib.sol";
+import "../../../icondao/Interfaces/IBMC.sol";
+import "../../../icondao/Libraries/ParseAddressLib.sol";
+import "../../../icondao/Libraries/RLPEncodeStructLib.sol";
+import "../../../icondao/Libraries/StringsLib.sol";
+import "../../../icondao/Libraries/Owner.sol";
+import "../../../icondao/Libraries/EncodeBase64Lib.sol";
+import "../../../icondao/Libraries/DecodeBase64Lib.sol";
 
 contract BMC is IBMC, Owner {
     using ParseAddress for address;
@@ -72,8 +72,8 @@ contract BMC is IBMC, Owner {
         string memory _svc,
         uint256 _sn,
         bytes memory _msg
-    ) external override {            
-       require(
+    ) external override {
+        require(
             msg.sender == address(this) || bshServices[_svc] == msg.sender,
             "No permission"
         );
@@ -105,7 +105,7 @@ contract BMC is IBMC, Owner {
         public
         override
         owner
-    {        
+    {
         require(bshServices[_svc] == address(0), "BSH service existed");
         bshServices[_svc] = _addr;
         listBSHNames.push(_svc);
@@ -200,6 +200,14 @@ contract BMC is IBMC, Owner {
         return verifiers;
     }
 
+    function getVerifier(string memory _net)
+        public
+        view
+        returns (address _addr)
+    {
+        return bmvServices[_net];
+    }
+
     /**
        @notice Initializes status information for the link.
        @dev Caller must be an operator of BTP network.
@@ -260,6 +268,14 @@ contract BMC is IBMC, Owner {
             }
         }
         return res;
+    }
+
+    function getLink(string memory _link)
+        public
+        view
+        returns (Types.Link memory)
+    {
+        return links[_link];
     }
 
     function prepareEventMessage(
@@ -385,6 +401,8 @@ contract BMC is IBMC, Owner {
         return links[_link].relays;
     }
 
+    event MessageEvent(string _next, uint256 _seq);
+
     /*
        @notice Get status of BMC.
        @param _link        BTP Address of the connected BMC.
@@ -403,5 +421,32 @@ contract BMC is IBMC, Owner {
             RelayStats[] memory relaysStats,
             bytes memory rotationDetails
         )
-    {}
+    {
+        uint256 heightMTA = 0; // MTA = Merkle Trie Accumulator
+        uint256 offsetMTA = 0;
+        uint256 lastHeight = 0;
+        Types.Link memory link = getLink(_link);
+        // Blockcount and message count are from Relay go struct, and added during handleRelayMessage
+        //relay.block_count = relay.block_count + status["height"] - prev_status["height"]
+        //relay.msg_count = relay.msg_count + len(serialized_msgs)
+        uint256 length = link.relays.length;
+        RelayStats[] memory relayStatus = new RelayStats[](length);
+        for (uint256 i = 0; i < link.relays.length; i++) {
+            relayStatus[i] = RelayStats(link.relays[i], 0, 0);
+        }
+        string memory _net;
+        string memory _bmc;
+        (_net, _bmc) = _link.splitBTPAddress();
+        address verifier = getVerifier(_net);
+        // create verifier interface Object with getstatus implemented
+        // verifier.getStatus return height,offset from BMV- MTA.getStatus()
+        // & lastheight= block_proof.blockHeight
+
+        //relaysStats[0] = RelayStats(address(0), 0, 0); // Relay Address, blockCount, msgCount
+        txSEQ = serialNo;
+        rxSEQ =  0;//link.rx_seq = link.rx_seq + len(serialized_msgs) in handleRelayMessage*/
+        verifierStatus =
+            VerifierStatus(heightMTA, offsetMTA, lastHeight, new bytes(0));
+        return (txSEQ, rxSEQ, verifierStatus, relayStatus, new bytes(0));
+    }
 }

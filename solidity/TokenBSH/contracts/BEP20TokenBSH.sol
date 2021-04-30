@@ -18,17 +18,17 @@
 
 pragma solidity >=0.5.0 <=0.8.0;
 
-import "./icondao/Interfaces/IBSH.sol";
-import "./icondao/Interfaces/IBMC.sol";
-import "./icondao/Libraries/TypesLib.sol";
+import "../../icondao/Interfaces/IBSH.sol";
+import "../../icondao/Interfaces/IBMC.sol";
+import "../../icondao/Libraries/TypesLib.sol";
  
 //import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 //import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./icondao/Libraries/RLPEncodeStructLib.sol";
-import "./icondao/Libraries/RLPDecodeStructLib.sol";
-import "./icondao/Libraries/StringsLib.sol";
-import "./icondao/Libraries/ParseAddressLib.sol";
-//import "./Libraries/Owner.sol";
+import "../../icondao/Libraries/RLPEncodeStructLib.sol";
+import "../../icondao/Libraries/RLPDecodeStructLib.sol";
+import "../../icondao/Libraries/StringsLib.sol";
+import "../../icondao/Libraries/ParseAddressLib.sol";
+//import "../../Libraries/Owner.sol";
 import "./BEP20/BEP20.sol";
 
 contract BEP20TokenBSH is IBSH, BEP20Token {
