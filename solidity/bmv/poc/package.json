@@ -1,0 +1,11 @@
+{
+  "devDependencies": {},
+  "scripts": {},
+  "dependencies": {
+    "crypto-js": "^3.3.0",
+    "ethlint": "^1.2.5",
+    "keccak256": "^1.0.2",
+    "merkle-patricia-tree": "^4.1.0",
+    "merkletreejs": "^0.2.18"
+  }
+}
