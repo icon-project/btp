@@ -21,16 +21,16 @@ pragma solidity >=0.5.0 <=0.8.0;
 import "../../icondao/Interfaces/IBSH.sol";
 import "../../icondao/Interfaces/IBMC.sol";
 import "../../icondao/Libraries/TypesLib.sol";
- 
+
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../icondao/Libraries/RLPEncodeStructLib.sol";
 import "../../icondao/Libraries/RLPDecodeStructLib.sol";
 import "../../icondao/Libraries/StringsLib.sol";
 import "../../icondao/Libraries/ParseAddressLib.sol";
 import "../../icondao/Libraries/Owner.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TokenBSH is IBSH, ERC20, Owner {
+contract TokenBSH is IBSH, Owner {
     using SafeMath for uint256;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.TransferCoin;
@@ -41,23 +41,19 @@ contract TokenBSH is IBSH, ERC20, Owner {
     using Strings for string;
 
     IBMC private bmc;
-    mapping(address => bool) owners;
     mapping(string => address) tokenAddr;
     mapping(address => string) tokenName;
     mapping(address => mapping(string => Types.Balance)) private balances;
-    event AddOwner(address indexed owner);
-    event RemoveOwner(address indexed owner);
     event Register(string indexed name, address addr);
     mapping(uint256 => Types.Record) public requests;
     string[] tokens;
-    uint32 noOfOwners;
-    uint256 constant minReqOwner = 1;
     uint256 private serialNo;
     uint256 private numOfTokens;
     string public serviceName;
 
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
+    uint256 constant FEE_DENOMINATOR = 10**6;
 
     event HandleBTPMessageEvent(uint256 _sn, uint256 _code, string _msg);
     event TransferStart(
@@ -75,11 +71,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
         string _response
     );
 
-    constructor(address _bmc, string memory _serviceName,string memory _tokenName,
-        string memory _symbol)
-        ERC20(_tokenName, _symbol)
-        Owner()
-    {
+    constructor(address _bmc, string memory _serviceName) Owner() {
         bmc = IBMC(_bmc);
         serviceName = _serviceName;
         serialNo = 0;
@@ -120,9 +112,27 @@ contract TokenBSH is IBSH, ERC20, Owner {
         returns (uint256 _usableBalance, uint256 _lockedBalance)
     {
         return (
-            this.balanceOf(_owner),
+            //this.balanceOf(_owner),
+            balances[_owner][_tokenName].refundableBalance,
             balances[_owner][_tokenName].lockedBalance
         );
+    }
+
+    function withdraw(string calldata _tokenName, uint256 _value) external {
+        require(tokenAddr[_tokenName] != address(0), "Token not supported");
+        require(
+            balances[msg.sender][_tokenName].refundableBalance >= _value,
+            "Insufficient balance"
+        );
+
+        balances[msg.sender][_tokenName].refundableBalance = balances[
+            msg.sender
+        ][_tokenName]
+            .refundableBalance
+            .sub(_value);
+        address token_addr = tokenAddr[_tokenName];
+        //todo: check if this actually transfers token
+        ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
     }
 
     function transfer(
@@ -133,7 +143,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
         address token_addr = tokenAddr[_tokenName];
         require(token_addr != address(0), "Token is not registered");
         require(_value > 0, "Invalid amount specified.");
-        this.transferFrom(msg.sender, address(this), _value);
+        ERC20(token_addr).transferFrom(msg.sender, address(this), _value);
         sendServiceMessage(_to, _tokenName, _value);
     }
 
@@ -180,13 +190,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
             false
         );
 
-        emit TransferStart(
-            msg.sender,
-            _to,
-            balances[msg.sender][_tokenName].lockedBalance,
-            _tokenName,
-            _value
-        );
+        emit TransferStart(msg.sender, _to, serialNo, _tokenName, _value);
         serialNo++;
     }
 
@@ -218,7 +222,8 @@ contract TokenBSH is IBSH, ERC20, Owner {
                 ]
                     .lockedBalance
                     .sub(value);
-                _burn(address(this), value);
+                address _tokenaddr = tokenAddr[_tokenName];
+                //ERC20(_tokenaddr)._burn(address(this), value);
                 // Update the response message in requests and mark it resolved
                 requests[_sn] = Types.Record(
                     requests[_sn].request,
@@ -242,19 +247,14 @@ contract TokenBSH is IBSH, ERC20, Owner {
         );
     }
 
-    function withdraw(string calldata _tokenName, uint256 _value) external {
-        require(tokenAddr[_tokenName] != address(0), "Token not supported");
-        require(
-            balances[msg.sender][_tokenName].refundableBalance >= _value,
-            "Insufficient balance"
-        );
-
-        balances[msg.sender][_tokenName].refundableBalance = balances[
-            msg.sender
-        ][_tokenName]
-            .refundableBalance
-            .sub(_value);
-        this.transferFrom(address(this), msg.sender, _value);
+    function handleBTPError(
+        string calldata _src,
+        string calldata _svc,
+        uint256 _sn,
+        uint256 _code,
+        string calldata _msg
+    ) external override {
+        handleResponseError(_sn, _code, _msg);
     }
 
     function handleRequestService(
@@ -287,8 +287,8 @@ contract TokenBSH is IBSH, ERC20, Owner {
             return;
         }
         // Check if the token is registered already
-        address tokenaddr = tokenAddr[_tokenName];
-        if (tokenaddr == address(0)) {
+        address _tokenaddr = tokenAddr[_tokenName];
+        if (_tokenaddr == address(0)) {
             sendResponseMessage(
                 Types.ServiceType.RESPONSE_HANDLE_SERVICE,
                 _toNetwork,
@@ -299,7 +299,18 @@ contract TokenBSH is IBSH, ERC20, Owner {
             return;
         }
         // Mint token for the _toAddress
-        try this.tryToMintToken(_toAddress.parseAddress(), _amount) {
+        balances[_toAddress.parseAddress()][_tokenName]
+            .refundableBalance = balances[_toAddress.parseAddress()][_tokenName]
+            .refundableBalance
+            .add(_amount);
+        sendResponseMessage(
+            Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+            _toNetwork,
+            _sn,
+            "Transfer Success",
+            RC_OK
+        );
+        /* try this.tryToMintToken(_tokenaddr,_toAddress.parseAddress(), _amount) {
             sendResponseMessage(
                 Types.ServiceType.RESPONSE_HANDLE_SERVICE,
                 _toNetwork,
@@ -323,7 +334,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
                 "Transfer failed",
                 RC_ERR
             );
-        }
+        } */
     }
 
     function sendResponseMessage(
@@ -355,8 +366,14 @@ contract TokenBSH is IBSH, ERC20, Owner {
         // Update locked balance of the caller
         address caller = requests[_sn].request.from.parseAddress();
         string memory _tokenName = requests[_sn].request.coinName;
+        address _tokenAddr = tokenAddr[_tokenName];
         uint256 value = requests[_sn].request.value;
-        try this.tryToTransferCoin(caller, value) {} catch Error(
+        balances[caller][_tokenName].refundableBalance = balances[caller][
+            _tokenName
+        ]
+            .refundableBalance
+            .add(value);
+        /*try this.tryToTransferCoin(_tokenAddr,caller, value) {} catch Error(
             string memory
         ) {
             balances[caller][_tokenName].refundableBalance = balances[caller][
@@ -380,7 +397,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
                 _code,
                 "Transfer Token Failed"
             );
-        }
+        }*/
         balances[caller][_tokenName].lockedBalance = balances[caller][
             _tokenName
         ]
@@ -399,24 +416,14 @@ contract TokenBSH is IBSH, ERC20, Owner {
         _to.parseAddress();
     }
 
-    function handleBTPError(
-        string calldata _src,
-        string calldata _svc,
-        uint256 _sn,
-        uint256 _code,
-        string calldata _msg
-    ) external override {
-        handleResponseError(_sn, _code, _msg);
+    /*function tryToTransferCoin(address _tokenAddr,address _to, uint256 _amount) external {
+        require(msg.sender == address(this), "Only BSH");
+        ERC20(_tokenAddr).approve(address(this), _amount);
+        ERC20(_tokenAddr).transferFrom(address(this), _to, _amount);
     }
 
-    function tryToTransferCoin(address _to, uint256 _amount) external {
+    function tryToMintToken(address _tokenAddr,address _to, uint256 _amount) external {
         require(msg.sender == address(this), "Only BSH");
-        this.approve(address(this), _amount);
-        this.transferFrom(address(this), _to, _amount);
-    }
-
-    function tryToMintToken(address _to, uint256 _amount) external {
-        require(msg.sender == address(this), "Only BSH");
-        _mint(_to, _amount);
-    }    
+        ERC20(_tokenAddr)._mint(_to, _amount);
+    }    */
 }

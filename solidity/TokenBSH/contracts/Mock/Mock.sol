@@ -18,23 +18,23 @@
 
 pragma solidity >=0.5.0 <=0.8.5;
 
-import "../TokenBSH.sol"; 
+import "../TokenBSH.sol";
 
-contract Mock is TokenBSH  {
+contract Mock is TokenBSH {
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
     using RLPEncodeStruct for Types.TransferCoin;
     using ParseAddress for address;
 
-    constructor(address bmc,string memory _serviceName,string memory _network,
-        string memory _tokenName,
-        string memory _symbol)
-        TokenBSH(bmc, _serviceName,_tokenName, _symbol) 
-    {}
+    constructor(
+        address bmc,
+        string memory _serviceName,
+        string memory _network
+    ) TokenBSH(bmc, _serviceName) {}
 
-    function setBalance(address _tokenContract, uint256 _amt) external {
-        _mint(_tokenContract, _amt);
-    }
+    // function setBalance(address _tokenContract, uint256 _amt) external {
+    //     _mint(_tokenContract, _amt);
+    // }
 
     function handleRequest(
         string memory _net,
