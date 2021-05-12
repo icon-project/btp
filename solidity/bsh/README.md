@@ -1,47 +1,24 @@
-## NativeCoinBSH
-
-
-### TODO
-
-
-### Setup
-
-Be sure to have node >= 10.x
-
+## Set up
+Node >= 10.x
 ```
 $ node --version
 v15.12.0
 ```
-
-Install dev dependencies:
-
+Install tools
 ```
-$ npm install -g truffle
-$ npm install -g ganache-cli
-$ npm install
+$ npm install --global yarn truffle ganache-cli
+```
+Install dev dependencies
+```
+$ yarn
 ```
 
-### Compile
-
-```
-$ npm run compile
-```
-### Test
-
-Open a terminal window
+## Test
+1. Run in a background process or seperate terminal window
 ```
 $ ganache-cli -l 12000000 --allowUnlimitedContractSize
 ```
-Open another terminal window
+2. Run test
 ```
-$ npm test
+$ yarn test
 ```
-### Format
-
-```
-$ npm run prettier
-
-```
-
-### Deploy
-

@@ -1,4 +1,5 @@
-pragma solidity >=0.5.0 <=0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./RLPReaderLib.sol";
@@ -17,6 +18,23 @@ library RLPDecodeStruct {
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
 
+    function decodeGatherFeeMessage(bytes memory _rlp)
+        internal
+        pure
+        returns (Types.GatherFeeMessage memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        RLPReader.RLPItem[] memory subList = ls[1].toList();
+        string[] memory _svcs = new string[](subList.length);
+        for (uint i = 0; i < subList.length; i++) {
+            _svcs[i] = string(subList[i].toBytes());
+        }
+        return Types.GatherFeeMessage(
+            string(ls[0].toBytes()),
+            _svcs
+        );
+    }
+
     function decodeEventMessage(bytes memory _rlp)
         internal
         pure
@@ -25,25 +43,27 @@ library RLPDecodeStruct {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         return
             Types.EventMessage(
-                Types.EventType(ls[0].toUint()),
-                string(ls[1].toBytes()),
-                string(ls[2].toBytes())
+                string(ls[0].toBytes()),
+                Types.Connection(
+                    string(ls[1].toList()[0].toBytes()),
+                    string(ls[1].toList()[1].toBytes())
+                )
             );
     }
 
-    function decodeRegisterCoin(bytes memory _rlp)
-        internal
-        pure
-        returns (Types.RegisterCoin memory)
-    {
-        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        return
-            Types.RegisterCoin(
-                string(ls[0].toBytes()),
-                ls[1].toUint(),
-                string(ls[2].toBytes())
-            );
-    }
+    // function decodeRegisterCoin(bytes memory _rlp)
+    //     internal
+    //     pure
+    //     returns (Types.RegisterCoin memory)
+    // {
+    //     RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+    //     return
+    //         Types.RegisterCoin(
+    //             string(ls[0].toBytes()),
+    //             ls[1].toUint(),
+    //             string(ls[2].toBytes())
+    //         );
+    // }
 
     function decodeBMCMessage(bytes memory _rlp)
         internal
@@ -74,18 +94,25 @@ library RLPDecodeStruct {
             );
     }
 
-    function decodeData(bytes memory _rlp)
+    function decodeTransferCoinMsg(bytes memory _rlp)
         internal
         pure
         returns (Types.TransferCoin memory)
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        Types.Asset[] memory assets = new Types.Asset[](ls[2].toList().length);
+        RLPReader.RLPItem[] memory rlpAssets = ls[2].toList();
+        for (uint256 i = 0; i < ls[2].toList().length; i++) {
+            assets[i] = Types.Asset(
+                string(rlpAssets[i].toList()[0].toBytes()),
+                rlpAssets[i].toList()[1].toUint()
+            );
+        }
         return
             Types.TransferCoin(
                 string(ls[0].toBytes()),
                 string(ls[1].toBytes()),
-                string(ls[2].toBytes()),
-                ls[3].toUint()
+                assets
             );
     }
 
@@ -98,8 +125,6 @@ library RLPDecodeStruct {
         return Types.Response(ls[0].toUint(), string(ls[1].toBytes()));
     }
 
-    //  Wait for confirmation
-    //  passing empty RLP
     function decodeBlockHeader(bytes memory _rlp)
         internal
         pure
@@ -160,15 +185,13 @@ library RLPDecodeStruct {
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
 
-        Types.TS memory item;
         Types.TS[] memory tsList = new Types.TS[](ls[2].toList().length);
         RLPReader.RLPItem[] memory rlpTs = ls[2].toList();
         for (uint256 i = 0; i < ls[2].toList().length; i++) {
-            item = Types.TS(
+            tsList[i] = Types.TS(
                 rlpTs[i].toList()[0].toUint(),
                 rlpTs[i].toList()[1].toBytes()
             );
-            tsList[i] = item;
         }
         return
             Types.Votes(
@@ -220,6 +243,7 @@ library RLPDecodeStruct {
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
 
+        // Types.BlockHeader memory _bh;
         Types.BlockHeader memory _bh = ls[0].toBytes().decodeBlockHeader();
         Types.Votes memory _v = ls[1].toBytes().decodeVotes();
         // Types.Votes memory _v;
@@ -294,14 +318,18 @@ library RLPDecodeStruct {
     function decodeRelayMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.RelayMessage memory)
+        returns (
+           Types.RelayMessage memory
+        )
     {
         //  _rlp.toRlpItem() removes the LIST_HEAD_START of RelayMessage
         //  then .toList() to itemize all fields in the RelayMessage
         //  which are [RLP_ENCODE(BlockUpdate)], RLP_ENCODE(BlockProof), and
         //  the RLP_ENCODE(ReceiptProof)
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        // return ls[0].toList()[0].toBytes().toRlpItem().toList()[0].toBytes().toRlpItem().toList()[8].toBytes();
+        // return (
+        //     ls[0].toList()[0].toBytes().toRlpItem().toList()[1].toBytes().toRlpItem().toList()[2].toList()[0].toList()[1].toBytes()
+        // );
 
         //  If [RLP_ENCODE(BlockUpdate)] was empty, it should be started by 0xF800
         //  therein, ls[0].toBytes() will be null (length = 0)

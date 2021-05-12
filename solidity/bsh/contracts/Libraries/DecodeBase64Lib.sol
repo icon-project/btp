@@ -1,4 +1,5 @@
-pragma solidity >=0.5.0 <=0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
 
 /**
  * @title DecodeBase64
@@ -55,6 +56,7 @@ library DecodeBase64 {
     }
 
     function mapBase64Char(bytes1 _char) private pure returns (uint8) {
+        // solhint-disable-next-line
         uint8 A = 0;
         uint8 a = 26;
         uint8 zero = 52;

@@ -1,4 +1,5 @@
-pragma solidity >=0.5.0 <=0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../Libraries/TypesLib.sol";
 
@@ -100,12 +101,26 @@ interface IBMC {
     // function removeOwner(string calldata _svc, address _addr) external;
 
     /**
+        @notice BSH contract sends a request to add its service name and contract address to BMC
+        @param _serviceName    Service name of BSH contract
+        @param _addr    Address of BSH contract
+    */
+    function requestAddService(string memory _serviceName, address _addr) external;
+
+    /**
+       @notice Registers the smart contract for the service.
+       @dev Caller must be an operator of BTP network.
+       @param _svc     Name of the service
+   */
+    function approveService(string calldata _svc) external;
+
+    /**
        @notice Registers the smart contract for the service.
        @dev Caller must be an operator of BTP network.
        @param _svc     Name of the service
        @param _addr    Address of the smart contract handling the service
    */
-    function addService(string calldata _svc, address _addr) external;
+    // function addService(string calldata _svc, address _addr) external;
 
     /**
        @notice De-registers the smart contract for the service.  
@@ -135,6 +150,16 @@ interface IBMC {
        @param _link    BTP Address of connected BMC
    */
     function addLink(string calldata _link) external;
+
+    /**
+       @notice Set the link and status information. 
+       @dev Caller must be an operator of BTP network.
+       @param _link    BTP Address of connected BMC
+       @param _blockInterval    Block interval of a connected link 
+       @param _maxAggregation   Set max aggreation of a connected link
+       @param _delayLimit       Set delay limit of a connected link
+   */
+    function setLink(string calldata _link, uint _blockInterval, uint _maxAggregation, uint _delayLimit) external;
 
     /**
        @notice Removes the link and status information. 
@@ -233,10 +258,11 @@ interface IBMC {
         external
         view
         returns (
-            uint256 txSEQ,
-            uint256 rxSEQ,
-            VerifierStatus memory verifierStatus,
-            RelayStats[] memory relaysStats,
-            bytes memory rotationDetails
+            // uint256 txSEQ,
+            // uint256 rxSEQ,
+            // VerifierStatus memory verifierStatus,
+            // RelayStats[] memory relaysStats,
+            // bytes memory rotationDetails
+            Types.LinkStats memory _linkStats
         );
 }
