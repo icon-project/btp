@@ -145,8 +145,7 @@ contract TokenBSH is IBSH, Owner {
             .refundableBalance
             .sub(_value);
         address token_addr = tokenAddr[_tokenName];
-        //todo: check if this actually transfers token
-        ERC20(token_addr).approve(address(this),_value);
+        ERC20(token_addr).approve(address(this), _value);
         ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
     }
 
@@ -170,33 +169,17 @@ contract TokenBSH is IBSH, Owner {
         return (value, fee);
     }
 
-    function getAccumulatedFees()
-        external
-        view
-        returns (Types.Asset[] memory _feeAssets)
-    {
-        _feeAssets = new Types.Asset[](numOfTokens);
-        uint256 temp = 0;
-        for (uint256 i = 0; i < tokenList.length; i++) {
-            _feeAssets[i] = Types.Asset(
-                tokenList[i],
-                feeCollector[tokenList[i]],
-                0
-            );
-        }
+    Types.Asset[] _feeAssets;
+
+    function getAccumulatedFees() external view returns (Types.Asset[] memory) {
         return _feeAssets;
     }
 
-    //TODO: assign the _feeAssets during the fee collection scenario to save gas
-    Types.Asset[] _feeAssets;
-
     function handleGatherFee(string memory _toFA) external {
-        for (uint256 i = 0; i < tokenList.length; i++) {
-            _feeAssets.push(
-                Types.Asset(tokenList[i], feeCollector[tokenList[i]], 0)
-            );
-        }
         sendServiceMessage(_toFA, _feeAssets);
+        //delete the fees accumulated after sending to the FA
+        delete _feeAssets;
+        //todo: when receiving error from the handleresponse, put back the fee collected into feeCollector
     }
 
     Types.Asset[] public transferAssets;
@@ -303,8 +286,10 @@ contract TokenBSH is IBSH, Owner {
                     feeCollector[_tokenName] = feeCollector[_tokenName].add(
                         fee
                     );
+                    _feeAssets.push(
+                        Types.Asset(_tokenName, feeCollector[_tokenName], 0)
+                    );
                     address _tokenaddr = tokenAddr[_tokenName];
-                    //ERC20(_tokenaddr)._burn(address(this), value);
                     // Update the response message in requests and mark it resolved
                     requests[_sn].response = Types.Response(
                         response.code,
