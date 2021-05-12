@@ -1,4 +1,6 @@
 .?*
+!.prettierrc
+!.solhint.json
 __pycache__
 **/.DS_Store
 **/*.iml
@@ -6,4 +8,5 @@ build/
 bin/
 **/.idea
 **/**/.idea
+**/**/node_modules/
 
