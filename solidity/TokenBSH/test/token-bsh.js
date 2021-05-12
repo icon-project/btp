@@ -1,5 +1,4 @@
 const Mock = artifacts.require("Mock");
-const Holder = artifacts.require("Holder");
 const BMC = artifacts.require("BMC");
 const ERC20TKN = artifacts.require("ERC20TKN");
 const truffleAssert = require('truffle-assertions');
@@ -100,6 +99,8 @@ contract('ERC20 - Complete flow tests', function () {
 
         //###-handle gather fee request
         await mock.handleGatherFee(_to);
+        accumulatedFees = await mock.getAccumulatedFees();
+        assert.equal(accumulatedFees.length, 0, "The accumulated fees should be empty after handleGather fee");
     });
 
 });
@@ -284,7 +285,6 @@ contract('ERC20 - Basic BSH unit tests', function () {
     //TODO: new testcases 1. add different owner and perform transfer 
 
 });
-
 
 //Check the ACL of functions
 //Check with multiple tokens & multiple owners

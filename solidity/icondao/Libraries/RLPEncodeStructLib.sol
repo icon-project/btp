@@ -523,6 +523,7 @@ library RLPEncodeStruct {
         return abi.encodePacked(_rlp1, _rlp2, _rlp3, _rlp4, _rlp5);
     }
  
+    //TODO: remove fee from encode/decode, as it wont not be used
     function encodeTransferAsset(Types.TransferAssets memory _data)
         internal
         pure

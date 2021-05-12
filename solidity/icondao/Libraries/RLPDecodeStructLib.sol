@@ -361,8 +361,7 @@ library RLPDecodeStruct {
             );
     }
 
-    event Decode(bytes r, uint256 i);
-
+    //TODO: remove fee from encode/decode, as it wont not be used
     function decodeTransferAsset(bytes memory _rlp)
         internal
         returns (Types.TransferAssets memory)
