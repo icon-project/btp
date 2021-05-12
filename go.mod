@@ -3,17 +3,21 @@ module github.com/icon-project/btp
 go 1.13
 
 require (
+	github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bshuster-repo/logrus-logstash-hook v0.4.1
 	github.com/dgraph-io/badger v1.5.4
+	github.com/dgryski/go-farm v0.0.0-20190416075124-e1214b5e05dc // indirect
 	github.com/ethereum/go-ethereum v1.10.2
 	github.com/evalphobia/logrus_fluent v0.5.4
+	github.com/fluent/fluent-logger-golang v1.4.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/haltingstate/secp256k1-go v0.0.0-20151224084235-572209b26df6
-	github.com/icon-project/goloop v0.9.6
 	github.com/jroimartin/gocui v0.4.0
 	github.com/labstack/echo/v4 v4.1.10
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/nsf/termbox-go v0.0.0-20190325093121-288510b9734e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1

@@ -211,7 +211,7 @@ func NewFromKeyStore(data, pw []byte) (*softwareWallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewFromPrivateKey(secret)
+	return NewIcxWalletFromPrivateKey(secret)
 }
 
 func KeyStoreFromWallet(w interface{}, pw []byte) ([]byte, error) {

@@ -107,10 +107,6 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 			}
 			size += buSize
 			if s.isOverLimit(size) {
-				segment := &module.Segment{
-					Height:              msg.height,
-					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-				}
 				buSize := len(bu.Proof)
 				if s.isOverLimit(buSize) {
 					return nil, fmt.Errorf("invalid BlockUpdate.Proof size")

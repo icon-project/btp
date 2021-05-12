@@ -34,7 +34,7 @@ func (w *softwareWallet) PublicKey() []byte {
 }
 
 func (w *softwareWallet) ECDH(pubKey []byte) ([]byte, error) {
-	pkey,err := crypto.ParsePublicKey(pubKey)
+	pkey, err := crypto.ParsePublicKey(pubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func New() *softwareWallet {
 	}
 }
 
-func NewFromPrivateKey(sk *crypto.PrivateKey) (*softwareWallet, error) {
+func NewIcxWalletFromPrivateKey(sk *crypto.PrivateKey) (*softwareWallet, error) {
 	pk := sk.PublicKey()
 	return &softwareWallet{
 		skey: sk,
