@@ -126,12 +126,12 @@ public class FeeAggregationSCORE {
      * @return List of Token
      */
     @External(readonly = true)
-    public List<Token> tokens() {
+    public List<Map<String, String>> tokens() {
         int len = this.supportedTokens.size();
-        Token[] tokens = new Token[len];
+        Map<String, String>[] tokens = new Map[len];
 
         for (int i = 0; i < len; i++) {
-            tokens[i] = this.tokensScore.get(this.supportedTokens.get(i));
+            tokens[i] = (this.tokensScore.get(this.supportedTokens.get(i)).toMap());
         }
 
         return List.of(tokens);

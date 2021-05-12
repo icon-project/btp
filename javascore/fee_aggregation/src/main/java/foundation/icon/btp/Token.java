@@ -5,6 +5,7 @@ import score.ObjectReader;
 import score.ObjectWriter;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public class Token {
     private static final BigInteger BIGINT_NO_EXISTED_IN_TOKEN_ID = BigInteger.ZERO;
@@ -60,5 +61,9 @@ public class Token {
                 r.readNullable(BigInteger.class));
         r.end();
         return t;
+    }
+
+    public Map<String, String> toMap() {
+        return Map.of("name", this.name, "address", this.address.toString(), "tokenId", this.tokenId.toString());
     }
 }

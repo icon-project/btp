@@ -102,6 +102,7 @@ public class ServiceManager {
 
     public Object call(Account from, BigInteger value, Address targetAddress, String method, Object... params) {
         Score score = getScoreFromAddress(targetAddress);
+        transferSafe(from, targetAddress, value);
         return score.call(from, false, value, method, params);
     }
 
@@ -130,6 +131,20 @@ public class ServiceManager {
         if (targetAddress.isContract()) {
             call(from, value, targetAddress, "fallback");
         }
+    }
+
+    public void transferSafe(Account from, Address targetAddress, BigInteger value) {
+        getBlock().increase();
+        var fromBalance = from.getBalance();
+        if (fromBalance.compareTo(value) < 0) {
+            throw new IllegalStateException("OutOfBalance");
+        }
+        var to = Account.getAccount(targetAddress);
+        if (to == null) {
+            throw new IllegalStateException("NoAccount");
+        }
+        from.subtractBalance("ICX", value);
+        to.addBalance("ICX", value);
     }
 
     public void putStorage(String key, Object value) {

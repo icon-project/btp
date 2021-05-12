@@ -16,6 +16,7 @@
 
 package foundation.icon.btp;
 
+import foundation.icon.icx.transport.jsonrpc.RpcValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import score.Address;
@@ -113,7 +114,6 @@ class FeeAggregationSCORETest extends TestBase {
         BigInteger fundA = ICX.multiply(BigInteger.valueOf(100));
 
         BigInteger availableBalanceA = userA.getBalance();
-        sm.transfer(userA, feeAggregationSCORE.getAddress(), fundA);
         sm.call(userA, fundA, feeAggregationSCORE.getAddress(), "bid", TOKEN_NAME);
         assertEquals(availableBalanceA.subtract(fundA), Account.getAccount(userA.getAddress()).getBalance());
         assertEquals(fundA, Account.getAccount(feeAggregationSCORE.getAddress()).getBalance());
@@ -131,7 +131,6 @@ class FeeAggregationSCORETest extends TestBase {
         BigInteger fundB = ICX.multiply(BigInteger.valueOf(150));
         BigInteger availableBalanceB = userB.getBalance();
 
-        sm.transfer(userB, feeAggregationSCORE.getAddress(), fundB);
         sm.call(userB, fundB, feeAggregationSCORE.getAddress(), "bid", TOKEN_NAME);
 
         assertNotEquals(fundA, Account.getAccount(feeAggregationSCORE.getAddress()).getBalance());
@@ -161,5 +160,13 @@ class FeeAggregationSCORETest extends TestBase {
         Account userB = sm.createAccount(1000);
         BigInteger fundB = ICX.multiply(BigInteger.valueOf(109));
         assertThrows(AssertionError.class, () -> sm.call(userB, fundB, feeAggregationSCORE.getAddress(), "bid", TOKEN_NAME));
+    }
+
+    @Test
+    void testRPCValue() {
+        // stepLimit -> {RpcValue@4218} "0x2540be400"
+        RpcValue a = new RpcValue("0x3f3a348f");
+        System.out.println(new BigInteger(a.asByteArray()).toString());
+        assertEquals(1,1);
     }
 }
