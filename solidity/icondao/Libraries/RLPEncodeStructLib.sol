@@ -18,6 +18,9 @@ library RLPEncodeStruct {
     using RLPEncodeStruct for Types.ReceiptProof;
     using RLPEncodeStruct for Types.Votes;
     using RLPEncodeStruct for Types.RelayMessage;
+    using RLPEncodeStruct for Types.TransferAssets;
+    using RLPEncodeStruct for Types.Asset;
+    
 
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
@@ -519,4 +522,39 @@ library RLPEncodeStruct {
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(_rlp1, _rlp2, _rlp3, _rlp4, _rlp5);
     }
+ 
+    function encodeTransferAsset(Types.TransferAssets memory _data)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        uint256 length;
+        bytes memory listSize;
+        bytes memory _rlp;
+        bytes memory temp;
+
+        //  First, serialize an array of TS
+        for (uint256 i = 0; i < _data.asset.length; i++) {
+            temp = concat3(
+                _data.asset[i].name.encodeString(),
+                _data.asset[i].value.encodeUint(),
+                _data.asset[i].fee.encodeUint()
+            );
+            length = numOfBytes(temp);
+            listSize = addLength(length, false);
+            temp = concat2(listSize, temp); 
+            _rlp = concat2(_rlp, temp);
+        }
+        length = numOfBytes(_rlp);
+        listSize = addLength(length, false);
+        _rlp = concat2(listSize, _rlp); 
+
+        //  Combine all of them
+        _rlp = concat3(_data.from.encodeString(), _data.to.encodeString(), _rlp);
+        //  Calculate the LIST_HEAD_START and attach
+        length = numOfBytes(_rlp);
+        listSize = addLength(length, false);
+        return concat2(listSize, _rlp);
+    } 
+
 }
