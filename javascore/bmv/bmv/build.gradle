@@ -1,0 +1,95 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'signing'
+}
+
+sourceSets {
+    intTest {}
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+configurations {
+    intTestImplementation.extendsFrom testImplementation
+    intTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+    implementation 'io.emeraldpay.polkaj:polkaj-scale:0.3.0'
+    implementation 'io.emeraldpay.polkaj:polkaj-scale-types:0.3.0'
+    implementation 'io.emeraldpay.polkaj:polkaj-tx:0.3.0'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+    compileOnly files('../api-0.8.8-SNAPSHOT.jar')
+
+    testImplementation "com.squareup.okhttp3:okhttp:3.11.0"
+    intTestImplementation project(':testinteg')
+    intTestImplementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    intTestImplementation 'org.web3j:core:4.8.4'
+    // intTestImplementation files('build/libs/BMV.jar')
+    testImplementation project(':testsvc')
+    testImplementation 'org.mockito:mockito-core:3.4.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+}
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.bmv.edgeware.BMV'
+    archivesBaseName = 'BMV'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('bmc', 'hxb6b5791be0b5ef67063b3c10b840fb81514db2fd')
+        arg('net', '0x1234.icon')
+        arg('encodedValidators', '---')
+        arg('mtaOffset', '0x465459')
+        arg('mtaRootSize', '0x10')
+        arg('mtaCacheSize', '0x10')
+        arg('mtaIsAllowNewerWitness', "0x1")
+        arg('lastBlockHash', "0xfb147d7417db613d12685b9affdf6dd06bcfbba78a477a7fc9a79a21075a776a")
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+    testLogging.exceptionFormat = "full"
+}
+
+def eventDecoderJar = project(':eventDecoder').getTasks().getByName('optimizedJar')
+
+task integrationTest(type: Test, dependsOn: optimizedJar) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
+    testLogging.showStandardStreams = true
+
+    // use the common config files
+    systemProperty('env.props', new File(project(':testinteg').projectDir, 'conf/env.props'))
+
+    def prefix = 'score.path.'
+    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+    systemProperty(prefix + 'EventDecoderScore', eventDecoderJar.outputJarName)
+}

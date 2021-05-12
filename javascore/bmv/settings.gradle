@@ -1,0 +1,2 @@
+rootProject.name = 'bmv'
+include 'bmv', 'testsvc', 'testinteg', 'eventDecoder'
