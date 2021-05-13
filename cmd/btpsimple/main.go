@@ -28,7 +28,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/icon-project/btp/cmd/btpsimple/chain"
+	"github.com/icon-project/btp/btp"
 	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
@@ -46,10 +46,10 @@ const (
 )
 
 type Config struct {
-	chain.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData json.RawMessage `json:"key_store"`
-	KeyStorePass string          `json:"key_password,omitempty"`
-	KeySecret    string          `json:"key_secret,omitempty"`
+	btp.Config   `json:",squash"` //instead of `mapstructure:",squash"`
+	KeyStoreData json.RawMessage  `json:"key_store"`
+	KeyStorePass string           `json:"key_password,omitempty"`
+	KeySecret    string           `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -244,8 +244,8 @@ func main() {
 				cfg.BaseDir = path.Join(".", ".btpsimple", cfg.Src.Address.NetworkAddress())
 			}
 
-			var sr *chain.SimpleChain
-			if sr, err = chain.NewSimpleChain(&cfg.Config, w, l); err != nil {
+			var sr *btp.BTP
+			if sr, err = btp.New(&cfg.Config, w, l); err != nil {
 				return err
 			}
 			return sr.Serve()
@@ -265,7 +265,7 @@ func main() {
 
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("%+v",err)
+		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
 }

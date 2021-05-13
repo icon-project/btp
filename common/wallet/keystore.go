@@ -20,6 +20,7 @@ import (
 
 const (
 	coinTypeICON    = "icx"
+	coinTypeEVM     = "evm"
 	cipherAES128CTR = "aes-128-ctr"
 	kdfScrypt       = "scrypt"
 )
@@ -206,12 +207,28 @@ func ReadAddressFromKeyStore(data []byte) (*common.Address, error) {
 	return &ksData.Address, nil
 }
 
-func NewFromKeyStore(data, pw []byte) (*softwareWallet, error) {
-	secret, err := DecryptKeyStore(data, pw)
+func NewFromKeyStore(data, pw []byte) (Wallet, error) {
+	ksdata, err := NewKeyStoreData(data)
 	if err != nil {
 		return nil, err
 	}
-	return NewIcxWalletFromPrivateKey(secret)
+
+	switch ksdata.CoinType {
+	case coinTypeICON:
+		secret, err := DecryptICONKeyStore(ksdata, pw)
+		if err != nil {
+			return nil, err
+		}
+		return NewIcxWalletFromPrivateKey(secret)
+	case coinTypeEVM:
+		key, err := DecryptEvmKeyStore(data, pw)
+		if err != nil {
+			return nil, err
+		}
+		return NewEvmWalletFromPrivateKey(key)
+	default:
+		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksdata.CoinType)
+	}
 }
 
 func KeyStoreFromWallet(w interface{}, pw []byte) ([]byte, error) {
@@ -221,4 +238,69 @@ func KeyStoreFromWallet(w interface{}, pw []byte) ([]byte, error) {
 	} else {
 		return nil, nil
 	}
+}
+
+func DecryptICONKeyStore(ksData *KeyStoreData, pw []byte) (*crypto.PrivateKey, error) {
+	if ksData.Crypto.Cipher != cipherAES128CTR {
+		return nil, errors.Errorf("UnsupportedCipher(cipher=%s)",
+			ksData.Crypto.Cipher)
+	}
+	var cipherParams AES128CTRParams
+	if err := json.Unmarshal(ksData.Crypto.CipherParams, &cipherParams); err != nil {
+		return nil, err
+	}
+
+	if ksData.Crypto.KDF != kdfScrypt {
+		return nil, errors.Errorf("UnsupportedKDF(kdf=%s)", ksData.Crypto.KDF)
+	}
+	var kdfParams ScryptParams
+	if err := json.Unmarshal(ksData.Crypto.KDFParams, &kdfParams); err != nil {
+		return nil, err
+	}
+
+	key, err := kdfParams.Key(pw)
+	if err != nil {
+		return nil, err
+	}
+
+	cipheredBytes := ksData.Crypto.CipherText.Bytes()
+
+	s := sha3.NewLegacyKeccak256()
+	s.Write(key[16:32])
+	s.Write(cipheredBytes)
+	mac := s.Sum([]byte{})
+	if !bytes.Equal(mac, ksData.Crypto.MAC.Bytes()) {
+		return nil, errors.Errorf("InvalidPassword")
+	}
+
+	block, err := aes.NewCipher(key[0:16])
+	if err != nil {
+		return nil, err
+	}
+
+	secretBytes := make([]byte, len(cipheredBytes))
+
+	stream := cipher.NewCTR(block, cipherParams.IV.Bytes())
+	stream.XORKeyStream(secretBytes, cipheredBytes)
+
+	secret, err := crypto.ParsePrivateKey(secretBytes)
+	if err != nil {
+		return nil, err
+	}
+	public := secret.PublicKey()
+	address := common.NewAccountAddressFromPublicKey(public)
+	if !address.Equal(&ksData.Address) {
+		return nil, fmt.Errorf("recovered address is mismatched, %s, expected:%s",
+			address.String(), ksData.Address.String())
+	}
+	return secret, nil
+}
+
+func NewKeyStoreData(data []byte) (*KeyStoreData, error) {
+	var ksData KeyStoreData
+	if err := json.Unmarshal(data, &ksData); err != nil {
+		return nil, err
+	}
+
+	return &ksData, nil
 }

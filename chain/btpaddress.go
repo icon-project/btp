@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package module
+package chain
 
 import (
 	"fmt"
@@ -98,4 +98,3 @@ func ValidateBtpAddress(ba BtpAddress) error {
 	}
 	return nil
 }
-

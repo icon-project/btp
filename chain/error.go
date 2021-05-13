@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package module
+package chain
 
 import (
 	"fmt"

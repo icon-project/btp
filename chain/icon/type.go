@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -56,14 +56,14 @@ const (
 )
 
 const (
-	ResultStatusSuccess = "0x1"
+	ResultStatusSuccess           = "0x1"
 	ResultStatusFailureCodeRevert = 32
-	ResultStatusFailureCodeEnd = 99
+	ResultStatusFailureCodeEnd    = 99
 )
 
 const (
-	BMCRelayMethod       = "handleRelayMessage"
-	BMCGetStatusMethod   = "getStatus"
+	BMCRelayMethod     = "handleRelayMessage"
+	BMCGetStatusMethod = "getStatus"
 )
 
 type BlockHeader struct {
@@ -370,7 +370,7 @@ type RelayMessage struct {
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
-	EventProofs []*module.EventProof
+	EventProofs []*chain.EventProof
 }
 
 type Block struct {

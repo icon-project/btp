@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -28,8 +28,8 @@ const (
 type Sender struct {
 	c   *Client
 	w   Wallet
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 	log log.Logger
 
 	opt struct {
@@ -43,7 +43,7 @@ type Sender struct {
 		seq       []byte
 	}
 	isFoundOffsetBySeq bool
-	cb                 module.ReceiveCallback
+	cb                 chain.ReceiveCallback
 }
 
 func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*HandleRelayMessageParam, error) {
@@ -59,8 +59,8 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*HandleRela
 }
 
 // Segment split the give RelayMessage into small segments
-func (s *Sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segment, error) {
-	segments := make([]*module.Segment, 0)
+func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+	segments := make([]*chain.Segment, 0)
 	var err error
 	msg := &RelayMessage{
 		BlockUpdates:  make([][]byte, 0),
@@ -79,7 +79,7 @@ func (s *Sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 		}
 		size += buSize
 		if s.isOverLimit(size) {
-			segment := &module.Segment{
+			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
@@ -127,7 +127,7 @@ func (s *Sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
 				//
-				segment := &module.Segment{
+				segment := &chain.Segment{
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 					EventSequence:       msg.eventSequence,
@@ -154,7 +154,7 @@ func (s *Sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 
 	}
 	//
-	segment := &module.Segment{
+	segment := &chain.Segment{
 		Height:              msg.height,
 		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 		EventSequence:       msg.eventSequence,
@@ -168,7 +168,7 @@ func (s *Sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 }
 
 // UpdateSegment updates segment
-func (s *Sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) error {
+func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
 	p := segment.TransactionParam.(*HandleRelayMessageParam)
 	msg := &RelayMessage{}
 	b, err := base64.URLEncoding.DecodeString(p.Msg)
@@ -182,7 +182,7 @@ func (s *Sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) e
 	return nil
 }
 
-func (s *Sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
+func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	p, ok := segment.TransactionParam.(*HandleRelayMessageParam)
 	if !ok {
 		return nil, fmt.Errorf("casting failure")
@@ -209,7 +209,7 @@ SEND_TX:
 }
 
 // GetResult gets the TransactionReceipt
-func (s *Sender) GetResult(p module.GetResultParam) (module.TransactionResult, error) {
+func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	//TODO: map right Error with the result getting from the transaction receipt
 
 	if txh, ok := p.(*types.Transaction); ok {
@@ -229,13 +229,13 @@ func (s *Sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 	}
 }
 
-func (s *Sender) GetStatus() (*module.BMCLinkStatus, error) {
+func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
 		return nil, err
 	}
 
-	status := &module.BMCLinkStatus{
+	status := &chain.BMCLinkStatus{
 		BlockIntervalSrc: int(bs.BlockIntervalSrc.Int64()),
 		BlockIntervalDst: int(bs.BlockIntervalDst.Int64()),
 		TxSeq:            bs.TxSeq.Int64(),
@@ -273,7 +273,7 @@ func (s *Sender) GetStatus() (*module.BMCLinkStatus, error) {
 	return status, nil
 }
 
-func (s *Sender) MonitorLoop(height int64, cb module.MonitorCallback, scb func()) error {
+func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
 	return s.c.MonitorBlock(cb)
 }
 
@@ -286,7 +286,7 @@ func (s *Sender) FinalizeLatency() int {
 	return 1
 }
 
-func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) module.Sender {
+func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) chain.Sender {
 	s := &Sender{
 		src: src,
 		dst: dst,
@@ -312,29 +312,29 @@ func mapError(err error) error {
 			//fmt.Printf("jrResp.Error:%+v", re)
 			switch re.Code {
 			case JsonrpcErrorCodeTxPoolOverflow:
-				return module.ErrSendFailByOverflow
+				return chain.ErrSendFailByOverflow
 			case JsonrpcErrorCodeSystem:
 				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
 					//TODO return JsonRPC Error
 					switch subEc {
 					case ExpiredTransactionError:
-						return module.ErrSendFailByExpired
+						return chain.ErrSendFailByExpired
 					case FutureTransactionError:
-						return module.ErrSendFailByFuture
+						return chain.ErrSendFailByFuture
 					case TransactionPoolOverflowError:
-						return module.ErrSendFailByOverflow
+						return chain.ErrSendFailByOverflow
 					}
 				}
 			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-				return module.ErrGetResultFailByPending
+				return chain.ErrGetResultFailByPending
 			}
 		case *common.HttpError:
 			fmt.Printf("*common.HttpError:%+v", re)
-			return module.ErrConnectFail
+			return chain.ErrConnectFail
 		case *url.Error:
 			if common.IsConnectRefusedError(re.Err) {
 				//fmt.Printf("*url.Error:%+v", re)
-				return module.ErrConnectFail
+				return chain.ErrConnectFail
 			}
 		}
 	}

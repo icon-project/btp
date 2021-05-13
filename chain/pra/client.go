@@ -3,7 +3,7 @@ package pra
 import (
 	"context"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/icon-project/btp/cmd/btpsimple/module/pra/binding"
+	"github.com/icon-project/btp/chain/pra/binding"
 )
 
 type Client struct {
@@ -52,7 +52,7 @@ func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, b
 	return c.ethClient.TransactionByHash(context.Background(), txhash)
 }
 
-func (c *Client) MonitorBlock(cb module.MonitorCallback) error {
+func (c *Client) MonitorBlock(cb chain.MonitorCallback) error {
 	headers := make(chan *types.Header)
 	sub, err := c.ethClient.SubscribeNewHead(context.Background(), headers)
 	if err != nil {

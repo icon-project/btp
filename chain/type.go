@@ -1,25 +1,29 @@
-package module
+package chain
 
 type BlockWitness struct {
 	Height  int64
 	Witness [][]byte
 }
+
 type BlockUpdate struct {
 	Height    int64
 	BlockHash []byte
 	Header    []byte
 	Proof     []byte
 }
+
 type BlockProof struct {
 	Header       []byte
 	BlockWitness *BlockWitness
 }
+
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
 	EventProofs []*EventProof
 	Events      []*Event
 }
+
 type EventProof struct {
 	Index int
 	Proof []byte
@@ -40,6 +44,19 @@ type RelayMessage struct {
 	HeightOfDst   int64
 
 	Segments []*Segment
+}
+
+func (rm RelayMessage) HasWait() bool {
+	if len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0 {
+		return false
+	}
+
+	for _, segment := range rm.Segments {
+		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
+			return false
+		}
+	}
+	return true
 }
 
 type Segment struct {
