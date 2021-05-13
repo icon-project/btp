@@ -4,9 +4,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import foundation.icon.btp.lib.scale.ScaleWriter;
-import foundation.icon.btp.lib.utils.ByteSliceOutput;
-import foundation.icon.btp.lib.utils.HexConverter;
 import score.ObjectReader;
 import score.util.Crypto;
 

@@ -1,13 +1,8 @@
 package foundation.icon.btp.lib.mpt;
 
-import java.util.Arrays;
 import java.util.List;
 
-import foundation.icon.btp.lib.utils.HexConverter;
-
 import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
 
 import scorex.util.ArrayList;
 

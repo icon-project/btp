@@ -1,14 +1,8 @@
 package foundation.icon.btp.lib.mpt;
 
-import java.util.ArrayList;
 import foundation.icon.btp.lib.utils.Arrays;
-import java.util.List;
 
 import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
-
-import io.emeraldpay.polkaj.tx.Hashing;
 
 public class Nibbles {
     private byte[] raw;

@@ -28,7 +28,6 @@ public class ProxyEvent {
 
     public static byte[] proxyExecuted(ByteSliceInput input) {
         int startPoint = input.getOffset();
-        byte[] proposalHash = input.take(32);
         byte dispatchResultEnum = input.takeByte();
         if (dispatchResultEnum == (byte) (0x01 & 0xff)) {
             byte dispatchErrorEnum = input.takeByte();

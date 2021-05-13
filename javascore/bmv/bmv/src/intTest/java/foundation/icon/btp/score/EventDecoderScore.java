@@ -16,7 +16,7 @@
 
 package foundation.icon.test.score;
 
-import foundation.icon.btp.lib.utils.HexConverter;
+import foundation.icon.test.cases.HexConverter;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
 import foundation.icon.icx.data.Bytes;
@@ -45,9 +45,7 @@ public class EventDecoderScore extends Score {
         Wallet owner
     ) throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "EventDecoder");
-        // RpcObject params = new RpcObject.Builder().build();
-        Score score = null;
-        score = txHandler.deploy(owner, getFilePath("EventDecoderScore"), null);
+        Score score = txHandler.deploy(owner, getFilePath("EventDecoderScore"), null);
         LOG.info("eventDecoder score address = " + score.getAddress());
         LOG.infoExiting();
         return new EventDecoderScore(score);

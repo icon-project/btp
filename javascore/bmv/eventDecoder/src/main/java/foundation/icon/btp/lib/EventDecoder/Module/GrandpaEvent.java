@@ -36,6 +36,7 @@ public class GrandpaEvent {
         //     input.take(8); // AuthorityWeight u64
         // }
 
+        input.seek(startPoint);
         return input.take( (32 + 8 ) * validatorSize + compactSize);
     }
 

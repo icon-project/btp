@@ -1,6 +1,5 @@
 package foundation.icon.btp.lib.blockupdate;
 
-import java.util.Arrays;
 import java.util.List;
 
 import foundation.icon.btp.lib.scale.ScaleReader;

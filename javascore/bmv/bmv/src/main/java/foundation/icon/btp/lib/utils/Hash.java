@@ -1,6 +1,5 @@
 package foundation.icon.btp.lib.utils;
 
-// import io.emeraldpay.polkaj.tx.Hashing;
 import score.Context;
 
 public class Hash {

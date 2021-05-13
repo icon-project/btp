@@ -1,9 +1,4 @@
-package foundation.icon.btp.lib;
-
-import foundation.icon.btp.lib.utils.HexConverter;
-
-// import io.emeraldpay.polkaj.tx.Hashing;
-import score.Context;
+package foundation.icon.test.cases;
 
 public class ErrorCode {
     public static final int BMV_ERROR = 25;

@@ -1,14 +1,10 @@
 package foundation.icon.btp.lib.blockproof;
 
-import java.util.Arrays;
 import java.util.List;
 
 import foundation.icon.btp.lib.ErrorCode;
 import foundation.icon.btp.lib.blockupdate.BlockHeader;
 import foundation.icon.btp.lib.mta.SerializableMTA;
-import foundation.icon.btp.lib.scale.ScaleReader;
-import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.utils.Hash;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
 import score.Context;

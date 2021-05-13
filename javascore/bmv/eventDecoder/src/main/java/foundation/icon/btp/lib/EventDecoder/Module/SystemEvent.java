@@ -39,11 +39,12 @@ public class SystemEvent {
 
     public static byte[] extrinsicFailed(ByteSliceInput input) {
         int size = 11;
+        int startPoint = input.getOffset();
         byte dispatchError = input.takeByte();
         if ((dispatchError & 0xff) == 0x03) {
             size += 2;
         }
-        input.seek(input.getOffset() - 1);
+        input.seek(startPoint);
         return input.take(size);
     }
 

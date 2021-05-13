@@ -2,7 +2,6 @@ package foundation.icon.btp.bmv.edgeware;
 
 import score.Address;
 import score.Context;
-import score.DictDB;
 import score.VarDB;
 import score.ObjectReader;
 import score.ByteArrayObjectWriter;
@@ -10,9 +9,7 @@ import score.ByteArrayObjectWriter;
 import scorex.util.Base64;
 import scorex.util.ArrayList;
 
-import score.annotation.EventLog;
 import score.annotation.External;
-import score.annotation.Optional;
 
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BlockVerifyResult;
@@ -29,20 +26,14 @@ import foundation.icon.btp.lib.event.NewAuthoritiesEvent;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
 import foundation.icon.btp.lib.mta.MTAStatus;
-import foundation.icon.btp.lib.mta.MerkleTreeAccumulator;
 import foundation.icon.btp.lib.mta.SerializableMTA;
 
-import foundation.icon.btp.lib.mpt.MPTNode;
-import foundation.icon.btp.lib.mpt.MPTNodeType;
+import foundation.icon.btp.lib.mpt.*;
 
 import foundation.icon.btp.lib.relaymessage.RelayMessage;
-import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.stateproof.StateProof;
-import foundation.icon.btp.lib.utils.ByteSliceInput;
 import foundation.icon.btp.lib.utils.HexConverter;
 import foundation.icon.btp.lib.validators.Validators;
-
-// import foundation.icon.btp.lib.eventdecoder.EventDecoder;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -94,8 +85,7 @@ public class BMV {
 
     this.eventDecoderDb.set(eventDecoderAddress);
 
-    // TODO call bmc to addVerifier
-    // Context.call(bmc, "addVerifier", Context.getAddress());
+    Context.call(bmc, "addVerifier", net, Context.getAddress());
   }
 
   /**
@@ -203,7 +193,7 @@ public class BMV {
               continue;
             }
 
-            if (!Arrays.equals(evmLogEvent.getAddress(), HexConverter.hexStringToByteArray(prevAddress.getAddresss()))) {
+            if (!Arrays.equals(evmLogEvent.getAddress(), HexConverter.hexStringToByteArray(prevAddress.getAddress()))) {
               continue;
             }
 
@@ -273,6 +263,14 @@ public class BMV {
   }
 
   /**
+   * current set id
+   */
+  @External(readonly=true)
+  public BigInteger setId() {
+    return this.setIdDb.get();
+  }
+
+  /**
    * get status of BMV
    */
   @External(readonly=true)
@@ -290,7 +288,7 @@ public class BMV {
     if (!Context.getCaller().equals(this.bmcDb.get())) {
       Context.revert(ErrorCode.NOT_ACCEPTED_BMC_ADDR_ERROR, "not acceptable bmc");
     }
-    if (!Address.fromString(currentAddress.getAddresss()).equals(this.bmcDb.get())) { // actualy don't need to check it
+    if (!Address.fromString(currentAddress.getAddress()).equals(this.bmcDb.get())) { // actualy don't need to check it
       Context.revert(ErrorCode.NOT_ACCEPTED_BMC_ADDR_ERROR, "not acceptable bmc");
     }
   }

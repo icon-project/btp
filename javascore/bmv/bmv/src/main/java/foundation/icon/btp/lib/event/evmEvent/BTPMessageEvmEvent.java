@@ -4,14 +4,10 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.AbiDecoder;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.utils.ByteSliceOutput;
-import foundation.icon.btp.lib.utils.Hash;
 
 import score.Context;
-import score.ObjectReader;
 import scorex.util.ArrayList;
 
 public class BTPMessageEvmEvent {
@@ -28,12 +24,12 @@ public class BTPMessageEvmEvent {
         BigInteger msgPosition = AbiDecoder.decodeUInt(input);
 
         if (!nextPosition.equals(BigInteger.valueOf(input.getOffset()))) {
-            throw new AssertionError("Message evm data invalid, next position incorrect");
+            throw new AssertionError("Message evm data invalid, next position incorrect" + nextPosition.toString() + "; expected: " + input.getOffset());
         }
         this.next = AbiDecoder.decodeString(input);
 
         if (!msgPosition.equals(BigInteger.valueOf(input.getOffset()))) {
-            throw new AssertionError("Message evm data invalid, msg position incorrect : " + msgPosition.toString() + " " + input.getOffset());
+            throw new AssertionError("Message evm data invalid, msg position incorrect : " + msgPosition.toString() + "; expected: " + input.getOffset());
         }
         this.msg = AbiDecoder.decodeBytes(input);
     }

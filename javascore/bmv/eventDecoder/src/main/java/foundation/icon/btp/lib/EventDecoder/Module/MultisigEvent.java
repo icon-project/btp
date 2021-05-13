@@ -56,7 +56,6 @@ public class MultisigEvent {
         int startPoint = input.getOffset();
         input.seek(startPoint + size);
 
-        byte[] proposalHash = input.take(32);
         byte dispatchResultEnum = input.takeByte();
         if (dispatchResultEnum == (byte) (0x01 & 0xff)) {
             byte dispatchErrorEnum = input.takeByte();

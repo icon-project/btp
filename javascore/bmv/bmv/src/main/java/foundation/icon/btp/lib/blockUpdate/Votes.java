@@ -2,8 +2,6 @@ package foundation.icon.btp.lib.blockupdate;
 
 import java.util.List;
 
-import javax.xml.validation.Validator;
-
 import foundation.icon.btp.lib.utils.Arrays;
 import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.ByteSliceInput;

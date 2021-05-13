@@ -19,9 +19,6 @@ configurations {
 }
 
 dependencies {
-    implementation 'io.emeraldpay.polkaj:polkaj-scale:0.3.0'
-    implementation 'io.emeraldpay.polkaj:polkaj-scale-types:0.3.0'
-    implementation 'io.emeraldpay.polkaj:polkaj-tx:0.3.0'
     implementation 'com.github.sink772:javaee-scorex:0.5.2'
     compileOnly files('../api-0.8.8-SNAPSHOT.jar')
 

@@ -43,7 +43,7 @@ public class StakingEvent {
         // this.eraIndex = ScaleReader.readU32(input);
         // this.payout = ScaleReader.readU128(input);
         // this.remainder = ScaleReader.readU128(input);
-        return input.take(32 + 16 + 16);
+        return input.take(4 + 16 + 16);
     }
 
     public static byte[] reward(ByteSliceInput input) {

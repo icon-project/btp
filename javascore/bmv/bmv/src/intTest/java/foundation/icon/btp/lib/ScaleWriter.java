@@ -1,11 +1,9 @@
-package foundation.icon.btp.lib.scale;
+package foundation.icon.test.cases;
 
 import score.Context;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-
-import foundation.icon.btp.lib.utils.ByteSliceOutput;
 
 public class ScaleWriter {
     public static void writeCompactUint(ByteSliceOutput output, int compactNumber) {

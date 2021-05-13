@@ -23,8 +23,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 
-import io.emeraldpay.polkaj.tx.Hashing;
-
 @TestMethodOrder(OrderAnnotation.class)
 class BTPAddressTest {
     @Test
@@ -39,7 +37,7 @@ class BTPAddressTest {
         assertEquals(btpAddr.getNid(), "0x1234");
         assertEquals(btpAddr.getChain(), "icon");
         assertEquals(btpAddr.getProtocol(), protocol);
-        assertEquals(btpAddr.getAddresss(), address);
+        assertEquals(btpAddr.getAddress(), address);
         assertEquals(btpAddr.getNet(), "0x1234.icon");
         assertEquals(btpAddr.toString(), "btp://0x1234.icon/hx3e9be7c57c769adb06dd0b4943aab9222c30d825");
     }
@@ -56,7 +54,7 @@ class BTPAddressTest {
         assertEquals(btpAddr.getNid(), "0x1234");
         assertEquals(btpAddr.getChain(), "icon");
         assertEquals(btpAddr.getProtocol(), protocol);
-        assertEquals(btpAddr.getAddresss(), address);
+        assertEquals(btpAddr.getAddress(), address);
         assertTrue(btpAddr.isValid());
         assertEquals(btpAddr.getNet(), "0x1234.icon");
         assertEquals(btpAddr.toString(), "btp://0x1234.icon/hx3e9be7c57c769adb06dd0b4943aab9222c30d825");

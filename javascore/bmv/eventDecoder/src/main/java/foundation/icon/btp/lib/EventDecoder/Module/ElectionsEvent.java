@@ -41,6 +41,7 @@ public class ElectionsEvent {
         int startPoint = input.getOffset();
         int memberSize = ScaleReader.readUintCompactSize(input);
         int compactSize = input.getOffset() - startPoint;
+        input.seek(startPoint);
         return input.take((32 + 16) * memberSize + compactSize);
     }
 

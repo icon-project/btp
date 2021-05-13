@@ -516,7 +516,7 @@ class MTATest {
         
         MTAException thrown = assertThrows(
             MTAException.class,
-           () -> mta.verify(listWitness, hashFakeItem, 11, 17)
+           () -> mta.verify(listWitness, hashFakeItem, 12, 17)
         );
 
         assertTrue(thrown.getMessage().contains("invalid old witness"));

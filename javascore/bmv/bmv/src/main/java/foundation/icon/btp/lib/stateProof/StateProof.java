@@ -1,12 +1,10 @@
 package foundation.icon.btp.lib.stateproof;
 
-import java.util.Arrays;
 import java.util.List;
 
 import foundation.icon.btp.lib.mpt.MPTNode;
 import foundation.icon.btp.lib.mpt.MerklePatriciaTree;
 import foundation.icon.btp.lib.mpt.Nibbles;
-import foundation.icon.btp.lib.utils.HexConverter;
 import foundation.icon.btp.lib.ErrorCode;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
@@ -37,7 +35,7 @@ public class StateProof {
         try {
             Nibbles keyNibbles = new Nibbles(this.key, false); 
             return MerklePatriciaTree.prove(root, keyNibbles, this.proofs);
-        } catch (Exception e) {
+        } catch (Exception | AssertionError e) {
             Context.revert(ErrorCode.INVALID_MPT, e.toString());
             return null;
         }

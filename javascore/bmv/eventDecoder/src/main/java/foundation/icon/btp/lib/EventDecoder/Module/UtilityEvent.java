@@ -17,13 +17,14 @@ import scorex.util.ArrayList;
 public class UtilityEvent {
     public static byte[] batchInterrupted(ByteSliceInput input) {
         int size = 5;
+        int startPoint = input.getOffset();
         long errorIndex = ScaleReader.readU32(input);
         byte dispatchError = input.takeByte();
         if ((dispatchError & 0xff) == 0x03) {
             // byte[] module = input.take(2);
             size += 2;
         }
-        input.seek(input.getOffset() - size);
+        input.seek(startPoint);
         return input.take(size);
     }
 

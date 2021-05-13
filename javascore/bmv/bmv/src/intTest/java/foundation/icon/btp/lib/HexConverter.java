@@ -1,4 +1,4 @@
-package foundation.icon.btp.lib.utils;
+package foundation.icon.test.cases;
 
 import java.util.Arrays;
 

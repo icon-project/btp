@@ -1,14 +1,11 @@
 package foundation.icon.btp.lib.event;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 
-import foundation.icon.btp.lib.Constant;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.utils.Hash;
 import foundation.icon.btp.lib.utils.HexConverter;
 
 import score.Context;

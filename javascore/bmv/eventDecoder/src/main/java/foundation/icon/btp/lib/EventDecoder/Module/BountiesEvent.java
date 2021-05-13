@@ -53,8 +53,8 @@ public class BountiesEvent {
 
     public static byte[] bountyAwarded(ByteSliceInput input) {
         // this.bountyIndex = ScaleReader.readU32(input);
-        // this.balance = ScaleReader.readU128(input);
-        return input.take(4 + 16);
+        // this.accountId = input.take(32);
+        return input.take(4 + 32);
     }
 
     public static byte[] bountyClaimed(ByteSliceInput input) {

@@ -1,13 +1,6 @@
 package foundation.icon.btp.lib.validators;
 
-import java.util.Arrays;
 import java.util.List;
-
-import foundation.icon.btp.lib.blockupdate.BlockHeader;
-import foundation.icon.btp.lib.mta.SerializableMTA;
-import foundation.icon.btp.lib.scale.ScaleReader;
-import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.utils.Hash;
 
 import score.Context;
 import score.ObjectReader;

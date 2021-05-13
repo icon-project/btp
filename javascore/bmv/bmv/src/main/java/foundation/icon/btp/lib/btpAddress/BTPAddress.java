@@ -34,7 +34,7 @@ public class BTPAddress {
         return this.chain;
     }
 
-    public String getAddresss() {
+    public String getAddress() {
         return this.address;
     }
 

@@ -1,17 +1,8 @@
 package foundation.icon.btp.lib.mpt;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import foundation.icon.btp.lib.utils.Arrays;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.utils.Hash;
 
 import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
-
-import io.emeraldpay.polkaj.tx.Hashing;
 
 public class MPTNode {
     private Nibbles nibbles;

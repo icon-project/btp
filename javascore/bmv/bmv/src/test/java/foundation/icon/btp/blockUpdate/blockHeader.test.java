@@ -25,8 +25,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 
-import io.emeraldpay.polkaj.tx.Hashing;
-
 @TestMethodOrder(OrderAnnotation.class)
 class BlockHeaderTest {
     @Test

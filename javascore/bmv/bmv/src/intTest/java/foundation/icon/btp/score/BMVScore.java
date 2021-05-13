@@ -16,7 +16,7 @@
 
 package foundation.icon.test.score;
 
-import foundation.icon.btp.lib.utils.HexConverter;
+import foundation.icon.test.cases.HexConverter;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
 import foundation.icon.icx.data.Bytes;
@@ -129,6 +129,10 @@ public class BMVScore extends Score {
 
     public BigInteger lastHeight() throws IOException {
         return call("lastHeight", null).asInteger();
+    }
+
+    public BigInteger setId() throws IOException {
+        return call("setId", null).asInteger();
     }
 
     public List<byte[]> validators() throws IOException {

@@ -5,7 +5,6 @@ import foundation.icon.btp.lib.blockupdate.BlockUpdate;
 import foundation.icon.btp.lib.stateproof.StateProof;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
-import java.util.Arrays;
 import java.util.List;
 
 import scorex.util.ArrayList;

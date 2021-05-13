@@ -11,8 +11,6 @@ import foundation.icon.btp.lib.exception.mta.InvalidWitnessOldException;
 import scorex.util.ArrayList;
 
 import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
 
 public class MerkleTreeAccumulator {
     private long height;
@@ -122,23 +120,6 @@ public class MerkleTreeAccumulator {
             return null;
         }
     }
-
-    // public void setRootSize(int size) {
-    //     if (size < 0)
-    //         size = 0;
-    //     this.roots.setSize(size);
-    //     this.rootSize = size;
-    // }
-
-    // public void setCacheSize(int size) {
-    //     if (size < 0)
-    //         size = 0;
-    //     this.cacheSize = size;
-    //     if (this.caches.size() > this.cacheSize)
-    //         this.caches.truncate(size);
-    //     else 
-    //         this.caches.setSize(size);
-    // }
 
     public void setIsAllowNewerWitness(boolean allow) {
         this.isAllowNewerWitness = allow;
@@ -282,7 +263,7 @@ public class MerkleTreeAccumulator {
             }
             this._verify(acceptedWitness, root, hash, height - 1 - this.offset);
         } else if (this.height > at) {
-            if ((this.height - height - 1) < this.cacheSize) {
+            if ((this.height - height) < this.cacheSize) {
                 if (!this.hasCache(hash))
                     throw new MTAException("invalid old witness");
             } else {
