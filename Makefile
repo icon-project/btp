@@ -56,6 +56,7 @@ BUILD_TARGETS += btpsimple
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
 PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/pyscore
+PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop/pyscore
 
 $(PYSCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%,%,$@))
@@ -104,3 +105,19 @@ test :
 
 .DEFAULT_GOAL := all
 all : $(BUILD_TARGETS)
+
+cp_pyscore_testnet: dist-py
+	cp ${PYSCORE_DIST_DIR}/*.zip ${PYSCORE_TESTNET_DIR}
+
+build-docker: cp_pyscore_testnet
+	docker-compose build
+	
+run-docker: cp_pyscore_testnet
+	docker-compose up
+	
+clean-docker:
+	docker-compose down -v --remove-orphans
+	sudo rm -rf build/*
+
+run-test-scenario:
+	docker-compose exec goloop sh /goloop/bin/scenario_test.sh

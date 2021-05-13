@@ -10,3 +10,4 @@ bin/
 **/**/.idea
 **/**/node_modules/
 
+/testnet/goloop/pyscore/*.zip
