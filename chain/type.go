@@ -48,15 +48,15 @@ type RelayMessage struct {
 
 func (rm RelayMessage) HasWait() bool {
 	if len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0 {
-		return false
+		return true
 	}
 
 	for _, segment := range rm.Segments {
 		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 type Segment struct {

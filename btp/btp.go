@@ -94,7 +94,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 
 // Serve starts the BTP
 func (b *BTP) Serve() error {
-	log.Info("Starting BMR...")
+	log.Info("Starting BTP...")
 	if err := b.init(); err != nil {
 		return err
 	}
