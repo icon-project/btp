@@ -2,7 +2,6 @@ package btp
 
 import (
 	"path/filepath"
-	"sync/atomic"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/db"
@@ -11,8 +10,8 @@ import (
 )
 
 func (b *BTP) prepareDatabase(offset int64) error {
-	b.log.Debugln("open database", filepath.Join(b.dir, b.bmcDstBtpAddress.NetworkAddress()))
-	database, err := db.Open(b.dir, string(DefaultDBType), b.bmcDstBtpAddress.NetworkAddress())
+	b.log.Debugln("open database", filepath.Join(b.cfg.AbsBaseDir(), b.bmcDstBtpAddress.NetworkAddress()))
+	database, err := db.Open(b.cfg.AbsBaseDir(), string(DefaultDBType), b.bmcDstBtpAddress.NetworkAddress())
 	if err != nil {
 		return errors.Wrap(err, "fail to open database")
 	}
@@ -39,20 +38,6 @@ func (b *BTP) prepareDatabase(offset int64) error {
 		b.log.Debugf("recover Accumulator offset:%d, height:%d", b.store.Offset(), b.store.Height())
 		//TODO sync offset
 	}
-	return nil
-}
-
-func (b *BTP) init() error {
-	if err := b.prepareDatabase(b.cfg.Offset); err != nil {
-		return err
-	}
-
-	if err := b.refreshStatus(); err != nil {
-		return err
-	}
-	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
-	b.relayLoop()
-	b.newRelayMessage()
 	return nil
 }
 

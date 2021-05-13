@@ -92,6 +92,20 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 	}, nil
 }
 
+func (b *BTP) init() error {
+	if err := b.prepareDatabase(b.cfg.Offset); err != nil {
+		return err
+	}
+
+	if err := b.refreshStatus(); err != nil {
+		return err
+	}
+	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
+	b.relayLoop()
+	b.newRelayMessage()
+	return nil
+}
+
 // Serve starts the BTP
 func (b *BTP) Serve() error {
 	log.Info("Starting BTP...")
@@ -229,7 +243,7 @@ func (b *BTP) relay() {
 					}
 
 					b.logRelaying("after relay", rm, segment, j)
-					b.updateResult(rm, segment)
+					go b.updateResult(rm, segment)
 
 				}
 			}
