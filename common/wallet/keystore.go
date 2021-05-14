@@ -132,70 +132,6 @@ func EncryptKeyAsKeyStore(s *crypto.PrivateKey, pw []byte) ([]byte, error) {
 	return json.Marshal(&ks)
 }
 
-func DecryptKeyStore(data, pw []byte) (*crypto.PrivateKey, error) {
-	var ksData KeyStoreData
-	if err := json.Unmarshal(data, &ksData); err != nil {
-		return nil, err
-	}
-	if ksData.CoinType != coinTypeICON {
-		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksData.CoinType)
-	}
-
-	if ksData.Crypto.Cipher != cipherAES128CTR {
-		return nil, errors.Errorf("UnsupportedCipher(cipher=%s)",
-			ksData.Crypto.Cipher)
-	}
-	var cipherParams AES128CTRParams
-	if err := json.Unmarshal(ksData.Crypto.CipherParams, &cipherParams); err != nil {
-		return nil, err
-	}
-
-	if ksData.Crypto.KDF != kdfScrypt {
-		return nil, errors.Errorf("UnsupportedKDF(kdf=%s)", ksData.Crypto.KDF)
-	}
-	var kdfParams ScryptParams
-	if err := json.Unmarshal(ksData.Crypto.KDFParams, &kdfParams); err != nil {
-		return nil, err
-	}
-
-	key, err := kdfParams.Key(pw)
-	if err != nil {
-		return nil, err
-	}
-
-	cipheredBytes := ksData.Crypto.CipherText.Bytes()
-
-	s := sha3.NewLegacyKeccak256()
-	s.Write(key[16:32])
-	s.Write(cipheredBytes)
-	mac := s.Sum([]byte{})
-	if !bytes.Equal(mac, ksData.Crypto.MAC.Bytes()) {
-		return nil, errors.Errorf("InvalidPassword")
-	}
-
-	block, err := aes.NewCipher(key[0:16])
-	if err != nil {
-		return nil, err
-	}
-
-	secretBytes := make([]byte, len(cipheredBytes))
-
-	stream := cipher.NewCTR(block, cipherParams.IV.Bytes())
-	stream.XORKeyStream(secretBytes, cipheredBytes)
-
-	secret, err := crypto.ParsePrivateKey(secretBytes)
-	if err != nil {
-		return nil, err
-	}
-	public := secret.PublicKey()
-	address := common.NewAccountAddressFromPublicKey(public)
-	if !address.Equal(&ksData.Address) {
-		return nil, fmt.Errorf("recovered address is mismatched, %s, expected:%s",
-			address.String(), ksData.Address.String())
-	}
-	return secret, nil
-}
-
 func ReadAddressFromKeyStore(data []byte) (*common.Address, error) {
 	var ksData KeyStoreData
 	if err := json.Unmarshal(data, &ksData); err != nil {
@@ -207,7 +143,7 @@ func ReadAddressFromKeyStore(data []byte) (*common.Address, error) {
 	return &ksData.Address, nil
 }
 
-func NewFromKeyStore(data, pw []byte) (Wallet, error) {
+func DecryptKeyStore(data, pw []byte) (Wallet, error) {
 	ksdata, err := NewKeyStoreData(data)
 	if err != nil {
 		return nil, err

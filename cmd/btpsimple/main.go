@@ -61,7 +61,7 @@ func (c *Config) Wallet() (wallet.Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wallet.NewFromKeyStore(c.KeyStoreData, pw)
+	return wallet.DecryptKeyStore(c.KeyStoreData, pw)
 }
 
 func (c *Config) resolvePassword() ([]byte, error) {
