@@ -1,0 +1,41 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+LABEL MAINTAINER="t_arch@iconloop.com"
+# install dependencies
+#RUN apk add --no-cache jq
+
+ARG VERSION
+LABEL BTPSIMPLE_VERSION="$VERSION"
+
+RUN apk add build-base
+
+RUN apk add inotify-tools
+
+# install
+COPY dist/bin/btpsimple /btpsimple/bin/btpsimple
+ENV PATH $PATH:/btpsimple/bin
+
+# copy extras
+COPY dist/pyscore/*.zip /btpsimple/contracts/pyscore/
+
+# copy module
+COPY dist/debug/* /btpsimple
+
+WORKDIR /btpsimple
+
+# container configuration
+VOLUME ["/btpsimple/data"]
+
+# goloop entrypoint
+ENV BTPSIMPLE_BASE_DIR=/btpsimple/data
+ENV BTPSIMPLE_CONFIG=/btpsimple/config/config.json
+ENV BTPSIMPLE_KEY_STORE=/btpsimple/config/keystore.json
+ENV BTPSIMPLE_KEY_SECRET=/btpsimple/config/keysecret
+ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
+
+RUN go mod download
+
+RUN go get github.com/go-delve/delve/cmd/dlv
+
+RUN chmod +x /btpsimple/run
+ENTRYPOINT ["/btpsimple/run"]

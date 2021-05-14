@@ -5,20 +5,26 @@ services:
       context: .
       args:
         BTPSIMPLE_VERSION: latest
-        GOLOOP_IMAGE: goloop:latest
+        GOLOOP_IMAGE: iconloop/goloop:latest
     ports:
       - "9080:9080"
     volumes:
       - config:/goloop/config
-      - data:/goloop/data
+      - ./data:/goloop/data
     environment:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
   btpsimple_src:
     image: btpsimple:latest
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "10080:40000"
     volumes:
+      - ../cmd:/btpsimple/cmd
+      - ../common:/btpsimple/common
       - config:/btpsimple/config
-      - data:/btpsimple/data
+      - ./data:/btpsimple/data
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src
       - BTPSIMPLE_CONFIG=/btpsimple/config/src.config.json
@@ -34,9 +40,15 @@ services:
       - goloop
   btpsimple_dst:
     image: btpsimple:latest
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "10081:40000"
     volumes:
+      - ../cmd:/btpsimple/cmd
+      - ../common:/btpsimple/common
       - config:/btpsimple/config
-      - data:/btpsimple/data
+      - ./data:/btpsimple/data
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_dst
       - BTPSIMPLE_CONFIG=/btpsimple/config/dst.config.json
@@ -51,5 +63,4 @@ services:
     links:
       - goloop
 volumes:
-  config: {}
-  data: {}
+  config: {}     

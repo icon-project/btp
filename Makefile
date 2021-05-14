@@ -7,7 +7,6 @@
 BUILD_ROOT = $(abspath ./)
 BIN_DIR = ./bin
 LINUX_BIN_DIR = ./build/linux
-
 GOBUILD = go build
 GOBUILD_TAGS =
 GOBUILD_ENVS = CGO_ENABLED=0
@@ -96,6 +95,16 @@ btpsimple-image: btpsimple-linux dist-py
 	BUILD_TAGS="$(GOBUILD_TAGS)" \
 	DIST_DIR="$(PYSCORE_DIST_DIR)" \
 	$(BUILD_ROOT)/docker/btpsimple/build.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
+
+btpsimple-debug: btpsimple-linux dist-py
+	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
+	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
+	@ \
+	BIN_DIR=$(abspath $(LINUX_BIN_DIR)) \
+	BIN_VERSION=$(GL_VERSION) \
+	BUILD_TAGS="$(GOBUILD_TAGS)" \
+	DIST_DIR="$(PYSCORE_DIST_DIR)" \
+	$(BUILD_ROOT)/docker/btpsimple/build-debug.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
 
 .PHONY: test
 
