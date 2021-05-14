@@ -95,43 +95,35 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		ReceiptProofs: make([][]byte, 0),
 	}
 	size := 0
-
-	if rm.BlockUpdates[len(rm.BlockUpdates)-1].Height > height {
-		for _, bu := range rm.BlockUpdates {
-			if bu.Height <= height {
-				continue
-			}
-			buSize := len(bu.Proof)
-			if s.isOverLimit(buSize) {
-				return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
-			}
-			size += buSize
-			if s.isOverLimit(size) {
-				buSize := len(bu.Proof)
-				if s.isOverLimit(buSize) {
-					return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
-				}
-				size += buSize
-				if s.isOverLimit(size) {
-					segment := &chain.Segment{
-						Height:              msg.height,
-						NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-					}
-					if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-						return nil, err
-					}
-					segments = append(segments, segment)
-					msg = &RelayMessage{
-						BlockUpdates:  make([][]byte, 0),
-						ReceiptProofs: make([][]byte, 0),
-					}
-					size = buSize
-				}
-				msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
-				msg.height = bu.Height
-				msg.numberOfBlockUpdate += 1
-			}
+	//TODO rm.BlockUpdates[len(rm.BlockUpdates)-1].Height <= s.bmcStatus.Verifier.Height
+	//	using only rm.BlockProof
+	for _, bu := range rm.BlockUpdates {
+		if bu.Height <= height {
+			continue
 		}
+		buSize := len(bu.Proof)
+		if s.isOverLimit(buSize) {
+			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
+		}
+		size += buSize
+		if s.isOverLimit(size) {
+			segment := &chain.Segment{
+				Height:              msg.height,
+				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			}
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+				return nil, err
+			}
+			segments = append(segments, segment)
+			msg = &RelayMessage{
+				BlockUpdates:  make([][]byte, 0),
+				ReceiptProofs: make([][]byte, 0),
+			}
+			size = buSize
+		}
+		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
+		msg.height = bu.Height
+		msg.numberOfBlockUpdate += 1
 	}
 
 	var bp []byte

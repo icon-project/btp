@@ -16,7 +16,7 @@ services:
     logging:
       driver: none
   btpsimple_src:
-    image: btpsimple:dev
+    # image: btpsimple:dev
     build:
       target: builder
       context: .
@@ -47,7 +47,7 @@ services:
       - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src.secret
       - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/build/data/log/btpsimple_src.log
   btpsimple_dst:
-    image: btpsimple:dev
+    # image: btpsimple:dev
     build:
       target: builder
       context: .

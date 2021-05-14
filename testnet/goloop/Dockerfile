@@ -1,5 +1,5 @@
 ARG BMR_VERSION=latest
-FROM iconloop/goloop:latest
+FROM iconloop/goloop:0.9.5
 
 RUN apk add --no-cache jq zip
 

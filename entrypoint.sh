@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+
 if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then
     export BTPSIMPLE_OFFSET=$(cat ${BTPSIMPLE_OFFSET})
 fi
