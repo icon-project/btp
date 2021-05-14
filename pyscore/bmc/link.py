@@ -12,13 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import math
-
 from iconservice import Address, IconScoreDatabase
 
 from .relay import BTPRelays, BTPRelay
 from ..lib import BTPAddress, BTPException
 from ..lib.icon import PropertiesDB, IterableDictDB, remove_from_array_db
+
+
+def ceil(n):
+    return int(-1 * n // 1 * -1)
+
+
+def floor(n):
+    return int(n // 1)
 
 
 class BTPLink(PropertiesDB):
@@ -64,7 +70,7 @@ class BTPLink(PropertiesDB):
     def rotate_term(self) -> int:
         scale = self._scale()
         if scale > 0:
-            return math.ceil(self.max_aggregation / self._scale())
+            return ceil(self.max_aggregation / self._scale())
         else:
             return 0
 
@@ -81,14 +87,14 @@ class BTPLink(PropertiesDB):
         rotate_term = self.rotate_term()
         if rotate_term > 0:
             if has_msg:
-                guess_height = self.rx_height + math.ceil((relay_msg_height - self.rx_height_src) / self._scale()) - 1
+                guess_height = self.rx_height + ceil((relay_msg_height - self.rx_height_src) / self._scale()) - 1
                 if guess_height > current_height:
                     guess_height = current_height
-                rotate_count = math.ceil((guess_height - self.rotate_height)/rotate_term)
+                rotate_count = ceil((guess_height - self.rotate_height)/rotate_term)
                 if rotate_count < 0:
                     rotate_count = 0
                 base_height = self.rotate_height + ((rotate_count-1) * rotate_term)
-                skip_count = math.ceil((current_height - guess_height)/self.delay_limit) - 1
+                skip_count = ceil((current_height - guess_height)/self.delay_limit) - 1
                 if skip_count > 0:
                     rotate_count += skip_count
                     base_height = current_height
@@ -96,7 +102,7 @@ class BTPLink(PropertiesDB):
                 self.rx_height_src = relay_msg_height
                 return self._rotate(rotate_count, base_height)
             else:
-                rotate_count = math.ceil((current_height - self.rotate_height)/rotate_term)
+                rotate_count = ceil((current_height - self.rotate_height)/rotate_term)
                 base_height = self.rotate_height + ((rotate_count-1) * rotate_term)
                 return self._rotate(rotate_count, base_height)
         else:
