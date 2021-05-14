@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	stdlog "log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -106,63 +105,30 @@ var logoLines = []string{
 	"                                       |___/ ",
 }
 
+var rootCmd, rootVc = cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
+var cfg = &Config{}
+
 func main() {
-	rootCmd, rootVc := cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
-	cfg := &Config{}
+
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
 	//rootVc.Debug()
-
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Print btpsimple version",
-		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("btpsimple version", version, build)
-		},
-	})
-
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		baseDir := rootVc.GetString("base_dir")
-		logfile := rootVc.GetString("log_writer.filename")
-		cfg.FilePath = rootVc.GetString("config")
-		if cfg.FilePath != "" {
-			f, err := os.Open(cfg.FilePath)
-			if err != nil {
-				return fmt.Errorf("fail to open config file=%s err=%+v", cfg.FilePath, err)
-			}
-			rootVc.SetConfigType("json")
-			err = rootVc.ReadConfig(f)
-			if err != nil {
-				return fmt.Errorf("fail to read config file=%s err=%+v", cfg.FilePath, err)
-			}
-			cfg.FilePath, _ = filepath.Abs(cfg.FilePath)
-		}
-		if err := rootVc.Unmarshal(&cfg, cli.ViperDecodeOptJson); err != nil {
-			return fmt.Errorf("fail to unmarshall config from env err=%+v", err)
-		}
-		if baseDir != "" {
-			cfg.BaseDir = cfg.ResolveRelative(baseDir)
-		}
-		if logfile != "" {
-			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
-		}
-		return nil
-	}
+	//
 	rootPFlags := rootCmd.PersistentFlags()
+	rootPFlags.String("base_dir", "", "Base directory for data")
+	rootPFlags.StringP("config", "c", "", "Parsing configuration file")
+
 	rootPFlags.String("src.address", "", "BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("src.endpoint", "", "Endpoint of source blockchain")
 	rootPFlags.StringToString("src.options", nil, "Options, comma-separated 'key=value'")
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
+
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
 	rootPFlags.String("key_store", "", "KeyStore")
 	rootPFlags.String("key_password", "", "Password of KeyStore")
 	rootPFlags.String("key_secret", "", "Secret(password) file for KeyStore")
-	//
-	rootPFlags.String("base_dir", "", "Base directory for data")
-	rootPFlags.StringP("config", "c", "", "Parsing configuration file")
 	//
 	rootPFlags.String("log_level", "debug", "Global log level (trace,debug,info,warn,error,fatal,panic)")
 	rootPFlags.String("console_level", "trace", "Console log level (trace,debug,info,warn,error,fatal,panic)")
@@ -180,85 +146,39 @@ func main() {
 	rootPFlags.Bool("log_writer.localtime", false, "Use localtime on rotated log file instead of UTC")
 	rootPFlags.Bool("log_writer.compress", false, "Use gzip on rotated log file")
 	cli.BindPFlags(rootVc, rootPFlags)
-	cli.MarkAnnotationCustom(rootPFlags, "src.address", "dst.address", "src.endpoint", "dst.endpoint")
-	saveCmd := &cobra.Command{
-		Use:   "save [file]",
-		Short: "Save configuration",
-		Args:  cli.ArgsWithDefaultErrorFunc(cobra.ExactArgs(1)),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := cfg.EnsureWallet(); err != nil {
-				return fmt.Errorf("fail to ensure src wallet err:%+v", err)
-			} else {
-				cfg.KeyStorePass = ""
-			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			saveFilePath := args[0]
-			cfg.FilePath, _ = filepath.Abs(saveFilePath)
-			cfg.BaseDir = cfg.ResolveRelative(cfg.BaseDir)
 
-			if cfg.LogWriter != nil {
-				cfg.LogWriter.Filename = cfg.ResolveRelative(cfg.LogWriter.Filename)
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		baseDir := rootVc.GetString("base_dir")
+		logfile := rootVc.GetString("log_writer.filename")
+		cfg.FilePath = rootVc.GetString("config")
+		if cfg.FilePath != "" {
+			f, err := os.Open(cfg.FilePath)
+			if err != nil {
+				return fmt.Errorf("fail to open config file=%s err=%+v", cfg.FilePath, err)
 			}
-
-			if err := cli.JsonPrettySaveFile(saveFilePath, 0644, cfg); err != nil {
+			// rootVc.SetConfigType("json")
+			// if err = rootVc.ReadConfig(f); err != nil {
+			// 	return fmt.Errorf("fail to read config file=%s err=%+v", cfg.FilePath, err)
+			// }
+			if err := json.NewDecoder(f).Decode(cfg); err != nil {
 				return err
 			}
-			cmd.Println("Save configuration to", saveFilePath)
-			if saveKeyStore, _ := cmd.Flags().GetString("save_key_store"); saveKeyStore != "" {
-				if err := cli.JsonPrettySaveFile(saveKeyStore, 0600, cfg.KeyStoreData); err != nil {
-					return err
-				}
+
+			cfg.FilePath, _ = filepath.Abs(cfg.FilePath)
+		} else {
+			if err := rootVc.Unmarshal(cfg, cli.ViperDecodeOptJson); err != nil {
+				return fmt.Errorf("fail to unmarshall config from env err=%+v", err)
 			}
-			return nil
-		},
+		}
+
+		if baseDir != "" {
+			cfg.BaseDir = cfg.ResolveRelative(baseDir)
+		}
+		if logfile != "" {
+			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
+		}
+		return nil
 	}
-	rootCmd.AddCommand(saveCmd)
-	saveCmd.Flags().String("save_key_store", "", "KeyStore File path to save")
-
-	startCmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start server",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return cli.ValidateFlagsWithViper(rootVc, cmd.Flags())
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			for _, l := range logoLines {
-				log.Println(l)
-			}
-			log.Printf("Version : %s", version)
-			log.Printf("Build   : %s", build)
-
-			var (
-				err error
-				w   wallet.Wallet
-			)
-			if w, err = cfg.Wallet(); err != nil {
-				return err
-			}
-			modLevels, _ := cmd.Flags().GetStringToString("mod_level")
-			l := setLogger(cfg, w, modLevels)
-			l.Debugln(cfg.FilePath, cfg.BaseDir)
-			if cfg.BaseDir == "" {
-				cfg.BaseDir = path.Join(".", ".btpsimple", cfg.Src.Address.NetworkAddress())
-			}
-
-			var sr *btp.BTP
-			if sr, err = btp.New(&cfg.Config, w, l); err != nil {
-				return err
-			}
-			return sr.Serve()
-		},
-	}
-	rootCmd.AddCommand(startCmd)
-	startFlags := startCmd.Flags()
-	startFlags.StringToString("mod_level", nil, "Set console log level for specific module ('mod'='level',...)")
-	startFlags.String("cpuprofile", "", "CPU Profiling data file")
-	startFlags.String("memprofile", "", "Memory Profiling data file")
-	startFlags.MarkHidden("mod_level")
-
-	cli.BindPFlags(rootVc, startFlags)
 
 	genMdCmd := cli.NewGenerateMarkdownCommand(rootCmd, rootVc)
 	genMdCmd.Hidden = true

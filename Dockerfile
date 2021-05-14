@@ -8,11 +8,11 @@ WORKDIR /btpsimple
 COPY . .
 
 ENV PATH $PATH:/btpsimple/build/bin
-ENV BTPSIMPLE_BASE_DIR=/btpsimple/data
-ENV BTPSIMPLE_CONFIG=/btpsimple/config/config.json
-ENV BTPSIMPLE_KEY_STORE=/btpsimple/config/keystore.json
-ENV BTPSIMPLE_KEY_SECRET=/btpsimple/config/keysecret
-ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
+# ENV BTPSIMPLE_BASE_DIR=/btpsimple/data
+# ENV BTPSIMPLE_CONFIG=/btpsimple/config/config.json
+# ENV BTPSIMPLE_KEY_STORE=/btpsimple/config/keystore.json
+# ENV BTPSIMPLE_KEY_SECRET=/btpsimple/config/keysecret
+# ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
 
 RUN chmod +x entrypoint.sh
 ENTRYPOINT ["/btpsimple/entrypoint.sh"]
