@@ -86,3 +86,17 @@ Terminologies
 | /pyscore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
 | /pyscore/lib | BTP interface and common codes for Python SCORE |
 | /pyscore/lib/icon | ICON related common codes |
+
+## Quick start
+
+If you already installed docker and want to take a quick view.   
+Just run:
+```
+make run-docker
+```
+
+In docker environment, We have issolated a simple case of relaying between 2 relayers.
+After starting docker successfully. Now you can make a test by simply run this command:
+```
+make run-test-scenario
+```
