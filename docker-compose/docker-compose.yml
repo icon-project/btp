@@ -10,7 +10,8 @@ services:
       - "9080:9080"
     volumes:
       - config:/goloop/config
-      - ./data:/goloop/data
+      - data:/goloop/data
+      - ./logs:/goloop/data/log
     environment:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
@@ -24,7 +25,8 @@ services:
       - ../cmd:/btpsimple/cmd
       - ../common:/btpsimple/common
       - config:/btpsimple/config
-      - ./data:/btpsimple/data
+      - data:/btpsimple/data
+      - ./logs:/btpsimple/data/log
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src
       - BTPSIMPLE_CONFIG=/btpsimple/config/src.config.json
@@ -48,7 +50,8 @@ services:
       - ../cmd:/btpsimple/cmd
       - ../common:/btpsimple/common
       - config:/btpsimple/config
-      - ./data:/btpsimple/data
+      - data:/btpsimple/data
+      - ./logs:/btpsimple/data/log
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_dst
       - BTPSIMPLE_CONFIG=/btpsimple/config/dst.config.json
@@ -63,4 +66,5 @@ services:
     links:
       - goloop
 volumes:
-  config: {}     
+  config: {}
+  data: {}     

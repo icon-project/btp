@@ -4,5 +4,4 @@ __pycache__
 **/*.iml
 build/
 bin/
-docker-compose/data
-docker-compose/config
+docker-compose/logs
