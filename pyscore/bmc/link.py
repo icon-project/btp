@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from iconservice import Address, IconScoreDatabase
+from iconservice import *
 
 from .relay import BTPRelays, BTPRelay
 from ..lib import BTPAddress, BTPException
