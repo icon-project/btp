@@ -18,23 +18,22 @@
 
 pragma solidity >=0.5.0 <=0.8.5;
 
-import "../TokenBSH.sol"; 
+import "../TokenBSH.sol";
 
-contract Mock is TokenBSH  {
+contract Mock is TokenBSH {
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
     using RLPEncodeStruct for Types.TransferCoin;
+    using RLPEncodeStruct for Types.TransferAssets;
     using ParseAddress for address;
 
-    constructor(address bmc,string memory _serviceName,string memory _network,
-        string memory _tokenName,
-        string memory _symbol)
-        TokenBSH(bmc, _serviceName,_tokenName, _symbol) 
-    {}
+    constructor(
+        address bmc,
+        string memory _serviceName,
+        string memory _network
+    ) TokenBSH(bmc, _serviceName) {}
 
-    function setBalance(address _tokenContract, uint256 _amt) external {
-        _mint(_tokenContract, _amt);
-    }
+    Types.Asset[] public assetsMock;
 
     function handleRequest(
         string memory _net,
@@ -44,6 +43,10 @@ contract Mock is TokenBSH  {
         string memory _tokenName,
         uint256 _value
     ) external {
+        address token_addr = tokenAddr[_tokenName];
+        uint256 _fee;
+        (_value, _fee) = this.calculateTransferFee(token_addr, _value);
+        assetsMock.push(Types.Asset(_tokenName, _value, _fee));
         sendBTPMessage(
             _net,
             _svc,
@@ -54,8 +57,8 @@ contract Mock is TokenBSH  {
                     .ServiceType
                     .REQUEST_TOKEN_TRANSFER,
                 Types
-                    .TransferCoin(_from, _to.toString(), _tokenName, _value)
-                    .encodeData()
+                    .TransferAssets(_from, _to.toString(), assetsMock)
+                    .encodeTransferAsset()
             )
                 .encodeServiceMessage()
         );
@@ -83,6 +86,8 @@ contract Mock is TokenBSH  {
         );
     }
 
+    Types.Asset[] public tokensMock;
+
     function handleRequestWithStringAddress(
         string memory _net,
         string memory _svc,
@@ -91,6 +96,10 @@ contract Mock is TokenBSH  {
         string memory _tokenName,
         uint256 _value
     ) external {
+        address token_addr = tokenAddr[_tokenName];
+        uint256 _fee;
+        (_value, _fee) = this.calculateTransferFee(token_addr, _value);
+        tokensMock.push(Types.Asset(_tokenName, _value, _fee));
         sendBTPMessage(
             _net,
             _svc,
@@ -100,7 +109,9 @@ contract Mock is TokenBSH  {
                 Types
                     .ServiceType
                     .REQUEST_TOKEN_TRANSFER,
-                Types.TransferCoin(_from, _to, _tokenName, _value).encodeData()
+                Types
+                    .TransferAssets(_from, _to, tokensMock)
+                    .encodeTransferAsset()
             )
                 .encodeServiceMessage()
         );

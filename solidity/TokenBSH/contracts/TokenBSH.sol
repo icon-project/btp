@@ -17,55 +17,59 @@
  */
 
 pragma solidity >=0.5.0 <=0.8.0;
+pragma experimental ABIEncoderV2;
 
 import "../../icondao/Interfaces/IBSH.sol";
 import "../../icondao/Interfaces/IBMC.sol";
 import "../../icondao/Libraries/TypesLib.sol";
- 
+
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../icondao/Libraries/RLPEncodeStructLib.sol";
 import "../../icondao/Libraries/RLPDecodeStructLib.sol";
 import "../../icondao/Libraries/StringsLib.sol";
 import "../../icondao/Libraries/ParseAddressLib.sol";
 import "../../icondao/Libraries/Owner.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TokenBSH is IBSH, ERC20, Owner {
+contract TokenBSH is IBSH, Owner {
     using SafeMath for uint256;
     using RLPEncodeStruct for Types.ServiceMessage;
-    using RLPEncodeStruct for Types.TransferCoin;
+    using RLPEncodeStruct for Types.TransferAssets;
     using RLPEncodeStruct for Types.Response;
     using RLPDecodeStruct for bytes;
     using ParseAddress for address;
     using ParseAddress for string;
     using Strings for string;
 
+    struct Token {
+        string name;
+        string symbol;
+        uint256 decimals;
+        uint256 feeNumerator;
+    }
+
     IBMC private bmc;
-    mapping(address => bool) owners;
     mapping(string => address) tokenAddr;
-    mapping(address => string) tokenName;
+    mapping(address => Token) tokens;
     mapping(address => mapping(string => Types.Balance)) private balances;
-    event AddOwner(address indexed owner);
-    event RemoveOwner(address indexed owner);
     event Register(string indexed name, address addr);
-    mapping(uint256 => Types.Record) public requests;
-    string[] tokens;
-    uint32 noOfOwners;
-    uint256 constant minReqOwner = 1;
+    mapping(uint256 => Types.TransferAssetsRecord) public requests;
+    mapping(string => uint256) public feeCollector;
+    string[] tokenList;
     uint256 private serialNo;
     uint256 private numOfTokens;
     string public serviceName;
 
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
+    uint256 constant FEE_DENOMINATOR = 100; //TODO: keeping it simple for now
 
     event HandleBTPMessageEvent(uint256 _sn, uint256 _code, string _msg);
     event TransferStart(
         address indexed _from,
         string _to,
         uint256 _sn,
-        string _tokenName,
-        uint256 _value
+        Types.Asset[] _assets
     );
 
     event TransferEnd(
@@ -75,11 +79,7 @@ contract TokenBSH is IBSH, ERC20, Owner {
         string _response
     );
 
-    constructor(address _bmc, string memory _serviceName,string memory _tokenName,
-        string memory _symbol)
-        ERC20(_tokenName, _symbol)
-        Owner()
-    {
+    constructor(address _bmc, string memory _serviceName) Owner() {
         bmc = IBMC(_bmc);
         serviceName = _serviceName;
         serialNo = 0;
@@ -90,24 +90,30 @@ contract TokenBSH is IBSH, ERC20, Owner {
         _;
     }
 
-    function register(string calldata name, address addr) external owner {
+    function register(
+        string calldata _name,
+        string calldata _symbol,
+        uint256 _decimals,
+        uint256 _feeNumerator,
+        address _addr
+    ) external owner {
         require(
-            tokenAddr[name] == address(0),
+            tokenAddr[_name] == address(0),
             "Token with same name exists already."
         );
-        tokenAddr[name] = addr;
-        tokenName[addr] = name;
-        tokens.push(name);
+        tokenAddr[_name] = _addr;
+        tokens[_addr] = Token(_name, _symbol, _decimals, _feeNumerator);
+        tokenList.push(_name);
         numOfTokens++;
-        emit Register(name, addr);
+        emit Register(_name, _addr);
     }
 
     function tokenNames() external view returns (string[] memory _names) {
         _names = new string[](numOfTokens);
         uint256 temp = 0;
-        for (uint256 i = 0; i < tokens.length; i++) {
-            if (tokenAddr[tokens[i]] != address(0)) {
-                _names[temp] = tokens[i];
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            if (tokenAddr[tokenList[i]] != address(0)) {
+                _names[temp] = tokenList[i];
                 temp++;
             }
         }
@@ -120,10 +126,63 @@ contract TokenBSH is IBSH, ERC20, Owner {
         returns (uint256 _usableBalance, uint256 _lockedBalance)
     {
         return (
-            this.balanceOf(_owner),
+            //this.balanceOf(_owner),
+            balances[_owner][_tokenName].refundableBalance,
             balances[_owner][_tokenName].lockedBalance
         );
     }
+
+    function withdraw(string calldata _tokenName, uint256 _value) external {
+        require(tokenAddr[_tokenName] != address(0), "Token not supported");
+        require(
+            balances[msg.sender][_tokenName].refundableBalance >= _value,
+            "Insufficient balance"
+        );
+
+        balances[msg.sender][_tokenName].refundableBalance = balances[
+            msg.sender
+        ][_tokenName]
+            .refundableBalance
+            .sub(_value);
+        address token_addr = tokenAddr[_tokenName];
+        ERC20(token_addr).approve(address(this), _value);
+        ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
+    }
+
+    function calculateTransferFee(address token_addr, uint256 _value)
+        external
+        view
+        returns (uint256 value, uint256 fee)
+    {
+        return _calculateTransferFee(token_addr, _value);
+    }
+
+    //TODO: check for the decimals calulation && require for amount less than FEE_DENOMINATOR
+    function _calculateTransferFee(address token_addr, uint256 _value)
+        private
+        view
+        returns (uint256 value, uint256 fee)
+    {
+        Token memory _token = tokens[token_addr];
+        fee = (_value * _token.feeNumerator) / FEE_DENOMINATOR;
+        value = _value.sub(fee);
+        return (value, fee);
+    }
+
+    Types.Asset[] _feeAssets;
+
+    function getAccumulatedFees() external view returns (Types.Asset[] memory) {
+        return _feeAssets;
+    }
+
+    function handleGatherFee(string memory _toFA) external {
+        sendServiceMessage(_toFA, _feeAssets);
+        //delete the fees accumulated after sending to the FA
+        delete _feeAssets;
+        //todo: when receiving error from the handleresponse, put back the fee collected into feeCollector
+    }
+
+    Types.Asset[] public transferAssets;
 
     function transfer(
         string calldata _tokenName,
@@ -133,23 +192,29 @@ contract TokenBSH is IBSH, ERC20, Owner {
         address token_addr = tokenAddr[_tokenName];
         require(token_addr != address(0), "Token is not registered");
         require(_value > 0, "Invalid amount specified.");
-        this.transferFrom(msg.sender, address(this), _value);
-        sendServiceMessage(_to, _tokenName, _value);
+        ERC20(token_addr).transferFrom(msg.sender, address(this), _value);
+        uint256 _fee;
+        (_value, _fee) = _calculateTransferFee(token_addr, _value);
+        balances[msg.sender][_tokenName].lockedBalance = _value.add(
+            balances[msg.sender][_tokenName].lockedBalance
+        );
+        //to empty the transfer assets as its a public variable
+        if (transferAssets.length > 0) {
+            delete transferAssets;
+        }
+        transferAssets.push(Types.Asset(_tokenName, _value, _fee));
+        sendServiceMessage(_to, transferAssets);
     }
 
     function sendServiceMessage(
         string memory _to,
-        string memory _tokenName,
-        uint256 _value
+        Types.Asset[] storage transferAssets
     ) private {
-        balances[msg.sender][_tokenName].lockedBalance = _value.add(
-            balances[msg.sender][_tokenName].lockedBalance
-        );
-
         // Send Service Message to BMC
         string memory _toNetwork;
         string memory _toAddress;
         (_toNetwork, _toAddress) = _to.splitBTPAddress();
+
         bytes memory serviceMessage =
             Types
                 .ServiceMessage(
@@ -157,40 +222,37 @@ contract TokenBSH is IBSH, ERC20, Owner {
                     .ServiceType
                     .REQUEST_TOKEN_TRANSFER,
                 Types
-                    .TransferCoin(
+                    .TransferAssets(
                     address(msg.sender).toString(),
                     _toAddress,
-                    _tokenName,
-                    _value
+                    transferAssets
                 )
-                    .encodeData()
+                    .encodeTransferAsset()
             )
                 .encodeServiceMessage();
 
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
-        // Add request in the pending map
-        requests[serialNo] = Types.Record(
-            Types.TransferCoin(
-                address(msg.sender).toString(),
-                _to,
-                _tokenName,
-                _value
-            ),
-            Types.Response(0, ""),
-            false
-        );
 
-        emit TransferStart(
-            msg.sender,
-            _to,
-            balances[msg.sender][_tokenName].lockedBalance,
-            _tokenName,
-            _value
-        );
+        // Add request in the pending map
+        Types.TransferAssetsRecord storage record = requests[serialNo];
+        record.request.asset = transferAssets;
+        record.request.from = address(msg.sender).toString();
+        record.request.to = _toAddress;
+        record.response = Types.Response(0, "");
+        record.isResolved = false;
+        emit TransferStart(msg.sender, _to, serialNo, record.request.asset);
         serialNo++;
     }
 
     //TODO: add onlyBMC later when integrated with BMC
+    function getAssets(uint256 _sn)
+        public
+        view
+        returns (Types.Asset[] memory assets)
+    {
+        assets = requests[_sn].request.asset;
+    }
+
     function handleBTPMessage(
         string calldata _from,
         string calldata _svc,
@@ -199,32 +261,41 @@ contract TokenBSH is IBSH, ERC20, Owner {
     ) external override {
         Types.ServiceMessage memory _sm = _msg.decodeServiceMessage();
         if (_sm.serviceType == Types.ServiceType.REQUEST_TOKEN_TRANSFER) {
-            Types.TransferCoin memory _tc = _sm.data.decodeData();
-            handleRequestService(_tc.coinName, _tc.to, _from, _tc.value, _sn);
+            Types.TransferAssets memory _tc = _sm.data.decodeTransferAsset();
+            handleRequestService(_tc, _from, _sn);
             return;
         } else if (
             _sm.serviceType == Types.ServiceType.RESPONSE_HANDLE_SERVICE
         ) {
             Types.Response memory response = _sm.data.decodeResponse();
             address caller = requests[_sn].request.from.parseAddress();
-            string memory _tokenName = requests[_sn].request.coinName;
-            uint256 value = requests[_sn].request.value;
             if (response.code == 1) {
                 handleResponseError(_sn, response.code, response.message);
             } else {
                 // Update locked balance for the response OK & burn the amount transfered from BSH
-                balances[caller][_tokenName].lockedBalance = balances[caller][
-                    _tokenName
-                ]
-                    .lockedBalance
-                    .sub(value);
-                _burn(address(this), value);
-                // Update the response message in requests and mark it resolved
-                requests[_sn] = Types.Record(
-                    requests[_sn].request,
-                    Types.Response(response.code, response.message),
-                    true
-                );
+                Types.Asset[] memory _assets = getAssets(_sn);
+                for (uint256 i = 0; i < _assets.length; i++) {
+                    string memory _tokenName = _assets[i].name;
+                    uint256 value = _assets[i].value;
+                    uint256 fee = _assets[i].fee;
+                    balances[caller][_tokenName].lockedBalance = balances[
+                        caller
+                    ][_tokenName]
+                        .lockedBalance
+                        .sub(value);
+                    feeCollector[_tokenName] = feeCollector[_tokenName].add(
+                        fee
+                    );
+                    _feeAssets.push(
+                        Types.Asset(_tokenName, feeCollector[_tokenName], 0)
+                    );
+                    // Update the response message in requests and mark it resolved
+                    requests[_sn].response = Types.Response(
+                        response.code,
+                        response.message
+                    );
+                    requests[_sn].isResolved = true;
+                }
             }
 
             emit TransferEnd(caller, _sn, response.code, response.message);
@@ -242,29 +313,22 @@ contract TokenBSH is IBSH, ERC20, Owner {
         );
     }
 
-    function withdraw(string calldata _tokenName, uint256 _value) external {
-        require(tokenAddr[_tokenName] != address(0), "Token not supported");
-        require(
-            balances[msg.sender][_tokenName].refundableBalance >= _value,
-            "Insufficient balance"
-        );
-
-        balances[msg.sender][_tokenName].refundableBalance = balances[
-            msg.sender
-        ][_tokenName]
-            .refundableBalance
-            .sub(_value);
-        this.transferFrom(address(this), msg.sender, _value);
+    function handleBTPError(
+        string calldata _src,
+        string calldata _svc,
+        uint256 _sn,
+        uint256 _code,
+        string calldata _msg
+    ) external override {
+        handleResponseError(_sn, _code, _msg);
     }
 
     function handleRequestService(
-        string memory _tokenName,
-        string memory _toAddress,
+        Types.TransferAssets memory transferAssets,
         string calldata _toNetwork,
-        uint256 _amount,
         uint256 _sn
     ) private {
-        // Check if the _toAddress is invalid
+        string memory _toAddress = transferAssets.to;
         try this.checkParseAddress(_toAddress) {} catch Error(
             string memory err
         ) {
@@ -286,44 +350,41 @@ contract TokenBSH is IBSH, ERC20, Owner {
             );
             return;
         }
-        // Check if the token is registered already
-        address tokenaddr = tokenAddr[_tokenName];
-        if (tokenaddr == address(0)) {
-            sendResponseMessage(
-                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                _toNetwork,
-                _sn,
-                "Unregistered Token",
-                RC_ERR
-            );
-            return;
+
+        Types.Asset[] memory _asset = transferAssets.asset;
+
+        for (uint256 i = 0; i < _asset.length; i++) {
+            // Check if the _toAddress is invalid
+            uint256 _amount = _asset[i].value;
+            string memory _tokenName = _asset[i].name;
+            // Check if the token is registered already
+            address _tokenaddr = tokenAddr[_tokenName];
+            if (_tokenaddr == address(0)) {
+                sendResponseMessage(
+                    Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+                    _toNetwork,
+                    _sn,
+                    "Unregistered Token",
+                    RC_ERR
+                );
+                continue;
+            }
+            // Mint token for the _toAddress
+            balances[_toAddress.parseAddress()][_tokenName]
+                .refundableBalance = balances[_toAddress.parseAddress()][
+                _tokenName
+            ]
+                .refundableBalance
+                .add(_amount);
         }
-        // Mint token for the _toAddress
-        try this.tryToMintToken(_toAddress.parseAddress(), _amount) {
-            sendResponseMessage(
-                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                _toNetwork,
-                _sn,
-                "Transfer Success",
-                RC_OK
-            );
-        } catch Error(string memory err) {
-            sendResponseMessage(
-                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                _toNetwork,
-                _sn,
-                err,
-                RC_ERR
-            );
-        } catch (bytes memory) {
-            sendResponseMessage(
-                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                _toNetwork,
-                _sn,
-                "Transfer failed",
-                RC_ERR
-            );
-        }
+
+        sendResponseMessage(
+            Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+            _toNetwork,
+            _sn,
+            "Transfer Success",
+            RC_OK
+        );
     }
 
     function sendResponseMessage(
@@ -354,69 +415,38 @@ contract TokenBSH is IBSH, ERC20, Owner {
     ) private {
         // Update locked balance of the caller
         address caller = requests[_sn].request.from.parseAddress();
-        string memory _tokenName = requests[_sn].request.coinName;
-        uint256 value = requests[_sn].request.value;
-        try this.tryToTransferCoin(caller, value) {} catch Error(
-            string memory
-        ) {
-            balances[caller][_tokenName].refundableBalance = balances[caller][
-                _tokenName
-            ]
-                .refundableBalance
-                .add(value);
-            emit HandleBTPMessageEvent(
-                _sn,
-                _code,
-                "Transfer Token Failed"
-            );
-        } catch (bytes memory) {
-            balances[caller][_tokenName].refundableBalance = balances[caller][
-                _tokenName
-            ]
-                .refundableBalance
-                .add(value);
-            emit HandleBTPMessageEvent(
-                _sn,
-                _code,
-                "Transfer Token Failed"
-            );
-        }
-        balances[caller][_tokenName].lockedBalance = balances[caller][
-            _tokenName
-        ]
-            .lockedBalance
-            .sub(value);
 
-        // Update the request with error message and change it to resolved
-        requests[_sn] = Types.Record(
-            requests[_sn].request,
-            Types.Response(_code, _msg),
-            true
-        );
+        Types.Asset[] memory _assets = requests[_sn].request.asset;
+        for (uint256 i = 0; i < _assets.length; i++) {
+            string memory _tokenName = _assets[i].name;
+            uint256 value = _assets[i].value;
+            uint256 fee = _assets[i].fee;
+
+            address _tokenAddr = tokenAddr[_tokenName];
+            balances[caller][_tokenName].refundableBalance = balances[caller][
+                _tokenName
+            ]
+                .refundableBalance
+                .add(value);
+            balances[caller][_tokenName].refundableBalance = balances[caller][
+                _tokenName
+            ]
+                .refundableBalance
+                .add(fee);
+
+            balances[caller][_tokenName].lockedBalance = balances[caller][
+                _tokenName
+            ]
+                .lockedBalance
+                .sub(value);
+
+            // Update the request with error message and change it to resolved
+            requests[_sn].response = Types.Response(_code, _msg);
+            requests[_sn].isResolved = true;
+        }
     }
 
     function checkParseAddress(string calldata _to) external {
         _to.parseAddress();
     }
-
-    function handleBTPError(
-        string calldata _src,
-        string calldata _svc,
-        uint256 _sn,
-        uint256 _code,
-        string calldata _msg
-    ) external override {
-        handleResponseError(_sn, _code, _msg);
-    }
-
-    function tryToTransferCoin(address _to, uint256 _amount) external {
-        require(msg.sender == address(this), "Only BSH");
-        this.approve(address(this), _amount);
-        this.transferFrom(address(this), _to, _amount);
-    }
-
-    function tryToMintToken(address _to, uint256 _amount) external {
-        require(msg.sender == address(this), "Only BSH");
-        _mint(_to, _amount);
-    }    
 }

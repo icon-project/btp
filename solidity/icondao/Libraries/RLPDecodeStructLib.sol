@@ -346,4 +346,44 @@ library RLPDecodeStruct {
         }
         return Types.RelayMessage(_buArray, _bp, isBPEmpty, _rp, isRPEmpty);
     }
+   
+    function decodeAsset(bytes memory _rlp)
+        internal
+        pure
+        returns (Types.Asset memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        return
+            Types.Asset(
+                string(ls[0].toBytes()),
+                ls[1].toUint(),
+                ls[2].toUint()
+            );
+    }
+
+    //TODO: remove fee from encode/decode, as it wont not be used
+    function decodeTransferAsset(bytes memory _rlp)
+        internal
+        returns (Types.TransferAssets memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        Types.Asset[] memory _ep = new Types.Asset[](ls[2].toList().length);
+        uint256 len = ls[2].toList().length;
+        Types.Asset memory _asset;
+        RLPReader.RLPItem[] memory rlpTs = ls[2].toList();
+        for (uint256 i = 0; i < ls[2].toList().length; i++) {
+            _asset = Types.Asset(
+                string(rlpTs[i].toList()[0].toBytes()),
+                rlpTs[i].toList()[1].toUint(),
+                rlpTs[i].toList()[2].toUint()
+            );
+            _ep[i] = _asset;
+        }
+        return
+            Types.TransferAssets(
+                string(ls[0].toBytes()),
+                string(ls[1].toBytes()),
+                _ep
+            );
+    }
 }

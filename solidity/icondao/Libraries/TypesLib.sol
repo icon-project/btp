@@ -194,10 +194,27 @@ library Types {
     bytes4 internal constant ERC1155_BATCH_ACCEPTED = 0xbc197c81;
 
 
+    struct TransferAssets {
+        string from;
+        string to;
+        Asset[] asset;
+    }
+
+    struct Asset{
+        string name;
+        uint256 value;
+        uint256 fee;
+    }
     enum ServiceType {
         REQUEST_TOKEN_TRANSFER,
         REQUEST_TOKEN_REGISTER,
         RESPONSE_HANDLE_SERVICE,
         RESPONSE_UNKNOWN
     } 
+
+    struct TransferAssetsRecord {
+        TransferAssets request;
+        Response response;
+        bool isResolved;
+    }
 }
