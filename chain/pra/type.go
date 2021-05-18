@@ -1,6 +1,8 @@
 package pra
 
-import "github.com/icon-project/btp/common/jsonrpc"
+import (
+	"github.com/icon-project/btp/common/jsonrpc"
+)
 
 const (
 	JsonrpcApiVersion                                = 3

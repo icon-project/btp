@@ -2,11 +2,15 @@ package pra
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
+	srpc "github.com/centrifuge/go-substrate-rpc-client"
+	stypes "github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,13 +18,30 @@ import (
 	"github.com/icon-project/btp/chain/pra/binding"
 )
 
+const (
+	BlockRetryInterval = time.Second * 1
+)
+
 type Client struct {
 	ethClient *ethclient.Client
+	subAPI    *srpc.SubstrateAPI
 	bmc       *binding.BMC
 	log       log.Logger
+	meta      *stypes.Metadata
+	mutex     *sync.RWMutex
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
+	subAPI, err := srpc.NewSubstrateAPI(uri)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	meta, err := subAPI.RPC.State.GetMetadataLatest()
+	if err != nil {
+		l.Fatal(err)
+	}
+
 	ethClient, err := ethclient.Dial(uri)
 	if err != nil {
 		l.Fatal(err)
@@ -32,11 +53,35 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 	}
 
 	c := &Client{
+		mutex:     &sync.RWMutex{},
+		meta:      meta,
+		subAPI:    subAPI,
 		bmc:       bmc,
 		ethClient: ethClient,
 		log:       l,
 	}
 	return c
+}
+
+func (c *Client) getMetadata() *stypes.Metadata {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	clone := new(stypes.Metadata)
+	*clone = *c.meta
+	return clone
+}
+
+func (c *Client) updateMetatdata() error {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	meta, err := c.subAPI.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return err
+	}
+	c.meta = meta
+	return nil
 }
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
@@ -52,7 +97,7 @@ func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, b
 	return c.ethClient.TransactionByHash(context.Background(), txhash)
 }
 
-func (c *Client) MonitorBlock(cb chain.MonitorCallback) error {
+func (c *Client) MonitorEvmBlock(cb chain.MonitorCallback) error {
 	headers := make(chan *types.Header)
 	sub, err := c.ethClient.SubscribeNewHead(context.Background(), headers)
 	if err != nil {
@@ -80,4 +125,69 @@ func (c *Client) MonitorEvent() error {
 
 func (c *Client) CloseAllMonitor() error {
 	return nil
+}
+
+func (c *Client) queryStorage(prefix, method string, arg1, arg2 []byte, result interface{}) (bool, error) {
+
+	key, err := stypes.CreateStorageKey(c.getMetadata(), prefix, method, arg1, arg2)
+	if err != nil {
+		return false, err
+	}
+	return c.subAPI.RPC.State.GetStorageLatest(key, result)
+}
+
+func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events stypes.EventRecordsRaw)) error {
+	currentBlock := h
+	for {
+		finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
+		if err != nil {
+			return err
+		}
+
+		finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
+		if err != nil {
+			return err
+		}
+
+		if currentBlock > uint64(finalizedHeader.Number) {
+			c.log.Trace("Block not yet finalized", "target", currentBlock, "latest", finalizedHeader.Number)
+			time.Sleep(BlockRetryInterval)
+			continue
+		}
+
+		hash, err := c.subAPI.RPC.Chain.GetBlockHash(currentBlock)
+		if err != nil && err.Error() == ErrBlockNotReady.Error() {
+			time.Sleep(BlockRetryInterval)
+			continue
+		} else if err != nil {
+			c.log.Error("Failed to query latest block", "block", currentBlock, "err", err)
+			return err
+		}
+
+		events, err := c.getEvents(hash)
+		if err != nil {
+			return err
+		}
+
+		cb(events)
+		currentBlock++
+	}
+}
+
+func (c *Client) getEvents(hash stypes.Hash) (stypes.EventRecordsRaw, error) {
+	c.log.Trace("Fetching block for events", "hash", hash.Hex())
+	meta := c.getMetadata()
+
+	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var records stypes.EventRecordsRaw
+	_, err = c.subAPI.RPC.State.GetStorage(key, &records, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
 }

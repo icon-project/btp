@@ -274,7 +274,7 @@ func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 }
 
 func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
-	return s.c.MonitorBlock(cb)
+	return s.c.MonitorEvmBlock(cb)
 }
 
 func (s *Sender) StopMonitorLoop() {
