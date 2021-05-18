@@ -20,7 +20,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"net/url"
 	"strconv"
 	"time"
@@ -47,8 +49,12 @@ type sender struct {
 	w   Wallet
 	l   log.Logger
 	opt struct {
-		StepLimit int64
+		GasPrice int64
+		GasLimit int64
+		ChainID  int64
 	}
+
+	bmc *binding.Bmc
 
 	evtLogRawFilter struct {
 		addr      []byte
@@ -71,18 +77,8 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
-	fmt.Println(rmp)
 	p := &TransactionParam{
-		Version: NewHexInt(JsonrpcApiVersion),
-		//FromAddress: Address(s.w.Address()),
-		//ToAddress:   Address(s.dst.ContractAddress()),
-		NetworkID: HexInt(s.dst.NetworkID()),
-		StepLimit: NewHexInt(s.opt.StepLimit),
-		DataType:  "call",
-		//Data: CallData{
-		//	Method: BMCRelayMethod,
-		//	Params: rmp,
-		//},
+		Params: rmp,
 	}
 	return p, nil
 }
@@ -231,39 +227,16 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	if !ok {
 		return nil, fmt.Errorf("casting failure")
 	}
-	thp := &TransactionHashParam{}
-	tx := s.c.NewTransaction(p)
-SignLoop:
-	for {
-		if err := s.c.SignTransaction(nil, tx); err != nil {
-			return nil, err
-		}
-	SendLoop:
-		for {
-			err := s.c.SendTransaction(tx)
-			if err != nil {
-				if je, ok := err.(*jsonrpc.Error); ok {
-					switch je.Code {
-					case JsonrpcErrorCodeTxPoolOverflow:
-						<-time.After(DefaultRelayReSendInterval)
-						continue SendLoop
-					case JsonrpcErrorCodeSystem:
-						if subEc, err := strconv.ParseInt(je.Message[1:5], 0, 32); err == nil {
-							switch subEc {
-							case DuplicateTransactionError:
-								s.l.Debugf("DuplicateTransactionError txh:%v", tx.Hash())
-								return thp, nil
-							case ExpiredTransactionError:
-								continue SignLoop
-							}
-						}
-					}
-				}
-				return nil, mapError(err)
-			}
-			return thp, nil
-		}
+	t, err := s.c.newTransactOpts(s.opt.ChainID)
+	if err != nil {
+		return nil, err
 	}
+	rmp := p.Params.(BMCRelayMethodParams)
+	message, err := s.bmc.HandleRelayMessage(t, rmp.Prev, rmp.Messages)
+	if err != nil {
+		return nil, err
+	}
+	return message, nil
 }
 
 func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, error) {
@@ -279,7 +252,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 					}
 				}
 			}
-			return txr, mapErrorWithTransactionResult(&TransactionResult{}, err) // TODO: map transaction result error
+			return txr, mapErrorWithTransactionResult(&TransactionResult{}, err) // TODO: map transaction.js result error
 		}
 	} else {
 		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)
@@ -287,46 +260,39 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 }
 
 func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
-	/*p := &CallParam{
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.ContractAddress()),
-		DataType:    "call",
-		Data: CallData{
-			Method: BMCGetStatusMethod,
-			Params: BMCStatusParams{
-				Target: s.src.String(),
-			},
-		},
-	}*/
-	//bs := &BMCStatus{}
-	//mapError(s.c.Call(p, bs))
-	/*if err != nil {
+	var status binding.TypesLinkStats
+	status, err := s.bmc.GetStatus(
+		&bind.CallOpts{From: HexToAddress(s.w.Address())}, s.src.String())
+
+	if err != nil {
+		s.l.Errorf("Error retrieving relay status from BMC")
 		return nil, err
-	}*/
+	}
+
 	ls := &module.BMCLinkStatus{}
-	ls.TxSeq = 1
-	ls.RxSeq = 0                 //err = bs.RxSeq.Value()
-	ls.Verifier.Height = 1037    //, err = bs.Verifier.Height.Value()
-	ls.Verifier.Offset = 137     //, err = bs.Verifier.Offset.Value()
-	ls.Verifier.LastHeight = 137 //, err = bs.Verifier.LastHeight.Value()
+	ls.TxSeq = status.TxSeq.Int64()
+	ls.RxSeq = status.RxSeq.Int64()
+	ls.Verifier.Height = status.Verifier.HeightMTA.Int64()
+	ls.Verifier.Offset = status.Verifier.OffsetMTA.Int64()
+	ls.Verifier.LastHeight = status.Verifier.LastHeight.Int64()
 	ls.BMRs = make([]struct {
 		Address      string
 		BlockCount   int64
 		MessageCount int64
-	}, 1)
-	//for i, bmr := range bs.BMRs {
-	ls.BMRs[0].Address = "hx8d671a3f1fd4a1f6b201c3e3c79d4c86713665cd" //string(bmr.Address)
-	ls.BMRs[0].BlockCount = 900                                       //, err = bmr.BlockCount.Value()
-	ls.BMRs[0].MessageCount = 0                                       //, err = bmr.MessageCount.Value()
-	//}
-	ls.BMRIndex = 0         //, err = bs.BMRIndex.Int()
-	ls.RotateHeight = 6654  //, err = bs.RotateHeight.Value()
-	ls.RotateTerm = 16      //, err = bs.RotateTerm.Int()
-	ls.DelayLimit = 3       //, err = bs.DelayLimit.Int()
-	ls.MaxAggregation = 16  //, err = bs.MaxAggregation.Int()
-	ls.CurrentHeight = 8329 //, err = bs.CurrentHeight.Value()
-	ls.RxHeight = 94        //, err = bs.RxHeight.Value()
-	ls.RxHeightSrc = 137    //, err = bs.RxHeightSrc.Value()
+	}, len(status.Relays))
+	for i, bmr := range status.Relays {
+		ls.BMRs[i].Address = bmr.Addr.String()
+		ls.BMRs[i].BlockCount = bmr.BlockCount.Int64()
+		ls.BMRs[i].MessageCount = bmr.MsgCount.Int64()
+	}
+	ls.BMRIndex = int(status.RelayIdx.Int64())
+	ls.RotateHeight = status.RotateHeight.Int64()
+	ls.RotateTerm = int(status.RotateTerm.Int64())
+	ls.DelayLimit = int(status.DelayLimit.Int64())
+	ls.MaxAggregation = int(status.MaxAggregation.Int64())
+	ls.CurrentHeight = status.CurrentHeight.Int64()
+	ls.RxHeight = status.RxHeight.Int64()
+	ls.RxHeightSrc = status.RxHeightSrc.Int64()
 	return ls, nil
 }
 
@@ -380,6 +346,9 @@ func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[st
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
 	s.c = NewClient(endpoint, l)
+
+	s.bmc, _ = binding.NewBmc(HexToAddress(s.dst.ContractAddress()), s.c.ethClient)
+
 	return s
 }
 

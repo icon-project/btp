@@ -264,3 +264,11 @@ func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]int
 	r.c = NewClient(endpoint, l)
 	return r
 }
+
+func (r *receiver) GetBlockUpdate(height int64) (*module.BlockUpdate, error) {
+	var v *BlockNotification
+	var bu *module.BlockUpdate
+	v = &BlockNotification{Height: NewHexInt(height)}
+	bu, err := r.newBlockUpdate(v)
+	return bu, err
+}

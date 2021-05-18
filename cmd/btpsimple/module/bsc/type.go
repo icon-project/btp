@@ -18,8 +18,8 @@ package bsc
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"strconv"
 	"strings"
@@ -62,11 +62,6 @@ const (
 	ResultStatusFailureCodeEnd    = 99
 )
 
-const (
-	BMCRelayMethod     = "handleRelayMessage"
-	BMCGetStatusMethod = "getStatus"
-)
-
 type BlockHeader struct {
 	Version                int
 	Height                 int64
@@ -80,18 +75,6 @@ type BlockHeader struct {
 	LogsBloom              []byte
 	Result                 []byte
 	serialized             []byte
-}
-
-type ReceiptData struct {
-	Status             int
-	To                 []byte
-	CumulativeStepUsed []byte
-	StepUsed           []byte
-	StepPrice          []byte
-	LogsBloom          []byte
-	EventLogs          []EventLog
-	SCOREAddress       []byte
-	EventLogsHash      []byte
 }
 
 type EventLog struct {
@@ -124,39 +107,16 @@ type TransactionResult struct {
 }
 
 type TransactionParam struct {
-	Version     HexInt   `json:"version" validate:"required,t_int"`
-	FromAddress string   `json:"from" validate:"required,t_addr_eoa"`
-	ToAddress   string   `json:"to" validate:"required,t_addr"`
-	Value       HexInt   `json:"value,omitempty" validate:"optional,t_int"`
-	StepLimit   HexInt   `json:"stepLimit" validate:"required,t_int"`
-	Timestamp   HexInt   `json:"timestamp" validate:"required,t_int"`
-	NetworkID   HexInt   `json:"nid" validate:"required,t_int"`
-	Nonce       HexInt   `json:"nonce,omitempty" validate:"optional,t_int"`
-	Signature   string   `json:"signature" validate:"required,t_sig"`
-	DataType    string   `json:"dataType,omitempty" validate:"optional,call|deploy|message"`
-	Data        []byte   `json:"data,omitempty"`
-	TxHash      HexBytes `json:"-"`
+	FromAddress string      `json:"from" validate:"required,t_addr_eoa"`
+	ToAddress   string      `json:"to" validate:"required,t_addr"`
+	NetworkID   HexInt      `json:"nid" validate:"required,t_int"`
+	Params      interface{} `json:"params,omitempty"`
+	TransactOpt *bind.TransactOpts
 }
+
 type CallData struct {
 	Method string      `json:"method"`
 	Params interface{} `json:"params,omitempty"`
-}
-
-type DeployData struct {
-	ContentType string      `json:"contentType"`
-	Content     string      `json:"content"`
-	Params      interface{} `json:"params,omitempty"`
-}
-
-type DeployParamsBMC struct {
-	NetAddress string `json:"_net"`
-}
-
-type DeployParamsBMV struct {
-	BMC        Address `json:"_bmc"`
-	NetAddress string  `json:"_net"`
-	MTAOffset  HexInt  `json:"_offset"`
-	Validators string  `json:"_validators"`
 }
 
 type BMCRelayMethodParams struct {
@@ -164,30 +124,6 @@ type BMCRelayMethodParams struct {
 	Messages string `json:"_msg"`
 }
 
-type BMCLinkMethodParams struct {
-	Target string `json:"_link"`
-}
-type BMCUnlinkMethodParams struct {
-	Target string `json:"_link"`
-}
-type BMCAddRouteMethodParams struct {
-	Destination string `json:"_dst"`
-	Link        string `json:"_link"`
-}
-type BMCRemoveRouteMethodParams struct {
-	Destination string `json:"_dst"`
-}
-
-type CallParam struct {
-	FromAddress Address     `json:"from" validate:"optional,t_addr_eoa"`
-	ToAddress   Address     `json:"to" validate:"required,t_addr_score"`
-	DataType    string      `json:"dataType" validate:"required,call"`
-	Data        interface{} `json:"data"`
-}
-
-type BMCStatusParams struct {
-	Target string `json:"_link"`
-}
 type BMCStatus struct {
 	TxSeq    HexInt `json:"tx_seq"`
 	RxSeq    HexInt `json:"rx_seq"`
@@ -252,16 +188,8 @@ type BlockNotification struct {
 	Events  [][][]HexInt `json:"events,omitempty"`
 }
 
-type EventRequest struct {
-	EventFilter
-	Height HexInt `json:"height"`
-}
-
-type EventNotification struct {
-	Hash   HexBytes `json:"hash"`
-	Height HexInt   `json:"height"`
-	Index  HexInt   `json:"index"`
-	Events []HexInt `json:"events,omitempty"`
+func HexToAddress(s string) common.Address {
+	return common.HexToAddress(s)
 }
 
 //T_BIN_DATA, T_HASH
@@ -361,29 +289,4 @@ type ReceiptProof struct {
 	Index       int
 	Proof       []byte
 	EventProofs []*module.EventProof
-}
-
-type Block struct {
-	//BlockHash              HexBytes  `json:"block_hash" validate:"required,t_hash"`
-	//Version                HexInt    `json:"version" validate:"required,t_int"`
-	Height int64 `json:"height" validate:"required,t_int"`
-	//Timestamp              int64             `json:"time_stamp" validate:"required,t_int"`
-	//Proposer               HexBytes  `json:"peer_id" validate:"optional,t_addr_eoa"`
-	//PrevID                 HexBytes  `json:"prev_block_hash" validate:"required,t_hash"`
-	//NormalTransactionsHash HexBytes  `json:"merkle_tree_root_hash" validate:"required,t_hash"`
-	NormalTransactions []struct {
-		TxHash HexBytes `json:"txHash"`
-		//Version   HexInt   `json:"version"`
-		From Address `json:"from"`
-		To   Address `json:"to"`
-		//Value     HexInt   `json:"value,omitempty" `
-		//StepLimit HexInt   `json:"stepLimit"`
-		//TimeStamp HexInt   `json:"timestamp"`
-		//NID       HexInt   `json:"nid,omitempty"`
-		//Nonce     HexInt   `json:"nonce,omitempty"`
-		//Signature HexBytes `json:"signature"`
-		DataType string          `json:"dataType,omitempty"`
-		Data     json.RawMessage `json:"data,omitempty"`
-	} `json:"confirmed_transaction_list"`
-	//Signature              HexBytes  `json:"signature" validate:"optional,t_hash"`
 }
