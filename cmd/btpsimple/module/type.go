@@ -102,4 +102,5 @@ type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
 type Receiver interface {
 	ReceiveLoop(height int64, seq int64, cb ReceiveCallback, scb func()) error
 	StopReceiveLoop()
+	GetBlockUpdate(height int64) (*BlockUpdate, error)
 }
