@@ -107,7 +107,7 @@ test :
 all : $(BUILD_TARGETS)
 
 cp_pyscore_testnet: dist-py
-	cp ${PYSCORE_DIST_DIR}/*.zip ${PYSCORE_TESTNET_DIR}
+	rsync -a ${PYSCORE_DIST_DIR}/*.zip ${PYSCORE_TESTNET_DIR}
 
 build-docker: cp_pyscore_testnet
 	docker-compose build
