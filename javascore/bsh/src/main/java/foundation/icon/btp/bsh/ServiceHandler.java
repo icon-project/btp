@@ -16,44 +16,45 @@
 
 package foundation.icon.btp.bsh;
 
+import foundation.icon.btp.bsh.types.*;
 import score.*;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 import scorex.util.ArrayList;
+
 import java.math.BigInteger;
-import java.util.NoSuchElementException;
+import java.util.List;
 
 public class ServiceHandler {
     final static String RLPn = "RLPn";
-
+    final static String _svc = "TokenBSH";
     private static final int MIN_OWNER_COUNT = 1;
-
     private static final int REQUEST_TOKEN_TRANSFER = 0;
     private static final int REQUEST_TOKEN_REGISTER = 1;
     private static final int RESPONSE_HANDLE_SERVICE = 2;
     private static final int RESPONSE_UNKNOWN_ = 3;
-
-    private static final int BD_USABLE_IDX = 0;
-    private static final int BD_LOCKED_IDX = 1;
-    private static final int BD_REFUNDABLE_IDX = 2;
     private static final int RC_OK = 0;
-    private static final int RC_ERR_UNREGISTERED_TOKEN = -1;
-    private static float FEE_PERCENT = 0.1f;
+    private static final int RC_ERR = 1;
+    private static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(100);
+    private final DictDB<BigInteger, byte[]> pendingDb = Context.newDictDB("pending", byte[].class);
+    private final VarDB<BigInteger> serialNo = Context.newVarDB("serialNo", BigInteger.class);
     private final DictDB<String, String> tokenAddrDb = Context.newDictDB("token_addr", String.class);
     private final ArrayDB<String> tokenNameDb = Context.newArrayDB("token_name", String.class);
-    private final VarDB<BigInteger> snDb = Context.newVarDB("sn", BigInteger.class);
+    private final DictDB<Address, Token> tokenDb = Context.newDictDB("tokens", Token.class);
+    private final BranchDB<Address, DictDB<String, Balance>> balanceDB = Context.newBranchDB("balance", Balance.class);
+    private final VarDB<Integer> numberOfOwners = Context.newVarDB("numberOfOwners", Integer.class);
     private final VarDB<Address> bmcDb = Context.newVarDB("bmc", Address.class);
-    private final DictDB<BigInteger, byte[]> pendingDb = Context.newDictDB("pending", byte[].class);
-    BranchDB<Address, DictDB<String, BigInteger>> usuableBalances = Context.newBranchDB("usuableBalances", BigInteger.class);
-    BranchDB<Address, DictDB<String, BigInteger>> lockedBalances = Context.newBranchDB("lockedBalances", BigInteger.class);
-    BranchDB<Address, DictDB<String, BigInteger>> refundableBalances = Context.newBranchDB("refundableBalances", BigInteger.class);
-    ArrayList<Address> ownersDb = new ArrayList<>();
-    Address feeAggregationScore;
+    private final DictDB<String, BigInteger> feeCollector = Context.newDictDB("fee_collector", BigInteger.class);
+    private final DictDB<BigInteger, TransferAsset> pendingFeesDb = Context.newDictDB("pending_fees", TransferAsset.class);
+    DictDB<Address, Boolean> ownersDb = Context.newDictDB("owners", Boolean.class);
 
-    public ServiceHandler() {
+    public ServiceHandler(Address _bmc) {
         //register the BMC link for this BSH
-        //bmcDb.set(bmc);
+        bmcDb.set(_bmc);
+        serialNo.set(BigInteger.ZERO);
+        ownersDb.set(Context.getOwner(), true);
+        numberOfOwners.set(1);
     }
 
     /**
@@ -62,8 +63,8 @@ public class ServiceHandler {
     @External
     public void addOwner(Address address) {
         onlyOwner();
-        ownersDb.add(address);
-        AddOwner(address);
+        ownersDb.set(address, true);
+        numberOfOwners.set(numberOfOwners.get() + 1);
     }
 
     /**
@@ -73,63 +74,57 @@ public class ServiceHandler {
     public void removeOwner(Address address) {
         onlyOwner();
         checkMinOwners();
-        ownersDb.remove(address);
-        RemoveOwner(address);
+        ownersDb.set(address, false);
+        numberOfOwners.set(numberOfOwners.get() - 1);
     }
-
 
     private void onlyOwner() {
         assert (Context.getCaller() != null);
-        Context.require(Context.getOwner().equals(Context.getCaller()) || isAnOwner(Context.getCaller()));
+        if (!(Context.getOwner().equals(Context.getCaller()) || isAnOwner(Context.getCaller()))) {
+            Context.revert("No Permission");
+        }
+    }
+
+    private void onlyBMC() {
+        assert (Context.getCaller() != null);
+        if (!Context.getCaller().equals(bmcDb.get())) {
+            Context.revert("No Permission");
+        }
     }
 
     private void checkMinOwners() {
-        Context.require(ownersDb.size() >= MIN_OWNER_COUNT);
+        Context.require(numberOfOwners.get() > MIN_OWNER_COUNT);
     }
 
     private boolean isAnOwner(Address caller) {
-        return ownersDb.contains(caller);
-    }
-
-
-    @External
-    public void addFeeAggregationScore(Address address) {
-        onlyOwner();
-        feeAggregationScore = address;
-        AddFeeAggregationScore(address);
-    }
-
-    @External
-    public void updateFeeAggregationScore(Address address) {
-        onlyOwner();
-        feeAggregationScore = address;
-        UpdateFeeAggregationScore(address);
-    }
-
-    /**
-     * @param percent percentage of fees in String format, converted internally to float
-     */
-    @External
-    public void setFeePercent(String percent) {
-        onlyOwner();
-        FEE_PERCENT = Float.parseFloat(percent);
-        SetFeePercent(percent);
+        if (ownersDb.get(caller) != null) {
+            return ownersDb.get(caller);
+        }
+        return false;
     }
 
     /**
      * @param name    name of the token
      * @param address Address of the token contract
      */
-
     @External
-    public void register(String name, Address address) {
-        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
+    public void register(String name, String symbol, BigInteger decimals, BigInteger feeNumerator, Address address) {
         onlyOwner();
         if (tokenAddrDb.get(name) != null) {
-            throw new UserRevertedException("Duplicated token name");
+            Context.revert("Token with same name exists already.");
         }
         tokenAddrDb.set(name, address.toString());
         tokenNameDb.add(name);
+        tokenDb.set(address, new Token(name, symbol, decimals, feeNumerator));
+    }
+
+    @External
+    public String[] tokenNames() {
+        String[] tokenNames = new String[tokenNameDb.size()];
+        for (int i = 0; i < tokenNameDb.size(); i++) {
+            tokenNames[i] = tokenNameDb.get(i);
+        }
+        return tokenNames;
     }
 
     /**
@@ -141,21 +136,19 @@ public class ServiceHandler {
      */
     @External
     public void tokenFallback(Address from, BigInteger value, @Optional byte[] data) {
-        if (value.compareTo(BigInteger.ZERO) == -1) {
-            throw new UserRevertedException("Invalid Amount");
+        if (value.compareTo(BigInteger.ZERO) == 0) {
+            Context.revert("Invalid Amount");
         }
-        String targetName = null;
-        for (int i = 0; i < tokenNameDb.size(); i++) {
-            if (Context.getCaller().toString().compareTo(tokenAddrDb.get(tokenNameDb.get(i))) == 0) {
-                targetName = tokenNameDb.get(i);
-                break;
-            }
-        }
-        if (targetName == null || targetName.equals("")) {
-            //throw new UserRevertedException("Token not registered");
+        Token token = tokenDb.get(Context.getCaller());
+        if (token == null) {
+            Context.revert("Caller doesnt have a token Registered");
         }
 
-        setBalance(from, targetName, value, BigInteger.ZERO);
+        String _tokenName = token.getName();
+        if (_tokenName == null || _tokenName.equals("")) {
+            Context.revert("Token not registered");
+        }
+        setBalance(from, _tokenName, value, BigInteger.ZERO, BigInteger.ZERO);
     }
 
     /**
@@ -164,27 +157,33 @@ public class ServiceHandler {
      * @param value     Amount to transfer
      */
     @External
-    public void transfer(String tokenName, String to, BigInteger value) {
+    public void transfer(String tokenName, BigInteger value, String to) {
         String tokenAddr = this.tokenAddrDb.getOrDefault(tokenName, null);
         if (tokenAddr == null) {
-            throw new UserRevertedException("Token not registered");
+            Context.revert("Token not registered");
         }
-        if (value.compareTo(BigInteger.ZERO) == -1) {
-            throw new UserRevertedException("Not allowed amount value");
+        if (value.compareTo(BigInteger.ZERO) == 0) {
+            Context.revert("Invalid amount specified");
         }
-        //Address _to = Address.fromString(to);
         Address sender = Context.getCaller();
-        BigInteger[] balance = getBalance(sender, tokenName);
-        if (balance[BD_USABLE_IDX].compareTo(value) == -1) {
-            throw new UserRevertedException("Overdrawn");
+        Balance balance = getBalance(sender, tokenName);
+        if (balance.getUsable().compareTo(value) == -1) {
+            Context.revert("Overdrawn");
         }
-        setBalance(sender, tokenName, value.negate(), value);
+        BTPAddress _to = BTPAddress.fromString(to);
+        Token _tk = tokenDb.get(Address.fromString(tokenAddr));
+        setBalance(sender, tokenName, value.negate(), value, BigInteger.ZERO);
+        BigInteger fee = value.multiply(_tk.getFeeNumerator()).divide(FEE_DENOMINATOR);
+        value = value.subtract(fee);
         BigInteger sn = generateSerialNumber();
-        byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, sender.toString(), to, tokenName, value);
+        List<Asset> assets = new ArrayList<Asset>();
+        assets.add(new Asset(tokenName, value, fee));
+        byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, sender.toString(), to, assets);
         putPending(sn, msg);
-        //TODO: call sendMessage method to send it to BMC
         Context.println("################# BMC.SendMessage initiated");
-        TransferStart(sender, tokenName, sn, value, to);
+        Context.call(bmcDb.get(), "sendMessage", _to.getNet(), _svc, serialNo.get(), msg);
+        //TODO: emit event
+        //TransferStart(sender, tokenName, sn, assets);
     }
 
     /**
@@ -198,149 +197,182 @@ public class ServiceHandler {
      */
     @External
     public void handleBTPMessage(String from, String svc, BigInteger sn, byte[] msg) {
-
-        if (!Context.getCaller().equals(bmcDb.get())) {
-            //TODO: Not allowed caller
+        onlyBMC();
+        Context.println("####################pointer 1");
+        if (svc.compareTo(_svc) != 0) {
+            Context.revert("Invalid Service");
         }
+        Context.println("####################pointer 2");
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, msg);
+        Context.println("####################pointer 3");
         reader.beginList();
         int actionType = reader.readInt();
-        Context.println("[Exception] " + actionType);
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            reader.beginList();
-            Address dataFrom = Address.fromString(reader.readString());
-            Address dataTo = Address.fromString(reader.readString());
-            String tokenName = reader.readString();
-            int value = reader.readInt();
-            reader.end();
-            reader.end();
+            TransferAsset _ta = TransferAsset.readObject(reader);
+            Address dataTo = null;
+            try {
+                dataTo = Address.fromString(_ta.getTo());
+            } catch (Exception e) {
+                Context.revert("Invalid Address format exception");
+            }
+            Asset _asset = _ta.getAssets().get(0);//TODO: convert this to for loop to transfer all the assets value
+            String tokenName = _asset.getName();
+            BigInteger value = _asset.getValue();
             String tokenAddr = this.tokenAddrDb.getOrDefault(tokenName, null);
             int code = RC_OK;
             if (tokenAddr != null) {
-                setBalance(dataTo, tokenName, BigInteger.valueOf(value), BigInteger.ZERO);
+                //TODO: check if this needs to be deposited back to refundable or credit directly back to user?
+                setBalance(dataTo, tokenName, value, BigInteger.ZERO, BigInteger.ZERO);
             } else {
-                code = RC_ERR_UNREGISTERED_TOKEN;
+                //code = RC_ERR_UNREGISTERED_TOKEN;
+                Context.revert("Unregistered Token");
             }
             // send response message for `req_token_transfer`
             byte[] res = createMessage(RESPONSE_HANDLE_SERVICE, code);
-            //TODO: call sendMessage method to send it to BMC
+            Context.call(bmcDb.get(), "sendMessage", from, _svc, serialNo.get(), msg);
         } else if (actionType == RESPONSE_HANDLE_SERVICE) {
-            if (!hasPending(sn)) {
-                throw new NoSuchElementException("No pending message");
+            if (!hasPending(sn) && !hasPendingFees(sn)) {
+                Context.revert("No pending message for this Serial Number");
             }
-
-            byte[] pmsg = getPending(sn);
-            ObjectReader pmsgReader = Context.newByteArrayObjectReader(RLPn, pmsg);
-            pmsgReader.beginList();
-            Address pmsgFrom = Address.fromString(pmsgReader.readString());
-            Address pmsgTo = Address.fromString(pmsgReader.readString());
-            String pmsgTokenName = pmsgReader.readString();
-            int pmsgValue = pmsgReader.readInt();
-            pmsgReader.end();
-            pmsgReader.end();
             int code = reader.readInt();
-            if (code == RC_OK) {
-                setBalance(pmsgFrom, pmsgTokenName, BigInteger.ZERO, BigInteger.valueOf(pmsgValue).negate());
-            } else {
-                setBalance(pmsgFrom, pmsgTokenName, BigInteger.valueOf(pmsgValue), BigInteger.valueOf(pmsgValue).negate());
+            boolean feeAggregationSvc = false;
+            if (pendingFeesDb.get(sn) != null) {
+                feeAggregationSvc = true;
             }
-            // delete pending message
-            deletePending(sn);
+            if (!feeAggregationSvc) {
+                byte[] pmsg = getPending(sn);
+                ObjectReader pmsgReader = Context.newByteArrayObjectReader(RLPn, pmsg);
+                pmsgReader.beginList();
+                pmsgReader.skip();
+                TransferAsset pendingMsg = TransferAsset.readObject(pmsgReader);
+                Address pmsgFrom = Address.fromString(pendingMsg.getFrom());
+                for (int i = 0; i < pendingMsg.getAssets().size(); i++) {
+                    Asset _asset = pendingMsg.getAssets().get(i);
+                    String _tokenName = _asset.getName();
+                    BigInteger _value = _asset.getValue();
+                    BigInteger _fee = _asset.getFee();
+                    BigInteger _totalAmount = _value.add(_fee);
+                    if (code == RC_OK) {
+                        setBalance(pmsgFrom, _tokenName, BigInteger.ZERO, _totalAmount.negate(), BigInteger.ZERO);
+                        feeCollector.set(_tokenName, feeCollector.getOrDefault(_tokenName, BigInteger.ZERO).add(_fee));
+                    } else {
+                        setBalance(pmsgFrom, _tokenName, _totalAmount, _totalAmount.negate(), BigInteger.ZERO);
+                    }
+                }
+                // delete pending message
+                deletePending(sn);
+            } else {
+                TransferAsset _pendingFAReq = pendingFeesDb.get(sn);
+                if (code == RC_ERR) {
+                    for (int i = 0; i < _pendingFAReq.getAssets().size(); i++) {
+                        Asset _asset = _pendingFAReq.getAssets().get(i);
+                        String _tokenName = _asset.getName();
+                        BigInteger _value = _asset.getValue();
+                        feeCollector.set(_tokenName, feeCollector.getOrDefault(_tokenName, BigInteger.ZERO).add(_value));
+                    }
+                }
+                //delete pending fee request
+                pendingFeesDb.set(sn, null);
+            }
             TransferEnd(sn, code, msg);
+        } else if (actionType == RESPONSE_UNKNOWN_) {
+            return;
         } else {
             byte[] res = createMessage(RESPONSE_UNKNOWN_);
-            //TODO: call sendMessage method to send it to BMC
-
+            Context.call(bmcDb.get(), "sendMessage", from, _svc, serialNo.get(), res);
         }
     }
 
     /**
-     * @param src     Source
-     * @param service Service Name
-     * @param sn      Serial Number
-     * @param code    Error Code
-     * @param msg     Serialized Message (from, to, tokenName, value) in order
+     * @param src  Source
+     * @param svc  Service Name
+     * @param sn   Serial Number
+     * @param code Error Code
+     * @param msg  Serialized Message (from, to, tokenName, value) in order
      */
     @External
-    public void handleBTPError(String src, String service, BigInteger sn, int code, String msg) {
-        //TODO: not allowed caller
+    public void handleBTPError(String src, String svc, BigInteger sn, int code, String msg) {
+        onlyBMC();
         //TODO: no pending message
+        if (svc.compareTo(_svc) != 0) {
+            Context.revert("Invalid Service name");
+        }
+        if (getPending(sn) == null) {
+            Context.revert("No pending message for this Serial Number");
+        }
         byte[] pmsg = getPending(sn);
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, pmsg);
         reader.beginList();
         int actionType = reader.readInt();
-        // ROllback token transfer
+        // Rollback token transfer
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            Address from = Address.fromString(reader.readString());
-            Address to = Address.fromString(reader.readString());
-            String tokenName = reader.readString();
-            int value = reader.readInt();
+            TransferAsset _ta = TransferAsset.readObject(reader);
+            Address from = Address.fromString(_ta.getFrom());
+            Address to = Address.fromString(_ta.getTo());
+            Asset _asset = _ta.getAssets().get(0);
+            String tokenName = _asset.getName();
+            BigInteger value = _asset.getValue();
             reader.end();
-            setBalance(from, tokenName, BigInteger.valueOf(value), BigInteger.valueOf(value).negate());
+            setBalance(from, tokenName, value, value.negate(), BigInteger.ZERO);
         }
         // delete pending message
         deletePending(sn);
     }
 
-    @External
-    public String[] tokenNames() {
-        String[] tokenNames = new String[tokenNameDb.size()];
+    /**
+     * Returns the Accumulated fees for all the assets
+     */
+    @External(readonly = true)
+    public List<Asset> getAccumulatedFees() {
+        List<Asset> _assets = new ArrayList<Asset>();
         for (int i = 0; i < tokenNameDb.size(); i++) {
-            tokenNames[i] = tokenNameDb.get(i);
+            if (feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).compareTo(BigInteger.ZERO) != 0) {
+                Asset _asset = new Asset(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i)), BigInteger.ZERO);
+                _assets.add(_asset);
+            }
         }
-        return tokenNames;
+        return _assets;
+    }
+
+    /**
+     * @param _fa  Fee Aggregation address
+     * @param _svc Service Name
+     */
+    @External
+    public void handleFeeGathering(String _fa, String _svc) {
+        onlyBMC();
+        BTPAddress _addr = BTPAddress.fromString(_fa);
+        List<Asset> _assets = new ArrayList<Asset>();
+        boolean hasFeePending = false;
+        for (int i = 0; i < tokenNameDb.size(); i++) {
+            if (feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).compareTo(BigInteger.ZERO) != 0) {
+                Asset _asset = new Asset(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i)), BigInteger.ZERO);
+                _assets.add(_asset);
+                pendingFeesDb.set(generateSerialNumber(), new TransferAsset(Context.getCaller().toString(), _fa, _assets));
+                feeCollector.set(tokenNameDb.get(i), BigInteger.ZERO);
+                hasFeePending = true;
+            }
+        }
+        if (!hasFeePending) {
+            return;
+        }
+
+        byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, Context.getCaller().toString(), _addr.getContract(), _assets);
+        Context.call(bmcDb.get(), "sendMessage", _addr.getNet(), _svc, serialNo.get(), msg);
+        //TODO: emit transfer start event
     }
 
     @External(readonly = true)
-    public int numberOfTokens() {
-        return tokenNameDb.size();
-    }
-
-
-    @External(readonly = true)
-    public BigInteger[] getBalance(Address user, String tokenName) {
-        //TODO: check the tokenName involvement in the logic again
-        BigInteger[] out = new BigInteger[3];
-        out[BD_USABLE_IDX] = usuableBalances.at(user).getOrDefault(tokenName, BigInteger.ZERO);
-        out[BD_LOCKED_IDX] = lockedBalances.at(user).getOrDefault(tokenName, BigInteger.ZERO);
-        return out;
+    public Balance getBalance(Address user, String tokenName) {
+        Balance defaultBal = new Balance(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
+        return balanceDB.at(user).getOrDefault(tokenName, defaultBal);
     }
 
     @External
-    public void setBalance(Address user, String tokenName, BigInteger usable, BigInteger locked) {
-        BigInteger[] newBalance = getBalance(user, tokenName);
-        newBalance[BD_USABLE_IDX] = newBalance[BD_USABLE_IDX].add(usable);
-        newBalance[BD_LOCKED_IDX] = newBalance[BD_LOCKED_IDX].add(locked);
-        if (newBalance[BD_USABLE_IDX].compareTo(BigInteger.ZERO) == 0 && newBalance[BD_LOCKED_IDX].compareTo(BigInteger.ZERO) == 0) {
-            //balanceDb.set(user,null);
-            Context.println("########### User Balance Invalid. removing from the db:" + user);
-            //TODO: check/implement to remove the token from DB
-        } else {
-            usuableBalances.at(user).set(tokenName, newBalance[BD_USABLE_IDX]);
-            lockedBalances.at(user).set(tokenName, newBalance[BD_LOCKED_IDX]);
-        }
-    }
-
-    private BigInteger generateSerialNumber() {
-        BigInteger newSnNo = snDb.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE);
-        snDb.set(newSnNo);
-        return newSnNo;
-    }
-
-    private void putPending(BigInteger sn, byte[] msg) {
-        pendingDb.set(sn, msg);
-    }
-
-    private byte[] getPending(BigInteger sn) {
-        return pendingDb.get(sn);
-    }
-
-    private boolean hasPending(BigInteger sn) {
-        return pendingDb.get(sn) != null;
-    }
-
-    private void deletePending(BigInteger sn) {
-        pendingDb.set(sn, null);
+    public void setBalance(Address user, String tokenName, BigInteger usable, BigInteger locked, BigInteger refundable) {
+        Balance balanceBefore = getBalance(user, tokenName);
+        Balance newBalance = new Balance(balanceBefore.getUsable().add(usable), balanceBefore.getLocked().add(locked), balanceBefore.getRefundable().add(refundable));
+        balanceDB.at(user).set(tokenName, newBalance);
     }
 
     private byte[] createMessage(int type, Object... args) {
@@ -348,14 +380,8 @@ public class ServiceHandler {
         if (type == REQUEST_TOKEN_TRANSFER) {
             writer.beginList(2);
             writer.write(REQUEST_TOKEN_TRANSFER);//ActionType
-            //Action Data writer -start
-            writer.beginList(4);
-            writer.write((String) args[0]);
-            writer.write((String) args[1]);
-            writer.write((String) args[2]);
-            writer.write((BigInteger) args[3]);
-            writer.end();
-            //Action Data - end
+            TransferAsset _ta = new TransferAsset((String) args[0], (String) args[1], (List<Asset>) args[2]);
+            TransferAsset.writeObject(writer, _ta);
             writer.end();
         } else if (type == RESPONSE_HANDLE_SERVICE) {
             writer.beginList(2);
@@ -370,31 +396,48 @@ public class ServiceHandler {
         return writer.toByteArray();
     }
 
-    @EventLog(indexed = 2)
-    public void TransferStart(Address from, String tokenName, BigInteger sn, BigInteger value, String to) {
+
+    private void putPending(BigInteger sn, byte[] msg) {
+        pendingDb.set(sn, msg);
     }
+
+    private boolean hasPending(BigInteger sn) {
+        return pendingDb.get(sn) != null;
+    }
+
+    private void deletePending(BigInteger sn) {
+        pendingDb.set(sn, null);
+    }
+
+    private byte[] getPending(BigInteger sn) {
+        return pendingDb.get(sn);
+    }
+
+    private boolean hasPendingFees(BigInteger sn) {
+        return pendingFeesDb.get(sn) != null;
+    }
+
+    private BigInteger generateSerialNumber() {
+        BigInteger newSnNo = serialNo.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE);
+        serialNo.set(newSnNo);
+        return newSnNo;
+    }
+
+   /* @EventLog(indexed = 2)
+    public void TransferStart(Address from, String tokenName, BigInteger sn, Asset[] assets) {
+    }*/
 
     @EventLog(indexed = 1)
     protected void TransferEnd(BigInteger sn, int code, byte[] msg) {
     }
-
-    @EventLog(indexed = 1)
-    protected void AddOwner(Address owner) {
-    }
-
-    @EventLog(indexed = 1)
-    protected void RemoveOwner(Address owner) {
-    }
-
-    @EventLog(indexed = 1)
-    protected void AddFeeAggregationScore(Address owner) {
-    }
-
-    @EventLog(indexed = 1)
-    protected void UpdateFeeAggregationScore(Address owner) {
-    }
-
-    @EventLog(indexed = 1)
-    protected void SetFeePercent(String owner) {
-    }
 }
+
+//TODO: 1. addowner remove owner test with min owner -done
+// 2. Proper ACL tests -done
+// 3. Fee aggregation handle test- done
+// 4. one Full complete flow test
+// 5. Integration test
+// 6. handle error test case
+// 7. invalid serial number - done
+// 8. check the BTP address format - done
+// 9. Request token register service
