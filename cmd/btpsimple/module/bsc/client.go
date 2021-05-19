@@ -21,8 +21,10 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
@@ -30,8 +32,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -39,6 +39,7 @@ const (
 	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
 	DefaultTimeout                             = 10 * time.Second        //
+	ChainID                                    = 56
 )
 
 type Wallet interface {
@@ -53,7 +54,7 @@ type Client struct {
 	ethClient *ethclient.Client
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *types.Transaction {
+func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *types.Transaction {
 	return types.NewTx(&types.LegacyTx{
 		Nonce:    nonce,
 		To:       &to,
@@ -75,12 +76,21 @@ func (c *Client) NewTransaction(p *TransactionParam) *types.Transaction {
 	nonce, _ := c.ethClient.NonceAt(ctx, fromAddress, nil)
 	nonce = uint64(txCount) + nonce
 
-	value, _ := p.Value.Value()
-	return NewTransaction(nonce, toAddress, big.NewInt(value), 6000000, big.NewInt(6000000), p.Data)
+	return newTransaction(nonce, toAddress, nil, 6000000, big.NewInt(6000000), nil)
+}
+
+func (c *Client) newTransactOpts(chainID int64) (*bind.TransactOpts, error) {
+	privateKey, err := crypto.HexToECDSA("")
+	txo, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainID))
+	if err != nil {
+		return nil, err
+	}
+	return txo, nil
 }
 
 func (c *Client) SignTransaction(signerKey *ecdsa.PrivateKey, tx *types.Transaction) error {
-	signer := types.HomesteadSigner{} //TODO configure another signer for crypto.SHA3Sum256
+	//signer := types.EIP155Signer{}
+	signer := types.LatestSignerForChainID(big.NewInt(ChainID))
 	tx, err := types.SignTx(tx, signer, signerKey)
 	if err != nil {
 		c.l.Errorf("could not sign tx: %v", err)
@@ -88,6 +98,7 @@ func (c *Client) SignTransaction(signerKey *ecdsa.PrivateKey, tx *types.Transact
 	}
 	return nil
 }
+
 func (c *Client) SendTransaction(tx *types.Transaction) error {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
@@ -119,69 +130,13 @@ func (c *Client) WaitTransactionResult(p *TransactionHashParam) (*TransactionRes
 	return tr, nil
 }
 func (c *Client) Call(p ethereum.CallMsg, r interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 	r, err := c.ethClient.CallContract(ctx, p, big.NewInt(0))
 	if err != nil {
 		return err
 	}
 	return nil
-}
-func (c *Client) SendTransactionAndGetResult(p *TransactionParam) (common.Hash, *types.Receipt, error) {
-	thp := &TransactionHashParam{}
-txLoop:
-	for {
-		tx := c.NewTransaction(p)
-		err := c.SendTransaction(tx)
-		if err != nil {
-			switch err {
-			case module.ErrSendFailByOverflow:
-				//TODO Retry max
-				time.Sleep(DefaultSendTransactionRetryInterval)
-				c.l.Debugf("Retry SendTransaction")
-				continue txLoop
-			default:
-				switch re := err.(type) {
-				case *jsonrpc.Error:
-					switch re.Code {
-					case JsonrpcErrorCodeSystem:
-						if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
-							switch subEc {
-							case 2000: //DuplicateTransactionError
-								//Ignore
-								c.l.Debugf("DuplicateTransactionError txh:%v", tx.Hash())
-								//thp.Hash = tx.Hash()
-								break txLoop
-							}
-						}
-					}
-				}
-			}
-			c.l.Debugf("fail to SendTransaction hash:%v, err:%+v", tx.Hash(), err)
-			return tx.Hash(), nil, err
-		}
-		thp.Hash = tx.Hash()
-		break txLoop
-	}
-
-txrLoop:
-	for {
-		time.Sleep(DefaultGetTransactionResultPollingInterval)
-		txr, err := c.GetTransactionResult(thp)
-		if err != nil {
-			switch re := err.(type) {
-			case *jsonrpc.Error:
-				switch re.Code {
-				case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-					//TODO Retry max
-					c.l.Debugln("Retry GetTransactionResult", thp)
-					continue txrLoop
-				}
-			}
-		}
-		c.l.Debugf("GetTransactionResult hash:%v, txr:%+v, err:%+v", thp.Hash, txr, err)
-		return thp.Hash, txr, err
-	}
 }
 
 func (c *Client) GetBlockHeaderByHeight(height HexInt) (*types.Header, error) {

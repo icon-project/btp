@@ -186,9 +186,9 @@ func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
 		var i common.HexInt
 		i.SetBytes(el.Indexed[EventIndexSequence])
 		evt := &module.Event{
-			Next: module.BtpAddress(el.Indexed[EventIndexNext]),
+			Next:     module.BtpAddress(el.Indexed[EventIndexNext]),
 			Sequence: i.Int64(),
-			Message: el.Data[0],
+			Message:  el.Data[0],
 		}
 		return evt, nil
 	}
@@ -283,4 +283,19 @@ func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]int
 	}
 	r.c = NewClient(endpoint, l)
 	return r
+}
+
+func (r *receiver) GetBlockUpdate(height int64) (*module.BlockUpdate, error) {
+	var v *BlockNotification
+	var bu *module.BlockUpdate
+	h, err := r.getBlockHeader(NewHexInt(height))
+	if err != nil {
+		return nil, err
+	}
+	v = &BlockNotification{Height: NewHexInt(height), Hash: NewHexBytes(crypto.SHA3Sum256(h.serialized))}
+	bu, err = r.newBlockUpdate(v)
+	if err != nil {
+		return nil, err
+	}
+	return bu, nil
 }
