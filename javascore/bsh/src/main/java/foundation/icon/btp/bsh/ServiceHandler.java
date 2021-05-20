@@ -25,6 +25,7 @@ import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 
 public class ServiceHandler {
     final static String RLPn = "RLPn";
@@ -81,14 +82,14 @@ public class ServiceHandler {
     private void onlyOwner() {
         assert (Context.getCaller() != null);
         if (!(Context.getOwner().equals(Context.getCaller()) || isAnOwner(Context.getCaller()))) {
-            Context.revert("No Permission");
+            Context.revert(ErrorCodes.BSH_NO_PERMISSION, "No Permission");
         }
     }
 
     private void onlyBMC() {
         assert (Context.getCaller() != null);
         if (!Context.getCaller().equals(bmcDb.get())) {
-            Context.revert("No Permission");
+            Context.revert(ErrorCodes.BSH_NO_PERMISSION, "No Permission");
         }
     }
 
@@ -111,14 +112,14 @@ public class ServiceHandler {
     public void register(String name, String symbol, BigInteger decimals, BigInteger feeNumerator, Address address) {
         onlyOwner();
         if (tokenAddrDb.get(name) != null) {
-            Context.revert("Token with same name exists already.");
+            Context.revert(ErrorCodes.BSH_TOKEN_EXISTS, "Token with same name exists already.");
         }
         tokenAddrDb.set(name, address.toString());
         tokenNameDb.add(name);
         tokenDb.set(address, new Token(name, symbol, decimals, feeNumerator));
     }
 
-    @External
+    @External(readonly = true)
     public String[] tokenNames() {
         String[] tokenNames = new String[tokenNameDb.size()];
         for (int i = 0; i < tokenNameDb.size(); i++) {
@@ -160,15 +161,15 @@ public class ServiceHandler {
     public void transfer(String tokenName, BigInteger value, String to) {
         String tokenAddr = this.tokenAddrDb.getOrDefault(tokenName, null);
         if (tokenAddr == null) {
-            Context.revert("Token not registered");
+            Context.revert(ErrorCodes.BSH_TOKEN_NOT_REGISTERED, "Token not registered");
         }
         if (value.compareTo(BigInteger.ZERO) == 0) {
-            Context.revert("Invalid amount specified");
+            Context.revert(ErrorCodes.BSH_INVALID_AMOUNT, "Invalid amount specified");
         }
         Address sender = Context.getCaller();
         Balance balance = getBalance(sender, tokenName);
         if (balance.getUsable().compareTo(value) == -1) {
-            Context.revert("Overdrawn");
+            Context.revert(ErrorCodes.BSH_OVERDRAWN, "Overdrawn");
         }
         BTPAddress _to = BTPAddress.fromString(to);
         Token _tk = tokenDb.get(Address.fromString(tokenAddr));
@@ -198,13 +199,10 @@ public class ServiceHandler {
     @External
     public void handleBTPMessage(String from, String svc, BigInteger sn, byte[] msg) {
         onlyBMC();
-        Context.println("####################pointer 1");
         if (svc.compareTo(_svc) != 0) {
-            Context.revert("Invalid Service");
+            Context.revert(ErrorCodes.BSH_INVALID_SERVICE, "Invalid Service");
         }
-        Context.println("####################pointer 2");
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, msg);
-        Context.println("####################pointer 3");
         reader.beginList();
         int actionType = reader.readInt();
         if (actionType == REQUEST_TOKEN_TRANSFER) {
@@ -213,7 +211,8 @@ public class ServiceHandler {
             try {
                 dataTo = Address.fromString(_ta.getTo());
             } catch (Exception e) {
-                Context.revert("Invalid Address format exception");
+                Context.println("################### exception thrown for address");
+                Context.revert(ErrorCodes.BSH_INVALID_ADDRESS_FORMAT, "Invalid Address format");
             }
             Asset _asset = _ta.getAssets().get(0);//TODO: convert this to for loop to transfer all the assets value
             String tokenName = _asset.getName();
@@ -225,14 +224,14 @@ public class ServiceHandler {
                 setBalance(dataTo, tokenName, value, BigInteger.ZERO, BigInteger.ZERO);
             } else {
                 //code = RC_ERR_UNREGISTERED_TOKEN;
-                Context.revert("Unregistered Token");
+                Context.revert(ErrorCodes.BSH_TOKEN_NOT_REGISTERED, "Unregistered Token");
             }
             // send response message for `req_token_transfer`
             byte[] res = createMessage(RESPONSE_HANDLE_SERVICE, code);
             Context.call(bmcDb.get(), "sendMessage", from, _svc, serialNo.get(), msg);
         } else if (actionType == RESPONSE_HANDLE_SERVICE) {
             if (!hasPending(sn) && !hasPendingFees(sn)) {
-                Context.revert("No pending message for this Serial Number");
+                Context.revert(ErrorCodes.BSH_INVALID_SERIALNO, "Invalid Serial Number");
             }
             int code = reader.readInt();
             boolean feeAggregationSvc = false;
@@ -319,20 +318,28 @@ public class ServiceHandler {
         deletePending(sn);
     }
 
+
     /**
      * Returns the Accumulated fees for all the assets
      */
+
     @External(readonly = true)
-    public List<Asset> getAccumulatedFees() {
-        List<Asset> _assets = new ArrayList<Asset>();
+    public List<Map<String, BigInteger>> getAccumulatedFees() {
+        //ArrayList<Asset> _assets = new ArrayList<Asset>();
+        List<Map<String, BigInteger>> tokens = new ArrayList<>();
+        Context.println("############## dbsize ############" + tokenNameDb.size());
         for (int i = 0; i < tokenNameDb.size(); i++) {
             if (feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).compareTo(BigInteger.ZERO) != 0) {
-                Asset _asset = new Asset(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i)), BigInteger.ZERO);
-                _assets.add(_asset);
+                // Asset _asset = new Asset(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i)), BigInteger.ZERO);
+                // _assets.add(_asset);
+                Context.println("############## tokenName" + tokenNameDb.get(i));
+                Context.println("############## fees" + feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).toString());
+                tokens.add(Map.of(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i))));
             }
         }
-        return _assets;
+        return tokens;
     }
+
 
     /**
      * @param _fa  Fee Aggregation address
@@ -436,7 +443,7 @@ public class ServiceHandler {
 // 2. Proper ACL tests -done
 // 3. Fee aggregation handle test- done
 // 4. one Full complete flow test
-// 5. Integration test
+// 5. Integration test - done
 // 6. handle error test case
 // 7. invalid serial number - done
 // 8. check the BTP address format - done
