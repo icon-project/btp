@@ -14,6 +14,7 @@ contract MockBMC is BMC {
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.GatherFeeMessage;
+    using RLPEncodeStruct for Types.BMCService;
     using RLPEncodeStruct for Types.Response;
     using ParseAddress for address;
 
@@ -37,6 +38,7 @@ contract MockBMC is BMC {
 
     function gatherFee(
         string calldata _from,
+        string calldata _msgType,
         string calldata _svcType,
         string calldata _fa,
         string[] memory _svcs
@@ -46,12 +48,15 @@ contract MockBMC is BMC {
             Types.BMCMessage(
                 _from,
                 bmcAddress,
-                _svcType,
+                _msgType,
                 0,
-                Types.GatherFeeMessage(
-                    _fa,
-                    _svcs
-                ).encodeGatherFeeMessage()
+                Types.BMCService(
+                    _svcType,
+                    Types.GatherFeeMessage(
+                        _fa,
+                        _svcs
+                    ).encodeGatherFeeMessage()
+                ).encodeBMCService()
             )
         );
     }

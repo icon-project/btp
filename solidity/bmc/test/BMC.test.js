@@ -631,18 +631,17 @@ contract('BMC Relay Rotation Unit Test - Rotate_term != 0', () => {
         assert(relay_info.r == accounts[5]);
     });
 
-    //  TODO: need to check it again
     //  [block(t+46), block(t+60)] => Relay 4
     //  However, Relay 4 not relay BTP Message on time 'delay_limit'
     //  Move to next
-    it.skip('Relay Rotation - BTP Message (hasMsg = true) - Relay 4 Overtime, Relay 1 Allowable', async () => {
+    it('Relay Rotation - BTP Message (hasMsg = true) - Relay 4 Overtime, Relay 1 Allowable', async () => {
         for (i = 0; i < 2; i++) {
             await bmc.mineOneBlock();
         }
         //  After loop, block_time = block(t+54)
         var linkStat = await bmc.getStatus(link);
         var scale = parseInt(linkStat.blockIntervalSrc) / parseInt(linkStat.blockIntervalDst);
-        var block = Math.floor((parseInt(current)+3)*scale);
+        var block = Math.floor((parseInt(current)+2)*scale);
         //  If relayRotation() were called now, there would have been a regular case
         //  Relay 4 were still allowable thereafter
         //  However, Relay 4 passes 'delay_limit' to relay Message
@@ -650,18 +649,11 @@ contract('BMC Relay Rotation Unit Test - Rotate_term != 0', () => {
         //  Even though, block_height = 59 that is less than 60
         //  but Relay 4 is skipped and move to a next Relay
         
-        //  If 'delay_limit' == 3 and Relay 4 send BTPMessage at 'delay_limit' + 1. This unit test might be failed
-        //  uint _skipCount = ceilDiv((_currentHeight - _guessHeight), link.delayLimit) - 1
-        //  There might be a case that uint ceilDiv((_currentHeight - _guessHeight), link.delayLimit);
-        //  has not round-up. For example:
-        //  'currentHeight' = 100, 'guess_height' = 97, and 'delay_limit' = 3
-        //  => 'skipCount' = 1 - 1 = 0. Thus, choosing 4 is quite sensitive
-        //  It's better to set a unit test that Relay sends BTPMessage at 'delay_limit' + 2
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i < 4; i++) {
             await bmc.mineOneBlock();
         }
-        //  After loop, block_time = block(t+59)
-        await bmc.relayRotation(link, block, true);    //  block(t+60)
+        //  After loop, block_time = block(t+58)
+        await bmc.relayRotation(link, block, true);    //  block(t+59)
         var relay_info = await bmc.getRelay();
         assert(relay_info.r == accounts[2]);
     });
@@ -670,22 +662,20 @@ contract('BMC Relay Rotation Unit Test - Rotate_term != 0', () => {
 /***************************************************************************************
                                 Handle Gather Fee Request Unit Tests
  ***************************************************************************************/
-contract('BSH Handle Fee Aggregation', () => {
-    let bsh1, bsh2, bsh3, bmc, holder, accounts;
+contract.only('BMC Handles Gather Fee Request', () => {
+    let bsh1, bsh2, bsh3, bmc, accounts;
     var service1 = 'Service1';  var service2 = 'Service2';  var service3 = 'Service3'
-    var _native = 'PARA';   var _symbol = 'PRA';    var _decimals = 0; var _fee = 10000;
+    var _native = 'PARA';   var _symbol = 'PRA';    var _decimals = 0; var _fee = 10;
     var _net1 = '1234.iconee';                          var _net2 = '1234.binance';     
     var _txAmt = 10000;
 
     var _name1 = 'ICON';                                var _name2 = 'BINANCE';    
     var _symbol1 = 'ICX';                               var _symbol2 = 'BNC';
     var _decimals1 = 0;                                 var _decimals2 = 0;
-    var _fee1 = 10000;                                  var _fee2 = 10000;
         
     var _name3 = 'ETHEREUM';                            var _name4 = 'TRON'; 
     var _symbol3 = 'ETH';                               var _symbol4 = 'TRX';
     var _decimals3 = 0;                                 var _decimals4 = 0;
-    var _fee3 = 10000;                                  var _fee4 = 10000;
 
     var _from1 = '0x12345678';                          var _from2 = '0x12345678';
     var _value1 = 999999999999999;                      var _value2 = 999999999999999;
@@ -694,6 +684,7 @@ contract('BSH Handle Fee Aggregation', () => {
     var _txAmt1 = 1000000;                              var _txAmt2 = 5000000;                                                                                        
     var _sn1 = 1;                                       var _sn2 = 2;
     var REPONSE_HANDLE_SERVICE = 2;                     var RC_OK = 0;   
+    var msgType = 'bmc';                                var svcType = 'FeeGathering';
     
     beforeEach(async () => {
         bmc = await BMC.new('1234.pra');
@@ -712,20 +703,20 @@ contract('BSH Handle Fee Aggregation', () => {
         await holder1.addBSHContract(bsh1.address);
         await holder2.addBSHContract(bsh2.address);
         await holder3.addBSHContract(bsh3.address);
-        await bsh1.register(_name1, _symbol1, _decimals1, _fee1);
-        await bsh1.register(_name2, _symbol2, _decimals2, _fee2);
-        await bsh1.register(_name3, _symbol3, _decimals3, _fee3);
-        await bsh1.register(_name4, _symbol4, _decimals4, _fee4);
+        await bsh1.register(_name1, _symbol1, _decimals1);
+        await bsh1.register(_name2, _symbol2, _decimals2);
+        await bsh1.register(_name3, _symbol3, _decimals3);
+        await bsh1.register(_name4, _symbol4, _decimals4);
 
-        await bsh2.register(_name1, _symbol1, _decimals1, _fee1);
-        await bsh2.register(_name2, _symbol2, _decimals2, _fee2);
-        await bsh2.register(_name3, _symbol3, _decimals3, _fee3);
-        await bsh2.register(_name4, _symbol4, _decimals4, _fee4);
+        await bsh2.register(_name1, _symbol1, _decimals1);
+        await bsh2.register(_name2, _symbol2, _decimals2);
+        await bsh2.register(_name3, _symbol3, _decimals3);
+        await bsh2.register(_name4, _symbol4, _decimals4);
 
-        await bsh3.register(_name1, _symbol1, _decimals1, _fee1);
-        await bsh3.register(_name2, _symbol2, _decimals2, _fee2);
-        await bsh3.register(_name3, _symbol3, _decimals3, _fee3);
-        await bsh3.register(_name4, _symbol4, _decimals4, _fee4);
+        await bsh3.register(_name1, _symbol1, _decimals1);
+        await bsh3.register(_name2, _symbol2, _decimals2);
+        await bsh3.register(_name3, _symbol3, _decimals3);
+        await bsh3.register(_name4, _symbol4, _decimals4);
         await bmc.transferRequestWithAddress(
             _net1, service1, _from1, holder1.address, _name1, _value1
         );
@@ -759,19 +750,19 @@ contract('BSH Handle Fee Aggregation', () => {
         var FA1Before = await bsh1.getFAOf(_native);     //  state Aggregation Fee of each type of Coins
         var FA2Before = await bsh1.getFAOf(_name1);
         var FA3Before = await bsh1.getFAOf(_name2);
-        await bmc.gatherFee(_to1, "bmc", _to1, [service1]);
+        await bmc.gatherFee(_to1, msgType, svcType, _to1, [service1]);
         var FA1After = await bsh1.getFAOf(_native);
         var FA2After = await bsh1.getFAOf(_name1);
         var FA3After = await bsh1.getFAOf(_name2);
         var fees = await bsh1.getFees(_sn2 + 1);     //  get pending Aggregation Fee list
         assert(
-            FA1Before == Math.floor(_txAmt / 100) && 
-            FA2Before == Math.floor(_txAmt1 / 100) &&
-            FA3Before == Math.floor(_txAmt2 / 100) &&
+            FA1Before == Math.floor(_txAmt / 1000) && 
+            FA2Before == Math.floor(_txAmt1 / 1000) &&
+            FA3Before == Math.floor(_txAmt2 / 1000) &&
             FA1After == 0 && FA2After == 0 && FA3After == 0 && 
-            fees[0].coinName == _native && fees[0].value == Math.floor(_txAmt / 100) &&
-            fees[1].coinName == _name1 && fees[1].value == Math.floor(_txAmt1 / 100) &&
-            fees[2].coinName == _name2 && fees[2].value == Math.floor(_txAmt2 / 100)
+            fees[0].coinName == _native && fees[0].value == Math.floor(_txAmt / 1000) &&
+            fees[1].coinName == _name1 && fees[1].value == Math.floor(_txAmt1 / 1000) &&
+            fees[2].coinName == _name2 && fees[2].value == Math.floor(_txAmt2 / 1000)
         );
     });
 
@@ -781,7 +772,7 @@ contract('BSH Handle Fee Aggregation', () => {
         var FA2Before = await bsh3.getFAOf(_name1);
         var FA3Before = await bsh3.getFAOf(_name2);
         var feesBefore = await bsh3.getFees(0);     //  get pending Aggregation Fee list
-        await bmc.gatherFee(_to1, "bmc", _to1, [service3]);
+        await bmc.gatherFee(_to1, msgType, svcType, _to1, [service3]);
         var FA1After = await bsh3.getFAOf(_native);
         var FA2After = await bsh3.getFAOf(_name1);
         var FA3After = await bsh3.getFAOf(_name2);
@@ -799,7 +790,7 @@ contract('BSH Handle Fee Aggregation', () => {
         var FA2Before = await bsh1.getFAOf(_name1);
         var FA3Before = await bsh1.getFAOf(_name2);
         var _fa = 'btp://1234.iconee:0x12345678';
-        await bmc.gatherFee(_to1, "bmc", _fa, [service1]);
+        await bmc.gatherFee(_to1, msgType, svcType, _fa, [service1]);
         var FA1After = await bsh1.getFAOf(_native);
         var FA2After = await bsh1.getFAOf(_name1);
         var FA3After = await bsh1.getFAOf(_name2);
@@ -829,7 +820,7 @@ contract('BSH Handle Fee Aggregation', () => {
         var BSH3_FA3Before = await bsh3.getFAOf(_name2);
         var BSH3_feesBefore = await bsh3.getFees(0);     //  get pending Aggregation Fee list
 
-        await bmc.gatherFee(_to1, "bmc", _to1, [service1, 'ServiceA', service3, 'Service4']);
+        await bmc.gatherFee(_to1, msgType, svcType, _to1, [service1, 'ServiceA', service3, 'Service4']);
 
         var BSH1_FA1After = await bsh1.getFAOf(_native);
         var BSH1_FA2After = await bsh1.getFAOf(_name1);
@@ -847,14 +838,14 @@ contract('BSH Handle Fee Aggregation', () => {
         var BSH3_feesAfter = await bsh3.getFees(1);     //  get pending Aggregation Fee list
 
         assert(
-            BSH1_FA1Before == Math.floor(_txAmt / 100) && 
-            BSH1_FA2Before == Math.floor(_txAmt1 / 100) &&
-            BSH1_FA3Before == Math.floor(_txAmt2 / 100) &&
+            BSH1_FA1Before == Math.floor(_txAmt / 1000) && 
+            BSH1_FA2Before == Math.floor(_txAmt1 / 1000) &&
+            BSH1_FA3Before == Math.floor(_txAmt2 / 1000) &&
             BSH1_FA1After == 0 && BSH1_FA2After == 0 && BSH1_FA3After == 0 && 
             BSH1_feesBefore.length == 0 &&
-            BSH1_feesAfter[0].coinName == _native && BSH1_feesAfter[0].value == Math.floor(_txAmt / 100) &&
-            BSH1_feesAfter[1].coinName == _name1 && BSH1_feesAfter[1].value == Math.floor(_txAmt1 / 100) &&
-            BSH1_feesAfter[2].coinName == _name2 && BSH1_feesAfter[2].value == Math.floor(_txAmt2 / 100) &&
+            BSH1_feesAfter[0].coinName == _native && BSH1_feesAfter[0].value == Math.floor(_txAmt / 1000) &&
+            BSH1_feesAfter[1].coinName == _name1 && BSH1_feesAfter[1].value == Math.floor(_txAmt1 / 1000) &&
+            BSH1_feesAfter[2].coinName == _name2 && BSH1_feesAfter[2].value == Math.floor(_txAmt2 / 1000) &&
 
             web3.utils.BN(BSH2_FA1Before).toNumber() == web3.utils.BN(BSH2_FA1After).toNumber() &&
             web3.utils.BN(BSH2_FA2Before).toNumber() == web3.utils.BN(BSH2_FA2After).toNumber() &&

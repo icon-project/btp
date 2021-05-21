@@ -18,6 +18,19 @@ library RLPDecodeStruct {
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
 
+    function decodeBMCService(bytes memory _rlp)
+        internal
+        pure
+        returns (Types.BMCService memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        return
+            Types.BMCService(
+                string(ls[0].toBytes()),
+                ls[1].toBytes() //  bytes array of RLPEncode(Data)
+            );
+    }
+
     function decodeGatherFeeMessage(bytes memory _rlp)
         internal
         pure

@@ -45,4 +45,15 @@ contract MockBSH is IBSH {
         require(_sn != 1000, "Mocking error message on handleBTPError");
         assert(_sn != 100); // mocking invalid opcode
     }
+
+    /**
+       @notice Handle Gather Fee Request from ICON.
+       @dev Every BSH must implement this function
+       @param _fa    BTP Address of Fee Aggregator in ICON
+       @param _svc   Name of the service
+   */
+    function handleFeeGathering(
+        string calldata _fa,
+        string calldata _svc
+    ) external override {}
 }

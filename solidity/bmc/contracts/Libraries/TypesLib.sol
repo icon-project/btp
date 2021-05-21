@@ -137,8 +137,7 @@ library Types {
     struct Coin {
         uint256 id;
         string symbol;
-        uint256 decimals;
-        uint256 feeNumerator;        
+        uint256 decimals;      
     }
 
     struct Balance {
@@ -231,6 +230,11 @@ library Types {
     struct EventMessage {
         string eventType;
         Connection conn;
+    }
+
+    struct BMCService {
+        string serviceType; 
+        bytes payload;
     }
 
     struct GatherFeeMessage {

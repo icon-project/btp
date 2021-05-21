@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "./Interfaces/NativeCoinBSH.sol";
+import "./Interfaces/IBSH.sol";
 import "./Interfaces/IBMC.sol";
 import "./Interfaces/IBMV.sol";
 import "./Libraries/ParseAddressLib.sol";
@@ -71,8 +71,12 @@ contract BMC is IBMC {
 
     uint256 private constant BLOCK_INTERVAL_MSEC = 1000;
 
-    modifier owner {
-        require(_owners[msg.sender] == true, "BMCRevertUnauthorized");
+    modifier hasPermission {
+        //  As Soliditty Security Consideration mentioned: https://docs.soliditylang.org/en/v0.6.2/security-considerations.html
+        //  tx.origin should not be used in checking authorization
+        //  However, PyScore implementation have used both 'msg.sender' and 'tx.orgin'
+        //  Thus, this code just follows it
+        require(_owners[msg.sender] == true || _owners[tx.origin] == true, "BMCRevertUnauthorized");
         _;
     }
 
@@ -96,7 +100,7 @@ contract BMC is IBMC {
        @dev Caller must be an Onwer of BTP network
        @param _owner    Address of a new Onwer.
    */
-    function addOwner(address _owner) external owner {
+    function addOwner(address _owner) external hasPermission {
         _owners[_owner] = true;
         numOfOwner++;
     }
@@ -107,7 +111,7 @@ contract BMC is IBMC {
        @dev If only one Owner left, unable to remove the last Owner
        @param _owner    Address of an Owner to be removed.
    */
-    function removeOwner(address _owner) external owner {
+    function removeOwner(address _owner) external hasPermission {
         require(numOfOwner > 1, "BMCRevertLastOwner");
         require(_owners[_owner] == true, "BMCRevertNotExistsPermission");
         delete _owners[_owner];
@@ -292,21 +296,34 @@ contract BMC is IBMC {
                 }
             } else revert("BMCRevert: not exists event handler");
         } else if (_msg.svc.compareTo("bmc")) {
-            Types.GatherFeeMessage memory _gatherFee =
-                _msg.message.decodeGatherFeeMessage();
-
-            for (uint i = 0; i < _gatherFee.svcs.length; i++) {
-                //  If 'svc' not found, ignore
-                if (bshServices[_gatherFee.svcs[i]] != address(0)){
-                    try NativeCoinBSH(bshServices[_gatherFee.svcs[i]]).handleGatherFee(
-                        _gatherFee.fa
-                    ){}
-                    catch {
-                        // TODO: GatherFee request does NOT require any response
-                        // However, if BSH revert(), BMC should emit an error event
-                    }
+            Types.BMCService memory _sm;
+            try this.tryDecodeBMCService(_msg.message) returns (Types.BMCService memory ret) {
+                _sm = ret;
+            }
+            catch {
+                _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+            }
+            if (_sm.serviceType.compareTo("FeeGathering")) {
+                Types.GatherFeeMessage memory _gatherFee;
+                try this.tryDecodeGatherFeeMessage(_sm.payload) returns (Types.GatherFeeMessage memory ret) {
+                    _gatherFee = ret;
                 }
-            }    
+                catch {
+                    _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+                }
+
+                for (uint i = 0; i < _gatherFee.svcs.length; i++) {
+                    //  If 'svc' not found, ignore
+                    if (bshServices[_gatherFee.svcs[i]] != address(0)){
+                        try IBSH(bshServices[_gatherFee.svcs[i]]).handleFeeGathering(
+                            _gatherFee.fa, _gatherFee.svcs[i]
+                        ){}
+                        catch {
+                            //  If BSH contract throws a revert error, ignore and continue
+                        }
+                    }
+                }    
+            }
         } else {
             if (bshServices[_msg.svc] == address(0)) {
                 _sendError(_prev, _msg, BMC_ERR, "BMCRevertNotExistsBSH");
@@ -356,6 +373,17 @@ contract BMC is IBMC {
                 }
             }
         }
+    }
+
+    //  @dev Solidity does not allow using try_catch with internal function
+    //  Thus, work-around solution is the followings
+    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR Response
+    function tryDecodeBMCService(bytes calldata _msg) external pure returns (Types.BMCService memory) {
+        return _msg.decodeBMCService();
+    }
+
+    function tryDecodeGatherFeeMessage(bytes calldata _msg) external pure returns (Types.GatherFeeMessage memory) {
+        return _msg.decodeGatherFeeMessage();
     }
 
     function _sendMessage(string memory _to, bytes memory _serializedMsg)
@@ -455,7 +483,7 @@ contract BMC is IBMC {
        @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
    */
-    function approveService(string memory _svc) public override owner {
+    function approveService(string memory _svc) public override hasPermission {
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
         bool foundReq = false;
         Types.Request[] memory temp = new Types.Request[](pendingReq[0].length);
@@ -501,7 +529,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _svc     Name of the service
    */
-    function removeService(string memory _svc) public override owner {
+    function removeService(string memory _svc) public override hasPermission {
         require(bshServices[_svc] != address(0), "BMCRevertNotExistsBSH");
         delete bshServices[_svc];
         numOfBSHService--;
@@ -540,7 +568,7 @@ contract BMC is IBMC {
     function addVerifier(string memory _net, address _addr)
         public
         override
-        owner
+        hasPermission
     {
         require(bmvServices[_net] == address(0), "BMCRevertAlreadyExistsBMV");
         bmvServices[_net] = _addr;
@@ -553,7 +581,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _net     Network Address of the blockchain
    */
-    function removeVerifier(string memory _net) public override owner {
+    function removeVerifier(string memory _net) public override hasPermission {
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
         delete bmvServices[_net];
         numOfBMVService--;
@@ -589,7 +617,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
    */
-    function addLink(string calldata _link) public override owner {
+    function addLink(string calldata _link) public override hasPermission {
         string memory _net;
         (_net, ) = _link.splitBTPAddress();
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
@@ -621,7 +649,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
    */
-    function removeLink(string calldata _link) public override owner {
+    function removeLink(string calldata _link) public override hasPermission {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
         delete links[_link];
         numOfLinks--;
@@ -649,7 +677,7 @@ contract BMC is IBMC {
         uint256 _blockInterval,
         uint256 _maxAggregation,
         uint256 _delayLimit
-    ) external override owner {
+    ) external override hasPermission {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
         require(_maxAggregation >= 1 && _delayLimit >= 1, "BMCRevertInvalidParam");
         Types.Link memory link = links[_link];
@@ -874,7 +902,7 @@ contract BMC is IBMC {
     function addRoute(string memory _dst, string memory _link)
         public
         override
-        owner
+        hasPermission
     {
         require(bytes(routes[_dst]).length == 0, "BTPRevertAlreadyExistRoute");
         //  Verify _dst and _link format address
@@ -893,7 +921,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _dst     BTP Address of the destination BMC
     */
-    function removeRoute(string memory _dst) public override owner {
+    function removeRoute(string memory _dst) public override hasPermission {
         //  @dev No need to check if _dst is a valid BTP format address
         //  since it was checked when adding route at the beginning
         //  If _dst does not match, revert()
@@ -930,7 +958,7 @@ contract BMC is IBMC {
     function addRelay(string memory _link, address[] memory _addr)
         public
         override
-        owner
+        hasPermission
     {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
         // if (links[_link].relays.length != 0) {
@@ -950,7 +978,7 @@ contract BMC is IBMC {
     function removeRelay(string memory _link, address _addr)
         public
         override
-        owner
+        hasPermission
     {
         require(
             links[_link].isConnected == true && links[_link].relays.length != 0,

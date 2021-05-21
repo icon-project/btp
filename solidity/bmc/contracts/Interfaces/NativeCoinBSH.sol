@@ -63,8 +63,8 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
 
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
-    uint256 private constant FEE_DENOMINATOR = 10**6;
-
+    uint256 private constant FEE_DENOMINATOR = 10**4;
+    uint256 private feeNumerator;
     uint256 private serialNo; //  a counter of request service, i.e. Transfer Coin/Token
 
     modifier onlyBMC {
@@ -86,9 +86,9 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
         coins[_nativeCoinName] = Types.Coin(
             0, //  native coin is assigend '_id' = 0
             _symbol,
-            _decimals,
-            _feeNumerator
+            _decimals
         );
+        feeNumerator = _feeNumerator;
         coinsName.push(_nativeCoinName);
         numOfCoins++;
         serialNo = 0;
@@ -115,15 +115,13 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
     function register(
         string calldata _name,
         string calldata _symbol,
-        uint256 _decimals,
-        uint256 _feeNumerator
+        uint256 _decimals
     ) external owner {
         require(bytes(coins[_name].symbol).length == 0, "Token existed");
         coins[_name] = Types.Coin(
             uint256(keccak256(abi.encodePacked(_name))),
             _symbol,
-            _decimals,
-            _feeNumerator
+            _decimals
         );
         coinsName.push(_name);
         numOfCoins++;
@@ -285,7 +283,7 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
         //  This fee is set when coins is registered
         //  If fee = 0, revert()
         //  Otherwise, charge_amt = (_amt * fee) / 100
-        uint chargeAmt = msg.value.mul(coins[coinsName[0]].feeNumerator).div(FEE_DENOMINATOR);
+        uint chargeAmt = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
         require(chargeAmt > 0, "Invalid amount");
         sendServiceMessage(_to, coinsName[0], msg.value.sub(chargeAmt), chargeAmt);
     }
@@ -307,7 +305,7 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
             bytes(coins[_coinName].symbol).length != 0,
             "Invalid Token"
         );
-        uint chargeAmt = _value.mul(coins[_coinName].feeNumerator).div(FEE_DENOMINATOR);
+        uint chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR);
         require(chargeAmt > 0, "Invalid amount");
         //  Transfer and Lock Token processes:
         //  To transfer, BSH contract call safeTransferFrom()  to transfer
@@ -645,15 +643,18 @@ contract NativeCoinBSH is IBSH, ERC1155, ERC1155Holder, Owner {
                                 Gather Fee Handler Functions                  
     ************************************************************************************/
     /**
-     @notice BSH handle Gather Fee Message request from BMC contract
-     @dev Caller must be BMC contract only
-     @param _fa     A BTP address of fee aggregator
-    */
-    function handleGatherFee(
-        string calldata _fa
-    ) external onlyBMC {
+       @notice Handle Gather Fee Request from ICON.
+       @dev Every BSH must implement this function
+       @param _fa    BTP Address of Fee Aggregator in ICON
+       @param _svc   Name of the service
+   */
+    function handleFeeGathering(
+        string calldata _fa,
+        string calldata _svc
+    ) external override onlyBMC {
         //  If adress of Fee Aggregator (_fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
+        require(_svc.compareTo(serviceName) == true, "Invalid service");
         (string memory _net, string memory _toAddress) = _fa.splitBTPAddress();
         for (uint i = 0; i < coinsName.length; i++) {
             if (aggregationFee[coinsName[i]] != 0) {
