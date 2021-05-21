@@ -1,6 +1,7 @@
 package pra
 
 import (
+	"github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -51,4 +52,11 @@ type RelayMessage struct {
 	numberOfBlockUpdate int
 	eventSequence       int64
 	numberOfEvent       int
+}
+
+type BlockNotification struct {
+	Header *types.Header
+	Hash   types.Hash
+	Height uint64
+	Events types.EventRecordsRaw
 }

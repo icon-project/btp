@@ -10,6 +10,7 @@ import (
 	"github.com/icon-project/btp/common/wallet"
 
 	srpc "github.com/centrifuge/go-substrate-rpc-client"
+	"github.com/centrifuge/go-substrate-rpc-client/client"
 	stypes "github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -127,6 +128,21 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
+func (c *Client) getReadProof(key stypes.StorageKey, hash *stypes.Hash) ([]byte, error) {
+	var res string
+	err := client.CallWithBlockHash(c.subAPI.Client, &res, "state_getStorage", hash, key.Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	bz, err := stypes.HexDecodeString(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return bz, nil
+}
+
 func (c *Client) queryStorage(prefix, method string, arg1, arg2 []byte, result interface{}) (bool, error) {
 
 	key, err := stypes.CreateStorageKey(c.getMetadata(), prefix, method, arg1, arg2)
@@ -136,7 +152,7 @@ func (c *Client) queryStorage(prefix, method string, arg1, arg2 []byte, result i
 	return c.subAPI.RPC.State.GetStorageLatest(key, result)
 }
 
-func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events stypes.EventRecordsRaw)) error {
+func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotification) error) error {
 	currentBlock := h
 	for {
 		finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
@@ -169,7 +185,14 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events stypes.EventReco
 			return err
 		}
 
-		cb(events)
+		if err := cb(&BlockNotification{
+			Header: finalizedHeader,
+			Height: currentBlock,
+			Hash:   hash,
+			Events: events,
+		}); err != nil {
+			return err
+		}
 		currentBlock++
 	}
 }
