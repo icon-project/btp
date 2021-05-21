@@ -10,7 +10,7 @@ import (
 	"github.com/icon-project/btp/common/wallet"
 
 	srpc "github.com/centrifuge/go-substrate-rpc-client"
-	"github.com/centrifuge/go-substrate-rpc-client/client"
+	sclient "github.com/centrifuge/go-substrate-rpc-client/client"
 	stypes "github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
 )
+
+// TODO: Create general types to avoid confusing between Substrate and Ethereum library.
 
 const (
 	BlockRetryInterval = time.Second * 1
@@ -130,7 +132,7 @@ func (c *Client) CloseAllMonitor() error {
 
 func (c *Client) getReadProof(key stypes.StorageKey, hash *stypes.Hash) ([]byte, error) {
 	var res string
-	err := client.CallWithBlockHash(c.subAPI.Client, &res, "state_getStorage", hash, key.Hex())
+	err := sclient.CallWithBlockHash(c.subAPI.Client, &res, "state_getStorage", hash, key.Hex())
 	if err != nil {
 		return nil, err
 	}
