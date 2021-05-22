@@ -257,10 +257,12 @@ class ServiceHandlerTest extends TestBase {
     @Order(13)
     public void scenario13() {
         String _from = "0x1234567890123456789";
-        Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
+        //Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
+        BigInteger balanceBefore = (BigInteger) token.call("balanceOf", owners[0].getAddress());
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ZERO, handleBTPRequestBtpMsg(_from, owners[0].getAddress().toString()));
-        Balance balanceAfter = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
-        assertEquals(balanceBefore.getUsable().add(transferAmount), balanceAfter.getUsable());
+        //Balance balanceAfter = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
+        BigInteger balanceAfter = (BigInteger) token.call("balanceOf", owners[0].getAddress());
+        assertEquals(balanceBefore.add(transferAmount), balanceAfter);
     }
 
     /**

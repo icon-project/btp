@@ -213,8 +213,10 @@ library Types {
     } 
 
     struct TransferAssetsRecord {
-        TransferAssets request;
-        Response response;
-        bool isResolved;
+        string from;
+        string to;
+        string name;
+        uint256 value;
+        uint256 fee;
     }
 }

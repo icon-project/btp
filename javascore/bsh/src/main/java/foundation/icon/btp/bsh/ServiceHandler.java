@@ -221,7 +221,8 @@ public class ServiceHandler {
             int code = RC_OK;
             if (tokenAddr != null) {
                 //TODO: check if this needs to be deposited back to refundable or credit directly back to user?
-                setBalance(dataTo, tokenName, value, BigInteger.ZERO, BigInteger.ZERO);
+                Context.call(Address.fromString(tokenAddr), "transfer", dataTo, value, "transfer to Receiver".getBytes());
+                //setBalance(dataTo, tokenName, value, BigInteger.ZERO, BigInteger.ZERO);
             } else {
                 //code = RC_ERR_UNREGISTERED_TOKEN;
                 Context.revert(ErrorCodes.BSH_TOKEN_NOT_REGISTERED, "Unregistered Token");
@@ -448,3 +449,4 @@ public class ServiceHandler {
 // 7. invalid serial number - done
 // 8. check the BTP address format - done
 // 9. Request token register service
+// 10. withdraw/reclaim -

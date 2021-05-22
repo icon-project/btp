@@ -442,12 +442,15 @@ class ServiceHandlerTest extends TestBase {
     @Order(14)
     public void scenario14() throws IOException, ResultTimeoutException {
         String _from = "0x1234567890123456789";
-        RpcObject getBalanceArgs = new RpcObject.Builder()
+      /*  RpcObject getBalanceArgs = new RpcObject.Builder()
                 .put("user", new RpcValue(wallets[0].getAddress()))
                 .put("tokenName", new RpcValue(tokenName))
                 .build();
-        RpcObject res = bsh.call("getBalance", getBalanceArgs).asObject();
-        RpcValue usableBefore = res.getItem("usable").asValue();
+        RpcObject res = bsh.call("getBalance", getBalanceArgs).asObject();*/
+        RpcObject getBalanceArgs = new RpcObject.Builder()
+                .put("_owner", new RpcValue(wallets[0].getAddress()))
+                .build();
+        BigInteger balanceBefore = token.call("balanceOf", getBalanceArgs).asInteger();
         RpcObject args = new RpcObject.Builder()
                 .put("from", new RpcValue(_from))
                 .put("svc", new RpcValue(_svc))
@@ -456,9 +459,10 @@ class ServiceHandlerTest extends TestBase {
                 .build();
         TransactionResult txResult = bmc.invokeAndWaitResult(wallets[0], "handleBTPMessage", args);
         assertTrue(txResult.getFailure() == null);
-        res = bsh.call("getBalance", getBalanceArgs).asObject();
-        RpcValue usableAfter = res.getItem("usable").asValue();
-        assertTrue(convertHex(usableAfter).equals(convertHex(usableBefore).add(transferAmount)));
+        /*res = bsh.call("getBalance", getBalanceArgs).asObject();
+        RpcValue usableAfter = res.getItem("usable").asValue();*/
+        BigInteger balanceAfter = token.call("balanceOf", getBalanceArgs).asInteger();
+        assertTrue(balanceAfter.equals(balanceBefore.add(transferAmount)));
     }
 
     /**
