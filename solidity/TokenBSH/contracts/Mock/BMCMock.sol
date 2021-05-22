@@ -19,19 +19,36 @@
 pragma solidity >=0.5.0 <=0.8.5;
 
 import "../TokenBSH.sol";
+import "./BMC.sol";
 
-contract Mock is TokenBSH {
+contract BMCMock is BMC {
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.TransferAssets;
     using ParseAddress for address;
+    TokenBSH private bsh;
 
-    constructor(
-        address bmc,
-        string memory _serviceName,
-        string memory _network
-    ) TokenBSH(bmc, _serviceName) {}
+    constructor(string memory _network) BMC(_network) {}
+
+    function setBSH(address _bsh) external {
+        bsh = TokenBSH(_bsh);
+    }
+
+    function sendBTPMessage(
+        string memory _from,
+        string memory _svc,
+        uint256 _sn,
+        bytes memory _msg
+    ) internal {
+        bsh.handleBTPMessage(_from, _svc, _sn, _msg);
+    }
+
+    function handleFeeGathering(string calldata _fa, string memory _svc)
+        external
+    {
+        bsh.handleFeeGathering(_fa, _svc);
+    }
 
     Types.Asset[] public assetsMock;
 
@@ -43,10 +60,7 @@ contract Mock is TokenBSH {
         string memory _tokenName,
         uint256 _value
     ) external {
-        address token_addr = tokenAddr[_tokenName];
-        uint256 _fee;
-        (_value, _fee) = this.calculateTransferFee(token_addr, _value);
-        assetsMock.push(Types.Asset(_tokenName, _value, _fee));
+        assetsMock.push(Types.Asset(_tokenName, _value, 0));
         sendBTPMessage(
             _net,
             _svc,
@@ -96,10 +110,7 @@ contract Mock is TokenBSH {
         string memory _tokenName,
         uint256 _value
     ) external {
-        address token_addr = tokenAddr[_tokenName];
-        uint256 _fee;
-        (_value, _fee) = this.calculateTransferFee(token_addr, _value);
-        tokensMock.push(Types.Asset(_tokenName, _value, _fee));
+        tokensMock.push(Types.Asset(_tokenName, _value, 0));
         sendBTPMessage(
             _net,
             _svc,
@@ -117,12 +128,12 @@ contract Mock is TokenBSH {
         );
     }
 
-    function sendBTPMessage(
+    /* function sendBTPMessage(
         string memory _from,
         string memory _svc,
         uint256 _sn,
         bytes memory _msg
     ) internal {
         this.handleBTPMessage(_from, _svc, _sn, _msg);
-    }
+    } */
 }
