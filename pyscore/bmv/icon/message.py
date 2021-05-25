@@ -23,6 +23,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+import hashlib
 from iconservice import *
 
 from ..exception import *
@@ -38,7 +40,7 @@ from ...lib.icon.mpt import MerklePatriciaTree, MPTException
 class BlockHeader(object):
     def __init__(self, serialized: bytes) -> None:
         self.__bytes = serialized
-        self.__hash = sha3_256(serialized)
+        self.__hash = hashlib.sha3_256(serialized)
 
         unpacked = rlp.rlp_decode(self.__bytes,
                                   [int, int, int, bytes, bytes, bytes, bytes, bytes, bytes, bytes, bytes])
@@ -95,7 +97,7 @@ class Validators(Serializable):
         self.__bytes = serialized
         self.__addresses = []
         if serialized is not None:
-            self.__hash = sha3_256(serialized)
+            self.__hash = hashlib.sha3_256(serialized)
             unpacked = rlp.rlp_decode(self.__bytes, {list: bytes})
             for b in unpacked:
                 address = Address.from_bytes(b)
@@ -194,7 +196,7 @@ class Votes(object):
         for vote_item in self.__vote_items:
             vote_msg.append(vote_item.timestamp)
             serialized_vote_msg = rlp.rlp_encode(vote_msg)
-            msg_hash = sha3_256(serialized_vote_msg)
+            msg_hash = hashlib.sha3_256(serialized_vote_msg)
             public_key = recover_key(msg_hash, vote_item.signature)
             addr = create_address_with_key(public_key)
             if not validators.contains(addr):

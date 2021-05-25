@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import hashlib
 from . import rlp, Serializable
 
 
@@ -146,7 +147,7 @@ class MerkleTreeAccumulator(Serializable):
                         # self.__height -= offset
                         break
                     else:
-                        _hash = sha3_256(self.__roots[idx] + _hash)
+                        _hash = hashlib.sha3_256(self.__roots[idx] + _hash)
                         self.__roots[idx] = None
             if root is None:
                 root = _hash
@@ -176,9 +177,9 @@ class MerkleTreeAccumulator(Serializable):
     def _verify(witness: list, root: bytes, _hash: bytes, idx: int):
         for w in witness:
             if idx % 2 == 0:
-                _hash = sha3_256(_hash + w)  # right
+                _hash = hashlib.sha3_256(_hash + w)  # right
             else:
-                _hash = sha3_256(w + _hash)  # left
+                _hash = hashlib.sha3_256(w + _hash)  # left
             idx = int(idx/2)
 
         if _hash != root:

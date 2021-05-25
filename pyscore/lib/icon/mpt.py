@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import hashlib
 from .rlp import rlp_decode
 
 
@@ -77,7 +78,7 @@ class MerklePatriciaTree(object):
         def prove(self, nibbles: bytes, proofs: list) -> bytes:
             if self.is_hash():
                 serialized = proofs.pop(0)
-                _hash = sha3_256(serialized)
+                _hash = hashlib.sha3_256(serialized)
                 if self.__hash != _hash:
                     raise MPTException("mismatch hash")
                 node = MerklePatriciaTree.Node(_hash, serialized)
