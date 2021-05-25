@@ -145,6 +145,17 @@ func (c *Client) getReadProof(key stypes.StorageKey, hash *stypes.Hash) ([]byte,
 	return bz, nil
 }
 
+func (c *Client) getSystemEventReadProofKey() (stypes.StorageKey, error) {
+	meta := c.getMetadata()
+
+	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
 func (c *Client) queryStorage(prefix, method string, arg1, arg2 []byte, result interface{}) (bool, error) {
 
 	key, err := stypes.CreateStorageKey(c.getMetadata(), prefix, method, arg1, arg2)
