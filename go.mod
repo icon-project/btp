@@ -6,8 +6,7 @@ require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bshuster-repo/logrus-logstash-hook v0.4.1
-	github.com/centrifuge/go-substrate-rpc-client v2.0.0+incompatible
-	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/centrifuge/go-substrate-rpc-client/v3 v3.0.0
 	github.com/dgraph-io/badger v1.5.4
 	github.com/dgryski/go-farm v0.0.0-20190416075124-e1214b5e05dc // indirect
 	github.com/ethereum/go-ethereum v1.10.2
@@ -22,7 +21,6 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nsf/termbox-go v0.0.0-20190325093121-288510b9734e // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
-	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1
