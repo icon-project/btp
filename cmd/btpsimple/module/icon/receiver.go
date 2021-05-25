@@ -25,10 +25,10 @@ import (
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common"
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mpt"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 const (
@@ -186,9 +186,9 @@ func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
 		var i common.HexInt
 		i.SetBytes(el.Indexed[EventIndexSequence])
 		evt := &module.Event{
-			Next: module.BtpAddress(el.Indexed[EventIndexNext]),
+			Next:     module.BtpAddress(el.Indexed[EventIndexNext]),
 			Sequence: i.Int64(),
-			Message: el.Data[0],
+			Message:  el.Data[0],
 		}
 		return evt, nil
 	}

@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 const (

@@ -3,9 +3,9 @@ package mta
 import (
 	"fmt"
 
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 type ExtAccumulator struct {

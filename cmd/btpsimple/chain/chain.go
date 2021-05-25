@@ -28,12 +28,12 @@ import (
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
 	"github.com/icon-project/btp/common/wallet"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 const (
@@ -598,7 +598,7 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
 		w:   w,
-		l: l.WithFields(log.Fields{log.FieldKeyChain:
+		l:   l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,

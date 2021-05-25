@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
+	"github.com/icon-project/goloop/common/codec"
 )
 
 //refer service/txresult/receiptlist.go:59 receiptList.GetProof(n int) ([][]byte, error)
