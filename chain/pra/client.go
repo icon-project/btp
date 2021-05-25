@@ -9,9 +9,9 @@ import (
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
-	srpc "github.com/centrifuge/go-substrate-rpc-client"
-	sclient "github.com/centrifuge/go-substrate-rpc-client/client"
-	stypes "github.com/centrifuge/go-substrate-rpc-client/types"
+	srpc "github.com/centrifuge/go-substrate-rpc-client/v3"
+	sclient "github.com/centrifuge/go-substrate-rpc-client/v3/client"
+	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
