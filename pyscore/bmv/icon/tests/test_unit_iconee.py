@@ -2,7 +2,7 @@ import unittest
 from ..icon import *
 from ....lib.icon import rlp, base64
 from ....lib.icon.mta import MerkleTreeAccumulator
-from iconservice import Address, AddressPrefix
+from iconservice import *
 from tbears.libs.scoretest.score_test_case import ScoreTestCase
 from tbears.libs.icon_integrate_test import IconIntegrateTestBase
 from typing import List
@@ -14,7 +14,7 @@ from coincurve import PrivateKey
 class Key(object):
     def __init__(self, secret=None) -> None:
         self.private_key = PrivateKey(secret)
-        self.addr = address_by_public_key(self.private_key.public_key.format(False))
+        self.addr = create_address_with_key(self.private_key.public_key.format(False))
 
     def sign(self, _hash: bytes) -> bytes:
         return self.private_key.sign_recoverable(_hash, None)
