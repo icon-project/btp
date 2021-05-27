@@ -9,7 +9,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-public class FeeAggregationSCORE {
+public class FeeAggregationSCORE extends IRC31Receiver {
     private static final BigInteger ONE_ICX = new BigInteger("1000000000000000000");
     private static final VarDB<BigInteger> minimumBidAmount = Context.newVarDB("minimumBidAmount", BigInteger.class);
     private static final VarDB<BigInteger> minimumIncrementalBidPercent = Context.newVarDB("minimumIncrementalBidPercent", BigInteger.class);
@@ -146,6 +146,10 @@ public class FeeAggregationSCORE {
     @External(readonly = true)
     public Map<String, String> getCurrentAuction(String _tokenName) {
         Context.require(getSafeTokenScore(_tokenName) != null);
+        Auction currentAuction = getSafeAuction(_tokenName);
+        if (currentAuction == null) {
+            Context.revert("Nil Data");
+        }
         return getSafeAuction(_tokenName).toMap();
     }
 
@@ -154,13 +158,11 @@ public class FeeAggregationSCORE {
      */
     @Payable
     public void fallback() {
-        // TODO: used for unit test, will be removed
         Address _from = Context.getCaller();
         BigInteger _value = Context.getValue();
         Context.require(_value.compareTo(BigInteger.ZERO) > 0);
     }
 
-    // TODO: used for receive token from IRC2 contract, will be removed
     @External
     public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
     }

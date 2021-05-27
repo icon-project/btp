@@ -19,7 +19,6 @@ public class FeeAggregationScore extends Score {
 
     public static FeeAggregationScore mustDeploy(TransactionHandler txHandler, Wallet wallet)
             throws ResultTimeoutException, TransactionFailureException, IOException {
-        // TODO: need deploy CPS contract
         // Deploy CPS
         Score cps = txHandler.deploy(wallet, "CPFTreasury.zip", null);
 
@@ -54,6 +53,24 @@ public class FeeAggregationScore extends Score {
                 .build();
 
         invokeAndWaitResult(wallet, "register", params);
+
+        List<RpcItem> tokens = call("tokens", null).asArray().asList();
+        for (RpcItem token : tokens) {
+            if (token.asObject().getItem("name").asString().equals(tokenName)) {
+                return;
+            }
+        }
+        throw new IOException("ensureRegisterSuccess failed.");
+    }
+
+    public void ensureRegisterIRC31Success(Wallet wallet, String tokenName, Address tokenAddress, BigInteger id) throws Exception {
+        RpcObject params = new RpcObject.Builder()
+                .put("_tokenName", new RpcValue(tokenName))
+                .put("_tokenAddress", new RpcValue(tokenAddress))
+                .put("_tokenId", new RpcValue(id))
+                .build();
+
+        invokeAndWaitResult(wallet, "registerIRC31", params);
 
         List<RpcItem> tokens = call("tokens", null).asArray().asList();
         for (RpcItem token : tokens) {

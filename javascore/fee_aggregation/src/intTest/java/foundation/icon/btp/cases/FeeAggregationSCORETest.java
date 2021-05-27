@@ -2,6 +2,7 @@ package foundation.icon.btp.cases;
 
 import foundation.icon.btp.*;
 import foundation.icon.btp.score.FeeAggregationScore;
+import foundation.icon.btp.score.SampleMultiTokenScore;
 import foundation.icon.btp.score.SampleTokenScore;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
@@ -22,6 +23,7 @@ public class FeeAggregationSCORETest extends TestBase {
     private static KeyWallet[] wallets;
     private static KeyWallet ownerWallet;
     private static SampleTokenScore tokenScore;
+    private static SampleMultiTokenScore irc31TokenScore;
     private static FeeAggregationScore feeAggregationScore;
 
     @BeforeAll
@@ -49,6 +51,10 @@ public class FeeAggregationSCORETest extends TestBase {
         tokenScore = SampleTokenScore.mustDeploy(txHandler, ownerWallet,
                 decimals, initialSupply);
 
+        // Deploy multi-token SCORE && mint token
+        irc31TokenScore = SampleMultiTokenScore.mustDeploy(txHandler, ownerWallet);
+        irc31TokenScore.mintToken(ownerWallet);
+
         // Deploy FAS
         feeAggregationScore = FeeAggregationScore.mustDeploy(txHandler, ownerWallet);
 
@@ -58,8 +64,17 @@ public class FeeAggregationSCORETest extends TestBase {
         tokenScore.ensureTransfer(resultOfTransfer10TokenToFAS, ownerWallet.getAddress(), feeAggregationScore.getAddress(), ICX.multiply(BigInteger.TEN), null);
         LOG.infoExiting();
 
+        LOG.infoEntering("transfer multi-token", "100000 " + SampleMultiTokenScore.ID + " to FeeAggregationSCORE");
+        TransactionResult resultOfTransfer100000MultiTokenToFAS = irc31TokenScore.transfer(ownerWallet, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(100000), null);
+        irc31TokenScore.ensureTransfer(resultOfTransfer100000MultiTokenToFAS, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(100000), null);
+        LOG.infoExiting();
+
         LOG.infoEntering("call", "register() - register " + SampleTokenScore.NAME);
         feeAggregationScore.ensureRegisterSuccess(ownerWallet, SampleTokenScore.NAME, tokenScore.getAddress());
+        LOG.infoExiting();
+
+        LOG.infoEntering("call", "registerIRC31() - register IRC31 Token " + SampleMultiTokenScore.NAME);
+        feeAggregationScore.ensureRegisterIRC31Success(ownerWallet, SampleMultiTokenScore.NAME, irc31TokenScore.getAddress(), SampleMultiTokenScore.ID);
         LOG.infoExiting();
     }
 
