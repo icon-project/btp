@@ -99,8 +99,15 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         }
     }
 
+    /**
+     * (Operator)
+     * Operator register a IRC2 token
+     *
+     * @param _tokenName        Name of a token
+     * @param _tokenAddress     Address of token contract
+     */
     @External
-    public void register(String _tokenName, Address _tokenAddress) {
+    public void registerIRC2(String _tokenName, Address _tokenAddress) {
         Context.require(Context.getCaller().equals(Context.getOwner()));
         Context.require(getSafeTokenScore(_tokenName) == null);
         Context.require(_tokenAddress.isContract());
@@ -109,6 +116,14 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         this.supportedTokens.add(_tokenName);
     }
 
+    /**
+     * (Operator)
+     * Operator register a IRC31 Token
+     *
+     * @param _tokenName        Name of a token
+     * @param _tokenAddress     Address of token contract
+     * @param _tokenId          Id of token
+     */
     @External
     public void registerIRC31(String _tokenName, Address _tokenAddress, BigInteger _tokenId) {
         Context.require(Context.getCaller().equals(Context.getOwner()));
@@ -121,7 +136,22 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     }
 
     /**
-     *  List of tokens which defined in supportedTokens and tokensScore
+     * (Operator)
+     * Operator set the duration time for auction
+     *
+     * @param _duration        Duration time of a auction
+     */
+    @External
+    public void setDurationTime(BigInteger _duration) {
+        Context.require(Context.getCaller().equals(Context.getOwner()));
+        Context.require(!_duration.equals(BigInteger.ZERO));
+
+        durationTime.set(_duration.longValueExact());
+    }
+
+    /**
+     * (User)
+     * List of tokens which defined in supportedTokens and tokensScore
      *
      * @return List of Token
      */
@@ -137,6 +167,7 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         return List.of(tokens);
     }
 
+
     /**
      * Get auction information.
      *
@@ -146,10 +177,8 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     @External(readonly = true)
     public Map<String, String> getCurrentAuction(String _tokenName) {
         Context.require(getSafeTokenScore(_tokenName) != null);
-        Auction currentAuction = getSafeAuction(_tokenName);
-        if (currentAuction == null) {
-            Context.revert("Nil Data");
-        }
+
+        if (isAuctionExpired(_tokenName)) return null;
         return getSafeAuction(_tokenName).toMap();
     }
 
@@ -161,11 +190,12 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         Address _from = Context.getCaller();
         BigInteger _value = Context.getValue();
         Context.require(_value.compareTo(BigInteger.ZERO) > 0);
+
+        Context.call(_value, this.addressCPS.get(), "add_fund");
     }
 
     @External
-    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
-    }
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) { }
 
     /**
      * Called when a user submit a bid on asset. This function will:
@@ -187,7 +217,7 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         // Check if minimum value is 100 ICX
         Context.require(value.compareTo(minimumBidAmount.get()) > -1);
 
-        long now = Context.getTransactionTimestamp();
+        long now = Context.getBlockTimestamp();
         Auction auction = getSafeAuction(_tokenName);
         Address caller = Context.getCaller();
 
@@ -195,26 +225,31 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         if (auction == null) {
             // Check available balance of token enough to start an auction
             BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName));
-            Context.require(availableBalance.compareTo(BigInteger.ZERO) > -1);
+            Context.require(availableBalance.compareTo(BigInteger.ZERO) > 0);
 
             auction = new Auction(availableBalance, caller, value, now);
             this.auctions.set(_tokenName, auction);
 
             // Event log
-            AuctionStart(caller, auction.id(), _tokenName, value, auction.endTime());
+            AuctionStart(auction.id(), _tokenName, caller , value, auction.endTime());
         } else {
             // Check auction is ended
             if (isAuctionExpired(_tokenName)) {
-                endAuction(token, auction);
+                Auction oldAuction = this.auctions.get(_tokenName);
 
                 // Bid for new auction
                 balance = getTokenBalance(token, Context.getAddress());
-                BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName));
+                BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName)).subtract(oldAuction.tokenAmount());
+                Context.require(availableBalance.compareTo(BigInteger.ZERO) > 0);
+
                 auction = new Auction(availableBalance, caller, value, now);
                 this.auctions.set(_tokenName, auction);
 
+                // Transfer token to winner & ICX to CPS
+                endAuction(token, oldAuction);
+
                 // Event log
-                AuctionStart(caller, auction.id(), _tokenName, value, auction.endTime());
+                AuctionStart(auction.id(), _tokenName, caller, value, auction.endTime());
             } else {
                 BigInteger existingBidAmount = auction.bidAmount();
 
@@ -222,16 +257,17 @@ public class FeeAggregationSCORE extends IRC31Receiver {
                 BigInteger minimumBidAmount = existingBidAmount.add(existingBidAmount.multiply(minimumIncrementalBidPercent.get()).divide(BigInteger.valueOf(100)));
                 Context.require(minimumBidAmount.compareTo(value) <= 0);
 
-                // Refund to the previous bidder
                 Address previousBidder = auction.bidder();
+
+                this.auctions.set(_tokenName, this.auctions.get(_tokenName).setNewBidder(caller, value));
+
+                // Refund to the previous bidder
                 try {
                     Context.transfer(previousBidder, existingBidAmount);
                 } catch (Exception e) {
                     Context.println("[Exception] " + e.getMessage());
-                    this.refundableBalances.set(caller, getSafeRefundableBalance(caller).add(auction.bidAmount()));
+                    this.refundableBalances.set(previousBidder, getSafeRefundableBalance(previousBidder).add(existingBidAmount));
                 }
-
-                this.auctions.set(_tokenName, this.auctions.get(_tokenName).setNewBidder(caller, value));
 
                 // Event Log
                 BidInfo(auction.id(), _tokenName, previousBidder, existingBidAmount, auction.bidder(), auction.bidAmount());
@@ -239,26 +275,34 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         }
     }
 
+    /**
+     * (User)
+     * User use to withdraw their ICX when another bid higher but the system can not transfer ICX to them
+     */
     @External
     public void withdrawal() {
         Address caller = Context.getCaller();
         BigInteger amount = getSafeRefundableBalance(caller);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
 
-        // refund to loser
-        Context.transfer(caller, amount);
-
         // Remove loser in
         this.refundableBalances.set(caller, BigInteger.ZERO);
+
+        // refund to loser
+        try {
+            Context.transfer(caller, amount);
+        } catch (Exception e) {
+            Context.println("[Exception] Withdrawal " + e.getMessage());
+            this.refundableBalances.set(caller, getSafeRefundableBalance(caller).add(amount));
+        }
     }
 
+    /**
+     * (User)
+     * User use to claim their tokens when User win this token but the system can not transfer tokens to them
+     */
     @External
     public void claim(String _tokenName) {
-        // End Auction
-        if (isAuctionExpired(_tokenName)) {
-            endAuction(getSafeTokenScore(_tokenName), getSafeAuction(_tokenName));
-        }
-
         Token token = getSafeTokenScore(_tokenName);
         Context.require(token != null);
 
@@ -266,18 +310,33 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         BigInteger amount = getSafeTokenBalance(caller, _tokenName);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
 
-        // transfer token to loser
-        if (!token.isIRC31()) {
-            Context.call(token.address(), "safeTransferFrom", Context.getAddress(), caller, token.tokenId(), amount, "transfer to bidder".getBytes());
-        } else {
-            Context.call(token.address(), "transfer", caller, amount, "transfer to bidder".getBytes());
-        }
-
         // release Token locked
         this.lockedBalances.set(_tokenName, this.getSafeLockBalance(_tokenName).subtract(amount));
 
         // Remove loser in
         this.tokenBalances.at(caller).set(_tokenName, BigInteger.ZERO);
+
+        try {
+            // transfer token to winner
+            if (!token.isIRC31()) {
+                Context.call(token.address(), "transferFrom", Context.getAddress(), caller, token.tokenId(), amount, "transfer to bidder".getBytes());
+            } else {
+                Context.call(token.address(), "transfer", caller, amount, "transfer to bidder".getBytes());
+            }
+        } catch (Exception e) {
+            Context.println("[Exception] " + e.getMessage());
+
+            // Lock amount token to winner claims manually
+            this.lockedBalances.set(_tokenName, getSafeLockBalance(_tokenName).add(amount));
+            this.tokenBalances.at(caller).set(_tokenName, amount);
+        }
+
+        // End Auction
+        Auction auction = getSafeAuction(_tokenName);
+        if (auction != null && Context.getBlockTimestamp() >= auction.endTime()) {
+            this.auctions.set(_tokenName, null);
+            endAuction(getSafeTokenScore(_tokenName), auction);
+        }
     }
 
     @External(readonly = true)
@@ -311,11 +370,16 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     private void endAuction(Token _token, Auction _auction) {
         // Send token to winner
         BigInteger balance = getTokenBalance(_token, Context.getAddress());
-        Context.require(balance.compareTo(this.auctions.get(_token.name()).tokenAmount()) >= 0);
+        Context.require(balance.compareTo(_auction.tokenAmount()) >= 0);
+
+        // Send ICX to CPS
+        if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
+            Context.call(_auction.bidAmount(), this.addressCPS.get(), "add_fund");
+        }
 
         try {
             if (_token.isIRC31()) {
-                Context.call(_token.address(), "safeTransferFrom", Context.getAddress(), _auction.bidder(), _token.tokenId(), _auction.tokenAmount(), "transfer to bidder".getBytes());
+                Context.call(_token.address(), "transferFrom", Context.getAddress(), _auction.bidder(), _token.tokenId(), _auction.tokenAmount(), "transfer to bidder".getBytes());
             } else {
                 Context.call(_token.address(), "transfer", _auction.bidder(), _auction.tokenAmount(), "transfer to bidder".getBytes());
             }
@@ -327,29 +391,21 @@ public class FeeAggregationSCORE extends IRC31Receiver {
             this.tokenBalances.at(_auction.bidder()).set(_token.name(), getSafeTokenBalance(_auction.bidder(), _token.name()).add(_auction.tokenAmount()));
         }
 
-        // Send ICX to CPS
-        if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
-            Context.call(_auction.bidAmount(), this.addressCPS.get(), "add_fund");
-        }
-
-        // Reset auction
-        this.auctions.set(_token.name(), null);
-
         // Event log
-        AuctionEnded(_auction.id(), _token.name(), _auction.bidder(), _auction.tokenAmount(), _auction.bidAmount(), Context.getTransactionTimestamp());
+        AuctionEnded(_auction.id(), _token.name(), _auction.bidder(), _auction.tokenAmount(), _auction.bidAmount(), Context.getBlockTimestamp());
     }
 
     boolean isAuctionExpired(String _tokenName) {
         Auction auction = getSafeAuction(_tokenName);
         // checks if auction is not started yet or ended
-        return auction == null || Context.getTransactionTimestamp() >= auction.endTime();
+        return auction == null || Context.getBlockTimestamp() >= auction.endTime();
     }
 
     @EventLog(indexed = 3)
-    protected void BidInfo(BigInteger auctionID, String tokenName, Address currentBidder, BigInteger currentBidAmount, Address newBidder,  BigInteger newBidAmount ) {}
+    protected void BidInfo(BigInteger auctionID, String tokenName, Address currentBidder, BigInteger currentBidAmount, Address newBidder,  BigInteger newBidAmount) {}
 
     @EventLog(indexed = 3)
-    protected void AuctionStart(Address firstBidder, BigInteger auctionID, String tokenName, BigInteger bidAmount, long deadline) {}
+    protected void AuctionStart(BigInteger auctionID, String tokenName, Address firstBidder, BigInteger bidAmount, long deadline) {}
 
     @EventLog(indexed = 3)
     protected void AuctionEnded(BigInteger auctionID, String tokenName, Address winner, BigInteger tokenAmount, BigInteger bidAmount, long deadline) {}

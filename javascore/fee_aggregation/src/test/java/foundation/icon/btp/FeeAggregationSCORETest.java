@@ -16,7 +16,6 @@
 
 package foundation.icon.btp;
 
-import foundation.icon.icx.transport.jsonrpc.RpcValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import score.Address;
@@ -59,13 +58,14 @@ class FeeAggregationSCORETest extends TestBase {
         feeAggregationSCORE = sm.deploy(owner, FeeAggregationSCORE.class, cps.getAddress());
         feeAggregationSCORESpy = (FeeAggregationSCORE) spy(feeAggregationSCORE.getInstance());
         feeAggregationSCORE.setInstance(feeAggregationSCORESpy);
+        feeAggregationSCORE.invoke(owner, "setDurationTime", new BigInteger("1000000000000"));
     }
 
     @Test
     void register_Success() {
-        // register general Token
-        feeAggregationSCORE.invoke(owner, "register",TOKEN_NAME, contractAddress);
-        verify(feeAggregationSCORESpy).register(TOKEN_NAME, contractAddress);
+        // register IRC2 Token
+        feeAggregationSCORE.invoke(owner, "registerIRC2",TOKEN_NAME, contractAddress);
+        verify(feeAggregationSCORESpy).registerIRC2(TOKEN_NAME, contractAddress);
 
         // register IRC31 Token
         feeAggregationSCORE.invoke(owner, "registerIRC31",TOKEN_NAME_IRC31, contractAddress, TOKEN_ID);
@@ -77,7 +77,7 @@ class FeeAggregationSCORETest extends TestBase {
         Address notContractAddress = sm.createAccount().getAddress();
 
         // Throw error when address is not contract
-        assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "register", TOKEN_NAME, notContractAddress));
+        assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "registerIRC2", TOKEN_NAME, notContractAddress));
         assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "registerIRC31", TOKEN_NAME_IRC31, notContractAddress, TOKEN_ID));
 
         // Throw error when tokenId is invalid
@@ -85,7 +85,7 @@ class FeeAggregationSCORETest extends TestBase {
 
         // Throw error when token name existed
         register_Success();
-        assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "register", TOKEN_NAME, contractAddress));
+        assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "registerIRC2", TOKEN_NAME, contractAddress));
         assertThrows(AssertionError.class, () -> feeAggregationSCORE.invoke(owner, "registerIRC31", TOKEN_NAME_IRC31, contractAddress, TOKEN_ID));
     }
 
@@ -130,7 +130,6 @@ class FeeAggregationSCORETest extends TestBase {
         Account userB = sm.createAccount(1000);
         BigInteger fundB = ICX.multiply(BigInteger.valueOf(150));
         BigInteger availableBalanceB = userB.getBalance();
-
         sm.call(userB, fundB, feeAggregationSCORE.getAddress(), "bid", TOKEN_NAME);
 
         assertNotEquals(fundA, Account.getAccount(feeAggregationSCORE.getAddress()).getBalance());
@@ -160,13 +159,5 @@ class FeeAggregationSCORETest extends TestBase {
         Account userB = sm.createAccount(1000);
         BigInteger fundB = ICX.multiply(BigInteger.valueOf(109));
         assertThrows(AssertionError.class, () -> sm.call(userB, fundB, feeAggregationSCORE.getAddress(), "bid", TOKEN_NAME));
-    }
-
-    @Test
-    void testRPCValue() {
-        // stepLimit -> {RpcValue@4218} "0x2540be400"
-        RpcValue a = new RpcValue("0x3f3a348f");
-        System.out.println(new BigInteger(a.asByteArray()).toString());
-        assertEquals(1,1);
     }
 }
