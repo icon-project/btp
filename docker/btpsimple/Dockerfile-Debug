@@ -19,7 +19,7 @@ ENV PATH $PATH:/btpsimple/bin
 COPY dist/pyscore/*.zip /btpsimple/contracts/pyscore/
 
 # copy module
-COPY dist/debug/* /btpsimple
+COPY dist/debug/* /btpsimple/
 
 WORKDIR /btpsimple
 
