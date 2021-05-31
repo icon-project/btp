@@ -19,7 +19,7 @@ public class TransferAsset {
     }
 
 
-    public static void writeObject(ByteArrayObjectWriter w, TransferAsset v) {
+    public static void writeObject(ObjectWriter w, TransferAsset v) {
         w.beginList(3);
         w.write( v.getFrom());
         w.write( v.getTo());
