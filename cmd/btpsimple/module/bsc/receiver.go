@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mpt"
+	"math/big"
 )
 
 const (
@@ -55,7 +55,7 @@ type receiver struct {
 	isFoundOffsetBySeq bool
 }
 
-func (r *receiver) getBlockHeader(height HexInt) (*BlockHeader, error) {
+func (r *receiver) getBlockHeader(height *big.Int) (*BlockHeader, error) {
 	//p := &BlockHeightParam{Height: height}
 	b, err := r.c.GetBlockHeaderByHeight(height)
 	if err != nil {
@@ -80,30 +80,15 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	if err != nil {
 		return nil, err
 	}
-	blkHash, _ := v.Hash.Value()
-	if !bytes.Equal(blkHash, crypto.SHA3Sum256(bh.serialized)) {
+	if !bytes.Equal(v.Hash.Bytes(), crypto.SHA3Sum256(bh.serialized)) {
 		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
 
 	var update BlockUpdate
 	update.BlockHeader = bh.serialized
-	vb, vbErr := r.c.GetVotesByHeight(&BlockHeightParam{Height: v.Height})
-	if vbErr != nil {
-		return nil, mapError(vbErr)
-	}
-	update.Votes = vb
-
-	if r.bh == nil || !bytes.Equal(bh.NextValidatorsHash, r.bh.NextValidatorsHash) {
-		dp := &DataHashParam{Hash: NewHexBytes(bh.NextValidatorsHash)}
-		nvb, err := r.c.GetDataByHash(dp)
-		if err != nil {
-			return nil, mapError(err)
-		}
-		update.Validators = nvb
-	}
 
 	bu := &module.BlockUpdate{
-		BlockHash: blkHash,
+		BlockHash: v.Hash.Bytes(),
 		Height:    bh.Height,
 		Header:    bh.serialized,
 	}
@@ -218,14 +203,14 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallbac
 		Indexed:   []*string{&s},
 	}
 	r.evtReq = &BlockRequest{
-		Height:       NewHexInt(height),
+		Height:       big.NewInt(height),
 		EventFilters: []*EventFilter{ef},
 	}
 	if height < 1 {
 		return fmt.Errorf("cannot catchup from zero height")
 	}
 	var err error
-	if r.bh, err = r.getBlockHeader(NewHexInt(height - 1)); err != nil {
+	if r.bh, err = r.getBlockHeader(big.NewInt(height - 1)); err != nil {
 		return err
 	}
 	if seq < 1 {
@@ -238,9 +223,23 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallbac
 	r.evtLogRawFilter.next = []byte(s)
 	r.evtLogRawFilter.seq = common.NewHexInt(seq).Bytes()
 
-	subch := make(chan types.Header)
-	err = r.c.MonitorBlock(r.evtReq, subch)
-
+	err = r.c.MonitorBlock(r.evtReq,
+		func(v *BlockNotification) error {
+			var bu *module.BlockUpdate
+			var rps []*module.ReceiptProof
+			if bu, err = r.newBlockUpdate(v); err != nil {
+				return err
+			}
+			if rps, err = r.newReceiptProofs(v); err != nil {
+				return err
+			} else if r.isFoundOffsetBySeq {
+				cb(bu, rps)
+			} else {
+				cb(bu, nil)
+			}
+			return nil
+		},
+	)
 	return err
 }
 
@@ -266,9 +265,8 @@ func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]int
 }
 
 func (r *receiver) GetBlockUpdate(height int64) (*module.BlockUpdate, error) {
-	var v *BlockNotification
 	var bu *module.BlockUpdate
-	v = &BlockNotification{Height: NewHexInt(height)}
+	v := &BlockNotification{Height: big.NewInt(height)}
 	bu, err := r.newBlockUpdate(v)
 	return bu, err
 }

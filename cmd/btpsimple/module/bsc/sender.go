@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
+	"math/big"
 	"net/url"
 	"strconv"
 	"time"
@@ -35,8 +36,8 @@ import (
 )
 
 const (
-	txMaxDataSize                 = 524288 //512 * 1024 // 512kB
-	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
+	txMaxDataSize                 = 8192 //8kB TODO: determine optimum size for Ethereum max tx size
+	txOverheadScale               = 0.37 //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
@@ -228,31 +229,37 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 		return nil, fmt.Errorf("casting failure")
 	}
 	t, err := s.c.newTransactOpts(s.opt.ChainID)
+	t.GasLimit = uint64(s.opt.GasLimit)
 	if err != nil {
 		return nil, err
 	}
 	rmp := p.Params.(BMCRelayMethodParams)
-	message, err := s.bmc.HandleRelayMessage(t, rmp.Prev, rmp.Messages)
+	var tx *types.Transaction
+	tx, err = s.bmc.HandleRelayMessage(t, rmp.Prev, rmp.Messages)
 	if err != nil {
 		return nil, err
 	}
-	return message, nil
+	thp := &TransactionHashParam{}
+	thp.Hash = tx.Hash()
+	return thp, nil
 }
 
 func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, error) {
 	if txh, ok := p.(*TransactionHashParam); ok {
 		for {
-			txr, err := s.c.GetTransactionResult(txh)
+			_, pending, err := s.c.GetTransaction(txh.Hash)
 			if err != nil {
-				if je, ok := err.(*jsonrpc.Error); ok {
-					switch je.Code {
-					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-						<-time.After(DefaultGetRelayResultInterval)
-						continue
-					}
-				}
+				return nil, err
 			}
-			return txr, mapErrorWithTransactionResult(&TransactionResult{}, err) // TODO: map transaction.js result error
+			if pending {
+				<-time.After(DefaultGetRelayResultInterval)
+				continue
+			}
+			tx, err := s.c.GetTransactionResult(txh)
+			if err != nil {
+				return nil, err
+			}
+			return tx, nil //mapErrorWithTransactionResult(&types.Receipt{}, err) // TODO: map transaction.js result error
 		}
 	} else {
 		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)
@@ -301,26 +308,14 @@ func (s *sender) isOverLimit(size int) bool {
 }
 
 func (s *sender) MonitorLoop(height int64, cb module.MonitorCallback, scb func()) error {
-	br := &BlockRequest{
-		Height: NewHexInt(height),
-	}
-
-	subch := make(chan types.Header)
-	if err := s.c.MonitorBlock(br, subch); err != nil {
-		return err
-	}
-
 	s.l.Debugf("MonitorLoop (sender) connected")
-	scb()
-
-	for head := range subch {
-		if err := cb(head.Number.Int64()); err != nil {
-			return err
-		}
-		s.l.Debugf("MonitorLoop (sender) latest block: %s", head.Number)
+	br := &BlockRequest{
+		Height: big.NewInt(height),
 	}
-
-	return nil
+	return s.c.MonitorBlock(br,
+		func(v *BlockNotification) error {
+			return cb(v.Height.Int64())
+		})
 }
 
 func (s *sender) StopMonitorLoop() {

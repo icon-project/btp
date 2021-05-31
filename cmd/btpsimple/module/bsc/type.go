@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -150,27 +151,25 @@ type BMCStatus struct {
 }
 
 type TransactionHashParam struct {
-	Hash common.Hash `json:"txHash" validate:"required,t_hash"`
+	Hash common.Hash
 }
 
 type BlockHeightParam struct {
-	Height HexInt `json:"height" validate:"required,t_int"`
+	Height *big.Int `json:"height" validate:"required,t_int"`
 }
-type DataHashParam struct {
-	Hash HexBytes `json:"hash" validate:"required,t_hash"`
-}
+
 type ProofResultParam struct {
 	BlockHash HexBytes `json:"hash" validate:"required,t_hash"`
 	Index     HexInt   `json:"index" validate:"required,t_int"`
 }
 type ProofEventsParam struct {
-	BlockHash HexBytes `json:"hash" validate:"required,t_hash"`
-	Index     HexInt   `json:"index" validate:"required,t_int"`
-	Events    []HexInt `json:"events"`
+	BlockHash common.Hash `json:"hash" validate:"required,t_hash"`
+	Index     HexInt      `json:"index" validate:"required,t_int"`
+	Events    []HexInt    `json:"events"`
 }
 
 type BlockRequest struct {
-	Height       HexInt         `json:"height"`
+	Height       *big.Int       `json:"height"`
 	EventFilters []*EventFilter `json:"eventFilters,omitempty"`
 }
 
@@ -182,8 +181,8 @@ type EventFilter struct {
 }
 
 type BlockNotification struct {
-	Hash    HexBytes     `json:"hash"`
-	Height  HexInt       `json:"height"`
+	Hash    common.Hash
+	Height  *big.Int
 	Indexes [][]HexInt   `json:"indexes,omitempty"`
 	Events  [][][]HexInt `json:"events,omitempty"`
 }
@@ -249,20 +248,6 @@ func (a Address) Value() ([]byte, error) {
 		return nil, fmt.Errorf("invalid length %d", n)
 	}
 	return b[:], nil
-}
-
-func NewAddress(b []byte) Address {
-	if len(b) != 21 {
-		return ""
-	}
-	switch b[0] {
-	case 1:
-		return Address("cx" + hex.EncodeToString(b[1:]))
-	case 0:
-		return Address("hx" + hex.EncodeToString(b[1:]))
-	default:
-		return ""
-	}
 }
 
 //T_SIG

@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -112,10 +111,6 @@ func (c *Client) SendTransaction(tx *types.Transaction) error {
 
 	return nil
 }
-func (c *Client) SendTransactionAndWait(p *TransactionParam) (*HexBytes, error) {
-	var result HexBytes = HexBytes(0)
-	return &result, nil
-}
 func (c *Client) GetTransactionResult(p *TransactionHashParam) (*types.Receipt, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
@@ -125,38 +120,23 @@ func (c *Client) GetTransactionResult(p *TransactionHashParam) (*types.Receipt, 
 	}
 	return tr, nil
 }
-func (c *Client) WaitTransactionResult(p *TransactionHashParam) (*TransactionResult, error) {
-	tr := &TransactionResult{}
-	return tr, nil
-}
-func (c *Client) Call(p ethereum.CallMsg, r interface{}) error {
+func (c *Client) GetTransaction(hash common.Hash) (*types.Transaction, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	r, err := c.ethClient.CallContract(ctx, p, big.NewInt(0))
+	tx, pending, err := c.ethClient.TransactionByHash(ctx, hash)
 	if err != nil {
-		return err
+		return nil, pending, err
 	}
-	return nil
+	return tx, pending, err
 }
 
-func (c *Client) GetBlockHeaderByHeight(height HexInt) (*types.Header, error) {
+func (c *Client) GetBlockHeaderByHeight(height *big.Int) (*types.Header, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	v, _ := height.Value()
-	head, _ := c.ethClient.HeaderByNumber(ctx, big.NewInt(v))
+	head, _ := c.ethClient.HeaderByNumber(ctx, height)
 	return head, nil
 }
 
-func (c *Client) GetVotesByHeight(p *BlockHeightParam) ([]byte, error) {
-	var result []byte
-	// TODO: get votes
-	return result, nil
-}
-func (c *Client) GetDataByHash(p *DataHashParam) ([]byte, error) {
-	var result []byte
-	// TODO: get data by hash
-	return result, nil
-}
 func (c *Client) GetProofForResult(p *ProofResultParam) ([][]byte, error) {
 	var result [][]byte
 	// TODO: get proof for result
@@ -168,31 +148,32 @@ func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
 	return result, nil
 }
 
-func (c *Client) MonitorBlock(p *BlockRequest, subch chan types.Header) error {
-	go func() {
-		err := c.Monitor("newHeads", subch)
-		if err != nil {
-			return
-		}
-	}()
-	return nil
+func (c *Client) MonitorBlock(p *BlockRequest, cb func(b *BlockNotification) error) error {
+	return c.Monitor(cb)
 }
 
-func (c *Client) Monitor(req string, subch chan types.Header) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Subscribe to new blocks.
-	sub, err := c.Client.EthSubscribe(ctx, subch, req)
-
+func (c *Client) Monitor(cb func(b *BlockNotification) error) error {
+	subch := make(chan *types.Header)
+	sub, err := c.ethClient.SubscribeNewHead(context.Background(), subch)
 	if err != nil {
-		fmt.Println("subscribe error:", err)
 		return err
 	}
 
-	c.ClientSubscription = sub
-
-	fmt.Println("connection lost: ", <-sub.Err())
+	go func() {
+		for {
+			select {
+			case err := <-sub.Err():
+				c.l.Fatal(err)
+			case header := <-subch:
+				b := &BlockNotification{Hash: header.Hash(), Height: header.Number}
+				err := cb(b)
+				if err != nil {
+					return
+				}
+				c.l.Debugf("MonitorBlock %v", header.Number.Int64())
+			}
+		}
+	}()
 
 	return nil
 }
