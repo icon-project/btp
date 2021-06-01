@@ -14,7 +14,7 @@ This document describes how to setup a BTP network and interchain token transfer
 CONFIG_DIR=/path/to/config
 docker run -d --name goloop -p 9080:9080 \
   -v ${CONFIG_DIR}:/goloop/config \
-  iconloop/goloop
+  iconloop/goloop-icon
 ```` 
 for follows, execute under `docker exec -ti --workdir /goloop/config goloop sh`.
 
@@ -432,11 +432,10 @@ goloop rpc sendtx call --to $(cat token_bsh.dst) \
 Tutorial with [Docker-compose](https://docs.docker.com/compose/)
 
 ### Preparation
-Prepare 'btpsimple' docker image via `make btpsimple-image` and Copy files from project source to `/path/to/tutorial`
+Prepare 'btpsimple' docker image via `make btpsimple-image`
 ````shell
 make btpsimple-image
-mkdir -p /path/to/tutorial
-cp docker-compose/* /path/to/tutorial/
+docker-compose -f docker-compose/docker-compose.yml up --build -d
 ```` 
 
 ### Run chain and relay
@@ -453,11 +452,11 @@ And It creates containers for `goloop`, `btpsimple_src`, `btpsimple_dst` service
 
 ### Interchain Token Transfer
 > To use `goloop` as json-rpc client, execute shell via `docker-compose exec goloop sh`  
-> And apply `source token.sh` for transfer and retrieve balance
+> And apply `source /goloop/bin/token.sh` for transfer and retrieve balance
 
 Create key store for Alice and Bob
 ````shell
-source keystore.sh
+source /goloop/bin/keystore.sh
 ensure_key_store alice.ks.json alice.secret
 ensure_key_store bob.ks.json bob.secret
 ````

@@ -1,5 +1,5 @@
 ARG BTPSIMPLE_VERSION=latest
-ARG GOLOOP_IMAGE=goloop:latest
+ARG GOLOOP_IMAGE=iconloop/goloop-icon:latest
 
 FROM btpsimple:${BTPSIMPLE_VERSION} AS btpsimple
 FROM ${GOLOOP_IMAGE}
