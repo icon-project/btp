@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from iconservice import *
 from .rlp import rlp_decode
-from .wrap import get_hash
 
 
 class MPTException(BaseException):
@@ -78,7 +78,7 @@ class MerklePatriciaTree(object):
         def prove(self, nibbles: bytes, proofs: list) -> bytes:
             if self.is_hash():
                 serialized = proofs.pop(0)
-                _hash = get_hash(serialized)
+                _hash = sha3_256(serialized)
                 if self.__hash != _hash:
                     raise MPTException("mismatch hash")
                 node = MerklePatriciaTree.Node(_hash, serialized)
