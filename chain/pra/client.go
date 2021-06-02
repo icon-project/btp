@@ -35,15 +35,15 @@ type Client struct {
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
-	subAPI, err := srpc.NewSubstrateAPI(uri)
-	if err != nil {
-		l.Fatal(err)
-	}
+	// subAPI, err := srpc.NewSubstrateAPI(uri)
+	// if err != nil {
+	// 	l.Fatal(err)
+	// }
 
-	meta, err := subAPI.RPC.State.GetMetadataLatest()
-	if err != nil {
-		l.Fatal(err)
-	}
+	// meta, err := subAPI.RPC.State.GetMetadataLatest()
+	// if err != nil {
+	// 	l.Fatal(err)
+	// }
 
 	ethClient, err := ethclient.Dial(uri)
 	if err != nil {
@@ -52,13 +52,13 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 
 	bmc, err := binding.NewBMC(common.HexToAddress(bmcContractAddress), ethClient)
 	if err != nil {
-		l.Fatal(err)
+		l.Fatal("got error when connect to BMC contract", err.Error())
 	}
 
 	c := &Client{
-		mutex:     &sync.RWMutex{},
-		meta:      meta,
-		subAPI:    subAPI,
+		mutex: &sync.RWMutex{},
+		// meta:      meta,
+		// subAPI:    subAPI,
 		bmc:       bmc,
 		ethClient: ethClient,
 		log:       l,
@@ -101,6 +101,7 @@ func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, b
 }
 
 func (c *Client) MonitorEvmBlock(cb chain.MonitorCallback) error {
+
 	headers := make(chan *types.Header)
 	sub, err := c.ethClient.SubscribeNewHead(context.Background(), headers)
 	if err != nil {

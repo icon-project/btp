@@ -230,6 +230,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 }
 
 func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
+
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
 		return nil, err

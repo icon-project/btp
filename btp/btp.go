@@ -260,6 +260,8 @@ func (b *BTP) relay() {
 
 // addRelayMessage adds messages to the buffered rms
 func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
+	b.log.Debugf("addRelayMessage bu.Height:%v b.bmcLinkStatus.Verifier.Height:%v", bu.Height, b.bmcLinkStatus.Verifier.Height)
+
 	if b.lastBlockUpdate != nil {
 		//TODO consider remained bu when reconnect
 		if b.lastBlockUpdate.Height+1 != bu.Height {
