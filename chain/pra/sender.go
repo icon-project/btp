@@ -270,7 +270,6 @@ func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 		status.BMRs[i].MessageCount = bmr.MsgCount.Int64()
 	}
 
-	status.Verifier.LastHeight = 1 // TODO: Change this when using with real contract
 	return status, nil
 }
 

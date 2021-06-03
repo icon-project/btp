@@ -216,7 +216,13 @@ func (b *BTP) relay() {
 	}
 
 	for _, rm := range b.rms {
-		if rm.HasWait() || (!b.skippable(rm) && !b.relayble(rm)) {
+		hasWait := rm.HasWait()
+		skippable := b.skippable(rm)
+		relayable := b.relayble(rm)
+
+		b.log.Debugf("Relay rm:%v has_wait:%v skippable:%v relayable:%v", rm.HeightOfDst, hasWait, skippable, relayable)
+
+		if hasWait || (!skippable && !relayable) {
 			break
 		} else {
 			if len(rm.Segments) == 0 {
