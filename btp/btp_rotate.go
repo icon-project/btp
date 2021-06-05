@@ -56,7 +56,7 @@ func (b *BTP) relayble(rm *chain.RelayMessage) bool {
 		relaybleHeightEnd += int64(bs.RotateTerm * rotate)
 	}
 
-	b.log.Debugf("relayableIndex:%v b.bmrIndex:%v b.overMaxAggregation(rm):%v", relayableIndex, b.bmrIndex(), b.overMaxAggregation(rm))
+	b.log.Tracef("relayableIndex:%v b.bmrIndex:%v b.overMaxAggregation(rm):%v", relayableIndex, b.bmrIndex(), b.overMaxAggregation(rm))
 
 	prevFinalizeHeight := relaybleHeightEnd - int64(bs.RotateTerm) + int64(b.sender.FinalizeLatency())
 	return (relayableIndex == b.bmrIndex()) &&
