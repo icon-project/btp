@@ -14,6 +14,8 @@ func (b *BTP) bmrIndex() int {
 			return i
 		}
 	}
+
+	b.log.Warn("BMR not found")
 	return -1
 }
 
@@ -43,6 +45,7 @@ func (b *BTP) overMaxAggregation(rm *chain.RelayMessage) bool {
 func (b *BTP) relayble(rm *chain.RelayMessage) bool {
 	bs := b.bmcLinkStatus
 	if bs.RotateTerm <= 0 {
+		b.log.Debugf("bs.RotateTerm:%v", bs.RotateTerm)
 		return false
 	}
 
@@ -52,6 +55,8 @@ func (b *BTP) relayble(rm *chain.RelayMessage) bool {
 	if rotate > 0 {
 		relaybleHeightEnd += int64(bs.RotateTerm * rotate)
 	}
+
+	b.log.Debugf("relayableIndex:%v b.bmrIndex:%v b.overMaxAggregation(rm):%v", relayableIndex, b.bmrIndex(), b.overMaxAggregation(rm))
 
 	prevFinalizeHeight := relaybleHeightEnd - int64(bs.RotateTerm) + int64(b.sender.FinalizeLatency())
 	return (relayableIndex == b.bmrIndex()) &&

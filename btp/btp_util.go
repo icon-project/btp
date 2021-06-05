@@ -42,6 +42,8 @@ func (b *BTP) prepareDatabase(offset int64) error {
 }
 
 func (b *BTP) receiveHeight() int64 {
+	return 9532852
+
 	max := b.store.Height()
 	if max < b.bmcLinkStatus.Verifier.Offset {
 		max = b.bmcLinkStatus.Verifier.Offset

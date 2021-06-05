@@ -214,14 +214,14 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 	if txh, ok := p.(*types.Transaction); ok {
 		for {
-			s.log.Debugf("Get receipt %s", txh.Hash().Hex())
+			s.log.Debugf("getting receipt:%s", txh.Hash().Hex())
 			txr, err := s.c.GetTransactionReceipt(txh.Hash())
 			if err != nil {
 				<-time.After(DefaultGetRelayResultInterval)
 				continue
 			}
 
-			s.log.Error("Got receipt %s %v", txr.TxHash.String())
+			s.log.Error("got receipt:%v", txr.TxHash.String())
 			return txr, err
 		}
 	} else {
@@ -269,6 +269,9 @@ func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 		status.BMRs[i].BlockCount = bmr.BlockCount.Int64()
 		status.BMRs[i].MessageCount = bmr.MsgCount.Int64()
 	}
+
+	// fmt.Println(status.Verifier.Offset)
+	// status.Verifier.Offset = 9532852
 
 	return status, nil
 }
