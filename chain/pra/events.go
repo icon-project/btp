@@ -1,8 +1,8 @@
 package pra
 
 import (
-	"github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
+	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 )
 
 // Scale decode for EthereumLog

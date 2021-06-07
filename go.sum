@@ -92,8 +92,6 @@ github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtE
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
 github.com/c-bata/go-prompt v0.2.2/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/centrifuge/go-substrate-rpc-client v2.0.0-alpha.3+incompatible h1:d8hQYVrpemZ6ZN38kL1XdQtezXTwrgiVXgQg+M3Lay0=
-github.com/centrifuge/go-substrate-rpc-client v2.0.0-alpha.3+incompatible/go.mod h1:GBMLH8MQs5g4FcrytcMm9uRgBnTL1LIkNTue6lUPhZU=
 github.com/centrifuge/go-substrate-rpc-client/v3 v3.0.0 h1:nwmK0bGIN67YBkqW/nAhgyhkCOv1nrFS3otY0qoQFeE=
 github.com/centrifuge/go-substrate-rpc-client/v3 v3.0.0/go.mod h1:AwGxOMdXSKLXN+Ks7/nwyfNcOgnXufaP7TV8QZmEyS4=
 github.com/cespare/cp v0.1.0 h1:SE+dxFebS7Iik5LK0tsi1k9ZCxEaFX4AjQmoyA+1dJk=
