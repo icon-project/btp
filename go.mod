@@ -4,9 +4,9 @@ go 1.13
 
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9 // indirect
-	github.com/ChainSafe/chainbridge-substrate-events v0.0.0-20210330144342-1ec3ee88674f // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bshuster-repo/logrus-logstash-hook v0.4.1
+	github.com/centrifuge/go-substrate-rpc-client v2.0.0-alpha.3+incompatible
 	github.com/centrifuge/go-substrate-rpc-client/v3 v3.0.0
 	github.com/dgraph-io/badger v1.5.4
 	github.com/dgryski/go-farm v0.0.0-20190416075124-e1214b5e05dc // indirect

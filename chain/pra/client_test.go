@@ -14,15 +14,6 @@ const bmcAddress = "0xa3a83D4C5f453C62808f33fc0278d547aeB3F0C0"
 var logger = log.New()
 var c = NewClient(uri, bmcAddress, logger)
 
-func TestNewClient(t *testing.T) {
-	// GIVEN global setup
-	// WHEN pra.NewClient
-	// THEN
-	if c.ethClient == nil || c.subAPI == nil || c.bmc == nil {
-		t.Errorf("NewClient(%v, %v, %v), expect non-empty client, but got %v", uri, bmcAddress, logger, c)
-	}
-}
-
 func TestGetReadProof(t *testing.T) {
 	// GIVEN and NewClient
 	key, _ := types.HexDecodeString("0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
