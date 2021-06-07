@@ -108,6 +108,12 @@ type ValidatorSignature struct {
 	Validator []byte
 }
 
+type ReadProof struct {
+	At    types.Hash `json:"at"`
+	Proof []string   `json:"proof"`
+}
+
+// SYSTEM EVENT DECLARATIONS
 type EventEVMLog struct {
 	Phase  types.Phase
 	Log    EthereumLog

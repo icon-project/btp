@@ -35,10 +35,10 @@ type Client struct {
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
-	// subAPI, err := srpc.NewSubstrateAPI(uri)
-	// if err != nil {
-	// 	l.Fatal(err)
-	// }
+	subAPI, err := srpc.NewSubstrateAPI(uri)
+	if err != nil {
+		l.Fatal(err)
+	}
 
 	// meta, err := subAPI.RPC.State.GetMetadataLatest()
 	// if err != nil {
@@ -57,8 +57,8 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 
 	c := &Client{
 		mutex: &sync.RWMutex{},
-		// meta:      meta,
-		// subAPI:    subAPI,
+		// meta:  meta,
+		subAPI:    subAPI,
 		bmc:       bmc,
 		ethClient: ethClient,
 		log:       l,
@@ -144,6 +144,12 @@ func (c *Client) getReadProof(key stypes.StorageKey, hash *stypes.Hash) ([]byte,
 	}
 
 	return bz, nil
+}
+
+func (c *Client) GetReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProof, error) {
+	var res ReadProof
+	err := c.subAPI.Client.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
+	return res, err
 }
 
 func (c *Client) getSystemEventReadProofKey() (stypes.StorageKey, error) {

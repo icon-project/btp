@@ -3,9 +3,9 @@ package pra
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -39,16 +39,29 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
-func (r *Receiver) newBlockUpdate(v *BlockNotification) (*BlockUpdate, error) {
-	return nil, nil
+func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
+	var err error
+	bu := &chain.BlockUpdate{
+		Height:    int64(v.Height),
+		BlockHash: v.Hash[:],
+	}
+
+	if bu.Header, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
+		return nil, err
+	}
+
+	// https://github.com/w3f/consensus
+	// Nominated Proof of Staking
+	// if bu.Proof, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
+	// 	return nil, err
+	// }
+
+	return bu, nil
 }
 
-func (r *Receiver) newReceiptProofs(v *BlockNotification) (*StateProof, error) {
+func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
+	rps := make([]*chain.ReceiptProof, 0)
 	events := SubstateWithFrontierEventRecord{}
-
-	metadata := r.c.getMetadata()
-	// ignore this error because system event of each substrate-based is different, we only care module_events EVM_Log
-	_ = v.Events.DecodeEventRecords(metadata, events)
 
 	if len(events.EVM_Log) > 0 {
 		for _, e := range events.EVM_Log {
@@ -60,23 +73,22 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) (*StateProof, error) {
 					return nil, err
 				}
 
-				proofs, err := r.c.getReadProof(key, &v.Hash)
+				proof, err := r.c.GetReadProof(key, v.Hash)
 				if err != nil {
 					return nil, err
 				}
 
-				sp := &StateProof{
-					Key:    key,
-					Proofs: proofs,
+				rp := &chain.ReceiptProof{}
+				if rp.Proof, err = codec.RLP.MarshalToBytes(proof); err != nil {
+					return nil, err
 				}
-				return sp, nil
+				rps = append(rps, rp)
 			}
 			continue
 		}
-
 	}
 
-	return nil, nil
+	return rps, nil
 }
 
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
@@ -86,8 +98,8 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 
 	return r.c.MonitorSubstrateBlock(uint64(height), func(v *BlockNotification) error {
 		var err error
-		var bu *BlockUpdate
-		var sp *StateProof
+		var bu *chain.BlockUpdate
+		var sp []*chain.ReceiptProof
 		if bu, err = r.newBlockUpdate(v); err != nil {
 			return err
 		}
@@ -95,15 +107,9 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		if sp, err = r.newReceiptProofs(v); err != nil {
 			return err
 		} else if r.isFoundOffsetBySeq {
-			fmt.Printf("Call BlockUpdate %+v\n", bu)
-			fmt.Printf("Call StateProof %+v\n", sp)
-			// TODO this can't work because BlockUpdate is incompatible with chain.BlockUpdate
-			// TODO this can't work because StateProof is incompatible with []chain.ReceiptProof
-			// cb(bu, sp)
+			cb(bu, sp)
 		} else {
-			fmt.Printf("Call BlockUpdate %+v\n", bu)
-			// TODO this can't work because BlockUpdate is incompatible with chain.BlockUpdate
-			// cb(bu, nil)
+			cb(bu, nil)
 		}
 		return nil
 	})
