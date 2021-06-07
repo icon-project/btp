@@ -188,10 +188,6 @@ type EventProposalFailed struct {
 	Topics       []types.Hash
 }
 
-// Edgeware specs in https://github.com/hicommonwealth/edgeware-node-types/tree/master/src/interfaces
-// Rust implementation of module_event in https://github.com/hicommonwealth/edgeware-node/tree/master/modules
-// Original go events for ChainBridge https://github.com/ChainSafe/ChainBridge/blob/main/shared/substrate/events.go
-
 type SubstateWithFrontierEventRecord struct {
 	types.EventRecords
 	EVM_Log                             []EventEVMLog

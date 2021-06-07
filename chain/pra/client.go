@@ -28,8 +28,6 @@ type Client struct {
 	subAPI    *srpc.SubstrateAPI
 	bmc       *binding.BMC
 	log       log.Logger
-	// meta      *stypes.Metadata
-	// mutex     *sync.RWMutex
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
@@ -75,27 +73,6 @@ func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
 	return err != nil
 }
 
-// func (c *Client) getMetadata() *stypes.Metadata {
-// 	c.mutex.RLock()
-// 	defer c.mutex.RUnlock()
-
-// 	clone := new(stypes.Metadata)
-// 	*clone = *c.meta
-// 	return clone
-// }
-
-// func (c *Client) updateMetatdata() error {
-// 	c.mutex.RLock()
-// 	defer c.mutex.RUnlock()
-
-// 	meta, err := c.subAPI.RPC.State.GetMetadataLatest()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	c.meta = meta
-// 	return nil
-// }
-
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
 	return bind.NewKeyedTransactor(ew.Skey)
@@ -140,9 +117,13 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) getSystemEventReadProofKey(hash stypes.Hash) (stypes.StorageKey, error) {
+func (c *Client) getMetadata(hash stypes.Hash) (*stypes.Metadata, error) {
 	// TODO optimize metadata fetching
-	meta, err := c.subAPI.RPC.State.GetMetadata(hash)
+	return c.subAPI.RPC.State.GetMetadata(hash)
+}
+
+func (c *Client) getSystemEventReadProofKey(hash stypes.Hash) (stypes.StorageKey, error) {
+	meta, err := c.getMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -208,8 +189,7 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 
 func (c *Client) getEvents(hash stypes.Hash) (*SubstateWithFrontierEventRecord, error) {
 	c.log.Trace("Fetching block for events", "hash", hash.Hex())
-	// TODO optimize metadata fetching
-	meta, err := c.subAPI.RPC.State.GetMetadata(hash)
+	meta, err := c.getMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
