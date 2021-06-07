@@ -1,7 +1,6 @@
 package pra
 
 import (
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/icon-project/btp/chain"
@@ -46,13 +45,27 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		BlockHash: v.Hash[:],
 	}
 
-	if bu.Header, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
-		return nil, err
+	// Justification required, when update validators list
+	if len(v.Events.Grandpa_NewAuthorities) > 0 {
+		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash)
+		if err != nil {
+			return nil, err
+		}
+
+		if bu.Header, err = codec.RLP.MarshalToBytes(SignedHeader{
+			Header:        *v.Header,
+			Justification: signedBlock.Justification,
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		if bu.Header, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
+			return nil, err
+		}
 	}
 
-	// https://github.com/w3f/consensus
-	// Nominated Proof of Staking
-	// if bu.Proof, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
+	// TODO subscribe to GrandpaJustification with a RWLock
+	// if bu.Proof, err = codec.RLP.MarshalToBytes(); err != nil {
 	// 	return nil, err
 	// }
 
@@ -61,19 +74,16 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
 	rps := make([]*chain.ReceiptProof, 0)
-	events := SubstateWithFrontierEventRecord{}
 
-	if len(events.EVM_Log) > 0 {
-		for _, e := range events.EVM_Log {
-			address := hex.EncodeToString(e.Log.Address[:])
-			// TODO filter with topics and data
-			if address == r.bmcAddress {
-				key, err := r.c.getSystemEventReadProofKey()
+	if len(v.Events.EVM_Log) > 0 {
+		for _, e := range v.Events.EVM_Log {
+			if r.c.IsSendMessageEvent(e) {
+				key, err := r.c.getSystemEventReadProofKey(v.Hash)
 				if err != nil {
 					return nil, err
 				}
 
-				proof, err := r.c.GetReadProof(key, v.Hash)
+				proof, err := r.c.getReadProof(key, v.Hash)
 				if err != nil {
 					return nil, err
 				}
@@ -83,8 +93,8 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					return nil, err
 				}
 				rps = append(rps, rp)
+				continue
 			}
-			continue
 		}
 	}
 

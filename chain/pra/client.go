@@ -2,7 +2,6 @@ package pra
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/icon-project/btp/chain"
@@ -10,7 +9,6 @@ import (
 	"github.com/icon-project/btp/common/wallet"
 
 	srpc "github.com/centrifuge/go-substrate-rpc-client/v3"
-	sclient "github.com/centrifuge/go-substrate-rpc-client/v3/client"
 	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,8 +28,8 @@ type Client struct {
 	subAPI    *srpc.SubstrateAPI
 	bmc       *binding.BMC
 	log       log.Logger
-	meta      *stypes.Metadata
-	mutex     *sync.RWMutex
+	// meta      *stypes.Metadata
+	// mutex     *sync.RWMutex
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
@@ -39,11 +37,6 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 	if err != nil {
 		l.Fatal(err)
 	}
-
-	// meta, err := subAPI.RPC.State.GetMetadataLatest()
-	// if err != nil {
-	// 	l.Fatal(err)
-	// }
 
 	ethClient, err := ethclient.Dial(uri)
 	if err != nil {
@@ -56,7 +49,7 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 	}
 
 	c := &Client{
-		mutex: &sync.RWMutex{},
+		// mutex: &sync.RWMutex{},
 		// meta:  meta,
 		subAPI:    subAPI,
 		bmc:       bmc,
@@ -66,26 +59,42 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 	return c
 }
 
-func (c *Client) getMetadata() *stypes.Metadata {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
+	topics := []common.Hash{}
 
-	clone := new(stypes.Metadata)
-	*clone = *c.meta
-	return clone
-}
-
-func (c *Client) updateMetatdata() error {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	meta, err := c.subAPI.RPC.State.GetMetadataLatest()
-	if err != nil {
-		return err
+	for _, t := range e.Topics {
+		topics = append(topics, common.HexToHash(t.Hex()))
 	}
-	c.meta = meta
-	return nil
+
+	_, err := c.bmc.ParseMessage(types.Log{
+		Address: common.Address(e.Log.Address),
+		Topics:  topics,
+		Data:    []byte(e.Log.Data),
+	})
+
+	return err != nil
 }
+
+// func (c *Client) getMetadata() *stypes.Metadata {
+// 	c.mutex.RLock()
+// 	defer c.mutex.RUnlock()
+
+// 	clone := new(stypes.Metadata)
+// 	*clone = *c.meta
+// 	return clone
+// }
+
+// func (c *Client) updateMetatdata() error {
+// 	c.mutex.RLock()
+// 	defer c.mutex.RUnlock()
+
+// 	meta, err := c.subAPI.RPC.State.GetMetadataLatest()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	c.meta = meta
+// 	return nil
+// }
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
@@ -131,29 +140,12 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) getReadProof(key stypes.StorageKey, hash *stypes.Hash) ([]byte, error) {
-	var res string
-	err := sclient.CallWithBlockHash(c.subAPI.Client, &res, "state_getStorage", hash, key.Hex())
+func (c *Client) getSystemEventReadProofKey(hash stypes.Hash) (stypes.StorageKey, error) {
+	// TODO optimize metadata fetching
+	meta, err := c.subAPI.RPC.State.GetMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
-
-	bz, err := stypes.HexDecodeString(res)
-	if err != nil {
-		return nil, err
-	}
-
-	return bz, nil
-}
-
-func (c *Client) GetReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProof, error) {
-	var res ReadProof
-	err := c.subAPI.Client.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
-	return res, err
-}
-
-func (c *Client) getSystemEventReadProofKey() (stypes.StorageKey, error) {
-	meta := c.getMetadata()
 
 	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
@@ -163,13 +155,10 @@ func (c *Client) getSystemEventReadProofKey() (stypes.StorageKey, error) {
 	return key, nil
 }
 
-func (c *Client) queryStorage(prefix, method string, arg1, arg2 []byte, result interface{}) (bool, error) {
-
-	key, err := stypes.CreateStorageKey(c.getMetadata(), prefix, method, arg1, arg2)
-	if err != nil {
-		return false, err
-	}
-	return c.subAPI.RPC.State.GetStorageLatest(key, result)
+func (c *Client) getReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProof, error) {
+	var res ReadProof
+	err := c.subAPI.Client.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
+	return res, err
 }
 
 func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotification) error) error {
@@ -217,20 +206,29 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 	}
 }
 
-func (c *Client) getEvents(hash stypes.Hash) (stypes.EventRecordsRaw, error) {
+func (c *Client) getEvents(hash stypes.Hash) (*SubstateWithFrontierEventRecord, error) {
 	c.log.Trace("Fetching block for events", "hash", hash.Hex())
-	meta := c.getMetadata()
+	// TODO optimize metadata fetching
+	meta, err := c.subAPI.RPC.State.GetMetadata(hash)
+	if err != nil {
+		return nil, err
+	}
 
 	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var records stypes.EventRecordsRaw
-	_, err = c.subAPI.RPC.State.GetStorage(key, &records, hash)
+	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key, hash)
 	if err != nil {
 		return nil, err
 	}
 
-	return records, nil
+	records := SubstateWithFrontierEventRecord{}
+	err = stypes.EventRecordsRaw(*sdr).DecodeEventRecords(meta, &records)
+	if err != nil {
+		return nil, err
+	}
+
+	return &records, nil
 }

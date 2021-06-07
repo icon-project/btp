@@ -29,7 +29,7 @@ func TestGetReadProof(t *testing.T) {
 	hash, _ := types.NewHashFromHexString("0x2db4d2e7b3a3a9f19470746197eac3c733f59328794aca4c86a05ee83bdff041")
 
 	// WHEN
-	rp, err := c.GetReadProof(key, hash)
+	rp, err := c.getReadProof(key, hash)
 	if err != nil {
 		t.Errorf("GetReadProof(%#x, %#x), expect no error, but got %v", key, hash, err)
 	}
@@ -44,4 +44,19 @@ func TestGetReadProof(t *testing.T) {
 	}
 	assert.Equal(t, rp.At, hash, "Should same hash")
 	assert.ElementsMatch(t, rp.Proof, proof, "Should same read proofs array elements")
+}
+
+func TestGetEvents(t *testing.T) {
+	hash, err := c.subAPI.RPC.Chain.GetBlockHashLatest()
+	if err != nil {
+		panic(err)
+	}
+	events, err := c.getEvents(hash)
+
+	if err != nil {
+		t.Errorf("GetEvents(%#x), expect no error, but got %v", hash, err)
+	}
+
+	assert.NotEmpty(t, events, "GetEvents(%+v), always has events, but got %v", hash, err)
+	t.Logf("%+v", events)
 }

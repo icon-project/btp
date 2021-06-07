@@ -1,6 +1,7 @@
 package pra
 
 import (
+	chainbridgeEvents "github.com/ChainSafe/chainbridge-substrate-events"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -55,11 +56,16 @@ type RelayMessage struct {
 	numberOfEvent       int
 }
 
+type SignedHeader struct {
+	types.Header
+	types.Justification
+}
+
 type BlockNotification struct {
 	Header *types.Header
 	Hash   types.Hash
 	Height uint64
-	Events types.EventRecordsRaw
+	Events *SubstateWithFrontierEventRecord
 }
 
 type BlockUpdate struct {
@@ -142,7 +148,83 @@ func (el *EthereumLog) Decode(decoder scale.Decoder) error {
 	return err
 }
 
+type EventTreasuryMinting struct {
+	Phase  types.Phase
+	Who    types.AccountID
+	Topics []types.Hash
+}
+
+type EventNewMultiAccount struct {
+	Phase   types.Phase
+	Who, ID types.AccountID
+	Topics  []types.Hash
+}
+
+type EventMultiAccountUpdated struct {
+	Phase  types.Phase
+	Who    types.AccountID
+	Topics []types.Hash
+}
+
+// EventMultiAccountRemoved is emitted when a multi account has been removed. First param is the multisig account.
+type EventMultiAccountRemoved struct {
+	Phase  types.Phase
+	Who    types.AccountID
+	Topics []types.Hash
+}
+
+type EventNewMultisig struct {
+	Phase   types.Phase
+	Who, ID types.AccountID
+	Topics  []types.Hash
+}
+
+type EventMultisigApproval struct {
+	Phase     types.Phase
+	Who       types.AccountID
+	TimePoint types.TimePoint
+	ID        types.AccountID
+	Topics    []types.Hash
+}
+
+type EventMultisigExecuted struct {
+	Phase     types.Phase
+	Who       types.AccountID
+	TimePoint types.TimePoint
+	ID        types.AccountID
+	Result    types.DispatchResult
+	Topics    []types.Hash
+}
+
+type EventMultisigCancelled struct {
+	Phase     types.Phase
+	Who       types.AccountID
+	TimePoint types.TimePoint
+	ID        types.AccountID
+	Topics    []types.Hash
+}
+
+// Edgeware specs in https://github.com/hicommonwealth/edgeware-node-types/tree/master/src/interfaces
+// Rust implementation of module_event in https://github.com/hicommonwealth/edgeware-node/tree/master/modules
+// Original go events for ChainBridge https://github.com/ChainSafe/ChainBridge/blob/main/shared/substrate/events.go
+
 type SubstateWithFrontierEventRecord struct {
-	EVM_Log []EventEVMLog
 	types.EventRecords
+	chainbridgeEvents.Events
+	EVM_Log                          []EventEVMLog
+	Council_Proposed                 []types.EventCollectiveProposed       //nolint:stylecheck,golint
+	Council_Voted                    []types.EventCollectiveVoted          //nolint:stylecheck,golint
+	Council_Approved                 []types.EventCollectiveApproved       //nolint:stylecheck,golint
+	Council_Disapproved              []types.EventCollectiveDisapproved    //nolint:stylecheck,golint
+	Council_Executed                 []types.EventCollectiveExecuted       //nolint:stylecheck,golint
+	Council_MemberExecuted           []types.EventCollectiveMemberExecuted //nolint:stylecheck,golint
+	Council_Closed                   []types.EventCollectiveClosed         //nolint:stylecheck,golint
+	MultiAccount_NewMultiAccount     []EventNewMultiAccount                //nolint:stylecheck,golint
+	MultiAccount_MultiAccountUpdated []EventMultiAccountUpdated            //nolint:stylecheck,golint
+	MultiAccount_MultiAccountRemoved []EventMultiAccountRemoved            //nolint:stylecheck,golint
+	MultiAccount_NewMultisig         []EventNewMultisig                    //nolint:stylecheck,golint
+	MultiAccount_MultisigApproval    []EventMultisigApproval               //nolint:stylecheck,golint
+	MultiAccount_MultisigExecuted    []EventMultisigExecuted               //nolint:stylecheck,golint
+	MultiAccount_MultisigCancelled   []EventMultisigCancelled              //nolint:stylecheck,golint
+	TreasuryReward_TreasuryMinting   []EventTreasuryMinting                //nolint:stylecheck,golint
 }
