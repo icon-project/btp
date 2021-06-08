@@ -23,7 +23,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/cmd/btpsimple/module/base"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
@@ -40,8 +40,8 @@ const (
 
 type receiver struct {
 	c   *Client
-	src module.BtpAddress
-	dst module.BtpAddress
+	src base.BtpAddress
+	dst base.BtpAddress
 	l   log.Logger
 	opt struct {
 	}
@@ -72,7 +72,7 @@ func (r *receiver) getBlockHeader(height HexInt) (*BlockHeader, error) {
 	return &bh, nil
 }
 
-func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, error) {
+func (r *receiver) newBlockUpdate(v *BlockNotification) (*base.BlockUpdate, error) {
 	bh, err := r.getBlockHeader(v.Height)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 		update.Validators = nvb
 	}
 
-	bu := &module.BlockUpdate{
+	bu := &base.BlockUpdate{
 		BlockHash: blkHash,
 		Height:    bh.Height,
 		Header:    bh.serialized,
@@ -112,9 +112,9 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	return bu, nil
 }
 
-func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProof, error) {
+func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*base.ReceiptProof, error) {
 	nextEp := 0
-	rps := make([]*module.ReceiptProof, 0)
+	rps := make([]*base.ReceiptProof, 0)
 	if len(v.Indexes) > 0 {
 		l := v.Indexes[0]
 	RpLoop:
@@ -146,22 +146,22 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 				}
 			}
 			idx, _ := index.Value()
-			rp := &module.ReceiptProof{
+			rp := &base.ReceiptProof{
 				Index:       int(idx),
-				EventProofs: make([]*module.EventProof, 0),
+				EventProofs: make([]*base.EventProof, 0),
 			}
 			if rp.Proof, err = codec.RLP.MarshalToBytes(proofs[0]); err != nil {
 				return nil, err
 			}
 			for k := nextEp; k < len(p.Events); k++ {
 				eIdx, _ := p.Events[k].Value()
-				ep := &module.EventProof{
+				ep := &base.EventProof{
 					Index: int(eIdx),
 				}
 				if ep.Proof, err = codec.RLP.MarshalToBytes(proofs[k+1]); err != nil {
 					return nil, err
 				}
-				var evt *module.Event
+				var evt *base.Event
 				if evt, err = r.toEvent(proofs[k+1]); err != nil {
 					return nil, err
 				}
@@ -175,7 +175,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 	return rps, nil
 }
 
-func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
+func (r *receiver) toEvent(proof [][]byte) (*base.Event, error) {
 	el, err := toEventLog(proof)
 	if err != nil {
 		return nil, err
@@ -185,8 +185,8 @@ func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
 		bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) {
 		var i common.HexInt
 		i.SetBytes(el.Indexed[EventIndexSequence])
-		evt := &module.Event{
-			Next: module.BtpAddress(el.Indexed[EventIndexNext]),
+		evt := &base.Event{
+			Next: base.BtpAddress(el.Indexed[EventIndexNext]),
 			Sequence: i.Int64(),
 			Message: el.Data[0],
 		}
@@ -207,7 +207,7 @@ func toEventLog(proof [][]byte) (*EventLog, error) {
 	return el, nil
 }
 
-func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallback, scb func()) error {
+func (r *receiver) ReceiveLoop(height int64, seq int64, cb base.ReceiveCallback, scb func()) error {
 	s := r.dst.String()
 	ef := &EventFilter{
 		Addr:      Address(r.src.ContractAddress()),
@@ -238,8 +238,8 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallbac
 	return r.c.MonitorBlock(r.evtReq,
 		func(conn *websocket.Conn, v *BlockNotification) error {
 			var err error
-			var bu *module.BlockUpdate
-			var rps []*module.ReceiptProof
+			var bu *base.BlockUpdate
+			var rps []*base.ReceiptProof
 			if bu, err = r.newBlockUpdate(v); err != nil {
 				return err
 			}
@@ -268,7 +268,7 @@ func (r *receiver) StopReceiveLoop() {
 	r.c.CloseAllMonitor()
 }
 
-func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) module.Receiver {
+func NewReceiver(src, dst base.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) base.Receiver {
 	r := &receiver{
 		src: src,
 		dst: dst,

@@ -13,24 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+package base
 
-package chain
+import "fmt"
 
-import (
-	"github.com/icon-project/btp/cmd/btpsimple/module/base"
-	"github.com/icon-project/btp/common/config"
-)
+var Clients = map[string]Client {}
 
-type BaseConfig struct {
-	Address  base.BtpAddress `json:"address"`
-	Endpoint string `json:"endpoint"`
-	Options  map[string]interface{} `json:"options,omitempty"`
+func RegisterClients(networks []string, client Client) {
+	for _, network := range networks {
+		Clients[network] = client
+	}
 }
 
-type Config struct {
-	config.FileConfig `json:",squash"` //instead of `mapstructure:",squash"`
-	Src BaseConfig `json:"src"`
-	Dst BaseConfig `json:"dst"`
-
-	Offset int64 `json:"offset"`
+func GetClient(network string) (Client, error) {
+	if c := Clients[network]; c != nil {
+		return c, nil
+	}
+	return nil, fmt.Errorf("not supported blockchain:%s", network)
 }

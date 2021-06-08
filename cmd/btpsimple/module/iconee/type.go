@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package icon
+package iconee
 
 import (
 	"encoding/hex"
@@ -24,20 +24,10 @@ import (
 	"strings"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module/base"
-	"github.com/icon-project/btp/common/jsonrpc"
 )
 
 const (
-	JsonrpcApiVersion                                = 3
-	JsonrpcErrorCodeSystem         jsonrpc.ErrorCode = -31000
-	JsonrpcErrorCodeTxPoolOverflow jsonrpc.ErrorCode = -31001
-	JsonrpcErrorCodePending        jsonrpc.ErrorCode = -31002
-	JsonrpcErrorCodeExecuting      jsonrpc.ErrorCode = -31003
-	JsonrpcErrorCodeNotFound       jsonrpc.ErrorCode = -31004
-	JsonrpcErrorLackOfResource     jsonrpc.ErrorCode = -31005
-	JsonrpcErrorCodeTimeout        jsonrpc.ErrorCode = -31006
-	JsonrpcErrorCodeSystemTimeout  jsonrpc.ErrorCode = -31007
-	JsonrpcErrorCodeScore          jsonrpc.ErrorCode = -30000
+	JsonrpcApiVersion = 3
 )
 
 const (
@@ -56,30 +46,15 @@ const (
 )
 
 const (
-	ResultStatusSuccess = "0x1"
+	ResultStatusSuccess           = "0x1"
 	ResultStatusFailureCodeRevert = 32
-	ResultStatusFailureCodeEnd = 99
+	ResultStatusFailureCodeEnd    = 99
 )
 
 const (
-	BMCRelayMethod       = "handleRelayMessage"
-	BMCGetStatusMethod   = "getStatus"
+	BMCRelayMethod     = "handleRelayMessage"
+	BMCGetStatusMethod = "getStatus"
 )
-
-type BlockHeader struct {
-	Version                int
-	Height                 int64
-	Timestamp              int64
-	Proposer               []byte
-	PrevID                 []byte
-	VotesHash              []byte
-	NextValidatorsHash     []byte
-	PatchTransactionsHash  []byte
-	NormalTransactionsHash []byte
-	LogsBloom              []byte
-	Result                 []byte
-	serialized             []byte
-}
 
 type ReceiptData struct {
 	Status             int
@@ -97,6 +72,13 @@ type EventLog struct {
 	Addr    []byte
 	Indexed [][]byte
 	Data    [][]byte
+}
+
+type EventLogFilter struct {
+	addr      []byte
+	signature []byte
+	next      []byte
+	seq       []byte
 }
 
 type TransactionResult struct {
@@ -186,30 +168,6 @@ type CallParam struct {
 
 type BMCStatusParams struct {
 	Target string `json:"_link"`
-}
-type BMCStatus struct {
-	TxSeq    HexInt `json:"tx_seq"`
-	RxSeq    HexInt `json:"rx_seq"`
-	Verifier struct {
-		Height     HexInt `json:"height"`
-		Offset     HexInt `json:"offset"`
-		LastHeight HexInt `json:"last_height"`
-	} `json:"verifier"`
-	BMRs []struct {
-		Address      Address `json:"address"`
-		BlockCount   HexInt  `json:"block_count"`
-		MessageCount HexInt  `json:"msg_count"`
-	} `json:"relays"`
-	BMRIndex         HexInt `json:"relay_idx"`
-	RotateHeight     HexInt `json:"rotate_height"`
-	RotateTerm       HexInt `json:"rotate_term"`
-	DelayLimit       HexInt `json:"delay_limit"`
-	MaxAggregation   HexInt `json:"max_agg"`
-	CurrentHeight    HexInt `json:"cur_height"`
-	RxHeight         HexInt `json:"rx_height"`
-	RxHeightSrc      HexInt `json:"rx_height_src"`
-	BlockIntervalSrc HexInt `json:"block_interval_src"`
-	BlockIntervalDst HexInt `json:"block_interval_dst"`
 }
 
 type TransactionHashParam struct {
@@ -356,17 +314,6 @@ type BlockUpdate struct {
 	Validators  []byte
 }
 
-type RelayMessage struct {
-	BlockUpdates  [][]byte
-	BlockProof    []byte
-	ReceiptProofs [][]byte
-	//
-	height              int64
-	numberOfBlockUpdate int
-	eventSequence       int64
-	numberOfEvent       int
-}
-
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
@@ -396,4 +343,43 @@ type Block struct {
 		Data     json.RawMessage `json:"data,omitempty"`
 	} `json:"confirmed_transaction_list"`
 	//Signature              HexBytes  `json:"signature" validate:"optional,t_hash"`
+}
+
+type BMCStatusResponse struct {
+	TxSeq    HexInt `json:"tx_seq"`
+	RxSeq    HexInt `json:"rx_seq"`
+	Verifier struct {
+		Height     HexInt `json:"height"`
+		Offset     HexInt `json:"offset"`
+		LastHeight HexInt `json:"last_height"`
+	} `json:"verifier"`
+	BMRs []struct {
+		Address      Address `json:"address"`
+		BlockCount   HexInt  `json:"block_count"`
+		MessageCount HexInt  `json:"msg_count"`
+	} `json:"relays"`
+	BMRIndex         HexInt `json:"relay_idx"`
+	RotateHeight     HexInt `json:"rotate_height"`
+	RotateTerm       HexInt `json:"rotate_term"`
+	DelayLimit       HexInt `json:"delay_limit"`
+	MaxAggregation   HexInt `json:"max_agg"`
+	CurrentHeight    HexInt `json:"cur_height"`
+	RxHeight         HexInt `json:"rx_height"`
+	RxHeightSrc      HexInt `json:"rx_height_src"`
+	BlockIntervalSrc HexInt `json:"block_interval_src"`
+	BlockIntervalDst HexInt `json:"block_interval_dst"`
+}
+
+type ApiInterface interface {
+	getBlockByHeight(*BlockHeightParam) (*Block, error)
+	getBlockHeaderByHeight(*BlockHeightParam) ([]byte, error)
+	getVotesByHeight(*BlockHeightParam) ([]byte, error)
+	getProofForResult(*ProofResultParam) ([][]byte, error)
+	getDataByHash(*DataHashParam) ([]byte, error)
+	getProofForEvents(*ProofEventsParam) ([][][]byte, error)
+	getTransactionResult(p *TransactionHashParam) (*TransactionResult, error)
+	call(*CallParam, interface{}) error
+	sendTransaction(*TransactionParam) ([]byte, error)
+	monitor(string, interface{}, interface{}, wsReadCallback) error
+	closeAllMonitor()
 }

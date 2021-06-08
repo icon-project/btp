@@ -20,20 +20,19 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"math"
-	"path/filepath"
-	"sync"
-	"sync/atomic"
-	"time"
-
-	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
+	_ "github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/cmd/btpsimple/module/base"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
 	"github.com/icon-project/btp/common/wallet"
+	"math"
+	"path/filepath"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -48,22 +47,22 @@ const (
 )
 
 type SimpleChain struct {
-	s       module.Sender
-	r       module.Receiver
+	s       base.Sender
+	r       base.Receiver
 	w       wallet.Wallet
-	src     module.BtpAddress
+	src     base.BtpAddress
 	acc     *mta.ExtAccumulator
-	dst     module.BtpAddress
-	bs      *module.BMCLinkStatus //getstatus(dst.src)
-	relayCh chan *module.RelayMessage
+	dst     base.BtpAddress
+	bs      *base.BMCLinkStatus //getstatus(dst.src)
+	relayCh chan *base.RelayMessage
 	l       log.Logger
 	cfg     *Config
 
-	rms             []*module.RelayMessage
+	rms             []*base.RelayMessage
 	rmsMtx          sync.RWMutex
 	rmSeq           uint64
 	heightOfDst     int64
-	lastBlockUpdate *module.BlockUpdate
+	lastBlockUpdate *base.BlockUpdate
 
 	bmrIndex       int
 	relayble       bool
@@ -71,16 +70,16 @@ type SimpleChain struct {
 	relaybleHeight int64
 }
 
-func (s *SimpleChain) _relayble(rm *module.RelayMessage) bool {
+func (s *SimpleChain) _relayble(rm *base.RelayMessage) bool {
 	return s.relayble && (s._overMaxAggregation(rm) || s._lastRelaybleHeight())
 }
-func (s *SimpleChain) _overMaxAggregation(rm *module.RelayMessage) bool {
+func (s *SimpleChain) _overMaxAggregation(rm *base.RelayMessage) bool {
 	return len(rm.BlockUpdates) >= s.bs.MaxAggregation
 }
 func (s *SimpleChain) _lastRelaybleHeight() bool {
 	return s.relaybleHeight == (s.monitorHeight() + 1)
 }
-func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
+func (s *SimpleChain) _hasWait(rm *base.RelayMessage) bool {
 	for _, segment := range rm.Segments {
 		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
 			return true
@@ -89,7 +88,7 @@ func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
 	return false
 }
 
-func (s *SimpleChain) _log(prefix string, rm *module.RelayMessage, segment *module.Segment, segmentIdx int) {
+func (s *SimpleChain) _log(prefix string, rm *base.RelayMessage, segment *base.Segment, segmentIdx int) {
 	if segment == nil {
 		s.l.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
 			prefix,
@@ -148,7 +147,7 @@ func (s *SimpleChain) _relay() {
 	}
 }
 
-func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
+func (s *SimpleChain) result(rm *base.RelayMessage, segment *base.Segment) {
 	var err error
 	segment.TransactionResult, err = s.s.GetResult(segment.GetResultParam)
 	if err != nil {
@@ -156,20 +155,20 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
 			switch ec.ErrorCode() {
-			case module.BMVRevertInvalidSequence, module.BMVRevertInvalidBlockUpdateLower:
+			case base.BMVRevertInvalidSequence, base.BMVRevertInvalidBlockUpdateLower:
 				for i := 0; i < len(rm.Segments); i++ {
 					if rm.Segments[i] == segment {
 						rm.Segments[i] = nil
 						break
 					}
 				}
-			case module.BMVRevertInvalidBlockWitnessOld:
+			case base.BMVRevertInvalidBlockWitnessOld:
 				rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
 				s.s.UpdateSegment(rm.BlockProof, segment)
 				segment.GetResultParam = nil
-			case module.BMVRevertInvalidSequenceHigher, module.BMVRevertInvalidBlockUpdateHigher, module.BMVRevertInvalidBlockProofHigher:
+			case base.BMVRevertInvalidSequenceHigher, base.BMVRevertInvalidBlockUpdateHigher, base.BMVRevertInvalidBlockProofHigher:
 				segment.GetResultParam = nil
-			case module.BMCRevertUnauthorized:
+			case base.BMCRevertUnauthorized:
 				segment.GetResultParam = nil
 			default:
 				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
@@ -182,10 +181,10 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 	}
 }
 
-func (s *SimpleChain) _rm() *module.RelayMessage {
-	rm := &module.RelayMessage{
+func (s *SimpleChain) _rm() *base.RelayMessage {
+	rm := &base.RelayMessage{
 		From:         s.src,
-		BlockUpdates: make([]*module.BlockUpdate, 0),
+		BlockUpdates: make([]*base.BlockUpdate, 0),
 		Seq:          s.rmSeq,
 	}
 	s.rms = append(s.rms, rm)
@@ -193,7 +192,7 @@ func (s *SimpleChain) _rm() *module.RelayMessage {
 	return rm
 }
 
-func (s *SimpleChain) addRelayMessage(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+func (s *SimpleChain) addRelayMessage(bu *base.BlockUpdate, rps []*base.ReceiptProof) {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
 
@@ -317,7 +316,7 @@ rmLoop:
 	return nil
 }
 
-func (s *SimpleChain) updateMTA(bu *module.BlockUpdate) {
+func (s *SimpleChain) updateMTA(bu *base.BlockUpdate) {
 	next := s.acc.Height() + 1
 	if next < bu.Height {
 		s.l.Panicf("found missing block next:%d bu:%d", next, bu.Height)
@@ -349,14 +348,14 @@ func (s *SimpleChain) OnBlockOfDst(height int64) error {
 	return nil
 }
 
-func (s *SimpleChain) OnBlockOfSrc(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+func (s *SimpleChain) OnBlockOfSrc(bu *base.BlockUpdate, rps []*base.ReceiptProof) {
 	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
 	s.updateMTA(bu)
 	s.addRelayMessage(bu, rps)
 	s.relayCh <- nil
 }
 
-func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockProof, error) {
+func (s *SimpleChain) newBlockProof(height int64, header []byte) (*base.BlockProof, error) {
 	//at := s.bs.Verifier.Height
 	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bs.Verifier.Offset)
 	at, w, err := s.acc.WitnessForAt(height, s.bs.Verifier.Height, s.bs.Verifier.Offset)
@@ -365,9 +364,9 @@ func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockP
 	}
 
 	s.l.Debugf("newBlockProof height:%d, at:%d, w:%d", height, at, len(w))
-	bp := &module.BlockProof{
+	bp := &base.BlockProof{
 		Header: header,
-		BlockWitness: &module.BlockWitness{
+		BlockWitness: &base.BlockWitness{
 			Height:  at,
 			Witness: mta.WitnessesToHashes(w),
 		},
@@ -418,7 +417,7 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 	return nil
 }
 
-func (s *SimpleChain) _skippable(rm *module.RelayMessage) bool {
+func (s *SimpleChain) _skippable(rm *base.RelayMessage) bool {
 	bs := s.bs
 	if len(rm.ReceiptProofs) > 0 {
 		if bs.RotateTerm > 0 {
@@ -511,7 +510,7 @@ func (s *SimpleChain) init() error {
 	}
 	atomic.StoreInt64(&s.heightOfDst, s.bs.CurrentHeight)
 	if s.relayCh == nil {
-		s.relayCh = make(chan *module.RelayMessage, 2)
+		s.relayCh = make(chan *base.RelayMessage, 2)
 		go func() {
 			s.l.Debugln("start relayLoop")
 			defer func() {
@@ -598,16 +597,18 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
 		w:   w,
-		l: l.WithFields(log.Fields{log.FieldKeyChain:
+		l:   l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
-		rms: make([]*module.RelayMessage, 0),
+		rms: make([]*base.RelayMessage, 0),
 	}
 	s._rm()
 
-	s.r = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
-	s.s = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
+	s.r = GetReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
+	//icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
+	s.s = GetSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
+	//iconee.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
 
 	if err := s.prepareDatabase(cfg.Offset); err != nil {
 		return nil, err
@@ -615,7 +616,7 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	return s, nil
 }
 
-func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof) {
+func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *base.BlockProof) {
 	if n, err := acc.GetNode(height); err != nil {
 		fmt.Printf("height:%d, accLen:%d, err:%+v", height, acc.Len(), err)
 	} else {
@@ -629,4 +630,26 @@ func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof
 	fmt.Println("]")
 	b, _ := codec.RLP.MarshalToBytes(bp)
 	fmt.Println(base64.URLEncoding.EncodeToString(b))
+}
+
+func GetReceiver(source, destination base.BtpAddress, endpoint string, options map[string]interface{}, logger log.Logger) base.Receiver {
+	client, err := base.GetClient(source.BlockChain())
+	if err != nil {
+		logger.Panic(err)
+	}
+	client.Initialize(endpoint, logger)
+	receiver := base.NewReceiver(source, destination, endpoint, options, logger, client)
+
+	return receiver
+}
+
+func GetSender(source, destination base.BtpAddress, wallet base.Wallet, endpoint string, options map[string]interface{}, logger log.Logger) base.Sender {
+	client, err := base.GetClient(destination.BlockChain())
+	if err != nil {
+		logger.Panic(err)
+	}
+	client.Initialize(endpoint, logger)
+	sender := base.NewSender(source, destination, wallet, endpoint, options, logger, client)
+
+	return sender
 }
