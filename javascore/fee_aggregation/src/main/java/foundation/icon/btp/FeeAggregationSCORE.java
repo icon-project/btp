@@ -274,6 +274,8 @@ public class FeeAggregationSCORE extends IRC31Receiver {
                     this.refundableBalances.set(previousBidder, getSafeRefundableBalance(previousBidder).add(existingBidAmount));
                 }
 
+                auction = getSafeAuction(_tokenName);
+
                 // Event Log
                 BidInfo(auction.id(), _tokenName, previousBidder, existingBidAmount, auction.bidder(), auction.bidAmount());
             }
