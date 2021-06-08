@@ -65,7 +65,7 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         this.tokenBalances = Context.newBranchDB("tokenBalances", BigInteger.class);
         this.refundableBalances = Context.newDictDB("refundableBalances", BigInteger.class);
         this.lockedBalances = Context.newDictDB("lockedBalances", BigInteger.class);
-        durationTime.set(1000*60*60*12L);
+        durationTime.set(43200000000L);
         auctionCount.set(BigInteger.ZERO);
         minimumBidAmount.set(BigInteger.valueOf(100L).multiply(ONE_ICX));
         minimumIncrementalBidPercent.set(BigInteger.valueOf(10L));
@@ -147,6 +147,11 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         Context.require(!_duration.equals(BigInteger.ZERO));
 
         durationTime.set(_duration.longValueExact());
+    }
+
+    @External
+    public BigInteger getDurationTime() {
+        return BigInteger.valueOf(durationTime.getOrDefault(0L));
     }
 
     /**

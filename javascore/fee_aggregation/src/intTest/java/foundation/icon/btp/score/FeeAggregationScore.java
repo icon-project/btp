@@ -3,7 +3,6 @@ package foundation.icon.btp.score;
 import foundation.icon.btp.*;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
-import foundation.icon.icx.data.IconAmount;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.icx.transport.jsonrpc.RpcItem;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
