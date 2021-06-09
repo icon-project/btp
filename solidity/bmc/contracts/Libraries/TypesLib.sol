@@ -137,7 +137,7 @@ library Types {
     struct Coin {
         uint256 id;
         string symbol;
-        uint256 decimals;      
+        uint256 decimals;
     }
 
     struct Balance {
@@ -233,12 +233,17 @@ library Types {
     }
 
     struct BMCService {
-        string serviceType; 
+        string serviceType;
         bytes payload;
     }
 
     struct GatherFeeMessage {
-        string fa;          //  BTP address of Fee Aggregator
-        string[] svcs;      //  a list of services
+        string fa; //  BTP address of Fee Aggregator
+        string[] svcs; //  a list of services
+    }
+
+    struct Tuple {
+        string _prev;
+        string _to;
     }
 }

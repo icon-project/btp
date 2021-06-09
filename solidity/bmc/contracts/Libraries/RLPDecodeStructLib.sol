@@ -3,10 +3,7 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./RLPReaderLib.sol";
-import "./Helper.sol";
 import "./TypesLib.sol";
-
-//import "./RLPEncode.sol";
 
 library RLPDecodeStruct {
     using RLPReader for RLPReader.RLPItem;
@@ -39,13 +36,10 @@ library RLPDecodeStruct {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         RLPReader.RLPItem[] memory subList = ls[1].toList();
         string[] memory _svcs = new string[](subList.length);
-        for (uint i = 0; i < subList.length; i++) {
+        for (uint256 i = 0; i < subList.length; i++) {
             _svcs[i] = string(subList[i].toBytes());
         }
-        return Types.GatherFeeMessage(
-            string(ls[0].toBytes()),
-            _svcs
-        );
+        return Types.GatherFeeMessage(string(ls[0].toBytes()), _svcs);
     }
 
     function decodeEventMessage(bytes memory _rlp)

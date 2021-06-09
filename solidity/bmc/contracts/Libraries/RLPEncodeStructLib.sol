@@ -37,7 +37,7 @@ library RLPEncodeStruct {
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-    function encodeGatherFeeMessage(Types.GatherFeeMessage memory _gfm) 
+    function encodeGatherFeeMessage(Types.GatherFeeMessage memory _gfm)
         internal
         pure
         returns (bytes memory)
@@ -61,7 +61,6 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-
         bytes memory _rlp =
             abi.encodePacked(
                 _em.conn.from.encodeString(),
@@ -71,7 +70,7 @@ library RLPEncodeStruct {
             _em.eventType.encodeString(),
             addLength(_rlp.length, false),
             _rlp
-        );    
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -130,23 +129,15 @@ library RLPEncodeStruct {
                 _data.assets[i].coinName.encodeString(),
                 _data.assets[i].value.encodeUint()
             );
-            _rlp = abi.encodePacked(
-                _rlp,
-                addLength(temp.length, false),
-                temp
-            );
+            _rlp = abi.encodePacked(_rlp, addLength(temp.length, false), temp);
         }
-        _rlp =
-            abi.encodePacked(
-                _data.from.encodeString(),
-                _data.to.encodeString(),
-                addLength(_rlp.length, false),
-                _rlp
-            );
-        return abi.encodePacked(
+        _rlp = abi.encodePacked(
+            _data.from.encodeString(),
+            _data.to.encodeString(),
             addLength(_rlp.length, false),
             _rlp
         );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeResponse(Types.Response memory _res)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
-interface IBSH {
+interface IBSHPeriphery {
     /**
        @notice Handle BTP Message from other blockchain.
        @dev Accept the message only from the BMC. 
@@ -43,8 +43,6 @@ interface IBSH {
        @param _fa    BTP Address of Fee Aggregator in ICON
        @param _svc   Name of the service
    */
-    function handleFeeGathering(
-        string calldata _fa,
-        string calldata _svc
-    ) external;
+    function handleFeeGathering(string calldata _fa, string calldata _svc)
+        external;
 }

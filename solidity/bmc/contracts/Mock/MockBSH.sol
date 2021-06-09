@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "../Interfaces/IBSH.sol";
+import "../Interfaces/IBSHPeriphery.sol";
 
-contract MockBSH is IBSH {
+contract MockBSH is IBSHPeriphery {
     constructor() {}
 
     /**
@@ -52,8 +52,8 @@ contract MockBSH is IBSH {
        @param _fa    BTP Address of Fee Aggregator in ICON
        @param _svc   Name of the service
    */
-    function handleFeeGathering(
-        string calldata _fa,
-        string calldata _svc
-    ) external override {}
+    function handleFeeGathering(string calldata _fa, string calldata _svc)
+        external
+        override
+    {}
 }
