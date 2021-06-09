@@ -2,9 +2,9 @@ package pra
 
 import (
 	"context"
+	"strings"
 	"time"
 
-	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
@@ -31,6 +31,11 @@ type Client struct {
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
+	if strings.HasPrefix(uri, "ws") {
+		// Websocket does not allow us fetch DATA from a specific Block Height.
+		l.Fatal("Parachain client does not support Websocket URL")
+	}
+
 	subAPI, err := srpc.NewSubstrateAPI(uri)
 	if err != nil {
 		l.Fatal(err)
@@ -86,34 +91,8 @@ func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, b
 	return c.ethClient.TransactionByHash(context.Background(), txhash)
 }
 
-func (c *Client) MonitorEvmBlock(cb chain.MonitorCallback) error {
-
-	headers := make(chan *types.Header)
-	sub, err := c.ethClient.SubscribeNewHead(context.Background(), headers)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			select {
-			case err := <-sub.Err():
-				log.Fatal(err)
-			case header := <-headers:
-				cb(header.Number.Int64())
-				c.log.Debugf("MonitorBlock %v", header.Number.Int64())
-			}
-		}
-	}()
-
-	return nil
-}
-
-func (c *Client) MonitorEvent() error {
-	return nil
-}
-
 func (c *Client) CloseAllMonitor() error {
+	//TODO implement logic to stop monitoring
 	return nil
 }
 
