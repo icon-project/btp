@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "../NativeCoinBSH.sol";
-import "../Libraries/BMC.sol";
+import "../BSHPeriphery.sol";
+import "./BMC.sol";
 
 contract MockBMC is BMC {
     struct RelayInfo {
@@ -11,18 +11,22 @@ contract MockBMC is BMC {
         uint rh;
     }
 
+    using RLPEncodeStruct for Types.BMCMessage;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.Response;
+    using RLPEncodeStruct for string[];
     using ParseAddress for address;
+    using ParseAddress for string;
+    using Strings for string;
 
     RelayInfo private relay;
 
-    NativeCoinBSH private bsh;
+    BSHPeriphery private bsh;
     constructor(string memory _network) BMC(_network) {}
 
     function setBSH(address _bsh) external {
-        bsh = NativeCoinBSH(_bsh);
+        bsh = BSHPeriphery(_bsh);
     }
 
     function sendBTPMessage(
@@ -35,21 +39,150 @@ contract MockBMC is BMC {
     }
 
     function gatherFee(
-        string calldata _fa
+        string calldata _fa,
+        string calldata _svc
     ) external {
-        bsh.handleGatherFee(_fa);
+        bsh.handleFeeGathering(_fa, _svc);
     }
 
-    function transferRequestWithAddress(
-        string memory _net,
+    function transferBatchStringAddress(
+        string calldata _src,
+        string memory _dst,
         string memory _svc,
+        uint256 _sn,
+        string memory _from,
+        string memory _to,
+        Types.Asset[] memory assets
+    ) external {
+        handleMessage(
+            _src,
+            Types
+                .BMCMessage(
+                _src,
+                _dst,
+                _svc,
+                int256(_sn),
+                Types
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_from, _to, assets)
+                        .encodeTransferCoinMsg()
+                    )
+                    .encodeServiceMessage()
+                ) 
+        );
+    }
+
+    function transferBatchAddress(
+        string calldata _src,
+        string memory _dst,
+        string memory _svc,
+        uint256 _sn,
+        string memory _from,
+        address _to,
+        Types.Asset[] memory assets
+    ) external {
+        handleMessage(
+            _src,
+            Types
+                .BMCMessage(
+                _src,
+                _dst,
+                _svc,
+                int256(_sn),
+                Types
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_from, _to.toString(), assets)
+                        .encodeTransferCoinMsg()
+                    )
+                    .encodeServiceMessage()
+                ) 
+        );
+    }
+
+    function transferRequestAddress(
+        string calldata _src,
+        string memory _dst,
+        string memory _svc,
+        uint256 _sn,
         string memory _from,
         address _to,
         string memory _coinName,
         uint256 _value
     ) external {
-        // string memory _net = "1234.iconee";
-        // string memory _svc = "Token";
+        Types.Asset[] memory asset = new Types.Asset[](1);
+        asset[0] = Types.Asset(_coinName, _value);
+        handleMessage(
+            _src,
+            Types
+                .BMCMessage(
+                _src,
+                _dst,
+                _svc,
+                int256(_sn),
+                Types
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_from, _to.toString(), asset)
+                        .encodeTransferCoinMsg()
+                    )
+                    .encodeServiceMessage()
+                ) 
+        );
+    }
+
+    function transferRequestStringAddress(
+        string calldata _src,
+        string memory _dst,
+        string memory _svc,
+        uint256 _sn,
+        string memory _from,
+        string memory _to,
+        string memory _coinName,
+        uint256 _value
+    ) external {
+        Types.Asset[] memory asset = new Types.Asset[](1);
+        asset[0] = Types.Asset(_coinName, _value);
+        handleMessage(
+            _src,
+            Types
+                .BMCMessage(
+                _src,
+                _dst,
+                _svc,
+                int256(_sn),
+                Types
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_from, _to, asset)
+                        .encodeTransferCoinMsg()
+                    )
+                    .encodeServiceMessage()
+                ) 
+        );
+    }
+
+    function transferRequestWithAddress(
+        string calldata _net,
+        string calldata _svc,
+        string memory _from,
+        address _to,
+        string memory _coinName,
+        uint256 _value
+    ) external {
         Types.Asset[] memory asset = new Types.Asset[](1);
         asset[0] = Types.Asset(_coinName, _value);
         sendBTPMessage(
@@ -70,8 +203,8 @@ contract MockBMC is BMC {
     }
 
     function transferRequestWithStringAddress(
-        string memory _net,
-        string memory _svc,
+        string calldata _net,
+        string calldata _svc,
         string memory _from,
         string memory _to,
         string memory _coinName,
@@ -113,6 +246,71 @@ contract MockBMC is BMC {
             )
                 .encodeServiceMessage()
         );
+    }
+
+    function encodeBMCMessage(
+        string memory _from,
+        string memory _to,
+        string memory _svc,
+        int256 _sn,
+        uint256 _code,
+        string memory _msg
+    ) 
+        external
+        view
+        returns (bytes memory) 
+    {
+        return Types.BMCMessage(
+            _from,
+            _to,
+            _svc,
+            _sn,
+            Types
+                .ServiceMessage(
+                Types
+                    .ServiceType
+                    .REPONSE_HANDLE_SERVICE,
+                Types
+                    .Response(_code, _msg)
+                    .encodeResponse()
+                )
+                .encodeServiceMessage()
+        ).encodeBMCMessage();
+    }
+
+    function encodeTransferCoin(
+        string memory _from,
+        string memory _toNetwork,
+        string memory _toAddress,
+        string memory _svc,
+        int256 _sn,
+        address _bsh,
+        Types.Asset[] memory _fees
+    ) 
+        external
+        view
+        returns (bytes memory) 
+    { 
+        ( , string memory _to) = _toAddress.splitBTPAddress();
+        return Types.BMCMessage(
+            _from,
+            _toNetwork,
+            _svc,
+            _sn,
+            Types
+                .ServiceMessage(
+                Types
+                    .ServiceType
+                    .REQUEST_COIN_TRANSFER,
+                Types
+                    .TransferCoin(
+                        _bsh.toString(),
+                        _to,
+                        _fees
+                    ).encodeTransferCoinMsg()
+                )
+                .encodeServiceMessage()
+        ).encodeBMCMessage();
     }
 
     function hashCoinName(string memory _coinName)

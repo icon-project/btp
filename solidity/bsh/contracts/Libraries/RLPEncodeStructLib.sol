@@ -10,6 +10,7 @@ library RLPEncodeStruct {
     using RLPEncode for string;
     using RLPEncode for uint256;
     using RLPEncode for address;
+    using RLPEncode for int256;
 
     using RLPEncodeStruct for Types.BlockHeader;
     using RLPEncodeStruct for Types.BlockWitness;
@@ -42,23 +43,24 @@ library RLPEncodeStruct {
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-
-    // function encodeRegisterCoin(Types.RegisterCoin memory _rc)
-    //     internal
-    //     pure
-    //     returns (bytes memory)
-    // {
-    //     bytes memory _rlp =
-    //         abi.encodePacked(
-    //             _rc.coinName.encodeString(),
-    //             _rc.id.encodeUint(),
-    //             _rc.symbol.encodeString()
-    //         );
-    //     return abi.encodePacked(
-    //         addLength(_rlp.length, false),
-    //         _rlp
-    //     );
-    // }
+    function encodeCoinRegister(string[] memory _coins)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory _rlp;
+        bytes memory temp;
+        for (uint256 i = 0; i < _coins.length; i++) {
+            temp = abi.encodePacked(
+                _coins[i].encodeString()
+            );
+            _rlp = abi.encodePacked(_rlp, temp);
+        }
+        return abi.encodePacked(
+            addLength(_rlp.length, false),
+            _rlp
+        );
+    }
 
     function encodeBMCMessage(Types.BMCMessage memory _bm)
         internal
@@ -70,7 +72,7 @@ library RLPEncodeStruct {
                 _bm.src.encodeString(),
                 _bm.dst.encodeString(),
                 _bm.svc.encodeString(),
-                _bm.sn.encodeUint(),
+                _bm.sn.encodeInt(),
                 _bm.message.encodeBytes()
             );
         return abi.encodePacked(

@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "../NativeCoinBSH.sol";
-import "../Interfaces/IBMC.sol";
+import "../Interfaces/IBSH.sol";
+import "../Interfaces/IBMCPeriphery.sol";
 import "../Interfaces/IBMV.sol";
 import "../Libraries/ParseAddressLib.sol";
 import "../Libraries/RLPEncodeStructLib.sol";
+import "../Libraries/RLPDecodeStructLib.sol";
 import "../Libraries/StringsLib.sol";
-import "../Libraries/Owner.sol";
 import "../Libraries/EncodeBase64Lib.sol";
 import "../Libraries/DecodeBase64Lib.sol";
 import "../Libraries/TypesLib.sol";
 
-contract BMC is IBMC {
+contract BMC is IBMCPeriphery {
     using ParseAddress for address;
     using ParseAddress for string;
+    using RLPDecodeStruct for bytes;
     using RLPEncodeStruct for Types.BMCMessage;
+    using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.EventMessage;
+    using RLPEncodeStruct for Types.Response;
     using Strings for string;
 
     uint256 internal constant RC_OK = 0;
@@ -28,32 +31,48 @@ contract BMC is IBMC {
         bytes _msg
     );
 
-    mapping(address => bool) private _owners;
-    uint256 private numOfOwner;
-
     //  emit EVENT to announce link/unlink service
     event Event(string _next, uint256 _seq, bytes _msg);
+
+    event ErrorOnBTPError(
+        string _svc,
+        int256 _sn,
+        uint256 _code,
+        string _errMsg,
+        uint256 _svcErrCode,
+        string _svcErrMsg
+    );
+
+    mapping(address => bool) private _owners;
+    uint256 private numOfOwner;
 
     mapping(uint => Types.Request[]) private pendingReq;
     mapping(string => address) private bshServices;
     mapping(string => address) private bmvServices;
+    mapping(string => string) private connectedBMC; 
     mapping(address => Types.RelayStats) private relayStats;
     mapping(string => string) private routes;
     mapping(string => Types.Link) internal links; // should be private, temporarily set internal for testing
+    mapping(string => string[]) private reachable;
     string[] private listBMVNames;
     string[] private listBSHNames;
     string[] private listRouteKeys;
     string[] private listLinkNames;
     address[] private addrs;
 
-    string private bmcAddress; // a network address BMV, i.e. btp://1234.pra
-    uint256 private serialNo;
+    string public bmcAddress; // a network address BMV, i.e. btp://1234.pra
     uint256 private numOfBMVService;
     uint256 private numOfBSHService;
     uint256 private numOfLinks;
     uint256 private numOfRoutes;
     
     uint private constant BLOCK_INTERVAL_MSEC = 1000;
+    uint256 internal constant UNKNOWN_ERR = 0;
+    uint256 internal constant BMC_ERR = 10;
+    uint256 internal constant BMV_ERR = 25;
+    uint256 internal constant BSH_ERR = 40;
+    uint256 private constant DECIMAL_PRECISION = 10**6;
+
 
     modifier owner {
         require(_owners[msg.sender] == true, "BMCRevertUnauthorized");
@@ -108,6 +127,9 @@ contract BMC is IBMC {
     /*****************************************************************************************
 
     *****************************************************************************************/
+    function getBmcBtpAddress() external override view returns (string memory) {
+        return bmcAddress;
+    }
 
     function requestAddService(string memory _serviceName, address _addr) external override {
         require(bshServices[_serviceName] == address(0), "BMCRevertAlreadyExistsBSH");
@@ -128,10 +150,295 @@ contract BMC is IBMC {
         return pendingReq[0];
     }
 
-    function handleRelayMessage(string calldata _prev, bytes memory _msg)
-        public
+    function handleRelayMessage(string calldata _prev, string calldata _msg)
+        external
         override
-    {}
+    {
+        bytes[] memory serializedMsgs = decodeMsgAndValidateRelay(_prev, _msg);
+
+        // dispatch BTP Messages
+        Types.BMCMessage memory _message;
+        for (uint256 i = 0; i < serializedMsgs.length; i++) {
+            try this.decodeBTPMessage(serializedMsgs[i]) returns (
+                Types.BMCMessage memory _decoded
+            ) {
+                _message = _decoded;
+            } catch {
+                continue;
+            } 
+
+            if (_message.dst.compareTo(bmcAddress)) {
+                handleMessage(_prev, _message);
+            } else {
+                try this.resolveRoute(_message.dst) returns (
+                    string memory _nextLink
+                ) {
+                    _sendMessage(_nextLink, serializedMsgs[i]);
+                } catch Error(string memory _error) {
+                    _sendError(_prev, _message, BMC_ERR, _error);
+                }
+            }
+        }
+
+        links[_prev].rxSeq = links[_prev].rxSeq + serializedMsgs.length;
+    }
+
+    function decodeMsgAndValidateRelay(
+        string calldata _prev,
+        string calldata _msg
+    ) internal returns (bytes[] memory) {
+        (string memory _net, ) = _prev.splitBTPAddress();
+        require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
+        (uint256 _prevHeight, , ) = IBMV(bmvServices[_net]).getStatus();
+
+        // decode and verify relay message
+        bytes[] memory serializedMsgs =
+            IBMV(bmvServices[_net]).handleRelayMessage(
+                bmcAddress,
+                _prev,
+                links[_prev].rxSeq,
+                _msg
+            );
+
+        // rotate and check valid relay
+        (uint256 _height, uint256 _lastHeight, ) =
+            IBMV(bmvServices[_net]).getStatus();
+        address relay =
+            rotateRelay(
+                _prev,
+                block.number,
+                _lastHeight,
+                serializedMsgs.length > 0
+            );
+
+        if (relay == address(0)) {
+            address[] memory relays = links[_prev].relays;
+            bool check;
+            for (uint256 i = 0; i < relays.length; i++)
+                if (msg.sender == relays[i]) {
+                    check = true;
+                    break;
+                }
+            require(check, "BMCRevertUnauthorized: not registered relay");
+            relay = msg.sender;
+        } else if (relay != msg.sender) revert("BMCRevertUnauthorized: invalid relay");
+
+        relayStats[relay].blockCount =
+            relayStats[relay].blockCount +
+            _height -
+            _prevHeight;
+        relayStats[relay].msgCount =
+            relayStats[relay].msgCount +
+            serializedMsgs.length;
+        return serializedMsgs;
+    }
+
+    //  @dev Despite this function was set as external, it should be called internally
+    //  since Solidity does not allow using try_catch with internal function
+    //  this solution can solve the issue
+    function decodeBTPMessage(bytes memory _rlp)
+        external
+        pure
+        returns (Types.BMCMessage memory)
+    {
+        return _rlp.decodeBMCMessage();
+    }
+
+    function handleMessage(string calldata _prev, Types.BMCMessage memory _msg)
+        internal
+    {
+        if (_msg.svc.compareTo("_EVENT")) {
+            Types.EventMessage memory _eventMsg =
+                _msg.message.decodeEventMessage();
+            if (_eventMsg.eventType.compareTo("Link")) {
+                bool check;
+                if (links[_eventMsg.conn.from].isConnected) {
+                    for (
+                        uint256 i = 0;
+                        i < reachable[_eventMsg.conn.to].length;
+                        i++
+                    )
+                        if (
+                            _eventMsg.conn.from.compareTo(
+                                reachable[_eventMsg.conn.to][i]
+                            )
+                        ) {
+                            check = true;
+                            break;
+                        }
+                    if (!check) {
+                        reachable[_eventMsg.conn.to].push(_eventMsg.conn.from);
+                        (string memory _net, ) = _eventMsg.conn.to.splitBTPAddress();
+                        connectedBMC[_net] = _eventMsg.conn.to;
+                    }
+                        
+                }
+            } else if (_eventMsg.eventType.compareTo("Unlink")) {
+                if (links[_eventMsg.conn.from].isConnected) {
+                    for (
+                        uint256 i = 0;
+                        i < reachable[_eventMsg.conn.to].length;
+                        i++
+                    ) {
+                        if (
+                            _eventMsg.conn.from.compareTo(
+                                reachable[_eventMsg.conn.to][i]
+                            )
+                        ) {
+                            delete reachable[_eventMsg.conn.to][i];
+                            (string memory _net, ) = _eventMsg.conn.to.splitBTPAddress();
+                            delete connectedBMC[_net];
+                        } 
+                    }
+                }
+            } else revert("BMCRevert: not exists event handler");
+        } else if (_msg.svc.compareTo("bmc")) {
+            Types.BMCService memory _sm;
+            try this.tryDecodeBMCService(_msg.message) returns (Types.BMCService memory ret) {
+                _sm = ret;
+            }
+            catch {
+                _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+            }
+            if (_sm.serviceType.compareTo("FeeGathering")) {
+                Types.GatherFeeMessage memory _gatherFee;
+                try this.tryDecodeGatherFeeMessage(_sm.payload) returns (Types.GatherFeeMessage memory ret) {
+                    _gatherFee = ret;
+                }
+                catch {
+                    _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+                }
+                
+                for (uint i = 0; i < _gatherFee.svcs.length; i++) {
+                    //  If 'svc' not found, ignore
+                    if (bshServices[_gatherFee.svcs[i]] != address(0)){
+                        try IBSH(bshServices[_gatherFee.svcs[i]]).handleFeeGathering(
+                            _gatherFee.fa, _gatherFee.svcs[i]
+                        ){}
+                        catch {
+                            //  If BSH contract throws a revert error, ignore and continue
+                        }
+                    }
+                }  
+            }
+        } else {
+            if (bshServices[_msg.svc] == address(0)) {
+                _sendError(_prev, _msg, BMC_ERR, "BMCRevertNotExistsBSH");
+                return;
+            }
+
+            if (_msg.sn >= 0) {
+                (string memory _net, ) = _msg.src.splitBTPAddress();
+                try
+                    IBSH(bshServices[_msg.svc]).handleBTPMessage(
+                        _net,
+                        _msg.svc,
+                        uint256(_msg.sn),
+                        _msg.message
+                    )
+                {} catch Error(string memory _error) {
+                    _sendError(_prev, _msg, BSH_ERR, _error);
+                }
+            } else {
+                Types.Response memory _errMsg = _msg.message.decodeResponse();
+                try
+                    IBSH(bshServices[_msg.svc]).handleBTPError(
+                        _msg.src,
+                        _msg.svc,
+                        uint256(int256(_msg.sn) * -1),
+                        _errMsg.code,
+                        _errMsg.message
+                    )
+                {} catch Error(string memory _error) {
+                    emit ErrorOnBTPError(
+                        _msg.svc,
+                        int256(_msg.sn) * -1,
+                        _errMsg.code,
+                        _errMsg.message,
+                        BSH_ERR,
+                        _error
+                    );
+                } catch (bytes memory _error) {
+                    emit ErrorOnBTPError(
+                        _msg.svc,
+                        int256(_msg.sn) * -1,
+                        _errMsg.code,
+                        _errMsg.message,
+                        UNKNOWN_ERR,
+                        string(_error)
+                    );
+                }
+            }
+        }
+    }
+
+    //  @dev Solidity does not allow using try_catch with internal function
+    //  Thus, work-around solution is the followings
+    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR Response
+    function tryDecodeBMCService(bytes calldata _msg) external pure returns (Types.BMCService memory) {
+        return _msg.decodeBMCService();
+    }
+
+    function tryDecodeGatherFeeMessage(bytes calldata _msg) external pure returns (Types.GatherFeeMessage memory) {
+        return _msg.decodeGatherFeeMessage();
+    }
+
+    function _sendMessage(string memory _to, bytes memory _serializedMsg)
+        internal
+    {
+        links[_to].txSeq += 1;
+        emit Message(_to, links[_to].txSeq, _serializedMsg);
+    }
+
+    function _sendError(
+        string calldata _prev,
+        Types.BMCMessage memory _message,
+        uint256 _errCode,
+        string memory _errMsg
+    ) internal {
+        if (_message.sn > 0) {
+            bytes memory _serializedMsg =
+                Types
+                    .BMCMessage(
+                    bmcAddress,
+                    _message
+                        .src,
+                    _message
+                        .svc,
+                    int256(_message.sn) * -1,
+                    Types
+                        .ServiceMessage(
+                        Types
+                            .ServiceType
+                            .REPONSE_HANDLE_SERVICE,
+                        Types
+                            .Response(_errCode, _errMsg)
+                            .encodeResponse()
+                        )
+                        .encodeServiceMessage()
+                    )
+                    .encodeBMCMessage();
+            _sendMessage(_prev, _serializedMsg);
+        }
+    }
+
+    function resolveRoute(string memory _dst)
+        external
+        view
+        returns (string memory)
+    {
+        // resolve route
+        if (bytes(routes[_dst]).length == 0) {
+            if (links[_dst].isConnected) return _dst;
+            for (uint256 i = 0; i < reachable[_dst].length; i++) {
+                if (bytes(reachable[_dst][i]).length != 0) 
+                    return reachable[_dst][i];
+            }
+            (string memory _net, ) = _dst.splitBTPAddress();
+            revert(string("BMCRevertUnreachable: ").concat(_net).concat(" is unreachable"));
+        }
+        return routes[_dst];
+    }
 
     /**
        @notice Send the message to a specific network.
@@ -158,16 +465,16 @@ contract BMC is IBMC {
         if (bmvServices[_to] == address(0)) {
             revert("BMCRevertNotExistsBMV");
         }
+        string memory _toBMC = connectedBMC[_to];
         bytes memory _rlp =
             Types
-                .BMCMessage(bmcAddress, _to, _svc, _sn, _msg)
+                .BMCMessage(bmcAddress, _toBMC, _svc, int256(_sn), _msg)
                 .encodeBMCMessage();
         if (_svc.compareTo("_EVENT")) {
-            emit Event(_to, serialNo, _rlp);
+            emit Event(_toBMC, links[_toBMC].txSeq + 1, _rlp);
         } else {
-            emit Message(_to, serialNo, _rlp);
+            emit Message(_toBMC, links[_toBMC].txSeq + 1, _rlp);
         }
-        serialNo++;
     }
 
      /**
@@ -177,8 +484,7 @@ contract BMC is IBMC {
        @param _svc     Name of the service
    */
     function approveService(string memory _svc)
-        public
-        override
+        external
         owner
     {
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
@@ -226,7 +532,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _svc     Name of the service
    */
-    function removeService(string memory _svc) public override owner {
+    function removeService(string memory _svc) external owner {
         require(bshServices[_svc] != address(0), "BMCRevertNotExistsBSH");
         delete bshServices[_svc];
         numOfBSHService--;
@@ -237,9 +543,8 @@ contract BMC is IBMC {
        @return _servicers   An array of Service.
     */
     function getServices()
-        public
+        external
         view
-        override
         returns (Types.Service[] memory)
     {
         Types.Service[] memory services = new Types.Service[](numOfBSHService);
@@ -263,8 +568,7 @@ contract BMC is IBMC {
        @param _addr    Address of BMV
    */
     function addVerifier(string memory _net, address _addr)
-        public
-        override
+        external
         owner
     {
         require(bmvServices[_net] == address(0), "BMCRevertAlreadyExistsBMV");
@@ -278,7 +582,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _net     Network Address of the blockchain
    */
-    function removeVerifier(string memory _net) public override owner {
+    function removeVerifier(string memory _net) external owner {
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
         delete bmvServices[_net];
         numOfBMVService--;
@@ -289,9 +593,8 @@ contract BMC is IBMC {
        @return _verifiers   An array of Verifier.
     */
     function getVerifiers()
-        public
+        external
         view
-        override
         returns (Types.Verifier[] memory)
     {
         Types.Verifier[] memory verifiers =
@@ -314,13 +617,14 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
    */
-    function addLink(string calldata _link) public override owner {
+    function addLink(string calldata _link) external owner {
         string memory _net;
         (_net, ) = _link.splitBTPAddress();
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
         require(links[_link].isConnected == false, "BMCRevertAlreadyExistsLink");
-        links[_link] = Types.Link(new address[](0), new string[](0),0, 0, BLOCK_INTERVAL_MSEC, 0, 10, 3, 0, 0, 0, 0, true);
+        links[_link] = Types.Link(new address[](0),0, 0, BLOCK_INTERVAL_MSEC, 0, 10, 3, 0, 0, 0, 0, true);
         listLinkNames.push(_link);
+        connectedBMC[_net] = _link;
         numOfLinks++;
 
         //  propagate an event "LINK"
@@ -332,9 +636,11 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
    */
-    function removeLink(string calldata _link) public override owner {
+    function removeLink(string calldata _link) external owner {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
         delete links[_link];
+        (string memory _net, ) = _link.splitBTPAddress();
+        delete connectedBMC[_net];
         numOfLinks--;
         propagateEvent("Unlink", _link);
     }
@@ -343,7 +649,7 @@ contract BMC is IBMC {
        @notice Get registered links.
        @return _links   An array of links ( BTP Addresses of the BMCs ).
     */
-    function getLinks() public view override returns (string[] memory) {
+    function getLinks() external view returns (string[] memory) {
         string[] memory res = new string[](numOfLinks);
         uint256 temp;
         for (uint256 i = 0; i < listLinkNames.length; i++) {
@@ -362,7 +668,6 @@ contract BMC is IBMC {
         uint _delayLimit
     ) 
         external
-        override
         owner 
     {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
@@ -417,7 +722,7 @@ contract BMC is IBMC {
                 //  which is 'guessHeight' and the time BMC receiving this event is 'currentHeight'
                 //  If there is any delay, 'guessHeight' is likely less than 'currentHeight'
                 uint _guessHeight = link.rxHeight + ceilDiv(
-                    (_relayMsgHeight - link.rxHeightSrc) * 10**6, _scale
+                    (_relayMsgHeight - link.rxHeightSrc) * DECIMAL_PRECISION, _scale
                 ) - 1;
 
                 if (_guessHeight > _currentHeight) {
@@ -510,7 +815,7 @@ contract BMC is IBMC {
         if (_blockIntervalSrc < 1 || _blockIntervalDst < 1) {
             return 0;
         }
-        return ceilDiv(_blockIntervalSrc * 10**6, _blockIntervalDst);
+        return ceilDiv(_blockIntervalSrc * DECIMAL_PRECISION, _blockIntervalDst);
     }
 
     function getRotateTerm(
@@ -522,7 +827,7 @@ contract BMC is IBMC {
         returns (uint) 
     {
         if (_scale > 0) {
-            return ceilDiv(_maxAggregation * 10**6, _scale);
+            return ceilDiv(_maxAggregation * DECIMAL_PRECISION, _scale);
         }
         return 0;
     }
@@ -589,16 +894,17 @@ contract BMC is IBMC {
        @param _link    BTP Address of the next BMC for the destination
    */
     function addRoute(string memory _dst, string memory _link)
-        public
-        override
+        external
         owner
     {
         require(bytes(routes[_dst]).length == 0, "BTPRevertAlreadyExistRoute");
         //  Verify _dst and _link format address
         //  these two strings must follow BTP format address
         //  If one of these is failed, revert()
-        _dst.splitBTPAddress();
-        _link.splitBTPAddress();
+        (string memory _net, ) = _dst.splitBTPAddress();
+        connectedBMC[_net] = _dst;
+        (_net, ) = _link.splitBTPAddress();
+        connectedBMC[_net] = _link;
 
         routes[_dst] = _link; //  map _dst to _link
         listRouteKeys.push(_dst); //  push _dst key into an array of route keys
@@ -610,7 +916,7 @@ contract BMC is IBMC {
        @dev Caller must be an operator of BTP network.
        @param _dst     BTP Address of the destination BMC
     */
-    function removeRoute(string memory _dst) public override owner {
+    function removeRoute(string memory _dst) external owner {
         //  @dev No need to check if _dst is a valid BTP format address
         //  since it was checked when adding route at the beginning
         //  If _dst does not match, revert()
@@ -623,7 +929,7 @@ contract BMC is IBMC {
        @notice Get routing information.
        @return _routes An array of Route.
     */
-    function getRoutes() public view override returns (Types.Route[] memory) {
+    function getRoutes() external view returns (Types.Route[] memory) {
         Types.Route[] memory _routes = new Types.Route[](numOfRoutes);
         uint256 temp;
         for (uint256 i = 0; i < listRouteKeys.length; i++) {
@@ -645,8 +951,7 @@ contract BMC is IBMC {
        @param _addr     the address of Relay
     */
     function addRelay(string memory _link, address[] memory _addr)
-        public
-        override
+        external
         owner
     {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
@@ -665,8 +970,7 @@ contract BMC is IBMC {
        @param _addr     the address of Relay
     */
     function removeRelay(string memory _link, address _addr)
-        public
-        override
+        external
         owner
     {
         require(
@@ -689,9 +993,8 @@ contract BMC is IBMC {
     */
 
     function getRelays(string memory _link)
-        public
+        external
         view
-        override
         returns (address[] memory)
     {
         return links[_link].relays;
@@ -705,7 +1008,7 @@ contract BMC is IBMC {
        @return verifier     VerifierStatus Object contains status information of the BMV.
     */
     function getStatus(string calldata _link)
-        public
+        external
         view
         override
         returns (

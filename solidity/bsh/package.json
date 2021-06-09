@@ -4,6 +4,8 @@
   "license": "MIT",
   "devDependencies": {
     "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/truffle-upgrades": "^1.7.0",
     "chai": "^4.3.4",
     "husky": "^6.0.0",
     "prettier": "^2.2.1",
@@ -18,7 +20,9 @@
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l",
     "compile": "truffle compile",
     "migrate": "truffle migrate",
-    "test": "truffle test"
+    "test": "truffle test",
+    "bsh": "truffle test ./test/integration/native-coin-bsh.js",
+    "bsh-up": "truffle test ./test/integration/upgradeability-native-coin-bsh.js"
   },
   "husky": {
     "hooks": {

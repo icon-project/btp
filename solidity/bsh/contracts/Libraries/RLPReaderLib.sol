@@ -199,6 +199,14 @@ library RLPReader {
         return result;
     }
 
+    function toInt(RLPItem memory item) internal pure returns (int256) {
+        if ((toBytes(item)[0] & 0x80) == 0x80) {
+            return int256(toUint(item) - 2**(toBytes(item).length * 8));
+        }
+
+        return int256(toUint(item));
+    }
+
     // enforces 32 byte length
     function toUintStrict(RLPItem memory item) internal pure returns (uint256) {
         // one byte prefix

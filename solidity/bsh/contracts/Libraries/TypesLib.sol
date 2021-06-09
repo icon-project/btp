@@ -132,8 +132,7 @@ library Types {
     struct Coin {
         uint256 id;
         string symbol;
-        uint256 decimals;
-        uint256 feeNumerator;        
+        uint256 decimals;    
     }
 
     struct Balance {
@@ -174,7 +173,6 @@ library Types {
 
     struct Link {
         address[] relays; //  Address of multiple Relays handle for this link network
-        string[] reachable; //  A BTP Address of the next BMC that can be reach using this link
         uint rxSeq;
         uint txSeq;
         uint blockIntervalSrc;
@@ -216,7 +214,7 @@ library Types {
         string src; //  an address of BMC (i.e. btp://1234.PARA/0x1234)
         string dst; //  an address of destination BMC
         string svc; //  service name of BSH
-        uint256 sn; //  sequence number of BMC
+        int256 sn; //  sequence number of BMC
         bytes message; //  serializef Service Message from BSH
     }
 
@@ -228,6 +226,11 @@ library Types {
     struct EventMessage {
         string eventType;
         Connection conn;
+    }
+
+    struct BMCService {
+        string serviceType; 
+        bytes payload;
     }
 
     struct GatherFeeMessage {

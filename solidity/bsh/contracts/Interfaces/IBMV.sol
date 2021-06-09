@@ -50,7 +50,7 @@ interface IBMV {
     function handleRelayMessage(
         string calldata _bmc,
         string calldata _prev,
-        string calldata _seq,
+        uint256 _seq,
         string calldata _msg
     ) external returns (bytes[] memory serializedMessages);
 }

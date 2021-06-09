@@ -3,7 +3,6 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./RLPReaderLib.sol";
-import "./Helper.sol";
 import "./TypesLib.sol";
 
 //import "./RLPEncode.sol";
@@ -17,6 +16,19 @@ library RLPDecodeStruct {
 
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
+
+    function decodeBMCService(bytes memory _rlp)
+        internal
+        pure
+        returns (Types.BMCService memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        return
+            Types.BMCService(
+                string(ls[0].toBytes()),
+                ls[1].toBytes() //  bytes array of RLPEncode(Data)
+            );
+    }
 
     function decodeGatherFeeMessage(bytes memory _rlp)
         internal
@@ -51,19 +63,18 @@ library RLPDecodeStruct {
             );
     }
 
-    // function decodeRegisterCoin(bytes memory _rlp)
-    //     internal
-    //     pure
-    //     returns (Types.RegisterCoin memory)
-    // {
-    //     RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-    //     return
-    //         Types.RegisterCoin(
-    //             string(ls[0].toBytes()),
-    //             ls[1].toUint(),
-    //             string(ls[2].toBytes())
-    //         );
-    // }
+    function decodeCoinRegister(bytes memory _rlp)
+        internal
+        pure
+        returns (string[] memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        string[] memory _coins = new string[](ls.length);
+        for (uint256 i = 0; i < ls.length; i++) {
+            _coins[i] = string(ls[i].toBytes());
+        }
+        return _coins;
+    }
 
     function decodeBMCMessage(bytes memory _rlp)
         internal
@@ -76,7 +87,7 @@ library RLPDecodeStruct {
                 string(ls[0].toBytes()),
                 string(ls[1].toBytes()),
                 string(ls[2].toBytes()),
-                ls[3].toUint(),
+                ls[3].toInt(),
                 ls[4].toBytes() //  bytes array of RLPEncode(ServiceMessage)
             );
     }

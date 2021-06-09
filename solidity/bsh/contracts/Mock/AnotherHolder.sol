@@ -2,16 +2,16 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
-import "../BSHPeriphery.sol";
-import "../BSHCore.sol";
+import "./BSHPeripheryV1.sol";
+import "./BSHCoreV1.sol";
 
-contract Holder is ERC1155Holder {
-    BSHPeriphery private bshp;
-    BSHCore private bshc;
+contract AnotherHolder is ERC1155Holder {
+    BSHPeripheryV1 private bshs;
+    BSHCoreV1 private bshc;
 
-    function addBSHContract(address _bshp, address _bshc) external {
-        bshp = BSHPeriphery(_bshp);
-        bshc = BSHCore(_bshc);
+    function addBSHContract(address _bshs, address _bshc) external {
+        bshs = BSHPeripheryV1(_bshs);
+        bshc = BSHCoreV1(_bshc);
     }
 
     function setApprove(address _operator) external {
