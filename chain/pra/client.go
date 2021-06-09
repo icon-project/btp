@@ -48,12 +48,10 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 
 	bmc, err := binding.NewBMC(common.HexToAddress(bmcContractAddress), ethClient)
 	if err != nil {
-		l.Fatal("got error when connect to BMC contract", err.Error())
+		l.Fatal("failed to connect to BMC contract", err.Error())
 	}
 
 	c := &Client{
-		// mutex: &sync.RWMutex{},
-		// meta:  meta,
 		subAPI:    subAPI,
 		bmc:       bmc,
 		ethClient: ethClient,
@@ -135,7 +133,7 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 		}
 
 		if currentBlock > uint64(finalizedHeader.Number) {
-			c.log.Trace("Block not yet finalized", "target", currentBlock, "latest", finalizedHeader.Number)
+			c.log.Tracef("block not yet finalized target:%v latest:%v", currentBlock, finalizedHeader.Number)
 			time.Sleep(BlockRetryInterval)
 			continue
 		}
@@ -145,7 +143,7 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 			time.Sleep(BlockRetryInterval)
 			continue
 		} else if err != nil {
-			c.log.Error("Failed to query latest block", "block", currentBlock, "err", err)
+			c.log.Error("failed to query latest block:%v error:%v", currentBlock, err)
 			return err
 		}
 
@@ -167,7 +165,7 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 }
 
 func (c *Client) getEvents(hash stypes.Hash) (*SubstateWithFrontierEventRecord, error) {
-	c.log.Trace("Fetching block for events", "hash", hash.Hex())
+	c.log.Trace("fetching block for events", "hash", hash.Hex())
 	meta, err := c.getMetadata(hash)
 	if err != nil {
 		return nil, err
@@ -183,11 +181,10 @@ func (c *Client) getEvents(hash stypes.Hash) (*SubstateWithFrontierEventRecord, 
 		return nil, err
 	}
 
-	records := SubstateWithFrontierEventRecord{}
-	err = stypes.EventRecordsRaw(*sdr).DecodeEventRecords(meta, &records)
-	if err != nil {
+	records := &SubstateWithFrontierEventRecord{}
+	if err = stypes.EventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
 		return nil, err
 	}
 
-	return &records, nil
+	return records, nil
 }

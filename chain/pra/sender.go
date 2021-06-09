@@ -270,9 +270,6 @@ func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 		status.BMRs[i].MessageCount = bmr.MsgCount.Int64()
 	}
 
-	// fmt.Println(status.Verifier.Offset)
-	// status.Verifier.Offset = 9532852
-
 	return status, nil
 }
 
