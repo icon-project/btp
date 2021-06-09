@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 
-interface IBSHPeriphery {
+interface IBSH {
     /**
        @notice Handle BTP Message from other blockchain.
        @dev Accept the message only from the BMC. 

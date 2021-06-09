@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "../Interfaces/IBSHPeriphery.sol";
+import "../Interfaces/IBSH.sol";
 
-contract MockBSH is IBSHPeriphery {
+contract MockBSH is IBSH {
     constructor() {}
 
     /**

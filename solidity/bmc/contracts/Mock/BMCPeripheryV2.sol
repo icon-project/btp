@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../Interfaces/IBSHPeriphery.sol";
+import "../Interfaces/IBSH.sol";
 import "../Interfaces/IBMCPeriphery.sol";
 import "../Interfaces/IBMCManagement.sol";
 import "../Interfaces/IBMV.sol";
@@ -244,7 +244,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
                     //  If 'svc' not found, ignore
                     if (_bshAddr != address(0)) {
                         try
-                            IBSHPeriphery(_bshAddr).handleFeeGathering(
+                            IBSH(_bshAddr).handleFeeGathering(
                                 _gatherFee.fa,
                                 _gatherFee.svcs[i]
                             )
@@ -266,7 +266,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
             if (_msg.sn >= 0) {
                 (string memory _net, ) = _msg.src.splitBTPAddress();
                 try
-                    IBSHPeriphery(_bshAddr).handleBTPMessage(
+                    IBSH(_bshAddr).handleBTPMessage(
                         _net,
                         _msg.svc,
                         uint256(_msg.sn),
@@ -278,7 +278,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
             } else {
                 Types.Response memory _errMsg = _msg.message.decodeResponse();
                 try
-                    IBSHPeriphery(_bshAddr).handleBTPError(
+                    IBSH(_bshAddr).handleBTPError(
                         _msg.src,
                         _msg.svc,
                         uint256(_msg.sn * -1),
