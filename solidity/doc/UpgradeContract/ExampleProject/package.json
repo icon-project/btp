@@ -1,0 +1,17 @@
+{
+  "name": "pra-bsh",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/truffle-upgrades": "^1.7.0",
+    "chai": "^4.3.4",
+    "truffle-assertions": "^0.9.2"
+  },
+  "scripts": {
+    "compile": "truffle compile",
+    "truffle:deploy": "truffle migrate -f 1 --to 1 --network development",
+    "truffle:upgrade": "truffle migrate -f 2 --to 2 --network development"
+  }
+}
