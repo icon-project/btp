@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+/*-------------------Constans---------------*/
 const (
 	JsonrpcErrorCodeSystem         jsonrpc.ErrorCode = -31000
 	JsonrpcErrorCodeTxPoolOverflow jsonrpc.ErrorCode = -31001
@@ -21,6 +22,8 @@ const (
 	JsonrpcErrorCodeScore          jsonrpc.ErrorCode = -30000
 )
 
+/*----------------------functions-----------------*/
+
 func (c *Client) MapError(err error) error {
 	if err != nil {
 		switch re := err.(type) {
@@ -28,53 +31,63 @@ func (c *Client) MapError(err error) error {
 			switch re.Code {
 			case JsonrpcErrorCodeTxPoolOverflow:
 				return base.ErrSendFailByOverflow
+
 			case JsonrpcErrorCodeSystem:
 				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
 					switch subEc {
 					case DuplicateTransactionError:
 						return base.ErrSendDuplicateTransaction
+
 					case ExpiredTransactionError:
 						return base.ErrSendFailByExpired
+
 					case FutureTransactionError:
 						return base.ErrSendFailByFuture
+
 					case TransactionPoolOverflowError:
 						return base.ErrSendFailByOverflow
 					}
 				}
+
 			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
 				return base.ErrGetResultFailByPending
 			}
+
 		case *common.HttpError:
 			fmt.Printf("*common.HttpError:%+v", re)
 			return base.ErrConnectFail
+
 		case *url.Error:
 			if common.IsConnectRefusedError(re.Err) {
 				return base.ErrConnectFail
 			}
 		}
 	}
+
 	return err
 }
 
-func (c *Client) MapErrorWithTransactionResult(t *base.TransactionResult, err error) error {
-	txr := (*t).(TransactionResult)
+func (c *Client) MapErrorWithTransactionResult(transactionResultPointer *base.TransactionResult, err error) error {
+	transactionResult := (*transactionResultPointer).(TransactionResult)
 	err = c.MapError(err)
-	if err == nil && &txr != nil && txr.Status != ResultStatusSuccess {
-		fc, _ := txr.Failure.CodeValue.Value()
+
+	if err == nil && &transactionResult != nil && transactionResult.Status != ResultStatusSuccess {
+		fc, _ := transactionResult.Failure.CodeValue.Value()
 		if fc < ResultStatusFailureCodeRevert || fc > ResultStatusFailureCodeEnd {
 			err = fmt.Errorf("failure with code:%s, message:%s",
-				txr.Failure.CodeValue, txr.Failure.MessageValue)
+				transactionResult.Failure.CodeValue, transactionResult.Failure.MessageValue)
 		} else {
 			err = base.NewRevertError(int(fc - ResultStatusFailureCodeRevert))
 		}
 	}
+
 	return err
 }
 
 func (c *Client) CheckRPCPendingErrorCode(err *jsonrpc.ErrorCode) bool {
 	switch *err {
-		case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-			return true
+	case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
+		return true
 	}
 	return false
 }

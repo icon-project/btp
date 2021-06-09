@@ -26,6 +26,7 @@ import (
 	"github.com/icon-project/btp/cmd/btpsimple/module/base"
 )
 
+/*---------constants---------*/
 const (
 	JsonrpcApiVersion = 3
 )
@@ -55,7 +56,11 @@ const (
 	BMCRelayMethod     = "handleRelayMessage"
 	BMCGetStatusMethod = "getStatus"
 )
+const (
+	WSEventInit WSEvent = "WSEventInit"
+)
 
+/*-------------------struct and functions-----------------------*/
 type ReceiptData struct {
 	Status             int
 	To                 []byte
@@ -118,6 +123,7 @@ type TransactionParam struct {
 	Data        interface{} `json:"data,omitempty"`
 	TxHash      HexBytes    `json:"-"`
 }
+
 type CallData struct {
 	Method string      `json:"method"`
 	Params interface{} `json:"params,omitempty"`
@@ -148,13 +154,16 @@ type BMCRelayMethodParams struct {
 type BMCLinkMethodParams struct {
 	Target string `json:"_link"`
 }
+
 type BMCUnlinkMethodParams struct {
 	Target string `json:"_link"`
 }
+
 type BMCAddRouteMethodParams struct {
 	Destination string `json:"_dst"`
 	Link        string `json:"_link"`
 }
+
 type BMCRemoveRouteMethodParams struct {
 	Destination string `json:"_dst"`
 }
@@ -177,13 +186,16 @@ type TransactionHashParam struct {
 type BlockHeightParam struct {
 	Height HexInt `json:"height" validate:"required,t_int"`
 }
+
 type DataHashParam struct {
 	Hash HexBytes `json:"hash" validate:"required,t_hash"`
 }
+
 type ProofResultParam struct {
 	BlockHash HexBytes `json:"hash" validate:"required,t_hash"`
 	Index     HexInt   `json:"index" validate:"required,t_int"`
 }
+
 type ProofEventsParam struct {
 	BlockHash HexBytes `json:"hash" validate:"required,t_hash"`
 	Index     HexInt   `json:"index" validate:"required,t_int"`
@@ -223,10 +235,6 @@ type EventNotification struct {
 
 type WSEvent string
 
-const (
-	WSEventInit WSEvent = "WSEventInit"
-)
-
 type WSResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message,omitempty"`
@@ -241,6 +249,7 @@ func (hs HexBytes) Value() ([]byte, error) {
 	}
 	return hex.DecodeString(string(hs[2:]))
 }
+
 func NewHexBytes(b []byte) HexBytes {
 	return HexBytes("0x" + hex.EncodeToString(b))
 }
@@ -253,6 +262,7 @@ func (i HexInt) Value() (int64, error) {
 	if strings.HasPrefix(s, "0x") {
 		s = s[2:]
 	}
+
 	return strconv.ParseInt(s, 16, 64)
 }
 
@@ -261,6 +271,7 @@ func (i HexInt) Int() (int, error) {
 	if strings.HasPrefix(s, "0x") {
 		s = s[2:]
 	}
+
 	v, err := strconv.ParseInt(s, 16, 32)
 	return int(v), err
 }
@@ -277,17 +288,21 @@ func (a Address) Value() ([]byte, error) {
 	switch a[:2] {
 	case "cx":
 		b[0] = 1
+
 	case "hx":
 	default:
 		return nil, fmt.Errorf("invalid prefix %s", a[:2])
 	}
+
 	n, err := hex.Decode(b[1:], []byte(a[2:]))
 	if err != nil {
 		return nil, err
 	}
+
 	if n != 20 {
 		return nil, fmt.Errorf("invalid length %d", n)
 	}
+
 	return b[:], nil
 }
 
@@ -298,8 +313,10 @@ func NewAddress(b []byte) Address {
 	switch b[0] {
 	case 1:
 		return Address("cx" + hex.EncodeToString(b[1:]))
+
 	case 0:
 		return Address("hx" + hex.EncodeToString(b[1:]))
+
 	default:
 		return ""
 	}
@@ -370,6 +387,9 @@ type BMCStatusResponse struct {
 	BlockIntervalDst HexInt `json:"block_interval_dst"`
 }
 
+/*------------interface-------------------*/
+//TODO : why we need to interface here ?
+//Interface should have the public methods
 type ApiInterface interface {
 	getBlockByHeight(*BlockHeightParam) (*Block, error)
 	getBlockHeaderByHeight(*BlockHeightParam) ([]byte, error)

@@ -92,14 +92,14 @@ func (s *SimpleChain) _log(prefix string, rm *base.RelayMessage, segment *base.S
 	if segment == nil {
 		s.l.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
 			prefix,
-			rm.Seq,
+			rm.Sequence,
 			rm.BlockUpdates[0].Height,
 			rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
 			len(rm.ReceiptProofs))
 	} else {
 		s.l.Debugf("%s rm:%d [i:%d,h:%d,bu:%d,seq:%d,evt:%d,txh:%v]",
 			prefix,
-			rm.Seq,
+			rm.Sequence,
 			segmentIdx,
 			segment.Height,
 			segment.NumberOfBlockUpdate,
@@ -185,7 +185,7 @@ func (s *SimpleChain) _rm() *base.RelayMessage {
 	rm := &base.RelayMessage{
 		From:         s.src,
 		BlockUpdates: make([]*base.BlockUpdate, 0),
-		Seq:          s.rmSeq,
+		Sequence:     s.rmSeq,
 	}
 	s.rms = append(s.rms, rm)
 	s.rmSeq += 1
@@ -250,7 +250,7 @@ rmLoop:
 					rrp = j + 1
 				} else {
 					s.l.Debugf("updateRelayMessage rm:%d bu:%d rp:%d removeEventProofs %d ~ %d",
-						rm.Seq,
+						rm.Sequence,
 						rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
 						rp.Index,
 						rp.Events[0].Sequence,
@@ -263,7 +263,7 @@ rmLoop:
 			}
 			if rrp > 0 {
 				s.l.Debugf("updateRelayMessage rm:%d bu:%d removeReceiptProofs %d ~ %d",
-					rm.Seq,
+					rm.Sequence,
 					rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
 					rm.ReceiptProofs[0].Index,
 					rm.ReceiptProofs[rrp-1].Index)
@@ -296,7 +296,7 @@ rmLoop:
 				}
 			} else {
 				s.l.Debugf("updateRelayMessage rm:%d removeBlockUpdates %d ~ %d",
-					rm.Seq,
+					rm.Sequence,
 					rm.BlockUpdates[0].Height,
 					rm.BlockUpdates[rbu-1].Height)
 				rm.BlockUpdates = rm.BlockUpdates[rbu:]
@@ -306,8 +306,8 @@ rmLoop:
 	if rrm > 0 {
 		s.l.Debugf("updateRelayMessage rms:%d removeRelayMessage %d ~ %d",
 			len(s.rms),
-			s.rms[0].Seq,
-			s.rms[rrm-1].Seq)
+			s.rms[0].Sequence,
+			s.rms[rrm-1].Sequence)
 		s.rms = s.rms[rrm:]
 		if len(s.rms) == 0 {
 			s._rm()

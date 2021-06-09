@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package base
 
 import "fmt"
 
-var Clients = map[string]Client {}
+var Clients = map[string]Client{}
 
 func RegisterClients(networks []string, client Client) {
 	for _, network := range networks {

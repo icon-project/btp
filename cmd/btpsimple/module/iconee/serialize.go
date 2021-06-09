@@ -24,13 +24,41 @@ import (
 	"strconv"
 )
 
+/*--------------------- struct---------*/
 type SerializeError struct {
-	position, msg string
+	position, message string
+}
+
+/*---------Public functions------------------*/
+
+func SerializeMap(d map[string]interface{}, i map[string]bool, e map[string]bool) ([]byte, error) {
+	value, err := serializeDict(d, i, e)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func SerializeJSON(s []byte, in map[string]bool, exclude map[string]bool) ([]byte, error) {
+	var params map[string]interface{}
+
+	if err := json.Unmarshal(s, &params); err != nil {
+		return nil, err
+	}
+	data, err := serializeDict(params, in, exclude)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (s *SerializeError) Error() string {
-	return s.position + ":" + s.msg
+	return s.position + ":" + s.message
 }
+
+/*---------Private functions-----------------*/
 
 func serializeString(s string) []byte {
 	ret := []byte(s)
@@ -39,17 +67,23 @@ func serializeString(s string) []byte {
 		switch b {
 		case '\\':
 			fallthrough
+
 		case '{':
 			fallthrough
+
 		case '}':
 			fallthrough
+
 		case '[':
 			fallthrough
+
 		case ']':
 			fallthrough
+
 		case '.':
 			buf.WriteByte('\\')
 			buf.WriteByte(b)
+
 		default:
 			buf.WriteByte(b)
 		}
@@ -113,47 +147,33 @@ func serializeValue(v interface{}) ([]byte, *SerializeError) {
 }
 
 func serializeDict(d map[string]interface{}, in map[string]bool, ex map[string]bool) ([]byte, *SerializeError) {
-	buf := new(bytes.Buffer)
+	buffer := new(bytes.Buffer)
 	keys := make([]string, 0, len(d))
+
 	for k := range d {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+
 	for _, k := range keys {
 		if (in != nil && !in[k]) || (ex != nil && ex[k]) {
 			continue
 		}
 		v := d[k]
 		frag, err := serializeValue(v)
+
 		if err != nil {
-			return nil, &SerializeError{"." + k + err.position, err.msg}
+			return nil, &SerializeError{"." + k + err.position, err.message}
 		}
-		if buf.Len() > 0 {
-			buf.WriteByte('.')
+
+		if buffer.Len() > 0 {
+			buffer.WriteByte('.')
 		}
-		buf.Write(serializeString(k))
-		buf.WriteByte('.')
-		buf.Write(frag)
-	}
-	return buf.Bytes(), nil
-}
 
-func SerializeMap(d map[string]interface{}, i map[string]bool, e map[string]bool) ([]byte, error) {
-	value, err := serializeDict(d, i, e)
-	if err != nil {
-		return nil, err
+		buffer.Write(serializeString(k))
+		buffer.WriteByte('.')
+		buffer.Write(frag)
 	}
-	return value, nil
-}
 
-func SerializeJSON(s []byte, in map[string]bool, exclude map[string]bool) ([]byte, error) {
-	var params map[string]interface{}
-	if err := json.Unmarshal(s, &params); err != nil {
-		return nil, err
-	}
-	data, err := serializeDict(params, in, exclude)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return buffer.Bytes(), nil
 }

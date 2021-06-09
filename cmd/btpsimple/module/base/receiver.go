@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/icon-project/btp/common/log"
-
-	// "github.com/icon-project/btp/common/codec"
-	"github.com/icon-project/btp/common/crypto"
 	"github.com/reactivex/rxgo/v2"
+
+	"github.com/icon-project/btp/common/crypto"
+	"github.com/icon-project/btp/common/log"
 )
 
+/*---------------------------struct---------------------------*/
 type receiver struct {
 	client      Client
 	source      BtpAddress
@@ -42,69 +42,7 @@ type receiver struct {
 	isFoundOffsetBySequence bool
 }
 
-func (r *receiver) ReceiveLoop(height int64, sequence int64, receiveCallback ReceiveCallback, scb func()) error {
-	s := r.destination.String()
-	r.eventRequest = r.client.GetEventRequest(r.source, s, height) //TODO : New method in client.go
-
-	if height < 1 {
-		return fmt.Errorf("cannot catchup from zero height")
-	}
-	var err error
-	if r.blockHeader, err = r.getBlockHeader(height - 1); err != nil {
-		return err
-	}
-
-	if sequence < 1 {
-		r.isFoundOffsetBySequence = true
-	}
-
-	return r.client.MonitorReceiverBlock(r.eventRequest,
-		func(observable rxgo.Observable) error {
-			result := observable.Observe()
-			var err error
-			var bu *BlockUpdate
-			var rps []*ReceiptProof
-			for item := range result {
-				bn := item.V.(*BlockNotification)
-				if bu, err = r.newBlockUpdate(bn); err != nil {
-					return err
-				}
-				if rps, err = r.newReceiptProofs(bn); err != nil {
-					return err
-				} else if r.isFoundOffsetBySequence {
-					receiveCallback(bu, rps)
-				} else {
-					receiveCallback(bu, nil)
-				}
-			}
-			return nil
-		},
-		func() {
-			scb()
-		})
-}
-
-func (r *receiver) StopReceiveLoop() {
-	r.client.CloseAllMonitor()
-}
-
-func NewReceiver(source, destination BtpAddress, endpoint string, options map[string]interface{}, logger log.Logger, client Client) Receiver {
-	receiver := &receiver{
-		client:      client,
-		source:      source,
-		destination: destination,
-		logger:      logger,
-	}
-	b, err := json.Marshal(options)
-	if err != nil {
-		logger.Panicf("fail to marshal opt:%#v err:%+v", options, err)
-	}
-	if err = json.Unmarshal(b, &receiver.options); err != nil {
-		logger.Panicf("fail to unmarshal opt:%#v err:%+v", options, err)
-	}
-
-	return receiver
-}
+/*-------------------------Private functions-------------------*/
 
 func (r *receiver) getBlockHeader(height int64) (*BlockHeader, error) {
 	var blockHeader BlockHeader
@@ -112,6 +50,7 @@ func (r *receiver) getBlockHeader(height int64) (*BlockHeader, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	blockHeader.Serialized = serializedHeader
 	return &blockHeader, nil
 }
@@ -132,23 +71,22 @@ func (r *receiver) newBlockUpdate(blockNotification *BlockNotification) (*BlockU
 		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
 
-	bu := &BlockUpdate{
+	blockUpdate := &BlockUpdate{
 		BlockHash: blockHash,
 		Height:    blockHeader.Height,
 		Header:    blockHeader.Serialized,
 	}
 
-	bu.Proof, err = r.client.GetBlockProof(blockHeader)
+	blockUpdate.Proof, err = r.client.GetBlockProof(blockHeader)
 	if err != nil {
 		return nil, err
 	}
 
 	r.blockHeader = blockHeader
-	return bu, nil
+	return blockUpdate, nil
 }
 
 func (r *receiver) newReceiptProofs(blockNotification *BlockNotification) ([]*ReceiptProof, error) {
-
 	receiptProofs, isFound, err := r.client.GetReceiptProofs(blockNotification, r.isFoundOffsetBySequence, r.eventLogFilter)
 	r.isFoundOffsetBySequence = isFound
 
@@ -157,4 +95,76 @@ func (r *receiver) newReceiptProofs(blockNotification *BlockNotification) ([]*Re
 	}
 
 	return receiptProofs, nil
+}
+
+/*-------------------------Public functions--------------------------------*/
+func (r *receiver) ReceiveLoop(height int64, sequence int64, receiveCallback ReceiveCallback, scb func()) error {
+	destination := r.destination.String()
+	r.eventRequest = r.client.GetEventRequest(r.source, destination, height)
+
+	if height < 1 {
+		return fmt.Errorf("cannot catchup from zero height")
+	}
+
+	var err error
+	if r.blockHeader, err = r.getBlockHeader(height - 1); err != nil {
+		return err
+	}
+
+	if sequence < 1 {
+		r.isFoundOffsetBySequence = true
+	}
+
+	return r.client.MonitorReceiverBlock(r.eventRequest,
+		func(observable rxgo.Observable) error {
+			result := observable.Observe()
+			var err error
+			var bu *BlockUpdate
+			var rps []*ReceiptProof
+
+			for item := range result {
+				bn := item.V.(*BlockNotification)
+
+				if bu, err = r.newBlockUpdate(bn); err != nil {
+					return err
+				}
+
+				if rps, err = r.newReceiptProofs(bn); err != nil {
+					return err
+				} else if r.isFoundOffsetBySequence {
+					receiveCallback(bu, rps)
+				} else {
+					receiveCallback(bu, nil)
+				}
+			}
+
+			return nil
+		},
+		func() {
+			scb()
+		})
+}
+
+func NewReceiver(source, destination BtpAddress, endpoint string, options map[string]interface{}, logger log.Logger, client Client) Receiver {
+	receiver := &receiver{
+		client:      client,
+		source:      source,
+		destination: destination,
+		logger:      logger,
+	}
+
+	byteData, err := json.Marshal(options)
+	if err != nil {
+		logger.Panicf("fail to marshal opt:%#v err:%+v", options, err)
+	}
+
+	if err = json.Unmarshal(byteData, &receiver.options); err != nil {
+		logger.Panicf("fail to unmarshal opt:%#v err:%+v", options, err)
+	}
+
+	return receiver
+}
+
+func (r *receiver) StopReceiveLoop() {
+	r.client.CloseAllMonitor()
 }

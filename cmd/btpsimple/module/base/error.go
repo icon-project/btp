@@ -23,11 +23,11 @@ import (
 )
 
 var (
-	ErrConnectFail            = fmt.Errorf("fail to connect")
-	ErrSendFailByExpired      = fmt.Errorf("reject by expired")
-	ErrSendFailByFuture       = fmt.Errorf("reject by future")
-	ErrSendFailByOverflow     = fmt.Errorf("reject by overflow")
-	ErrGetResultFailByPending = fmt.Errorf("fail to getresult by pending")
+	ErrConnectFail              = fmt.Errorf("fail to connect")
+	ErrSendFailByExpired        = fmt.Errorf("reject by expired")
+	ErrSendFailByFuture         = fmt.Errorf("reject by future")
+	ErrSendFailByOverflow       = fmt.Errorf("reject by overflow")
+	ErrGetResultFailByPending   = fmt.Errorf("fail to getresult by pending")
 	ErrSendDuplicateTransaction = fmt.Errorf("duplicate transaction")
 )
 
@@ -39,6 +39,7 @@ const (
 	CodeReserved errors.Code = 55
 )
 
+/*------------------------BMC Error codes----------------*/
 const (
 	BMCRevert = CodeBMC + iota
 	BMCRevertUnauthorized
@@ -68,6 +69,8 @@ var (
 		BMCRevertNotExistsPermission: "BMCRevertNotExistsPermission",
 	}
 )
+
+/*------------------------BMV Error codes------------------------*/
 
 const (
 	BMVRevert = CodeBMV + iota
@@ -101,6 +104,7 @@ var (
 	}
 )
 
+/*-------------------Public Functions------------------------*/
 func NewRevertError(code int) error {
 	c := errors.Code(code)
 	if c >= CodeBTP {
