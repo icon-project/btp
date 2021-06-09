@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
+	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
@@ -22,7 +22,6 @@ const (
 	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
-	gasLimit                      = 6000000
 )
 
 type Sender struct {
@@ -192,7 +191,6 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 SEND_TX:
 	tries++
 	opts := s.c.newTransactOpts(s.w)
-	opts.GasLimit = gasLimit
 
 	txh, err := s.c.bmc.HandleRelayMessage(opts, p.Prev, p.Msg)
 	if err != nil {
@@ -204,25 +202,27 @@ SEND_TX:
 		return nil, mapError(err)
 	}
 
-	s.log.Debugf("Got new relayed TX %s", txh.Hash().Hex())
-	return txh, nil
+	s.log.Debugf("got new relayed TX %s", txh.Hash().Hex())
+	return txh.Hash(), nil
 }
 
 // GetResult gets the TransactionReceipt
 func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	//TODO: map right Error with the result getting from the transaction receipt
 
-	if txh, ok := p.(*types.Transaction); ok {
+	if txh, ok := p.(ecommon.Hash); ok {
+		t := time.Now()
+		s.log.Debugf("getting receipt:%s", txh.Hex())
+
 		for {
-			s.log.Debugf("getting receipt:%s", txh.Hash().Hex())
-			txr, err := s.c.GetTransactionReceipt(txh.Hash())
+			txr, err := s.c.GetTransactionReceipt(txh)
 			if err != nil {
 				<-time.After(DefaultGetRelayResultInterval)
 				continue
 			}
 
-			s.log.Error("got receipt:%v", txr.TxHash.String())
-			return txr, err
+			s.log.Debugf("got receipt:%v taken:%.2f seconds", txr.TxHash.String(), time.Now().Sub(t).Seconds())
+			return txr.TxHash.Hex(), err
 		}
 	} else {
 		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)

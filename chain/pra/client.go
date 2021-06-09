@@ -21,6 +21,7 @@ import (
 
 const (
 	BlockRetryInterval = time.Second * 1
+	DefaultGasLimit    = 10000000
 )
 
 type Client struct {
@@ -78,7 +79,9 @@ func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
-	return bind.NewKeyedTransactor(ew.Skey)
+	txopts := bind.NewKeyedTransactor(ew.Skey)
+	txopts.GasLimit = DefaultGasLimit
+	return txopts
 }
 
 func (c *Client) GetTransactionReceipt(txhash common.Hash) (*types.Receipt, error) {
