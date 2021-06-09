@@ -42,36 +42,26 @@ library LibMerklePatriciaTrie {
 
                 if ((node.prefix & 0x20) != 0) node.data = ls[1].toBytes();
                 else {
-                    MPT[] memory children = new MPT[](node.children.length + 1);
-                    for (uint256 i = 0; i < node.children.length; i++)
-                        children[i] = node.children[i];
-                    children[node.children.length] = init(
+                    node.children = new MPT[](1);
+                    node.children[0] = init(
                         ls[1].toBytes().bytesToBytes32(),
                         ""
                     );
-                    delete node.children;
-                    node.children = children;
                 }
             } else if (ls.length == 17) {
                 MPT memory bNode;
-                for (uint256 i = 0; i < 17; i++) {
-                    if (ls[i].toBytes()[0] >= 0xC0) {
+                node.children = new MPT[](16);
+                for (uint256 i = 0; i < 16; i++) {
+                    if (ls[i].toBytes().length == 0) continue;
+                    if (ls[i].toBytes()[0] >= 0xC0)
                         bNode = init("", ls[i].toBytes());
-                    } else {
-                        if (ls[i].toBytes().length > 0) {
-                            bNode = init(ls[i].toBytes().bytesToBytes32(), "");
-                        }
-                    }
+                    else bNode = init(ls[i].toBytes().bytesToBytes32(), "");
 
-                    MPT[] memory children = new MPT[](node.children.length + 1);
-                    for (uint256 j = 0; j < node.children.length; j++)
-                        children[j] = node.children[j];
-                    children[node.children.length] = bNode;
-                    delete node.children;
-                    node.children = children;
+                    node.children[i] = bNode;
+                    delete bNode;
                 }
                 node.data = ls[16].toBytes();
-            } else revert("MPT Exception: Invalid list length");
+            } else revert("MPTException: Invalid list length");
         }
     }
 
@@ -117,22 +107,22 @@ library LibMerklePatriciaTrie {
                 proofs = temp;
             } else if (proofs.length == 1) delete proofs;
 
-            require(mpt.hash == _hash, "MPT Exception: Mismatch hash");
+            require(mpt.hash == _hash, "MPTException: Mismatch hash");
             MPT memory node = init(_hash, serialized);
             return node.prove(nibbles, proofs);
-        // check if node is extension
+            // check if node is extension
         } else if (mpt.children.length == 1) {
             uint256 sharedLen = matchNibbles(mpt.nibbles, nibbles);
             require(
                 sharedLen >= mpt.nibbles.length,
-                "MPT Exception: Mismatch nibbles on extension"
+                "MPTException: Mismatch nibbles on extension"
             );
             return
                 mpt.children[0].prove(
                     nibbles.slice(sharedLen, nibbles.length),
                     proofs
                 );
-        // check if node is branch
+            // check if node is branch
         } else if (mpt.children.length == 16) {
             if (nibbles.length == 0) return mpt.data;
             else {
@@ -143,7 +133,7 @@ library LibMerklePatriciaTrie {
             uint256 sharedLen = matchNibbles(mpt.nibbles, nibbles);
             require(
                 sharedLen >= nibbles.length,
-                "MPT Exception: mismatch nibbles on leaf"
+                "MPTException: Mismatch nibbles on leaf"
             );
             return mpt.data;
         }

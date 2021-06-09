@@ -1,17 +1,17 @@
-const rlp = require("rlp");
-const _ = require("lodash");
-const assert = require("chai").assert;
-const truffleAssert = require("truffle-assertions");
+const rlp = require('rlp');
+const _ = require('lodash');
+const assert = require('chai').assert;
+const truffleAssert = require('truffle-assertions');
 
-let testMta = artifacts.require("testLibMTA");
+let testMta = artifacts.require('testLibMTA');
 
-const nullHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const nullHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 let toHex = (buf) => { 
-    buf = buf.toString("hex");
-    if (buf.substring(0, 2) == "0x")
+    buf = buf.toString('hex');
+    if (buf.substring(0, 2) == '0x')
         return buf;
-    return "0x" + buf.toString("hex");
+    return '0x' + buf.toString('hex');
 };
 
 let toRLPBytes = (data) => {
@@ -27,18 +27,18 @@ let toRLPBytes = (data) => {
 };
 
 let rootHashes = [
-    web3.utils.sha3("root 1"),
-    web3.utils.sha3("root 2"),
-    web3.utils.sha3("root 3"),
-    web3.utils.sha3("root 4")
+    web3.utils.sha3('root 1'),
+    web3.utils.sha3('root 2'),
+    web3.utils.sha3('root 3'),
+    web3.utils.sha3('root 4')
 ];
 
 let rootCaches = [
-    web3.utils.sha3("cache 1"),
-    web3.utils.sha3("cache 2"),
-    web3.utils.sha3("cache 3"),
-    web3.utils.sha3("cache 4"),
-    web3.utils.sha3("cache 5")
+    web3.utils.sha3('cache 1'),
+    web3.utils.sha3('cache 2'),
+    web3.utils.sha3('cache 3'),
+    web3.utils.sha3('cache 4'),
+    web3.utils.sha3('cache 5')
 ];
 
 let data = {
@@ -71,72 +71,72 @@ let expected = {
     isAllowNewerWitness: (data.isAllowNewerWitness === 1) ? true : false
 }
 
-contract("TestLibMTA", async () => {
+contract('TestLibMTA', async () => {
     let testLibMta;
 
     beforeEach(async () => {
         testLibMta = await testMta.new();
     });
 
-    it("should initialize Merkel Tree Accumulator with given RLP bytes", async () => {
+    it('should initialize Merkel Tree Accumulator with given RLP bytes', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(data));
 
         const mta = await testLibMta.getMTA();
-        assert.deepEqual(mta, Object.values(expected), "mta data should match initial data");
+        assert.deepEqual(mta, Object.values(expected), 'mta data should match initial data');
     });
 
-    it("should update offset of MTA", async () => {
+    it('should update offset of MTA', async () => {
         await testLibMta.setOffset(4);
 
         const mta = await testLibMta.getMTA();
-        assert.equal(mta.offset, 4, "failed to update offset in MTA");
+        assert.equal(mta.offset, 4, 'failed to update offset in MTA');
     });
 
-    it("should get root hash by index", async () => {
+    it('should get root hash by index', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(data));
 
         const rootHash = await testLibMta.getRoot(1);
-        assert.equal(rootHash, rootHashes[1], "return incorrect root hash");
+        assert.equal(rootHash, rootHashes[1], 'return incorrect root hash');
 
-        await truffleAssert.reverts(testLibMta.getRoot(4), "root index is out of range");
+        await truffleAssert.reverts(testLibMta.getRoot(4), 'root index is out of range');
     });
 
-    it("should check whether a root is in cache", async () => {
+    it('should check whether a root is in cache', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(data));
 
-        let checkCache = await testLibMta.doesIncludeCache("0x");
-        assert.equal(checkCache, false, "invalid empty hash param");
+        let checkCache = await testLibMta.doesIncludeCache('0x');
+        assert.equal(checkCache, false, 'invalid empty hash param');
 
         checkCache = await testLibMta.doesIncludeCache(rootCaches[4]);
-        assert.equal(checkCache, true, "root is not in cache");
+        assert.equal(checkCache, true, 'root is not in cache');
 
-        checkCache = await testLibMta.doesIncludeCache("0x12345");
-        assert.equal(checkCache, false, "root is in cache");
+        checkCache = await testLibMta.doesIncludeCache('0x12345');
+        assert.equal(checkCache, false, 'root is in cache');
     });
 
-    it("should push a cache into caches list in MTA", async () => {
+    it('should push a cache into caches list in MTA', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(data));
 
-        const newCacheRoot = web3.utils.sha3("new cache");
+        const newCacheRoot = web3.utils.sha3('new cache');
         await testLibMta.putCache(newCacheRoot);
 
         const mta = await testLibMta.getMTA();
         
         let expected = _.drop([...rootCaches, newCacheRoot], 1);
 
-        assert.include(mta.cache, newCacheRoot, "failed to add cache");
-        assert.deepEqual(mta.cache, expected, "failed to update cache list in MTA");
+        assert.include(mta.cache, newCacheRoot, 'failed to add cache');
+        assert.deepEqual(mta.cache, expected, 'failed to update cache list in MTA');
     });
 
-    it("should add hash roots to MTA", async () => {
+    it('should add hash roots to MTA', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(initData)); // rootsSize = 4, cacheSize = 5
 
-        /* add first item "dog"
+        /* add first item 'dog'
          * root    [   hash(dog)   ]
          * data    [     dog       ]
          * cache   [     dog       ]
          */
-        const root1 = web3.utils.sha3("dog");
+        const root1 = web3.utils.sha3('dog');
         await testLibMta.add(root1);
 
         let mta = await testLibMta.getMTA();
@@ -148,12 +148,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[0], root1);
         assert.deepEqual(c, [root1]);
 
-        /* add second item "dog"
+        /* add second item 'dog'
          * root (higher item first)   [     0x0      hash(dog, cat)   ]
          * data                       [     dog          cat          ]
          * cache                      [     dog          cat          ]
          */
-        const root2 = web3.utils.sha3("cat"); 
+        const root2 = web3.utils.sha3('cat'); 
         const root12 = web3.utils.soliditySha3(root1, root2);
         await testLibMta.add(root2);
 
@@ -167,12 +167,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[1], root12);
         assert.deepEqual(c, [root1, root2]);
 
-        /* add third item "snake"
+        /* add third item 'snake'
          * root       [   hash(snake)     hash(dog, cat)  ]
          * data       [      dog               cat           snake    ]
          * cache      [      dog               cat           snake    ]
          */
-        const root3 = web3.utils.sha3("snake");
+        const root3 = web3.utils.sha3('snake');
         await testLibMta.add(root3);
 
         mta = await testLibMta.getMTA();
@@ -185,12 +185,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[1], root12);
         assert.deepEqual(c, [root1, root2, root3]);
 
-        /* add 4th item "pig"
+        /* add 4th item 'pig'
          * root       [    0x0    0x0    hash(hash(dog, cat), hash(snake, pig))]
          * data       [    dog    cat    snake    pig  ]
          * cache      [    dog    cat    snake    pig  ]
          */
-        const root4 = web3.utils.sha3("pig");
+        const root4 = web3.utils.sha3('pig');
         const root34 = web3.utils.soliditySha3(root3, root4);
         const root1234 = web3.utils.soliditySha3(root12, root34);
         await testLibMta.add(root4);
@@ -206,12 +206,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[2], root1234);
         assert.deepEqual(c, [root1, root2, root3, root4]);
 
-        /* add 5th item "chicken"
+        /* add 5th item 'chicken'
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
          * cache   [     dog     cat     snake     pig     chicken     ]
          */
-        const root5 = web3.utils.sha3("chicken");
+        const root5 = web3.utils.sha3('chicken');
         await testLibMta.add(root5);
 
         mta = await testLibMta.getMTA();
@@ -225,12 +225,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[2], root1234);
         assert.deepEqual(c, [root1, root2, root3, root4, root5]);
 
-        /* add 6th item "cow"
+        /* add 6th item 'cow'
          * root    [     0x0     hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     ]
          * cache   [             cat     snake     pig     chicken     cow     ]
          */
-        const root6 = web3.utils.sha3("chicken");
+        const root6 = web3.utils.sha3('chicken');
         const root56 = web3.utils.soliditySha3(root5, root6);
         await testLibMta.add(root6);
 
@@ -245,12 +245,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[2], root1234);
         assert.deepEqual(c, [root2, root3, root4, root5, root6]);
 
-        /* add 7th item "fish"
+        /* add 7th item 'fish'
          * root    [     hash(fish)     hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish     ]
          * cache   [                     snake     pig     chicken     cow     fish     ]
          */
-        const root7 = web3.utils.sha3("fish");
+        const root7 = web3.utils.sha3('fish');
         await testLibMta.add(root7);
 
         mta = await testLibMta.getMTA();
@@ -264,12 +264,12 @@ contract("TestLibMTA", async () => {
         assert.equal(r[2], root1234);
         assert.deepEqual(c, [root3, root4, root5, root6, root7]);
 
-        /* add 8th item "wolf"
+        /* add 8th item 'wolf'
          * root    [     0x0     0x0     0x0     hash(hash(hash(dog, cat), hash(snake, pig)),hash(hash(chicken, cow), hash(fish, wolf))  ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish     wolf     ]
          * cache   [                               pig     chicken     cow     fish     wolf     ]
          */
-        const root8 = web3.utils.sha3("wolf");
+        const root8 = web3.utils.sha3('wolf');
         const root78 = web3.utils.soliditySha3(root7, root8);
         const root5678 = web3.utils.soliditySha3(root56, root78);
         const root12345678 = web3.utils.soliditySha3(root1234, root5678);
@@ -288,7 +288,7 @@ contract("TestLibMTA", async () => {
         assert.deepEqual(c, [root4, root5, root6, root7, root8]);
     });
 
-    it("should get root index by block height", async () => {
+    it('should get root index by block height', async () => {
         /*
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
@@ -297,11 +297,11 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -319,8 +319,8 @@ contract("TestLibMTA", async () => {
         assert.equal(idx, 0);
     });
 
-    it("should verify leaf if height of BMV's MTA  is equal to relay ones", async () => {
-        /* BMV"s MTA
+    it('should verify leaf if height of BMV\'s MTA  is equal to relay ones', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -328,7 +328,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -337,11 +337,11 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -356,8 +356,8 @@ contract("TestLibMTA", async () => {
         await testLibMta.verify(witness, root5, 5, 7);
     });
 
-    it("should verify leaf if height of BMV's MTA  is less than relay ones", async () => {
-        /* BMV"s MTA
+    it('should verify leaf if height of BMV\'s MTA  is less than relay ones', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -365,7 +365,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish      ]
@@ -374,11 +374,11 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -393,8 +393,8 @@ contract("TestLibMTA", async () => {
         await testLibMta.verify(witness, root5, 5, 9);
     });
 
-    it("should verify leaf if height of BMV's MTA  is less than relay ones with different offset", async () => {
-        /* BMV"s MTA
+    it('should verify leaf if height of BMV\'s MTA  is less than relay ones with different offset', async () => {
+        /* BMV's MTA
          * rootIdx [     0              1                       2                                          ]
          * root    [     hash(fish)     hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish     ]
@@ -402,7 +402,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0              1       2                                              ]
          * root    [     hash(lion)     0x0     hash(hash(chicken, cow), hash(fish, wolf))     ]
          * data    [     chicken     cow     fish     wolf     lion     ]
@@ -411,14 +411,14 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
-        const root8 = web3.utils.sha3("cow");
-        const root9 = web3.utils.sha3("fish");
-        const root10 = web3.utils.sha3("wolf");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
+        const root8 = web3.utils.sha3('cow');
+        const root9 = web3.utils.sha3('fish');
+        const root10 = web3.utils.sha3('wolf');
 
 
         await testLibMta.add(root3);
@@ -436,8 +436,8 @@ contract("TestLibMTA", async () => {
         await testLibMta.verify(witness, root9, 9, 11);
     });
 
-    it("should fail to verify leaf if proofs (witness) are modified and revert", async () => {
-        /* BMV"s MTA
+    it('should fail to verify leaf if proofs (witness) are modified and revert', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -445,7 +445,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -454,11 +454,11 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -470,13 +470,13 @@ contract("TestLibMTA", async () => {
         const witness = [root6, root34];
 
         // modify witness
-        witness[1] = web3.utils.sha3("fake pig");
+        witness[1] = web3.utils.sha3('fake pig');
 
-        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 7), "BMVRevertInvalidBlockWitness: invalid witness");
+        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 7), 'BMVRevertInvalidBlockWitness: invalid witness');
     });
 
-    it("should fail to verify leaf if newer witnesses are not allowed ", async () => {
-        /* BMV"s MTA
+    it('should fail to verify leaf if newer witnesses are not allowed ', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -484,7 +484,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish      ]
@@ -493,11 +493,11 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, isAllowNewerWitness: 0 }));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -508,11 +508,11 @@ contract("TestLibMTA", async () => {
         const root34 = web3.utils.soliditySha3(root3, root4);
         const witness = [root6, root34];
         
-        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 9), "BMVRevertInvalidBlockWitness: not allowed newer witness");
+        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 9), 'BMVRevertInvalidBlockWitness: not allowed newer witness');
     });
 
-    it("should fail to verify leaf that haven't synced yet in BMV MTA", async () => {
-        /* BMV"s MTA
+    it('should fail to verify leaf that haven\'t synced yet in BMV MTA', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     ]
@@ -520,7 +520,7 @@ contract("TestLibMTA", async () => {
          * offset  = 2
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * data    [     dog     cat     snake     pig     chicken     cow     fish      ]
@@ -529,14 +529,14 @@ contract("TestLibMTA", async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
-        const root8 = web3.utils.sha3("cow");
-        const root9 = web3.utils.sha3("fish");
-        const root10 = web3.utils.sha3("wolf");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
+        const root8 = web3.utils.sha3('cow');
+        const root9 = web3.utils.sha3('fish');
+        const root10 = web3.utils.sha3('wolf');
 
 
         await testLibMta.add(root3);
@@ -548,11 +548,11 @@ contract("TestLibMTA", async () => {
         const root78 = web3.utils.soliditySha3(root7, root8);
         const witness = [root10, root78];
         
-        await truffleAssert.reverts(testLibMta.verify(witness, root9, 9, 9), "BMVRevertInvalidBlockWitness: given witness for newer node");
+        await truffleAssert.reverts(testLibMta.verify(witness, root9, 9, 9), 'BMVRevertInvalidBlockWitness: given witness for newer node');
     });
 
-    it("should verify by cache", async () => {
-        /* BMV"s MTA
+    it('should verify by cache', async () => {
+        /* BMV's MTA
          * root idx   [     0                   1                    2                                             ]
          * root       [     hash(bird)          hash(tiger, lion)       hash(hash(chicken, cow), hash(fish, wolf)) ]
          * data       [     chicken     cow     fish     wolf     tiger     lion     bird    ]
@@ -561,7 +561,7 @@ contract("TestLibMTA", async () => {
          * offset = 9
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * root idx   [     0                   1                       2                                          ]
          * root       [     hash(fish)          hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data       [     dog     cat      snake     pig     chicken     cow     fish      ]
@@ -570,13 +570,13 @@ contract("TestLibMTA", async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9, cacheSize: 6 }));
 
-        const root10 = web3.utils.sha3("chicken");
-        const root11 = web3.utils.sha3("cow");
-        const root12 = web3.utils.sha3("fish");
-        const root13 = web3.utils.sha3("wolf");
-        const root14 = web3.utils.sha3("tiger");
-        const root15 = web3.utils.sha3("lion");
-        const root16 = web3.utils.sha3("bird");
+        const root10 = web3.utils.sha3('chicken');
+        const root11 = web3.utils.sha3('cow');
+        const root12 = web3.utils.sha3('fish');
+        const root13 = web3.utils.sha3('wolf');
+        const root14 = web3.utils.sha3('tiger');
+        const root15 = web3.utils.sha3('lion');
+        const root16 = web3.utils.sha3('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -592,8 +592,8 @@ contract("TestLibMTA", async () => {
         await testLibMta.verify(witness, root11, 11, 12);
     });
 
-    it("should fail to verify by cache and revert", async () => {
-        /* BMV"s MTA
+    it('should fail to verify by cache and revert', async () => {
+        /* BMV's MTA
          * root idx   [     0                   1                    2                                             ]
          * root       [     hash(bird)          hash(tiger, lion)       hash(hash(chicken, cow), hash(fish, wolf)) ]
          * data       [     chicken     cow     fish     wolf     tiger     lion     bird    ]
@@ -602,7 +602,7 @@ contract("TestLibMTA", async () => {
          * offset = 9
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * root idx   [     0                   1                       2                                          ]
          * root       [     hash(fish)          hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data       [     dog     cat      snake     pig     chicken     cow     fish      ]
@@ -611,13 +611,13 @@ contract("TestLibMTA", async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9 }));
 
-        const root10 = web3.utils.sha3("chicken");
-        const root11 = web3.utils.sha3("cow");
-        const root12 = web3.utils.sha3("fish");
-        const root13 = web3.utils.sha3("wolf");
-        const root14 = web3.utils.sha3("tiger");
-        const root15 = web3.utils.sha3("lion");
-        const root16 = web3.utils.sha3("bird");
+        const root10 = web3.utils.sha3('chicken');
+        const root11 = web3.utils.sha3('cow');
+        const root12 = web3.utils.sha3('fish');
+        const root13 = web3.utils.sha3('wolf');
+        const root14 = web3.utils.sha3('tiger');
+        const root15 = web3.utils.sha3('lion');
+        const root16 = web3.utils.sha3('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -630,11 +630,11 @@ contract("TestLibMTA", async () => {
         const witness = [root10];
 
         // prove item 11 (cow)
-        await truffleAssert.reverts(testLibMta.verify(witness, root11, 11, 12), "BMVRevertInvalidBlockWitness: invalid old witness");
+        await truffleAssert.reverts(testLibMta.verify(witness, root11, 11, 12), 'BMVRevertInvalidBlockWitness: invalid old witness');
     });
 
-    it("should fail to verify by old witness cache", async () => {
-        /* BMV"s MTA
+    it('should fail to verify by old witness cache', async () => {
+        /* BMV's MTA
          * root idx   [     0                   1                    2                                             ]
          * root       [     hash(bird)          hash(tiger, lion)       hash(hash(chicken, cow), hash(fish, wolf)) ]
          * data       [     chicken     cow     fish     wolf     tiger     lion     bird    ]
@@ -643,7 +643,7 @@ contract("TestLibMTA", async () => {
          * offset = 9
          */
 
-        /* Relay"s MTA
+        /* Relay's MTA
          * root idx   [     0                   1                       2                                          ]
          * root       [     hash(fish)          hash(chicken, cow)      hash(hash(dog, cat), hash(snake, pig))     ]
          * data       [     dog     cat      snake     pig     chicken     cow     fish      ]
@@ -652,13 +652,13 @@ contract("TestLibMTA", async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9 }));
 
-        const root10 = web3.utils.sha3("chicken");
-        const root11 = web3.utils.sha3("cow");
-        const root12 = web3.utils.sha3("fish");
-        const root13 = web3.utils.sha3("wolf");
-        const root14 = web3.utils.sha3("tiger");
-        const root15 = web3.utils.sha3("lion");
-        const root16 = web3.utils.sha3("bird");
+        const root10 = web3.utils.sha3('chicken');
+        const root11 = web3.utils.sha3('cow');
+        const root12 = web3.utils.sha3('fish');
+        const root13 = web3.utils.sha3('wolf');
+        const root14 = web3.utils.sha3('tiger');
+        const root15 = web3.utils.sha3('lion');
+        const root16 = web3.utils.sha3('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -671,11 +671,11 @@ contract("TestLibMTA", async () => {
         const witness = [root11];
 
         // prove item 10 (cow)
-        await truffleAssert.reverts(testLibMta.verify(witness, root11, 10, 12), "BMVRevertInvalidBlockWitnessOld");
+        await truffleAssert.reverts(testLibMta.verify(witness, root11, 10, 12), 'BMVRevertInvalidBlockWitnessOld');
     });
 
-    it("should get bytes encoding of MTA", async () => {
-        /* BMV"s MTA
+    it('should get bytes encoding of MTA', async () => {
+        /* BMV's MTA
          * rootIdx [     0                 1       2                                          ]
          * root    [     hash(chicken)     0x0     hash(hash(dog, cat), hash(snake, pig))     ]
          * cache   [     dog     cat     snake     pig     chicken     ]
@@ -684,11 +684,11 @@ contract("TestLibMTA", async () => {
          * isAllowNewerWitness = true
          */
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3("dog");
-        const root4 = web3.utils.sha3("cat");
-        const root5 = web3.utils.sha3("snake");
-        const root6 = web3.utils.sha3("pig");
-        const root7 = web3.utils.sha3("chicken");
+        const root3 = web3.utils.sha3('dog');
+        const root4 = web3.utils.sha3('cat');
+        const root5 = web3.utils.sha3('snake');
+        const root6 = web3.utils.sha3('pig');
+        const root7 = web3.utils.sha3('chicken');
         const root3456 = web3.utils.soliditySha3(
             web3.utils.soliditySha3(root3, root4),
             web3.utils.soliditySha3(root5, root6)

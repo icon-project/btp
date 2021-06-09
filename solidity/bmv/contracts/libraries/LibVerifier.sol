@@ -30,10 +30,12 @@ library LibVerifier {
             _blockProof.blockWitness.witnesses.length != 0,
             "BMVRevertInvalidBlockWitness"
         );
-        if (mta.height < _blockProof.blockHeader.height)
-            revert(
-                "BMVRevertInvalidBlockProofHigher"
-            );
+
+        require(
+            mta.height >= _blockProof.blockHeader.height,
+            "BMVRevertInvalidBlockProofHigher"
+        );
+
         mta.verify(
             _blockProof.blockWitness.witnesses,
             _blockProof.blockHeader.blockHash,
@@ -64,7 +66,9 @@ library LibVerifier {
             validators.validatorsHash
         ) {
             if (_blockUpdate.nextValidators.length == 0) {
-                revert("BMVRevertInvalidBlockUpdate: Not exists next validators");
+                revert(
+                    "BMVRevertInvalidBlockUpdate: Not exists next validators"
+                );
             } else if (
                 _blockUpdate.nextValidatorsHash ==
                 _blockUpdate.blockHeader.nextValidatorsHash

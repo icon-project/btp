@@ -6,7 +6,7 @@ library LibTypes {
      * @Notice List of ALL Struct being used to Encode and Decode RLP Messages
      */
 
-    //  SPR = State Hash + Pathch Receipt Hash + Receipt Hash
+    //  SPR = State Hash + Patch Receipt Hash + Receipt Hash
     struct SPR {
         bytes32 stateHash;
         bytes32 patchReceiptHash;
@@ -70,7 +70,7 @@ library LibTypes {
     struct BlockUpdate {
         BlockHeader blockHeader;
         Votes votes;
-        bytes[] nextValidators;
+        address[] nextValidators;
         bytes nextValidatorsRlp;
         bytes32 nextValidatorsHash;
     }
@@ -108,9 +108,6 @@ library LibTypes {
         BlockUpdate[] blockUpdates;
         BlockProof blockProof;
         bool isBPEmpty; //  add to check in a case BlockProof is an empty struct
-        //  when RLP RelayMessage, this field will not be serialized
-        ReceiptProof[] receiptProof;
-        bool isRPEmpty; //  add to check in a case ReceiptProof is an empty struct
         //  when RLP RelayMessage, this field will not be serialized
     }
 }

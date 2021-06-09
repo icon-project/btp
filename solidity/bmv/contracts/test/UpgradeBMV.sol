@@ -2,19 +2,19 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "./interfaces/IBMV.sol";
-import "./interfaces/IDataValidator.sol";
+import "../interfaces/IBMV.sol";
+import "../interfaces/IDataValidator.sol";
 
-import "./libraries/LibBase64.sol";
-import "./libraries/LibMTA.sol";
-import "./libraries/LibString.sol";
-import "./libraries/LibTypes.sol";
-import "./libraries/LibMsgDecoder.sol";
-import "./libraries/LibVerifier.sol";
+import "../libraries/LibBase64.sol";
+import "../libraries/LibMTA.sol";
+import "../libraries/LibString.sol";
+import "../libraries/LibTypes.sol";
+import "../libraries/LibMsgDecoder.sol";
+import "../libraries/LibVerifier.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract BMV is IBMV, Initializable {
+contract BMVV2 is IBMV, Initializable {
     using LibMerkleTreeAccumulator for LibMerkleTreeAccumulator.MTA;
     using LibMerkleTreeAccumulator for bytes;
     using LibString for string;
@@ -34,11 +34,6 @@ contract BMV is IBMV, Initializable {
     LibTypes.Validators private validators;
     LibMerkleTreeAccumulator.MTA private mta;
 
-    /**
-        @notice Shouldn't check tx.origin == BMC operator's address since it has a security issue.
-                Ref https://docs.soliditylang.org/en/v0.6.2/security-considerations.html#tx-origin.
-                BMC Operator should add BMV manually using addVerifier() function.
-     */
     function initialize(
         address _bmcAddr,
         address _subBmvAddr,
@@ -198,39 +193,23 @@ contract BMV is IBMV, Initializable {
         @param _bmc BTP Address of the BMC handling the message
         @param _prev BTP Address of the previous BMC
         @param _seq next sequence number to get a message
-        @param _msg serialized bytes of Relay Message
         @return serializedMessages List of serialized bytes of a BTP Message
      */
     function handleRelayMessage(
         string memory _bmc,
         string memory _prev,
         uint256 _seq,
-        string calldata _msg
+        string calldata /* _msg */
     ) external override returns (bytes[] memory) {
-        checkAccessible(_bmc, _prev);
-
-        bytes memory _serializedMsg = _msg.decode();
-        LibTypes.RelayMessage memory relayMsg =
-            _serializedMsg.decodeRelayMessage();
-
-        require(
-            relayMsg.blockUpdates.length != 0 || !relayMsg.isBPEmpty,
-            "BMVRevert: Invalid relay message"
-        );
-
-        (bytes32 _receiptHash, uint256 _lastHeight) =
-            getLastReceiptHash(relayMsg);
-
-        bytes[] memory msgs =
-            IDataValidator(subBmvAddr).validateReceipt(
+        bytes[] memory msgs = new bytes[](2);
+        msgs[0] = IDataValidator(subBmvAddr).validateReceipt(
                 _bmc,
                 _prev,
                 _seq,
-                _serializedMsg,
-                _receiptHash
-            );
-
-        if (msgs.length > 0) lastBlockHeight = _lastHeight;
+                bytes("test upgradable BMV"),
+                keccak256("test root hash")
+            )[0];
+        msgs[1] = bytes("Succeed to upgrade BMV contract");
         return msgs;
     }
 }

@@ -151,16 +151,16 @@ library LibMsgDecoder {
         //  Thus, length of data will be 0. Therein, loop will be skipped
         //  and the _validators[] will be empty
         //  Otherwise, executing normally to read and assign value into the array _validators[]
-        bytes[] memory _validators;
+        address[] memory _validators;
         bytes32 _validatorsHash;
         bytes memory _rlpBytes;
         if (ls[2].toBytes().length != 0) {
             _rlpBytes = ls[2].toBytes();
             // TODO: should use SHA3_256 instead
             _validatorsHash = keccak256(_rlpBytes);
-            _validators = new bytes[](ls[2].toList().length);
+            _validators = new address[](ls[2].toList().length);
             for (uint256 i = 0; i < ls[2].toList().length; i++) {
-                _validators[i] = ls[2].toList()[i].toBytes();
+                _validators[i] = ls[2].toList()[i].toAddress();
             }
         }
         return
@@ -281,21 +281,22 @@ library LibMsgDecoder {
             //  it will not be serialized thereafter
         }
 
-        bool isRPEmpty = true;
-        LibTypes.ReceiptProof[] memory _rp;
-        //  If [RLP_ENCODE(ReceiptProof)] is omitted,
-        //  ls[2].toBytes() should be null (length = 0)
+        return LibTypes.RelayMessage(_buArray, _bp, isBPEmpty);
+    }
+
+    function decodeReceiptProofs(bytes memory _rlp)
+        internal
+        pure
+        returns (LibTypes.ReceiptProof[] memory _rp)
+    {
+        LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+
         if (ls[2].toBytes().length != 0) {
             _rp = new LibTypes.ReceiptProof[](ls[2].toList().length);
             for (uint256 i = 0; i < ls[2].toList().length; i++) {
                 _rp[i] = ls[2].toList()[i].toBytes().decodeReceiptProof();
             }
-            isRPEmpty = false; //  add this field into RelayMessage
-            //  to specify whether ReceiptProof is omitted
-            //  to make it easy on encoding
-            //  it will not be serialized thereafter
         }
-        return LibTypes.RelayMessage(_buArray, _bp, isBPEmpty, _rp, isRPEmpty);
     }
 
     function decodeValidators(

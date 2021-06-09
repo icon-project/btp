@@ -146,7 +146,10 @@ library LibMerkleTreeAccumulator {
         uint256 i = mta.roots.length;
         uint256 bitFlag;
         while (i > 0) {
-            require(idx >= 0, "BMVRevertInvalidBlockWitness: given height is out of range");
+            require(
+                idx >= 0,
+                "BMVRevertInvalidBlockWitness: given height is out of range"
+            );
             i -= 1;
             if (mta.roots[i] == 0) continue;
             bitFlag = 1 << i;
@@ -193,8 +196,14 @@ library LibMerkleTreeAccumulator {
             root = getRoot(mta, proof.length);
             verify(proof, root, leaf, height - 1 - mta.offset);
         } else if (mta.height < at) {
-            require(mta.isAllowNewerWitness, "BMVRevertInvalidBlockWitness: not allowed newer witness");
-            require(mta.height >= height, "BMVRevertInvalidBlockWitness: given witness for newer node");
+            require(
+                mta.isAllowNewerWitness,
+                "BMVRevertInvalidBlockWitness: not allowed newer witness"
+            );
+            require(
+                mta.height >= height,
+                "BMVRevertInvalidBlockWitness: given witness for newer node"
+            );
             rootIdx = getRootIndexByHeight(mta, height);
             root = getRoot(mta, rootIdx);
             bytes32[] memory sliceRoots = new bytes32[](rootIdx);
@@ -202,7 +211,10 @@ library LibMerkleTreeAccumulator {
             verify(sliceRoots, root, leaf, height - 1 - mta.offset);
         } else {
             if (mta.height - height - 1 < mta.cacheSize)
-                require(doesIncludeCache(mta, leaf), "BMVRevertInvalidBlockWitness: invalid old witness");
+                require(
+                    doesIncludeCache(mta, leaf),
+                    "BMVRevertInvalidBlockWitness: invalid old witness"
+                );
             else {
                 revert("BMVRevertInvalidBlockWitnessOld");
             }
