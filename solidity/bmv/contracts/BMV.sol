@@ -186,7 +186,7 @@ contract BMV is IBMV, Initializable {
         require(msg.sender == bmcAddr, "BMVRevert: Invalid BMC");
         (, contractAddr) = currentAddr.splitBTPAddress();
         require(
-            contractAddr.compareTo(bmcAddr.addressToString(false)),
+            contractAddr.parseAddress() == bmcAddr,
             "BMVRevert: Invalid BMC"
         );
     }
