@@ -21,7 +21,7 @@ import (
 
 const (
 	BlockRetryInterval = time.Second * 1
-	DefaultGasLimit    = 10000000
+	DefaultGasLimit    = 6721975
 )
 
 type Client struct {
