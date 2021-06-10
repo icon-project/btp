@@ -65,6 +65,33 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         stakes[msg.sender][_coinName] = stakes[msg.sender][_coinName].add(_value);
     }
 
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function mintMock(address _acc, uint256 _id, uint256 _value) external {
+        _mint(_acc, _id, _value, "");
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function burnMock(address _acc, uint256 _id, uint256 _value) external {
+        _burn(_acc, _id, _value);
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function setAggregationFee(string calldata _coinName, uint256 _value) external {
+        aggregationFee[_coinName] += _value;
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function clearAggregationFee() external {
+        for (uint i = 0; i < coinsName.length; i++) {
+            delete aggregationFee[coinsName[i]];
+        }
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function setRefundableBalance(address _acc, string calldata _coinName, uint256 _value) external {
+        balances[_acc][_coinName].refundableBalance += _value;
+    }
+
     /**
         @notice update bsh service address.
         @dev Caller must be an operator of BTP network

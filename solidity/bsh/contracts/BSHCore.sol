@@ -28,9 +28,9 @@ contract BSHCore is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155HolderUp
 
     IBSHPeriphery private bshPeriphery;
     mapping(string => uint256) internal aggregationFee;   // storing Aggregation Fee in state mapping variable. MUST set back to 'private' after testing
-    mapping(address => mapping(string => Types.Balance)) private balances;
+    mapping(address => mapping(string => Types.Balance)) internal balances; // MUST set back to 'private' after testing
     mapping(string => uint256) private coins; //  a list of all supported coins
-    string[] private coinsName; // a string array stores names of supported coins
+    string[] internal coinsName; // a string array stores names of supported coins // MUST set back to 'private' after testing
     Types.Asset[] internal temp;
 
     uint256 private constant FEE_DENOMINATOR = 10**4;

@@ -9,16 +9,15 @@ const Refundable = artifacts.require("Refundable");
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
-contract('PRA BSHCore Query and Management', () => {
-    let bsh_core, bsh_perif, accounts;          var _uri = 'https://github.com/icon-project/btp'
+contract('PRA BSHCore Query and Management', (accounts) => {
+    let bsh_core, bsh_perif;          var _uri = 'https://github.com/icon-project/btp'
     var _native = 'PARA';                       var _fee = 10; 
 
     before(async () => {
-        bmc = await BMC.deployed();
-        bsh_core = await BSHCore.deployed();
-        bsh_perif = await BSHPeriphery.deployed();
+        bmc = await BMC.new('1234.pra');
+        bsh_core = await BSHCore.new();
+        bsh_perif = await BSHPeriphery.new();
         await bsh_core.initialize(_uri, _native, _fee);
-        accounts = await web3.eth.getAccounts();
     });
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
@@ -150,8 +149,8 @@ contract('PRA BSHCore Query and Management', () => {
 
 });
 
-contract('As a user, I want to send PRA to ICON blockchain', () => {
-    let bsh_perif, bsh_core, bmc, nonrefundable, refundable, accounts;
+contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
+    let bsh_perif, bsh_core, bmc, nonrefundable, refundable;
     var service = 'Coin/WrappedCoin';               var _bmcICON = 'btp://1234.iconee/0x1234567812345678';              
     var _net = '1234.iconee';                       var _to = 'btp://1234.iconee/0x12345678';
     var RC_OK = 0;                                  var RC_ERR = 1;    
@@ -160,15 +159,14 @@ contract('As a user, I want to send PRA to ICON blockchain', () => {
     var REPONSE_HANDLE_SERVICE = 2;                 var _uri = 'https://github.com/icon-project/btp';
 
     before(async () => {
-        bsh_perif = await BSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await BSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        nonrefundable = await NonRefundable.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        nonrefundable = await NonRefundable.new();
+        refundable = await Refundable.new();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);
         await bmc.addVerifier(_net, accounts[1]);
@@ -370,8 +368,8 @@ contract('As a user, I want to send PRA to ICON blockchain', () => {
     });
 });
 
-contract('As a user, I want to send ERC1155_ICX to ICON blockchain', () => {
-    let bsh_perif, bsh_core, bmc, holder, accounts;
+contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) => {
+    let bsh_perif, bsh_core, bmc, holder;
     var service = 'Coin/WrappedCoin';           var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                       var _fee = 10;     
     var _name = 'ICON';                         var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
@@ -380,14 +378,13 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', () => {
     var id;     
 
     before(async () => {    
-        bsh_perif = await BSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await BSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        holder = await Holder.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);
         await bmc.addVerifier(_net, accounts[1]);
@@ -597,8 +594,8 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', () => {
     });
 });
 
-contract('As a user, I want to receive PRA from ICON blockchain', () => {
-    let bmc, bsh_perif, bsh_core, accounts, notpayable, refundable;
+contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => {
+    let bmc, bsh_perif, bsh_core, notpayable, refundable;
     var service = 'Coin/WrappedCoin';       var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
     var _net = '1234.iconee';               var _to = 'btp://1234.iconee/0x12345678';
     var _native = 'PARA';                   var _fee = 10;   
@@ -606,15 +603,14 @@ contract('As a user, I want to receive PRA from ICON blockchain', () => {
     var _uri = 'https://github.com/icon-project/btp';
 
     before(async () => {
-        bsh_perif = await BSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await BSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        notpayable = await NotPayable.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        notpayable = await NotPayable.new();
+        refundable = await Refundable.new();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);
         await bmc.addVerifier(_net, accounts[1]);
@@ -700,8 +696,8 @@ contract('As a user, I want to receive PRA from ICON blockchain', () => {
     });
 });
 
-contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', () => {
-    let bmc, bsh_perif, bsh_core, holder, notpayable, accounts;
+contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accounts) => {
+    let bmc, bsh_perif, bsh_core, holder, notpayable;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name = 'ICON';                                 var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
@@ -709,15 +705,14 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', () => 
     var RC_ERR = 1;                                    var RC_OK = 0;          
 
     before(async () => {
-        bsh_perif = await BSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await BSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        holder = await Holder.deployed();
-        notpayable = await NotPayable.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
+        notpayable = await NotPayable.new();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);
         await bmc.addVerifier(_net, accounts[1]);
@@ -801,8 +796,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', () => 
     });
 });
 
-contract('BSHs handle Gather Fee Service Requests', () => {
-    let bsh_perif, bsh_core, bmc, holder, accounts;
+contract('BSHs handle Gather Fee Service Requests', (accounts) => {
+    let bsh_perif, bsh_core, bmc, holder;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name1 = 'ICON';    var _name2 = 'BINANCE';     var _name3 = 'ETHEREUM';        var _name4 = 'TRON';                                             
@@ -816,14 +811,13 @@ contract('BSHs handle Gather Fee Service Requests', () => {
     var _sn0 = 0;           var _sn1 = 1;               var _sn2 = 2; 
 
     before(async () => {
-        bsh_perif = await MockBSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await MockBSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        holder = await Holder.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
         btpAddr = await bmc.bmcAddress();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);
@@ -958,8 +952,8 @@ contract('BSHs handle Gather Fee Service Requests', () => {
     });
 });
 
-contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchain', () => {
-    let bsh_perif, bsh_core, bmc, holder, refundable, accounts;
+contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchain', (accounts) => {
+    let bsh_perif, bsh_core, bmc, holder, refundable;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name1 = 'ICON';    var _name2 = 'BINANCE';     var _name3 = 'ETHEREUM';        var _name4 = 'TRON';                                             
@@ -968,15 +962,14 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
     var _from1 = '0x12345678';                          var _to = 'btp://1234.iconee/0x12345678';                                                         
 
     before(async () => {
-        bsh_perif = await BSHPeriphery.deployed();
-        bsh_core = await BSHCore.deployed();
-        bmc = await BMC.deployed();
+        bsh_perif = await BSHPeriphery.new();
+        bsh_core = await BSHCore.new();
+        bmc = await BMC.new('1234.pra');
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
-        holder = await Holder.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
+        refundable = await Refundable.new();
         btpAddr = await bmc.bmcAddress();
         await bmc.setBSH(bsh_perif.address);
         await bmc.approveService(service);

@@ -16,19 +16,18 @@ const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 //  These two versions cover many upgradeable features:
 //  - Adding additional state variables
 //  - Adding additional functions
-contract('PRA BSHCore Query and Management - After Upgrading Contract', () => {
-    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, accounts;
+contract('PRA BSHCore Query and Management - After Upgrading Contract', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2;
     var _native = 'PARA';                   var _fee = 10;
     var service = 'Coin/WrappedCoin';       var _uri = 'https://github.com/icon-project/btp'
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        accounts = await web3.eth.getAccounts();
     });
 
     it('Re-initialize BSHService Contract - Failure', async () => {
@@ -173,8 +172,8 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', () => {
     });
 });
 
-contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Contract', () => {
-    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, nonrefundable, refundable, accounts;
+contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Contract', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, nonrefundable, refundable;
     var service = 'Coin/WrappedCoin';               var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
     var _net = '1234.iconee';                       var _to = 'btp://1234.iconee/0x12345678';
     var RC_OK = 0;                                  var RC_ERR = 1;    
@@ -183,7 +182,7 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
     var REPONSE_HANDLE_SERVICE = 2;                 var _uri = 'https://github.com/icon-project/btp';
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -191,9 +190,8 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        nonrefundable = await NonRefundable.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        nonrefundable = await NonRefundable.new();
+        refundable = await Refundable.new();
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
     });
@@ -393,8 +391,8 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
     });
 });
 
-contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgrading Contract', () => {
-    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder, accounts;
+contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgrading Contract', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder;
     var service = 'Coin/WrappedCoin';           var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                       var _fee = 10;     
     var _name = 'ICON';                         var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
@@ -402,7 +400,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
     var REPONSE_HANDLE_SERVICE = 2;             var RC_OK = 0;              var RC_ERR = 1;
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -410,8 +408,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        holder = await Holder.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
@@ -619,8 +616,8 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
     });
 });
 
-contract('As a user, I want to receive PRA from ICON blockchain - After Upgrading Contract', () => {
-    let bmc, bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, accounts, notpayable, refundable;
+contract('As a user, I want to receive PRA from ICON blockchain - After Upgrading Contract', (accounts) => {
+    let bmc, bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, notpayable, refundable;
     var service = 'Coin/WrappedCoin';       var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
     var _net = '1234.iconee';               var _to = 'btp://1234.iconee/0x12345678';
     var _native = 'PARA';                   var _fee = 10;   
@@ -628,7 +625,7 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
     var _uri = 'https://github.com/icon-project/btp';
     
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -636,9 +633,8 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        notpayable = await NotPayable.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        notpayable = await NotPayable.new();
+        refundable = await Refundable.new();
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await bsh_coreV2.transfer(_to, {from: accounts[0], value: 100000000});
@@ -722,8 +718,8 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
     });
 });
 
-contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After Upgrading Contract', () => {
-    let bmc, bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, holder, notpayable, accounts;
+contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After Upgrading Contract', (accounts) => {
+    let bmc, bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, holder, notpayable;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name = 'ICON';                                 var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
@@ -731,7 +727,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
     var RC_ERR = 1;                                     var RC_OK = 0;        
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -739,9 +735,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        holder = await Holder.deployed();
-        notpayable = await NotPayable.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
+        notpayable = await NotPayable.new();
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
@@ -823,8 +818,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
     });
 });
 
-contract('BSHs Handle Fee Aggregation - After Upgrading Contract', () => {
-    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder, accounts;
+contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name1 = 'ICON';    var _name2 = 'BINANCE';     var _name3 = 'ETHEREUM';        var _name4 = 'TRON';                                             
@@ -838,7 +833,7 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', () => {
     var _sn0 = 0;           var _sn1 = 1;               var _sn2 = 2;
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -846,8 +841,7 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', () => {
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        holder = await Holder.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
         btpAddr = await bmc.bmcAddress();
         await bmc.addVerifier(_net1, accounts[1]);
         await bmc.addVerifier(_net2, accounts[2]);
@@ -977,8 +971,8 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', () => {
     });
 });
 
-contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchain', () => {
-    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder, refundable, accounts;
+contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchain', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder, refundable;
     var service = 'Coin/WrappedCoin';                   var _uri = 'https://github.com/icon-project/btp';
     var _native = 'PARA';                               var _fee = 10;
     var _name1 = 'ICON';    var _name2 = 'BINANCE';     var _name3 = 'ETHEREUM';        var _name4 = 'TRON';                                             
@@ -987,7 +981,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
     var _from1 = '0x12345678';                          var _to = 'btp://1234.iconee/0x12345678';                                                         
 
     before(async () => {
-        bmc = await BMC.deployed();
+        bmc = await BMC.new('1234.pra');
         bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
         bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
         await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -995,9 +989,8 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         await bmc.setBSH(bsh_perifV1.address);
         bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-        holder = await Holder.deployed();
-        refundable = await Refundable.deployed();
-        accounts = await web3.eth.getAccounts();
+        holder = await Holder.new();
+        refundable = await Refundable.new();
         btpAddr = await bmc.bmcAddress();
         await bmc.addVerifier(_net1, accounts[1]);
         await bmc.addLink(_bmcICON);

@@ -21,8 +21,10 @@
     "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "truffle test",
-    "bsh": "truffle test ./test/integration/native-coin-bsh.js",
-    "bsh-up": "truffle test ./test/integration/upgradeability-native-coin-bsh.js"
+    "integration-bsh": "truffle test ./test/integration/native-coin-bsh.js",
+    "integration-bsh-up": "truffle test ./test/integration/upgradeability-native-coin-bsh.js",
+    "unit-bsh": "truffle test ./test/unit/native-coin-bsh.js",
+    "unit-bsh-up": "truffle test ./test/unit/upgradeability-native-coin-bsh.js"
   },
   "husky": {
     "hooks": {

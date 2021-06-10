@@ -90,10 +90,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
         serialNo = 0;
     }
 
-    function getServiceName() external view returns (string memory) {
-        return serviceName;
-    }
-
     /***********************************************************************************
                                 Send Service Message Function
         -   Prepare a request of service message
