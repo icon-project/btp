@@ -2,6 +2,7 @@ package pra
 
 import (
 	"context"
+	"math/big"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 const (
 	BlockRetryInterval = time.Second * 1
 	DefaultGasLimit    = 6721975
+	DefaultGasPrice    = 20000000000
 )
 
 type Client struct {
@@ -81,6 +83,8 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
 	txopts := bind.NewKeyedTransactor(ew.Skey)
 	txopts.GasLimit = DefaultGasLimit
+	txopts.GasPrice = big.NewInt(DefaultGasPrice)
+
 	return txopts
 }
 
