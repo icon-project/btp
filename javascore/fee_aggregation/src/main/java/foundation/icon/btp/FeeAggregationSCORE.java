@@ -108,9 +108,15 @@ public class FeeAggregationSCORE extends IRC31Receiver {
      */
     @External
     public void registerIRC2(String _tokenName, Address _tokenAddress) {
-        Context.require(Context.getCaller().equals(Context.getOwner()));
-        Context.require(getSafeTokenScore(_tokenName) == null);
-        Context.require(_tokenAddress.isContract());
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (getSafeTokenScore(_tokenName) != null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is existed");
+        }
+        if (!_tokenAddress.isContract()) {
+            Context.revert(ErrorCode.INVALID_CONTRACT_ADDRESS, "_tokenAddress is invalid");
+        }
 
         this.tokensScore.set(_tokenName, new Token(_tokenName, _tokenAddress));
         this.supportedTokens.add(_tokenName);
@@ -126,10 +132,18 @@ public class FeeAggregationSCORE extends IRC31Receiver {
      */
     @External
     public void registerIRC31(String _tokenName, Address _tokenAddress, BigInteger _tokenId) {
-        Context.require(Context.getCaller().equals(Context.getOwner()));
-        Context.require(getSafeTokenScore(_tokenName) == null);
-        Context.require(_tokenAddress.isContract());
-        Context.require(_tokenId.compareTo(BigInteger.ZERO) > 0);
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (getSafeTokenScore(_tokenName) != null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is existed");
+        }
+        if (!_tokenAddress.isContract()) {
+            Context.revert(ErrorCode.INVALID_CONTRACT_ADDRESS, "_tokenAddress is invalid");
+        }
+        if (_tokenId.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.INVALID_VALUE, "_tokenId is invalid, must > 0");
+        }
 
         this.tokensScore.set(_tokenName, new Token(_tokenName, _tokenAddress, _tokenId));
         this.supportedTokens.add(_tokenName);
@@ -143,8 +157,12 @@ public class FeeAggregationSCORE extends IRC31Receiver {
      */
     @External
     public void setDurationTime(BigInteger _duration) {
-        Context.require(Context.getCaller().equals(Context.getOwner()));
-        Context.require(!_duration.equals(BigInteger.ZERO));
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (_duration.equals(BigInteger.ZERO)) {
+            Context.revert(ErrorCode.INVALID_VALUE, "_duration is invalid, must > 0");
+        }
 
         durationTime.set(_duration.longValueExact());
     }
@@ -181,7 +199,9 @@ public class FeeAggregationSCORE extends IRC31Receiver {
      */
     @External(readonly = true)
     public Map<String, String> getCurrentAuction(String _tokenName) {
-        Context.require(getSafeTokenScore(_tokenName) != null);
+        if (getSafeTokenScore(_tokenName) == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
 
         if (isAuctionExpired(_tokenName)) return null;
         return getSafeAuction(_tokenName).toMap();
@@ -213,14 +233,22 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     @Payable
     public void bid(String _tokenName) {
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
         BigInteger balance = getTokenBalance(token, Context.getAddress());
-        Context.require(!balance.equals(BigInteger.ZERO));
+
+        if (balance.equals(BigInteger.ZERO)) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+        }
 
         BigInteger value = Context.getValue();
 
         // Check if minimum value is 100 ICX
         Context.require(value.compareTo(minimumBidAmount.get()) > -1);
+        if (value.compareTo(minimumBidAmount.get()) < 0) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough minimum value to bid");
+        }
 
         long now = Context.getBlockTimestamp();
         Auction auction = getSafeAuction(_tokenName);
@@ -230,13 +258,15 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         if (auction == null) {
             // Check available balance of token enough to start an auction
             BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName));
-            Context.require(availableBalance.compareTo(BigInteger.ZERO) > 0);
+            if (availableBalance.compareTo(BigInteger.ZERO) <= 0) {
+                Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+            }
 
             auction = new Auction(availableBalance, caller, value, now);
             this.auctions.set(_tokenName, auction);
 
             // Event log
-            AuctionStart(auction.id(), _tokenName, caller , value, auction.endTime());
+            AuctionStart(auction.id(), _tokenName, availableBalance, caller , value, auction.endTime());
         } else {
             // Check auction is ended
             if (isAuctionExpired(_tokenName)) {
@@ -245,7 +275,9 @@ public class FeeAggregationSCORE extends IRC31Receiver {
                 // Bid for new auction
                 balance = getTokenBalance(token, Context.getAddress());
                 BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName)).subtract(oldAuction.tokenAmount());
-                Context.require(availableBalance.compareTo(BigInteger.ZERO) > 0);
+                if (availableBalance.compareTo(BigInteger.ZERO) <= 0) {
+                    Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+                }
 
                 auction = new Auction(availableBalance, caller, value, now);
                 this.auctions.set(_tokenName, auction);
@@ -254,13 +286,15 @@ public class FeeAggregationSCORE extends IRC31Receiver {
                 endAuction(token, oldAuction);
 
                 // Event log
-                AuctionStart(auction.id(), _tokenName, caller, value, auction.endTime());
+                AuctionStart(auction.id(), _tokenName, availableBalance, caller, value, auction.endTime());
             } else {
                 BigInteger existingBidAmount = auction.bidAmount();
 
                 // Check if minimum value is greater MINIMUM_INCREMENTAL_BID_PERCENT than old value
                 BigInteger minimumBidAmount = existingBidAmount.add(existingBidAmount.multiply(minimumIncrementalBidPercent.get()).divide(BigInteger.valueOf(100)));
-                Context.require(minimumBidAmount.compareTo(value) <= 0);
+                if (value.compareTo(minimumBidAmount) < 0) {
+                    Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough minimum value to bid");
+                }
 
                 Address previousBidder = auction.bidder();
 
@@ -291,6 +325,9 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         Address caller = Context.getCaller();
         BigInteger amount = getSafeRefundableBalance(caller);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
+        if (amount.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.NOT_FOUND_BALANCE, "not found ICX balance");
+        }
 
         // Remove loser in
         this.refundableBalances.set(caller, BigInteger.ZERO);
@@ -311,11 +348,16 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     @External
     public void claim(String _tokenName) {
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
 
         Address caller = Context.getCaller();
         BigInteger amount = getSafeTokenBalance(caller, _tokenName);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
+        if (amount.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.NOT_FOUND_BALANCE, "not found _tokenName balance");
+        }
 
         // release Token locked
         this.lockedBalances.set(_tokenName, this.getSafeLockBalance(_tokenName).subtract(amount));
@@ -349,7 +391,9 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     @External(readonly = true)
     public BigInteger availableBalance(String _tokenName) {
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
         BigInteger balance = getTokenBalance(token, Context.getAddress());
         Auction auction = getSafeAuction(_tokenName);
         BigInteger lockedBalance = getSafeLockBalance(_tokenName);
@@ -377,7 +421,9 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     private void endAuction(Token _token, Auction _auction) {
         // Send token to winner
         BigInteger balance = getTokenBalance(_token, Context.getAddress());
-        Context.require(balance.compareTo(_auction.tokenAmount()) >= 0);
+        if (balance.compareTo(_auction.tokenAmount()) < 0) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough token");
+        }
 
         // Send ICX to CPS
         if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
@@ -412,7 +458,7 @@ public class FeeAggregationSCORE extends IRC31Receiver {
     protected void BidInfo(BigInteger auctionID, String tokenName, Address currentBidder, BigInteger currentBidAmount, Address newBidder,  BigInteger newBidAmount) {}
 
     @EventLog(indexed = 3)
-    protected void AuctionStart(BigInteger auctionID, String tokenName, Address firstBidder, BigInteger bidAmount, long deadline) {}
+    protected void AuctionStart(BigInteger auctionID, String tokenName, BigInteger tokenAmount, Address firstBidder,  BigInteger bidAmount, long deadline) {}
 
     @EventLog(indexed = 3)
     protected void AuctionEnded(BigInteger auctionID, String tokenName, Address winner, BigInteger tokenAmount, BigInteger bidAmount, long deadline) {}
