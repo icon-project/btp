@@ -106,7 +106,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		r.isFoundOffsetBySeq = true
 	}
 
-	return r.c.MonitorSubstrateBlock(uint64(height), func(v *BlockNotification) error {
+	return r.c.MonitorSubstrateBlock(uint64(height), true, func(v *BlockNotification) error {
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof

@@ -120,7 +120,7 @@ func (c *Client) getReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProo
 	return res, err
 }
 
-func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotification) error) error {
+func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events *BlockNotification) error) error {
 	currentBlock := h
 	for {
 		finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
@@ -148,17 +148,21 @@ func (c *Client) MonitorSubstrateBlock(h uint64, cb func(events *BlockNotificati
 			return err
 		}
 
-		events, err := c.getEvents(hash)
-		if err != nil {
-			return err
-		}
-
-		if err := cb(&BlockNotification{
+		v := &BlockNotification{
 			Header: finalizedHeader,
 			Height: currentBlock,
 			Hash:   hash,
-			Events: events,
-		}); err != nil {
+		}
+
+		if fetchEvent {
+			if events, err := c.getEvents(hash); err != nil {
+				return err
+			} else {
+				v.Events = events
+			}
+		}
+
+		if err := cb(v); err != nil {
 			return err
 		}
 		currentBlock++
