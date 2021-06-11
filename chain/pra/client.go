@@ -3,7 +3,6 @@ package pra
 import (
 	"context"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/icon-project/btp/common/log"
@@ -34,11 +33,6 @@ type Client struct {
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
-	if strings.HasPrefix(uri, "ws") {
-		// Websocket does not allow us fetch DATA from a specific Block Height.
-		l.Fatal("Parachain client does not support Websocket URL")
-	}
-
 	subAPI, err := srpc.NewSubstrateAPI(uri)
 	if err != nil {
 		l.Fatal(err)
