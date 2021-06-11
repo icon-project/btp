@@ -22,6 +22,7 @@ const (
 	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
+	MaxBlockUpdates               = 2
 )
 
 type Sender struct {
@@ -77,7 +78,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
 		}
 		size += buSize
-		if s.isOverLimit(size) {
+		if s.isOverLimit(size) || msg.numberOfBlockUpdate >= MaxBlockUpdates {
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -85,6 +86,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 				return nil, err
 			}
+
 			segments = append(segments, segment)
 			msg = &RelayMessage{
 				BlockUpdates:  make([][]byte, 0),
@@ -121,7 +123,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				return nil, fmt.Errorf("invalid EventProof.Proof size")
 			}
 			size += len(ep.Proof)
-			if s.isOverLimit(size) {
+			if s.isOverLimit(size) || msg.numberOfBlockUpdate >= MaxBlockUpdates {
 				if j == 0 && len(msg.BlockUpdates) == 0 {
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
