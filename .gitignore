@@ -9,3 +9,8 @@ bin/
 **/.idea
 **/**/.idea
 **/**/node_modules/
+godWallet.json
+.gradle/*
+**/**/Module/*
+EventDecoder.java
+metaData.json
