@@ -21,13 +21,15 @@ import (
 const (
 	BlockRetryInterval = time.Second * 1
 	DefaultGasLimit    = 6721975
+	DefaultReadTimeout = 10 * time.Second
 )
 
 type Client struct {
-	ethClient *ethclient.Client
-	subAPI    *srpc.SubstrateAPI
-	bmc       *binding.BMC
-	log       log.Logger
+	ethClient         *ethclient.Client
+	subAPI            *srpc.SubstrateAPI
+	bmc               *binding.BMC
+	log               log.Logger
+	stopMonitorSignal chan bool
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
@@ -47,10 +49,11 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 	}
 
 	c := &Client{
-		subAPI:    subAPI,
-		bmc:       bmc,
-		ethClient: ethClient,
-		log:       l,
+		subAPI:            subAPI,
+		bmc:               bmc,
+		ethClient:         ethClient,
+		log:               l,
+		stopMonitorSignal: make(chan bool),
 	}
 	return c
 }
@@ -84,11 +87,17 @@ func (c *Client) GetTransactionReceipt(txhash common.Hash) (*types.Receipt, erro
 }
 
 func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, bool, error) {
-	return c.ethClient.TransactionByHash(context.Background(), txhash)
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultReadTimeout)
+	defer cancel()
+	tx, pending, err := c.ethClient.TransactionByHash(ctx, txhash)
+	if err != nil {
+		return nil, pending, err
+	}
+	return tx, pending, err
 }
 
 func (c *Client) CloseAllMonitor() error {
-	//TODO implement logic to stop monitoring
+	close(c.stopMonitorSignal)
 	return nil
 }
 
@@ -118,51 +127,58 @@ func (c *Client) getReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProo
 }
 
 func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events *BlockNotification) error) error {
+
 	currentBlock := h
 	for {
-		finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
-		if err != nil {
-			return err
-		}
+		select {
+		case <-c.stopMonitorSignal:
+			return nil
+		default:
 
-		finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
-		if err != nil {
-			return err
-		}
-
-		if currentBlock > uint64(finalizedHeader.Number) {
-			c.log.Tracef("block not yet finalized target:%v latest:%v", currentBlock, finalizedHeader.Number)
-			time.Sleep(BlockRetryInterval)
-			continue
-		}
-
-		hash, err := c.subAPI.RPC.Chain.GetBlockHash(currentBlock)
-		if err != nil && err.Error() == ErrBlockNotReady.Error() {
-			time.Sleep(BlockRetryInterval)
-			continue
-		} else if err != nil {
-			c.log.Error("failed to query latest block:%v error:%v", currentBlock, err)
-			return err
-		}
-
-		v := &BlockNotification{
-			Header: finalizedHeader,
-			Height: currentBlock,
-			Hash:   hash,
-		}
-
-		if fetchEvent {
-			if events, err := c.getEvents(hash); err != nil {
+			finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
+			if err != nil {
 				return err
-			} else {
-				v.Events = events
 			}
-		}
 
-		if err := cb(v); err != nil {
-			return err
+			finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
+			if err != nil {
+				return err
+			}
+
+			if currentBlock > uint64(finalizedHeader.Number) {
+				c.log.Tracef("block not yet finalized target:%v latest:%v", currentBlock, finalizedHeader.Number)
+				time.Sleep(BlockRetryInterval)
+				continue
+			}
+
+			hash, err := c.subAPI.RPC.Chain.GetBlockHash(currentBlock)
+			if err != nil && err.Error() == ErrBlockNotReady.Error() {
+				time.Sleep(BlockRetryInterval)
+				continue
+			} else if err != nil {
+				c.log.Error("failed to query latest block:%v error:%v", currentBlock, err)
+				return err
+			}
+
+			v := &BlockNotification{
+				Header: finalizedHeader,
+				Height: currentBlock,
+				Hash:   hash,
+			}
+
+			if fetchEvent {
+				if events, err := c.getEvents(hash); err != nil {
+					return err
+				} else {
+					v.Events = events
+				}
+			}
+
+			if err := cb(v); err != nil {
+				return err
+			}
+			currentBlock++
 		}
-		currentBlock++
 	}
 }
 

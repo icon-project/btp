@@ -217,14 +217,29 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		s.log.Debugf("getting receipt:%s", txh.Hex())
 
 		for {
+			_, pending, err := s.c.GetTransactionByHash(txh)
+			if err != nil {
+				return nil, err
+			}
+
+			if pending {
+				<-time.After(DefaultGetRelayResultInterval)
+				continue
+			}
+
 			txr, err := s.c.GetTransactionReceipt(txh)
 			if err != nil {
 				<-time.After(DefaultGetRelayResultInterval)
 				continue
 			}
 
+			if txr.Status == 0 {
+				//TODO: handle mapError here
+				return txr, chain.NewRevertError(int(chain.BMCRevert))
+			}
+
 			s.log.Debugf("got receipt:%v taken:%.2f seconds", txr.TxHash.String(), time.Now().Sub(t).Seconds())
-			return txr.TxHash.Hex(), err
+			return txr.TxHash.Hex(), nil
 		}
 	} else {
 		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)
@@ -283,7 +298,7 @@ func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func())
 }
 
 func (s *Sender) StopMonitorLoop() {
-	return
+	s.c.CloseAllMonitor()
 }
 
 func (s *Sender) FinalizeLatency() int {
