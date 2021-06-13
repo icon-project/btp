@@ -215,17 +215,6 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		s.log.Debugf("getting receipt:%s", thp.TxHash)
 
 		for {
-			_, pending, err := s.c.GetTransactionByHash(thp.TxHash)
-			if err != nil {
-				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
-				return nil, fmt.Errorf("tx: %v error:%v", thp.TxHash, err.Error())
-			}
-
-			if pending {
-				<-time.After(DefaultGetRelayResultInterval)
-				continue
-			}
-
 			txr, err := s.c.GetTransactionReceipt(thp.TxHash)
 			if err != nil {
 				<-time.After(DefaultGetRelayResultInterval)

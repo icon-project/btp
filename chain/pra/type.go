@@ -25,8 +25,8 @@ type Wallet interface {
 }
 
 type RelayMessageParam struct {
-	Prev string
-	Msg  string
+	Prev string `json:"_prev"`
+	Msg  string `json:"_msg"`
 }
 
 type RelayMessage struct {
@@ -58,6 +58,6 @@ type ReadProof struct {
 }
 
 type TransactionHashParam struct {
-	TxHash string
-	Param  *RelayMessageParam
+	TxHash string             `json:"txhash"`
+	Param  *RelayMessageParam `json:"rm"`
 }

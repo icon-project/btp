@@ -223,7 +223,7 @@ func (b *BTP) relay() {
 		skippable := b.skippable(rm)
 		relayable := b.relayble(rm)
 
-		b.log.Debugf("Relay rm:%v has_wait:%v skippable:%v relayable:%v", rm.HeightOfDst, hasWait, skippable, relayable)
+		b.log.Debugf("Relay rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
 
 		if hasWait || (!skippable && !relayable) {
 			break
@@ -269,7 +269,7 @@ func (b *BTP) relay() {
 
 // addRelayMessage adds messages to the buffered rms
 func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
-	b.log.Tracef("addRelayMessage bu.Height:%v b.bmcLinkStatus.Verifier.Height:%v", bu.Height, b.bmcLinkStatus.Verifier.Height)
+	b.log.Debugf("addRelayMessage bu.Height:%v b.bmcLinkStatus.Verifier.Height:%v", bu.Height, b.bmcLinkStatus.Verifier.Height)
 
 	if b.lastBlockUpdate != nil {
 		//TODO consider remained bu when reconnect
