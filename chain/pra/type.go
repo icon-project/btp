@@ -1,21 +1,7 @@
 package pra
 
 import (
-	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/icon-project/btp/common/jsonrpc"
-)
-
-const (
-	JsonrpcApiVersion                                = 3
-	JsonrpcErrorCodeSystem         jsonrpc.ErrorCode = -31000
-	JsonrpcErrorCodeTxPoolOverflow jsonrpc.ErrorCode = -31001
-	JsonrpcErrorCodePending        jsonrpc.ErrorCode = -31002
-	JsonrpcErrorCodeExecuting      jsonrpc.ErrorCode = -31003
-	JsonrpcErrorCodeNotFound       jsonrpc.ErrorCode = -31004
-	JsonrpcErrorLackOfResource     jsonrpc.ErrorCode = -31005
-	JsonrpcErrorCodeTimeout        jsonrpc.ErrorCode = -31006
-	JsonrpcErrorCodeSystemTimeout  jsonrpc.ErrorCode = -31007
-	JsonrpcErrorCodeScore          jsonrpc.ErrorCode = -30000
+	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 )
 
 const (
@@ -38,7 +24,7 @@ type Wallet interface {
 	Address() string
 }
 
-type HandleRelayMessageParam struct {
+type RelayMessageParam struct {
 	Prev string
 	Msg  string
 }
@@ -55,18 +41,23 @@ type RelayMessage struct {
 }
 
 type SignedHeader struct {
-	types.Header
-	types.Justification
+	stypes.Header
+	stypes.Justification
 }
 
 type BlockNotification struct {
-	Header *types.Header
-	Hash   types.Hash
+	Header *stypes.Header
+	Hash   SubstrateHash
 	Height uint64
 	Events *SubstateWithFrontierEventRecord
 }
 
 type ReadProof struct {
-	At    types.Hash `json:"at"`
-	Proof []string   `json:"proof"`
+	At    SubstrateHash `json:"at"`
+	Proof []string      `json:"proof"`
+}
+
+type TransactionHashParam struct {
+	TxHash string
+	Param  *RelayMessageParam
 }

@@ -7,16 +7,11 @@ import (
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
-	srpc "github.com/centrifuge/go-substrate-rpc-client/v3"
-	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
 )
-
-// TODO: Create general types to avoid confusing between Substrate and Ethereum library.
 
 const (
 	BlockRetryInterval = time.Second * 1
@@ -26,14 +21,14 @@ const (
 
 type Client struct {
 	ethClient         *ethclient.Client
-	subAPI            *srpc.SubstrateAPI
+	subAPI            *gsrpc.SubstrateAPI
 	bmc               *binding.BMC
 	log               log.Logger
 	stopMonitorSignal chan bool
 }
 
 func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
-	subAPI, err := srpc.NewSubstrateAPI(uri)
+	subAPI, err := gsrpc.NewSubstrateAPI(uri)
 	if err != nil {
 		l.Fatal(err)
 	}
@@ -43,7 +38,7 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 		l.Fatal(err)
 	}
 
-	bmc, err := binding.NewBMC(common.HexToAddress(bmcContractAddress), ethClient)
+	bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
 	if err != nil {
 		l.Fatal("failed to connect to BMC contract", err.Error())
 	}
@@ -59,18 +54,7 @@ func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
 }
 
 func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
-	topics := []common.Hash{}
-
-	for _, t := range e.Topics {
-		topics = append(topics, common.HexToHash(t.Hex()))
-	}
-
-	_, err := c.bmc.ParseMessage(types.Log{
-		Address: common.Address(e.Log.Address),
-		Topics:  topics,
-		Data:    []byte(e.Log.Data),
-	})
-
+	_, err := c.bmc.ParseMessage(e.EvmLog())
 	return err != nil
 }
 
@@ -82,14 +66,19 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	return txopts
 }
 
-func (c *Client) GetTransactionReceipt(txhash common.Hash) (*types.Receipt, error) {
-	return c.ethClient.TransactionReceipt(context.Background(), txhash)
+func (c *Client) GetTransactionReceipt(txhash string) (EvmReceipt, error) {
+	receipt, err := c.ethClient.TransactionReceipt(context.Background(), EvmHexToHash(txhash))
+	if err != nil {
+		return nil, err
+	}
+
+	return receipt, nil
 }
 
-func (c *Client) GetTransactionByHash(txhash common.Hash) (*types.Transaction, bool, error) {
+func (c *Client) GetTransactionByHash(txhash string) (EvmTransaction, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultReadTimeout)
 	defer cancel()
-	tx, pending, err := c.ethClient.TransactionByHash(ctx, txhash)
+	tx, pending, err := c.ethClient.TransactionByHash(ctx, EvmHexToHash(txhash))
 	if err != nil {
 		return nil, pending, err
 	}
@@ -101,26 +90,25 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) getMetadata(hash stypes.Hash) (*stypes.Metadata, error) {
-	// TODO optimize metadata fetching
-	return c.subAPI.RPC.State.GetMetadata(hash)
+func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
+	metadata, err := c.subAPI.RPC.State.GetMetadata(hash.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	return &SubstrateMetaData{metadata}, nil
 }
 
-func (c *Client) getSystemEventReadProofKey(hash stypes.Hash) (stypes.StorageKey, error) {
+func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorageKey, error) {
 	meta, err := c.getMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
 
-	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return key, nil
+	return CreateStorageKey(meta.Metadata, "System", "Events", nil, nil)
 }
 
-func (c *Client) getReadProof(key stypes.StorageKey, hash stypes.Hash) (ReadProof, error) {
+func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
 	var res ReadProof
 	err := c.subAPI.Client.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	return res, err
@@ -163,11 +151,11 @@ func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events
 			v := &BlockNotification{
 				Header: finalizedHeader,
 				Height: currentBlock,
-				Hash:   hash,
+				Hash:   SubstrateHash(hash),
 			}
 
 			if fetchEvent {
-				if events, err := c.getEvents(hash); err != nil {
+				if events, err := c.getEvents(v.Hash); err != nil {
 					return err
 				} else {
 					v.Events = events
@@ -182,25 +170,25 @@ func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events
 	}
 }
 
-func (c *Client) getEvents(hash stypes.Hash) (*SubstateWithFrontierEventRecord, error) {
-	c.log.Trace("fetching block for events", "hash", hash.Hex())
-	meta, err := c.getMetadata(hash)
+func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventRecord, error) {
+	c.log.Trace("fetching block for events", "hash", blockHash.Hex())
+	meta, err := c.getMetadata(blockHash)
 	if err != nil {
 		return nil, err
 	}
 
-	key, err := stypes.CreateStorageKey(meta, "System", "Events", nil, nil)
+	key, err := CreateStorageKey(meta.Metadata, "System", "Events", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key, hash)
+	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key.StorageKey(), blockHash.Hash())
 	if err != nil {
 		return nil, err
 	}
 
 	records := &SubstateWithFrontierEventRecord{}
-	if err = stypes.EventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+	if err = SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
 		return nil, err
 	}
 

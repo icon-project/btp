@@ -130,8 +130,11 @@ func (b *BTP) Serve() error {
 		}
 	}()
 	go func() {
+		h := b.receiveHeight()
+		b.log.Debugf("start receiveloop from heigh: %v", h)
+
 		err := b.receiver.ReceiveLoop(
-			b.receiveHeight(),
+			h,
 			b.bmcLinkStatus.RxSeq,
 			b.OnBlockOfSrc,
 			func() {

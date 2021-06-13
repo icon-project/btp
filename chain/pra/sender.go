@@ -4,15 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strconv"
 	"time"
 
-	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
-	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -46,13 +41,13 @@ type Sender struct {
 	cb                 chain.ReceiveCallback
 }
 
-func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*HandleRelayMessageParam, error) {
+func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessageParam, error) {
 	b, err := codec.RLP.MarshalToBytes(rm)
 	if err != nil {
 		return nil, err
 	}
 
-	return &HandleRelayMessageParam{
+	return &RelayMessageParam{
 		Prev: prev,
 		Msg:  base64.URLEncoding.EncodeToString(b),
 	}, nil
@@ -170,7 +165,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 // UpdateSegment updates segment
 func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
-	p := segment.TransactionParam.(*HandleRelayMessageParam)
+	p := segment.TransactionParam.(*RelayMessageParam)
 	msg := &RelayMessage{}
 	b, err := base64.URLEncoding.DecodeString(p.Msg)
 	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
@@ -184,7 +179,7 @@ func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 }
 
 func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
-	p, ok := segment.TransactionParam.(*HandleRelayMessageParam)
+	p, ok := segment.TransactionParam.(*RelayMessageParam)
 	if !ok {
 		return nil, fmt.Errorf("casting failure")
 	}
@@ -201,25 +196,29 @@ SEND_TX:
 			<-time.After(time.Second * 3)
 			goto SEND_TX
 		}
-		return nil, mapError(err)
+		return nil, err
 	}
 
 	s.log.Debugf("got new relayed TX %s", txh.Hash().Hex())
-	return txh.Hash(), nil
+	return &TransactionHashParam{
+		TxHash: txh.Hash().Hex(),
+		Param:  p,
+	}, nil
 }
 
 // GetResult gets the TransactionReceipt
 func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	//TODO: map right Error with the result getting from the transaction receipt
 
-	if txh, ok := p.(ecommon.Hash); ok {
+	if thp, ok := p.(*TransactionHashParam); ok {
 		t := time.Now()
-		s.log.Debugf("getting receipt:%s", txh.Hex())
+		s.log.Debugf("getting receipt:%s", thp.TxHash)
 
 		for {
-			_, pending, err := s.c.GetTransactionByHash(txh)
+			_, pending, err := s.c.GetTransactionByHash(thp.TxHash)
 			if err != nil {
-				return nil, err
+				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
+				return nil, fmt.Errorf("tx: %v error:%v", thp.TxHash, err.Error())
 			}
 
 			if pending {
@@ -227,7 +226,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 				continue
 			}
 
-			txr, err := s.c.GetTransactionReceipt(txh)
+			txr, err := s.c.GetTransactionReceipt(thp.TxHash)
 			if err != nil {
 				<-time.After(DefaultGetRelayResultInterval)
 				continue
@@ -235,7 +234,8 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 			if txr.Status == 0 {
 				//TODO: handle mapError here
-				return txr, chain.NewRevertError(int(chain.BMCRevert))
+				s.log.Error("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
+				return nil, chain.NewRevertError(int(chain.BMCRevert))
 			}
 
 			s.log.Debugf("got receipt:%v taken:%.2f seconds", txr.TxHash.String(), time.Now().Sub(t).Seconds())
@@ -323,42 +323,6 @@ func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[str
 	s.c = NewClient(endpoint, dst.ContractAddress(), l)
 
 	return s
-}
-
-func mapError(err error) error {
-	if err != nil {
-		switch re := err.(type) {
-		case *jsonrpc.Error:
-			//fmt.Printf("jrResp.Error:%+v", re)
-			switch re.Code {
-			case JsonrpcErrorCodeTxPoolOverflow:
-				return chain.ErrSendFailByOverflow
-			case JsonrpcErrorCodeSystem:
-				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
-					//TODO return JsonRPC Error
-					switch subEc {
-					case ExpiredTransactionError:
-						return chain.ErrSendFailByExpired
-					case FutureTransactionError:
-						return chain.ErrSendFailByFuture
-					case TransactionPoolOverflowError:
-						return chain.ErrSendFailByOverflow
-					}
-				}
-			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-				return chain.ErrGetResultFailByPending
-			}
-		case *common.HttpError:
-			fmt.Printf("*common.HttpError:%+v", re)
-			return chain.ErrConnectFail
-		case *url.Error:
-			if common.IsConnectRefusedError(re.Err) {
-				//fmt.Printf("*url.Error:%+v", re)
-				return chain.ErrConnectFail
-			}
-		}
-	}
-	return err
 }
 
 func (s *Sender) isOverLimit(size int) bool {

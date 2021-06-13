@@ -42,12 +42,12 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 	var err error
 	bu := &chain.BlockUpdate{
 		Height:    int64(v.Height),
-		BlockHash: v.Hash[:],
+		BlockHash: v.Hash.Bytes(),
 	}
 
 	// Justification required, when update validators list
 	if len(v.Events.Grandpa_NewAuthorities) > 0 {
-		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash)
+		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
 		if err != nil {
 			return nil, err
 		}

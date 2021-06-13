@@ -20,7 +20,7 @@ func TestGetReadProof(t *testing.T) {
 	hash, _ := types.NewHashFromHexString("0x2db4d2e7b3a3a9f19470746197eac3c733f59328794aca4c86a05ee83bdff041")
 
 	// WHEN
-	rp, err := c.getReadProof(key, hash)
+	rp, err := c.getReadProof(SubstrateStorageKey(key), SubstrateHash(hash))
 	if err != nil {
 		t.Errorf("GetReadProof(%#x, %#x), expect no error, but got %v", key, hash, err)
 	}
@@ -42,7 +42,7 @@ func TestGetEvents(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	events, err := c.getEvents(hash)
+	events, err := c.getEvents(SubstrateHash(hash))
 
 	if err != nil {
 		t.Errorf("GetEvents(%#x), expect no error, but got %v", hash, err)
