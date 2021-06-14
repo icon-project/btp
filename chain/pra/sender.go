@@ -241,7 +241,7 @@ CALL_CONTRACT:
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
 		if tries < DefaultRetryContractCall {
-			time.After(DefaultRetryContractCallInterval)
+			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}
 		return nil, err
