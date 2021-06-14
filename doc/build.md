@@ -46,3 +46,11 @@ make dist-py
 ```
 
 Output files are placed under `build/pyscore/` directory.
+
+### Build SOLIDITY
+
+```bash
+make dist-sol
+```
+
+Output files are placed under `build/solidity/` directory.

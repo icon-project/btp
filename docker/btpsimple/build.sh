@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 BASE_DIR=$(dirname $0)
 . ${BASE_DIR}/../version.sh
 
@@ -36,8 +38,11 @@ build_image() {
     cp ${BIN_DIR}/* ${BUILD_DIR}/dist/bin/
 
     if [ -d "${DIST_DIR}" ] ; then
-      mkdir -p ${BUNDLE_DIR}
-      cp -r ${DIST_DIR} ${BUILD_DIR}/dist/
+        echo "${DIST_DIR}"
+        mkdir -p ${BUILD_DIR}/dist/pyscore
+        mkdir -p ${BUILD_DIR}/dist/solidity
+        cp -r ${DIST_DIR}/pyscore/* ${BUILD_DIR}/dist/pyscore
+        cp -r ${DIST_DIR}/solidity/* ${BUILD_DIR}/dist/solidity
     fi
 
     CDIR=$(pwd)

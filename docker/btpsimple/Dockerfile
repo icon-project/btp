@@ -14,6 +14,7 @@ ENV PATH $PATH:/btpsimple/bin
 
 # copy extras
 COPY dist/pyscore/*.zip /btpsimple/contracts/pyscore/
+COPY dist/solidity/* /btpsimple/contracts/solidity/
 WORKDIR /btpsimple
 
 # container configuration

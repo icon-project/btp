@@ -18,11 +18,16 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
+
+const localProvider = () => new HDWalletProvider({
+  privateKeys: [privKey],
+  providerOrUrl: "http://localhost:9933",
+});
 
 module.exports = {
   /**
@@ -71,7 +76,36 @@ module.exports = {
     // provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
     // network_id: 2111,   // This network is yours, in the cloud.
     // production: true    // Treats this network as if it was a public net. (default: false)
-    }
+    },
+    edgewarelocal: {
+      provider: localProvider,
+      network_id: 2021,
+      websocket: true
+    },
+    beresheet: {
+      provider: () => new HDWalletProvider({
+        privateKeys: [privKey],
+        providerOrUrl: "https://beresheet7.edgewa.re",
+        websocket: true
+      }),
+      confirmations: 3,
+      network_id: 2021,
+      production: true
+    },
+    moonbeamlocal: {
+      provider: localProvider,
+      network_id: 1287,
+      websocket: true
+    },
+    moonbase: {
+      provider: () => new HDWalletProvider({
+        privateKeys: [privKey],
+        providerOrUrl: "https://rpc.testnet.moonbeam.network",
+      }),
+      confirmations: 3,
+      network_id: 1287,
+      production: true
+    },
   },
 
   // Set default mocha options here, use special reporters etc.
