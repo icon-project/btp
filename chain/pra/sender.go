@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	txMaxDataSize                 = 524288 //512 * 1024 // 512kB
-	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
-	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
-	DefaultGetRelayResultInterval = time.Second
-	DefaultRelayReSendInterval    = time.Second
-	MaxBlockUpdates               = 2
+	txMaxDataSize                    = 524288 //512 * 1024 // 512kB
+	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
+	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
+	MaxBlockUpdates                  = 2
+	DefaultRetryContractCall         = 10
+	DefaultRetryContractCallInterval = time.Second
 )
 
 type Sender struct {
@@ -185,21 +185,19 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	}
 
 	tries := 0
-SEND_TX:
+CALL_CONTRACT:
 	tries++
 	opts := s.c.newTransactOpts(s.w)
 
 	txh, err := s.c.bmc.HandleRelayMessage(opts, p.Prev, p.Msg)
 	if err != nil {
-		if tries < 3 {
-			s.log.Debug("retry sending transaction")
-			<-time.After(time.Second * 3)
-			goto SEND_TX
+		if tries < DefaultRetryContractCall {
+			<-time.After(DefaultRetryContractCallInterval)
+			goto CALL_CONTRACT
 		}
 		return nil, err
 	}
 
-	s.log.Debugf("got new relayed TX %s", txh.Hash().Hex())
 	return &TransactionHashParam{
 		TxHash: txh.Hash().Hex(),
 		Param:  p,
@@ -217,7 +215,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		for {
 			txr, err := s.c.GetTransactionReceipt(thp.TxHash)
 			if err != nil {
-				<-time.After(DefaultGetRelayResultInterval)
+				<-time.After(DefaultRetryContractCallInterval)
 				continue
 			}
 
@@ -237,8 +235,15 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 func (s *Sender) GetStatus() (*chain.BMCLinkStatus, error) {
 
+	tries := 0
+CALL_CONTRACT:
+	tries++
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
+		if tries < DefaultRetryContractCall {
+			time.After(DefaultRetryContractCallInterval)
+			goto CALL_CONTRACT
+		}
 		return nil, err
 	}
 
