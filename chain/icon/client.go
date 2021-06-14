@@ -38,6 +38,8 @@ import (
 const (
 	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
+	DefaultKeepAliveInterval                   = 10 * time.Second
+	DefaultPingWait                            = 3 * time.Second
 )
 
 type Wallet interface {
@@ -313,8 +315,28 @@ func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Con
 		wsErr.httpResp = httpResp
 		return nil, wsErr
 	}
+
+	c.keepAlive(conn)
 	c._addWsConn(conn)
 	return conn, nil
+}
+
+func (c *Client) keepAlive(conn *websocket.Conn) {
+	go func() {
+		ticker := time.NewTicker(DefaultKeepAliveInterval)
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			if conn == nil {
+				return
+			}
+
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
+				c.l.Warn("Ping failed error: %v", err)
+			}
+		}
+	}()
 }
 
 type wsRequestError struct {
