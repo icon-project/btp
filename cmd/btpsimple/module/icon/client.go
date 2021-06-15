@@ -316,7 +316,8 @@ func (c *Client) keepAlive(conn *websocket.Conn) {
 		for {
 			<-ticker.C
 			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
-				c.l.Warn("Ping failed error: %v", err)
+				c.l.Warn("fail to WriteControl err: %v", err)
+				return
 			}
 		}
 	}()
