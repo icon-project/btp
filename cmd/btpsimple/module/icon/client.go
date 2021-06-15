@@ -37,8 +37,10 @@ import (
 )
 
 const (
-	DefaultSendTransactionRetryInterval = 3 * time.Second //3sec
+	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
+	DefaultKeepAliveInterval                   = 10 * time.Second
+	DefaultPingWait                            = 3 * time.Second
 )
 
 type Wallet interface {
@@ -137,7 +139,7 @@ txLoop:
 					}
 				}
 			}
-			c.l.Debugf("fail to SendTransaction hash:%v, err:%+v",txh, err)
+			c.l.Debugf("fail to SendTransaction hash:%v, err:%+v", txh, err)
 			return &thp.Hash, nil, err
 		}
 		thp.Hash = *txh
@@ -159,7 +161,7 @@ txrLoop:
 				}
 			}
 		}
-		c.l.Debugf("GetTransactionResult hash:%v, txr:%+v, err:%+v",thp.Hash, txr, err)
+		c.l.Debugf("GetTransactionResult hash:%v, txr:%+v, err:%+v", thp.Hash, txr, err)
 		return &thp.Hash, txr, err
 	}
 }
@@ -215,10 +217,10 @@ func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *websocket.Conn, v *
 		switch t := v.(type) {
 		case *BlockNotification:
 			if err := cb(conn, t); err != nil {
-				c.l.Debugf("MonitorBlock callback return err:%+v",err)
+				c.l.Debugf("MonitorBlock callback return err:%+v", err)
 			}
 		case WSEvent:
-			c.l.Debugf("MonitorBlock WSEvent %s %+v",conn.LocalAddr().String() ,t)
+			c.l.Debugf("MonitorBlock WSEvent %s %+v", conn.LocalAddr().String(), t)
 			switch t {
 			case WSEventInit:
 				if scb != nil {
@@ -239,7 +241,7 @@ func (c *Client) MonitorEvent(p *EventRequest, cb func(conn *websocket.Conn, v *
 		switch t := v.(type) {
 		case *EventNotification:
 			if err := cb(conn, t); err != nil {
-				c.l.Debugf("MonitorEvent callback return err:%+v",err)
+				c.l.Debugf("MonitorEvent callback return err:%+v", err)
 			}
 		case error:
 			errCb(conn, t)
@@ -257,8 +259,8 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr interface{}, cb wsReadCa
 	if err != nil {
 		return module.ErrConnectFail
 	}
-	defer func(){
-		c.l.Debugf("Monitor finish %s",conn.LocalAddr().String())
+	defer func() {
+		c.l.Debugf("Monitor finish %s", conn.LocalAddr().String())
 		c.wsClose(conn)
 	}()
 	if err = c.wsRequest(conn, reqPtr); err != nil {
@@ -269,13 +271,13 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr interface{}, cb wsReadCa
 }
 
 func (c *Client) CloseMonitor(conn *websocket.Conn) {
-	c.l.Debugf("CloseMonitor %s",conn.LocalAddr().String())
+	c.l.Debugf("CloseMonitor %s", conn.LocalAddr().String())
 	c.wsClose(conn)
 }
 
 func (c *Client) CloseAllMonitor() {
 	for _, conn := range c.conns {
-		c.l.Debugf("CloseAllMonitor %s",conn.LocalAddr().String())
+		c.l.Debugf("CloseAllMonitor %s", conn.LocalAddr().String())
 		c.wsClose(conn)
 	}
 }
@@ -306,6 +308,20 @@ type wsConnectError struct {
 	httpResp *http.Response
 }
 
+func (c *Client) keepAlive(conn *websocket.Conn) {
+	go func() {
+		ticker := time.NewTicker(DefaultKeepAliveInterval)
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
+				c.l.Warn("Ping failed error: %v", err)
+			}
+		}
+	}()
+}
+
 func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Conn, error) {
 	wsEndpoint := strings.Replace(c.Endpoint, "http", "ws", 1)
 	conn, httpResp, err := websocket.DefaultDialer.Dial(wsEndpoint+reqUrl, reqHeader)
@@ -314,6 +330,7 @@ func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Con
 		wsErr.httpResp = httpResp
 		return nil, wsErr
 	}
+	c.keepAlive(conn)
 	c._addWsConn(conn)
 	return conn, nil
 }
@@ -348,10 +365,10 @@ func (c *Client) wsRequest(conn *websocket.Conn, reqPtr interface{}) error {
 func (c *Client) wsClose(conn *websocket.Conn) {
 	c._removeWsConn(conn)
 	if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
-		c.l.Debugf("fail to WriteMessage CloseNormalClosure err:%+v",err)
+		c.l.Debugf("fail to WriteMessage CloseNormalClosure err:%+v", err)
 	}
 	if err := conn.Close(); err != nil {
-		c.l.Debugf("fail to Close err:%+v",err)
+		c.l.Debugf("fail to Close err:%+v", err)
 	}
 }
 
@@ -372,11 +389,11 @@ func (c *Client) wsReadJSONLoop(conn *websocket.Conn, respPtr interface{}, cb ws
 		v := reflect.New(elem.Type())
 		ptr := v.Interface()
 		if _, ok := c.conns[conn.LocalAddr().String()]; !ok {
-			c.l.Debugf("wsReadJSONLoop c.conns[%s] is nil",conn.LocalAddr().String())
+			c.l.Debugf("wsReadJSONLoop c.conns[%s] is nil", conn.LocalAddr().String())
 			return nil
 		}
 		if err := c.wsRead(conn, ptr); err != nil {
-			c.l.Debugf("wsReadJSONLoop c.conns[%s] ReadJSON err:%+v",conn.LocalAddr().String(), err)
+			c.l.Debugf("wsReadJSONLoop c.conns[%s] ReadJSON err:%+v", conn.LocalAddr().String(), err)
 			if cErr, ok := err.(*websocket.CloseError); !ok || cErr.Code != websocket.CloseNormalClosure {
 				cb(conn, err)
 			}
@@ -390,7 +407,7 @@ func NewClient(uri string, l log.Logger) *Client {
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
 	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
 	c := &Client{
-		Client: jsonrpc.NewJsonRpcClient(&http.Client{Transport:tr}, uri),
+		Client: jsonrpc.NewJsonRpcClient(&http.Client{Transport: tr}, uri),
 		conns:  make(map[string]*websocket.Conn),
 		l:      l,
 	}
@@ -485,4 +502,3 @@ func NewIconOptionsByHeader(h http.Header) IconOptions {
 	}
 	return nil
 }
-
