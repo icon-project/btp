@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	stdlog "log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/cobra"
 
 	"github.com/icon-project/btp/btp"
 	"github.com/icon-project/btp/common/cli"
@@ -33,6 +33,7 @@ import (
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -109,6 +110,7 @@ var rootCmd, rootVc = cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
 var cfg = &Config{}
 
 func main() {
+	go profiling()
 
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
@@ -242,4 +244,8 @@ func setLogger(cfg *Config, w wallet.Wallet, modLevels map[string]string) log.Lo
 	}
 
 	return l
+}
+
+func profiling() {
+	http.ListenAndServe(":6060", nil)
 }

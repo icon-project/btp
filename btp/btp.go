@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra"
@@ -41,6 +42,7 @@ const (
 	DefaultBufferInterval           = 5 * time.Second
 	DefaultReconnectDelay           = time.Second
 	DefaultRelayReSendInterval      = time.Second
+	DefaultMaxWorkers               = 100
 )
 
 // BTP is the core to manage relaying messages
@@ -61,6 +63,7 @@ type BTP struct {
 	rmsMutex         *sync.RWMutex
 	rmSeq            uint64
 	lastBlockUpdate  *chain.BlockUpdate
+	wp               *workerpool.WorkerPool // Use worker pool to avoid too many open files error
 }
 
 // New creates a new BTP object
@@ -91,6 +94,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 		bmcDstBtpAddress: cfg.Dst.Address,
 		rms:              []*chain.RelayMessage{},
 		rmsMutex:         &sync.RWMutex{},
+		wp:               workerpool.New(DefaultMaxWorkers),
 	}, nil
 }
 
@@ -238,8 +242,7 @@ func (b *BTP) relay() {
 
 			b.logRelaying("before relay", rm, nil, -1)
 			reSegment := true
-			for j := range rm.Segments {
-				segment := rm.Segments[j] // We assign a new segment here to avoid changing this variable when pass it to goroutine
+			for j, segment := range rm.Segments {
 				if segment == nil {
 					continue
 				}
@@ -254,7 +257,7 @@ func (b *BTP) relay() {
 					}
 
 					b.logRelaying("after relay", rm, segment, j)
-					go b.updateResult(rm, segment)
+					b.updateResult(rm, segment)
 
 				}
 			}
@@ -385,34 +388,37 @@ func (b *BTP) updateMTA(bu *chain.BlockUpdate) {
 
 // updateResult updates TransactionResult of the segment
 func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err error) {
-	segment.TransactionResult, err = b.sender.GetResult(segment.GetResultParam)
-	if err != nil {
-		if ec, ok := errors.CoderOf(err); ok {
-			b.log.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
-			switch ec.ErrorCode() {
-			case chain.BMVRevertInvalidSequence, chain.BMVRevertInvalidBlockUpdateLower:
-				for i := 0; i < len(rm.Segments); i++ {
-					if rm.Segments[i] == segment {
-						rm.Segments[i] = nil
-						break
+	b.wp.Submit(func() {
+
+		segment.TransactionResult, err = b.sender.GetResult(segment.GetResultParam)
+		if err != nil {
+			if ec, ok := errors.CoderOf(err); ok {
+				b.log.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
+				switch ec.ErrorCode() {
+				case chain.BMVRevertInvalidSequence, chain.BMVRevertInvalidBlockUpdateLower:
+					for i := 0; i < len(rm.Segments); i++ {
+						if rm.Segments[i] == segment {
+							rm.Segments[i] = nil
+							break
+						}
 					}
+				case chain.BMVRevertInvalidBlockWitnessOld:
+					rm.BlockProof, err = b.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
+					b.sender.UpdateSegment(rm.BlockProof, segment)
+					segment.GetResultParam = nil
+				case chain.BMVRevertInvalidSequenceHigher, chain.BMVRevertInvalidBlockUpdateHigher, chain.BMVRevertInvalidBlockProofHigher:
+					segment.GetResultParam = nil
+				case chain.BMCRevertUnauthorized:
+					segment.GetResultParam = nil
+				default:
+					b.log.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
 				}
-			case chain.BMVRevertInvalidBlockWitnessOld:
-				rm.BlockProof, err = b.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
-				b.sender.UpdateSegment(rm.BlockProof, segment)
-				segment.GetResultParam = nil
-			case chain.BMVRevertInvalidSequenceHigher, chain.BMVRevertInvalidBlockUpdateHigher, chain.BMVRevertInvalidBlockProofHigher:
-				segment.GetResultParam = nil
-			case chain.BMCRevertUnauthorized:
-				segment.GetResultParam = nil
-			default:
-				b.log.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
+			} else {
+				b.log.Panicf("fail to GetResult GetResultParam:%v err:%+v", segment.GetResultParam, err)
 			}
-		} else {
-			b.log.Panicf("fail to GetResult GetResultParam:%v err:%+v", segment.GetResultParam, err)
 		}
-	}
-	return
+	})
+	return nil
 }
 
 func (b *BTP) updateProofs(rm *chain.RelayMessage, rxSeq int64) {

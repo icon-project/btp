@@ -12,6 +12,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.2
 	github.com/evalphobia/logrus_fluent v0.5.4
 	github.com/fluent/fluent-logger-golang v1.4.0 // indirect
+	github.com/gammazero/workerpool v1.1.2
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/haltingstate/secp256k1-go v0.0.0-20151224084235-572209b26df6

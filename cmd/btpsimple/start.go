@@ -11,6 +11,7 @@ import (
 )
 
 func init() {
+
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start server",
@@ -18,6 +19,7 @@ func init() {
 			return cli.ValidateFlagsWithViper(rootVc, cmd.Flags())
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			for _, l := range logoLines {
 				log.Println(l)
 			}
