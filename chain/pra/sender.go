@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/icon-project/btp/chain"
@@ -15,10 +16,14 @@ const (
 	txMaxDataSize                    = 524288 //512 * 1024 // 512kB
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
-	MaxBlockUpdates                  = 2
+	MaxBlockUpdatesPerSegment        = 2
 	DefaultRetryContractCall         = 10
-	DefaultRetryContractCallInterval = time.Second
+	DefaultRetryContractCallInterval = 3 * time.Second
 )
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
 
 type Sender struct {
 	c   *Client
@@ -69,11 +74,11 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			continue
 		}
 		buSize := len(bu.Proof)
-		if s.isOverLimit(buSize) {
+		if s.isOverSizeLimit(buSize) {
 			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
 		}
 		size += buSize
-		if s.isOverLimit(size) || msg.numberOfBlockUpdate >= MaxBlockUpdates {
+		if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -98,12 +103,12 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
 		return nil, err
 	}
-	if s.isOverLimit(len(bp)) {
+	if s.isOverSizeLimit(len(bp)) {
 		return nil, fmt.Errorf("invalid BlockProof size")
 	}
 
 	for _, rp := range rm.ReceiptProofs {
-		if s.isOverLimit(len(rp.Proof)) {
+		if s.isOverSizeLimit(len(rp.Proof)) {
 			return nil, fmt.Errorf("invalid ReceiptProof.Proof size")
 		}
 		if len(msg.BlockUpdates) == 0 {
@@ -114,11 +119,11 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		size += len(rp.Proof)
 
 		for j, ep := range rp.EventProofs {
-			if s.isOverLimit(len(ep.Proof)) {
+			if s.isOverSizeLimit(len(ep.Proof)) {
 				return nil, fmt.Errorf("invalid EventProof.Proof size")
 			}
 			size += len(ep.Proof)
-			if s.isOverLimit(size) || msg.numberOfBlockUpdate >= MaxBlockUpdates {
+			if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
 				if j == 0 && len(msg.BlockUpdates) == 0 {
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
@@ -319,6 +324,10 @@ func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[str
 	return s
 }
 
-func (s *Sender) isOverLimit(size int) bool {
+func (s *Sender) isOverSizeLimit(size int) bool {
 	return txSizeLimit < float64(size)
+}
+
+func (s *Sender) isOverBlocksLimit(blockupdates int) bool {
+	return blockupdates > MaxBlockUpdatesPerSegment
 }
