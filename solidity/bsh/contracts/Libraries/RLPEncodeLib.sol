@@ -9,13 +9,13 @@ pragma solidity >=0.5.0 <0.8.0;
  * https://github.com/bakaoh/solidity-rlp-encode.git
  */
 library RLPEncode {
-    int8 constant MAX_INT8 = type(int8).max;
-    int16 constant MAX_INT16 = type(int16).max;
-    int24 constant MAX_INT24 = type(int24).max;
-    int32 constant MAX_INT32 = type(int32).max;
-    int40 constant MAX_INT40 = type(int40).max;
-    int48 constant MAX_INT48 = type(int48).max;
-    int56 constant MAX_INT56 = type(int56).max;
+    int8 internal constant MAX_INT8 = type(int8).max;
+    int16 internal constant MAX_INT16 = type(int16).max;
+    int24 internal constant MAX_INT24 = type(int24).max;
+    int32 internal constant MAX_INT32 = type(int32).max;
+    int40 internal constant MAX_INT40 = type(int40).max;
+    int48 internal constant MAX_INT48 = type(int48).max;
+    int56 internal constant MAX_INT56 = type(int56).max;
 
     /*
      * Internal functions
@@ -100,7 +100,7 @@ library RLPEncode {
      * @param n The int to convert.
      * @return The int in strict bytes without padding.
      */
-    function IntToStrictBytes(int256 n) internal pure returns (bytes memory) {
+    function intToStrictBytes(int256 n) internal pure returns (bytes memory) {
         if (-MAX_INT8 - 1 <= n && n <= MAX_INT8) {
             return abi.encodePacked(int8(n));
         } else if (-MAX_INT16 - 1 <= n && n <= MAX_INT16) {
@@ -119,14 +119,13 @@ library RLPEncode {
         return abi.encodePacked(int64(n));
     }
 
-
     /**
      * @dev RLP encodes an int.
      * @param self The int to encode.
      * @return The RLP encoded int in bytes.
      */
     function encodeInt(int256 self) internal pure returns (bytes memory) {
-         return encodeBytes(IntToStrictBytes(self));
+        return encodeBytes(intToStrictBytes(self));
     }
 
     /**

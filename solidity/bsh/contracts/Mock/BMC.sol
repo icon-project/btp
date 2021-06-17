@@ -46,10 +46,10 @@ contract BMC is IBMCPeriphery {
     mapping(address => bool) private _owners;
     uint256 private numOfOwner;
 
-    mapping(uint => Types.Request[]) private pendingReq;
+    mapping(uint256 => Types.Request[]) private pendingReq;
     mapping(string => address) private bshServices;
     mapping(string => address) private bmvServices;
-    mapping(string => string) private connectedBMC; 
+    mapping(string => string) private connectedBMC;
     mapping(address => Types.RelayStats) private relayStats;
     mapping(string => string) private routes;
     mapping(string => Types.Link) internal links; // should be private, temporarily set internal for testing
@@ -65,14 +65,13 @@ contract BMC is IBMCPeriphery {
     uint256 private numOfBSHService;
     uint256 private numOfLinks;
     uint256 private numOfRoutes;
-    
-    uint private constant BLOCK_INTERVAL_MSEC = 1000;
+
+    uint256 private constant BLOCK_INTERVAL_MSEC = 1000;
     uint256 internal constant UNKNOWN_ERR = 0;
     uint256 internal constant BMC_ERR = 10;
     uint256 internal constant BMV_ERR = 25;
     uint256 internal constant BSH_ERR = 40;
     uint256 private constant DECIMAL_PRECISION = 10**6;
-
 
     modifier owner {
         require(_owners[msg.sender] == true, "BMCRevertUnauthorized");
@@ -127,26 +126,31 @@ contract BMC is IBMCPeriphery {
     /*****************************************************************************************
 
     *****************************************************************************************/
-    function getBmcBtpAddress() external override view returns (string memory) {
+    function getBmcBtpAddress() external view override returns (string memory) {
         return bmcAddress;
     }
 
-    function requestAddService(string memory _serviceName, address _addr) external override {
-        require(bshServices[_serviceName] == address(0), "BMCRevertAlreadyExistsBSH");
-        for (uint i = 0; i < pendingReq[0].length; i++) {
+    function requestAddService(string memory _serviceName, address _addr)
+        external
+        override
+    {
+        require(
+            bshServices[_serviceName] == address(0),
+            "BMCRevertAlreadyExistsBSH"
+        );
+        for (uint256 i = 0; i < pendingReq[0].length; i++) {
             if (pendingReq[0][i].serviceName.compareTo(_serviceName)) {
                 revert("BMCRevertRequestPending");
             }
         }
-        pendingReq[0].push(
-            Types.Request(
-                _serviceName,
-                _addr
-            )
-        );
+        pendingReq[0].push(Types.Request(_serviceName, _addr));
     }
 
-    function getPendingRequest() external view returns (Types.Request[] memory) {
+    function getPendingRequest()
+        external
+        view
+        returns (Types.Request[] memory)
+    {
         return pendingReq[0];
     }
 
@@ -165,7 +169,7 @@ contract BMC is IBMCPeriphery {
                 _message = _decoded;
             } catch {
                 continue;
-            } 
+            }
 
             if (_message.dst.compareTo(bmcAddress)) {
                 handleMessage(_prev, _message);
@@ -221,7 +225,8 @@ contract BMC is IBMCPeriphery {
                 }
             require(check, "BMCRevertUnauthorized: not registered relay");
             relay = msg.sender;
-        } else if (relay != msg.sender) revert("BMCRevertUnauthorized: invalid relay");
+        } else if (relay != msg.sender)
+            revert("BMCRevertUnauthorized: invalid relay");
 
         relayStats[relay].blockCount =
             relayStats[relay].blockCount +
@@ -268,10 +273,10 @@ contract BMC is IBMCPeriphery {
                         }
                     if (!check) {
                         reachable[_eventMsg.conn.to].push(_eventMsg.conn.from);
-                        (string memory _net, ) = _eventMsg.conn.to.splitBTPAddress();
+                        (string memory _net, ) =
+                            _eventMsg.conn.to.splitBTPAddress();
                         connectedBMC[_net] = _eventMsg.conn.to;
                     }
-                        
                 }
             } else if (_eventMsg.eventType.compareTo("Unlink")) {
                 if (links[_eventMsg.conn.from].isConnected) {
@@ -286,40 +291,46 @@ contract BMC is IBMCPeriphery {
                             )
                         ) {
                             delete reachable[_eventMsg.conn.to][i];
-                            (string memory _net, ) = _eventMsg.conn.to.splitBTPAddress();
+                            (string memory _net, ) =
+                                _eventMsg.conn.to.splitBTPAddress();
                             delete connectedBMC[_net];
-                        } 
+                        }
                     }
                 }
             } else revert("BMCRevert: not exists event handler");
         } else if (_msg.svc.compareTo("bmc")) {
             Types.BMCService memory _sm;
-            try this.tryDecodeBMCService(_msg.message) returns (Types.BMCService memory ret) {
+            try this.tryDecodeBMCService(_msg.message) returns (
+                Types.BMCService memory ret
+            ) {
                 _sm = ret;
-            }
-            catch {
+            } catch {
                 _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
             }
             if (_sm.serviceType.compareTo("FeeGathering")) {
                 Types.GatherFeeMessage memory _gatherFee;
-                try this.tryDecodeGatherFeeMessage(_sm.payload) returns (Types.GatherFeeMessage memory ret) {
+                try this.tryDecodeGatherFeeMessage(_sm.payload) returns (
+                    Types.GatherFeeMessage memory ret
+                ) {
                     _gatherFee = ret;
-                }
-                catch {
+                } catch {
                     _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
                 }
-                
-                for (uint i = 0; i < _gatherFee.svcs.length; i++) {
+
+                for (uint256 i = 0; i < _gatherFee.svcs.length; i++) {
                     //  If 'svc' not found, ignore
-                    if (bshServices[_gatherFee.svcs[i]] != address(0)){
-                        try IBSH(bshServices[_gatherFee.svcs[i]]).handleFeeGathering(
-                            _gatherFee.fa, _gatherFee.svcs[i]
-                        ){}
-                        catch {
+                    if (bshServices[_gatherFee.svcs[i]] != address(0)) {
+                        try
+                            IBSH(bshServices[_gatherFee.svcs[i]])
+                                .handleFeeGathering(
+                                _gatherFee.fa,
+                                _gatherFee.svcs[i]
+                            )
+                        {} catch {
                             //  If BSH contract throws a revert error, ignore and continue
                         }
                     }
-                }  
+                }
             }
         } else {
             if (bshServices[_msg.svc] == address(0)) {
@@ -375,11 +386,19 @@ contract BMC is IBMCPeriphery {
     //  @dev Solidity does not allow using try_catch with internal function
     //  Thus, work-around solution is the followings
     //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR Response
-    function tryDecodeBMCService(bytes calldata _msg) external pure returns (Types.BMCService memory) {
+    function tryDecodeBMCService(bytes calldata _msg)
+        external
+        pure
+        returns (Types.BMCService memory)
+    {
         return _msg.decodeBMCService();
     }
 
-    function tryDecodeGatherFeeMessage(bytes calldata _msg) external pure returns (Types.GatherFeeMessage memory) {
+    function tryDecodeGatherFeeMessage(bytes calldata _msg)
+        external
+        pure
+        returns (Types.GatherFeeMessage memory)
+    {
         return _msg.decodeGatherFeeMessage();
     }
 
@@ -411,12 +430,10 @@ contract BMC is IBMCPeriphery {
                         Types
                             .ServiceType
                             .REPONSE_HANDLE_SERVICE,
-                        Types
-                            .Response(_errCode, _errMsg)
-                            .encodeResponse()
-                        )
-                        .encodeServiceMessage()
+                        Types.Response(_errCode, _errMsg).encodeResponse()
                     )
+                        .encodeServiceMessage()
+                )
                     .encodeBMCMessage();
             _sendMessage(_prev, _serializedMsg);
         }
@@ -431,11 +448,15 @@ contract BMC is IBMCPeriphery {
         if (bytes(routes[_dst]).length == 0) {
             if (links[_dst].isConnected) return _dst;
             for (uint256 i = 0; i < reachable[_dst].length; i++) {
-                if (bytes(reachable[_dst][i]).length != 0) 
+                if (bytes(reachable[_dst][i]).length != 0)
                     return reachable[_dst][i];
             }
             (string memory _net, ) = _dst.splitBTPAddress();
-            revert(string("BMCRevertUnreachable: ").concat(_net).concat(" is unreachable"));
+            revert(
+                string("BMCRevertUnreachable: ").concat(_net).concat(
+                    " is unreachable"
+                )
+            );
         }
         return routes[_dst];
     }
@@ -477,26 +498,23 @@ contract BMC is IBMCPeriphery {
         }
     }
 
-     /**
+    /**
        @notice Registers the smart contract for the service.
        @dev Caller must be an operator of BTP network.
        @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
    */
-    function approveService(string memory _svc)
-        external
-        owner
-    {
+    function approveService(string memory _svc) external owner {
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
         bool foundReq = false;
         Types.Request[] memory temp = new Types.Request[](pendingReq[0].length);
         temp = pendingReq[0];
         delete pendingReq[0];
         address _addr;
-        for (uint i = 0; i < temp.length; i++) {
+        for (uint256 i = 0; i < temp.length; i++) {
             if (!temp[i].serviceName.compareTo(_svc)) {
                 pendingReq[0].push(temp[i]);
-            }else {
+            } else {
                 foundReq = true;
                 _addr = temp[i].bsh;
             }
@@ -542,11 +560,7 @@ contract BMC is IBMCPeriphery {
        @notice Get registered services.
        @return _servicers   An array of Service.
     */
-    function getServices()
-        external
-        view
-        returns (Types.Service[] memory)
-    {
+    function getServices() external view returns (Types.Service[] memory) {
         Types.Service[] memory services = new Types.Service[](numOfBSHService);
         uint256 temp = 0;
         for (uint256 i = 0; i < listBSHNames.length; i++) {
@@ -567,10 +581,7 @@ contract BMC is IBMCPeriphery {
        @param _net     Network Address of the blockchain
        @param _addr    Address of BMV
    */
-    function addVerifier(string memory _net, address _addr)
-        external
-        owner
-    {
+    function addVerifier(string memory _net, address _addr) external owner {
         require(bmvServices[_net] == address(0), "BMCRevertAlreadyExistsBMV");
         bmvServices[_net] = _addr;
         listBMVNames.push(_net);
@@ -592,11 +603,7 @@ contract BMC is IBMCPeriphery {
        @notice Get registered verifiers.
        @return _verifiers   An array of Verifier.
     */
-    function getVerifiers()
-        external
-        view
-        returns (Types.Verifier[] memory)
-    {
+    function getVerifiers() external view returns (Types.Verifier[] memory) {
         Types.Verifier[] memory verifiers =
             new Types.Verifier[](numOfBMVService);
         uint256 temp = 0;
@@ -621,8 +628,24 @@ contract BMC is IBMCPeriphery {
         string memory _net;
         (_net, ) = _link.splitBTPAddress();
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
-        require(links[_link].isConnected == false, "BMCRevertAlreadyExistsLink");
-        links[_link] = Types.Link(new address[](0),0, 0, BLOCK_INTERVAL_MSEC, 0, 10, 3, 0, 0, 0, 0, true);
+        require(
+            links[_link].isConnected == false,
+            "BMCRevertAlreadyExistsLink"
+        );
+        links[_link] = Types.Link(
+            new address[](0),
+            0,
+            0,
+            BLOCK_INTERVAL_MSEC,
+            0,
+            10,
+            3,
+            0,
+            0,
+            0,
+            0,
+            true
+        );
         listLinkNames.push(_link);
         connectedBMC[_net] = _link;
         numOfLinks++;
@@ -663,17 +686,17 @@ contract BMC is IBMCPeriphery {
 
     function setLink(
         string memory _link,
-        uint _blockInterval,
-        uint _maxAggregation,
-        uint _delayLimit
-    ) 
-        external
-        owner 
-    {
+        uint256 _blockInterval,
+        uint256 _maxAggregation,
+        uint256 _delayLimit
+    ) external owner {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
-        require(_maxAggregation >= 1 && _delayLimit >= 1, "BMCRevertInvalidParam");
+        require(
+            _maxAggregation >= 1 && _delayLimit >= 1,
+            "BMCRevertInvalidParam"
+        );
         Types.Link memory link = links[_link];
-        uint _scale = getScale(link.blockIntervalSrc, link.blockIntervalDst);
+        uint256 _scale = getScale(link.blockIntervalSrc, link.blockIntervalDst);
         bool resetRotateHeight = false;
         if (getRotateTerm(link.maxAggregation, _scale) == 0) {
             resetRotateHeight = true;
@@ -683,7 +706,7 @@ contract BMC is IBMCPeriphery {
         link.delayLimit = _delayLimit;
 
         _scale = getScale(link.blockIntervalSrc, _blockInterval);
-        uint _rotateTerm = getRotateTerm(_maxAggregation, _scale);
+        uint256 _rotateTerm = getRotateTerm(_maxAggregation, _scale);
         if (resetRotateHeight && _rotateTerm > 0) {
             link.rotateHeight = block.number + _rotateTerm;
             link.rxHeight = block.number;
@@ -696,22 +719,20 @@ contract BMC is IBMCPeriphery {
 
     function rotateRelay(
         string memory _link,
-        uint _currentHeight,
-        uint _relayMsgHeight,
+        uint256 _currentHeight,
+        uint256 _relayMsgHeight,
         bool _hasMsg
-    )
-        internal
-        returns (address) 
-    {
+    ) internal returns (address) {
         /*
             @dev Solidity does not support calculate rational numbers/floating numbers
             thus, a division of _blockIntervalSrc and _blockIntervalDst should be
             scaled by 10^6 to minimize proportional error
         */
         Types.Link memory link = links[_link];
-        uint _scale = getScale(link.blockIntervalSrc, link.blockIntervalDst); 
-        uint _rotateTerm = getRotateTerm(link.maxAggregation, _scale);
-        uint _baseHeight; uint _rotateCount;
+        uint256 _scale = getScale(link.blockIntervalSrc, link.blockIntervalDst);
+        uint256 _rotateTerm = getRotateTerm(link.maxAggregation, _scale);
+        uint256 _baseHeight;
+        uint256 _rotateCount;
         if (_rotateTerm > 0) {
             if (_hasMsg) {
                 //  Note that, Relay has to relay this event immediately to BMC
@@ -721,9 +742,14 @@ contract BMC is IBMCPeriphery {
                 //  BMC starts guessing when an event of 'RelayMessage' was thrown by another BMC
                 //  which is 'guessHeight' and the time BMC receiving this event is 'currentHeight'
                 //  If there is any delay, 'guessHeight' is likely less than 'currentHeight'
-                uint _guessHeight = link.rxHeight + ceilDiv(
-                    (_relayMsgHeight - link.rxHeightSrc) * DECIMAL_PRECISION, _scale
-                ) - 1;
+                uint256 _guessHeight =
+                    link.rxHeight +
+                        ceilDiv(
+                            (_relayMsgHeight - link.rxHeightSrc) *
+                                DECIMAL_PRECISION,
+                            _scale
+                        ) -
+                        1;
 
                 if (_guessHeight > _currentHeight) {
                     _guessHeight = _currentHeight;
@@ -732,12 +758,16 @@ contract BMC is IBMCPeriphery {
                 //  rotate_count = math.ceil((guess_height - self.rotate_height)/rotate_term)
                 //  the following code re-write it with using unsigned integer
                 if (_guessHeight < link.rotateHeight) {
+                    _rotateCount =
+                        ceilDiv(
+                            (link.rotateHeight - _guessHeight),
+                            _rotateTerm
+                        ) -
+                        1;
+                } else {
                     _rotateCount = ceilDiv(
-                        (link.rotateHeight - _guessHeight), _rotateTerm
-                    ) - 1;
-                }else {
-                    _rotateCount = ceilDiv(
-                        (_guessHeight - link.rotateHeight), _rotateTerm
+                        (_guessHeight - link.rotateHeight),
+                        _rotateTerm
                     );
                 }
                 //  No need to check this if using unsigned integer as above
@@ -745,9 +775,9 @@ contract BMC is IBMCPeriphery {
                 //     _rotateCount = 0;
                 // }
 
-                _baseHeight = link.rotateHeight + (
-                    (_rotateCount - 1) * _rotateTerm
-                );
+                _baseHeight =
+                    link.rotateHeight +
+                    ((_rotateCount - 1) * _rotateTerm);
                 /*  Python implementation as:
                 //  skip_count = math.ceil((current_height - guess_height)/self.delay_limit) - 1
                 //  In case that 'current_height' = 'guess_height'
@@ -768,10 +798,9 @@ contract BMC is IBMCPeriphery {
                 //        => out of 'delay_limit'
                 //        => rejected and move to next Relay
                 */
-                uint _skipCount = ceilDiv(
-                    (_currentHeight - _guessHeight), link.delayLimit
-                );
-  
+                uint256 _skipCount =
+                    ceilDiv((_currentHeight - _guessHeight), link.delayLimit);
+
                 if (_skipCount > 0) {
                     _skipCount = _skipCount - 1;
                     _rotateCount += _skipCount;
@@ -782,49 +811,43 @@ contract BMC is IBMCPeriphery {
                 links[_link] = link;
             } else {
                 if (_currentHeight < link.rotateHeight) {
-                    _rotateCount = ceilDiv(
-                        (link.rotateHeight - _currentHeight), _rotateTerm
-                    ) - 1;
+                    _rotateCount =
+                        ceilDiv(
+                            (link.rotateHeight - _currentHeight),
+                            _rotateTerm
+                        ) -
+                        1;
                 } else {
                     _rotateCount = ceilDiv(
-                        (_currentHeight - link.rotateHeight), _rotateTerm
+                        (_currentHeight - link.rotateHeight),
+                        _rotateTerm
                     );
                 }
-                _baseHeight = link.rotateHeight + (
-                    (_rotateCount - 1) * _rotateTerm
-                );
+                _baseHeight =
+                    link.rotateHeight +
+                    ((_rotateCount - 1) * _rotateTerm);
             }
-            return rotate(
-                _link,
-                _rotateTerm,
-                _rotateCount,
-                _baseHeight
-            );
+            return rotate(_link, _rotateTerm, _rotateCount, _baseHeight);
         }
         return address(0);
     }
 
-    function getScale(
-        uint _blockIntervalSrc,
-        uint _blockIntervalDst
-    )
+    function getScale(uint256 _blockIntervalSrc, uint256 _blockIntervalDst)
         private
         pure
-        returns (uint) 
+        returns (uint256)
     {
         if (_blockIntervalSrc < 1 || _blockIntervalDst < 1) {
             return 0;
         }
-        return ceilDiv(_blockIntervalSrc * DECIMAL_PRECISION, _blockIntervalDst);
+        return
+            ceilDiv(_blockIntervalSrc * DECIMAL_PRECISION, _blockIntervalDst);
     }
 
-    function getRotateTerm(
-        uint _maxAggregation,
-        uint _scale
-    )   
+    function getRotateTerm(uint256 _maxAggregation, uint256 _scale)
         private
         pure
-        returns (uint) 
+        returns (uint256)
     {
         if (_scale > 0) {
             return ceilDiv(_maxAggregation * DECIMAL_PRECISION, _scale);
@@ -834,13 +857,10 @@ contract BMC is IBMCPeriphery {
 
     function rotate(
         string memory _link,
-        uint _rotateTerm,
-        uint _rotateCount,
-        uint _baseHeight
-    )
-        private
-        returns (address) 
-    {
+        uint256 _rotateTerm,
+        uint256 _rotateCount,
+        uint256 _baseHeight
+    ) private returns (address) {
         Types.Link memory link = links[_link];
         if (_rotateTerm > 0 && _rotateCount > 0) {
             link.rotateHeight = _baseHeight + _rotateTerm;
@@ -858,34 +878,38 @@ contract BMC is IBMCPeriphery {
     @dev No need to check validity of num2 (num2 != 0)
     @dev It is checked before calling this function
     */
-    function ceilDiv(uint num1, uint num2) private pure returns (uint) {
+    function ceilDiv(uint256 num1, uint256 num2)
+        private
+        pure
+        returns (uint256)
+    {
         if (num1 % num2 == 0) {
             return num1 / num2;
         }
         return (num1 / num2) + 1;
     }
 
-   function propagateEvent(string memory _eventType, string calldata _link) private {
+    function propagateEvent(string memory _eventType, string calldata _link)
+        private
+    {
         string memory _net;
-        for (uint i = 0; i < listLinkNames.length; i++) {
+        for (uint256 i = 0; i < listLinkNames.length; i++) {
             if (links[listLinkNames[i]].isConnected) {
                 (_net, ) = listLinkNames[i].splitBTPAddress();
                 this.sendMessage(
                     _net,
                     "_EVENT",
                     0,
-                    Types.EventMessage(
-                        _eventType, 
-                        Types.Connection(
-                            bmcAddress,
-                            _link
-                        )
-                    ).encodeEventMessage()
+                    Types
+                        .EventMessage(
+                        _eventType,
+                        Types.Connection(bmcAddress, _link)
+                    )
+                        .encodeEventMessage()
                 );
             }
         }
     }
-
 
     /**
        @notice Add route to the BMC.
@@ -893,10 +917,7 @@ contract BMC is IBMCPeriphery {
        @param _dst     BTP Address of the destination BMC
        @param _link    BTP Address of the next BMC for the destination
    */
-    function addRoute(string memory _dst, string memory _link)
-        external
-        owner
-    {
+    function addRoute(string memory _dst, string memory _link) external owner {
         require(bytes(routes[_dst]).length == 0, "BTPRevertAlreadyExistRoute");
         //  Verify _dst and _link format address
         //  these two strings must follow BTP format address
@@ -969,10 +990,7 @@ contract BMC is IBMCPeriphery {
        @param _link     BTP Address of connected BMC
        @param _addr     the address of Relay
     */
-    function removeRelay(string memory _link, address _addr)
-        external
-        owner
-    {
+    function removeRelay(string memory _link, address _addr) external owner {
         require(
             links[_link].isConnected == true && links[_link].relays.length != 0,
             "BMCRevertUnauthorized"
@@ -1022,38 +1040,38 @@ contract BMC is IBMCPeriphery {
     {
         require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
         Types.Link memory link = links[_link];
-        Types.RelayStats[] memory _relays = new Types.RelayStats[](link.relays.length);
-        for (uint i = 0; i < link.relays.length; i++) {
+        Types.RelayStats[] memory _relays =
+            new Types.RelayStats[](link.relays.length);
+        for (uint256 i = 0; i < link.relays.length; i++) {
             _relays[i] = relayStats[link.relays[i]];
         }
         string memory _net;
         (_net, ) = _link.splitBTPAddress();
-        uint _height; uint _offset; uint _lastHeight;
+        uint256 _height;
+        uint256 _offset;
+        uint256 _lastHeight;
         (_height, _offset, _lastHeight) = IBMV(bmvServices[_net]).getStatus();
-        uint _rotateTerm = getRotateTerm(
-            link.maxAggregation,
-            getScale(link.blockIntervalSrc, link.blockIntervalDst)
-        );
-        return Types.LinkStats (
-            link.rxSeq,
-            link.txSeq,
-            Types.VerifierStats(
-                _height,
-                _offset,
-                _lastHeight,
-                ""
-            ),
-            _relays,
-            link.relayIdx,
-            link.rotateHeight,
-            _rotateTerm,
-            link.delayLimit,
-            link.maxAggregation,
-            link.rxHeightSrc,
-            link.rxHeight,
-            link.blockIntervalSrc,
-            link.blockIntervalDst,
-            block.number
-        );
+        uint256 _rotateTerm =
+            getRotateTerm(
+                link.maxAggregation,
+                getScale(link.blockIntervalSrc, link.blockIntervalDst)
+            );
+        return
+            Types.LinkStats(
+                link.rxSeq,
+                link.txSeq,
+                Types.VerifierStats(_height, _offset, _lastHeight, ""),
+                _relays,
+                link.relayIdx,
+                link.rotateHeight,
+                _rotateTerm,
+                link.delayLimit,
+                link.maxAggregation,
+                link.rxHeightSrc,
+                link.rxHeight,
+                link.blockIntervalSrc,
+                link.blockIntervalDst,
+                block.number
+            );
     }
 }

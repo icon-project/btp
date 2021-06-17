@@ -110,7 +110,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         var _query = "EOS";
         var result = await bsh_coreV2.coinId(_query);
         assert(
-            web3.utils.BN(result).toNumber() == 0
+            web3.utils.BN(result).toNumber() === 0
         );
     }); 
 
@@ -119,7 +119,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.transferOwnership(accounts[1]);
         var newOwner = await bsh_coreV2.owner();
         assert(
-            oldOwner == accounts[0] && newOwner == accounts[1]
+            oldOwner === accounts[0] && newOwner === accounts[1]
         );
     }); 
 
@@ -191,9 +191,9 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.mintMock(accounts[2], _id, _value);
         var balance = await bsh_coreV2.getBalanceOf(accounts[2], _coin, {from: accounts[2]});
         assert(
-            web3.utils.BN(balance._usableBalance).toNumber() == _value &&
-            web3.utils.BN(balance._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balance._refundableBalance).toNumber() == 0
+            web3.utils.BN(balance._usableBalance).toNumber() === _value &&
+            web3.utils.BN(balance._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balance._refundableBalance).toNumber() === 0
         );
     });
 
@@ -204,13 +204,13 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.mintMock(accounts[2], _id, _value);
         var balance = await bsh_coreV2.getBalanceOfBatch(accounts[2], [_coin1,_coin2], {from: accounts[2]});
         assert(
-            web3.utils.BN(balance._usableBalances[0]).toNumber() == another_value &&
-            web3.utils.BN(balance._lockedBalances[0]).toNumber() == 0 &&
-            web3.utils.BN(balance._refundableBalances[0]).toNumber() == 0 &&
+            web3.utils.BN(balance._usableBalances[0]).toNumber() === another_value &&
+            web3.utils.BN(balance._lockedBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balance._refundableBalances[0]).toNumber() === 0 &&
 
-            web3.utils.BN(balance._usableBalances[1]).toNumber() == _value &&
-            web3.utils.BN(balance._lockedBalances[1]).toNumber() == 0 &&
-            web3.utils.BN(balance._refundableBalances[1]).toNumber() == 0
+            web3.utils.BN(balance._usableBalances[1]).toNumber() === _value &&
+            web3.utils.BN(balance._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balance._refundableBalances[1]).toNumber() === 0
         );
     });
 
@@ -222,11 +222,11 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.setAggregationFee(_native, _native_value);
         var fees = await bsh_coreV2.getAccumulatedFees({from: accounts[3]});
         assert(
-            fees[0].coinName == _native && fees[0].value == _native_value &&
-            fees[1].coinName == _coin1 && fees[1].value == _value1 &&
-            fees[2].coinName == 'wBTC' && fees[2].value == 0 &&
-            fees[3].coinName == 'Ethereum' && fees[3].value == 0 &&
-            fees[4].coinName == _coin2 && fees[4].value == _value2
+            fees[0].coinName === _native && Number(fees[0].value) === _native_value &&
+            fees[1].coinName === _coin1 && Number(fees[1].value) === _value1 &&
+            fees[2].coinName === 'wBTC' && Number(fees[2].value) === 0 &&
+            fees[3].coinName === 'Ethereum' && Number(fees[3].value) === 0 &&
+            fees[4].coinName === _coin2 && Number(fees[4].value) === _value2
         );
     });
 
@@ -255,7 +255,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.reclaim(_coin, _value, {from: accounts[2]});
         var balanceAfter = await bsh_coreV2.getBalanceOf(accounts[2], _coin);
         assert(
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() + _value
         );
     });
@@ -315,17 +315,17 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         await bsh_coreV2.handleErrorFeeGathering(_fees, {from: accounts[2]});
         var updatedFees = await bsh_coreV2.getAccumulatedFees();
         assert(
-            oldFees[0].coinName == _native && oldFees[0].value == 0 &&
-            oldFees[1].coinName == 'ICON' && oldFees[1].value == 0 &&
-            oldFees[2].coinName == 'wBTC' && oldFees[2].value == 0 &&
-            oldFees[3].coinName == 'Ethereum' && oldFees[3].value == 0 &&
-            oldFees[4].coinName == 'TRON' && oldFees[4].value == 0 &&
+            oldFees[0].coinName === _native && Number(oldFees[0].value) === 0 &&
+            oldFees[1].coinName === 'ICON' && Number(oldFees[1].value) === 0 &&
+            oldFees[2].coinName === 'wBTC' && Number(oldFees[2].value) === 0 &&
+            oldFees[3].coinName === 'Ethereum' && Number(oldFees[3].value) === 0 &&
+            oldFees[4].coinName === 'TRON' && Number(oldFees[4].value) === 0 &&
 
-            updatedFees[0].coinName == _native && updatedFees[0].value == 1000 &&
-            updatedFees[1].coinName == 'ICON' && updatedFees[1].value == 1000 &&
-            updatedFees[2].coinName == 'wBTC' && updatedFees[2].value == 0 &&
-            updatedFees[3].coinName == 'Ethereum' && updatedFees[3].value == 1000 &&
-            updatedFees[4].coinName == 'TRON' && updatedFees[4].value == 1000
+            updatedFees[0].coinName === _native && Number(updatedFees[0].value) === 1000 &&
+            updatedFees[1].coinName === 'ICON' && Number(updatedFees[1].value) === 1000 &&
+            updatedFees[2].coinName === 'wBTC' && Number(updatedFees[2].value) === 0 &&
+            updatedFees[3].coinName === 'Ethereum' && Number(updatedFees[3].value) === 1000 &&
+            updatedFees[4].coinName === 'TRON' && Number(updatedFees[4].value) === 1000
         );
     });
 
@@ -334,10 +334,10 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         //  In this test, I'm using accounts[2] as a BSHPeriphery contract
         var result = await bsh_coreV2.gatherFeeRequest.call({from: accounts[2]});
         assert(
-            result[0].coinName == _native && result[0].value == 1000 &&
-            result[1].coinName == 'ICON' && result[1].value == 1000 &&
-            result[2].coinName == 'Ethereum' && result[2].value == 1000 &&
-            result[3].coinName == 'TRON' && result[3].value == 1000
+            result[0].coinName === _native && Number(result[0].value) === 1000 &&
+            result[1].coinName === 'ICON' && Number(result[1].value) === 1000 &&
+            result[2].coinName === 'Ethereum' && Number(result[2].value) === 1000 &&
+            result[3].coinName === 'TRON' && Number(result[3].value) === 1000
         );
     });
 });

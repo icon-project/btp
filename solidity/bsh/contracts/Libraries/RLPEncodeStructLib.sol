@@ -29,7 +29,6 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-
         bytes memory _rlp =
             abi.encodePacked(
                 _em.conn.from.encodeString(),
@@ -39,7 +38,7 @@ library RLPEncodeStruct {
             _em.eventType.encodeString(),
             addLength(_rlp.length, false),
             _rlp
-        );    
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -51,15 +50,10 @@ library RLPEncodeStruct {
         bytes memory _rlp;
         bytes memory temp;
         for (uint256 i = 0; i < _coins.length; i++) {
-            temp = abi.encodePacked(
-                _coins[i].encodeString()
-            );
+            temp = abi.encodePacked(_coins[i].encodeString());
             _rlp = abi.encodePacked(_rlp, temp);
         }
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBMCMessage(Types.BMCMessage memory _bm)
@@ -75,10 +69,7 @@ library RLPEncodeStruct {
                 _bm.sn.encodeInt(),
                 _bm.message.encodeBytes()
             );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeServiceMessage(Types.ServiceMessage memory _sm)
@@ -91,10 +82,7 @@ library RLPEncodeStruct {
                 uint256(_sm.serviceType).encodeUint(),
                 _sm.data.encodeBytes()
             );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeTransferCoinMsg(Types.TransferCoin memory _data)
@@ -109,23 +97,15 @@ library RLPEncodeStruct {
                 _data.assets[i].coinName.encodeString(),
                 _data.assets[i].value.encodeUint()
             );
-            _rlp = abi.encodePacked(
-                _rlp,
-                addLength(temp.length, false),
-                temp
-            );
+            _rlp = abi.encodePacked(_rlp, addLength(temp.length, false), temp);
         }
-        _rlp =
-            abi.encodePacked(
-                _data.from.encodeString(),
-                _data.to.encodeString(),
-                addLength(_rlp.length, false),
-                _rlp
-            );
-        return abi.encodePacked(
+        _rlp = abi.encodePacked(
+            _data.from.encodeString(),
+            _data.to.encodeString(),
             addLength(_rlp.length, false),
             _rlp
         );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeResponse(Types.Response memory _res)
@@ -138,10 +118,7 @@ library RLPEncodeStruct {
                 _res.code.encodeUint(),
                 _res.message.encodeString()
             );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockHeader(Types.BlockHeader memory _bh)
@@ -177,12 +154,8 @@ library RLPEncodeStruct {
         } else {
             temp1 = emptyListHeadStart();
         }
-        _rlp = abi.encodePacked(
-            _rlp,
-            temp1,
-            _bh.logsBloom.encodeBytes()
-        );
-        bytes memory temp2;    
+        _rlp = abi.encodePacked(_rlp, temp1, _bh.logsBloom.encodeBytes());
+        bytes memory temp2;
         //  SPR struct could be an empty struct
         //  In that case, serialize(SPR) = 0xF800
         if (_bh.isSPREmpty) {
@@ -195,10 +168,7 @@ library RLPEncodeStruct {
             } else {
                 temp1 = emptyListHeadStart();
             }
-            temp2 = abi.encodePacked(
-                _bh.spr.stateHash.encodeBytes(),
-                temp1
-            );
+            temp2 = abi.encodePacked(_bh.spr.stateHash.encodeBytes(), temp1);
 
             if (_bh.spr.receiptHash.length != 0) {
                 temp1 = _bh.spr.receiptHash.encodeBytes();
@@ -206,17 +176,13 @@ library RLPEncodeStruct {
                 temp1 = emptyListHeadStart();
             }
             temp2 = abi.encodePacked(temp2, temp1);
-            temp2 = abi.encodePacked(
-                addLength(temp2.length, false),
-                temp2
-            ).encodeBytes();
+            temp2 = abi
+                .encodePacked(addLength(temp2.length, false), temp2)
+                .encodeBytes();
         }
         _rlp = abi.encodePacked(_rlp, temp2);
 
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeVotes(Types.Votes memory _vote)
@@ -233,11 +199,7 @@ library RLPEncodeStruct {
                 _vote.ts[i].timestamp.encodeUint(),
                 _vote.ts[i].signature.encodeBytes()
             );
-            _rlp = abi.encodePacked(
-                _rlp,
-                addLength(temp.length, false),
-                temp
-            );
+            _rlp = abi.encodePacked(_rlp, addLength(temp.length, false), temp);
         }
 
         //  Next, serialize the blockPartSetID
@@ -250,13 +212,10 @@ library RLPEncodeStruct {
             _vote.round.encodeUint(),
             addLength(temp.length, false),
             temp,
-            addLength(_rlp.length, false), 
-            _rlp
-        );
-        return abi.encodePacked(
             addLength(_rlp.length, false),
             _rlp
         );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockWitness(Types.BlockWitness memory _bw)
@@ -275,10 +234,7 @@ library RLPEncodeStruct {
             addLength(_rlp.length, false),
             _rlp
         );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeEventProof(Types.EventProof memory _ep)
@@ -292,19 +248,12 @@ library RLPEncodeStruct {
             temp = _ep.eventMptNode[i].encodeBytes();
             _rlp = abi.encodePacked(_rlp, temp);
         }
-        _rlp = abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        ).encodeBytes();
+        _rlp = abi
+            .encodePacked(addLength(_rlp.length, false), _rlp)
+            .encodeBytes();
 
-        _rlp = abi.encodePacked(
-            _ep.index.encodeUint(),
-            _rlp
-        );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        _rlp = abi.encodePacked(_ep.index.encodeUint(), _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockUpdate(Types.BlockUpdate memory _bu)
@@ -321,10 +270,9 @@ library RLPEncodeStruct {
                 temp = _bu.validators[i].encodeBytes();
                 _rlp = abi.encodePacked(_rlp, temp);
             }
-            _rlp = abi.encodePacked(
-                addLength(_rlp.length, false),
-                _rlp
-            ).encodeBytes();
+            _rlp = abi
+                .encodePacked(addLength(_rlp.length, false), _rlp)
+                .encodeBytes();
         } else {
             _rlp = emptyListHeadStart();
         }
@@ -335,10 +283,7 @@ library RLPEncodeStruct {
             _rlp
         );
 
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeReceiptProof(Types.ReceiptProof memory _rp)
@@ -353,10 +298,9 @@ library RLPEncodeStruct {
             temp = _rp.txReceipts[i].encodeBytes();
             _rlp = abi.encodePacked(_rlp, temp);
         }
-        _rlp = abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        ).encodeBytes();
+        _rlp = abi
+            .encodePacked(addLength(_rlp.length, false), _rlp)
+            .encodeBytes();
 
         bytes memory eventProof;
         for (uint256 i = 0; i < _rp.ep.length; i++) {
@@ -370,10 +314,7 @@ library RLPEncodeStruct {
             eventProof
         );
 
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockProof(Types.BlockProof memory _bp)
@@ -386,10 +327,7 @@ library RLPEncodeStruct {
                 _bp.bh.encodeBlockHeader().encodeBytes(),
                 _bp.bw.encodeBlockWitness().encodeBytes()
             );
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeRelayMessage(Types.RelayMessage memory _rm)
@@ -404,10 +342,7 @@ library RLPEncodeStruct {
                 temp = _rm.buArray[i].encodeBlockUpdate().encodeBytes();
                 _rlp = abi.encodePacked(_rlp, temp);
             }
-            _rlp = abi.encodePacked(
-                addLength(_rlp.length, false),
-                _rlp
-            );
+            _rlp = abi.encodePacked(addLength(_rlp.length, false), _rlp);
         } else {
             _rlp = emptyListShortStart();
         }
@@ -434,10 +369,7 @@ library RLPEncodeStruct {
         }
         _rlp = abi.encodePacked(_rlp, receiptProof);
 
-        return abi.encodePacked(
-            addLength(_rlp.length, false),
-            _rlp
-        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     //  Adding LIST_HEAD_START by length
@@ -454,10 +386,11 @@ library RLPEncodeStruct {
     {
         if (length > 55 && !isLongList) {
             bytes memory payLoadSize = encodeUintByLength(length);
-            return abi.encodePacked(
-                addLength(payLoadSize.length, true),
-                payLoadSize
-            );
+            return
+                abi.encodePacked(
+                    addLength(payLoadSize.length, true),
+                    payLoadSize
+                );
         } else if (length <= 55 && !isLongList) {
             return abi.encodePacked(uint8(LIST_SHORT_START + length));
         }
@@ -466,12 +399,11 @@ library RLPEncodeStruct {
 
     function emptyListHeadStart() internal pure returns (bytes memory) {
         bytes memory payLoadSize = encodeUintByLength(0);
-        return abi.encodePacked(
+        return
             abi.encodePacked(
-                uint8(LIST_LONG_START + payLoadSize.length)
-            ),
-            payLoadSize
-        );
+                abi.encodePacked(uint8(LIST_LONG_START + payLoadSize.length)),
+                payLoadSize
+            );
     }
 
     function emptyListShortStart() internal pure returns (bytes memory) {

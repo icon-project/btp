@@ -110,7 +110,7 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
         var _query = "EOS";
         var result = await bsh_coreV2.coinId(_query);
         assert(
-            web3.utils.BN(result).toNumber() == 0
+            web3.utils.BN(result).toNumber() === 0
         );
     }); 
 
@@ -119,7 +119,7 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
         await bsh_coreV2.transferOwnership(accounts[1]);
         var newOwner = await bsh_coreV2.owner();
         assert(
-            oldOwner == accounts[0] && newOwner == accounts[1]
+            oldOwner === accounts[0] && newOwner === accounts[1]
         );
     }); 
 
@@ -205,8 +205,8 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         bsh_coin_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
         account_balance = await bsh_coreV2.getBalanceOf(accounts[0], _native);
         assert(
-            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(account_balance._lockedBalance).toNumber() == 0
+            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(account_balance._lockedBalance).toNumber() === 0
         );
     });
 
@@ -243,16 +243,16 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         //  - catch emit event TransferStart throwing from BSHPeriphery contract
 
         // truffleAssert.eventEmitted(output, 'TransferStart', (ev) => {
-        //     return ev._from === accounts[0] && ev._to === _to && ev._sn == 0 &&
-        //         ev._assetDetails.length == 1 &&
+        //     return ev._from === accounts[0] && ev._to === _to && ev._sn === 0 &&
+        //         ev._assetDetails.length === 1 &&
         //         ev._assetDetails[0].coinName === 'PARA' && 
-        //         ev._assetDetails[0].value == _amt - chargedFee &&
-        //         ev._assetDetails[0].fee == chargedFee
+        //         ev._assetDetails[0].value === _amt - chargedFee &&
+        //         ev._assetDetails[0].fee === chargedFee
         // });
         assert(
-            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() == _amt &&
-            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() == 0 && 
-            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() == _amt
+            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() === _amt &&
+            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === 0 && 
+            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() === _amt
         );
     });
 
@@ -263,9 +263,10 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         var fees = await bsh_coreV2.getAccumulatedFees();
         // TODO: catch emit event TransferEnd throwing from BSHService contract
         assert(
-            fees[0].coinName == _native && fees[0].value == Math.floor(_amt/ 1000) &&
-            web3.utils.BN(account_balanceBefore._lockedBalance) == _amt && 
-            web3.utils.BN(account_balanceAfter._lockedBalance) == 0
+            fees[0].coinName === _native && 
+            Number(fees[0].value) === Math.floor(_amt/ 1000) &&
+            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === _amt &&
+            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() === 0
         );
     });
 
@@ -280,17 +281,17 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         //  - catch emit event TransferStart throwing from BSHPeriphery contract
 
         // truffleAssert.eventEmitted(output, 'TransferStart', (ev) => {
-        //     return ev._from === accounts[0] && ev._to === _to && ev._sn == 1 &&
-        //         ev._assetDetails.length == 1 &&
+        //     return ev._from === accounts[0] && ev._to === _to && ev._sn === 1 &&
+        //         ev._assetDetails.length === 1 &&
         //         ev._assetDetails[0].coinName === 'PARA' && 
-        //         ev._assetDetails[0].value == _amt - chargedFee &&
-        //         ev._assetDetails[0].fee == chargedFee
+        //         ev._assetDetails[0].value === _amt - chargedFee &&
+        //         ev._assetDetails[0].fee === chargedFee
         // });
 
         assert(
-            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() == 2 * _amt &&
-            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() == 0 && 
-            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() == _amt
+            web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() === 2 * _amt &&
+            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === 0 && 
+            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() === _amt
         );
     });
 
@@ -303,11 +304,11 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
 
         assert(
-            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() == _amt && 
-            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(account_balanceAfter._refundableBalance).toNumber() == 0 && 
-            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() == 2 * _amt &&
-            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() == _amt
+            web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === _amt && 
+            web3.utils.BN(account_balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(account_balanceAfter._refundableBalance).toNumber() === 0 && 
+            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() === 2 * _amt &&
+            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() === _amt
         );
     });
 
@@ -323,12 +324,12 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         //  - emit event TransferStart throwing from BSHPeriphery contract
         
         assert(
-            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() + _amt &&
-            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() == 0 && 
-            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() == _amt &&
-            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() == _amt &&
-            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() == 2 * _amt
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === 0 && 
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === _amt &&
+            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() === _amt &&
+            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() === 2 * _amt
         );
     });
 
@@ -340,12 +341,12 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         var bsh_coin_balance_after = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
         // TODO: catch emit event TransferEnd throwing from BSHService contract    
         assert(
-            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() == _amt && 
-            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _amt && 
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() &&
-            web3.utils.BN(contract_balanceAfter._refundableBalance).toNumber() == _amt &&
-            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceAfter._refundableBalance).toNumber() === _amt &&
+            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() === 
                 web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber()
         );
     });
@@ -362,11 +363,11 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         //  - emit event TransferStart throwing from BSHService contract
 
         assert(
-            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() + _amt &&
-            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() == 0 && 
-            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() == _amt &&
-            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() ==
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === 0 && 
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === _amt &&
+            web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() ===
                 web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() + _amt
         );
     });
@@ -380,12 +381,12 @@ contract('As a user, I want to send PRA to ICON blockchain - After Upgrading Con
         // TODO: catch emit event TransferEnd throwing from BSHService contract
 
         assert(
-            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() == _amt && 
-            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _amt && 
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() + _amt &&
-            web3.utils.BN(contract_balanceAfter._refundableBalance).toNumber() == 0 &&
-            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() ==
+            web3.utils.BN(contract_balanceAfter._refundableBalance).toNumber() === 0 &&
+            web3.utils.BN(bsh_coin_balance_before._usableBalance).toNumber() ===
                 web3.utils.BN(bsh_coin_balance_after._usableBalance).toNumber() + _amt
         );
     });
@@ -429,10 +430,10 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         ); 
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         assert(
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() &&
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&    
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&    
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0
         );
     });
 
@@ -447,10 +448,10 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         ); 
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         assert(
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() &&
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&    
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&    
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0
         );
     });
 
@@ -476,11 +477,11 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         var contract_balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         var bsh_core_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
         assert(
-            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() &&
-            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() == 0
+            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() === 0
         );
     });
 
@@ -494,9 +495,9 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         ); 
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         assert(
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceAfter._usableBalance).toNumber()
         );
     });
@@ -512,9 +513,9 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         ); 
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         assert(
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber()
         );
     });
@@ -531,11 +532,11 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         var bsh_core_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
         assert(
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() &&
-            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() == 0
+            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() === 0
         );
     });
 
@@ -552,11 +553,11 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         //  - emit event TransferStart throwing from BSHService contract
 
         assert(
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() - _value &&
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&    
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == _value &&
-            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() == _value
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&    
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === _value &&
+            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() === _value
         );
     });
 
@@ -569,12 +570,13 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         var bsh_core_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
         // TODO: catch emit event TransferEnd throwing from BSHService contract
         assert(
-            web3.utils.BN(contract_balanceBefore._lockedBalance) == _value && 
-            web3.utils.BN(contract_balanceAfter._lockedBalance) == 0 &&
-            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() == 
+            web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _value && 
+            web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
                 web3.utils.BN(contract_balanceAfter._usableBalance).toNumber() &&
-            fees[1].coinName == _name && fees[1].value == Math.floor(_value / 1000) &&
-            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() == Math.floor(_value / 1000)
+            fees[1].coinName === _name && 
+            Number(fees[1].value) === Math.floor(_value / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalance).toNumber() === Math.floor(_value / 1000)
         );
     });
 
@@ -591,11 +593,11 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         //  - emit event Message throwing from BMC contract
         //  - emit event TransferStart throwing from BSHService contract
         assert(
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() - _value &&
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == 0 &&    
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == _value &&
-            web3.utils.BN(bsh_core_balance_after._usableBalance).toNumber() == 
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === 0 &&    
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === _value &&
+            web3.utils.BN(bsh_core_balance_after._usableBalance).toNumber() === 
                 web3.utils.BN(bsh_core_balance_before._usableBalance).toNumber() + _value
         );
     });
@@ -607,11 +609,11 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         var balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
         // TODO: catch emit event TransferEnd throwing from BSHService contract
         assert(
-            web3.utils.BN(balanceBefore._lockedBalance).toNumber() == _value && 
-            web3.utils.BN(balanceAfter._lockedBalance).toNumber() == 0 &&
-            web3.utils.BN(balanceAfter._usableBalance).toNumber() == 
+            web3.utils.BN(balanceBefore._lockedBalance).toNumber() === _value && 
+            web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() + _value &&
-            web3.utils.BN(balanceAfter._refundableBalance).toNumber() == 0
+            web3.utils.BN(balanceAfter._refundableBalance).toNumber() === 0
         );
     });
 });
@@ -650,7 +652,7 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
             _bmcICON, '',service, 10, _from, _address, _native, _value
         );
         assert(
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -664,8 +666,8 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         );
         var balanceAfter = await bmc.getBalance(accounts[1]);
         assert(
-            web3.utils.BN(balanceAfter).toString() == web3.utils.BN(balanceBefore).toString() &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            web3.utils.BN(balanceAfter).toString() === web3.utils.BN(balanceBefore).toString() &&
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -679,8 +681,8 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         );
         var balanceAfter = await bmc.getBalance(notpayable.address);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == web3.utils.BN(balanceBefore).toNumber() &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            web3.utils.BN(balanceAfter).toNumber() === web3.utils.BN(balanceBefore).toNumber() &&
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -695,9 +697,9 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         var balanceAfter = await bmc.getBalance(accounts[1]);
 
         assert(
-            web3.utils.BN(balanceAfter).toString() == 
+            web3.utils.BN(balanceAfter).toString() === 
                 web3.utils.BN(balanceBefore).add(new web3.utils.BN(_value)).toString() &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg    
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg    
         );
     });
 
@@ -711,9 +713,9 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         );
         var balanceAfter = await bmc.getBalance(refundable.address);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == 
+            web3.utils.BN(balanceAfter).toNumber() === 
                 web3.utils.BN(balanceBefore).toNumber() + _value &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg    
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg    
         );
     });
 });
@@ -753,7 +755,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
             _bmcICON, '', service, 10, _from, _address, _name, _value
         );
         assert(
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -766,8 +768,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         );
         var balanceAfter = await bsh_coreV2.balanceOf(notpayable.address, id);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == web3.utils.BN(balanceBefore).toNumber() &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            web3.utils.BN(balanceAfter).toNumber() === web3.utils.BN(balanceBefore).toNumber() &&
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -782,8 +784,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         );
         var balanceAfter = await bsh_coreV2.balanceOf(holder.address, invalid_coin_id);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == web3.utils.BN(balanceBefore).toNumber() &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            web3.utils.BN(balanceAfter).toNumber() === web3.utils.BN(balanceBefore).toNumber() &&
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -796,9 +798,9 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         );
         var balanceAfter = await bsh_coreV2.balanceOf(holder.address, id);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == 
+            web3.utils.BN(balanceAfter).toNumber() === 
                 web3.utils.BN(balanceBefore).toNumber() + _value &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg    
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg    
         );
     });
 
@@ -811,9 +813,9 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         );
         var balanceAfter = await bsh_coreV2.balanceOf(accounts[1], id);
         assert(
-            web3.utils.BN(balanceAfter).toNumber() == 
+            web3.utils.BN(balanceAfter).toNumber() === 
                 web3.utils.BN(balanceBefore).toNumber() + _value &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg 
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg 
         );
     });
 });
@@ -869,12 +871,12 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) =>
     it('Scenario 1: Should be able to query Aggregation Fee', async () => {
         var aggregationFee = await bsh_coreV2.getAccumulatedFees();
         assert(
-            aggregationFee.length == 5 &&
-            aggregationFee[0].coinName == 'PARA' && aggregationFee[0].value == 10 &&
-            aggregationFee[1].coinName == 'ICON' && aggregationFee[1].value == 1000 &&
-            aggregationFee[2].coinName == 'BINANCE' && aggregationFee[2].value == 5000 &&
-            aggregationFee[3].coinName == 'ETHEREUM' && aggregationFee[3].value == 0 &&
-            aggregationFee[4].coinName == 'TRON' && aggregationFee[4].value == 0
+            aggregationFee.length === 5 &&
+            aggregationFee[0].coinName === 'PARA' && Number(aggregationFee[0].value) === 10 &&
+            aggregationFee[1].coinName === 'ICON' && Number(aggregationFee[1].value) === 1000 &&
+            aggregationFee[2].coinName === 'BINANCE' && Number(aggregationFee[2].value) === 5000 &&
+            aggregationFee[3].coinName === 'ETHEREUM' && Number(aggregationFee[3].value) === 0 &&
+            aggregationFee[4].coinName === 'TRON' && Number(aggregationFee[4].value) === 0
         );
     });
 
@@ -892,10 +894,10 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) =>
         var FA3After = await bsh_perifV2.getAggregationFeeOf(_name2);
         var fees = await bsh_perifV2.getPendingFees(_sn3);     //  get pending Aggregation Fee list
         assert(
-            web3.utils.BN(FA1Before).toNumber() == web3.utils.BN(FA1After).toNumber() && 
-            web3.utils.BN(FA2Before).toNumber() == web3.utils.BN(FA2After).toNumber() &&
-            web3.utils.BN(FA3Before).toNumber() == web3.utils.BN(FA3After).toNumber() &&
-            fees.length == 0
+            web3.utils.BN(FA1Before).toNumber() === web3.utils.BN(FA1After).toNumber() && 
+            web3.utils.BN(FA2Before).toNumber() === web3.utils.BN(FA2After).toNumber() &&
+            web3.utils.BN(FA3Before).toNumber() === web3.utils.BN(FA3After).toNumber() &&
+            fees.length === 0
         );
     });
 
@@ -919,14 +921,16 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) =>
             btpAddr, _bmcICON, _to1, service, _sn3, bsh_coreV2.address, fees
         );
         assert(
-            FA1Before == Math.floor(_txAmt / 1000) && 
-            FA2Before == Math.floor(_txAmt1 / 1000) &&
-            FA3Before == Math.floor(_txAmt2 / 1000) &&
-            FA1After == 0 && FA2After == 0 && FA3After == 0 && 
-            fees[0].coinName == _native && fees[0].value == Math.floor(_txAmt / 1000) &&
-            fees[1].coinName == _name1 && fees[1].value == Math.floor(_txAmt1 / 1000) &&
-            fees[2].coinName == _name2 && fees[2].value == Math.floor(_txAmt2 / 1000) &&
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            web3.utils.BN(FA1Before).toNumber() === Math.floor(_txAmt / 1000) && 
+            web3.utils.BN(FA2Before).toNumber() === Math.floor(_txAmt1 / 1000) &&
+            web3.utils.BN(FA3Before).toNumber() === Math.floor(_txAmt2 / 1000) &&
+            web3.utils.BN(FA1After).toNumber() === 0 && 
+            web3.utils.BN(FA2After).toNumber() === 0 && 
+            web3.utils.BN(FA3After).toNumber() === 0 && 
+            fees[0].coinName === _native && Number(fees[0].value) === Math.floor(_txAmt / 1000) &&
+            fees[1].coinName === _name1 && Number(fees[1].value) === Math.floor(_txAmt1 / 1000) &&
+            fees[2].coinName === _name2 && Number(fees[2].value) === Math.floor(_txAmt2 / 1000) &&
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
 
@@ -936,11 +940,11 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) =>
         await bmc.response(REPONSE_HANDLE_SERVICE, _net1, service, _sn3, RC_OK, "");
         var feesAfter = await bsh_perifV2.getPendingFees(_sn3);
         assert(
-            feesBefore.length == 3 &&
-            feesBefore[0].coinName == _native && feesBefore[0].value == Math.floor(_txAmt / 1000) &&
-            feesBefore[1].coinName == _name1 && feesBefore[1].value == Math.floor(_txAmt1 / 1000) &&
-            feesBefore[2].coinName == _name2 && feesBefore[2].value == Math.floor(_txAmt2 / 1000) &&
-            feesAfter.length == 0
+            feesBefore.length === 3 &&
+            feesBefore[0].coinName === _native && Number(feesBefore[0].value) === Math.floor(_txAmt / 1000) &&
+            feesBefore[1].coinName === _name1 && Number(feesBefore[1].value) === Math.floor(_txAmt1 / 1000) &&
+            feesBefore[2].coinName === _name2 && Number(feesBefore[2].value) === Math.floor(_txAmt2 / 1000) &&
+            feesAfter.length === 0
         );
     });
 
@@ -961,12 +965,14 @@ contract('BSHs Handle Fee Aggregation - After Upgrading Contract', (accounts) =>
         var FA2After = await bsh_perifV2.getAggregationFeeOf(_name2);
         var feesAfter = await bsh_perifV2.getPendingFees(_sn6);
         assert(
-            feesBefore.length == 2 &&
-            feesBefore[0].coinName == _name1 && feesBefore[0].value == Math.floor(_amt1 / 1000) &&
-            feesBefore[1].coinName == _name2 && feesBefore[1].value == Math.floor(_amt2 / 1000) &&
-            FA1Before == 0 && FA2Before == 0 &&
-            feesAfter.length == 0 &&
-            FA1After == Math.floor(_amt1 / 1000) && FA2After == Math.floor(_amt2 / 1000)
+            feesBefore.length === 2 &&
+            feesBefore[0].coinName === _name1 && Number(feesBefore[0].value) === Math.floor(_amt1 / 1000) &&
+            feesBefore[1].coinName === _name2 && Number(feesBefore[1].value) === Math.floor(_amt2 / 1000) &&
+            web3.utils.BN(FA1Before).toNumber() === 0 && 
+            web3.utils.BN(FA2Before).toNumber() === 0 &&
+            feesAfter.length === 0 &&
+            web3.utils.BN(FA1After).toNumber() === Math.floor(_amt1 / 1000) && 
+            web3.utils.BN(FA2After).toNumber() === Math.floor(_amt2 / 1000)
         );
     });
 });
@@ -1011,7 +1017,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         );
 
         assert(
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg === _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1030,17 +1036,17 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(holder.address, _invalid_token);
 
         assert(
-            web3.utils.BN(balance1Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance1Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance1After._usableBalance).toNumber() &&
-            web3.utils.BN(balance2Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance2Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance2After._usableBalance).toNumber() &&  
-            web3.utils.BN(balance3Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance3Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance3After._usableBalance).toNumber() &&      
-            web3.utils.BN(balance1After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance3After._usableBalance).toNumber() == 0 &&
+            web3.utils.BN(balance1After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance2After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance3After._usableBalance).toNumber() === 0 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg === _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1058,16 +1064,16 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(accounts[1], _native);
 
         assert(
-            web3.utils.BN(balance1Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance1Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance1After._usableBalance).toNumber() &&
-            web3.utils.BN(balance2Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance2Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance2After._usableBalance).toNumber() &&  
-            web3.utils.BN(balance3Before._usableBalance).toString() == 
+            web3.utils.BN(balance3Before._usableBalance).toString() === 
                 web3.utils.BN(balance3After._usableBalance).toString() &&      
-            web3.utils.BN(balance1After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == 0 &&
+            web3.utils.BN(balance1After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance2After._usableBalance).toNumber() === 0 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg === _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1085,17 +1091,17 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(refundable.address, _name2);
 
         assert(
-            web3.utils.BN(balance1Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance1Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance1After._usableBalance).toNumber() &&
-            web3.utils.BN(balance2Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance2Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance2After._usableBalance).toNumber() &&  
-            web3.utils.BN(balance3Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance3Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance3After._usableBalance).toNumber() &&      
-            web3.utils.BN(balance1After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance3After._usableBalance).toNumber() == 0 &&
+            web3.utils.BN(balance1After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance2After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance3After._usableBalance).toNumber() === 0 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg === _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1113,17 +1119,17 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(holder.address, _native);
 
         assert(
-            web3.utils.BN(balance1Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance1Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance1After._usableBalance).toNumber() &&
-            web3.utils.BN(balance2Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance2Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance2After._usableBalance).toNumber() &&  
-            web3.utils.BN(balance3Before._usableBalance).toNumber() == 
+            web3.utils.BN(balance3Before._usableBalance).toNumber() === 
                 web3.utils.BN(balance3After._usableBalance).toNumber() &&      
-            web3.utils.BN(balance1After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance3After._usableBalance).toNumber() == 0 &&
+            web3.utils.BN(balance1After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance2After._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance3After._usableBalance).toNumber() === 0 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg === _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1141,14 +1147,14 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(holder.address, _name3);
 
         assert(
-            web3.utils.BN(balance1Before._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance2Before._usableBalance).toNumber() == 0 &&
-            web3.utils.BN(balance3Before._usableBalance).toNumber() == 0 &&    
-            web3.utils.BN(balance1After._usableBalance).toNumber() == _value1 &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == _value2 &&
-            web3.utils.BN(balance3After._usableBalance).toNumber() == _value3 &&
+            web3.utils.BN(balance1Before._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance2Before._usableBalance).toNumber() === 0 &&
+            web3.utils.BN(balance3Before._usableBalance).toNumber() === 0 &&    
+            web3.utils.BN(balance1After._usableBalance).toNumber() === _value1 &&
+            web3.utils.BN(balance2After._usableBalance).toNumber() === _value2 &&
+            web3.utils.BN(balance3After._usableBalance).toNumber() === _value3 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
 
@@ -1166,14 +1172,635 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance3After = await bsh_coreV2.getBalanceOf(accounts[1], _name3);
 
         assert(   
-            web3.utils.BN(balance1After._usableBalance).toString() == 
+            web3.utils.BN(balance1After._usableBalance).toString() === 
                 web3.utils.BN(balance1Before._usableBalance).add(new web3.utils.BN(_value1)).toString() &&
-            web3.utils.BN(balance2After._usableBalance).toNumber() == 
+            web3.utils.BN(balance2After._usableBalance).toNumber() === 
                 web3.utils.BN(balance2Before._usableBalance).toNumber() + _value2 &&
-            web3.utils.BN(balance3After._usableBalance).toNumber() == 
+            web3.utils.BN(balance3After._usableBalance).toNumber() === 
                 web3.utils.BN(balance3Before._usableBalance).toNumber() + _value3 &&
 
-            output.logs[0].args._next == _bmcICON && output.logs[0].args._msg == _msg
+            output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         )
     });
-});    
+}); 
+
+contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (accounts) => {
+    let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder;
+    var service = 'Coin/WrappedCoin';           var _uri = 'https://github.com/icon-project/btp';
+    var _native = 'PARA';                       var _fee = 10;      
+    var _net = '1234.iconee';                   var _from = '0x12345678';   var _value = 999999999999999;                       
+    var REPONSE_HANDLE_SERVICE = 2;             var RC_OK = 0;              var RC_ERR = 1;
+    var _bmcICON = 'btp://1234.iconee/0x1234567812345678';         
+    var _coin1 = 'ICON';    var _coin2 = 'TRON';    var _coin3 = 'BINANCE';
+    var initAmt = 100000000;
+
+    before(async () => {    
+        bmc = await BMC.new('1234.pra');
+        bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee]);
+        bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
+        await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
+        await bmc.approveService(service);
+        await bmc.setBSH(bsh_perifV1.address);
+        bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
+        bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
+        holder = await Holder.new();
+        await bmc.addVerifier(_net, accounts[1]);
+        await bmc.addLink(_bmcICON);
+        await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
+        await bsh_coreV2.register(_coin1);
+        await bsh_coreV2.register(_coin2);
+        await bsh_coreV2.register(_coin3);
+        await bsh_coreV2.transfer('btp://1234.iconee/0x12345678', {from: accounts[0], value: initAmt});
+        await holder.deposit({from: accounts[1], value: 100000000});
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, holder.address, _coin1, _value
+        );
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, holder.address, _coin2, _value
+        );
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, holder.address, _coin3, _value
+        );
+
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, accounts[1], _coin1, _value
+        );
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, accounts[1], _coin2, _value
+        );
+        await bmc.transferRequestWithAddress(
+            _net, service, _from, accounts[1], _coin3, _value
+        );
+    });
+
+    it('Scenario 1: Should revert when User has not yet set approval for token being transferred out by Operator', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 3000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "ERC1155: caller is not owner nor approved"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&  
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it(`Scenario 2: Should revert when User has set approval, but user's balance has insufficient amount`, async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 9999999999999999n];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "ERC1155: insufficient balance for transfer"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&   
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 3: Should revert when User requests to transfer an invalid Token', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var invalid_token = 'EOS';
+        var _coins = [_native, _coin1, invalid_token];
+        var _values = [1000, 2000, 3000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "unregistered_coin"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&    
+            web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() === 0 &
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 4: Should revert when User transfers Tokens to an invalid BTP Address format', async () => {
+        var _to = '1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 3000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "VM Exception while processing transaction: revert"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() && 
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 5: Should revert when User requests to transfer zero Token', async () => {
+        var _to = '1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 0];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "InvalidAmount"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 6: Should revert when charging fee is zero', async () => {
+        var _to = '1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 100];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "InvalidAmount"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 7: Should revert when User requests to transfer to an invalid network/Not Supported Network', async () => {
+        var _to = 'btp://1234.eos/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000, 3000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "BMCRevertNotExistsBMV"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 8: Should revert when an account client sends an invalid request of transferBatch', async () => {
+        var _to = 'btp://1234.eos/0x12345678';
+        var _coins = [_native, _native, _native];
+        var _values = [1000, 2000, 3000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(accounts[2], _coins);
+        await truffleAssert.reverts(
+            bsh_coreV2.transferBatch(_coins, _values, _to, {from: accounts[2], value: 6000}),
+            "InvalidAmount"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(accounts[2], _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        
+        assert(
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === initAmt
+        );
+    });
+
+    it('Scenario 9: Should revert when a contract client sends an invalid request of transferBatch', async () => {
+        var _to = 'btp://1234.eos/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _values = [1000, 2000];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await truffleAssert.reverts(
+            holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
+            "InvalidRequest"
+        ); 
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 && 
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === 0
+        );
+    });
+
+    it('Scenario 10: Should succeed when a contract client sends a valid transferBatch request', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _values = [_value1, _value2, _value3];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to);
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() - _value3 &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt + _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === _value3
+        );
+    });
+
+    it('Scenario 11: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _coins = [_native, _coin1, _coin2];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, service, 1, RC_OK, "");
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var fees = await bsh_coreV2.getAccumulatedFees();
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+ 
+        assert(
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() &&
+            web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() &&
+            web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() &&
+
+            fees[0].coinName === _native && Number(fees[0].value) === Math.floor(_value1 / 1000) &&
+            fees[1].coinName === _coin1 && Number(fees[1].value) === Math.floor(_value2 / 1000) &&
+            fees[2].coinName === _coin2 && Number(fees[2].value) === Math.floor(_value3 / 1000) &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt + _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === Math.floor(_value3 / 1000)
+        );
+    });
+
+    it('Scenario 12: Should succeed when an account client sends a valid transferBatch request', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_coin3, _coin1, _coin2];
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _values = [_value1, _value2, _value3];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
+        await bsh_coreV2.setApprovalForAll(bsh_coreV2.address, true, {from: accounts[1]});
+        await bsh_coreV2.transferBatch(_coins, _values, _to, {from: accounts[1]});
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() - _value3 &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === _value2 + Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === _value3 + Math.floor(_value3 / 1000)
+        );
+    });
+
+    it('Scenario 13: Should refund tokens back to account client when BSHPeriphery receives an error response of a recent request', async () => {
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _coins = [_coin3, _coin1, _coin2];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, service, 2, RC_ERR, "");
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+ 
+        assert(
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() - _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === Math.floor(_value3 / 1000)
+        );
+    });
+
+    it('Scenario 14: Should succeed when a contract client sends a valid transferBatch request', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_coin3, _coin1, _coin2];
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _values = [_value1, _value2, _value3];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to);
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() - _value3 &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === _value2 + Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === _value3 + Math.floor(_value3 / 1000)
+        );
+    });
+
+    it('Scenario 15: Should refund tokens back to contract when BSHPeriphery receives an error response of a recent request', async () => {
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _coins = [_coin3, _coin1, _coin2];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, service, 3, RC_ERR, "");
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+ 
+        assert(
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() - _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === Math.floor(_value3 / 1000)
+        );
+    });
+    //  This test is replicated from Scenario 8
+    it('Scenario 16: Should succeed when a contract client sends a valid transferBatch request', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        var _coins = [_native, _coin1, _coin2];
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _values = [_value1, _value2, _value3];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await holder.setApprove(bsh_coreV2.address);
+        await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to);
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+
+        assert(
+            web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() - _value1 &&
+            web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() - _value3 &&    
+
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === 0 &&  
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === 0 &&  
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt + 2 * _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === _value2 + Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === _value3 + Math.floor(_value3 / 1000)
+        );
+    });
+
+    it('Scenario 17: Should issue one refundable balance to contract when BSHPeriphery receives an error response of a recent request', async () => {
+        var _value1 = 1000;     var _value2 = 2000;     var _value3 = 1000;
+        var _coins = [_native, _coin1, _coin2];
+        var balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, service, 4, RC_ERR, "");
+        var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
+        var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
+        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+ 
+        assert(
+            web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
+            web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === _value2 &&
+            web3.utils.BN(balanceBefore._lockedBalances[2]).toNumber() === _value3 &&
+
+            web3.utils.BN(balanceAfter._lockedBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[1]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._lockedBalances[2]).toNumber() === 0 &&
+
+            web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() && 
+            web3.utils.BN(balanceBefore._usableBalances[1]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[1]).toNumber() - _value2 &&
+            web3.utils.BN(balanceBefore._usableBalances[2]).toNumber() === 
+                web3.utils.BN(balanceAfter._usableBalances[2]).toNumber() - _value3 &&
+
+            web3.utils.BN(balanceBefore._refundableBalances[0]).toNumber() === 0 &&
+            web3.utils.BN(balanceAfter._refundableBalances[0]).toNumber() === _value1 &&       
+
+            web3.utils.BN(bsh_core_balance._usableBalances[0]).toNumber() === initAmt + 2 * _value1 &&
+            web3.utils.BN(bsh_core_balance._usableBalances[1]).toNumber() === Math.floor(_value2 / 1000) &&
+            web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === Math.floor(_value3 / 1000)
+        );
+    });
+});  

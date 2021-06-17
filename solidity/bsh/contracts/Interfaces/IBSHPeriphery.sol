@@ -3,31 +3,26 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./IBSH.sol";
+
 /**
    @title Interface of BSHPeriphery contract
    @dev This contract is used to handle communications among BMCService and BSHCore contract
 */
 interface IBSHPeriphery is IBSH {
-    struct AssetTransferDetail {
-        string _coinName;
-        uint256 _value;
-        uint256 _fee;
-    }
-    
     /**
      @notice Send Service Message from BSHCore contract to BMCService contract
      @dev Caller must be BSHCore only
-     @param _to           A network address of destination chain
-     @param _coinName     A coin name that is requested to transfer    
-     @param _value        An amount to receive at destination chain
-     @param _fee          An amount of charging fee 
+     @param _to             A network address of destination chain
+     @param _coinNames      A list of coin name that are requested to transfer  
+     @param _values         A list of an amount to receive at destination chain respectively with its coin name
+     @param _fees           A list of an amount of charging fee respectively with its coin name 
     */
     function sendServiceMessage(
         address _from,
         string calldata _to,
-        string memory _coinName,
-        uint256 _value,
-        uint256 _fee
+        string[] memory _coinNames,
+        uint256[] memory _values,
+        uint256[] memory _fees
     ) external;
 
     /**
@@ -67,8 +62,7 @@ interface IBSHPeriphery is IBSH {
      @param _fa     A BTP address of fee aggregator
      @param _svc    A name of the service
     */
-    function handleFeeGathering(
-        string calldata _fa,
-        string calldata _svc
-    ) external override;
+    function handleFeeGathering(string calldata _fa, string calldata _svc)
+        external
+        override;
 }

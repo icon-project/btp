@@ -97,9 +97,9 @@ library Types {
     struct PendingTransferCoin {
         string from;
         string to;
-        string coinName;
-        uint256 value;
-        uint256 fee;
+        string[] coinNames;
+        uint256[] values;
+        uint256[] fees;
     }
 
     struct TransferCoin {
@@ -132,7 +132,7 @@ library Types {
     struct Coin {
         uint256 id;
         string symbol;
-        uint256 decimals;    
+        uint256 decimals;
     }
 
     struct Balance {
@@ -173,35 +173,34 @@ library Types {
 
     struct Link {
         address[] relays; //  Address of multiple Relays handle for this link network
-        uint rxSeq;
-        uint txSeq;
-        uint blockIntervalSrc;
-        uint blockIntervalDst;
-        uint maxAggregation;
-        uint delayLimit;
-        uint relayIdx;
-        uint rotateHeight;
-        uint rxHeight;
-        uint rxHeightSrc;
-
+        uint256 rxSeq;
+        uint256 txSeq;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 maxAggregation;
+        uint256 delayLimit;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rxHeight;
+        uint256 rxHeightSrc;
         bool isConnected;
     }
 
     struct LinkStats {
-        uint rxSeq;
-        uint txSeq;
+        uint256 rxSeq;
+        uint256 txSeq;
         VerifierStats verifier;
         RelayStats[] relays;
-        uint relayIdx;
-        uint rotateHeight;
-        uint rotateTerm;
-        uint delayLimit;
-        uint maxAggregation;
-        uint rxHeightSrc;
-        uint rxHeight;
-        uint blockIntervalSrc;
-        uint blockIntervalDst;
-        uint currentHeight;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rotateTerm;
+        uint256 delayLimit;
+        uint256 maxAggregation;
+        uint256 rxHeightSrc;
+        uint256 rxHeight;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 currentHeight;
     }
 
     struct RelayStats {
@@ -229,13 +228,12 @@ library Types {
     }
 
     struct BMCService {
-        string serviceType; 
+        string serviceType;
         bytes payload;
     }
 
     struct GatherFeeMessage {
-        string fa;          //  BTP address of Fee Aggregator
-        string[] svcs;      //  a list of services
+        string fa; //  BTP address of Fee Aggregator
+        string[] svcs; //  a list of services
     }
-
 }

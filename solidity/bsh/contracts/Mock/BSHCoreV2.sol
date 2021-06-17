@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 /**
    @title Interface of BSH Coin transfer service
    @dev This contract use to handle coin transfer service
@@ -17,7 +18,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
    Native Coin : The native coin of this chain
    Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155HolderUpgradeable, OwnableUpgradeable {
+contract BSHCoreV2 is
+    Initializable,
+    IBSHCore,
+    ERC1155Upgradeable,
+    ERC1155HolderUpgradeable,
+    OwnableUpgradeable
+{
     using SafeMathUpgradeable for uint256;
     using Strings for string;
 
@@ -27,7 +34,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
     }
 
     IBSHPeriphery private bshPeriphery;
-    mapping(string => uint256) internal aggregationFee;   // storing Aggregation Fee in state mapping variable. MUST set back to 'private' after testing
+    mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable. MUST set back to 'private' after testing
     mapping(address => mapping(string => Types.Balance)) private balances;
     mapping(string => uint256) private coins; //  a list of all supported coins
     string[] private coinsName; // a string array stores names of supported coins
@@ -41,54 +48,79 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
     //  This is just an example to show how to add more state variable
     mapping(address => mapping(string => uint256)) private stakes;
 
-    function initialize (
+    function initialize(
         string calldata _uri,
         string calldata _nativeCoinName,
         uint256 _feeNumerator
     ) public initializer {
         __ERC1155_init(_uri);
-         __ERC1155Holder_init();
+        __ERC1155Holder_init();
         __Ownable_init();
 
-        coins[_nativeCoinName] = 0;         
+        coins[_nativeCoinName] = 0;
         feeNumerator = _feeNumerator;
         coinsName.push(_nativeCoinName);
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
-    function addStake(string calldata _coinName, uint256 _value) external payable {
+    function addStake(string calldata _coinName, uint256 _value)
+        external
+        payable
+    {
         if (_coinName.compareTo(coinsName[0])) {
             require(msg.value == _value, "InvalidAmount");
-        }else {
-            this.safeTransferFrom(msg.sender, address(this), coins[_coinName], _value, "");
+        } else {
+            this.safeTransferFrom(
+                msg.sender,
+                address(this),
+                coins[_coinName],
+                _value,
+                ""
+            );
         }
-        stakes[msg.sender][_coinName] = stakes[msg.sender][_coinName].add(_value);
+        stakes[msg.sender][_coinName] = stakes[msg.sender][_coinName].add(
+            _value
+        );
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
-    function mintMock(address _acc, uint256 _id, uint256 _value) external {
+    function mintMock(
+        address _acc,
+        uint256 _id,
+        uint256 _value
+    ) external {
         _mint(_acc, _id, _value, "");
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
-    function burnMock(address _acc, uint256 _id, uint256 _value) external {
+    function burnMock(
+        address _acc,
+        uint256 _id,
+        uint256 _value
+    ) external {
         _burn(_acc, _id, _value);
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
-    function setAggregationFee(string calldata _coinName, uint256 _value) external {
+    function setAggregationFee(string calldata _coinName, uint256 _value)
+        external
+    {
         aggregationFee[_coinName] += _value;
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
     function clearAggregationFee() external {
-        for (uint i = 0; i < coinsName.length; i++) {
+        for (uint256 i = 0; i < coinsName.length; i++) {
             delete aggregationFee[coinsName[i]];
         }
     }
 
     //  @notice This is just an example to show how to add more function in upgrading a contract
-    function setRefundableBalance(address _acc, string calldata _coinName, uint256 _value) external {
+    function setRefundableBalance(
+        address _acc,
+        string calldata _coinName,
+        uint256 _value
+    ) external {
         balances[_acc][_coinName].refundableBalance += _value;
     }
 
@@ -98,7 +130,11 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         _bshPeriphery Must be different with the existing one.
         @param _bshPeriphery    bsh service address.
     */
-    function updateBSHPeriphery(address _bshPeriphery) external override onlyOwner {
+    function updateBSHPeriphery(address _bshPeriphery)
+        external
+        override
+        onlyOwner
+    {
         bshPeriphery = IBSHPeriphery(_bshPeriphery);
     }
 
@@ -109,7 +145,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         @param _newURI    new uri
     */
     function updateUri(string calldata _newURI) external override onlyOwner {
-       _setURI(_newURI);
+        _setURI(_newURI);
     }
 
     /**
@@ -134,9 +170,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
           '_id' = 0 is fixed to assign to native coin
         @param _name    Coin name. 
     */
-    function register(
-        string calldata _name
-    ) external override onlyOwner {
+    function register(string calldata _name) external override onlyOwner {
         require(coins[_name] == 0, "ExistToken");
         coins[_name] = uint256(keccak256(abi.encodePacked(_name)));
         coinsName.push(_name);
@@ -147,7 +181,12 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
        @dev 
        @return _names   An array of strings.
     */
-    function coinNames() external override view returns (string[] memory _names) {
+    function coinNames()
+        external
+        view
+        override
+        returns (string[] memory _names)
+    {
         return coinsName;
     }
 
@@ -156,7 +195,12 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
        @dev     Return nullempty if not found.
        @return  _coinId     An ID number of _coinName.
     */
-    function coinId(string calldata _coinName) external override view returns (uint256 _coinId) {
+    function coinId(string calldata _coinName)
+        external
+        view
+        override
+        returns (uint256 _coinId)
+    {
         return coins[_coinName];
     }
 
@@ -165,8 +209,13 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
        @dev     Call by BSHPeriphery contract to validate a requested _coinName
        @return  _valid     true of false
     */
-    function isValidCoin(string calldata _coinName) external override view returns (bool _valid) {
-        return (coins[_coinName] != 0 || _coinName.compareTo(coinsName[0])); 
+    function isValidCoin(string calldata _coinName)
+        external
+        view
+        override
+        returns (bool _valid)
+    {
+        return (coins[_coinName] != 0 || _coinName.compareTo(coinsName[0]));
     }
 
     /**
@@ -181,7 +230,11 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         external
         view
         override
-        returns (uint256 _usableBalance, uint256 _lockedBalance, uint256 _refundableBalance)
+        returns (
+            uint256 _usableBalance,
+            uint256 _lockedBalance,
+            uint256 _refundableBalance
+        )
     {
         if (_coinName.compareTo(coinsName[0])) {
             return (
@@ -210,18 +263,21 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         external
         view
         override
-        returns
-    (
-        uint256[] memory _usableBalances,
-        uint256[] memory _lockedBalances,
-        uint256[] memory _refundableBalances
-    ){
+        returns (
+            uint256[] memory _usableBalances,
+            uint256[] memory _lockedBalances,
+            uint256[] memory _refundableBalances
+        )
+    {
         _usableBalances = new uint256[](_coinNames.length);
         _lockedBalances = new uint256[](_coinNames.length);
         _refundableBalances = new uint256[](_coinNames.length);
         for (uint256 i = 0; i < _coinNames.length; i++) {
-            (_usableBalances[i], _lockedBalances[i], _refundableBalances[i]) =
-                this.getBalanceOf(_owner, _coinNames[i]);
+            (
+                _usableBalances[i],
+                _lockedBalances[i],
+                _refundableBalances[i]
+            ) = this.getBalanceOf(_owner, _coinNames[i]);
         }
         return (_usableBalances, _lockedBalances, _refundableBalances);
     }
@@ -238,7 +294,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         returns (Types.Asset[] memory _accumulatedFees)
     {
         _accumulatedFees = new Types.Asset[](coinsName.length);
-        for (uint i = 0; i < coinsName.length; i++) {
+        for (uint256 i = 0; i < coinsName.length; i++) {
             _accumulatedFees[i] = (
                 Types.Asset(coinsName[i], aggregationFee[coinsName[i]])
             );
@@ -247,24 +303,29 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
     }
 
     /**
-       @notice Allow users to deposit `msg.value` native coin into a BSH contract.
+       @notice Allow users to deposit `msg.value` native coin into a BSHCore contract.
        @dev MUST specify msg.value
        @param _to  An address that a user expects to receive an amount of tokens.
     */
-    function transfer(string calldata _to) external override payable {
+    function transfer(string calldata _to) external payable override {
         //  Aggregation Fee will be charged on BSH Contract
         //  A Fee Ratio is set when BSH contract is created
         //  If charging fee amount is zero, revert()
         //  Otherwise, charge_amt = (_amt * feeNumerator) / FEE_DENOMINATOR
-        uint chargeAmt = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
-        require(chargeAmt > 0, "InvalidAmount");
-        lockBalance(msg.sender, coinsName[0], msg.value);
-        bshPeriphery.sendServiceMessage(msg.sender, _to, coinsName[0], msg.value.sub(chargeAmt), chargeAmt);
+        uint256 _chargeAmt = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
+        require(_chargeAmt > 0, "InvalidAmount");
+        _sendServiceMessage(
+            msg.sender,
+            _to,
+            coinsName[0],
+            msg.value,
+            _chargeAmt
+        );
     }
 
     /**
-       @notice Allow users to deposit an amount of wrapped native coin `_coinName` from the `msg.sender` address into the BSH contract.
-       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by the operator.
+       @notice Allow users to deposit an amount of wrapped native coin `_coinName` from the `msg.sender` address into the BSHCore contract.
+       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
        It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
        @param _coinName    A given name of a wrapped coin 
        @param _value       An amount request to transfer.
@@ -275,14 +336,11 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         uint256 _value,
         string calldata _to
     ) external override {
-        require(
-            coins[_coinName] != 0,
-            "unregistered_coin"     //  Assuming, change revert() response when upgrading a contract
-        );
-        uint chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR);
-        require(chargeAmt > 0, "InvalidAmount");
+        require(coins[_coinName] != 0, "unregistered_coin");
+        uint256 _chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR);
+        require(_chargeAmt > 0, "InvalidAmount");
         //  Transfer and Lock Token processes:
-        //  BSHCorecontract calls safeTransferFrom() to transfer the Token from Caller's account (msg.sender)
+        //  BSHCore contract calls safeTransferFrom() to transfer the Token from Caller's account (msg.sender)
         //  Before that, Caller must approve (setApproveForAll) to accept
         //  token being transfer out by an Operator
         //  If this requirement is failed, a transaction is reverted.
@@ -291,11 +349,85 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         //  When a transaction is completed without any error on another chain,
         //  Locked Token amount (bind to an address of caller) will be reset/subtract,
         //  then emit a successful TransferEnd event as a notification
-        //  Otherwise, the locked amount will also be updated 
+        //  Otherwise, the locked amount will also be updated
         //  but BSHCore contract will issue a refund to Caller before emitting an error TransferEnd event
-        this.safeTransferFrom(msg.sender, address(this), coins[_coinName], _value, "");
-        lockBalance(msg.sender, _coinName, _value);
-        bshPeriphery.sendServiceMessage(msg.sender, _to, _coinName, _value.sub(chargeAmt), chargeAmt);
+        this.safeTransferFrom(
+            msg.sender,
+            address(this),
+            coins[_coinName],
+            _value,
+            ""
+        );
+        _sendServiceMessage(msg.sender, _to, _coinName, _value, _chargeAmt);
+    }
+
+    function _sendServiceMessage(
+        address _from,
+        string calldata _to,
+        string memory _coinName,
+        uint256 _value,
+        uint256 _chargeAmt
+    ) private {
+        lockBalance(_from, _coinName, _value);
+        string[] memory _coin = new string[](1);
+        _coin[0] = _coinName;
+        uint256[] memory _amount = new uint256[](1);
+        _amount[0] = _value.sub(_chargeAmt);
+        uint256[] memory _fee = new uint256[](1);
+        _fee[0] = _chargeAmt;
+        bshPeriphery.sendServiceMessage(_from, _to, _coin, _amount, _fee);
+    }
+
+    /**
+       @notice Allow users to transfer multiple coins/wrapped coins to another chain
+       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
+       It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
+       In case of transferring a native coin, it also checks `msg.value` with `_values[i]`
+       It MUST revert if `msg.value` is not equal to `_values[i]`
+       The number of requested coins MUST be as the same as the number of requested values
+       The requested coins and values MUST be matched respectively
+       @param _coinNames    A list of requested transferring coins/wrapped coins
+       @param _values       A list of requested transferring values respectively with its coin name
+       @param _to          Target BTP address.
+    */
+    function transferBatch(
+        string[] memory _coinNames,
+        uint256[] memory _values,
+        string calldata _to
+    ) external payable override {
+        require(_coinNames.length == _values.length, "InvalidRequest");
+        uint256 size = _coinNames.length;
+        uint256[] memory _amounts = new uint256[](size);
+        uint256[] memory _fees = new uint256[](size);
+        for (uint256 i = 0; i < size; i++) {
+            _fees[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
+            if (_coinNames[i].compareTo(coinsName[0])) {
+                require(
+                    _fees[i] > 0 && _values[i] == msg.value,
+                    "InvalidAmount"
+                );
+            } else {
+                uint256 _id = coins[_coinNames[i]];
+                require(_id != 0, "unregistered_coin");
+                require(_fees[i] > 0, "InvalidAmount");
+                this.safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    _id,
+                    _values[i],
+                    ""
+                );
+            }
+            _amounts[i] = _values[i].sub(_fees[i]);
+            lockBalance(msg.sender, _coinNames[i], _values[i]);
+        }
+        bshPeriphery.sendServiceMessage(
+            msg.sender,
+            _to,
+            _coinNames,
+            _amounts,
+            _fees
+        );
     }
 
     /**
@@ -305,7 +437,10 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         @param _coinName   A given name of coin
         @param _value       An amount of re-claiming tokens
     */
-    function reclaim (string calldata _coinName, uint256 _value) external override {
+    function reclaim(string calldata _coinName, uint256 _value)
+        external
+        override
+    {
         require(
             balances[msg.sender][_coinName].refundableBalance >= _value,
             "Imbalance"
@@ -319,7 +454,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
 
         this.refund(msg.sender, _coinName, _value);
     }
- 
+
     /**
         @notice return coin for the failed transfer.
         @dev Caller must be this contract
@@ -327,7 +462,11 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         @param _coinName    coin name    
         @param _value    the minted amount   
     */
-    function refund(address _to, string calldata _coinName, uint256 _value) external override {
+    function refund(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external override {
         require(msg.sender == address(this), "Unauthorized");
         uint256 _id = coins[_coinName];
         if (_id == 0) {
@@ -347,11 +486,15 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         @param _coinName    coin name
         @param _value    the minted amount   
     */
-    function mint(address _to, string calldata _coinName, uint256 _value) external override onlyBSHPeriphery {   
+    function mint(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external override onlyBSHPeriphery {
         uint256 _id = coins[_coinName];
         if (_id == 0) {
             payable(_to).transfer(_value);
-        }else {
+        } else {
             _mint(_to, _id, _value, "");
         }
     }
@@ -367,7 +510,7 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
     //     uint256 _id = coins[_coinName];
     //     if (_id != 0) {
     //         _burn(address(this), _id, _value);
-    //     }    
+    //     }
     // }
 
     function handleResponseService(
@@ -377,15 +520,14 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         uint256 _fee,
         uint256 rspCode
     ) external override onlyBSHPeriphery {
-        uint _amount = _value.add(_fee);
-        balances[_caller][_coinName].lockedBalance = balances[
-            _caller
-        ][_coinName]
+        uint256 _amount = _value.add(_fee);
+        balances[_caller][_coinName].lockedBalance = balances[_caller][
+            _coinName
+        ]
             .lockedBalance
             .sub(_amount);
         if (rspCode == RC_ERR) {
-            try this.refund(_caller, _coinName, _amount) {}
-            catch {
+            try this.refund(_caller, _coinName, _amount) {} catch {
                 balances[_caller][_coinName].refundableBalance = balances[
                     _caller
                 ][_coinName]
@@ -396,21 +538,33 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
             uint256 _id = coins[_coinName];
             if (_id != 0) {
                 _burn(address(this), _id, _value);
-            }    
+            }
             aggregationFee[_coinName] = _fee;
         }
     }
 
-    function handleErrorFeeGathering(Types.Asset[] memory _fees) external override onlyBSHPeriphery {
-        for (uint i = 0; i < _fees.length; i++) {
+    function handleErrorFeeGathering(Types.Asset[] memory _fees)
+        external
+        override
+        onlyBSHPeriphery
+    {
+        for (uint256 i = 0; i < _fees.length; i++) {
             //  Assuming, previous logic implementation is not correct
             //  When upgrading a contract, modify code to fix bug
-            aggregationFee[_fees[i].coinName] = aggregationFee[_fees[i].coinName].add(_fees[i].value);
+            aggregationFee[_fees[i].coinName] = aggregationFee[
+                _fees[i].coinName
+            ]
+                .add(_fees[i].value);
         }
     }
 
-    function gatherFeeRequest() external override onlyBSHPeriphery returns (Types.Asset[] memory _pendingFA) {
-        for (uint i = 0; i < coinsName.length; i++) {
+    function gatherFeeRequest()
+        external
+        override
+        onlyBSHPeriphery
+        returns (Types.Asset[] memory _pendingFA)
+    {
+        for (uint256 i = 0; i < coinsName.length; i++) {
             if (aggregationFee[coinsName[i]] != 0) {
                 temp.push(
                     Types.Asset(coinsName[i], aggregationFee[coinsName[i]])
@@ -423,10 +577,12 @@ contract BSHCoreV2 is Initializable, IBSHCore, ERC1155Upgradeable, ERC1155Holder
         return _pendingFA;
     }
 
-    function lockBalance(address _to, string memory _coinName, uint256 _value) private {
-        balances[_to][_coinName].lockedBalance = balances[
-            _to
-        ][_coinName]
+    function lockBalance(
+        address _to,
+        string memory _coinName,
+        uint256 _value
+    ) private {
+        balances[_to][_coinName].lockedBalance = balances[_to][_coinName]
             .lockedBalance
             .add(_value);
     }

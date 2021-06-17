@@ -38,13 +38,10 @@ library RLPDecodeStruct {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         RLPReader.RLPItem[] memory subList = ls[1].toList();
         string[] memory _svcs = new string[](subList.length);
-        for (uint i = 0; i < subList.length; i++) {
+        for (uint256 i = 0; i < subList.length; i++) {
             _svcs[i] = string(subList[i].toBytes());
         }
-        return Types.GatherFeeMessage(
-            string(ls[0].toBytes()),
-            _svcs
-        );
+        return Types.GatherFeeMessage(string(ls[0].toBytes()), _svcs);
     }
 
     function decodeEventMessage(bytes memory _rlp)
@@ -329,9 +326,7 @@ library RLPDecodeStruct {
     function decodeRelayMessage(bytes memory _rlp)
         internal
         pure
-        returns (
-           Types.RelayMessage memory
-        )
+        returns (Types.RelayMessage memory)
     {
         //  _rlp.toRlpItem() removes the LIST_HEAD_START of RelayMessage
         //  then .toList() to itemize all fields in the RelayMessage

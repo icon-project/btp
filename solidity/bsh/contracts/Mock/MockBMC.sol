@@ -7,8 +7,8 @@ import "./BMC.sol";
 contract MockBMC is BMC {
     struct RelayInfo {
         address r;
-        uint cb;
-        uint rh;
+        uint256 cb;
+        uint256 rh;
     }
 
     using RLPEncodeStruct for Types.BMCMessage;
@@ -23,6 +23,7 @@ contract MockBMC is BMC {
     RelayInfo private relay;
 
     BSHPeriphery private bsh;
+
     constructor(string memory _network) BMC(_network) {}
 
     function setBSH(address _bsh) external {
@@ -38,10 +39,7 @@ contract MockBMC is BMC {
         bsh.handleBTPMessage(_from, _svc, _sn, _msg);
     }
 
-    function gatherFee(
-        string calldata _fa,
-        string calldata _svc
-    ) external {
+    function gatherFee(string calldata _fa, string calldata _svc) external {
         bsh.handleFeeGathering(_fa, _svc);
     }
 
@@ -56,8 +54,7 @@ contract MockBMC is BMC {
     ) external {
         handleMessage(
             _src,
-            Types
-                .BMCMessage(
+            Types.BMCMessage(
                 _src,
                 _dst,
                 _svc,
@@ -70,9 +67,9 @@ contract MockBMC is BMC {
                     Types
                         .TransferCoin(_from, _to, assets)
                         .encodeTransferCoinMsg()
-                    )
+                )
                     .encodeServiceMessage()
-                ) 
+            )
         );
     }
 
@@ -87,8 +84,7 @@ contract MockBMC is BMC {
     ) external {
         handleMessage(
             _src,
-            Types
-                .BMCMessage(
+            Types.BMCMessage(
                 _src,
                 _dst,
                 _svc,
@@ -101,9 +97,9 @@ contract MockBMC is BMC {
                     Types
                         .TransferCoin(_from, _to.toString(), assets)
                         .encodeTransferCoinMsg()
-                    )
+                )
                     .encodeServiceMessage()
-                ) 
+            )
         );
     }
 
@@ -121,8 +117,7 @@ contract MockBMC is BMC {
         asset[0] = Types.Asset(_coinName, _value);
         handleMessage(
             _src,
-            Types
-                .BMCMessage(
+            Types.BMCMessage(
                 _src,
                 _dst,
                 _svc,
@@ -135,9 +130,9 @@ contract MockBMC is BMC {
                     Types
                         .TransferCoin(_from, _to.toString(), asset)
                         .encodeTransferCoinMsg()
-                    )
+                )
                     .encodeServiceMessage()
-                ) 
+            )
         );
     }
 
@@ -155,8 +150,7 @@ contract MockBMC is BMC {
         asset[0] = Types.Asset(_coinName, _value);
         handleMessage(
             _src,
-            Types
-                .BMCMessage(
+            Types.BMCMessage(
                 _src,
                 _dst,
                 _svc,
@@ -169,9 +163,9 @@ contract MockBMC is BMC {
                     Types
                         .TransferCoin(_from, _to, asset)
                         .encodeTransferCoinMsg()
-                    )
+                )
                     .encodeServiceMessage()
-                ) 
+            )
         );
     }
 
@@ -231,8 +225,8 @@ contract MockBMC is BMC {
         Types.ServiceType _serviceType,
         string calldata _from,
         string calldata _svc,
-        uint _sn,
-        uint _code,
+        uint256 _sn,
+        uint256 _code,
         string calldata _msg
     ) external {
         sendBTPMessage(
@@ -255,27 +249,24 @@ contract MockBMC is BMC {
         int256 _sn,
         uint256 _code,
         string memory _msg
-    ) 
-        external
-        view
-        returns (bytes memory) 
-    {
-        return Types.BMCMessage(
-            _from,
-            _to,
-            _svc,
-            _sn,
+    ) external view returns (bytes memory) {
+        return
             Types
-                .ServiceMessage(
+                .BMCMessage(
+                _from,
+                _to,
+                _svc,
+                _sn,
                 Types
-                    .ServiceType
-                    .REPONSE_HANDLE_SERVICE,
-                Types
-                    .Response(_code, _msg)
-                    .encodeResponse()
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REPONSE_HANDLE_SERVICE,
+                    Types.Response(_code, _msg).encodeResponse()
                 )
-                .encodeServiceMessage()
-        ).encodeBMCMessage();
+                    .encodeServiceMessage()
+            )
+                .encodeBMCMessage();
     }
 
     function encodeTransferCoin(
@@ -286,31 +277,27 @@ contract MockBMC is BMC {
         int256 _sn,
         address _bsh,
         Types.Asset[] memory _fees
-    ) 
-        external
-        view
-        returns (bytes memory) 
-    { 
-        ( , string memory _to) = _toAddress.splitBTPAddress();
-        return Types.BMCMessage(
-            _from,
-            _toNetwork,
-            _svc,
-            _sn,
+    ) external view returns (bytes memory) {
+        (, string memory _to) = _toAddress.splitBTPAddress();
+        return
             Types
-                .ServiceMessage(
+                .BMCMessage(
+                _from,
+                _toNetwork,
+                _svc,
+                _sn,
                 Types
-                    .ServiceType
-                    .REQUEST_COIN_TRANSFER,
-                Types
-                    .TransferCoin(
-                        _bsh.toString(),
-                        _to,
-                        _fees
-                    ).encodeTransferCoinMsg()
+                    .ServiceMessage(
+                    Types
+                        .ServiceType
+                        .REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_bsh.toString(), _to, _fees)
+                        .encodeTransferCoinMsg()
                 )
-                .encodeServiceMessage()
-        ).encodeBMCMessage();
+                    .encodeServiceMessage()
+            )
+                .encodeBMCMessage();
     }
 
     function hashCoinName(string memory _coinName)
@@ -321,28 +308,18 @@ contract MockBMC is BMC {
         return uint256(keccak256(abi.encodePacked(_coinName)));
     }
 
-    function getBalance(address _addr) external view returns (uint) {
+    function getBalance(address _addr) external view returns (uint256) {
         return _addr.balance;
     }
 
     function relayRotation(
         string memory _link,
-        uint _relayMsgHeight,
+        uint256 _relayMsgHeight,
         bool hasMsg
-    ) external
-    {
-        address r = rotateRelay(
-                _link, 
-                block.number,
-                _relayMsgHeight,
-                hasMsg
-        );
+    ) external {
+        address r = rotateRelay(_link, block.number, _relayMsgHeight, hasMsg);
         Types.Link memory link = links[_link];
-        relay = RelayInfo(
-            r,
-            block.number,
-            link.rotateHeight
-        );    
+        relay = RelayInfo(r, block.number, link.rotateHeight);
     }
 
     function getRelay() external view returns (RelayInfo memory) {

@@ -7,17 +7,18 @@ import "../BSHCore.sol";
 contract MockBSHPeriphery is BSHPeriphery {
     using Strings for string;
 
-    function getFees(uint _sn) external view returns (Types.Asset[] memory) {
+    function getFees(uint256 _sn) external view returns (Types.Asset[] memory) {
         return pendingFA[_sn];
     }
 
-    function getAggregationFeeOf(string calldata _coinName) external view returns (uint _fee) {
+    function getAggregationFeeOf(string calldata _coinName)
+        external
+        view
+        returns (uint256 _fee)
+    {
         Types.Asset[] memory _fees = bshCore.getAccumulatedFees();
-        for (uint i = 0; i < _fees.length; i++) {
-            if (_coinName.compareTo(_fees[i].coinName)) 
-                return _fees[i].value;
+        for (uint256 i = 0; i < _fees.length; i++) {
+            if (_coinName.compareTo(_fees[i].coinName)) return _fees[i].value;
         }
     }
 }
-
-

@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgrad
    Native Coin : The native coin of this chain
    Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
+interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     /**
         @notice update BSH Periphery address.
         @dev Caller must be an Owner of this contract
@@ -48,9 +48,7 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
           '_id' = 0 is fixed to assign to native coin
         @param _name    Coin name. 
     */
-    function register(
-        string calldata _name
-    ) external;
+    function register(string calldata _name) external;
 
     /**
        @notice Return all supported coins names
@@ -64,15 +62,21 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
        @dev     Return nullempty if not found.
        @return  _coinId     An ID number of _coinName.
     */
-    function coinId(string calldata _coinName) external view returns (uint256 _coinId);
+    function coinId(string calldata _coinName)
+        external
+        view
+        returns (uint256 _coinId);
 
     /**
        @notice  Check Validity of a _coinName
        @dev     Call by BSHPeriphery contract to validate a requested _coinName
        @return  _valid     true of false
     */
-    function isValidCoin(string calldata _coinName) external view returns (bool _valid);
-    
+    function isValidCoin(string calldata _coinName)
+        external
+        view
+        returns (bool _valid);
+
     /**
         @notice Return a usable/locked/refundable balance of an account based on coinName.
         @return _usableBalance the balance that users are holding.
@@ -83,8 +87,11 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
     function getBalanceOf(address _owner, string memory _coinName)
         external
         view
-        returns (uint256 _usableBalance, uint256 _lockedBalance, uint256 _refundableBalance);
-
+        returns (
+            uint256 _usableBalance,
+            uint256 _lockedBalance,
+            uint256 _refundableBalance
+        );
 
     /**
         @notice Return a list Balance of an account.
@@ -97,12 +104,11 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
     function getBalanceOfBatch(address _owner, string[] calldata _coinNames)
         external
         view
-        returns
-    (
-        uint256[] memory _usableBalances,
-        uint256[] memory _lockedBalances,
-        uint256[] memory _refundableBalances
-    );
+        returns (
+            uint256[] memory _usableBalances,
+            uint256[] memory _lockedBalances,
+            uint256[] memory _refundableBalances
+        );
 
     /**
         @notice Return a list accumulated Fees.
@@ -136,14 +142,32 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
     ) external;
 
     /**
+       @notice Allow users to transfer multiple coins/wrapped coins to another chain
+       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
+       It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
+       In case of transferring a native coin, it also checks `msg.value` with `_values[i]`
+       It MUST revert if `msg.value` is not equal to `_values[i]`
+       The number of requested coins MUST be as the same as the number of requested values
+       The requested coins and values MUST be matched respectively
+       @param _coinNames    A list of requested transferring coins/wrapped coins
+       @param _values       A list of requested transferring values respectively with its coin name
+       @param _to          Target BTP address.
+    */
+    function transferBatch(
+        string[] memory _coinNames,
+        uint256[] memory _values,
+        string calldata _to
+    ) external payable;
+
+    /**
         @notice Reclaim the token's refundable balance by an owner.
         @dev Caller must be an owner of coin
         The amount to claim must be smaller or equal than refundable balance
         @param _coinName   A given name of coin
         @param _value       An amount of re-claiming tokens
     */
-    function reclaim (string calldata _coinName, uint256 _value) external;
- 
+    function reclaim(string calldata _coinName, uint256 _value) external;
+
     /**
         @notice return coin for the failed transfer.
         @dev Caller must be itself
@@ -151,7 +175,11 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
         @param _coinName    coin name    
         @param _value    the minted amount   
     */
-    function refund(address _to, string calldata _coinName, uint256 _value) external;
+    function refund(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external;
 
     /**
         @notice mint the wrapped coin.
@@ -163,8 +191,12 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
         @param _coinName    coin name
         @param _value    the minted amount   
     */
-    function mint(address _to, string calldata _coinName, uint256 _value) external;
-    
+    function mint(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external;
+
     /**
         @notice Handle when Fee Gathering request receives an error response
             Usage: Copy back pending state of charged fees back to aggregationFee state variable
@@ -172,14 +204,16 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable{
         @param _fees    An array of charged fees
     */
     function handleErrorFeeGathering(Types.Asset[] memory _fees) external;
-    
+
     /**
         @notice Handle a request of Fee Gathering
             Usage: Copy all charged fees to an array
         @dev Caller must be an BSHPeriphery contract
         @return _pendingFA      An array of charged fees
     */
-    function gatherFeeRequest() external returns (Types.Asset[] memory _pendingFA);
+    function gatherFeeRequest()
+        external
+        returns (Types.Asset[] memory _pendingFA);
 
     /**
         @notice Handle a response of a requested service
