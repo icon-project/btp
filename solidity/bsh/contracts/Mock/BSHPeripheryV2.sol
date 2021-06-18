@@ -243,7 +243,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
                     errMsg = _err;
                 }
             } catch {
-                errMsg = "invalid_address";
+                errMsg = "InvalidAddress";
             }
             sendResponseMessage(
                 Types.ServiceType.REPONSE_HANDLE_SERVICE,
@@ -361,7 +361,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
         for (uint256 i = 0; i < _assets.length; i++) {
             require(
                 bshCore.isValidCoin(_assets[i].coinName) == true,
-                "unregistered_coin"
+                "UnregisterCoin"
             );
             //  @dev There might be many errors generating by BSHCore contract
             //  which includes also low-level error
@@ -373,7 +373,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
                     _assets[i].value
                 )
             {} catch {
-                revert("transfer_failed");
+                revert("TransferFailed");
             }
         }
     }

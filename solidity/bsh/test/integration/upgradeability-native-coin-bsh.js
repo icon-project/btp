@@ -53,16 +53,16 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
         );
     });
     
-    it('Scenario 2: Should not allow arbitrary client to register a new coin', async () => {   
+    it('Scenario 2: Should revert when an arbitrary client tries to register a new coin', async () => {   
         var _name = "TRON";
         await truffleAssert.reverts(
             bsh_coreV2.register(_name, {from: accounts[1]}),
-            "Ownable: caller is not the owner"
+            "Unauthorized"
         );
     }); 
 
     it('Scenario 3: Should revert when contract owner registers an existed coin', async () => {
-        var _name = "ICON";  
+        var _name = "ICON";
         await truffleAssert.reverts(
             bsh_coreV2.register(_name),
             "ExistToken"
@@ -70,13 +70,13 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
     }); 
 
     it('Scenario 4: Should allow contract owner to update BSHPeriphery contract', async () => {
-        await bsh_coreV2.updateBSHPeriphery(bsh_perifV2.address);
+        await bsh_coreV2.updateBSHPeriphery(accounts[2]);
     });
 
     it('Scenario 5: Should revert when arbitrary client updates BSHPeriphery contract', async () => {
         await truffleAssert.reverts(
-            bsh_coreV2.updateBSHPeriphery(bsh_perifV2.address, {from: accounts[1]}),
-            "Ownable: caller is not the owner"
+            bsh_coreV2.updateBSHPeriphery(accounts[2], {from: accounts[1]}),
+            "Unauthorized"
         );
     });
 
@@ -89,24 +89,45 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
         var new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_coreV2.updateUri(new_uri, {from: accounts[1]}),
-            "Ownable: caller is not the owner"
+            "Unauthorized"
         );
     });
 
-    it('Scenario 8: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
+    it('Scenario 8: Should allow contract owner to update fee ratio', async () => {
+        var new_fee = 20;
+        await bsh_coreV2.setFeeRatio(new_fee);
+    });
+
+    it('Scenario 9: Should revert when arbitrary client updates fee ratio', async () => {
+        var new_fee = 20;
+        await truffleAssert.reverts(
+            bsh_coreV2.setFeeRatio(new_fee, {from: accounts[1]}),
+            "Unauthorized"
+        );
+    });
+
+    it('Scenario 10: Should revert when Fee Numerator is higher than Fee Denominator', async () => {
+        var new_fee = 20000;
+        await truffleAssert.reverts(
+            bsh_coreV2.setFeeRatio(new_fee),
+            "InvalidSetting"
+        );
+    });
+
+    it('Scenario 11: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
         var _name1 = "wBTC";    var _name2 = "Ethereum";
         await bsh_coreV2.register(_name1);
         await bsh_coreV2.register(_name2);
 
         var _query = "ICON";
-        var id = await bmc.hashCoinName(_query);
+        var id = web3.utils.keccak256(_query);
         var result = await bsh_coreV2.coinId(_query);
         assert(
-            web3.utils.BN(result).toString() === web3.utils.BN(id).toString()
+            web3.utils.BN(result).toString() === web3.utils.toBN(id).toString()
         );
     }); 
 
-    it('Scenario 9: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 12: Should receive an id = 0 when querying an invalid supporting coin', async () => {
         var _query = "EOS";
         var result = await bsh_coreV2.coinId(_query);
         assert(
@@ -114,60 +135,149 @@ contract('PRA BSHCore Query and Management - After Upgrading Contract', (account
         );
     }); 
 
-    it('Scenario 10: Should allow to transfer an ownable role to a new address', async () => {
-        var oldOwner = await bsh_coreV2.owner();
-        await bsh_coreV2.transferOwnership(accounts[1]);
-        var newOwner = await bsh_coreV2.owner();
+    it('Scenario 13: Should revert when a non-Owner tries to add a new Owner', async () => {
+        var oldList = await bsh_coreV2.getOwners();
+        await truffleAssert.reverts(
+            bsh_coreV2.addOwner(accounts[1], {from: accounts[2]}),
+            "Unauthorized"
+        );
+        var newList = await bsh_coreV2.getOwners();
         assert(
-            oldOwner === accounts[0] && newOwner === accounts[1]
+            oldList.length === 1 && oldList[0] === accounts[0] &&
+            newList.length === 1 && newList[0] === accounts[0]
         );
     }); 
 
-    it('Scenario 11: Should not allow old owner to register a new coin', async () => {
-        var _name3 = "TRON";
-        await truffleAssert.reverts(
-            bsh_coreV2.register(_name3),
-            "Ownable: caller is not the owner"
-        );
-        output = await bsh_coreV2.coinNames();
+    it('Scenario 14: Should allow a current Owner to add a new Owner', async () => {
+        var oldList = await bsh_coreV2.getOwners();
+        await bsh_coreV2.addOwner(accounts[1]);
+        var newList = await bsh_coreV2.getOwners();
         assert(
-            output[0] === _native && output[1] === 'ICON' &&
-            output[2] === 'wBTC' && output[3] === 'Ethereum'
+            oldList.length === 1 && oldList[0] === accounts[0] &&
+            newList.length === 2 && newList[0] === accounts[0] && newList[1] === accounts[1]
         );
-    });
+    }); 
     
-    it('Scenario 12: Should allow new owner to register a new coin', async () => {   
+    it('Scenario 15: Should allow old owner to register a new coin - After adding new Owner', async () => {
         var _name3 = "TRON";
-        await bsh_coreV2.register(_name3, {from: accounts[1]});
+        await bsh_coreV2.register(_name3);
         output = await bsh_coreV2.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
             output[2] === 'wBTC' && output[3] === 'Ethereum' &&
             output[4] ===  'TRON'
         );
+    });
+
+    it('Scenario 16: Should allow new owner to register a new coin', async () => {   
+        var _name3 = "BINANCE";
+        await bsh_coreV2.register(_name3, {from: accounts[1]});
+        output = await bsh_coreV2.coinNames();
+        assert(
+            output[0] === _native && output[1] === 'ICON' &&
+            output[2] === 'wBTC' && output[3] === 'Ethereum' &&
+            output[4] ===  'TRON' && output[5] === 'BINANCE'
+        );
     }); 
 
-    it('Scenario 13: Should allow new owner to update BSHPeriphery contract', async () => {
-        await bsh_coreV2.updateBSHPeriphery(bsh_perifV2.address, {from: accounts[1]});
+    it('Scenario 17: Should allow new owner to update BSHPeriphery contract', async () => {
+        await bsh_coreV2.updateBSHPeriphery(accounts[3], {from: accounts[1]});
     });
 
-    it('Scenario 14: Should not allow old owner to update BSHPeriphery contract', async () => {
-        await truffleAssert.reverts(
-            bsh_coreV2.updateBSHPeriphery(bsh_perifV2.address, {from: accounts[0]}),
-            "Ownable: caller is not the owner"
-        );
+    it('Scenario 18: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
+        await bsh_coreV2.updateBSHPeriphery(accounts[3], {from: accounts[0]});
     });
 
-    it('Scenario 15: Should allow new owner to update the new URI', async () => {
+    it('Scenario 19: Should allow new owner to update the new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await bsh_coreV2.updateUri(new_uri, {from: accounts[1]});
     });
 
-    it('Scenario 16: Should not allow old owner to update the new URI', async () => {
+    it('Scenario 20: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+        var new_uri = 'https://1234.iconee/'
+        await bsh_coreV2.updateUri(new_uri, {from: accounts[0]});
+    });
+
+    it('Scenario 21: Should allow new owner to update new fee ratio', async () => {
+        var new_fee = 30;
+        await bsh_coreV2.setFeeRatio(new_fee, {from: accounts[1]});
+    });
+
+    it('Scenario 22: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
+        var new_fee = 30;
+        await bsh_coreV2.setFeeRatio(new_fee, {from: accounts[0]});
+    });
+
+    it('Scenario 23: Should revert when non-Owner tries to remove an Owner', async () => {
+        var oldList = await bsh_coreV2.getOwners();
+        await truffleAssert.reverts(
+            bsh_coreV2.removeOwner(accounts[0], {from: accounts[2]}),
+            "Unauthorized"
+        );
+        var newList = await bsh_coreV2.getOwners();
+        assert(
+            oldList.length === 2 && oldList[0] === accounts[0] && oldList[1] === accounts[1] &&
+            newList.length === 2 && newList[0] === accounts[0] && newList[1] === accounts[1]
+        );
+    });
+
+    it('Scenario 24: Should allow one current Owner to remove another Owner', async () => {
+        var oldList = await bsh_coreV2.getOwners();
+        await bsh_coreV2.removeOwner(accounts[0], {from: accounts[1]});
+        var newList = await bsh_coreV2.getOwners();
+        assert(
+            oldList.length === 2 && oldList[0] === accounts[0] && oldList[1] === accounts[1] &&
+            newList.length === 1 && newList[0] === accounts[1]
+        );
+    });
+
+    it('Scenario 25: Should revert when the last Owner removes him/herself', async () => {
+        var oldList = await bsh_coreV2.getOwners();
+        await truffleAssert.reverts(
+            bsh_coreV2.removeOwner(accounts[1], {from: accounts[1]}),
+            "Unable to remove last Owner"
+        );
+        var newList = await bsh_coreV2.getOwners();
+        assert(
+            oldList.length === 1 && oldList[0] === accounts[1] &&
+            newList.length === 1 && newList[0] === accounts[1]
+        );
+    });
+
+    it('Scenario 26: Should revert when removed Owner tries to register a new coin', async () => {
+        var _name3 = "KYBER";
+        await truffleAssert.reverts(
+            bsh_coreV2.register(_name3),
+            'Unauthorized'
+        );
+        output = await bsh_coreV2.coinNames();
+        assert(
+            output[0] === _native && output[1] === 'ICON' &&
+            output[2] === 'wBTC' && output[3] === 'Ethereum' &&
+            output[4] ===  'TRON' && output[5] === 'BINANCE'
+        );
+    });
+
+    it('Scenario 27: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
+        await truffleAssert.reverts(
+            bsh_coreV2.updateBSHPeriphery(accounts[3], {from: accounts[0]}),
+            'Unauthorized'
+        );
+    });
+
+    it('Scenario 28: Should revert when removed Owner tries to update the new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_coreV2.updateUri(new_uri, {from: accounts[0]}),
-            "Ownable: caller is not the owner"
+            'Unauthorized'
+        );
+    });
+
+    it('Scenario 29: Should revert when removed Owner tries to update new fee ratio', async () => {
+        var new_fee = 30;
+        await truffleAssert.reverts(
+            bsh_coreV2.setFeeRatio(new_fee, {from: accounts[0]}),
+            'Unauthorized'
         );
     });
 });
@@ -462,7 +572,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgra
         await holder.setApprove(bsh_coreV2.address);
         await truffleAssert.reverts(
             holder.callTransfer(_token, _value, _to),
-            "unregistered_coin"
+            "UnregisterCoin"
         ); 
     });
 
@@ -647,7 +757,7 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         var _from = '0x12345678';
         var _value = 1000;
         var _address = '0x1234567890123456789';
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'invalid_address');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'InvalidAddress');
         var output = await bmc.transferRequestStringAddress(
             _bmcICON, '',service, 10, _from, _address, _native, _value
         );
@@ -660,7 +770,7 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         var _from = '0x12345678';
         var _value = 1000000000;
         var balanceBefore = await bmc.getBalance(accounts[1]);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferRequestAddress(
             _bmcICON, '',service, 10, _from, accounts[1], _native, _value
         );
@@ -675,7 +785,7 @@ contract('As a user, I want to receive PRA from ICON blockchain - After Upgradin
         var _from = '0x12345678';
         var _value = 1000;
         var balanceBefore = await bmc.getBalance(notpayable.address);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferRequestAddress(
             _bmcICON, '', service, 10, _from, notpayable.address, _native, _value
         );
@@ -750,7 +860,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
     it('Scenario 1: Should emit an error message when receiving address is an invalid address', async () => {
         var _value = 1000;
         var _address = '0x1234567890123456789';
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'invalid_address');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'InvalidAddress');
         var output = await bmc.transferRequestStringAddress(
             _bmcICON, '', service, 10, _from, _address, _name, _value
         );
@@ -762,7 +872,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
     it(`Scenario 2: Should emit an error message when receiving contract does not implement ERC1155Holder/Receiver`, async () => {
         var _value = 1000;
         var balanceBefore = await bsh_coreV2.balanceOf(notpayable.address, id);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferRequestAddress(
             _bmcICON, '', service, 10, _from, notpayable.address, _name, _value
         );
@@ -778,7 +888,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain - After 
         var _tokenName = 'Ethereum';
         var invalid_coin_id = await bsh_coreV2.coinId(_tokenName);
         var balanceBefore = await bsh_coreV2.balanceOf(holder.address, invalid_coin_id);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'unregistered_coin');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'UnregisterCoin');
         var output = await bmc.transferRequestAddress(
             _bmcICON, '', service, 10, _from, holder.address, _tokenName, _value
         );
@@ -1011,7 +1121,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
     it('Scenario 1: Should emit an error message when receiving address is invalid', async () => {
         var _value1 = 1000;     var _value2 = 10000;    var _value3 = 40000;
         var _address = '0x1234567890123456789';
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'invalid_address');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'InvalidAddress');
         var output = await bmc.transferBatchStringAddress(
             _bmcICON, '', service, 10, _from1, _address, [[_native, _value1], [_name1, _value2], [_name2, _value3]]
         );
@@ -1027,7 +1137,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance1Before = await bsh_coreV2.getBalanceOf(holder.address, _name1);
         var balance2Before = await bsh_coreV2.getBalanceOf(holder.address, _name2);
         var balance3Before = await bsh_coreV2.getBalanceOf(holder.address, _invalid_token);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'unregistered_coin');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'UnregisterCoin');
         var output = await bmc.transferBatchAddress(
             _bmcICON, '', service, 10, _from1, holder.address, [[_name1, _value1], [_name2, _value2], [_invalid_token, _value3]]
         );
@@ -1055,7 +1165,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance1Before = await bsh_coreV2.getBalanceOf(accounts[1], _name1);
         var balance2Before = await bsh_coreV2.getBalanceOf(accounts[1], _name2);
         var balance3Before = await bsh_coreV2.getBalanceOf(accounts[1], _native);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferBatchAddress(
             _bmcICON, '', service, 10, _from1, accounts[1], [[_name1, _value1], [_name2, _value2], [_native, _value3]]
         );
@@ -1082,7 +1192,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance1Before = await bsh_coreV2.getBalanceOf(refundable.address, _native);
         var balance2Before = await bsh_coreV2.getBalanceOf(refundable.address, _name1);
         var balance3Before = await bsh_coreV2.getBalanceOf(refundable.address, _name2);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferBatchAddress(
             _bmcICON, '', service, 10, _from1, refundable.address, [[_native, _value1], [_name1, _value2], [_name2, _value3]]
         );
@@ -1110,7 +1220,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         var balance1Before = await bsh_coreV2.getBalanceOf(holder.address, _name1);
         var balance2Before = await bsh_coreV2.getBalanceOf(holder.address, _name2);
         var balance3Before = await bsh_coreV2.getBalanceOf(holder.address, _native);
-        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'transfer_failed');
+        var _msg = await bmc.encodeBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
         var output = await bmc.transferBatchAddress(
             _bmcICON, '', service, 10, _from1, holder.address, [[_name1, _value1], [_name2, _value2], [_native, _value3]]
         );
@@ -1311,7 +1421,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         await holder.setApprove(bsh_coreV2.address);
         await truffleAssert.reverts(
             holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to),
-            "unregistered_coin"
+            "UnregisterCoin"
         ); 
         var balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
         var bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);

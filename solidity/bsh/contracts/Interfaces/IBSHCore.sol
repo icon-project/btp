@@ -15,6 +15,35 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgrad
 */
 interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     /**
+       @notice Adding another Onwer.
+       @dev Caller must be an Onwer of BTP network
+       @param _owner    Address of a new Onwer.
+    */
+    function addOwner(address _owner) external;
+
+    /**
+       @notice Removing an existing Owner.
+       @dev Caller must be an Owner of BTP network
+       @dev If only one Owner left, unable to remove the last Owner
+       @param _owner    Address of an Owner to be removed.
+    */
+    function removeOwner(address _owner) external;
+
+    /**
+       @notice Checking whether one specific address has Owner role.
+       @dev Caller can be ANY
+       @param _owner    Address needs to verify.
+    */
+    function isOwner(address _owner) external view returns (bool);
+
+    /**
+       @notice Get a list of current Owners
+       @dev Caller can be ANY
+       @return      An array of addresses of current Owners
+    */
+
+    function getOwners() external view returns (address[] memory);
+    /**
         @notice update BSH Periphery address.
         @dev Caller must be an Owner of this contract
         _bshPeriphery Must be different with the existing one.

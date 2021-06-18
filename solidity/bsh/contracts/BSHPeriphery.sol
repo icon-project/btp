@@ -10,14 +10,17 @@ import "./Libraries/RLPDecodeStructLib.sol";
 import "./Libraries/ParseAddressLib.sol";
 import "./Libraries/StringsLib.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 /**
    @title BSHPeriphery contract
    @dev This contract is used to handle communications among BMCService and BSHCore contract
+   @dev OwnerUpgradeable has been removed. This contract does not have its own Owners
+        Instead, BSHCore manages ownership roles.
+        Thus, BSHPeriphery should call bshCore.isOwner() and pass an address for verification
+        in case of implementing restrictions, if needed, in the future. 
 */
-contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
+contract BSHPeriphery is Initializable, IBSHPeriphery {
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
@@ -79,13 +82,10 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
         address _bshCore,
         string memory _serviceName
     ) public initializer {
-        __Ownable_init();
-
         bmc = IBMCPeriphery(_bmc);
         bmc.requestAddService(_serviceName, address(this));
         bshCore = IBSHCore(_bshCore);
         serviceName = _serviceName;
-        serialNo = 0;
     }
 
     /***********************************************************************************
@@ -201,7 +201,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
                     errMsg = _err;
                 }
             } catch {
-                errMsg = "invalid_address";
+                errMsg = "InvalidAddress";
             }
             sendResponseMessage(
                 Types.ServiceType.REPONSE_HANDLE_SERVICE,
@@ -234,16 +234,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
                 //  The only issue, which might happen, is BSHCore's token balance lower than burning amount
                 //  If so, there might be something went wrong before
                 handleResponseService(_sn, response.code, response.message);
-                // address _caller = requests[_sn].from.parseAddress();
-                // bshCore.handleResponseService(
-                //     _caller,
-                //     requests[_sn].coinName,
-                //     requests[_sn].value,
-                //     requests[_sn].fee,
-                //     response.code
-                // );
-                // delete requests[_sn];
-                // emit TransferEnd(_caller, _sn, response.code, response.message);
                 return;
             }
             if (response.code == RC_ERR) {
@@ -268,7 +258,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
                 Types.ServiceType.UNKNOWN_TYPE,
                 _from,
                 _sn,
-                "UNKNOWN",
+                "Unknown",
                 RC_ERR
             );
         }
@@ -292,16 +282,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
         handleResponseService(_sn, _code, _msg);
-        // address _caller = requests[_sn].from.parseAddress();
-        // bshCore.handleResponseService(
-        //     _caller,
-        //     requests[_sn].coinName,
-        //     requests[_sn].value,
-        //     requests[_sn].fee,
-        //     _code
-        // );
-        // delete requests[_sn];
-        // emit TransferEnd(_caller, _sn, _code, _msg);
     }
 
     function handleResponseService(
@@ -339,7 +319,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
         for (uint256 i = 0; i < _assets.length; i++) {
             require(
                 bshCore.isValidCoin(_assets[i].coinName) == true,
-                "unregistered_coin"
+                "UnregisteredCoin"
             );
             //  @dev There might be many errors generating by BSHCore contract
             //  which includes also low-level error
@@ -351,7 +331,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery, OwnableUpgradeable {
                     _assets[i].value
                 )
             {} catch {
-                revert("transfer_failed");
+                revert("TransferFailed");
             }
         }
     }

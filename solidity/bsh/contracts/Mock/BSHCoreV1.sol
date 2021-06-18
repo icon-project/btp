@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
    @title BSHCore contract
@@ -22,22 +21,31 @@ contract BSHCoreV1 is
     Initializable,
     IBSHCore,
     ERC1155Upgradeable,
-    ERC1155HolderUpgradeable,
-    OwnableUpgradeable
+    ERC1155HolderUpgradeable
 {
     using SafeMathUpgradeable for uint256;
     using Strings for string;
+    event SetOwnership(address indexed promoter, address indexed newOwner);
+    event RemoveOwnership(address indexed remover, address indexed formerOwner);
+
+    modifier onlyOwner {
+        require(owners[msg.sender] == true, "Unauthorized");
+        _;
+    }
 
     modifier onlyBSHPeriphery {
         require(msg.sender == address(bshPeriphery), "Unauthorized");
         _;
     }
 
+    mapping(address => bool) private owners;
+    address[] private listOfOwners;
+
     IBSHPeriphery private bshPeriphery;
-    mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable. MUST set back to 'private' after testing
-    mapping(address => mapping(string => Types.Balance)) private balances;
+    mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
+    mapping(address => mapping(string => Types.Balance)) internal balances; 
     mapping(string => uint256) private coins; //  a list of all supported coins
-    string[] private coinsName; // a string array stores names of supported coins
+    string[] internal coinsName; // a string array stores names of supported coins 
     Types.Asset[] internal temp;
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
@@ -52,11 +60,65 @@ contract BSHCoreV1 is
     ) public initializer {
         __ERC1155_init(_uri);
         __ERC1155Holder_init();
-        __Ownable_init();
+
+        owners[msg.sender] = true;
+        listOfOwners.push(msg.sender);
+        emit SetOwnership(address(0), msg.sender);
 
         coins[_nativeCoinName] = 0;
         feeNumerator = _feeNumerator;
         coinsName.push(_nativeCoinName);
+    }
+
+    /**
+       @notice Adding another Onwer.
+       @dev Caller must be an Onwer of BTP network
+       @param _owner    Address of a new Onwer.
+   */
+    function addOwner(address _owner) external override onlyOwner {
+        owners[_owner] = true;
+        listOfOwners.push(_owner);
+        emit SetOwnership(_msgSender(), _owner);
+    }
+
+    /**
+       @notice Removing an existing Owner.
+       @dev Caller must be an Owner of BTP network
+       @dev If only one Owner left, unable to remove the last Owner
+       @param _owner    Address of an Owner to be removed.
+   */
+    function removeOwner(address _owner) external override onlyOwner {
+        require(listOfOwners.length > 1, "Unable to remove last Owner");
+        delete owners[_owner];
+        _remove(_owner);
+        emit RemoveOwnership(_msgSender(), _owner);
+    }
+
+    function _remove(address _addr) internal {
+        for (uint256 i = 0; i < listOfOwners.length; i++)
+            if (listOfOwners[i] == _addr) {
+                listOfOwners[i] = listOfOwners[listOfOwners.length - 1];
+                listOfOwners.pop();
+                break;
+            }
+    }
+
+    /**
+       @notice Checking whether one specific address has Owner role.
+       @dev Caller can be ANY
+       @param _owner    Address needs to verify.
+    */
+    function isOwner(address _owner) external view override returns (bool) {
+        return owners[_owner];
+    }
+
+    /**
+       @notice Get a list of current Owners
+       @dev Caller can be ANY
+       @return      An array of addresses of current Owners
+    */
+    function getOwners() external view override returns (address[] memory) {
+        return listOfOwners;
     }
 
     /**
@@ -269,7 +331,7 @@ contract BSHCoreV1 is
         uint256 _value,
         string calldata _to
     ) external override {
-        require(coins[_coinName] != 0, "unregistered_coin");
+        require(coins[_coinName] != 0, "UnregisterCoin");
         uint256 _chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR);
         require(_chargeAmt > 0, "InvalidAmount");
         //  Transfer and Lock Token processes:
@@ -329,7 +391,7 @@ contract BSHCoreV1 is
                 );
             } else {
                 uint256 _id = coins[_coinNames[i]];
-                require(_id != 0, "unregistered_coin");
+                require(_id != 0, "UnregisterCoin");
                 require(_fees[i] > 0, "InvalidAmount");
                 this.safeTransferFrom(
                     msg.sender,
