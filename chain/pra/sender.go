@@ -226,7 +226,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 			if txr.Status == 0 {
 				//TODO: handle mapError here
-				s.log.Error("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
+				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
 				return nil, chain.NewRevertError(int(chain.BMCRevert))
 			}
 
