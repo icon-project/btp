@@ -60,6 +60,7 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 
 // Segment split the give RelayMessage into small segments
 func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+
 	segments := make([]*chain.Segment, 0)
 	var err error
 	msg := &RelayMessage{
@@ -117,13 +118,18 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			msg.height = rm.BlockProof.BlockWitness.Height
 		}
 		size += len(rp.Proof)
+		trp := &ReceiptProof{
+			Index:       rp.Index,
+			Proof:       rp.Proof,
+			EventProofs: make([]*chain.EventProof, 0),
+		}
 
 		for j, ep := range rp.EventProofs {
 			if s.isOverSizeLimit(len(ep.Proof)) {
 				return nil, fmt.Errorf("invalid EventProof.Proof size")
 			}
 			size += len(ep.Proof)
-			if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
+			if s.isOverSizeLimit(size) {
 				if j == 0 && len(msg.BlockUpdates) == 0 {
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
@@ -148,11 +154,22 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				size += len(rp.Proof)
 				size += len(bp)
 
+				trp = &ReceiptProof{
+					Index:       rp.Index,
+					Proof:       rp.Proof,
+					EventProofs: make([]*chain.EventProof, 0),
+				}
 			}
+			trp.EventProofs = append(trp.EventProofs, ep)
 			msg.eventSequence = rp.Events[j].Sequence
 			msg.numberOfEvent += 1
 		}
 
+		if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
+			return nil, err
+		} else {
+			msg.ReceiptProofs = append(msg.ReceiptProofs, b)
+		}
 	}
 	//
 	segment := &chain.Segment{
@@ -193,7 +210,6 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 CALL_CONTRACT:
 	tries++
 	opts := s.c.newTransactOpts(s.w)
-
 	txh, err := s.c.bmc.HandleRelayMessage(opts, p.Prev, p.Msg)
 	if err != nil {
 		if tries < DefaultRetryContractCall {
@@ -290,7 +306,9 @@ CALL_CONTRACT:
 }
 
 func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
-	return s.c.MonitorSubstrateBlock(uint64(height), false, func(v *BlockNotification) error {
+	s.log.Debugf("MonitorLoop h: %v", height)
+
+	return s.c.MonitorLatestBlock(func(v *BlockNotification) error {
 		cb(int64(v.Height))
 		return nil
 	})

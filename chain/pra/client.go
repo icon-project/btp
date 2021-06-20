@@ -122,7 +122,6 @@ func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events
 		case <-c.stopMonitorSignal:
 			return nil
 		default:
-
 			finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
 			if err != nil {
 				return err
@@ -193,4 +192,22 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventR
 	}
 
 	return records, nil
+}
+
+func (c *Client) MonitorLatestBlock(cb func(v *BlockNotification) error) error {
+
+	sub, err := c.subAPI.RPC.Chain.SubscribeNewHeads()
+	if err != nil {
+		return err
+	}
+
+	for {
+		head := <-sub.Chan()
+		if cb(&BlockNotification{
+			Header: &head,
+			Height: uint64(head.Number),
+		}); err != nil {
+			return err
+		}
+	}
 }

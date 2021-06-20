@@ -2,6 +2,7 @@ package pra
 
 import (
 	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/icon-project/btp/chain"
 )
 
 const (
@@ -60,4 +61,10 @@ type ReadProof struct {
 type TransactionHashParam struct {
 	TxHash string             `json:"txhash"`
 	Param  *RelayMessageParam `json:"rm"`
+}
+
+type ReceiptProof struct {
+	Index       int
+	Proof       []byte
+	EventProofs []*chain.EventProof
 }
