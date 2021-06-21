@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "../BMCManagement.sol";
-import "../Libraries/Utils.sol";
+import "../libraries/Utils.sol";
 
 contract MockBMCManagement is BMCManagement {
     using Utils for uint256;

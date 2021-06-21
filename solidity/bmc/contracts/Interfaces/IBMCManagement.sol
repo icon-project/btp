@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../Libraries/TypesLib.sol";
+import "../libraries/TypesLib.sol";
 
 interface IBMCManagement {
     /**
@@ -32,7 +32,7 @@ interface IBMCManagement {
         @dev Caller must be an operator of BTP network.
         @param _svc     Name of the service
      */
-    function approveService(string calldata _svc) external;
+    function approveService(string calldata _svc, bool isAccepted) external;
 
     /**
        @notice De-registers the smart contract for the service.  

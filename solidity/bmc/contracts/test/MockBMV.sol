@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../Interfaces/IBMV.sol";
-import "../Libraries/DecodeBase64Lib.sol";
+import "../interfaces/IBMV.sol";
+import "../libraries/DecodeBase64Lib.sol";
 
 contract MockBMV is IBMV {
     using DecodeBase64 for string;

@@ -35,6 +35,28 @@ contract('BMC Basic Unit Tests', (accounts) => {
     });
 
     /***************************************************************************************
+                                Set BMC Periphery Unit Tests
+    ***************************************************************************************/
+    it('Set BMC Periphery - should revert if param input is address(0)', async () => {
+        await truffleAssert.reverts(
+            bmcManagement.setBMCPeriphery('0x0000000000000000000000000000000000000000'),
+            'BMCRevertInvalidAddress'
+        );
+    });
+
+    it('Set BMC Periphery - should revert if param input is duplicate address', async () => {
+        await truffleAssert.reverts(
+            bmcManagement.setBMCPeriphery(bmcPeriphery.address),
+            'BMCRevertAlreadyExistsBMCPeriphery'
+        );
+    });
+
+    it('Set BMC Periphery successfully', async () => {
+        await bmcManagement.setBMCPeriphery('0x0000000000000000000000000000000000000001');
+        await bmcManagement.setBMCPeriphery(bmcPeriphery.address);
+    });
+
+    /***************************************************************************************
                                 Add/Remove Service Unit Tests
     ***************************************************************************************/
     it('Request Add Service - Service not requested nor registered - Success', async () => {
@@ -60,7 +82,7 @@ contract('BMC Basic Unit Tests', (accounts) => {
     it('Request Add Service - Service registered - Failure', async () => {
         let service = 'Coin/WrappedCoin';
         
-        await bmcManagement.approveService(service);
+        await bmcManagement.approveService(service, true);
         await truffleAssert.reverts(
             bmcPeriphery.requestAddService(service, accounts[6]),
             "BMCRevertAlreadyExistsBSH"
@@ -70,15 +92,32 @@ contract('BMC Basic Unit Tests', (accounts) => {
     it('Approve Service - Service existed - Failure', async () => {
         let service = 'Coin/WrappedCoin';
         await truffleAssert.reverts(
-            bmcManagement.approveService(service),
+            bmcManagement.approveService(service, true),
             "BMCRevertAlreadyExistsBSH"
         );
     });
 
+    it('Reject Service - Service existed - Failure', async () => {
+        let service = 'Coin/WrappedCoin';
+        await truffleAssert.reverts(
+            bmcManagement.approveService(service, false),
+            "BMCRevertAlreadyExistsBSH"
+        );
+    });
+
+
     it('Approve Service - Service request not existed - Failure', async () => {
         let service = 'Token';
         await truffleAssert.reverts(
-            bmcManagement.approveService(service),
+            bmcManagement.approveService(service, true),
+            "BMCRevertNotExistRequest"
+        );
+    });
+
+    it('Reject Service - Service request not existed - Failure', async () => {
+        let service = 'Token';
+        await truffleAssert.reverts(
+            bmcManagement.approveService(service, true),
             "BMCRevertNotExistRequest"
         );
     });
@@ -87,7 +126,15 @@ contract('BMC Basic Unit Tests', (accounts) => {
         let service = 'Token';
         await bmcPeriphery.requestAddService(service, accounts[6]);
         await truffleAssert.reverts(
-            bmcManagement.approveService(service, {from: accounts[1]}),
+            bmcManagement.approveService(service, true, {from: accounts[1]}),
+            "BMCRevertUnauthorized"
+        );
+    });
+
+    it('Reject Service - Without Permission - Failure', async () => {
+        let service = 'Token';
+        await truffleAssert.reverts(
+            bmcManagement.approveService(service, false, {from: accounts[1]}),
             "BMCRevertUnauthorized"
         );
     });
@@ -95,10 +142,23 @@ contract('BMC Basic Unit Tests', (accounts) => {
     it('Approve Service - With Permission - Success', async () => {
         let service = 'Token';
         
-        await bmcManagement.approveService(service);
+        await bmcManagement.approveService(service, true);
         let output = await bmcManagement.getServices();
         assert(
-            output.length == 2,
+            output.length === 2,
+            output[1].svc === service,
+            output[1].addr === accounts[6]
+        );
+    });
+
+    it('Reject Service - With Permission - Success', async () => {
+        let service = 'TokenA';
+
+        await bmcPeriphery.requestAddService(service, accounts[6]);
+        await bmcManagement.approveService(service, false);
+        let output = await bmcManagement.getServices();
+        assert(
+            output.length === 2,
             output[1].svc === service,
             output[1].addr === accounts[6]
         );
@@ -665,7 +725,7 @@ contract('Handle relay message', (accounts) => {
         bmv = await MockBMV.new();
         bsh = await MockBSH.new();
         await bmcPeriphery.requestAddService('Token', bsh.address);
-        await bmcManagement.approveService('Token');
+        await bmcManagement.approveService('Token', true);
         await bmcManagement.addVerifier(network, bmv.address);
         link = 'btp://1234.iconee/0x1234';
         await bmcManagement.addLink(link); // txSeq += 1 due to link progagation
@@ -1124,7 +1184,7 @@ contract('Test upgradable contracts', (accounts) => {
     it('should upgrade BMC Management', async() => {
         let bsh = await MockBSH.new();
         await bmcPeriphery.requestAddService('Token', bsh.address);
-        await bmcManagement.approveService('Token');
+        await bmcManagement.approveService('Token', true);
         let address = await bmcManagement.getBshServiceByName('Token');
         assert.equal(address, bsh.address);
 

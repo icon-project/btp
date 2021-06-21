@@ -1,16 +1,16 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../Interfaces/IBMCManagement.sol";
-import "../Interfaces/IBMCPeriphery.sol";
-import "../Interfaces/IBMV.sol";
-import "../Libraries/ParseAddressLib.sol";
-import "../Libraries/RLPEncodeStructLib.sol";
-import "../Libraries/StringsLib.sol";
-import "../Libraries/Owner.sol";
-import "../Libraries/TypesLib.sol";
-import "../Libraries/Utils.sol";
+import "../interfaces/IBMCManagement.sol";
+import "../interfaces/IBMCPeriphery.sol";
+import "../interfaces/IBMV.sol";
+import "../libraries/ParseAddressLib.sol";
+import "../libraries/RLPEncodeStructLib.sol";
+import "../libraries/StringsLib.sol";
+import "../libraries/Owner.sol";
+import "../libraries/TypesLib.sol";
+import "../libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -119,20 +119,23 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
      */
-    function approveService(string memory _svc)
+    function approveService(string memory _svc, bool isAccepted)
         external
         override
         hasPermission
     {
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
-        bool foundReq = false;
 
-        address _addr;
+        bool exist;
         for (uint256 i = 0; i < pendingReq.length; i++) {
             if (pendingReq[i].serviceName.compareTo(_svc)) {
-                foundReq = true;
-                _addr = pendingReq[i].bsh;
+                exist = true;
+                if (isAccepted) {             
+                    bshServices[_svc] = pendingReq[i].bsh;
+                    listBSHNames.push(_svc);
+                }
 
+                // remove pending request
                 pendingReq[i] = pendingReq[pendingReq.length - 1];
                 pendingReq.pop();
                 break;
@@ -141,10 +144,7 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
 
         //  If service not existed in a pending request list,
         //  then revert()
-        require(foundReq == true, "BMCRevertNotExistRequest");
-
-        bshServices[_svc] = _addr;
-        listBSHNames.push(_svc);
+        require(exist, "BMCRevertNotExistRequest");
     }
 
     /**

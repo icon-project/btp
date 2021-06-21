@@ -1,18 +1,18 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "./Interfaces/IBSH.sol";
-import "./Interfaces/IBMCPeriphery.sol";
-import "./Interfaces/IBMCManagement.sol";
-import "./Interfaces/IBMV.sol";
-import "./Libraries/ParseAddressLib.sol";
-import "./Libraries/RLPDecodeStructLib.sol";
-import "./Libraries/RLPEncodeStructLib.sol";
-import "./Libraries/StringsLib.sol";
-import "./Libraries/Owner.sol";
-import "./Libraries/TypesLib.sol";
-import "./Libraries/Utils.sol";
+import "./interfaces/IBSH.sol";
+import "./interfaces/IBMCPeriphery.sol";
+import "./interfaces/IBMCManagement.sol";
+import "./interfaces/IBMV.sol";
+import "./libraries/ParseAddressLib.sol";
+import "./libraries/RLPDecodeStructLib.sol";
+import "./libraries/RLPEncodeStructLib.sol";
+import "./libraries/StringsLib.sol";
+import "./libraries/Owner.sol";
+import "./libraries/TypesLib.sol";
+import "./libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
