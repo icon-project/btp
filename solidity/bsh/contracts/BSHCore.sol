@@ -41,12 +41,13 @@ contract BSHCore is
     mapping(address => bool) private owners;
     address[] private listOfOwners;
 
-    IBSHPeriphery private bshPeriphery;
+    IBSHPeriphery internal bshPeriphery;
     mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
     mapping(address => mapping(string => Types.Balance)) internal balances; 
     mapping(string => uint256) private coins; //  a list of all supported coins
     string[] internal coinsName; // a string array stores names of supported coins 
-    Types.Asset[] internal temp;
+    string[] private chargedCoins;  //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
+    uint256[] private chargedAmounts;   //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
     uint256 private feeNumerator;
@@ -78,7 +79,7 @@ contract BSHCore is
     function addOwner(address _owner) external override onlyOwner {
         owners[_owner] = true;
         listOfOwners.push(_owner);
-        emit SetOwnership(_msgSender(), _owner);
+        emit SetOwnership(msg.sender, _owner);
     }
 
     /**
@@ -91,7 +92,7 @@ contract BSHCore is
         require(listOfOwners.length > 1, "Unable to remove last Owner");
         delete owners[_owner];
         _remove(_owner);
-        emit RemoveOwnership(_msgSender(), _owner);
+        emit RemoveOwnership(msg.sender, _owner);
     }
 
     function _remove(address _addr) internal {
@@ -132,6 +133,10 @@ contract BSHCore is
         override
         onlyOwner
     {
+        require(_bshPeriphery != address(0), "InvalidSetting");
+        if (address(bshPeriphery) != address(0)) {
+            require(bshPeriphery.hasPendingRequest() == false, "HasPendingRequest");
+        }
         bshPeriphery = IBSHPeriphery(_bshPeriphery);
     }
 
@@ -308,6 +313,8 @@ contract BSHCore is
         //  Otherwise, charge_amt = (_amt * feeNumerator) / FEE_DENOMINATOR
         uint256 _chargeAmt = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
         require(_chargeAmt > 0, "InvalidAmount");
+        //  @dev msg.value is an amount request to transfer (include fee)
+        //  Later on, it will be calculated a true amount that should be received at a destination
         _sendServiceMessage(
             msg.sender,
             _to,
@@ -322,7 +329,7 @@ contract BSHCore is
        @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
        It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
        @param _coinName    A given name of a wrapped coin 
-       @param _value       An amount request to transfer.
+       @param _value       An amount request to transfer from a Requester (include fee)
        @param _to          Target BTP address.
     */
     function transfer(
@@ -352,9 +359,19 @@ contract BSHCore is
             _value,
             ""
         );
+        //  @dev _value is an amount request to transfer (include fee)
+        //  Later on, it will be calculated a true amount that should be received at a destination
         _sendServiceMessage(msg.sender, _to, _coinName, _value, _chargeAmt);
     }
 
+    /**
+       @notice This private function handles overlapping procedure before sending a service message to BSHPeriphery
+       @param _from             An address of a Requester
+       @param _to               BTP address of of Receiver on another chain
+       @param _coinName         A given name of a requested coin 
+       @param _value            A requested amount to transfer from a Requester (include fee)
+       @param _chargeAmt        An amount being charged for this request
+    */
     function _sendServiceMessage(
         address _from,
         string calldata _to,
@@ -362,14 +379,19 @@ contract BSHCore is
         uint256 _value,
         uint256 _chargeAmt
     ) private {
+        //  Lock this requested _value as a record of a pending transferring transaction
+        //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
+        //  The true amount to receive at a destination receiver is calculated by 
+        //  _amounts[0] = _value.sub(_chargeAmt);
         lockBalance(_from, _coinName, _value);
-        string[] memory _coin = new string[](1);
-        _coin[0] = _coinName;
-        uint256[] memory _amount = new uint256[](1);
-        _amount[0] = _value.sub(_chargeAmt);
-        uint256[] memory _fee = new uint256[](1);
-        _fee[0] = _chargeAmt;
-        bshPeriphery.sendServiceMessage(_from, _to, _coin, _amount, _fee);
+        string[] memory _coins = new string[](1);
+        _coins[0] = _coinName;
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = _value.sub(_chargeAmt);
+        uint256[] memory _fees = new uint256[](1);
+        _fees[0] = _chargeAmt;
+        //  @dev Note that: `_amounts` is a true amount to receive at a destination after deducting a charged fee
+        bshPeriphery.sendServiceMessage(_from, _to, _coins, _amounts, _fees);
     }
 
     /**
@@ -392,18 +414,18 @@ contract BSHCore is
         require(_coinNames.length == _values.length, "InvalidRequest");
         uint256 size = _coinNames.length;
         uint256[] memory _amounts = new uint256[](size);
-        uint256[] memory _fees = new uint256[](size);
+        uint256[] memory _chargeAmts = new uint256[](size);
         for (uint256 i = 0; i < size; i++) {
-            _fees[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
+            _chargeAmts[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
             if (_coinNames[i].compareTo(coinsName[0])) {
                 require(
-                    _fees[i] > 0 && _values[i] == msg.value,
+                    _chargeAmts[i] > 0 && _values[i] == msg.value,
                     "InvalidAmount"
                 );
             } else {
                 uint256 _id = coins[_coinNames[i]];
                 require(_id != 0, "UnregisterCoin");
-                require(_fees[i] > 0, "InvalidAmount");
+                require(_chargeAmts[i] > 0, "InvalidAmount");
                 this.safeTransferFrom(
                     msg.sender,
                     address(this),
@@ -412,15 +434,20 @@ contract BSHCore is
                     ""
                 );
             }
-            _amounts[i] = _values[i].sub(_fees[i]);
+            _amounts[i] = _values[i].sub(_chargeAmts[i]);
+            //  Lock this requested _value as a record of a pending transferring transaction
+            //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
+            //  The true amount to receive at a destination receiver is calculated by 
+            //  _amounts[i] = _values[i].sub(_chargeAmts[i]);
             lockBalance(msg.sender, _coinNames[i], _values[i]);
         }
+        //  @dev Note that: `_amounts` is true amounts to receive at a destination after deducting charged fees
         bshPeriphery.sendServiceMessage(
             msg.sender,
             _to,
             _coinNames,
             _amounts,
-            _fees
+            _chargeAmts
         );
     }
 
@@ -508,6 +535,20 @@ contract BSHCore is
         uint256 _fee,
         uint256 rspCode
     ) external override onlyBSHPeriphery {
+        //  Fee Gathering and Transfer Coin Request use the same method
+        //  and both have the same response
+        //  In case of Fee Gathering's response, `_requester` is this contract's address
+        //  Thus, check that first
+        //  -- If `_requester` is this contract's address, then check whethere response's code is RC_ERR
+        //  In case of RC_ERR, adding back charged fees to `aggregationFee` state variable
+        //  In case of RC_OK, ignore and return
+        //  -- Otherwise, handle service's response as normal
+        if (_requester == address(this)) {
+            if (rspCode == RC_ERR) {
+                aggregationFee[_coinName] = aggregationFee[_coinName].add(_value);
+            }
+            return;
+        }
         uint256 _amount = _value.add(_fee);
         balances[_requester][_coinName].lockedBalance = balances[_requester][
             _coinName
@@ -527,26 +568,7 @@ contract BSHCore is
             if (_id != 0) {
                 _burn(address(this), _id, _value);
             }
-            aggregationFee[_coinName] = _fee;
-        }
-    }
-
-    /**
-        @notice Handle when Fee Gathering request receives an error response
-            Usage: Copy back pending state of charged fees back to aggregationFee state variable
-        @dev Caller must be an BSHPeriphery contract
-        @param _fees    An array of charged fees
-    */
-    function handleErrorFeeGathering(Types.Asset[] memory _fees)
-        external
-        override
-        onlyBSHPeriphery
-    {
-        for (uint256 i = 0; i < _fees.length; i++) {
-            aggregationFee[_fees[i].coinName] = aggregationFee[
-                _fees[i].coinName
-            ]
-                .add(_fees[i].value);
+            aggregationFee[_coinName] = aggregationFee[_coinName].add(_fee);
         }
     }
 
@@ -554,28 +576,31 @@ contract BSHCore is
         @notice Handle a request of Fee Gathering
             Usage: Copy all charged fees to an array
         @dev Caller must be an BSHPeriphery contract
-        @return _pendingFA      An array of charged fees
     */
-    function gatherFeeRequest()
+    function transferFees(string calldata _fa)
         external
         override
         onlyBSHPeriphery
-        returns (Types.Asset[] memory _pendingFA)
     {
         //  @dev Due to uncertainty in identifying a size of returning memory array
         //  and Solidity does not allow to use 'push' with memory array (only storage)
         //  thus, must use 'temp' storage state variable
         for (uint256 i = 0; i < coinsName.length; i++) {
             if (aggregationFee[coinsName[i]] != 0) {
-                temp.push(
-                    Types.Asset(coinsName[i], aggregationFee[coinsName[i]])
-                );
+                chargedCoins.push(coinsName[i]);
+                chargedAmounts.push(aggregationFee[coinsName[i]]);
                 delete aggregationFee[coinsName[i]];
             }
         }
-        //  Copy back to memory and delete storage state variable
-        _pendingFA = temp;
-        delete temp;
+        bshPeriphery.sendServiceMessage(
+            address(this),
+            _fa,
+            chargedCoins,
+            chargedAmounts,
+            new uint256[](chargedCoins.length)      //  chargedFees is an array of 0 since this is a fee gathering request
+        );
+        delete chargedCoins;
+        delete chargedAmounts;
     }
 
     function lockBalance(

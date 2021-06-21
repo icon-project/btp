@@ -227,22 +227,11 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     ) external;
 
     /**
-        @notice Handle when Fee Gathering request receives an error response
-            Usage: Copy back pending state of charged fees back to aggregationFee state variable
-        @dev Caller must be an BSHPeriphery contract
-        @param _fees    An array of charged fees
-    */
-    function handleErrorFeeGathering(Types.Asset[] memory _fees) external;
-
-    /**
         @notice Handle a request of Fee Gathering
-            Usage: Copy all charged fees to an array
-        @dev Caller must be an BSHPeriphery contract
-        @return _pendingFA      An array of charged fees
+        @dev    Caller must be an BSHPeriphery contract
+        @param  _fa    BTP Address of Fee Aggregator 
     */
-    function gatherFeeRequest()
-        external
-        returns (Types.Asset[] memory _pendingFA);
+    function transferFees(string calldata _fa) external;
 
     /**
         @notice Handle a response of a requested service

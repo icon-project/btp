@@ -10,14 +10,20 @@ const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
 contract('PRA BSHCore Query and Management', (accounts) => {
-    let bsh_core, bsh_perif;          var _uri = 'https://github.com/icon-project/btp'
+    let bsh_core, bsh_perif;                    var _uri = 'https://github.com/icon-project/btp'
     var _native = 'PARA';                       var _fee = 10; 
-
+    var _net = '1234.iconee';                   var _bmcICON = 'btp://1234.iconee/0x1234567812345678'; 
+    var service = 'Coin/WrappedCoin';           var REPONSE_HANDLE_SERVICE = 2;         var RC_OK = 0;
     before(async () => {
         bmc = await BMC.new('1234.pra');
         bsh_core = await BSHCore.new();
         bsh_perif = await BSHPeriphery.new();
         await bsh_core.initialize(_uri, _native, _fee);
+        await bsh_perif.initialize(bmc.address, bsh_core.address, service);
+        await bmc.setBSH(bsh_perif.address);
+        await bmc.approveService(service);
+        await bmc.addVerifier(_net, accounts[1]);
+        await bmc.addLink(_bmcICON);
     });
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
@@ -46,22 +52,33 @@ contract('PRA BSHCore Query and Management', (accounts) => {
     }); 
 
     it('Scenario 4: Should allow contract owner to update BSHPeriphery contract', async () => {
-        await bsh_core.updateBSHPeriphery(accounts[2]);
+        await bsh_core.updateBSHPeriphery(bsh_perif.address);
     });
 
     it('Scenario 5: Should revert when arbitrary client updates BSHPeriphery contract', async () => {
         await truffleAssert.reverts(
-            bsh_core.updateBSHPeriphery(accounts[2], {from: accounts[1]}),
+            bsh_core.updateBSHPeriphery(bsh_perif.address, {from: accounts[1]}),
             "Unauthorized"
         );
     });
 
-    it('Scenario 6: Should allow contract owner to update a new URI', async () => {
+    it('Scenario 6: Should revert when contract owner updates BSHPeriphery while this contract has pending requests', async () => {
+        var _to = 'btp://1234.iconee/0x12345678';
+        await bsh_core.transfer(_to, {from: accounts[0], value: 100000000});
+        await truffleAssert.reverts(
+            bsh_core.updateBSHPeriphery(accounts[2]),
+            "HasPendingRequest"
+        );
+        //  Clear pending request
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, service, 0, RC_OK, "");
+    });
+
+    it('Scenario 7: Should allow contract owner to update a new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri);
     });
 
-    it('Scenario 7: Should revert when arbitrary client update a new URI', async () => {
+    it('Scenario 8: Should revert when arbitrary client update a new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_core.updateUri(new_uri, {from: accounts[1]}),
@@ -69,12 +86,12 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 8: Should allow contract owner to update fee ratio', async () => {
+    it('Scenario 9: Should allow contract owner to update fee ratio', async () => {
         var new_fee = 20;
         await bsh_core.setFeeRatio(new_fee);
     });
 
-    it('Scenario 9: Should revert when arbitrary client updates fee ratio', async () => {
+    it('Scenario 10: Should revert when arbitrary client updates fee ratio', async () => {
         var new_fee = 20;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio(new_fee, {from: accounts[1]}),
@@ -82,7 +99,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 10: Should revert when Fee Numerator is higher than Fee Denominator', async () => {
+    it('Scenario 11: Should revert when Fee Numerator is higher than Fee Denominator', async () => {
         var new_fee = 20000;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio(new_fee),
@@ -90,7 +107,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 11: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
+    it('Scenario 12: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
         var _name1 = "wBTC";    var _name2 = "Ethereum";
         await bsh_core.register(_name1);
         await bsh_core.register(_name2);
@@ -103,7 +120,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 12: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 13: Should receive an id = 0 when querying an invalid supporting coin', async () => {
         var _query = "EOS";
         var result = await bsh_core.coinId(_query);
         assert(
@@ -111,7 +128,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 13: Should revert when a non-Owner tries to add a new Owner', async () => {
+    it('Scenario 14: Should revert when a non-Owner tries to add a new Owner', async () => {
         var oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.addOwner(accounts[1], {from: accounts[2]}),
@@ -124,7 +141,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 14: Should allow a current Owner to add a new Owner', async () => {
+    it('Scenario 15: Should allow a current Owner to add a new Owner', async () => {
         var oldList = await bsh_core.getOwners();
         await bsh_core.addOwner(accounts[1]);
         var newList = await bsh_core.getOwners();
@@ -134,7 +151,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
     
-    it('Scenario 15: Should allow old owner to register a new coin - After adding new Owner', async () => {
+    it('Scenario 16: Should allow old owner to register a new coin - After adding new Owner', async () => {
         var _name3 = "TRON";
         await bsh_core.register(_name3);
         output = await bsh_core.coinNames();
@@ -145,7 +162,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 16: Should allow new owner to register a new coin', async () => {   
+    it('Scenario 17: Should allow new owner to register a new coin', async () => {   
         var _name3 = "BINANCE";
         await bsh_core.register(_name3, {from: accounts[1]});
         output = await bsh_core.coinNames();
@@ -156,35 +173,37 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 17: Should allow new owner to update BSHPeriphery contract', async () => {
-        await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[1]});
+    it('Scenario 18: Should allow new owner to update BSHPeriphery contract', async () => {
+        var newBSHPerif = await BSHPeriphery.new();
+        await bsh_core.updateBSHPeriphery(newBSHPerif.address, {from: accounts[1]});
     });
 
-    it('Scenario 18: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
-        await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]});
+    it('Scenario 19: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
+        var newBSHPerif = await BSHPeriphery.new();
+        await bsh_core.updateBSHPeriphery(newBSHPerif.address, {from: accounts[0]});
     });
 
-    it('Scenario 19: Should allow new owner to update the new URI', async () => {
+    it('Scenario 20: Should allow new owner to update the new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[1]});
     });
 
-    it('Scenario 20: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+    it('Scenario 21: Should also allow old owner to update the new URI - After adding new Owner', async () => {
         var new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[0]});
     });
 
-    it('Scenario 21: Should allow new owner to update new fee ratio', async () => {
+    it('Scenario 22: Should allow new owner to update new fee ratio', async () => {
         var new_fee = 30;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[1]});
     });
 
-    it('Scenario 22: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
+    it('Scenario 23: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
         var new_fee = 30;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[0]});
     });
 
-    it('Scenario 23: Should revert when non-Owner tries to remove an Owner', async () => {
+    it('Scenario 24: Should revert when non-Owner tries to remove an Owner', async () => {
         var oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner(accounts[0], {from: accounts[2]}),
@@ -197,7 +216,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 24: Should allow one current Owner to remove another Owner', async () => {
+    it('Scenario 25: Should allow one current Owner to remove another Owner', async () => {
         var oldList = await bsh_core.getOwners();
         await bsh_core.removeOwner(accounts[0], {from: accounts[1]});
         var newList = await bsh_core.getOwners();
@@ -207,7 +226,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 25: Should revert when the last Owner removes him/herself', async () => {
+    it('Scenario 26: Should revert when the last Owner removes him/herself', async () => {
         var oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner(accounts[1], {from: accounts[1]}),
@@ -220,7 +239,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 26: Should revert when removed Owner tries to register a new coin', async () => {
+    it('Scenario 27: Should revert when removed Owner tries to register a new coin', async () => {
         var _name3 = "KYBER";
         await truffleAssert.reverts(
             bsh_core.register(_name3),
@@ -234,14 +253,14 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 27: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
+    it('Scenario 28: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
         await truffleAssert.reverts(
             bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]}),
             'Unauthorized'
         );
     });
 
-    it('Scenario 28: Should revert when removed Owner tries to update the new URI', async () => {
+    it('Scenario 29: Should revert when removed Owner tries to update the new URI', async () => {
         var new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_core.updateUri(new_uri, {from: accounts[0]}),
@@ -249,7 +268,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 29: Should revert when removed Owner tries to update new fee ratio', async () => {
+    it('Scenario 30: Should revert when removed Owner tries to update new fee ratio', async () => {
         var new_fee = 30;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio(new_fee, {from: accounts[0]}),
@@ -814,7 +833,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
     var _native = 'PARA';                               var _fee = 10;
     var _name = 'ICON';                                 var _bmcICON = 'btp://1234.iconee/0x1234567812345678';
     var _net = '1234.iconee';                           var _from = '0x12345678';           
-    var RC_ERR = 1;                                    var RC_OK = 0;          
+    var RC_ERR = 1;                                     var RC_OK = 0;          
 
     before(async () => {
         bsh_perif = await BSHPeriphery.new();
@@ -985,7 +1004,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
             web3.utils.BN(FA1Before).toNumber() === web3.utils.BN(FA1After).toNumber() && 
             web3.utils.BN(FA2Before).toNumber() === web3.utils.BN(FA2After).toNumber() &&
             web3.utils.BN(FA3Before).toNumber() === web3.utils.BN(FA3After).toNumber() &&
-            fees.length === 0
+            fees.amounts.length === 0
         );
     });
 
@@ -1005,8 +1024,12 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         var FA2After = await bsh_perif.getAggregationFeeOf(_name1);
         var FA3After = await bsh_perif.getAggregationFeeOf(_name2);
         var fees = await bsh_perif.getFees(_sn3);     //  get pending Aggregation Fee list
+        var list = [];
+        for (let i = 0; i < fees.amounts.length; i++) {
+            list[i] = [fees.coinNames[i], fees.amounts[i]];
+        }
         var _msg = await bmc.encodeTransferCoin(
-            btpAddr, _bmcICON, _to1, service, _sn3, bsh_core.address, fees
+            btpAddr, _bmcICON, _to1, service, _sn3, bsh_core.address, list
         );
         //  TODO: catch event TransferStart throwing from BSHService contract
 
@@ -1017,9 +1040,9 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
             web3.utils.BN(FA1After).toNumber() === 0 && 
             web3.utils.BN(FA2After).toNumber() === 0 && 
             web3.utils.BN(FA3After).toNumber() === 0 && 
-            fees[0].coinName === _native && Number(fees[0].value) === Math.floor(_txAmt / 1000) &&
-            fees[1].coinName === _name1 && Number(fees[1].value) === Math.floor(_txAmt1 / 1000) &&
-            fees[2].coinName === _name2 && Number(fees[2].value) === Math.floor(_txAmt2 / 1000) &&
+            fees.coinNames[0] === _native && Number(fees.amounts[0]) === Math.floor(_txAmt / 1000) &&
+            fees.coinNames[1] === _name1 && Number(fees.amounts[1]) === Math.floor(_txAmt1 / 1000) &&
+            fees.coinNames[2] === _name2 && Number(fees.amounts[2]) === Math.floor(_txAmt2 / 1000) &&
             output.logs[0].args._next === _bmcICON && output.logs[0].args._msg === _msg
         );
     });
@@ -1031,11 +1054,11 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         var feesAfter = await bsh_perif.getFees(_sn3);
         //  TODO: catch event TransferEnd throwing from BSHService contract
         assert(
-            feesBefore.length === 3 &&
-            feesBefore[0].coinName === _native && Number(feesBefore[0].value) === Math.floor(_txAmt / 1000) &&
-            feesBefore[1].coinName === _name1 && Number(feesBefore[1].value) === Math.floor(_txAmt1 / 1000) &&
-            feesBefore[2].coinName === _name2 && Number(feesBefore[2].value) === Math.floor(_txAmt2 / 1000) &&
-            feesAfter.length === 0
+            feesBefore.amounts.length === 3 &&
+            feesBefore.coinNames[0] === _native && Number(feesBefore.amounts[0]) === Math.floor(_txAmt / 1000) &&
+            feesBefore.coinNames[1] === _name1 && Number(feesBefore.amounts[1]) === Math.floor(_txAmt1 / 1000) &&
+            feesBefore.coinNames[2] === _name2 && Number(feesBefore.amounts[2]) === Math.floor(_txAmt2 / 1000) &&
+            feesAfter.amounts.length === 0
         );
     });
 
@@ -1057,12 +1080,12 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         var feesAfter = await bsh_perif.getFees(_sn6);
         // TODO: catch event TransferEnd throwing from BSHService contract
         assert(
-            feesBefore.length === 2 &&
-            feesBefore[0].coinName === _name1 && Number(feesBefore[0].value) === Math.floor(_amt1 / 1000) &&
-            feesBefore[1].coinName === _name2 && Number(feesBefore[1].value) === Math.floor(_amt2 / 1000) &&
+            feesBefore.amounts.length === 2 &&
+            feesBefore.coinNames[0] === _name1 && Number(feesBefore.amounts[0]) === Math.floor(_amt1 / 1000) &&
+            feesBefore.coinNames[1] === _name2 && Number(feesBefore.amounts[1]) === Math.floor(_amt2 / 1000) &&
             web3.utils.BN(FA1Before).toNumber() === 0 && 
             web3.utils.BN(FA2Before).toNumber() === 0 &&
-            feesAfter.length === 0 &&
+            feesAfter.amounts.length === 0 &&
             web3.utils.BN(FA1After).toNumber() === Math.floor(_amt1 / 1000) && 
             web3.utils.BN(FA2After).toNumber() === Math.floor(_amt2 / 1000)
         );

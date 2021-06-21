@@ -98,7 +98,7 @@ library Types {
         string from;
         string to;
         string[] coinNames;
-        uint256[] values;
+        uint256[] amounts;
         uint256[] fees;
     }
 

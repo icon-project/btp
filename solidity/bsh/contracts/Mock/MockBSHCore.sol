@@ -32,6 +32,10 @@ contract MockBSHCore is BSHCore {
         }
     }
 
+    function clearBSHPerifSetting() external {
+        bshPeriphery = IBSHPeriphery(address(0));
+    }
+
     function setRefundableBalance(
         address _acc,
         string calldata _coinName,

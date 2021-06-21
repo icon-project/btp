@@ -150,10 +150,18 @@ contract('BSHCore Unit Tests', (accounts) => {
     }); 
 
     it('Scenario 17: Should allow new owner to update BSHPeriphery contract', async () => {
+        //  Must clear BSHPerif setting since BSHPeriphery has been set
+        //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
+        //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
+        await bsh_core.clearBSHPerifSetting();
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[1]});
     });
 
     it('Scenario 18: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
+        //  Must clear BSHPerif setting since BSHPeriphery has been set
+        //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
+        //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
+        await bsh_core.clearBSHPerifSetting();
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]});
     });
 
@@ -228,6 +236,10 @@ contract('BSHCore Unit Tests', (accounts) => {
     });
 
     it('Scenario 27: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
+        //  Must clear BSHPerif setting since BSHPeriphery has been set
+        //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
+        //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
+        await bsh_core.clearBSHPerifSetting();
         await truffleAssert.reverts(
             bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]}),
             'Unauthorized'
@@ -354,56 +366,12 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 39: Should not allow any clients (even a contract owner) to call a handleErrorFeeGathering()', async () => {
+    it('Scenario 39: Should not allow any clients (even a contract owner) to call a transferFees()', async () => {
         //  This function should be called only by BSHPeriphery contract
-        var _fees = [ [_native, 1000], ['ICON', 1000], ['TRON', 1000], ['Ethereum', 1000]];
+        var _fa = 'btp://1234.iconee/0x1234567812345678';
         await truffleAssert.reverts(
-            bsh_core.handleErrorFeeGathering(_fees),
+            bsh_core.transferFees(_fa),
             "Unauthorized"
-        );
-    });
-
-    it('Scenario 40: Should not allow any clients (even a contract owner) to call a gatherFeeRequest()', async () => {
-        //  This function should be called only by BSHPeriphery contract
-        await truffleAssert.reverts(
-            bsh_core.gatherFeeRequest(),
-            "Unauthorized"
-        );
-    });
-
-    it('Scenario 41: Should update AggregationFee state variable when BSHPeriphery calls handleErrorFeeGathering()', async () => {
-        //  This function should be called only by BSHPeriphery contract
-        //  In this test, I'm using accounts[2] as a BSHPeriphery contract
-        await bsh_core.clearAggregationFee();   // this step clear all aggregation fees were set before
-        var _fees = [ [_native, 1000], ['ICON', 1000], ['TRON', 1000], ['Ethereum', 1000]];
-        var oldFees = await bsh_core.getAccumulatedFees();
-        await bsh_core.updateBSHPeriphery(accounts[2], {from: accounts[1]});
-        await bsh_core.handleErrorFeeGathering(_fees, {from: accounts[2]});
-        var updatedFees = await bsh_core.getAccumulatedFees();
-        assert(
-            oldFees[0].coinName === _native && Number(oldFees[0].value) === 0 &&
-            oldFees[1].coinName === 'ICON' && Number(oldFees[1].value) === 0 &&
-            oldFees[2].coinName === 'wBTC' && Number(oldFees[2].value) === 0 &&
-            oldFees[3].coinName === 'Ethereum' && Number(oldFees[3].value) === 0 &&
-            oldFees[4].coinName === 'TRON' && Number(oldFees[4].value) === 0 &&
-
-            updatedFees[0].coinName === _native && Number(updatedFees[0].value) === 1000 &&
-            updatedFees[1].coinName === 'ICON' && Number(updatedFees[1].value) === 1000 &&
-            updatedFees[2].coinName === 'wBTC' && Number(updatedFees[2].value) === 0 &&
-            updatedFees[3].coinName === 'Ethereum' && Number(updatedFees[3].value) === 1000 &&
-            updatedFees[4].coinName === 'TRON' && Number(updatedFees[4].value) === 1000
-        );
-    });
-
-    it('Scenario 42: Should return an array of charging fees when BSHPeriphery calls gatherFeeRequest()', async () => {
-        //  This function should be called only by BSHPeriphery contract
-        //  In this test, I'm using accounts[2] as a BSHPeriphery contract
-        var result = await bsh_core.gatherFeeRequest.call({from: accounts[2]});
-        assert(
-            result[0].coinName === _native && Number(result[0].value) === 1000 &&
-            result[1].coinName === 'ICON' && Number(result[1].value) === 1000 &&
-            result[2].coinName === 'Ethereum' && Number(result[2].value) === 1000 &&
-            result[3].coinName === 'TRON' && Number(result[3].value) === 1000
         );
     });
 });

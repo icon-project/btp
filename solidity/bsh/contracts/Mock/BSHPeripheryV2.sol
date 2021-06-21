@@ -10,7 +10,6 @@ import "../Libraries/RLPDecodeStructLib.sol";
 import "../Libraries/ParseAddressLib.sol";
 import "../Libraries/StringsLib.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 /**
@@ -20,7 +19,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
    Native Coin : The native coin of this chain
    Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
+contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
@@ -63,22 +62,18 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
     event UnknownResponse(string _from, uint256 _sn);
 
     IBMCPeriphery private bmc;
-    IBSHCore internal bshCore; //  must be set private. Temporarily set internal for testing
-    mapping(uint256 => Types.PendingTransferCoin) private requests; // a list of transferring requests
-    mapping(uint256 => Types.Asset[]) private pendingFA; // a list of pending transfer Aggregation Fee. MUST set back to 'private' after testing
-    string private serviceName; //    BSH Service Name
+    IBSHCore internal bshCore;
+    mapping(uint256 => Types.PendingTransferCoin) internal requests; // a list of transferring requests
+    string public serviceName; //    BSH Service Name
 
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
     uint256 private serialNo; //  a counter of sequence number of service message
+    uint256 private numOfPendingRequests;
 
     modifier onlyBMC {
         require(msg.sender == address(bmc), "Unauthorized");
         _;
-    }
-
-    function get(uint256 _sn) external view returns (Types.Asset[] memory) {
-        return pendingFA[_sn];
     }
 
     function initialize(
@@ -86,13 +81,19 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
         address _bshCore,
         string memory _serviceName
     ) public initializer {
-        __Ownable_init();
-
         bmc = IBMCPeriphery(_bmc);
         bmc.requestAddService(_serviceName, address(this));
         bshCore = IBSHCore(_bshCore);
         serviceName = _serviceName;
         serialNo = 0;
+    }
+
+    /**
+     @notice Check whether BSHPeriphery has any pending transferring requests
+     @return true or false
+    */
+    function hasPendingRequest() external override view returns (bool) {
+        return numOfPendingRequests != 0;
     }
 
     //  @notice This is just an example of how to add more function in upgrading a contract
@@ -110,15 +111,6 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
     }
 
     //  @notice This is just an example of how to add more function in upgrading a contract
-    function getPendingFees(uint256 _sn)
-        external
-        view
-        returns (Types.Asset[] memory)
-    {
-        return pendingFA[_sn];
-    }
-
-    //  @notice This is just an example of how to add more function in upgrading a contract
     function getAggregationFeeOf(string calldata _coinName)
         external
         view
@@ -129,13 +121,6 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
             if (_coinName.compareTo(_fees[i].coinName)) return _fees[i].value;
         }
     }
-
-    /***********************************************************************************
-                                Send Service Message Function
-        -   Prepare a request of service message
-        -   Sends a service message to BMCService contract
-        -   Save a request to a pending list
-    ************************************************************************************/
 
     function sendServiceMessage(
         address _from,
@@ -161,52 +146,31 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
                 _fees[i]
             );
         }
-        _sendMessage(
+        //  Because `stack is too deep`, must create `_strFrom` to waive this error
+        //  `_strFrom` is a string type of an address `_from`
+        string memory _strFrom = _from.toString();
+        bmc.sendMessage(
             _toNetwork,
+            serviceName,
             serialNo,
-            encodeServiceMessage(
+            Types.ServiceMessage(
                 Types.ServiceType.REQUEST_COIN_TRANSFER,
-                encodeTransferCoin(_from.toString(), _toAddress, _assets)
-            )
+                Types.TransferCoin(_strFrom, _toAddress, _assets).encodeTransferCoinMsg()
+            ).encodeServiceMessage()
         );
         //  Push pending tx into Record list
         requests[serialNo] = Types.PendingTransferCoin(
-            _from.toString(),
+            _strFrom,
             _to,
             _coinNames,
             _values,
             _fees
         );
+        numOfPendingRequests++;
         emit TransferStart(_from, _to, serialNo, _assetDetails);
         serialNo++;
     }
 
-    function encodeTransferCoin(
-        string memory _from,
-        string memory _to,
-        Types.Asset[] memory _assets
-    ) private pure returns (bytes memory) {
-        return Types.TransferCoin(_from, _to, _assets).encodeTransferCoinMsg();
-    }
-
-    function encodeServiceMessage(
-        Types.ServiceType _serviceType,
-        bytes memory _msg
-    ) private pure returns (bytes memory) {
-        return Types.ServiceMessage(_serviceType, _msg).encodeServiceMessage();
-    }
-
-    function _sendMessage(
-        string memory _net,
-        uint256 _sn,
-        bytes memory _msg
-    ) private {
-        bmc.sendMessage(_net, serviceName, _sn, _msg);
-    }
-
-    /***********************************************************************************
-                                BTP Message Handler Functions                  
-    ************************************************************************************/
     /**
      @notice BSH handle BTP Message from BMC contract
      @dev Caller must be BMC contract only
@@ -256,42 +220,20 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
             _sm.serviceType == Types.ServiceType.REPONSE_HANDLE_SERVICE
         ) {
             //  Check whether '_sn' is pending state
-            require(
-                pendingFA[_sn].length != 0 ||
-                    bytes(requests[_sn].from).length != 0,
-                "InvalidSN"
-            );
-
-            bool feeAggregationSvc;
-            if (pendingFA[_sn].length != 0) {
-                feeAggregationSvc = true;
-            }
+            require(bytes(requests[_sn].from).length != 0, "InvalidSN");
             Types.Response memory response = _sm.data.decodeResponse();
-            if (!feeAggregationSvc) {
-                //  @dev Not implement try_catch at this point
-                //  If RC_ERR, BSHCore proceeds a refund. If a refund is failed, BSHCore issues refundable Balance
-                //  If RC_OK:
-                //  - requested coin = native -> update aggregation fee (likely no issue)
-                //  - requested coin = wrapped coin -> BSHCore calls itself to burn its tokens and update aggregation fee (likely no issue)
-                //  The only issue, which might happen, is BSHCore's token balance lower than burning amount
-                //  If so, there might be something went wrong before
-                handleResponseService(_sn, response.code, response.message);
-                return;
-            }
-            if (response.code == RC_ERR) {
-                Types.Asset[] memory _fees = pendingFA[_sn];
-                //  @dev Not implement try_catch at this point
-                //  If any error occurs, it can be considered as UNKNOWN_ERR
-                //  revert() would be invoked and BMC would catch an error
-                bshCore.handleErrorFeeGathering(_fees);
-            }
-            delete pendingFA[_sn];
-            emit TransferEnd(
-                address(bshCore),
-                _sn,
-                response.code,
-                response.message
-            );
+            //  @dev Not implement try_catch at this point
+            //  + If RESPONSE_REQUEST_SERVICE:
+            //      If RC_ERR, BSHCore proceeds a refund. If a refund is failed, BSHCore issues refundable Balance
+            //      If RC_OK:
+            //      - requested coin = native -> update aggregation fee (likely no issue)
+            //      - requested coin = wrapped coin -> BSHCore calls itself to burn its tokens and update aggregation fee (likely no issue)
+            //  The only issue, which might happen, is BSHCore's token balance lower than burning amount
+            //  If so, there might be something went wrong before
+            //  + If RESPONSE_FEE_GATHERING
+            //      If RC_ERR, BSHCore saves charged fees back to `aggregationFee` state mapping variable
+            //      If RC_OK: do nothing
+            handleResponseService(_sn, response.code, response.message);
         } else if (_sm.serviceType == Types.ServiceType.UNKNOWN_TYPE) {
             emit UnknownResponse(_from, _sn);
         } else {
@@ -300,7 +242,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
                 Types.ServiceType.UNKNOWN_TYPE,
                 _from,
                 _sn,
-                "UNKNOWN",
+                "Unknown",
                 RC_ERR
             );
         }
@@ -337,13 +279,13 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
             bshCore.handleResponseService(
                 _caller,
                 requests[_sn].coinNames[i],
-                requests[_sn].values[i],
+                requests[_sn].amounts[i],
                 requests[_sn].fees[i],
                 _code
             );
         }
-
         delete requests[_sn];
+        numOfPendingRequests--;
         emit TransferEnd(_caller, _sn, _code, _msg);
     }
 
@@ -361,7 +303,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
         for (uint256 i = 0; i < _assets.length; i++) {
             require(
                 bshCore.isValidCoin(_assets[i].coinName) == true,
-                "UnregisterCoin"
+                "UnregisteredCoin"
             );
             //  @dev There might be many errors generating by BSHCore contract
             //  which includes also low-level error
@@ -385,19 +327,17 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
         string memory _msg,
         uint256 _code
     ) private {
-        _sendMessage(
+        bmc.sendMessage(
             _to,
+            serviceName,
             _sn,
-            encodeServiceMessage(
+            Types.ServiceMessage(
                 _serviceType,
                 Types.Response(_code, _msg).encodeResponse()
-            )
+            ).encodeServiceMessage()
         );
     }
 
-    /***********************************************************************************
-                                Gather Fee Handler Functions                  
-    ************************************************************************************/
     /**
      @notice BSH handle Gather Fee Message request from BMC contract
      @dev Caller must be BMC contract only
@@ -412,35 +352,8 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery, OwnableUpgradeable {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         //  If adress of Fee Aggregator (_fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        (string memory _net, string memory _toAddress) = _fa.splitBTPAddress();
-        Types.Asset[] memory _fees = bshCore.gatherFeeRequest();
-        //  If there's no charged fees, just do nothing and return
-        if (_fees.length == 0) return;
-        _sendMessage(
-            _net,
-            serialNo,
-            encodeServiceMessage(
-                Types.ServiceType.REQUEST_COIN_TRANSFER,
-                encodeTransferCoin(
-                    address(bshCore).toString(),
-                    _toAddress,
-                    _fees
-                )
-            )
-        );
-
-        Types.AssetTransferDetail[] memory assets =
-            new Types.AssetTransferDetail[](_fees.length);
-        for (uint256 i = 0; i < _fees.length; i++) {
-            assets[i] = Types.AssetTransferDetail(
-                _fees[i].coinName,
-                _fees[i].value,
-                0
-            );
-            pendingFA[serialNo].push(_fees[i]);
-        }
-        emit TransferStart(address(bshCore), _fa, serialNo, assets);
-        serialNo++;
+        _fa.splitBTPAddress();
+        bshCore.transferFees(_fa);
     }
 
     //  @dev Solidity does not allow to use try_catch with internal function

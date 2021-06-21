@@ -10,6 +10,12 @@ import "./IBSH.sol";
 */
 interface IBSHPeriphery is IBSH {
     /**
+     @notice Check whether BSHPeriphery has any pending transferring requests
+     @return true or false
+    */
+    function hasPendingRequest() external view returns (bool);
+
+    /**
      @notice Send Service Message from BSHCore contract to BMCService contract
      @dev Caller must be BSHCore only
      @param _to             A network address of destination chain

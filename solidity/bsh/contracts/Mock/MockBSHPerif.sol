@@ -7,8 +7,8 @@ import "../BSHCore.sol";
 contract MockBSHPeriphery is BSHPeriphery {
     using Strings for string;
 
-    function getFees(uint256 _sn) external view returns (Types.Asset[] memory) {
-        return pendingFA[_sn];
+    function getFees(uint256 _sn) external view returns (Types.PendingTransferCoin memory) {
+        return requests[_sn];
     }
 
     function getAggregationFeeOf(string calldata _coinName)
