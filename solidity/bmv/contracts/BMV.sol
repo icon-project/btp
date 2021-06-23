@@ -45,6 +45,8 @@ contract BMV is IBMV, Initializable {
         string memory _netAddr,
         string memory _validators,
         uint256 _offset,
+        uint256 _rootsSize,
+        uint256 _cacheSize,
         bytes32 _lastBlockHash
     ) public initializer {
         bmcAddr = _bmcAddr;
@@ -52,6 +54,9 @@ contract BMV is IBMV, Initializable {
         netAddr = _netAddr;
         validators.decodeValidators(_validators.decode());
         mta.setOffset(_offset);
+        mta.rootsSize = _rootsSize;
+        mta.cacheSize = _cacheSize;
+        lastBlockHeight = _offset;
         lastBlockHash = _lastBlockHash;
     }
 
@@ -148,7 +153,7 @@ contract BMV is IBMV, Initializable {
                 // );
                 receiptHash = relayMsg.blockUpdates[i]
                     .blockHeader
-                    .spr
+                    .result
                     .receiptHash;
                 lastHeight = relayMsg.blockUpdates[i].blockHeader.height;
                 lastBlockHash = relayMsg.blockUpdates[i].blockHeader.blockHash;
@@ -168,7 +173,7 @@ contract BMV is IBMV, Initializable {
 
         if (relayMsg.blockProof.blockWitness.witnesses.length != 0) {
             relayMsg.blockProof.verifyMTAProof(mta);
-            receiptHash = relayMsg.blockProof.blockHeader.spr.receiptHash;
+            receiptHash = relayMsg.blockProof.blockHeader.result.receiptHash;
             lastHeight = relayMsg.blockProof.blockHeader.height;
         }
 

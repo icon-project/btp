@@ -5,24 +5,49 @@ const {
     iconNet,
     prevBtpAddr,
     validatorsList,
-    serviceMsgs,
+    btpMsgs,
     encodedValidators,
     initOffset,
-    lastBlockHash
+    initRootSize,
+    initCacheSize,
+    lastBlockHash,
+    praNet
 } = require('./data');
 const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
-let testBMV = artifacts.require('BMV');
-let mockBMC = artifacts.require('MockBMC');
-let testDataValidator = artifacts.require('DataValidator');
+const MockBMC = artifacts.require('MockBMC');
+const BMV = artifacts.require('BMV');
+const DataValidator = artifacts.require('DataValidator');
 
-let bmvV2 = artifacts.require('BMVV2');
-let dataValidatorV2 = artifacts.require('DataValidatorV2');
+const BMVV2 = artifacts.require('BMVV2');
+const DataValidatorV2 = artifacts.require('DataValidatorV2');
 
-contract('TestBMV', async (accounts) => {
+contract('TestBMV', async () => {
+    let bmv, dataValidator, bmc;
+
     beforeEach(async () => {
-        bmv = await testBMV.deployed();
-        bmc = await mockBMC.deployed();
+        bmc = await MockBMC.new(praNet);
+        dataValidator = await deployProxy(DataValidator);
+        bmv = await deployProxy(
+            BMV,
+            [
+                bmc.address,
+                dataValidator.address,
+                iconNet,
+                encodedValidators,
+                initOffset,
+                initRootSize,
+                initCacheSize,
+                lastBlockHash
+            ]
+        );
+    });
+
+    it('check contract code size', async () => {
+        console.log('- BMV1 : ', BMV.deployedBytecode.length / 2 - 1);
+        assert.isBelow(BMV.deployedBytecode.length / 2 - 1, 24576, 'contract size is restricted to 24KB');
+        console.log('- BMV2 : ', DataValidator.deployedBytecode.length / 2 - 1);
+        assert.isBelow(DataValidator.deployedBytecode.length / 2 - 1, 24576, 'contract size is restricted to 24KB');
     });
 
     it('should get connected BMC\'s address', async () => {
@@ -48,39 +73,20 @@ contract('TestBMV', async (accounts) => {
         await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, base64Msg);
         const status = await bmv.getStatus();
         assert.isNotEmpty(status, 'invalid status');
-        assert.equal(status[0], 12, 'incorrect current MTA height');
-        assert.equal(status[1], 8, 'incorrect offset');
-        assert.equal(status[2], 12, 'incorrect last block height');
+        assert.equal(status[0], initOffset + 1, 'incorrect current MTA height');
+        assert.equal(status[1], initOffset, 'incorrect offset');
+        assert.equal(status[2], initOffset + 1, 'incorrect last block height');
     });
 
     it('should verify relay message', async () => {
         const res = await bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg);
-        for (let i = 0; i < serviceMsgs.length; i++)
-            assert.equal(serviceMsgs[i], res[i], 'incorrect service messages');
-    });
-
-    it('check contract code size', async () => {
-        // console.log((testBMV.deployedBytecode.length / 2) - 1);
-        assert.isBelow((testBMV.deployedBytecode.length / 2) - 1, 24576, 'contract size is restricted to 24KB');
-        // console.log((testDataValidator.deployedBytecode.length / 2) - 1);
-        assert.isBelow((testDataValidator.deployedBytecode.length / 2) - 1, 24576, 'contract size is restricted to 24KB');
+        for (let i = 0; i < btpMsgs.length; i++)
+            assert.equal(btpMsgs[i], res[i], 'incorrect service messages');
     });
 
     it('should upgrade BMV', async () => {
-        const dataValidator = await deployProxy(testDataValidator);
-        const BMV = await deployProxy(
-            testBMV,
-            [
-                bmc.address,
-                dataValidator.address,
-                iconNet,
-                encodedValidators,
-                initOffset,
-                lastBlockHash
-            ]
-        );
-        const upgradeDataValidator = await upgradeProxy(dataValidator.address, dataValidatorV2);
-        const upgradeBMV = await upgradeProxy(BMV.address, bmvV2);
+        const upgradeDataValidator = await upgradeProxy(dataValidator.address, DataValidatorV2);
+        const upgradeBMV = await upgradeProxy(bmv.address, BMVV2);
 
         let msgs = await upgradeDataValidator.validateReceipt.call(
             'param1',

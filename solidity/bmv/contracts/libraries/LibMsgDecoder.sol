@@ -26,7 +26,7 @@ library LibMsgDecoder {
     {
         //  Decode RLP bytes into a list of items
         LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        bool isSPREmpty = true;
+        bool isResultEmpty = true;
         if (ls[10].toBytes().length == 0) {
             return
                 LibTypes.BlockHeader(
@@ -41,13 +41,13 @@ library LibMsgDecoder {
                     ls[7].toBytes(),
                     ls[8].toBytes(),
                     ls[9].toBytes(),
-                    LibTypes.SPR("", "", ""),
-                    isSPREmpty
+                    LibTypes.Result("", "", "", ""),
+                    isResultEmpty
                 );
         }
         LibRLPDecode.RLPItem[] memory subList =
             ls[10].toBytes().toRlpItem().toList();
-        isSPREmpty = false;
+        isResultEmpty = false;
         return
             LibTypes.BlockHeader(
                 keccak256(_rlp),
@@ -61,12 +61,13 @@ library LibMsgDecoder {
                 ls[7].toBytes(),
                 ls[8].toBytes(),
                 ls[9].toBytes(),
-                LibTypes.SPR(
+                LibTypes.Result(
                     subList[0].toBytes().bytesToBytes32(),
                     subList[1].toBytes().bytesToBytes32(),
-                    subList[2].toBytes().bytesToBytes32()
+                    subList[2].toBytes().bytesToBytes32(),
+                    subList[3].toBytes()
                 ),
-                isSPREmpty
+                isResultEmpty
             );
     }
 

@@ -6,11 +6,12 @@ library LibTypes {
      * @Notice List of ALL Struct being used to Encode and Decode RLP Messages
      */
 
-    //  SPR = State Hash + Patch Receipt Hash + Receipt Hash
-    struct SPR {
+    //  Result = State Hash + Patch Receipt Hash + Receipt Hash + Extension Data
+    struct Result {
         bytes32 stateHash;
         bytes32 patchReceiptHash;
         bytes32 receiptHash;
+        bytes extensionData;
     }
 
     struct BlockHeader {
@@ -25,8 +26,8 @@ library LibTypes {
         bytes patchTxHash;
         bytes txHash;
         bytes logsBloom;
-        SPR spr;
-        bool isSPREmpty; //  add to check whether SPR is an empty struct
+        Result result;
+        bool isResultEmpty; //  add to check whether SPR is an empty struct
         //  It will not be included in serializing thereafter
     }
 

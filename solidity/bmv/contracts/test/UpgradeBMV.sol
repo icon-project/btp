@@ -143,7 +143,7 @@ contract BMVV2 is IBMV, Initializable {
                 // );
                 receiptHash = relayMsg.blockUpdates[i]
                     .blockHeader
-                    .spr
+                    .result
                     .receiptHash;
                 lastHeight = relayMsg.blockUpdates[i].blockHeader.height;
                 lastBlockHash = relayMsg.blockUpdates[i].blockHeader.blockHash;
@@ -163,7 +163,7 @@ contract BMVV2 is IBMV, Initializable {
 
         if (relayMsg.blockProof.blockWitness.witnesses.length != 0) {
             relayMsg.blockProof.verifyMTAProof(mta);
-            receiptHash = relayMsg.blockProof.blockHeader.spr.receiptHash;
+            receiptHash = relayMsg.blockProof.blockHeader.result.receiptHash;
             lastHeight = relayMsg.blockProof.blockHeader.height;
         }
 
