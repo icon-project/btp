@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const uri = "wss://beresheet7.edgewa.re"
+const uri = "wss://beresheet1.edgewa.re"
 const bmcAddress = "0xa3a83D4C5f453C62808f33fc0278d547aeB3F0C0"
 
 var logger = log.New()
