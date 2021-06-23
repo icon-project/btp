@@ -289,7 +289,7 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 
 	if len(rps) > 0 {
 		rm.BlockUpdates = append(rm.BlockUpdates, bu)
-		rm.BlockProof, _ = b.newBlockProof(bu.Height, bu.Header)
+
 		rm.ReceiptProofs = rps
 		rm.HeightOfDst = b.HeightOfDst()
 		if b.bmcLinkStatus.BlockIntervalDst > 0 {

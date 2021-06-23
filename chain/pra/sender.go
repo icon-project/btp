@@ -52,10 +52,16 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		return nil, err
 	}
 
-	return &RelayMessageParam{
+	rmp := &RelayMessageParam{
 		Prev: prev,
 		Msg:  base64.URLEncoding.EncodeToString(b),
-	}, nil
+	}
+
+	if len(rm.ReceiptProofs) > 0 {
+		s.log.Debugf("sending rp _msg: %v", rmp.Msg)
+	}
+
+	return rmp, nil
 }
 
 // Segment split the give RelayMessage into small segments
@@ -87,7 +93,6 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 				return nil, err
 			}
-
 			segments = append(segments, segment)
 			msg = &RelayMessage{
 				BlockUpdates:  make([][]byte, 0),
@@ -100,11 +105,19 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		msg.numberOfBlockUpdate += 1
 	}
 
-	var bp []byte
-	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
-		return nil, err
+	lbu := &chain.BlockUpdate{}
+	if rm.BlockProof != nil {
+		if bp, err := codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
+			return nil, err
+		} else {
+			lbu.Proof = bp
+			lbu.Height = rm.BlockProof.BlockWitness.Height
+		}
+	} else {
+		lbu = rm.BlockUpdates[len(rm.BlockUpdates)-1]
 	}
-	if s.isOverSizeLimit(len(bp)) {
+
+	if s.isOverSizeLimit(len(lbu.Proof)) {
 		return nil, fmt.Errorf("invalid BlockProof size")
 	}
 
@@ -113,10 +126,11 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			return nil, fmt.Errorf("invalid ReceiptProof.Proof size")
 		}
 		if len(msg.BlockUpdates) == 0 {
-			size += len(bp)
-			msg.BlockProof = bp
-			msg.height = rm.BlockProof.BlockWitness.Height
+			size += len(lbu.Proof)
+			msg.BlockProof = lbu.Proof
+			msg.height = lbu.Height
 		}
+
 		size += len(rp.Proof)
 		trp := &ReceiptProof{
 			Index:       rp.Index,
@@ -128,12 +142,13 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			if s.isOverSizeLimit(len(ep.Proof)) {
 				return nil, fmt.Errorf("invalid EventProof.Proof size")
 			}
+
 			size += len(ep.Proof)
 			if s.isOverSizeLimit(size) {
 				if j == 0 && len(msg.BlockUpdates) == 0 {
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
-				//
+
 				segment := &chain.Segment{
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -148,11 +163,11 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
 					ReceiptProofs: make([][]byte, 0),
-					BlockProof:    bp,
+					BlockProof:    lbu.Proof,
 				}
 				size = len(ep.Proof)
 				size += len(rp.Proof)
-				size += len(bp)
+				size += len(lbu.Proof)
 
 				trp = &ReceiptProof{
 					Index:       rp.Index,
@@ -171,7 +186,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 		}
 	}
-	//
+
 	segment := &chain.Segment{
 		Height:              msg.height,
 		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
