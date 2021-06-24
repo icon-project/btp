@@ -2,7 +2,7 @@ const BMV = artifacts.require("BMV");
 const SUB_BMV = artifacts.require("DataValidator");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
-module.exports = async function (deployer) {
+module.exports = async function (deployer, network) {
   if (network !== "development") {
     await deployProxy(SUB_BMV, { deployer });
     await deployProxy(
