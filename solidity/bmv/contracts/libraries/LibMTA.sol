@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./LibRLPDecode.sol";
 import "./LibRLPEncode.sol";
 import "./LibBytes.sol";
+import "./LibHash.sol";
 
 library LibMerkleTreeAccumulator {
     using LibRLPEncode for bytes;
@@ -15,6 +16,8 @@ library LibMerkleTreeAccumulator {
     using LibRLPDecode for bytes;
 
     using LibBytes for bytes;
+
+    using LibHash for bytes;
 
     struct MTA {
         uint256 height;
@@ -122,10 +125,9 @@ library LibMerkleTreeAccumulator {
                         mta.offset += 2**i;
                         break;
                     } else {
-                        // TODO: pending for pre-compiler, using sh3_256 instead of keccak256
-                        _hash = keccak256(
-                            abi.encodePacked(mta.roots[i], _hash)
-                        );
+                        _hash = abi
+                            .encodePacked(mta.roots[i], _hash)
+                            .sha3FIPS256();
                         delete mta.roots[i];
                     }
                 }
@@ -163,17 +165,17 @@ library LibMerkleTreeAccumulator {
     }
 
     function verify(
-        bytes32[] memory witness, // proof
+        bytes32[] memory witness,
         bytes32 root,
         bytes32 leaf,
         uint256 index
-    ) internal pure {
+    ) internal {
         bytes32 hash = leaf;
         for (uint256 i = 0; i < witness.length; i++) {
             if (index % 2 == 0) {
-                hash = keccak256(abi.encodePacked(hash, witness[i]));
+                hash = abi.encodePacked(hash, witness[i]).sha3FIPS256();
             } else {
-                hash = keccak256(abi.encodePacked(witness[i], hash));
+                hash = abi.encodePacked(witness[i], hash).sha3FIPS256();
             }
 
             index = index / 2;
@@ -188,7 +190,7 @@ library LibMerkleTreeAccumulator {
         bytes32 leaf,
         uint256 height,
         uint256 at
-    ) internal view {
+    ) internal {
         bytes32 root;
         uint256 rootIdx;
 
@@ -210,7 +212,7 @@ library LibMerkleTreeAccumulator {
             for (uint256 i = 0; i < rootIdx; i++) sliceRoots[i] = proof[i];
             verify(sliceRoots, root, leaf, height - 1 - mta.offset);
         } else {
-            if (mta.height - height - 1 < mta.cacheSize)
+            if (int256(mta.height - height - 1) < int256(mta.cacheSize))
                 require(
                     doesIncludeCache(mta, leaf),
                     "BMVRevertInvalidBlockWitness: invalid old witness"

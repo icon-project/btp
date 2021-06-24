@@ -2,10 +2,19 @@ const rlp = require('rlp');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const truffleAssert = require('truffle-assertions');
+const { sha3_256 } = require('js-sha3')
 
 let testMta = artifacts.require('testLibMTA');
 
 const nullHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+let sha3FIPS256 = (input) => {
+    return '0x' + sha3_256.update(input).hex();
+}
+
+let sha3FIPS256Packed = (inputA, inputB) => {
+    return '0x' + sha3_256.update(Buffer.from(inputA.slice(2), 'hex')).update(Buffer.from(inputB.slice(2), 'hex')).toString();
+}
 
 let toHex = (buf) => { 
     buf = buf.toString('hex');
@@ -27,18 +36,18 @@ let toRLPBytes = (data) => {
 };
 
 let rootHashes = [
-    web3.utils.sha3('root 1'),
-    web3.utils.sha3('root 2'),
-    web3.utils.sha3('root 3'),
-    web3.utils.sha3('root 4')
+    sha3FIPS256('root 1'),
+    sha3FIPS256('root 2'),
+    sha3FIPS256('root 3'),
+    sha3FIPS256('root 4')
 ];
 
 let rootCaches = [
-    web3.utils.sha3('cache 1'),
-    web3.utils.sha3('cache 2'),
-    web3.utils.sha3('cache 3'),
-    web3.utils.sha3('cache 4'),
-    web3.utils.sha3('cache 5')
+    sha3FIPS256('cache 1'),
+    sha3FIPS256('cache 2'),
+    sha3FIPS256('cache 3'),
+    sha3FIPS256('cache 4'),
+    sha3FIPS256('cache 5')
 ];
 
 let data = {
@@ -71,7 +80,7 @@ let expected = {
     isAllowNewerWitness: (data.isAllowNewerWitness === 1) ? true : false
 }
 
-contract('TestLibMTA', async () => {
+contract('MTA library unit tests', async () => {
     let testLibMta;
 
     beforeEach(async () => {
@@ -117,7 +126,7 @@ contract('TestLibMTA', async () => {
     it('should push a cache into caches list in MTA', async () => {
         await testLibMta.initFromSerialized(toRLPBytes(data));
 
-        const newCacheRoot = web3.utils.sha3('new cache');
+        const newCacheRoot = sha3FIPS256('new cache');
         await testLibMta.putCache(newCacheRoot);
 
         const mta = await testLibMta.getMTA();
@@ -136,7 +145,7 @@ contract('TestLibMTA', async () => {
          * data    [     dog       ]
          * cache   [     dog       ]
          */
-        const root1 = web3.utils.sha3('dog');
+        const root1 = sha3FIPS256('dog');
         await testLibMta.add(root1);
 
         let mta = await testLibMta.getMTA();
@@ -153,8 +162,8 @@ contract('TestLibMTA', async () => {
          * data                       [     dog          cat          ]
          * cache                      [     dog          cat          ]
          */
-        const root2 = web3.utils.sha3('cat'); 
-        const root12 = web3.utils.soliditySha3(root1, root2);
+        const root2 = sha3FIPS256('cat'); 
+        const root12 = sha3FIPS256Packed(root1, root2);
         await testLibMta.add(root2);
 
         mta = await testLibMta.getMTA();
@@ -172,7 +181,7 @@ contract('TestLibMTA', async () => {
          * data       [      dog               cat           snake    ]
          * cache      [      dog               cat           snake    ]
          */
-        const root3 = web3.utils.sha3('snake');
+        const root3 = sha3FIPS256('snake');
         await testLibMta.add(root3);
 
         mta = await testLibMta.getMTA();
@@ -190,9 +199,9 @@ contract('TestLibMTA', async () => {
          * data       [    dog    cat    snake    pig  ]
          * cache      [    dog    cat    snake    pig  ]
          */
-        const root4 = web3.utils.sha3('pig');
-        const root34 = web3.utils.soliditySha3(root3, root4);
-        const root1234 = web3.utils.soliditySha3(root12, root34);
+        const root4 = sha3FIPS256('pig');
+        const root34 = sha3FIPS256Packed(root3, root4);
+        const root1234 = sha3FIPS256Packed(root12, root34);
         await testLibMta.add(root4);
 
         mta = await testLibMta.getMTA();
@@ -211,7 +220,7 @@ contract('TestLibMTA', async () => {
          * data    [     dog     cat     snake     pig     chicken     ]
          * cache   [     dog     cat     snake     pig     chicken     ]
          */
-        const root5 = web3.utils.sha3('chicken');
+        const root5 = sha3FIPS256('chicken');
         await testLibMta.add(root5);
 
         mta = await testLibMta.getMTA();
@@ -230,8 +239,8 @@ contract('TestLibMTA', async () => {
          * data    [     dog     cat     snake     pig     chicken     cow     ]
          * cache   [             cat     snake     pig     chicken     cow     ]
          */
-        const root6 = web3.utils.sha3('chicken');
-        const root56 = web3.utils.soliditySha3(root5, root6);
+        const root6 = sha3FIPS256('chicken');
+        const root56 = sha3FIPS256Packed(root5, root6);
         await testLibMta.add(root6);
 
         mta = await testLibMta.getMTA();
@@ -250,7 +259,7 @@ contract('TestLibMTA', async () => {
          * data    [     dog     cat     snake     pig     chicken     cow     fish     ]
          * cache   [                     snake     pig     chicken     cow     fish     ]
          */
-        const root7 = web3.utils.sha3('fish');
+        const root7 = sha3FIPS256('fish');
         await testLibMta.add(root7);
 
         mta = await testLibMta.getMTA();
@@ -269,10 +278,10 @@ contract('TestLibMTA', async () => {
          * data    [     dog     cat     snake     pig     chicken     cow     fish     wolf     ]
          * cache   [                               pig     chicken     cow     fish     wolf     ]
          */
-        const root8 = web3.utils.sha3('wolf');
-        const root78 = web3.utils.soliditySha3(root7, root8);
-        const root5678 = web3.utils.soliditySha3(root56, root78);
-        const root12345678 = web3.utils.soliditySha3(root1234, root5678);
+        const root8 = sha3FIPS256('wolf');
+        const root78 = sha3FIPS256Packed(root7, root8);
+        const root5678 = sha3FIPS256Packed(root56, root78);
+        const root12345678 = sha3FIPS256Packed(root1234, root5678);
         await testLibMta.add(root8);
 
         mta = await testLibMta.getMTA();
@@ -297,11 +306,11 @@ contract('TestLibMTA', async () => {
          * offset  = 2
          */
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -337,11 +346,11 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -349,7 +358,7 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root6);
         await testLibMta.add(root7);
 
-        const root34 = web3.utils.soliditySha3(root3, root4);
+        const root34 = sha3FIPS256Packed(root3, root4);
         const witness = [root6, root34];
         
         // prove item 5 (snake)
@@ -374,11 +383,11 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -386,7 +395,7 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root6);
         await testLibMta.add(root7);
 
-        const root34 = web3.utils.soliditySha3(root3, root4);
+        const root34 = sha3FIPS256Packed(root3, root4);
         const witness = [root6, root34];
         
         // prove item 5 (snake)
@@ -411,14 +420,14 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
-        const root8 = web3.utils.sha3('cow');
-        const root9 = web3.utils.sha3('fish');
-        const root10 = web3.utils.sha3('wolf');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
+        const root8 = sha3FIPS256('cow');
+        const root9 = sha3FIPS256('fish');
+        const root10 = sha3FIPS256('wolf');
 
 
         await testLibMta.add(root3);
@@ -429,7 +438,7 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root8);
         await testLibMta.add(root9);
 
-        const root78 = web3.utils.soliditySha3(root7, root8);
+        const root78 = sha3FIPS256Packed(root7, root8);
         const witness = [root10, root78];
         
         // prove item 9 (fish)
@@ -454,11 +463,11 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -466,13 +475,13 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root6);
         await testLibMta.add(root7);
 
-        const root34 = web3.utils.soliditySha3(root3, root4);
+        const root34 = sha3FIPS256Packed(root3, root4);
         const witness = [root6, root34];
 
         // modify witness
-        witness[1] = web3.utils.sha3('fake pig');
+        witness[1] = sha3FIPS256('fake pig');
 
-        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 7), 'BMVRevertInvalidBlockWitness: invalid witness');
+        await truffleAssert.reverts(testLibMta.verify.call(witness, root5, 5, 7), 'BMVRevertInvalidBlockWitness: invalid witness');
     });
 
     it('should fail to verify leaf if newer witnesses are not allowed ', async () => {
@@ -493,11 +502,11 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, isAllowNewerWitness: 0 }));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
 
         await testLibMta.add(root3);
         await testLibMta.add(root4);
@@ -505,10 +514,10 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root6);
         await testLibMta.add(root7);
 
-        const root34 = web3.utils.soliditySha3(root3, root4);
+        const root34 = sha3FIPS256Packed(root3, root4);
         const witness = [root6, root34];
         
-        await truffleAssert.reverts(testLibMta.verify(witness, root5, 5, 9), 'BMVRevertInvalidBlockWitness: not allowed newer witness');
+        await truffleAssert.reverts(testLibMta.verify.call(witness, root5, 5, 9), 'BMVRevertInvalidBlockWitness: not allowed newer witness');
     });
 
     it('should fail to verify leaf that haven\'t synced yet in BMV MTA', async () => {
@@ -529,14 +538,14 @@ contract('TestLibMTA', async () => {
          */
 
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
-        const root8 = web3.utils.sha3('cow');
-        const root9 = web3.utils.sha3('fish');
-        const root10 = web3.utils.sha3('wolf');
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
+        const root8 = sha3FIPS256('cow');
+        const root9 = sha3FIPS256('fish');
+        const root10 = sha3FIPS256('wolf');
 
 
         await testLibMta.add(root3);
@@ -545,10 +554,10 @@ contract('TestLibMTA', async () => {
         await testLibMta.add(root6);
         await testLibMta.add(root7);
 
-        const root78 = web3.utils.soliditySha3(root7, root8);
+        const root78 = sha3FIPS256Packed(root7, root8);
         const witness = [root10, root78];
         
-        await truffleAssert.reverts(testLibMta.verify(witness, root9, 9, 9), 'BMVRevertInvalidBlockWitness: given witness for newer node');
+        await truffleAssert.reverts(testLibMta.verify.call(witness, root9, 9, 9), 'BMVRevertInvalidBlockWitness: given witness for newer node');
     });
 
     it('should verify by cache', async () => {
@@ -570,13 +579,13 @@ contract('TestLibMTA', async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9, cacheSize: 6 }));
 
-        const root10 = web3.utils.sha3('chicken');
-        const root11 = web3.utils.sha3('cow');
-        const root12 = web3.utils.sha3('fish');
-        const root13 = web3.utils.sha3('wolf');
-        const root14 = web3.utils.sha3('tiger');
-        const root15 = web3.utils.sha3('lion');
-        const root16 = web3.utils.sha3('bird');
+        const root10 = sha3FIPS256('chicken');
+        const root11 = sha3FIPS256('cow');
+        const root12 = sha3FIPS256('fish');
+        const root13 = sha3FIPS256('wolf');
+        const root14 = sha3FIPS256('tiger');
+        const root15 = sha3FIPS256('lion');
+        const root16 = sha3FIPS256('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -611,13 +620,13 @@ contract('TestLibMTA', async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9 }));
 
-        const root10 = web3.utils.sha3('chicken');
-        const root11 = web3.utils.sha3('cow');
-        const root12 = web3.utils.sha3('fish');
-        const root13 = web3.utils.sha3('wolf');
-        const root14 = web3.utils.sha3('tiger');
-        const root15 = web3.utils.sha3('lion');
-        const root16 = web3.utils.sha3('bird');
+        const root10 = sha3FIPS256('chicken');
+        const root11 = sha3FIPS256('cow');
+        const root12 = sha3FIPS256('fish');
+        const root13 = sha3FIPS256('wolf');
+        const root14 = sha3FIPS256('tiger');
+        const root15 = sha3FIPS256('lion');
+        const root16 = sha3FIPS256('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -630,7 +639,7 @@ contract('TestLibMTA', async () => {
         const witness = [root10];
 
         // prove item 11 (cow)
-        await truffleAssert.reverts(testLibMta.verify(witness, root11, 11, 12), 'BMVRevertInvalidBlockWitness: invalid old witness');
+        await truffleAssert.reverts(testLibMta.verify.call(witness, root11, 11, 12), 'BMVRevertInvalidBlockWitness: invalid old witness');
     });
 
     it('should fail to verify by old witness cache', async () => {
@@ -652,13 +661,13 @@ contract('TestLibMTA', async () => {
          */
         await testLibMta.initFromSerialized(toRLPBytes({ ...initData, height: 9, offset: 9 }));
 
-        const root10 = web3.utils.sha3('chicken');
-        const root11 = web3.utils.sha3('cow');
-        const root12 = web3.utils.sha3('fish');
-        const root13 = web3.utils.sha3('wolf');
-        const root14 = web3.utils.sha3('tiger');
-        const root15 = web3.utils.sha3('lion');
-        const root16 = web3.utils.sha3('bird');
+        const root10 = sha3FIPS256('chicken');
+        const root11 = sha3FIPS256('cow');
+        const root12 = sha3FIPS256('fish');
+        const root13 = sha3FIPS256('wolf');
+        const root14 = sha3FIPS256('tiger');
+        const root15 = sha3FIPS256('lion');
+        const root16 = sha3FIPS256('bird');
 
         await testLibMta.add(root10);
         await testLibMta.add(root11);
@@ -671,7 +680,7 @@ contract('TestLibMTA', async () => {
         const witness = [root11];
 
         // prove item 10 (cow)
-        await truffleAssert.reverts(testLibMta.verify(witness, root11, 10, 12), 'BMVRevertInvalidBlockWitnessOld');
+        await truffleAssert.reverts(testLibMta.verify.call(witness, root11, 10, 12), 'BMVRevertInvalidBlockWitnessOld');
     });
 
     it('should get bytes encoding of MTA', async () => {
@@ -684,14 +693,14 @@ contract('TestLibMTA', async () => {
          * isAllowNewerWitness = true
          */
         await testLibMta.initFromSerialized(toRLPBytes(initData));
-        const root3 = web3.utils.sha3('dog');
-        const root4 = web3.utils.sha3('cat');
-        const root5 = web3.utils.sha3('snake');
-        const root6 = web3.utils.sha3('pig');
-        const root7 = web3.utils.sha3('chicken');
-        const root3456 = web3.utils.soliditySha3(
-            web3.utils.soliditySha3(root3, root4),
-            web3.utils.soliditySha3(root5, root6)
+        const root3 = sha3FIPS256('dog');
+        const root4 = sha3FIPS256('cat');
+        const root5 = sha3FIPS256('snake');
+        const root6 = sha3FIPS256('pig');
+        const root7 = sha3FIPS256('chicken');
+        const root3456 = sha3FIPS256Packed(
+            sha3FIPS256Packed(root3, root4),
+            sha3FIPS256Packed(root5, root6)
         );
 
         await testLibMta.add(root3);

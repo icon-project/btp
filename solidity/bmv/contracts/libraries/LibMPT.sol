@@ -1,13 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
 import "./LibRLPDecode.sol";
 import "./LibBytes.sol";
+import "./LibHash.sol";
 
 library LibMerklePatriciaTrie {
     using LibRLPDecode for LibRLPDecode.RLPItem;
     using LibRLPDecode for bytes;
     using LibBytes for bytes;
+    using LibHash for bytes;
     using LibMerklePatriciaTrie for LibMerklePatriciaTrie.MPT;
 
     struct MPT {
@@ -96,9 +98,7 @@ library LibMerklePatriciaTrie {
         // check if node is a hash
         if (mpt.hash.length > 0 && mpt.serialized.length == 0) {
             bytes memory serialized = proofs[0];
-            // TODO: pending SHA3-256
-            // bytes32 _hash = keccak256(serialized);
-            bytes32 _hash = mpt.hash;
+            bytes32 _hash = serialized.sha3FIPS256();
             if (proofs.length > 1) {
                 bytes[] memory temp = new bytes[](proofs.length - 1);
                 for (uint256 i = 0; i < temp.length; i++)

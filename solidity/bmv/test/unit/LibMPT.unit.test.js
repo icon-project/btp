@@ -5,7 +5,7 @@ const truffleAssert = require('truffle-assertions');
 
 let testMpt = artifacts.require('testLibMPT');
 
-contract('TestLibMPT', async () => {
+contract('MPT library unit tests', async () => {
     let testLibMpt;
 
     beforeEach(async () => {
@@ -76,22 +76,19 @@ contract('TestLibMPT', async () => {
     });
 
     it('should revert if given serialized proofs length is invalid', async () => {
-        let rootHash = '0x1d854f17d88a1be09b146325fe67fb6baaf5ab192f40fe07ecfa0f84d73179f7';
-        let key = '0x02';
+        let rootHash = '0xcaa6f66e5523800ef5b38afed1f69cae3d8dd634b8ad2a2c6719905bfdefd86d';
+        let key = '0x01';
         let proofs = [
-            '0xe210a0649ceaf94e739f89bbbd83ee6fdae6b979c401a6a6f13c3c598f72f6cdae799a11',
-            '0xf871a03820879dad43db74eb87a07da4ab0a5141c1379f79d98b29cb80f5a297ba60bfa01d13281e65471f09e46ac284af3e5f67715db5c73341c3391eb3a4bb6cc888ffa0baff8756de1ba52f32ca341fe264b3081a148b2629436252e713139c36568d928080808080808080808080808080',
-            '0xef20adec0095002f071e05f858af2332c7c4ac7244319d14c233b2830493e0830186a08502e90edd0080f800f800f800'
+            '0xf884a1a03820879dad43db74eb87a07da4ab0a5141c1379f79d98b29cb80f5a297ba60bfa1a01d13281e65471f09e46ac284af3e5f67715db5c73341c3391eb3a4bb6cc888ffa1a0baff8756de1ba52f32ca341fe264b3081a148b2629436252e713139c36568d92818081808180818081808180818081808180818081808180818081808180',
         ]
         await truffleAssert.reverts(testLibMpt.prove.call(rootHash, key, proofs), 'MPTException: Invalid list length');
     });
 
-    // TODO: pending for SHA3-256
-    it.skip('should revert if root hash in proof is invalid', async () => {
+    it('should revert if root hash in proof is invalid', async () => {
         let rootHash = '0x2d854f17d88a1be09b146325fe67fb6baaf5ab192f40fe07ecfa0f84d73179f7';
         let key = '0x02';
         let proofs = [
-            '0xe210a0649ceaf94e739f89bbbd83ee6fdae6b979c401a6a6f13c3c598f72f6cdae799a',
+            '0xe210a0649ceaf94e739f89bbbd83ee6fdae6b979c401a6a6f13c3c598f72f6cdae799a11',
             '0xf871a03820879dad43db74eb87a07da4ab0a5141c1379f79d98b29cb80f5a297ba60bfa01d13281e65471f09e46ac284af3e5f67715db5c73341c3391eb3a4bb6cc888ffa0baff8756de1ba52f32ca341fe264b3081a148b2629436252e713139c36568d928080808080808080808080808080',
             '0xef20adec0095002f071e05f858af2332c7c4ac7244319d14c233b2830493e0830186a08502e90edd0080f800f800f800'
         ]
@@ -111,7 +108,7 @@ contract('TestLibMPT', async () => {
 
     it('should revert if nibbles on leaf are invalid', async () => {
         let rootHash = '0x1d854f17d88a1be09b146325fe67fb6baaf5ab192f40fe07ecfa0f84d73179f7';
-        let key = '0x023';
+        let key = '0x0234';
         let proofs = [
             '0xe210a0649ceaf94e739f89bbbd83ee6fdae6b979c401a6a6f13c3c598f72f6cdae799a',
             '0xf871a03820879dad43db74eb87a07da4ab0a5141c1379f79d98b29cb80f5a297ba60bfa01d13281e65471f09e46ac284af3e5f67715db5c73341c3391eb3a4bb6cc888ffa0baff8756de1ba52f32ca341fe264b3081a148b2629436252e713139c36568d928080808080808080808080808080',

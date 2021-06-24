@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -38,14 +38,14 @@ contract BMVV2 is IBMV, Initializable {
         address _bmcAddr,
         address _subBmvAddr,
         string memory _netAddr,
-        string memory _validators,
+        bytes memory _rlpValidators,
         uint256 _offset,
         bytes32 _lastBlockHash
     ) public initializer {
         bmcAddr = _bmcAddr;
         subBmvAddr = _subBmvAddr;
         netAddr = _netAddr;
-        validators.decodeValidators(_validators.decode());
+        validators.decodeValidators(_rlpValidators);
         mta.setOffset(_offset);
         lastBlockHash = _lastBlockHash;
     }
@@ -109,38 +109,7 @@ contract BMVV2 is IBMV, Initializable {
         returns (bytes32 receiptHash, uint256 lastHeight)
     {
         for (uint256 i = 0; i < relayMsg.blockUpdates.length; i++) {
-            // // verify prev block hash
-            // if (i == 0)
-            //     require(
-            //         relayMsg.blockUpdates[i].blockHeader.prevHash ==
-            //             lastBlockHash,
-            //         "BMVRevertInvalidBlockUpdate: Invalid block hash"
-            //     );
-            // else {
-            //     require(
-            //         relayMsg.blockUpdates[i].blockHeader.prevHash ==
-            //             relayMsg.blockUpdates[i - 1].blockHeader.blockHash,
-            //         "BMVRevertInvalidBlockUpdate: Invalid block hash"
-            //     );
-            // }
-
-            // // verify height
-            // require(
-            //     relayMsg.blockUpdates[i].blockHeader.height >= mta.height + 1,
-            //     "BMVRevertInvalidBlockUpdateHigher"
-            // );
-
-            // require(
-            //     relayMsg.blockUpdates[i].blockHeader.height < mta.height + 1,
-            //     "BMVRevertInvalidBlockUpdateLower"
-            // );
-
-            // only verify validators of last block for saving gas
             if (i == relayMsg.blockUpdates.length - 1) {
-                // require(
-                //     relayMsg.blockUpdates[i].verifyValidators(validators),
-                //     "BMVRevertInvalidBlockUpdate"
-                // );
                 receiptHash = relayMsg.blockUpdates[i]
                     .blockHeader
                     .result
@@ -149,8 +118,6 @@ contract BMVV2 is IBMV, Initializable {
                 lastBlockHash = relayMsg.blockUpdates[i].blockHeader.blockHash;
             }
 
-            // TODO: pending for SHA3-256
-            // if (validators.validatorsHash != relayMsg.blockUpdates[i].nextValidatorsHash) {
             if (relayMsg.blockUpdates[i].nextValidators.length > 0) {
                 delete validators;
                 validators.decodeValidators(
@@ -203,12 +170,12 @@ contract BMVV2 is IBMV, Initializable {
     ) external override returns (bytes[] memory) {
         bytes[] memory msgs = new bytes[](2);
         msgs[0] = IDataValidator(subBmvAddr).validateReceipt(
-                _bmc,
-                _prev,
-                _seq,
-                bytes("test upgradable BMV"),
-                keccak256("test root hash")
-            )[0];
+            _bmc,
+            _prev,
+            _seq,
+            bytes("test upgradable BMV"),
+            keccak256("test root hash")
+        )[0];
         msgs[1] = bytes("Succeed to upgrade BMV contract");
         return msgs;
     }

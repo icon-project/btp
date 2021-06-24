@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -13,9 +13,9 @@ contract DataValidatorV2 is IDataValidator, Initializable {
 
     function validateReceipt(
         string memory, /* _bmc */
-        string memory /* _prev */,
-        uint256 /* _seq */,
-        bytes memory /* _serializedMsg */,
+        string memory, /* _prev */
+        uint256, /* _seq */
+        bytes memory, /* _serializedMsg */
         bytes32 /* _receiptHash */
     ) external override returns (bytes[] memory) {
         msgs.push(bytes("Succeed to upgrade Data Validator contract"));
