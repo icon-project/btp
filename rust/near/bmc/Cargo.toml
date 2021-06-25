@@ -1,0 +1,8 @@
+[package]
+name = "bmc"
+version = "0.1.0"
+authors = ["Muhammed Irfan <muhammedirfan@hugobyte.com>"]
+edition = "2018"
+
+[dependencies]
+near-sdk = "2.0.0"
