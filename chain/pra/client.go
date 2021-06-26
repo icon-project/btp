@@ -62,6 +62,7 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
 	txopts := bind.NewKeyedTransactor(ew.Skey)
 	txopts.GasLimit = DefaultGasLimit
+	txopts.Context = context.Background()
 
 	return txopts
 }
