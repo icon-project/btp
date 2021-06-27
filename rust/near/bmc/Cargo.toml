@@ -1,7 +1,7 @@
 [package]
 name = "bmc"
 version = "0.1.0"
-authors = ["Muhammed Irfan <muhammedirfan@hugobyte.com>"]
+authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
