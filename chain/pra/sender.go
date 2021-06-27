@@ -371,7 +371,7 @@ func (s *Sender) isOverBlocksLimit(blockupdates int) bool {
 }
 
 func (s *Sender) parseTransactionError(from EvmAddress, tx *EvmTransaction, blockNumber *big.Int) error {
-	_, err := s.c.CallContract(EvmCallMsg{
+	_, txerr := s.c.CallContract(EvmCallMsg{
 		From:     from,
 		To:       tx.To(),
 		Gas:      tx.Gas(),
@@ -379,29 +379,35 @@ func (s *Sender) parseTransactionError(from EvmAddress, tx *EvmTransaction, bloc
 		Value:    tx.Value(),
 		Data:     tx.Data(),
 	}, blockNumber)
-	if err == nil {
+	if txerr == nil {
 		return errors.New("parseTransactionError: empty")
 	}
 
-	if dataerr, ok := err.(EvmDataError); ok {
-		rawerr, err := decodeEvmError(dataerr)
-		if err != nil {
-			return fmt.Errorf("failed to decode transaction error, err: %v", err.Error())
+	if dataerr, ok := txerr.(EvmDataError); ok {
+		rawerr, derr := decodeEvmError(dataerr)
+		if derr != nil {
+			s.log.Error(derr)
+			return txerr
 		}
 
 		return mapError(rawerr)
 	}
 
-	return err
+	return txerr
 }
 
 func decodeEvmError(dataerr EvmDataError) (string, error) {
+	i := dataerr.ErrorData()
+	if i == nil {
+		return "", errors.New("decodeEvmError: ErrorData is empty")
+	}
+
 	s := dataerr.ErrorData().(string)
 	s = s[136:]
 	s = strings.TrimRight(s, "0")
 	d, err := hex.DecodeString(s)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("decodeEvmError: %v", err.Error())
 	}
 
 	return strings.Split(string(d), ":")[0], nil
