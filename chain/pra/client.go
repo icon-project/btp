@@ -70,7 +70,7 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	return txopts
 }
 
-func (c *Client) GetTransactionReceipt(txhash string) (EvmReceipt, error) {
+func (c *Client) GetTransactionReceipt(txhash string) (*EvmReceipt, error) {
 	receipt, err := c.ethClient.TransactionReceipt(context.Background(), EvmHexToHash(txhash))
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (c *Client) GetTransactionReceipt(txhash string) (EvmReceipt, error) {
 	return receipt, nil
 }
 
-func (c *Client) GetTransactionByHash(txhash string) (EvmTransaction, bool, error) {
+func (c *Client) GetTransactionByHash(txhash string) (*EvmTransaction, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultReadTimeout)
 	defer cancel()
 	tx, pending, err := c.ethClient.TransactionByHash(ctx, EvmHexToHash(txhash))
@@ -214,4 +214,10 @@ func (c *Client) MonitorLatestBlock(cb func(v *BlockNotification) error) error {
 			return err
 		}
 	}
+}
+
+// CallContract executes a message call transaction, which is directly executed in the VM
+// of the node, but never mined into the blockchain.
+func (c *Client) CallContract(callMsg EvmCallMsg, blockNumber *big.Int) ([]byte, error) {
+	return c.ethClient.CallContract(context.Background(), callMsg, blockNumber)
 }

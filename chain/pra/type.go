@@ -59,8 +59,13 @@ type ReadProof struct {
 }
 
 type TransactionHashParam struct {
-	TxHash string             `json:"txhash"`
-	Param  *RelayMessageParam `json:"rm"`
+	From  EvmAddress
+	Tx    *EvmTransaction
+	Param *RelayMessageParam `json:"rm"`
+}
+
+func (thp TransactionHashParam) Hash() string {
+	return thp.Tx.Hash().Hex()
 }
 
 type ReceiptProof struct {

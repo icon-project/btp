@@ -2,9 +2,13 @@ package pra
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/big"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/icon-project/btp/chain"
@@ -224,8 +228,8 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	tries := 0
 CALL_CONTRACT:
 	tries++
-	opts := s.c.newTransactOpts(s.w)
-	txh, err := s.c.bmc.HandleRelayMessage(opts, p.Prev, p.Msg)
+	txOpts := s.c.newTransactOpts(s.w)
+	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
 	if err != nil {
 		if tries < DefaultRetryContractCall {
 			<-time.After(DefaultRetryContractCallInterval)
@@ -235,8 +239,9 @@ CALL_CONTRACT:
 	}
 
 	return &TransactionHashParam{
-		TxHash: txh.Hash().Hex(),
-		Param:  p,
+		From:  txOpts.From,
+		Tx:    tx,
+		Param: p,
 	}, nil
 }
 
@@ -246,10 +251,10 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 	if thp, ok := p.(*TransactionHashParam); ok {
 		t := time.Now()
-		s.log.Debugf("getting receipt:%s", thp.TxHash)
+		s.log.Debugf("getting receipt:%s", thp.Hash())
 
 		for {
-			txr, err := s.c.GetTransactionReceipt(thp.TxHash)
+			txr, err := s.c.GetTransactionReceipt(thp.Hash())
 			if err != nil {
 				<-time.After(DefaultRetryContractCallInterval)
 				continue
@@ -257,8 +262,8 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 			if txr.Status == 0 {
 				//TODO: handle mapError here
-				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.TxHash, thp.Param.Prev, thp.Param.Msg)
-				return nil, chain.NewRevertError(int(chain.BMCRevert))
+				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.Hash(), thp.Param.Prev, thp.Param.Msg)
+				return nil, s.parseTransactionError(thp.From, thp.Tx, txr.BlockNumber)
 			}
 
 			s.log.Debugf("got receipt:%v taken:%.2f seconds", txr.TxHash.String(), time.Now().Sub(t).Seconds())
@@ -363,4 +368,56 @@ func (s *Sender) isOverSizeLimit(size int) bool {
 
 func (s *Sender) isOverBlocksLimit(blockupdates int) bool {
 	return blockupdates >= MaxBlockUpdatesPerSegment
+}
+
+func (s *Sender) parseTransactionError(from EvmAddress, tx *EvmTransaction, blockNumber *big.Int) error {
+	_, err := s.c.CallContract(EvmCallMsg{
+		From:     from,
+		To:       tx.To(),
+		Gas:      tx.Gas(),
+		GasPrice: tx.GasPrice(),
+		Value:    tx.Value(),
+		Data:     tx.Data(),
+	}, blockNumber)
+	if err == nil {
+		return errors.New("parseTransactionError: empty")
+	}
+
+	if dataerr, ok := err.(EvmDataError); ok {
+		rawerr, err := decodeEvmError(dataerr)
+		if err != nil {
+			return fmt.Errorf("failed to decode transaction error, err: %v", err.Error())
+		}
+
+		return mapError(rawerr)
+	}
+
+	return err
+}
+
+func decodeEvmError(dataerr EvmDataError) (string, error) {
+	s := dataerr.ErrorData().(string)
+	s = s[136:]
+	s = strings.TrimRight(s, "0")
+	d, err := hex.DecodeString(s)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Split(string(d), ":")[0], nil
+}
+
+func mapError(s string) error {
+	for code, name := range chain.BMCRevertCodeNames {
+		if name == s {
+			return chain.NewRevertError(int(code))
+		}
+	}
+
+	for code, name := range chain.BMVRevertCodeNames {
+		if name == s {
+			return chain.NewRevertError(int(code))
+		}
+	}
+	return errors.New(s)
 }
