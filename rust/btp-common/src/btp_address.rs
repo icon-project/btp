@@ -1,90 +1,90 @@
-pub struct BTPAddress {
-    pub btp_address: String,
+pub struct BTPAddress(pub String);
+
+pub trait Address {
+    fn network(&self) -> Result<(String, String), String>;
+    fn network_address(&self) -> Result<String, String>;
+    fn protocol(&self) -> Result<(&str, &str), String>;
+    fn blockchain(&self) -> Result<String, String>;
+    fn network_id(&self) -> Result<String, String>;
+    fn contract_address(&self) -> Result<String, String>;
+    fn is_valid(&self) -> Result<bool, String>;
 }
 
-impl BTPAddress {
-    pub fn network(&self) -> (String, String) {
-        let na = self.network_address();
-        if na != "" {
-            let s: Vec<&str> = na.split(".").collect();
+impl Address for BTPAddress {
 
-            if s.len() > 1 {
-                return (s[0].to_string(), s[1].to_string());
-            } else {
-                return ("".to_string(), s[0].to_string());
+    fn blockchain(&self) -> Result<String, String> {
+        match self.network() {
+            Ok((_, blockchain)) => return Ok(blockchain.to_string()),
+            Err(error) => return Err(error),
+        }
+    }
+
+    fn network_id(&self) -> Result<String, String> {
+        match self.network() {
+            Ok((network_id, _)) => return Ok(network_id.to_string()),
+            Err(error) => return Err(error),
+        }
+    }
+
+    fn protocol(&self) -> Result<(&str, &str), String> {
+        match self.0.find("://").unwrap_or(0) {
+            0 => return Err(format!("invalid btp address")),
+            size => return Ok((&self.0[..size], &self.0[size..])),
+        }
+    }
+
+    fn network_address(&self) -> Result<String, String> {
+        match self.protocol() {
+            Ok((_, network)) => {
+                let s: Vec<&str> = network.split("/").collect();
+                if s.len() > 2 {
+                    return Ok(s[2].to_string());
+                }
+                return Err(format!("empty network address"));
             }
+            Err(error) => return Err(error),
         }
-
-        return ("".to_string(), "".to_string());
     }
 
-    pub fn protocol(&self) -> String {
-        let p = self.btp_address.to_string();
-
-        let index = p.find("://").unwrap_or(0);
-
-        if index > 0 {
-            return String::from(&p[index..]);
-        }
-
-        return "".to_string();
-    }
-    pub fn block_chain(&self) -> String {
-        let (_, y) = self.network();
-
-        return y.to_string();
-    }
-    pub fn network_address(&self) -> String {
-        let p = self.protocol();
-
-        if p != "" {
-            let s: Vec<&str> = p.split("/").collect();
-
-            if s.len() > 2 {
-                return s[2].to_string();
+    fn network(&self) -> Result<(String, String), String> {
+        match self.network_address() {
+            Ok(protocol) => {
+                let s: Vec<&str> = protocol.split(".").collect();
+                if s.len() > 1 {
+                    return Ok((s[0].to_string(), s[1].to_string()));
+                } else if s.len() > 0 {
+                    return Ok(("".to_string(), s[0].to_string()));
+                }
+                return Err(format!("invalid address"));
             }
+            Err(error) => return Err(error),
         }
-
-        return "".to_string();
     }
 
-    pub fn network_id(&self) -> String {
-        let (x, _) = self.network();
-
-        return x.to_string();
-    }
-
-    pub fn contract_address(&self) -> String {
-        let p = self.protocol();
-
-        if p != "" {
-            let s: Vec<&str> = p.split("/").collect();
-
-            if s.len() > 3 {
-                return s[3].to_string();
+    fn contract_address(&self) -> Result<String, String> {
+        match self.protocol() {
+            Ok((_, network)) => {
+                let s: Vec<&str> = network.split("/").collect();
+                if s.len() > 3 && !s[3].is_empty(){
+                    return Ok(s[3].to_string());
+                }
+                return Err(format!("empty contract address"));
             }
+            Err(error) => return Err(error),
         }
-
-        return "".to_string();
     }
-    pub fn string(&self) -> String {
-        return self.btp_address.to_string();
-    }
-    pub fn validate_btp_address(&self) -> String {
-        let p = self.protocol();
 
-        if p.as_str() != "btp" {
-            return format!("not supported protocol {}", p.as_str());
+    fn is_valid(&self) -> Result<bool, String> {
+        match self.protocol() {
+            Ok((protocol, _)) => match protocol {
+                "btp" => (),
+                unsupported => return Err(format!("not supported protocol {}", unsupported)),
+            },
+            Err(error) => return Err(error),
         }
-        let v = self.block_chain();
-        if v.as_str() != "icon" || v.as_str() != "iconee" {
-            return format!("not supported blockchain {}", p.as_str());
-        }
-
-        if self.contract_address().len() < 1 {
-            return format!("empty contract address");
-        }
-
-        return "".to_string();
+        return match self.contract_address() {
+            Err(error) => return Err(error),
+            _ => Ok(true),
+        };
     }
 }

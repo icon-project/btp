@@ -1,9 +1,14 @@
 [package]
 name = "btp-common"
 version = "0.1.0"
-authors = ["shreyas.ks <shreyas.ks@hugobyte.com>"]
+authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+
+[[test]]
+name = "test_btp_address"
+path = "tests/test_btp_address.rs"
