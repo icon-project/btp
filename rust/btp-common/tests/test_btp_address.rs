@@ -1,4 +1,4 @@
-use btp_common::{Address, BTPAddress};
+use btp_common::{BTPAddress};
 
 // TODO: Add more tests
 
