@@ -100,7 +100,7 @@ func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
 		return nil, err
 	}
 
-	return &SubstrateMetaData{metadata}, nil
+	return metadata, nil
 }
 
 func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorageKey, error) {
@@ -109,7 +109,7 @@ func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorag
 		return nil, err
 	}
 
-	return CreateStorageKey(meta.Metadata, "System", "Events", nil, nil)
+	return CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
 func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
@@ -205,12 +205,12 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventR
 		return nil, err
 	}
 
-	key, err := CreateStorageKey(meta.Metadata, "System", "Events", nil, nil)
+	key, err := CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key.StorageKey(), blockHash)
+	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key, blockHash)
 	if err != nil {
 		return nil, err
 	}
