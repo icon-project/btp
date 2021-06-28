@@ -2,6 +2,7 @@ package pra
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
@@ -106,7 +107,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		r.isFoundOffsetBySeq = true
 	}
 
-	return r.c.MonitorBlock(uint64(height), true, func(v *BlockNotification) error {
+	if err := r.c.MonitorBlock(uint64(height), true, func(v *BlockNotification) error {
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
@@ -122,7 +123,11 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 			cb(bu, nil)
 		}
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("ReceiveLoop parachain, got err: %v", err)
+	}
+
+	return nil
 }
 
 func (r *Receiver) StopReceiveLoop() {

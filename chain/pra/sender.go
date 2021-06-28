@@ -285,7 +285,7 @@ CALL_CONTRACT:
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}
-		return nil, err
+		return nil, fmt.Errorf("fail to get Parachain' status, err: %v", err)
 	}
 
 	status := &chain.BMCLinkStatus{
@@ -328,10 +328,13 @@ CALL_CONTRACT:
 func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
 	s.log.Debugf("MonitorLoop from height: %v", height)
 
-	return s.c.MonitorBlock(uint64(height), false, func(v *BlockNotification) error {
+	if err := s.c.MonitorBlock(uint64(height), false, func(v *BlockNotification) error {
 		cb(int64(v.Height))
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("MonitorLoop parachain, got err: %v", err)
+	}
+	return nil
 }
 
 func (s *Sender) StopMonitorLoop() {

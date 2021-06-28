@@ -333,7 +333,8 @@ func (c *Client) keepAlive(conn *websocket.Conn) {
 			}
 
 			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
-				c.l.Warn("Ping failed error: %v", err)
+				c.l.Warnf("Ping failed error: %v", err)
+				return
 			}
 		}
 	}()
