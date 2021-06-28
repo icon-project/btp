@@ -5,19 +5,19 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 )
 
-type SubstrateHash types.Hash
+type SubstrateHash = types.Hash
 
-func (hash SubstrateHash) Hash() types.Hash {
-	return types.Hash(hash)
-}
+// func (hash SubstrateHash) Hash() types.Hash {
+// 	return types.Hash(hash)
+// }
 
-func (hash SubstrateHash) Bytes() []byte {
-	return hash[:]
-}
+// func (hash SubstrateHash) Bytes() []byte {
+// 	return hash[:]
+// }
 
-func (key SubstrateHash) Hex() string {
-	return key.Hash().Hex()
-}
+// func (key SubstrateHash) Hex() string {
+// 	return key.Hash().Hex()
+// }
 
 type SubstrateMetaData struct {
 	*types.Metadata
@@ -155,4 +155,11 @@ func (fp *FinalityProof) Decode(decoder scale.Decoder) error {
 
 	err = decoder.Decode(&fp.UnknownHeaders)
 	return err
+}
+
+type SubstrateHeader = types.Header
+type HeaderSubscription interface {
+	Chan() <-chan types.Header
+	Err() <-chan error
+	Unsubscribe()
 }

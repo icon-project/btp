@@ -95,7 +95,7 @@ func (c *Client) CloseAllMonitor() error {
 }
 
 func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
-	metadata, err := c.subAPI.RPC.State.GetMetadata(hash.Hash())
+	metadata, err := c.subAPI.RPC.State.GetMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -118,43 +118,68 @@ func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (Read
 	return res, err
 }
 
-func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events *BlockNotification) error) error {
+func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
+	finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
+	if err != nil {
+		return nil, err
+	}
 
-	currentBlock := h
+	finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return finalizedHeader, nil
+}
+
+// bestLatestBlockHeader returns the best latest header
+// in testnet if the chain do not support finalizing headers, it returns latest header
+func (c *Client) bestLatestBlockHeader() (*SubstrateHeader, error) {
+	finalizedHeader, err := c.lastFinalizedHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	if finalizedHeader.Number > 0 {
+		return finalizedHeader, nil
+	}
+
+	return c.subAPI.RPC.Chain.GetHeaderLatest()
+}
+
+// MonitorBlock pulls block from the given height
+func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNotification) error) error {
+	current := height
+
 	for {
 		select {
 		case <-c.stopMonitorSignal:
 			return nil
 		default:
-			finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
+			header, err := c.bestLatestBlockHeader()
 			if err != nil {
 				return err
 			}
 
-			finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
-			if err != nil {
-				return err
-			}
-
-			if currentBlock > uint64(finalizedHeader.Number) {
-				c.log.Tracef("block not yet finalized target:%v latest:%v", currentBlock, finalizedHeader.Number)
-				time.Sleep(BlockRetryInterval)
+			if current > uint64(header.Number) {
+				c.log.Tracef("block not yet finalized target:%v latest:%v", current, header.Number)
+				<-time.After(BlockRetryInterval)
 				continue
 			}
 
-			hash, err := c.subAPI.RPC.Chain.GetBlockHash(currentBlock)
+			hash, err := c.subAPI.RPC.Chain.GetBlockHash(current)
 			if err != nil && err.Error() == ErrBlockNotReady.Error() {
-				time.Sleep(BlockRetryInterval)
+				<-time.After(BlockRetryInterval)
 				continue
 			} else if err != nil {
-				c.log.Error("failed to query latest block:%v error:%v", currentBlock, err)
+				c.log.Error("failed to query latest block:%v error:%v", current, err)
 				return err
 			}
 
 			v := &BlockNotification{
-				Header: finalizedHeader,
-				Height: currentBlock,
-				Hash:   SubstrateHash(hash),
+				Header: header,
+				Height: current,
+				Hash:   hash,
 			}
 
 			if fetchEvent {
@@ -168,7 +193,7 @@ func (c *Client) MonitorSubstrateBlock(h uint64, fetchEvent bool, cb func(events
 			if err := cb(v); err != nil {
 				return err
 			}
-			currentBlock++
+			current++
 		}
 	}
 }
@@ -185,7 +210,7 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventR
 		return nil, err
 	}
 
-	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key.StorageKey(), blockHash.Hash())
+	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key.StorageKey(), blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -196,24 +221,6 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventR
 	}
 
 	return records, nil
-}
-
-func (c *Client) MonitorLatestBlock(cb func(v *BlockNotification) error) error {
-
-	sub, err := c.subAPI.RPC.Chain.SubscribeNewHeads()
-	if err != nil {
-		return err
-	}
-
-	for {
-		head := <-sub.Chan()
-		if cb(&BlockNotification{
-			Header: &head,
-			Height: uint64(head.Number),
-		}); err != nil {
-			return err
-		}
-	}
 }
 
 // CallContract executes a message call transaction, which is directly executed in the VM

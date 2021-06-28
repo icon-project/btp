@@ -42,12 +42,12 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 	var err error
 	bu := &chain.BlockUpdate{
 		Height:    int64(v.Height),
-		BlockHash: v.Hash.Bytes(),
+		BlockHash: v.Hash[:],
 	}
 
 	// Justification required, when update validators list
 	if len(v.Events.Grandpa_NewAuthorities) > 0 {
-		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
+		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +106,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		r.isFoundOffsetBySeq = true
 	}
 
-	return r.c.MonitorSubstrateBlock(uint64(height), true, func(v *BlockNotification) error {
+	return r.c.MonitorBlock(uint64(height), true, func(v *BlockNotification) error {
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof

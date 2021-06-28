@@ -171,7 +171,7 @@ func (b *BTP) OnBlockOfSrc(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 
 // OnBlockOfDst callback when got a new update from the BMC destination
 func (b *BTP) OnBlockOfDst(height int64) error {
-	b.log.Tracef("OnBlockOfDst height:%d", height)
+	b.log.Debugf("OnBlockOfDst height:%d", height)
 	atomic.StoreInt64(&b.heightOfDst, height)
 
 	h, seq := b.bmcLinkStatus.Verifier.Height, b.bmcLinkStatus.RxSeq

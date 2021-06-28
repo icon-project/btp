@@ -326,9 +326,9 @@ CALL_CONTRACT:
 }
 
 func (s *Sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
-	s.log.Debugf("MonitorLoop h: %v", height)
+	s.log.Debugf("MonitorLoop from height: %v", height)
 
-	return s.c.MonitorLatestBlock(func(v *BlockNotification) error {
+	return s.c.MonitorBlock(uint64(height), false, func(v *BlockNotification) error {
 		cb(int64(v.Height))
 		return nil
 	})
