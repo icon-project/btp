@@ -1,15 +1,5 @@
 pub struct BTPAddress(pub String);
 
-// pub trait Address {
-//     fn network(&self) -> Result<(String, String), String>;
-//     fn network_address(&self) -> Result<String, String>;
-//     fn protocol(&self) -> Result<(&str, &str), String>;
-//     fn blockchain(&self) -> Result<String, String>;
-//     fn network_id(&self) -> Result<String, String>;
-//     fn contract_address(&self) -> Result<String, String>;
-//     fn is_valid(&self) -> Result<bool, String>;
-// }
-
 impl BTPAddress {
     pub fn to_string(&self) -> String {
         self.0.to_string()
