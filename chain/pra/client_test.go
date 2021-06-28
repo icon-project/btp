@@ -8,13 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const uri = "wss://beresheet1.edgewa.re"
-const bmcAddress = "0xa3a83D4C5f453C62808f33fc0278d547aeB3F0C0"
-
-var logger = log.New()
-var c = NewClient(uri, bmcAddress, logger)
+// TODO: modify this
+func NewTestClient() *Client {
+	const uri = "wss://beresheet1.edgewa.re"
+	return NewClient("wss://beresheet1.edgewa.re", "0xa3a83D4C5f453C62808f33fc0278d547aeB3F0C0", log.New())
+}
 
 func TestGetReadProof(t *testing.T) {
+	c := NewTestClient()
+
 	// GIVEN and NewClient
 	key, _ := types.HexDecodeString("0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 	hash, _ := types.NewHashFromHexString("0x2db4d2e7b3a3a9f19470746197eac3c733f59328794aca4c86a05ee83bdff041")
@@ -38,6 +40,8 @@ func TestGetReadProof(t *testing.T) {
 }
 
 func TestGetEvents(t *testing.T) {
+	c := NewTestClient()
+
 	hash, err := c.subAPI.RPC.Chain.GetBlockHashLatest()
 	if err != nil {
 		panic(err)

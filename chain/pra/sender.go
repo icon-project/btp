@@ -86,7 +86,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 		buSize := len(bu.Proof)
 		if s.isOverSizeLimit(buSize) {
-			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
+			return nil, ErrInvalidBlockUpdateProofSize
 		}
 		size += buSize
 		if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
@@ -122,12 +122,12 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 	}
 
 	if s.isOverSizeLimit(len(lbu.Proof)) {
-		return nil, fmt.Errorf("invalid BlockProof size")
+		return nil, ErrInvalidBlockUpdateProofSize
 	}
 
 	for _, rp := range rm.ReceiptProofs {
 		if s.isOverSizeLimit(len(rp.Proof)) {
-			return nil, fmt.Errorf("invalid ReceiptProof.Proof size")
+			return nil, ErrInvalidReceiptProofSize
 		}
 		if len(msg.BlockUpdates) == 0 {
 			size += len(lbu.Proof)
@@ -144,7 +144,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 		for j, ep := range rp.EventProofs {
 			if s.isOverSizeLimit(len(ep.Proof)) {
-				return nil, fmt.Errorf("invalid EventProof.Proof size")
+				return nil, ErrInvalidEventProofProofSize
 			}
 
 			size += len(ep.Proof)
