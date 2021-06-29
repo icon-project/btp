@@ -14,6 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	TestnetURL                     = "https://sejong.net.solidwallet.io/api/v3/icon_dex"
+	TestBlockNumberHasReceiptProof = 273042
+)
+
+const ()
+
 func genFakeBytes(n int) []byte {
 	rand.Seed(time.Now().UnixNano())
 
