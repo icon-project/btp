@@ -23,6 +23,18 @@ type EventTechComitteeCollectiveMemberExecuted = types.EventTechnicalCommitteeMe
 type EventTechComitteeCollectiveProposed = types.EventTechnicalCommitteeProposed
 type EventTechComitteeCollectiveVoted = types.EventTechnicalCommitteeVoted
 
+// https://github.com/PureStake/moonbeam/blob/master/moonbeam-types-bundle/index.ts
+type EthereumAccountId [20]byte
+type AccountId EthereumAccountId
+type Address AccountId
+type Balance types.U128
+type RefCount types.U8
+type LookupSource AccountId
+type AuthorId AccountId
+type RoundIndex types.U32
+type Percent uint
+type Perbill uint
+
 type Phase = types.Phase
 type U8 = types.U8
 type U16 = types.U16
@@ -45,17 +57,9 @@ type DispatchError = types.DispatchError
 type OptionBytes = types.OptionBytes
 type BlockNumber = types.BlockNumber
 
-// https://github.com/PureStake/moonbeam/blob/master/moonbeam-types-bundle/index.ts
-type EthereumAccountId [20]byte
-type AccountId EthereumAccountId
-type Address AccountId
-type Balance types.U128
-type RefCount types.U8
-type LookupSource AccountId
-type AuthorId AccountId
-type RoundIndex types.U32
-type Percent uint
-type Perbill uint
+func (ea *EthereumAccountId) Hex() string {
+	return fmt.Sprintf("%#x", *ea)
+}
 
 // COPY FROM GSRPC
 // EventClaimsClaimed is emitted when an account claims some DOTs

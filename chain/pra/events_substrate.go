@@ -96,44 +96,92 @@ func (el *EthereumLog) Decode(decoder scale.Decoder) error {
 	return err
 }
 
-type ExitReason byte
-
-type ExitReasonEnum struct {
-	IsSucceed bool
-	IsError   bool
-	IsRevert  bool
-	IsFatal   bool
+type ExitReason struct {
+	IsSucceed     bool
+	AsExitSucceed ExitSucceed
+	IsError       bool
+	AsExitError   ExitError
+	IsRevert      bool
+	AsExitRevert  ExitRevert
+	IsFatal       bool
+	AsExitFatal   ExitFatal
 }
 
 const (
-	// Machine has succeeded..
-	Succeed ExitReason = 0
-	// Machine returns a normal EVM error.
-	Error ExitReason = 1
-	// Machine encountered an explict revert
-	Revert ExitReason = 2
-	/// Machine encountered an error that is not supposed to be normal EVM
-	/// errors, such as requiring too much memory to execute.
-	Fatal ExitReason = 3
+	Succeed = iota
+	Error
+	Revert
+	Fatal
 )
 
-func (ere *ExitReasonEnum) Decode(decoder scale.Decoder) error {
-	b, err := decoder.ReadOneByte()
+type ExitError byte
+
+const (
+	StackUnderflow ExitError = iota
+	StackOverflow
+	InvalidJump
+	InvalidRange
+	DesignatedInvalid
+	CallTooDeep
+	CreateCollision
+	CreateContractLimit
+	OutOfOffset
+	OutOfGas
+	OutOfFund
+	PCUnderflow
+	CreateEmpty
+	OtherError
+)
+
+type ExitSucceed byte
+
+const (
+	Stopped ExitSucceed = iota
+	Returned
+	Suicided
+)
+
+type ExitRevert byte
+
+const (
+	Reverted ExitRevert = iota
+)
+
+type ExitFatal byte
+
+const (
+	NotSupported ExitFatal = iota
+	UnhandledInterrupt
+	CallErrorAsFatal
+	OtherFatal
+)
+
+func (ere *ExitReason) Decode(decoder scale.Decoder) error {
+	fb, err := decoder.ReadOneByte()
 	if err != nil {
 		return err
 	}
 
-	switch b {
+	sb, err := decoder.ReadOneByte()
+	if err != nil {
+		return err
+	}
+
+	switch fb {
 	case byte(Succeed):
 		ere.IsSucceed = true
+		ere.AsExitSucceed = ExitSucceed(sb)
 	case byte(Error):
 		ere.IsError = true
+		ere.AsExitError = ExitError(sb)
 	case byte(Revert):
 		ere.IsRevert = true
+		ere.AsExitRevert = ExitRevert(sb)
 	case byte(Fatal):
 		ere.IsFatal = true
+		ere.AsExitFatal = ExitFatal(sb)
 	default:
-		return fmt.Errorf("unknown ExitReason enum: %v", b)
+		return fmt.Errorf("unknown ExitReason: %v, or ExitMessage index: %v", fb, sb)
 	}
 
 	return err
