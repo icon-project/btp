@@ -53,7 +53,7 @@ func TestSegment(t *testing.T) {
 	txSizeLimit := int(f)
 	sender := &Sender{log: log.New()}
 
-	t.Run("invalid BlockUpdate Proof size", func(t *testing.T) {
+	t.Run("should get error ErrInvalidBlockUpdateProofSize", func(t *testing.T) {
 		segments, err := sender.Segment(&chain.RelayMessage{
 			BlockUpdates: []*chain.BlockUpdate{
 				{
@@ -67,7 +67,7 @@ func TestSegment(t *testing.T) {
 		assert.Equal(t, ErrInvalidBlockUpdateProofSize, err)
 	})
 
-	t.Run("segments by over proof size", func(t *testing.T) {
+	t.Run("should be segmented by over BlockProof size", func(t *testing.T) {
 		blocks := MaxBlockUpdatesPerSegment - 1
 
 		rm := &chain.RelayMessage{}
@@ -83,7 +83,7 @@ func TestSegment(t *testing.T) {
 		assert.Len(t, segments, 2)
 	})
 
-	t.Run("segments by over blockupdates", func(t *testing.T) {
+	t.Run("should be segmented by over BlockUpdates", func(t *testing.T) {
 		blocks := MaxBlockUpdatesPerSegment + 1
 		limit := txSizeLimit / (blocks + 1)
 
@@ -91,12 +91,58 @@ func TestSegment(t *testing.T) {
 		for i := 1; i <= blocks; i++ {
 			rm.BlockUpdates = append(rm.BlockUpdates, &chain.BlockUpdate{
 				Height: int64(i),
-				Proof:  genFakeBytes(int(limit)),
+				Proof:  genFakeBytes(limit),
 			})
 		}
 
 		segments, err := sender.Segment(rm, 0)
 		require.Nil(t, err)
 		assert.Len(t, segments, 2)
+	})
+
+	t.Run("should get error ErrInvalidReceiptProofSize", func(t *testing.T) {
+		rm := &chain.RelayMessage{
+			BlockUpdates: []*chain.BlockUpdate{
+				{
+					Height: 1,
+					Proof:  genFakeBytes(txSizeLimit),
+				},
+			},
+			ReceiptProofs: []*chain.ReceiptProof{
+				{
+					Proof: genFakeBytes(txSizeLimit + 1),
+				},
+			},
+		}
+
+		segments, err := sender.Segment(rm, 0)
+		require.NotNil(t, err)
+		require.Nil(t, segments)
+		assert.Equal(t, ErrInvalidReceiptProofSize, err)
+	})
+
+	t.Run("should get error ErrInvalidEventProofProofSize", func(t *testing.T) {
+		rm := &chain.RelayMessage{
+			BlockUpdates: []*chain.BlockUpdate{
+				{
+					Height: 1,
+				},
+			},
+			ReceiptProofs: []*chain.ReceiptProof{
+				{
+					Proof: genFakeBytes(txSizeLimit),
+					EventProofs: []*chain.EventProof{
+						{
+							Proof: genFakeBytes(txSizeLimit + 1),
+						},
+					},
+				},
+			},
+		}
+
+		segments, err := sender.Segment(rm, 0)
+		require.NotNil(t, err)
+		require.Nil(t, segments)
+		assert.Equal(t, ErrInvalidEventProofProofSize, err)
 	})
 }
