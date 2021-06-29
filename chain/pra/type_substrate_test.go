@@ -13,9 +13,8 @@ import (
 func TestDecodeFinalityProof(t *testing.T) {
 	dir, err := os.Getwd()
 	assert.NoError(t, err)
-	// From command
-	// curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"grandpa_proveFinality", "params": [8007753], "id":50}' https://kusama-rpc.polkadot.io
-	buf, err := ioutil.ReadFile(filepath.Join(dir, "./kusama_encoded_finalityproofs"))
+	// curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"grandpa_proveFinality", "params": [8007753], "id":50}' https://kusama-rpc.polkadot.io | jq -rj '.result' > chain/pra/assets/kusama_encoded_finalityproofs
+	buf, err := ioutil.ReadFile(filepath.Join(dir, "./assets/kusama_encoded_finalityproofs"))
 	assert.NoError(t, err)
 	hexStr := string(buf)
 
