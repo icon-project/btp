@@ -11,9 +11,14 @@ mod test {
         init_integration_logger();
 
         let nodes = create_nodes(num_nodes, test_prefix);
-        let nodes: Vec<_> = nodes.into_iter().map(|cfg| Node::new_sharable(cfg)).collect();
-        let account_names: Vec<_> =
-            nodes.iter().map(|node| node.read().unwrap().account_id().unwrap()).collect();
+        let nodes: Vec<_> = nodes
+            .into_iter()
+            .map(|cfg| Node::new_sharable(cfg))
+            .collect();
+        let account_names: Vec<_> = nodes
+            .iter()
+            .map(|node| node.read().unwrap().account_id().unwrap())
+            .collect();
 
         for i in 0..num_nodes {
             nodes[i].write().unwrap().start();
@@ -48,21 +53,38 @@ mod test {
                 .unwrap()
                 .get_access_key_nonce_for_signer(&account_names[i])
                 .unwrap();
-            let account_j = nodes[k].read().unwrap().view_account(&account_names[j]).unwrap();
+            let account_j = nodes[k]
+                .read()
+                .unwrap()
+                .view_account(&account_names[j])
+                .unwrap();
             let transaction = SignedTransaction::send_money(
                 nonce_i + 1,
                 account_names[i].clone(),
                 account_names[j].clone(),
                 &*nodes[i].read().unwrap().signer(),
                 amount_to_send,
-                nodes[k].read().unwrap().user().get_best_block_hash().unwrap(),
+                nodes[k]
+                    .read()
+                    .unwrap()
+                    .user()
+                    .get_best_block_hash()
+                    .unwrap(),
             );
-            nodes[k].read().unwrap().add_transaction(transaction).unwrap();
+            nodes[k]
+                .read()
+                .unwrap()
+                .add_transaction(transaction)
+                .unwrap();
 
             wait(
                 || {
                     account_j.amount
-                        < nodes[r].read().unwrap().view_balance(&account_names[j]).unwrap()
+                        < nodes[r]
+                            .read()
+                            .unwrap()
+                            .view_balance(&account_names[j])
+                            .unwrap()
                             - amount_to_send * 9 / 10
                 },
                 100,

@@ -600,6 +600,8 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 name = "bmc"
 version = "0.1.0"
 dependencies = [
+ "btp-common",
+ "lazy_static",
  "near-sdk",
 ]
 
@@ -722,6 +724,10 @@ name = "bs58"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
+
+[[package]]
+name = "btp-common"
+version = "0.1.0"
 
 [[package]]
 name = "bumpalo"
@@ -2303,6 +2309,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "bmc",
+ "lazy_static",
  "near-chain-configs",
  "near-logger-utils",
  "near-network",

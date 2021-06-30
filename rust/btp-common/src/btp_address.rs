@@ -8,6 +8,7 @@ pub trait Address {
     fn network_id(&self) -> Result<String, String>;
     fn contract_address(&self) -> Result<String, String>;
     fn is_valid(&self) -> Result<bool, String>;
+    
 }
 
 impl Address for BTPAddress {
@@ -87,4 +88,5 @@ impl Address for BTPAddress {
             _ => Ok(true),
         };
     }
+
 }

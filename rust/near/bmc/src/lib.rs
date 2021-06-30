@@ -1,6 +1,16 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::LookupMap;
 use near_sdk::{env, near_bindgen};
 use std::collections::HashMap;
+use std::str;
+mod link;
+mod route;
+use btp_common::{Address, BTPAddress};
+use route::{Route, Routes};
+#[macro_use]
+extern crate lazy_static;
+
+use link::{Link, LinkProps, Links};
 
 #[global_allocator]
 static ALLOC: near_sdk::wee_alloc::WeeAlloc = near_sdk::wee_alloc::WeeAlloc::INIT;
@@ -9,24 +19,8 @@ static ALLOC: near_sdk::wee_alloc::WeeAlloc = near_sdk::wee_alloc::WeeAlloc::INI
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BTPMessageCenter {
     message: Message,
-    links: HashMap<Vec<u8>, Link>,
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Link {
-    rx_seq: u64,
-    tx_seq: u64,
-    relays: Vec<u8>,
-    reachable: Vec<u8>,
-    block_interval_src: u128,
-    block_interval_dst: u128,
-    max_aggregation: u128,
-    delay_limit: u128,
-    relay_index: u64,
-    rotate_height: u64,
-    rotate_term: u64,
-    rx_height_src: u64,
-    connected: bool,
+    links: Links,
+    routes: Routes,
 }
 
 #[derive(Default, BorshDeserialize, BorshSerialize)]
@@ -69,10 +63,12 @@ pub struct Message {
 impl Default for BTPMessageCenter {
     fn default() -> Self {
         let message: Message = Default::default();
-        let links: HashMap<Vec<u8>, Link> = Default::default();
+        let links = Links::new();
+        let routes = Routes::new();
         Self {
             message,
-            links
+            links,
+            routes,
         }
     }
 }
@@ -118,9 +114,55 @@ mod tests {
     fn send_message() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = BTPMessageCenter { ..Default::default() };
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
         let mut s = String::from("");
         contract.send_message("dddddd".to_string());
         assert_eq!("dddddd".to_string(), contract.get_message());
+    }
+    // #[test]
+    // fn link() {
+    //     let context = get_context(vec![], false);
+    //     testing_env!(context);
+
+    //     let address =
+    //         BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    //     let link =
+    //         BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    //     let mut contract = BTPMessageCenter {
+    //         ..Default::default()
+    //     };
+
+    //     contract.routes.add_link(&address, &link);
+    //     match contract.routes.get_staus(&address) {
+    //         Ok(res) => assert_eq!(
+    //             res,
+    //             "btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()
+    //         ),
+    //         Err(res) => (),
+    //     }
+    // }
+
+    #[test]
+
+    fn link_test() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let address =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+        contract.links.add_link(&address);
+        match contract.links.get_links() {
+            Ok(res) => assert_eq!(
+                str::from_utf8(&res).unwrap(),
+                "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"
+            ),
+            Err(res) => (),
+        }
     }
 }
