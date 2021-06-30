@@ -1,5 +1,6 @@
 pub struct BTPAddress(pub String);
 
+<<<<<<< HEAD
 pub trait Address {
     fn network(&self) -> Result<(String, String), String>;
     fn network_address(&self) -> Result<String, String>;
@@ -12,29 +13,35 @@ pub trait Address {
 }
 
 impl Address for BTPAddress {
+=======
+impl BTPAddress {
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+>>>>>>> 9f8645c57fcccb5d31d2304390be90966fb6cb66
 
-    fn blockchain(&self) -> Result<String, String> {
+    pub fn blockchain(&self) -> Result<String, String> {
         match self.network() {
             Ok((_, blockchain)) => return Ok(blockchain.to_string()),
             Err(error) => return Err(error),
         }
     }
 
-    fn network_id(&self) -> Result<String, String> {
+    pub fn network_id(&self) -> Result<String, String> {
         match self.network() {
             Ok((network_id, _)) => return Ok(network_id.to_string()),
             Err(error) => return Err(error),
         }
     }
 
-    fn protocol(&self) -> Result<(&str, &str), String> {
+    pub fn protocol(&self) -> Result<(&str, &str), String> {
         match self.0.find("://").unwrap_or(0) {
             0 => return Err(format!("invalid btp address")),
             size => return Ok((&self.0[..size], &self.0[size..])),
         }
     }
 
-    fn network_address(&self) -> Result<String, String> {
+    pub fn network_address(&self) -> Result<String, String> {
         match self.protocol() {
             Ok((_, network)) => {
                 let s: Vec<&str> = network.split("/").collect();
@@ -47,7 +54,7 @@ impl Address for BTPAddress {
         }
     }
 
-    fn network(&self) -> Result<(String, String), String> {
+    pub fn network(&self) -> Result<(String, String), String> {
         match self.network_address() {
             Ok(protocol) => {
                 let s: Vec<&str> = protocol.split(".").collect();
@@ -62,7 +69,7 @@ impl Address for BTPAddress {
         }
     }
 
-    fn contract_address(&self) -> Result<String, String> {
+    pub fn contract_address(&self) -> Result<String, String> {
         match self.protocol() {
             Ok((_, network)) => {
                 let s: Vec<&str> = network.split("/").collect();
@@ -75,7 +82,7 @@ impl Address for BTPAddress {
         }
     }
 
-    fn is_valid(&self) -> Result<bool, String> {
+    pub fn is_valid(&self) -> Result<bool, String> {
         match self.protocol() {
             Ok((protocol, _)) => match protocol {
                 "btp" => (),

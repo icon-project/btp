@@ -1,2 +1,2 @@
 mod btp_address;
-pub use btp_address::{Address, BTPAddress};
+pub use btp_address::{BTPAddress};
