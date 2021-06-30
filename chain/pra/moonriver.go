@@ -2,6 +2,7 @@ package pra
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
@@ -27,11 +28,11 @@ type EventTechComitteeCollectiveVoted = types.EventTechnicalCommitteeVoted
 type EthereumAccountId [20]byte
 type AccountId EthereumAccountId
 type Address AccountId
-type Balance types.U128
-type RefCount types.U8
+type Balance = types.U128
+type RefCount = types.U8
 type LookupSource AccountId
 type AuthorId AccountId
-type RoundIndex types.U32
+type RoundIndex = types.U32
 type Percent uint
 type Perbill uint
 
@@ -1884,4 +1885,16 @@ type MoonriverEventRecord struct {
 	Treasury_Spending                               []EventTreasurySpending
 	Utility_BatchCompleted                          []EventUtilityBatchCompleted
 	Utility_BatchInterrupted                        []EventUtilityBatchInterrupted
+}
+
+func (me *MoonriverEventRecord) Len() int {
+	len := 0
+	v := reflect.ValueOf(*me)
+	for i := 0; i < v.NumField(); i++ {
+		switch v.Field(i).Kind() {
+		case reflect.Slice:
+			len += v.Field(i).Len()
+		}
+	}
+	return len
 }
