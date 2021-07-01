@@ -61,9 +61,9 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		Msg:  base64.URLEncoding.EncodeToString(b),
 	}
 
-	if len(rm.ReceiptProofs) > 0 {
-		s.log.Debugf("sending rp _msg: %v", rmp.Msg)
-	}
+	// if len(rm.ReceiptProofs) > 0 {
+	// 	s.log.Debugf("sending rp _msg: %v", rmp.Msg)
+	// }
 
 	return rmp, nil
 }
@@ -125,11 +125,11 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		return nil, ErrInvalidBlockUpdateProofSize
 	}
 
-	for _, rp := range rm.ReceiptProofs {
+	for i, rp := range rm.ReceiptProofs {
 		if s.isOverSizeLimit(len(rp.Proof)) {
 			return nil, ErrInvalidReceiptProofSize
 		}
-		if len(msg.BlockUpdates) == 0 {
+		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
 			size += len(lbu.Proof)
 			msg.BlockProof = lbu.Proof
 			msg.height = lbu.Height
@@ -149,8 +149,18 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 			size += len(ep.Proof)
 			if s.isOverSizeLimit(size) {
-				if j == 0 && len(msg.BlockUpdates) == 0 {
-					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
+				if i == 0 && j == 0 && len(msg.BlockUpdates) == 0 {
+					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit %v", i)
+				}
+
+				// TODO: need a confirmation
+				// I'm not sure why this EventProofs is missing
+				// at here this https://github.com/icon-project/btp/blob/master/cmd/btpsimple/module/icon/sender.go#L162
+
+				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
+					return nil, err
+				} else {
+					msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 				}
 
 				segment := &chain.Segment{
@@ -169,16 +179,18 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 					ReceiptProofs: make([][]byte, 0),
 					BlockProof:    lbu.Proof,
 				}
-				size = len(ep.Proof)
-				size += len(rp.Proof)
-				size += len(lbu.Proof)
 
 				trp = &ReceiptProof{
 					Index:       rp.Index,
 					Proof:       rp.Proof,
 					EventProofs: make([]*chain.EventProof, 0),
 				}
+
+				size = len(ep.Proof)
+				size += len(rp.Proof)
+				size += len(lbu.Proof)
 			}
+
 			trp.EventProofs = append(trp.EventProofs, ep)
 			msg.eventSequence = rp.Events[j].Sequence
 			msg.numberOfEvent += 1

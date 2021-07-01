@@ -41,6 +41,17 @@ type RelayMessage struct {
 	numberOfEvent       int
 }
 
+func (rm RelayMessage) Size() int {
+	size := len(rm.BlockProof)
+	for _, blockUpdate := range rm.BlockUpdates {
+		size += len(blockUpdate)
+	}
+	for _, receiptProof := range rm.ReceiptProofs {
+		size += len(receiptProof)
+	}
+	return size
+}
+
 type SignedHeader struct {
 	stypes.Header
 	stypes.Justification

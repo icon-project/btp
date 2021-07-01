@@ -2,7 +2,6 @@ package pra
 
 import (
 	"encoding/base64"
-	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -19,14 +18,14 @@ const (
 	TestBlockNumberHasReceiptProof = 273042
 )
 
-const ()
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func genFakeBytes(n int) []byte {
-	rand.Seed(time.Now().UnixNano())
-
 	b := []byte{}
 	for i := 0; i < n; i++ {
-		b = append(b, byte(rand.Intn(math.MaxUint8)))
+		b = append(b, 1)
 	}
 	return b
 }
@@ -88,6 +87,10 @@ func TestSegment(t *testing.T) {
 		segments, err := sender.Segment(rm, 0)
 		require.Nil(t, err)
 		assert.Len(t, segments, 2)
+		for _, segment := range segments {
+			assert.NotNil(t, segment.TransactionParam)
+			assert.Nil(t, segment.TransactionResult)
+		}
 	})
 
 	t.Run("should be segmented by over BlockUpdates", func(t *testing.T) {
@@ -105,6 +108,10 @@ func TestSegment(t *testing.T) {
 		segments, err := sender.Segment(rm, 0)
 		require.Nil(t, err)
 		assert.Len(t, segments, 2)
+		for _, segment := range segments {
+			assert.NotNil(t, segment.TransactionParam)
+			assert.Nil(t, segment.TransactionResult)
+		}
 	})
 
 	t.Run("should get error ErrInvalidReceiptProofSize", func(t *testing.T) {
@@ -151,5 +158,80 @@ func TestSegment(t *testing.T) {
 		require.NotNil(t, err)
 		require.Nil(t, segments)
 		assert.Equal(t, ErrInvalidEventProofProofSize, err)
+	})
+
+	t.Run("should be segmented by over EventProofs size", func(t *testing.T) {
+		for i := 0; i < 10; i++ {
+			numRps := i
+			numEvents := i
+			sizeLimit := txSizeLimit / 3 //to avoid this error BlockProof + ReceiptProof + EventProof
+			numSegments := 0
+			size := 0
+
+			bu := &chain.BlockUpdate{
+				Proof:  genFakeBytes(sizeLimit),
+				Height: 1,
+			}
+			rm := &chain.RelayMessage{
+				From:         "string",
+				Seq:          1,
+				BlockUpdates: []*chain.BlockUpdate{bu},
+			}
+
+			size += sizeLimit
+
+			for i := 0; i < numRps; i++ {
+				rp := &chain.ReceiptProof{
+					Index: i,
+					Proof: genFakeBytes(sizeLimit),
+				}
+				size += sizeLimit
+
+				for j := 0; j < numEvents; j++ {
+					rp.Events = append(rp.Events, &chain.Event{
+						Sequence: int64(j),
+					})
+
+					ep := &chain.EventProof{
+						Index: j,
+						Proof: genFakeBytes(sizeLimit),
+					}
+					size += sizeLimit
+					if sender.isOverSizeLimit(size) {
+						numSegments++
+						size = sizeLimit * 3
+					}
+
+					rp.EventProofs = append(rp.EventProofs, ep)
+				}
+				rm.ReceiptProofs = append(rm.ReceiptProofs, rp)
+			}
+			numSegments += 1
+
+			segments, err := sender.Segment(rm, 0)
+			require.Nil(t, err)
+			assert.Len(t, segments, numSegments)
+			for i, segment := range segments {
+				assert.NotNil(t, segment.TransactionParam)
+				assert.Nil(t, segment.TransactionResult)
+
+				p, ok := segment.TransactionParam.(*RelayMessageParam)
+				require.True(t, ok)
+				require.NotNil(t, p)
+
+				d, err := base64.URLEncoding.DecodeString(p.Msg)
+				require.Nil(t, err)
+				rm2 := &RelayMessage{}
+				_, err = codec.RLP.UnmarshalFromBytes(d, rm2)
+				require.Nil(t, err)
+
+				if i > 0 {
+					assert.EqualValues(t, rm2.BlockProof, bu.Proof)
+					assert.NotEmpty(t, rm2.ReceiptProofs)
+				} else {
+					assert.EqualValues(t, rm2.BlockUpdates[0], bu.Proof)
+				}
+			}
+		}
 	})
 }
