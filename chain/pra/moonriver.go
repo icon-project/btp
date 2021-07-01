@@ -56,7 +56,7 @@ type ElectionCompute = types.ElectionCompute
 type Weight = types.Weight
 type DispatchError = types.DispatchError
 type OptionBytes = types.OptionBytes
-type BlockNumber = types.BlockNumber
+type BlockNumber = types.U32
 
 func (ea *EthereumAccountId) Hex() string {
 	return fmt.Sprintf("%#x", *ea)
