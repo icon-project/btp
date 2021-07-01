@@ -75,8 +75,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 	switch cfg.Dst.Address.BlockChain() {
 	case "icon":
 		sender = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, nil, l)
-	// case "pra":
-	case "moonbeam":
+	case "pra":
 		sender = pra.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, nil, l)
 	default:
 		return nil, errors.New("Chain not supported yet")
@@ -85,8 +84,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 	switch cfg.Src.Address.BlockChain() {
 	case "icon":
 		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Dst.Endpoint, nil, l)
-	// case "pra":
-	case "moonbeam":
+	case "pra":
 		receiver = pra.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, nil, l)
 	default:
 		return nil, errors.New("Chain not supported yet")
