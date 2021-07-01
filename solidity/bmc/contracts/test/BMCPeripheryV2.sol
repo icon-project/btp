@@ -10,7 +10,6 @@ import "../libraries/ParseAddressLib.sol";
 import "../libraries/RLPDecodeStructLib.sol";
 import "../libraries/RLPEncodeStructLib.sol";
 import "../libraries/StringsLib.sol";
-import "../libraries/Owner.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/Utils.sol";
 

@@ -28,6 +28,13 @@ interface IBMCManagement {
     function removeOwner(address _owner) external;
 
     /**
+       @notice Checking whether one specific address has Owner role.
+       @dev Caller can be ANY
+       @param _owner    Address needs to verify.
+     */
+    function isOwner(address _owner) external view returns (bool);
+
+    /**
         @notice Registers the smart contract for the service.
         @dev Caller must be an operator of BTP network.
         @param _svc     Name of the service

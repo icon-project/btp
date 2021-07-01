@@ -8,7 +8,6 @@ import "./interfaces/IBMV.sol";
 import "./libraries/ParseAddressLib.sol";
 import "./libraries/RLPEncodeStructLib.sol";
 import "./libraries/StringsLib.sol";
-import "./libraries/Owner.sol";
 import "./libraries/TypesLib.sol";
 import "./libraries/Utils.sol";
 
@@ -104,7 +103,7 @@ contract BMCManagement is IBMCManagement, Initializable {
        @dev Caller can be ANY
        @param _owner    Address needs to verify.
     */
-    function isOwner(address _owner) external view returns (bool) {
+    function isOwner(address _owner) external view override returns (bool) {
         return _owners[_owner];
     }
 
