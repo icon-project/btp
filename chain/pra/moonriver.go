@@ -31,10 +31,10 @@ type Address AccountId
 type Balance = types.U128
 type RefCount = types.U8
 type LookupSource AccountId
-type AuthorId AccountId
+type AuthorId = types.AccountID
 type RoundIndex = types.U32
-type Percent uint
-type Perbill uint
+type Percent = types.U8
+type Perbill = types.U8
 
 type Phase = types.Phase
 type U8 = types.U8
@@ -1516,6 +1516,7 @@ type EventMultisigCancelled struct {
 
 type EventAuthorFilterEligibleUpdated struct {
 	Phase  types.Phase
+	Amount Percent
 	Topics []types.Hash
 }
 
