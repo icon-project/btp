@@ -165,4 +165,21 @@ mod tests {
             Err(res) => (),
         }
     }
+
+    #[test]
+
+    fn add_invalid_link() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let address =
+            BTPAddress("http://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+        match contract.links.add_link(&address) {
+            Ok(res) => (),
+            Err(error) => assert_eq!(error.as_str(), "not supported protocol http"),
+        }
+    }
 }

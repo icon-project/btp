@@ -1,16 +1,16 @@
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::{env, near_bindgen};
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Routes(pub LookupMap<String, String>);
+pub struct Routes(pub UnorderedMap<String, String>);
 
 pub trait Route {
     fn new() -> Self;
-    fn add_route(&mut self, dst: &BTPAddress, link: &BTPAddress) -> bool;
-    fn remove_route(&mut self, dst: &BTPAddress) -> bool;
-    fn get_routes(&self, dst: &BTPAddress) -> Result<String, String>;
+    fn add_route(&mut self, dst: &BTPAddress, link: &BTPAddress) -> Result<bool, String>;
+    fn remove_route(&mut self, dst: &BTPAddress) -> Result<bool, String>;
+    fn get_routes(&self) -> Result<(String,String), String>;
 }
 
 impl Routes {
@@ -21,49 +21,93 @@ impl Routes {
 
 impl Route for Routes {
     fn new() -> Self {
-        let routes: LookupMap<String, String> = LookupMap::new(b"routes".to_vec());
+        let routes: UnorderedMap<String, String> = UnorderedMap::new(b"routes".to_vec());
         Self(routes)
     }
 
-    fn add_route(&mut self, dst: &BTPAddress, link: &BTPAddress) -> bool {
-        if dst.is_valid().ok().unwrap() && link.is_valid().ok().unwrap() {
-            //TODO :
-            //validate caller has necessary permission
+    fn add_route(&mut self, dst: &BTPAddress, link: &BTPAddress) -> Result<bool, String> {
+        match dst.is_valid() {
+            Ok(true) => match link.is_valid() {
+                Ok(true) => match self.0.get(&dst.0) {
+                    Some(value) => {
+                        return Ok(false);
+                    }
 
-            if !self.0.contains_key(&dst.0) {
-                self.0.insert(&dst.0, &link.0);
+                    None => {
+                        self.0.insert(&dst.0, &link.0);
+                        return Ok(true);
+                    }
+                },
+                Ok(false) => return Ok(false),
+                Err(error) => return Err(error),
+            },
+            Ok(false) => return Ok(false),
 
-                return true;
-            }
+            Err(error) => return Err(error),
         }
-
-        return false;
     }
 
-    fn remove_route(&mut self, dst: &BTPAddress) -> bool {
+    fn remove_route(&mut self, dst: &BTPAddress) -> Result<bool, String> {
         //TODO :
         //validate caller has necessary permission
 
-        if dst.is_valid().ok().unwrap() {
-            if !self.0.contains_key(&dst.0) {
-                return false;
+
+        match dst.is_valid() {
+
+            Ok(true) => {
+
+
+                if !self.0.is_empty(){
+
+                    match self.0.get(&dst.0) {
+
+                        Some(value) =>{
+
+                            self.0.remove(&dst.0);
+
+                            return Ok(true);
+                        },
+
+                        None => {
+                            return Ok(false);
+                        }
+                        
+                    }
+
+
+                }
+
+                return Ok(false);
+
+
+            },
+            Ok(false) => return Ok(false),
+            Err(error) => return Err(error)
+            
+        }
+
+    
+    }
+    fn get_routes(&self) -> Result<(String,String), String> {
+        //needs to be changed
+
+       //TO-DO 
+
+       //Add testcases for route and links
+
+        if !self.0.is_empty(){
+
+            for (key,value) in self.0.iter(){
+
+
+                return Ok((key,value));
             }
 
-            self.0.remove(&dst.0);
 
-            return true;
+
         }
 
-        return false;
-    }
-    fn get_routes(&self, dst: &BTPAddress) -> Result<String, String> {
-        if !self.0.contains_key(&dst.0) {
-            return Err("Route Not found".to_string());
 
-            //TODO
-            // resolve route if mo route found
-        }
-
-        Ok(self.0.get(&dst.0).unwrap())
+        return Err("value not found".to_string());
     }
 }

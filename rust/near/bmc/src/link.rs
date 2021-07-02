@@ -32,17 +32,17 @@ pub struct LinkProps {
 
 pub trait Link {
     fn new() -> Self;
-    fn add_link(&mut self, link_add: &BTPAddress) -> bool;
-    fn remove_link(&mut self, link_add: &BTPAddress) -> bool;
+    fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
+    fn remove_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
     fn set_link(
         &mut self,
-        link_add: &BTPAddress,
+        link: &BTPAddress,
         block_interval: u128,
         mxagg: u128,
         delimit: u128,
-    ) -> bool;
+    ) -> Result<bool, String>;
     fn get_links(&self) -> Result<Vec<u8>, String>;
-    fn get_status(&self, link_add: &BTPAddress) -> Result<LinkProps, String>;
+    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
     fn init_linkprops(&self) -> LinkProps;
 }
 
@@ -54,72 +54,63 @@ impl Link for Links {
     }
 
     fn init_linkprops(&self) -> LinkProps {
-        let rx_seq = 0;
-        let tx_seq = 0;
-        let relays = b"".to_vec();
-        let reachable = b"".to_vec();
-        let block_interval_src = 0;
-
-        let block_interval_dst = 0;
-        let max_aggregation = 0;
-        let delay_limit = 0;
-        let relay_index = 0;
-        let rotate_height = 0;
-        let rotate_term = 0;
-        let rx_height_src = 0;
-        let connected = true;
-
         LinkProps {
-            rx_seq,
-            tx_seq,
-            relays,
-            reachable,
-            block_interval_src,
-            block_interval_dst,
-            max_aggregation,
-            delay_limit,
-            relay_index,
-            rotate_height,
-            rotate_term,
-            rx_height_src,
-            connected,
+            rx_seq: 0,
+            tx_seq: 0,
+            relays: b"".to_vec(),
+            reachable: b"".to_vec(),
+            block_interval_src: 0,
+            block_interval_dst: 0,
+            max_aggregation: 0,
+            delay_limit: 0,
+            relay_index: 0,
+            rotate_height: 0,
+            rotate_term: 0,
+            rx_height_src: 0,
+            connected: true,
         }
     }
 
-    fn add_link(&mut self, link_add: &BTPAddress) -> bool {
+    fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String> {
         let linkprop = self.init_linkprops();
-        let key = link_add.0.clone().into_bytes();
+        let key = link.0.clone().into_bytes();
 
         //TO-DO
         //validate caller has necessary permission
         // check if verifiers are already added
 
-        if link_add.is_valid().ok().unwrap() {
-            if !self.0.contains_key(&key) {
-                self.0.insert(&key, &linkprop);
+        match link.is_valid() {
+            Ok(true) => {
+                if !self.0.contains_key(&key) {
+                    self.0.insert(&key, &linkprop);
 
-                keytovalue.lock().unwrap().push(key);
+                    keytovalue.lock().unwrap().push(key);
 
-                return true;
+                    return Ok(true);
+                }
+                return Ok(false);
             }
+            Ok(false) => return Ok(false),
+            Err(res) => return Err(res),
         }
-
-        return false;
     }
 
-    fn remove_link(&mut self, link_add: &BTPAddress) -> bool {
+    fn remove_link(&mut self, link: &BTPAddress) -> Result<bool, String> {
         //TO-DO
         //validate caller has necessary permission
+        match link.is_valid() {
+            Ok(true) => {
+                if self.0.contains_key(&link.0.clone().into_bytes()) {
+                    self.0.remove(&link.0.clone().into_bytes());
 
-        if link_add.is_valid().ok().unwrap() {
-            if self.0.contains_key(&link_add.0.clone().into_bytes()) {
-                self.0.remove(&link_add.0.clone().into_bytes());
+                    return Ok(true);
+                }
 
-                return true;
+                return Ok(false);
             }
+            Ok(false) => return Ok(false),
+            Err(error) => return Err(format!("Unable to remove link {}", error)),
         }
-
-        return false;
     }
     fn get_links(&self) -> Result<Vec<u8>, String> {
         for key in keytovalue.lock().unwrap().iter() {
@@ -131,37 +122,40 @@ impl Link for Links {
 
     fn set_link(
         &mut self,
-        link_add: &BTPAddress,
+        link: &BTPAddress,
         block_interval: u128,
         mxagg: u128,
         delimit: u128,
-    ) -> bool {
+    ) -> Result<bool, String> {
         //TO-DO
         //validate caller has necessary permission
         //Check if either max_aggregation < 1 or delay_limit
         //Add link status information to the link based on rotate term
 
-        if link_add.is_valid().ok().unwrap() {
-            if !self.0.contains_key(&link_add.0.clone().into_bytes()) {
-                let linkprop = LinkProps {
-                    block_interval_src: block_interval,
-                    max_aggregation: mxagg,
-                    delay_limit: delimit,
-                    ..self.init_linkprops()
-                };
+        match link.is_valid() {
+            Ok(true) => {
+                if !self.0.contains_key(&link.0.clone().into_bytes()) {
+                    let linkprop = LinkProps {
+                        block_interval_src: block_interval,
+                        max_aggregation: mxagg,
+                        delay_limit: delimit,
+                        ..self.init_linkprops()
+                    };
 
-                self.0.insert(&link_add.0.clone().into_bytes(), &linkprop);
+                    self.0.insert(&link.0.clone().into_bytes(), &linkprop);
 
-                return true;
+                    return Ok(true);
+                }
+                return Ok(false);
             }
+            Ok(false) => return Ok(false),
+            Err(error) => Err(format!("unable to set the link {}", error)),
         }
-
-        return false;
     }
 
-    fn get_status(&self, link_add: &BTPAddress) -> Result<LinkProps, String> {
-        if self.0.contains_key(&link_add.0.clone().into_bytes()) {
-            let linkprop = self.0.get(&link_add.0.clone().into_bytes());
+    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String> {
+        if self.0.contains_key(&link.0.clone().into_bytes()) {
+            let linkprop = self.0.get(&link.0.clone().into_bytes());
 
             return Ok(linkprop.unwrap());
         }
