@@ -329,6 +329,8 @@ func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	ls.CurrentHeight, err = bs.CurrentHeight.Value()
 	ls.RxHeight, err = bs.RxHeight.Value()
 	ls.RxHeightSrc, err = bs.RxHeightSrc.Value()
+	ls.BlockIntervalSrc, err = bs.BlockIntervalSrc.Int()
+	ls.BlockIntervalDst, err = bs.BlockIntervalDst.Int()
 	return ls, nil
 }
 

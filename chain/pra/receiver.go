@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
@@ -66,13 +67,13 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 	// 	}
 	// } else {
 
-	if bu.Header, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
+	if bu.Header, err = types.EncodeToBytes(v.Header); err != nil {
 		return nil, err
 	}
 
-	if bu.Proof, err = r.newFinalityProof(v); err != nil {
-		return nil, err
-	}
+	// if bu.Proof, err = r.newFinalityProof(null); err != nil {
+	// 	return nil, err
+	// }
 
 	return bu, nil
 }
