@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::str;
 mod link;
 mod route;
-use btp_common::{Address, BTPAddress};
+use btp_common::BTPAddress;
 use route::{Route, Routes};
 #[macro_use]
 extern crate lazy_static;
