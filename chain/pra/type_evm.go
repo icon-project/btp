@@ -12,6 +12,7 @@ type EvmTransaction = types.Transaction
 type EvmCallMsg = ethereum.CallMsg
 type EvmAddress = common.Address
 type EvmDataError = rpc.DataError
+type EvmHash = common.Hash
 
 func (e *EventEVMLog) EvmLog() types.Log {
 	topics := []common.Hash{}

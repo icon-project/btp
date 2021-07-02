@@ -21,8 +21,14 @@ const (
 	DefaultReadTimeout       = 10 * time.Second
 )
 
+type EthClient interface {
+	TransactionReceipt(ctx context.Context, hash EvmHash) (*EvmReceipt, error)
+	TransactionByHash(ctx context.Context, hash EvmHash) (*EvmTransaction, bool, error)
+	CallContract(ctx context.Context, callMsg EvmCallMsg, block *big.Int) ([]byte, error)
+}
+
 type Client struct {
-	ethClient         *ethclient.Client
+	ethClient         EthClient
 	subAPI            *gsrpc.SubstrateAPI
 	bmc               *binding.BMC
 	log               log.Logger
