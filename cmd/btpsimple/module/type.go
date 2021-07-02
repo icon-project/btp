@@ -1,5 +1,7 @@
 package module
 
+import "math/big"
+
 type BlockWitness struct {
 	Height  int64
 	Witness [][]byte
@@ -27,7 +29,7 @@ type EventProof struct {
 
 type Event struct {
 	Next     BtpAddress
-	Sequence int64
+	Sequence *big.Int
 	Message  []byte
 }
 
@@ -38,6 +40,7 @@ type RelayMessage struct {
 	ReceiptProofs []*ReceiptProof
 	Seq           uint64
 	HeightOfDst   int64
+	HeightOfSrc   int64
 
 	Segments []*Segment
 }
@@ -49,13 +52,13 @@ type Segment struct {
 	//
 	Height              int64
 	NumberOfBlockUpdate int
-	EventSequence       int64
+	EventSequence       *big.Int
 	NumberOfEvent       int
 }
 
 type BMCLinkStatus struct {
-	TxSeq    int64
-	RxSeq    int64
+	TxSeq    *big.Int
+	RxSeq    *big.Int
 	Verifier struct {
 		Height     int64
 		Offset     int64
@@ -65,7 +68,7 @@ type BMCLinkStatus struct {
 	BMRs []struct {
 		Address      string
 		BlockCount   int64
-		MessageCount int64
+		MessageCount *big.Int
 	}
 	BMRIndex         int
 	RotateHeight     int64
@@ -100,6 +103,6 @@ type Sender interface {
 type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
 
 type Receiver interface {
-	ReceiveLoop(height int64, seq int64, cb ReceiveCallback, scb func()) error
+	ReceiveLoop(height int64, seq *big.Int, cb ReceiveCallback, scb func()) error
 	StopReceiveLoop()
 }

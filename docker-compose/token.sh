@@ -1,56 +1,72 @@
 #!/bin/sh
 
-deploy_bsh() {
+deploy_token() {
+  if [ $# -lt 1 ] ; then
+    echo "Usage: deploy_token CHAIN [SCORE_FILE=token.zip]"
+    return 1
+  fi
   local CHAIN=$1
+  local SCORE_FILE=${2:-token.zip}
+  local SCORE_TYPE=${SCORE_FILE##*.}
+  if [ "$SCORE_TYPE" == "jar" ]; then
+    local CONTENT_TYPE="--content_type application/java"
+  fi
+
   rpcch ${CHAIN}
-  goloop rpc sendtx deploy pyscore/token_bsh.zip \
-    --param _bmc=$(cat bmc.${CHAIN}) | jq -r . > tx.token_bsh.${CHAIN}
-  extract_scoreAddress tx.token_bsh.${CHAIN} token_bsh.${CHAIN}
+  goloop rpc sendtx deploy ${SCORE_FILE} ${CONTENT_TYPE} \
+    --param _bmc=$(cat bmc.${CHAIN}) | jq -r . > tx.token.${CHAIN}
+  extract_scoreAddress tx.token.${CHAIN} token.${CHAIN}
 }
 
 deploy_irc2() {
   local CHAIN=$1
-  if [ "$2" == "proxy" ]; then
-    PARAM_OWNER="--param _owner=$(cat token_bsh.${CHAIN})"
+  local SCORE_FILE=${2:-irc2.zip}
+  local SCORE_TYPE=${SCORE_FILE##*.}
+  if [ "$SCORE_TYPE" == "jar" ]; then
+    local CONTENT_TYPE="--content_type application/java"
+  fi
+  if [ "$3" == "proxy" ]; then
+    PARAM_OWNER="--param _owner=$(cat token.${CHAIN})"
   else
     PARAM_OWNER=""
   fi
   rpcch ${CHAIN}
-  goloop rpc sendtx deploy pyscore/irc2_token.zip \
+  goloop rpc sendtx deploy ${SCORE_FILE} ${CONTENT_TYPE} \
     --param _name=${TOKEN_NAME} \
     --param _symbol=${TOKEN_SYM} \
     --param _initialSupply=${TOKEN_SUPPLY} \
     --param _decimals=${TOKEN_DECIMALS} \
-    ${PARAM_OWNER} | jq -r . > tx.irc2_token.${CHAIN}
-  extract_scoreAddress tx.irc2_token.${CHAIN} irc2_token.${CHAIN}
+    ${PARAM_OWNER} | jq -r . > tx.irc2.${CHAIN}
+  extract_scoreAddress tx.irc2.${CHAIN} irc2.${CHAIN}
 }
 
-bsh_register() {
+token_register() {
   local CHAIN=$1
+  local ADDR=${2:-$(cat irc2.${CHAIN})}
   rpcch ${CHAIN}
-  goloop rpc sendtx call --to $(cat token_bsh.${CHAIN}) \
+  goloop rpc sendtx call --to $(cat token.${CHAIN}) \
     --method register \
     --param _name=${TOKEN_NAME} \
-    --param _addr=$(cat irc2_token.${CHAIN}) | jq -r . > tx.register.${CHAIN}
+    --param _addr=${ADDR} | jq -r . > tx.register.${CHAIN}
   ensure_txresult tx.register.${CHAIN}
 }
 
-bsh_balance() {
+token_balance() {
   if [ $# -lt 1 ] ; then
-    echo "Usage: bsh_balance CHAIN [EOA=$(rpceoa)]"
+    echo "Usage: token_balance CHAIN [EOA=$(rpceoa)]"
     return 1
   fi
   local CHAIN=$1
   local EOA=$(rpceoa $2)
   rpcch ${CHAIN} > /dev/null
-  goloop rpc call --to $(cat token_bsh.${CHAIN}) \
+  goloop rpc call --to $(cat token.${CHAIN}) \
     --method balanceOf \
     --param _owner=$EOA
 }
 
-bsh_transfer() {
+token_transfer() {
   if [ $# -lt 2 ] ; then
-    echo "Usage: bsh_transfer CHAIN LINK [VAL=0x10] [EOA=$(rpceoa)]"
+    echo "Usage: token_transfer CHAIN LINK [VAL=0x10] [EOA=$(rpceoa)]"
     return 1
   fi
   local CHAIN=$1
@@ -58,7 +74,7 @@ bsh_transfer() {
   local VAL=${3:-0x10}
   local EOA=$(rpceoa $4)
   rpcch ${CHAIN} > /dev/null
-  TX=$(goloop rpc sendtx call --to $(cat token_bsh.${CHAIN}) \
+  TX=$(goloop rpc sendtx call --to $(cat token.${CHAIN}) \
     --method transfer \
     --param _tokenName=${TOKEN_NAME} \
     --param _to=btp://$(cat net.btp.${LINK})/$EOA \
@@ -66,15 +82,15 @@ bsh_transfer() {
   ensure_txresult $TX
 }
 
-bsh_reclaim() {
-  if [ $# -lt 2 ] ; then
-    echo "Usage: bsh_reclaim CHAIN [VAL=0x10]"
+token_reclaim() {
+  if [ $# -lt 1 ] ; then
+    echo "Usage: token_reclaim CHAIN [VAL=0x10]"
     return 1
   fi
   local CHAIN=$1
   local VAL=${2:-0x10}
   rpcch ${CHAIN} > /dev/null
-  TX=$(goloop rpc sendtx call --to $(cat token_bsh.${CHAIN}) \
+  TX=$(goloop rpc sendtx call --to $(cat token.${CHAIN}) \
     --method reclaim \
     --param _tokenName=${TOKEN_NAME} \
     --param _value=$VAL | jq -r .)
@@ -89,7 +105,7 @@ irc2_balance() {
   local CHAIN=$1
   local EOA=$(rpceoa $2)
   rpcch ${CHAIN} > /dev/null
-  goloop rpc call --to $(cat irc2_token.${CHAIN}) \
+  goloop rpc call --to $(cat irc2.${CHAIN}) \
     --method balanceOf \
     --param _owner=$EOA
 }
@@ -101,9 +117,9 @@ irc2_transfer() {
   fi
   local CHAIN=$1
   local VAL=${2:-0x10}
-  local EOA=$(rpceoa ${3:-$(cat token_bsh.${CHAIN})})
+  local EOA=$(rpceoa ${3:-$(cat token.${CHAIN})})
   rpcch ${CHAIN} > /dev/null
-  TX=$(goloop rpc sendtx call --to $(cat irc2_token.${CHAIN}) \
+  TX=$(goloop rpc sendtx call --to $(cat irc2.${CHAIN}) \
     --method transfer \
     --param _to=$EOA \
     --param _value=$VAL | jq -r .)

@@ -2,7 +2,8 @@
 
 rpchelp() {
   echo "rpcch CHANNEL"
-  echo "rpcks KEYSTORE_PATH"
+  echo "rpcks KEY_STORE [KEY_SECRET|KEY_PASSWORD]"
+  echo "rpceoa [KEY_STORE]"
 }
 
 rpcch() {
@@ -12,7 +13,7 @@ rpcch() {
     export GOLOOP_RPC_URI=$URI_PREFIX/v3/$GOLOOP_RPC_CHANNEL
     export GOLOOP_RPC_NID=$(goloop chain inspect $GOLOOP_RPC_CHANNEL --format {{.NID}})
     export GOLOOP_DEBUG_URI=$URI_PREFIX/v3d/$GOLOOP_RPC_CHANNEL
-    export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-1}
+    export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-0x10000000}
   fi
   echo $GOLOOP_RPC_CHANNEL
 }
@@ -38,6 +39,19 @@ rpceoa() {
   else
     echo $EOA
   fi
+}
+
+rpc_transfer() {
+  if [ $# -lt 2 ] ; then
+    echo "Usage: rpc_transfer EOA VAL"
+    return 1
+  fi
+  local EOA=$(rpceoa $1)
+  local VAL=$2
+  TX=$(goloop rpc sendtx transfer \
+    --to $EOA \
+    --value $VAL | jq -r .)
+  ensure_txresult $TX
 }
 
 ensure_txresult() {

@@ -25,6 +25,12 @@ goloop gn gen --out src.genesis.json $GOLOOP_KEY_STORE
 goloop gn gen --out dst.genesis.json $GOLOOP_KEY_STORE
 ````
 
+modify genesis for javaee
+````shell
+echo $(cat src.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > src.genesis.json
+echo $(cat dst.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > dst.genesis.json
+````
+
 3. Join the chain
 
 ````shell
@@ -46,7 +52,14 @@ zip each BTP-Smart-Contracts from project source, and copy files to `/path/to/co
 ````shell
 make dist-py
 mkdir -p ${CONFIG_DIR}/pyscore
-cp build/pyscore/*.zip ${CONFIG_DIR}/pyscore/
+cp build/contracts/pyscore/*.zip ${CONFIG_DIR}/pyscore/
+````
+
+package for javascore/bmc
+````shell
+make dist-java
+mkdir -p ${CONFIG_DIR}/javascore
+cp build/contracts/javascore/*.jar ${CONFIG_DIR}/javascore/
 ````
 
 ### Environment for JSON-RPC
@@ -67,7 +80,7 @@ rpcch() {
     export GOLOOP_RPC_URI=$URI_PREFIX/v3/$GOLOOP_RPC_CHANNEL
     export GOLOOP_RPC_NID=$(goloop chain inspect $GOLOOP_RPC_CHANNEL --format {{.NID}})
     export GOLOOP_DEBUG_URI=$URI_PREFIX/v3d/$GOLOOP_RPC_CHANNEL
-    export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-1}
+    export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-0x10000000}
   fi
   echo $GOLOOP_RPC_CHANNEL
 }
@@ -92,7 +105,7 @@ Deploy BMC contract to 'src' chain
 ````shell
 rpcch src
 echo "$GOLOOP_RPC_NID.icon" > net.btp.$(rpcch)
-goloop rpc sendtx deploy pyscore/bmc.zip \
+goloop rpc sendtx deploy javascore/bmc.jar --content_type application/java \
     --param _net=$(cat net.btp.$(rpcch)) | jq -r . > tx.bmc.$(rpcch)
 ````
 
@@ -110,7 +123,7 @@ For 'dst' chain, same flows with replace 'src' to 'dst'.
 ````shell
 rpcch dst
 echo "$GOLOOP_RPC_NID.icon" > net.btp.$(rpcch)
-goloop rpc sendtx deploy pyscore/bmc.zip \
+goloop rpc sendtx deploy javascore/bmc.jar --content_type application/java \
     --param _net=$(cat net.btp.$(rpcch)) | jq -r . > tx.bmc.$(rpcch)
 sleep 2
 goloop rpc txresult $(cat tx.bmc.$(rpcch)) | jq -r .scoreAddress > bmc.$(rpcch)
@@ -128,7 +141,7 @@ echo "0x$(printf %x $(goloop chain inspect $(rpcch) --format {{.Height}}))" > of
 Deploy BMV contract to 'src' chain  
 ````shell
 rpcch src
-goloop rpc sendtx deploy pyscore/bmv.zip \
+goloop rpc sendtx deploy javascore/bmv-icon.jar --content_type application/java \
     --param _bmc=$(cat bmc.$(rpcch)) \
     --param _net=$(cat net.btp.dst) \
     --param _validators=$(cat validators.dst) \
@@ -147,7 +160,7 @@ rpcch src
 goloop rpc call --to $GOLOOP_CHAINSCORE --method getValidators| jq -r 'map(.)|join(",")' > validators.$(rpcch)
 echo "0x$(printf %x $(goloop chain inspect $(rpcch) --format {{.Height}}))" > offset.$(rpcch)
 rpcch dst
-goloop rpc sendtx deploy pyscore/bmv.zip \
+goloop rpc sendtx deploy javascore/bmv-icon.jar --content_type application/java \
     --param _bmc=$(cat bmc.$(rpcch)) \
     --param _net=$(cat net.btp.src) \
     --param _validators=$(cat validators.src) \
@@ -161,21 +174,21 @@ goloop rpc txresult $(cat tx.bmv.$(rpcch)) | jq -r .scoreAddress > bmv.$(rpcch)
 Deploy Token-BSH contract to 'src' chain
 ````shell
 rpcch src
-goloop rpc sendtx deploy pyscore/token_bsh.zip \
-    --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token_bsh.$(rpcch)
+goloop rpc sendtx deploy pyscore/token.zip \
+    --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token.$(rpcch)
 ````
 
 Extract Token-BSH contract address from deploy result
 ````shell
-goloop rpc txresult $(cat tx.token_bsh.$(rpcch)) | jq -r .scoreAddress > token_bsh.$(rpcch)
+goloop rpc txresult $(cat tx.token.$(rpcch)) | jq -r .scoreAddress > token.$(rpcch)
 ````
 
 For 'dst' chain, same flows with replace 'src' to 'dst'.
 ````shell
 rpcch dst
-goloop rpc sendtx deploy pyscore/token_bsh.zip \
-    --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token_bsh.$(rpcch)
-goloop rpc txresult $(cat tx.token_bsh.$(rpcch)) | jq -r .scoreAddress > token_bsh.$(rpcch)
+goloop rpc sendtx deploy pyscore/token.zip \
+    --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token.$(rpcch)
+goloop rpc txresult $(cat tx.token.$(rpcch)) | jq -r .scoreAddress > token.$(rpcch)
 ````
 
 ### IRC-2.0 Token
@@ -187,12 +200,12 @@ goloop rpc sendtx deploy pyscore/irc2_token.zip \
     --param _symbol=I2T \
     --param _initialSupply=1000 \
     --param _decimals=18 \
-    | jq -r . > tx.irc2_token.$(rpcch)
+    | jq -r . > tx.irc2.$(rpcch)
 ````
 
 Extract IRC-2.0 Token contract address from deploy result
 ````shell
-goloop rpc txresult $(cat tx.irc2_token.$(rpcch)) | jq -r .scoreAddress > irc2_token.$(rpcch)
+goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
 ````
 
 For 'dst' chain, same flows with replace 'src' to 'dst' and add `_owner` parameter. because IRC-2.0 Token contract of 'dst' chain is proxy.
@@ -203,12 +216,33 @@ goloop rpc sendtx deploy pyscore/irc2_token.zip \
     --param _symbol=I2T \
     --param _initialSupply=0x3E8 \
     --param _decimals=0x12 \
-    --param _owner=$(cat token_bsh.$(rpcch)) \
-    | jq -r . > tx.irc2_token.$(rpcch)
-goloop rpc txresult $(cat tx.irc2_token.$(rpcch)) | jq -r .scoreAddress > irc2_token.$(rpcch)
+    --param _owner=$(cat token.$(rpcch)) \
+    | jq -r . > tx.irc2.$(rpcch)
+goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
 ````
 
 ## Configuration
+
+### Register BMV
+Register verifier of 'dst' chain to 'src' chain
+````shell
+rpcch src
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method addVerifier \
+    --param _net=$(cat net.btp.dst) \
+    --param _addr=$(cat bmv.$(rpcch)) \
+    | jq -r . > tx.verifier.$(rpcch)
+````
+
+Register verifier of 'src' chain to 'dst' chain
+````shell
+rpcch dst
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method addVerifier \
+    --param _net=$(cat net.btp.src) \
+    --param _addr=$(cat bmv.$(rpcch)) \
+    | jq -r . > tx.verifier.$(rpcch)
+````
 
 ### Register Link
 Register BTP-Address of 'dst' chain to 'src' chain
@@ -263,67 +297,112 @@ goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
 > `goloop rpc call --to $(cat bmc.src) --method getStatus --param _link=$(cat btp.dst)`
 > `goloop rpc call --to $(cat bmc.dst) --method getStatus --param _link=$(cat btp.src)`
 
-### Register Token
+### Register Token-BSH
+Register Token service to BMC
+````shell
+rpcch src
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+  --method addService \
+  --param _svc=token \
+  --param _addr=$(cat token.$(rpcch)) | jq -r . > tx.service.token.$(rpcch)
+rpcch dst
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+  --method addService \
+  --param _svc=token \
+  --param _addr=$(cat token.$(rpcch)) | jq -r . > tx.service.token.$(rpcch)
+````
+
+### Register IRC2Token
 Register IRC 2.0 Token contract to Token-BSH
 ````shell
 rpcch src
-goloop rpc sendtx call --to $(cat token_bsh.src) \
+goloop rpc sendtx call --to $(cat token.src) \
   --method register \
   --param _name=IRC2Token \
-  --param _addr=$(cat irc2_token.src)
+  --param _addr=$(cat irc2.src)
 rpcch dst
-goloop rpc sendtx call --to $(cat token_bsh.dst) \
+goloop rpc sendtx call --to $(cat token.dst) \
   --method register \
   --param _name=IRC2Token \
-  --param _addr=$(cat irc2_token.dst)
+  --param _addr=$(cat irc2.dst)
 ````
 
 > To retrieve list of registered token, use `tokenNames` method of Token-BSH.  
-> `goloop rpc call --to $(cat token_bsh.$(rpcch)) --method tokenNames`
+> `goloop rpc call --to $(cat token.$(rpcch)) --method tokenNames`
 
-### Register Relayer and Relay
-Create key store for relay of 'src' chain
+### Register BMC-Owner and BMR
+Create key store for BMC-Owner, BMR of both chain
 ````shell
 echo -n $(date|md5sum|head -c16) > src.secret
 goloop ks gen -o src.ks.json  -p $(cat src.secret)
+echo -n $(date|md5sum|head -c16) > dst.secret
+goloop ks gen -o dst.ks.json  -p $(cat dst.secret)
 ````
 
-Register relayer and relay to 'dst' chain
+Register BMC-Owner to 'src' chain
 ````shell
-rpcch dst
-rpcks src.ks.json src.secret
+rpcch src
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
-    --method addRelayer \
-    --param _addr=$(jq -r .address src.ks.json) \
-    --param _desc="$(rpcch) relayer"
-goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
-    --method addRelay \
-    --param _link=$(cat btp.src) \
+    --method addOwner \
     --param _addr=$(jq -r .address src.ks.json)
 ````
 
-For relay of 'dst' chain, same flows with replace 'src' to 'dst'
+BMC-Owner register BMR to 'src' chain (Address of BMR could be any keystore)
 ````shell
-echo -n $(date|md5sum|head -c16) > dst.secret
-goloop ks gen -o dst.ks.json  -p $(cat dst.secret)
-rpcch src
-rpcks dst.ks.json dst.secret
-goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
-    --method addRelayer \
-    --param _addr=$(jq -r .address dst.ks.json) \
-    --param _desc="$(rpcch) relayer"
+rpcks src.ks.json src.secret
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
     --method addRelay \
     --param _link=$(cat btp.dst) \
     --param _addr=$(jq -r .address dst.ks.json)
 ````
 
-> To retrieve list of registered relayers, use `getRelayers` method of BMC.  
-> `goloop rpc call --to $(cat bmc.$(rpcch)) --method getRelayers`
+For 'dst' chain, same flows with replace 'src' to 'dst'
+````shell
+rpcch dst
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method addOwner \
+    --param _addr=$(jq -r .address dst.ks.json)
+rpcks dst.ks.json dst.secret
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method addRelay \
+    --param _link=$(cat btp.src) \
+    --param _addr=$(jq -r .address src.ks.json)
+````
+
+> To retrieve list of registered BMC-Owners, use `getOwners` method of BMC.  
+> `goloop rpc call --to $(cat bmc.$(rpcch)) --method getOwners`
 
 > To retrieve list of registered relay of link, use `getRelays(_link)` method of BMC.  
 > `goloop rpc call --to $(cat bmc.src) --method getRelays --param _link=$(cat btp.dst)`
 > `goloop rpc call --to $(cat bmc.dst) --method getRelays --param _link=$(cat btp.src)`
+
+### Register relayer candidate : only for ICON
+Create key store for relayer
+````shell
+echo -n $(date|md5sum|head -c16) > relayer.secret
+goloop ks gen -o relayer.ks.json  -p $(cat relayer.secret)
+````
+
+To register relayer candidate, bonding is required.
+The account of 'god' transfer some icx to account of relayer candidate.
+Assume 'src' chain as ICON
+````shell
+rpcch src
+goloop rpc sendtx transfer --to $(jq -r .address relayer.ks.json) --value 0x10
+````
+
+Register to 'src' chain
+````shell
+rpcch src
+rpcks relayer.ks.json relayer.secret
+goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+  --method registerRelayer \
+  --param _desc="first candidate for relayer" \
+  --value 0x10
+````
+
+> To retrieve list of registered relayers, use `getRelayers` method of BMC.  
+> `goloop rpc call --to $(cat bmc.src) --method getRelayers`
 
 ## Start relay
 
@@ -378,33 +457,33 @@ Mint token to Alice
 ````shell
 rpcch src
 rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
-goloop rpc sendtx call --to $(cat irc2_token.src) \
+goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
   --param _to=$(jq -r .address alice.ks.json) \
   --param _value=10
 ````
 
 > To retrieve balance of Alice, use `balanceOf(_owner)` method of IRC-2.0 Token contract.  
-> `goloop rpc call --to $(cat irc2_token.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)`
+> `goloop rpc call --to $(cat irc2.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)`
 
 Alice transfer token to Token-BSH
 ````shell
 rpcch src
 rpcks alice.ks.json alice.secret
-goloop rpc sendtx call --to $(cat irc2_token.src) \
+goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
-  --param _to=$(cat token_bsh.src) \
+  --param _to=$(cat token.src) \
   --param _value=10
 ````
 
 > To retrieve balance of Alice which is able to interchain-transfer, use `balanceOf(_owner)` method of Token-BSH.  
-> `goloop rpc call --to $(cat token_bsh.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json) | jq -r .IRC2Token.usable`
+> `goloop rpc call --to $(cat token.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json) | jq -r .IRC2Token.usable`
 
 Alice transfer token to Bob via Token-BSH
 ````shell
 rpcch src
 rpcks alice.ks.json alice.secret
-goloop rpc sendtx call --to $(cat token_bsh.src) \
+goloop rpc sendtx call --to $(cat token.src) \
   --method transfer \
   --param _tokenName=IRC2Token \
   --param _to=btp://$(cat net.btp.dst)/$(jq -r .address bob.ks.json) \
@@ -412,24 +491,25 @@ goloop rpc sendtx call --to $(cat token_bsh.src) \
 ````
 
 > To retrieve locked-balance of Alice, use `balanceOf(_owner)` method of Token-BSH.  
-> `goloop rpc call --to $(cat token_bsh.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json) | jq -r .IRC2Token.locked`
+> `goloop rpc call --to $(cat token.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json) | jq -r .IRC2Token.locked`
 
 Bob withdraw token from Token-BSH
 ````shell
 rpcch dst
 rpcks bob.ks.json bob.secret
-goloop rpc sendtx call --to $(cat token_bsh.dst) \
+goloop rpc sendtx call --to $(cat token.dst) \
   --method reclaim \
   --param _tokenName=IRC2Token \
   --param _value=10
 ````
 
 > To retrieve transferred balance of Bob which is , use `balanceOf(_owner)` method of Token-BSH.  
-> `goloop rpc call --to $(cat token_bsh.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json) | jq -r .IRC2Token.usable`
+> `goloop rpc call --to $(cat token.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json) | jq -r .IRC2Token.usable`
 
 ## Docker-compose
 
-Tutorial with [Docker-compose](https://docs.docker.com/compose/)
+Tutorial with [Docker-compose](https://docs.docker.com/compose/)  
+Using javascore/bmc instead of pyscore/bmc
 
 ### Preparation
 Prepare 'btpsimple' docker image via `make btpsimple-image` and Copy files from project source to `/path/to/tutorial`
@@ -451,9 +531,7 @@ cp docker-compose/* /path/to/tutorial/
     
 And It creates containers for `goloop`, `btpsimple_src`, `btpsimple_dst` services
 
-### Interchain Token Transfer
-> To use `goloop` as json-rpc client, execute shell via `docker-compose exec goloop sh`  
-> And apply `source token.sh` for transfer and retrieve balance
+### Prepare wallet
 
 Create key store for Alice and Bob
 ````shell
@@ -462,34 +540,48 @@ ensure_key_store alice.ks.json alice.secret
 ensure_key_store bob.ks.json bob.secret
 ````
 
-Mint token to Alice
-````shell
-rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
-irc2_transfer src 0x10 alice.ks.json
-````
+### Approve NativeCoin-BSH
+> To use `goloop` as json-rpc client, execute shell via `docker-compose exec goloop sh`  
+> And apply `source nativecoin.sh` for transfer and retrieve balance
 
-> To retrieve balance of Alice, use `irc2_balance src alice.ks.json`
-
-Alice transfer token to Token-BSH
+Alice for source chain
 ````shell
 rpcks alice.ks.json alice.secret
-irc2_transfer src 0x10
+irc31_approve src
 ````
 
-> To retrieve balance of Alice which is able to interchain-transfer, use `bsh_balance src alice.ks.json | jq -r .IRC2Token.usable`
-
-Alice transfer token to Bob via Token-BSH
-````shell
-rpcks alice.ks.json alice.secret
-bsh_transfer src dst 0x10 bob.ks.json
-````
-
-> To retrieve locked-balance of Alice, `bsh_balance src alice.ks.json | jq -r .IRC2Token.locked`
-
-Bob reclaim token from Token-BSH
+Bob for destination chain
 ````shell
 rpcks bob.ks.json bob.secret
-bsh_reclaim dst 0x10
+irc31_approve dst
 ````
 
-> To retrieve transferred balance of Bob, use `bsh_balance dst bob.ks.json | jq -r .IRC2Token.usable`
+### Transfer native-coin
+Mint native-coin of source chain to Alice
+````shell
+rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
+rpcch src
+goloop rpc sendtx transfer --to $(rpceoa alice.ks.json) --value 0x64
+````
+
+> To retrieve balance of Alice, use `goloop rpc balance $(rpceoa alice.ks.json)`
+
+Alice transfer native-coin of source chain to Bob of destination chain via NativeCoin-BSH
+````shell
+rpcks alice.ks.json alice.secret
+nc_transfer src dst bob.ks.json src 0x64
+````
+
+> To retrieve locked-balance of Alice, `nc_balance src src alice.ks.json | jq -r .locked`
+> To retrieve transferred balance of Bob, use `irc31_balance dst src bob.ks.json`
+
+### Transfer native-coin represented as IRC31-Token 
+Bob transfer irc31-token of destination chain to Alice of source chain via NativeCoin-BSH
+````shell
+rpcks bob.ks.json bob.secret
+nc_transfer dst src alice.ks.json src 0x10
+````
+
+> To retrieve locked-balance of Bob, `nc_balance dst src bob.ks.json | jq -r .locked`
+> To retrieve transferred balance of Alice, use `goloop rpc balance $(rpceoa alice.ks.json)`
+> To retrieve remained balance of Bob, use `irc31_balance dst src bob.ks.json`

@@ -1,0 +1,48 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("com.github.sink772:javaee-scorex:$scorexVersion")
+    implementation project(':score-util')
+    implementation project(':lib')
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+
+    testImplementation("org.mockito:mockito-core:3.3.3")
+}
+
+optimizedJar {
+    mainClassName = 'com.iconloop.btp.bmv.icon.BTPMessageVerifier'
+    archivesBaseName = 'bmv-icon'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = !rootProject.hasProperty("release")
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {[
+            arg('_bmc', 'cx?'),
+            arg('_net', '0x?.icon'),
+            arg('_validators', 'hx?'),
+            arg('_offset', '0x?')
+        ]
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

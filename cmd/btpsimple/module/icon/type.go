@@ -20,10 +20,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
+	"math/big"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -56,14 +56,15 @@ const (
 )
 
 const (
-	ResultStatusSuccess = "0x1"
+	ResultStatusSuccess           = "0x1"
 	ResultStatusFailureCodeRevert = 32
-	ResultStatusFailureCodeEnd = 99
+	ResultStatusFailureCodeEnd    = 99
 )
 
 const (
-	BMCRelayMethod       = "handleRelayMessage"
-	BMCGetStatusMethod   = "getStatus"
+	BMCRelayMethod     = "handleRelayMessage"
+	BMCFragmentMethod  = "handleFragment"
+	BMCGetStatusMethod = "getStatus"
 )
 
 type BlockHeader struct {
@@ -161,6 +162,12 @@ type DeployParamsBMV struct {
 type BMCRelayMethodParams struct {
 	Prev     string `json:"_prev"`
 	Messages string `json:"_msg"`
+}
+
+type BMCFragmentMethodParams struct {
+	Prev     string `json:"_prev"`
+	Messages string `json:"_msg"`
+	Index    HexInt `json:"_idx"`
 }
 
 type BMCLinkMethodParams struct {
@@ -291,24 +298,22 @@ func NewHexBytes(b []byte) HexBytes {
 type HexInt string
 
 func (i HexInt) Value() (int64, error) {
-	s := string(i)
-	if strings.HasPrefix(s, "0x") {
-		s = s[2:]
-	}
-	return strconv.ParseInt(s, 16, 64)
+	return intconv.ParseInt(string(i), 64)
 }
 
 func (i HexInt) Int() (int, error) {
-	s := string(i)
-	if strings.HasPrefix(s, "0x") {
-		s = s[2:]
-	}
-	v, err := strconv.ParseInt(s, 16, 32)
+	v, err := intconv.ParseInt(string(i), 32)
 	return int(v), err
 }
 
+func (i HexInt) BigInt() (*big.Int, error) {
+	v := new(big.Int)
+	err := intconv.ParseBigInt(v, string(i))
+	return v, err
+}
+
 func NewHexInt(v int64) HexInt {
-	return HexInt("0x" + strconv.FormatInt(v, 16))
+	return HexInt(intconv.FormatInt(v))
 }
 
 //T_ADDR_EOA, T_ADDR_SCORE
@@ -363,7 +368,7 @@ type RelayMessage struct {
 	//
 	height              int64
 	numberOfBlockUpdate int
-	eventSequence       int64
+	eventSequence       *big.Int
 	numberOfEvent       int
 }
 

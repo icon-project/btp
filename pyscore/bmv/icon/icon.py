@@ -27,7 +27,7 @@
 from iconservice import *
 
 from .message import *
-from ...lib import BTPAddress, BMVException, BMCInterfaceForBMV
+from ...lib import BTPAddress, BMVException
 from ...lib.icon import base64, PropertiesDB
 from ...lib.icon.mta import MerkleTreeAccumulator
 
@@ -80,9 +80,6 @@ class BTPMessageVerifier(IconScoreBase):
         mta.offset = _offset
         self._props.mta = mta
         self._props.last_height = _offset
-
-        bmc_score = self.create_interface_score(_bmc, BMCInterfaceForBMV)
-        bmc_score.addVerifier(_net, self.address)
 
     def on_update(self) -> None:
         super().on_update()

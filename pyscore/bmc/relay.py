@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from iconservice import IconScoreDatabase, Address
+from iconservice import *
 
 from ..lib.icon import PropertiesDB, IterableDictDB
 

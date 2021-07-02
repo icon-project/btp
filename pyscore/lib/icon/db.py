@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from iconservice import IconScoreDatabase, DictDB, VarDB, ABC, abstractmethod, Address, ArrayDB
+from iconservice import *
 
 from .. import Const, BTPAddress
 

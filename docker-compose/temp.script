@@ -1,0 +1,115 @@
+#register irc31
+goloop rpc sendtx deploy javascore/irc31.jar --content_type application/java \
+   | jq -r . > tx.irc31.$(rpcch)
+
+goloop rpc txresult $(cat tx.irc31.$(rpcch)) | jq -r .scoreAddress > irc31.$(rpcch)
+
+#register nativecoin
+goloop rpc sendtx deploy javascore/nativecoin.jar --content_type application/java \
+    --param _bmc=$(cat bmc.$(rpcch))  \
+ --param _irc31=$(cat irc31.$(rpcch))  \
+ --param _name=src  | jq -r . > tx.nativecoin.$(rpcch)
+ goloop rpc sendtx deploy javascore/nativecoin.jar --content_type application/java \
+     --param _bmc=$(cat bmc.$(rpcch))  \
+  --param _irc31=$(cat irc31.$(rpcch))  \
+  --param _name=dst  | jq -r . > tx.nativecoin.$(rpcch)
+
+goloop rpc txresult $(cat tx.nativecoin.$(rpcch)) | jq -r .scoreAddress > nativecoin.$(rpcch)
+
+  goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+      --method addService \
+      --param _svc=nativecoin \
+      --param _addr=$(cat nativecoin.$(rpcch))| jq -r . > tx.service.nativecoin.$(rpcch)
+
+
+
+goloop rpc sendtx call --to $(cat nativecoin.$(rpcch)) \
+    --method register \
+    --param _name=dst | jq -r . > tx.nativecoin.register.$(rpcch)
+goloop rpc sendtx call --to $(cat nativecoin.$(rpcch)) \
+    --method register \
+    --param _name=src | jq -r . > tx.nativecoin.register.$(rpcch)
+
+
+  goloop rpc sendtx call --to $(cat irc31.$(rpcch)) \
+      --method addOwner \
+      --param _addr=$(cat nativecoin.$(rpcch)) | jq -r . > tx.irc31.owner.$(rpcch)
+
+
+
+
+
+
+
+
+
+goloop rpc sendtx deploy pyscore/token.zip  \
+    --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token.$(rpcch)
+
+goloop rpc txresult $(cat tx.token.$(rpcch)) | jq -r .scoreAddress > token.$(rpcch)
+
+
+ goloop rpc sendtx deploy pyscore/irc2.zip \
+    --param _name=IRC2Token \
+    --param _symbol=I2T \
+    --param _initialSupply=0x3E8 \
+    --param _decimals=0x12 \
+    | jq -r . > tx.irc2.$(rpcch)
+
+goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
+
+
+  goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+      --method addService \
+      --param _svc=token \
+      --param _addr=$(cat token.$(rpcch))| jq -r . > tx.service.token.$(rpcch)
+
+ goloop rpc sendtx call --to $(cat token.$(rpcch)) \
+    --method register \
+    --param _name=$token \
+    --param _addr=$(cat irc2.$(rpcch)) | jq -r . > tx.register.$(rpcch)
+
+
+
+
+
+
+      echo -n $(date|md5sum|head -c16) > alice.secret
+      goloop ks gen -o alice.ks.json  -p $(cat alice.secret)
+      echo -n $(date|md5sum|head -c16) > bob.secret
+      goloop ks gen -o bob.ks.json  -p $(cat bob.secret)
+
+
+rpcch dst; goloop rpc balance $(rpceoa bob.ks.json)
+goloop rpc sendtx transfer --to $(rpceoa bob.ks.json) --value 0x64
+
+nc_transfer dst src alice.ks.json dst 0x10
+
+CONFIG_DIR=/Users/donghyunlee/docker/to
+docker run -d --name goloop -p 9080:9080 \
+  -v ${CONFIG_DIR}:/goloop/config \
+goloop
+
+docker exec -ti --workdir /goloop/config goloop2 sh
+
+cp docker-compose/*  /Users/donghyunlee/docker/to3
+
+rpcch src
+goloop rpc sendtx transfer --to $(rpceoa abs.ks.json) --value 0x64
+
+
+goloop rpc balance $(rpceoa bob.ks.json)
+
+rpcks abs.ks.json abs.secret
+nc_transfer src dst bob.ks.json src 0x64
+
+rpcks bob.ks.json bob.secret
+nc_transfer dst src alice.ks.json dst 0x10
+
+rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
+rpcch dst
+goloop rpc sendtx transfer --to $(rpceoa bob.ks.json) --value 0x64
+
+rpcks bob.ks.json bob.secret
+nc_transfer dst src alice.ks.json dst 0x10
+

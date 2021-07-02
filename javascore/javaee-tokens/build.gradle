@@ -1,0 +1,43 @@
+apply plugin: 'java-library'
+
+version = '0.1.0'
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("com.github.sink772:javaee-scorex:$scorexVersion")
+    implementation project(':score-util')
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+}
+
+optimizedJar {
+    mainClassName = 'com.iconloop.score.token.irc31.OwnerBasedIRC31SupplierImpl'
+    archivesBaseName = 'irc31'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    enableDebug = !rootProject.hasProperty("release")
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9080/api/v3/src'
+            nid = 0x944c77
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {[
+    ]
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
