@@ -30,7 +30,7 @@ impl Route for Routes {
             Ok(true) => match link.is_valid() {
                 Ok(true) => match self.0.get(&dst.0) {
                     Some(value) => {
-                        return Ok(false);
+                        return Err(format!("value already present {}",value));
                     }
 
                     None => {
@@ -69,7 +69,7 @@ impl Route for Routes {
                         },
 
                         None => {
-                            return Ok(false);
+                            return Err(format!("value already deleted"));
                         }
                         
                     }

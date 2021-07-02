@@ -182,4 +182,153 @@ mod tests {
             Err(error) => assert_eq!(error.as_str(), "not supported protocol http"),
         }
     }
+
+    #[test]
+
+    fn add_route(){
+
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let dst =
+            BTPAddress("http://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("http://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+        match contract.routes.add_route(&dst, &link) {
+
+            Ok(true) => println!("route aded"),
+            Ok(false) => (),
+            Err(error) => ()
+            
+        }
+
+    }
+
+    #[test]
+
+    fn add_failed_route(){
+
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let dst =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        
+        let dst1 =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link1=
+            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+
+        match contract.routes.add_route(&dst, &link) {
+
+            Ok(res) =>(),
+            Ok(res) => (),
+            Err(error) => ()
+            
+        }
+        match contract.routes.add_route(&dst1, &link1) {
+
+            Ok(true) => (),
+            Ok(false) => (),
+            Err(error) => assert_eq!(error.as_str(), "value already present btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"),
+            
+        }
+
+    }
+
+    #[test]
+
+    fn add_multiple_route(){
+
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let dst =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        
+        let dst1 =
+            BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link1=
+            BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+
+        match contract.routes.add_route(&dst, &link) {
+
+            Ok(res) =>(),
+            Ok(res) => (),
+            Err(error) => ()
+            
+        }
+        match contract.routes.add_route(&dst1, &link1) {
+
+            Ok(res) => assert_eq!(res, true),
+            Ok(res) => (),
+            Err(error) => ()
+            
+        }
+
+    }
+    #[test]
+    fn delete_route(){
+
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+        let dst =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        
+        let dst1 =
+            BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link1=
+            BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+
+        match contract.routes.add_route(&dst, &link) {
+
+            Ok(res) =>(),
+            Ok(res) => (),
+            Err(error) => ()
+            
+        }
+        match contract.routes.add_route(&dst1, &link1) {
+
+            Ok(res) => (),
+            Ok(res) => (),
+            Err(error) => ()
+            
+        }
+
+        match contract.routes.remove_route(&dst1) {
+
+            Ok(res) => assert_eq!(res,true),
+            Ok(res) =>(),
+            Err(error) => ()
+            
+        }
+
+        match contract.routes.remove_route(&dst1) {
+
+            Ok(res) => (),
+            Ok(res) =>(),
+            Err(error) => assert_eq!(error.as_str(),"value already deleted")
+            
+        }
+
+    }
 }
