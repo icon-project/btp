@@ -24,14 +24,9 @@ func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData
 	return types.EventRecordsRaw(event).DecodeEventRecords(meta, records)
 }
 
-// This type does contains Decodable interface like types.BlockNumber
-type BlockNumber = types.U32
-
-type Round = types.U64
-
 type GrandpaPrecommit struct {
 	TargetHash   types.Hash
-	TargetNumber BlockNumber
+	TargetNumber GrandpaBlockNumber
 }
 
 type GrandpaSignedPrecommit struct {
@@ -57,7 +52,7 @@ func (gsp *GrandpaSignedPrecommit) Decode(decoder scale.Decoder) error {
 
 type GrandpaCommit struct {
 	TargetHash   types.Hash
-	TargetNumber BlockNumber
+	TargetNumber GrandpaBlockNumber
 	Precommits   []GrandpaSignedPrecommit
 }
 
@@ -75,6 +70,10 @@ func (gc *GrandpaCommit) Decode(decoder scale.Decoder) error {
 	err = decoder.Decode(&gc.Precommits)
 	return err
 }
+
+// This type does contains Decodable interface like types.BlockNumber
+type GrandpaBlockNumber = types.U32
+type Round = types.U64
 
 type GrandpaJustification struct {
 	Round           Round

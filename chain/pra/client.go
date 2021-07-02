@@ -198,7 +198,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 	}
 }
 
-func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventRecord, error) {
+func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, error) {
 	c.log.Trace("fetching block for events", "hash", blockHash.Hex())
 	meta, err := c.getMetadata(blockHash)
 	if err != nil {
@@ -215,7 +215,7 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*SubstateWithFrontierEventR
 		return nil, err
 	}
 
-	records := &SubstateWithFrontierEventRecord{}
+	records := &MoonriverEventRecord{}
 	if err = SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
 		return nil, err
 	}

@@ -61,7 +61,7 @@ type BlockNotification struct {
 	Header *stypes.Header
 	Hash   SubstrateHash
 	Height uint64
-	Events *SubstateWithFrontierEventRecord
+	Events *MoonriverEventRecord
 }
 
 type ReadProof struct {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
@@ -39,6 +40,10 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
+func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
+	return nil, fmt.Errorf("failed to build finality proof for %+s, at %d", v.Hash.Hex(), v.Height)
+}
+
 func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
 	var err error
 	bu := &chain.BlockUpdate{
@@ -46,27 +51,27 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		BlockHash: v.Hash[:],
 	}
 
-	// Justification required, when update validators list
-	if len(v.Events.Grandpa_NewAuthorities) > 0 {
-		signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash)
-		if err != nil {
-			return nil, err
-		}
+	// For edgeware only
+	// // Justification required, when update validators list
+	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
+	// 	signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 
-		if bu.Header, err = codec.RLP.MarshalToBytes(SignedHeader{
-			Header:        *v.Header,
-			Justification: signedBlock.Justification,
-		}); err != nil {
-			return nil, err
-		}
-	} else {
-		if bu.Header, err = codec.RLP.MarshalToBytes(v.Header); err != nil {
-			return nil, err
-		}
+	// 	if bu.Header, err = codec.RLP.MarshalToBytes(SignedHeader{
+	// 		Header:        *v.Header,
+	// 		Justification: signedBlock.Justification,
+	// 	}); err != nil {
+	// 		return nil, err
+	// 	}
+	// } else {
+
+	if bu.Header, err = types.EncodeToBytes(v.Header); err != nil {
+		return nil, err
 	}
 
-	// TODO subscribe to GrandpaJustification with a RWLock
-	// if bu.Proof, err = codec.RLP.MarshalToBytes(); err != nil {
+	// if bu.Proof, err = r.newFinalityProof(null); err != nil {
 	// 	return nil, err
 	// }
 
