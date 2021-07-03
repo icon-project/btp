@@ -8,7 +8,8 @@ import (
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
-	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v3"
+	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
+	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
@@ -33,32 +34,43 @@ type BMCContract interface {
 	GetStatus(opts *bind.CallOpts, _link string) (binding.TypesLinkStats, error)
 }
 
+type SubstrateClient interface {
+	client.Client
+	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
+	GetFinalizedHead() (types.Hash, error)
+	GetHeader(hash SubstrateHash) (*SubstrateHeader, error)
+	GetHeaderLatest() (*types.Header, error)
+	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
+	GetStorageRaw(key types.StorageKey, blockHash types.Hash) (*types.StorageDataRaw, error)
+	GetBlockHashLatest() (SubstrateHash, error)
+}
+
 type Client struct {
 	ethClient         EthClient
-	subAPI            *gsrpc.SubstrateAPI
+	subClient         SubstrateClient
 	bmc               BMCContract
 	log               log.Logger
 	stopMonitorSignal chan bool
 }
 
-func NewClient(uri string, bmcContractAddress string, l log.Logger) *Client {
-	subAPI, err := gsrpc.NewSubstrateAPI(uri)
+func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
+	subClient, err := NewSubstrateClient(url)
 	if err != nil {
-		l.Fatal(err)
+		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
 	}
 
-	ethClient, err := ethclient.Dial(uri)
+	ethClient, err := ethclient.Dial(url)
 	if err != nil {
-		l.Fatal(err)
+		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
 	}
 
 	bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
 	if err != nil {
-		l.Fatal("failed to connect to BMC contract", err.Error())
+		l.Fatal("failed to connect to Parachain BMC contract", err.Error())
 	}
 
 	c := &Client{
-		subAPI:            subAPI,
+		subClient:         subClient,
 		bmc:               bmc,
 		ethClient:         ethClient,
 		log:               l,
@@ -107,7 +119,7 @@ func (c *Client) CloseAllMonitor() error {
 }
 
 func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
-	metadata, err := c.subAPI.RPC.State.GetMetadata(hash)
+	metadata, err := c.subClient.GetMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -126,17 +138,17 @@ func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorag
 
 func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
 	var res ReadProof
-	err := c.subAPI.Client.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
+	err := c.subClient.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	return res, err
 }
 
 func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
-	finalizedHash, err := c.subAPI.RPC.Chain.GetFinalizedHead()
+	finalizedHash, err := c.subClient.GetFinalizedHead()
 	if err != nil {
 		return nil, err
 	}
 
-	finalizedHeader, err := c.subAPI.RPC.Chain.GetHeader(finalizedHash)
+	finalizedHeader, err := c.subClient.GetHeader(finalizedHash)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +168,7 @@ func (c *Client) bestLatestBlockHeader() (*SubstrateHeader, error) {
 		return finalizedHeader, nil
 	}
 
-	return c.subAPI.RPC.Chain.GetHeaderLatest()
+	return c.subClient.GetHeaderLatest()
 }
 
 // MonitorBlock pulls block from the given height
@@ -179,7 +191,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 				continue
 			}
 
-			hash, err := c.subAPI.RPC.Chain.GetBlockHash(current)
+			hash, err := c.subClient.GetBlockHash(current)
 			if err != nil && err.Error() == ErrBlockNotReady.Error() {
 				<-time.After(BlockRetryInterval)
 				continue
@@ -222,7 +234,7 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, erro
 		return nil, err
 	}
 
-	sdr, err := c.subAPI.RPC.State.GetStorageRaw(key, blockHash)
+	sdr, err := c.subClient.GetStorageRaw(key, blockHash)
 	if err != nil {
 		return nil, err
 	}

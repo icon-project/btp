@@ -42,7 +42,7 @@ func TestGetReadProof(t *testing.T) {
 func TestGetEvents(t *testing.T) {
 	c := NewTestClient()
 
-	hash, err := c.subAPI.RPC.Chain.GetBlockHashLatest()
+	hash, err := c.subClient.GetBlockHashLatest()
 	if err != nil {
 		panic(err)
 	}

@@ -8,6 +8,7 @@ import (
 type SubstrateHash = types.Hash
 type SubstrateMetaData = types.Metadata
 type SubstrateStorageKey = types.StorageKey
+type SubstrateStorageDataRaw = types.StorageDataRaw
 
 func CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
 	key, err := types.CreateStorageKey(meta, prefix, method, arg, arg2)
