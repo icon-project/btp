@@ -9,6 +9,7 @@ type SubstrateHash = types.Hash
 type SubstrateMetaData = types.Metadata
 type SubstrateStorageKey = types.StorageKey
 type SubstrateStorageDataRaw = types.StorageDataRaw
+type SubstrateBlockNumber = types.BlockNumber
 
 func CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
 	key, err := types.CreateStorageKey(meta, prefix, method, arg, arg2)
@@ -138,4 +139,12 @@ type HeaderSubscription interface {
 	Chan() <-chan types.Header
 	Err() <-chan error
 	Unsubscribe()
+}
+
+func NewSubstrateHashFromHexString(s string) SubstrateHash {
+	hash, err := types.NewHashFromHexString(s)
+	if err != nil {
+		panic(err)
+	}
+	return hash
 }

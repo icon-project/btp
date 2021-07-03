@@ -543,3 +543,86 @@ func TestSenderGetStatus(t *testing.T) {
 		assert.EqualValues(t, input.Relays[0].MsgCount.Int64(), output.BMRs[0].MessageCount)
 	})
 }
+
+func TestSenderMonitorLoop(t *testing.T) {
+	log := log.New()
+
+	t.Run("monitor from current finallized header", func(t *testing.T) {
+		subClient := &mocks.SubstrateClient{}
+		sender := &Sender{
+			log: log,
+			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
+		}
+
+		monitoredBlocks := []uint64{}
+		pulledBlocks := []uint64{}
+
+		cb := func(height int64) error {
+			monitoredBlocks = append(monitoredBlocks, uint64(height))
+			return nil
+		}
+
+		blockNumber := uint64(1)
+		stopAt := uint64(10)
+		blockHeader := &SubstrateHeader{}
+		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
+
+		subClient.On("GetFinalizedHead").Return(hash, nil)
+		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
+			blockHeader.Number = SubstrateBlockNumber(blockNumber)
+			blockNumber++
+		})
+		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {
+			pullBlock := args[0].(uint64)
+			pulledBlocks = append(pulledBlocks, pullBlock)
+			if pullBlock == stopAt {
+				sender.StopMonitorLoop()
+			}
+		})
+
+		err := sender.MonitorLoop(int64(blockNumber), cb, func() {})
+		assert.Nil(t, err)
+		assert.Len(t, monitoredBlocks, int(stopAt))
+		assert.EqualValues(t, pulledBlocks, monitoredBlocks)
+	})
+
+	t.Run("monitor from a heigher finallized header", func(t *testing.T) {
+		subClient := &mocks.SubstrateClient{}
+		sender := &Sender{
+			log: log,
+			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
+		}
+
+		monitoredBlocks := []uint64{}
+		pulledBlocks := []uint64{}
+
+		cb := func(height int64) error {
+			monitoredBlocks = append(monitoredBlocks, uint64(height))
+			return nil
+		}
+
+		blockNumber := uint64(1)
+		stopAt := uint64(10)
+		from := blockNumber + 2
+		blockHeader := &SubstrateHeader{}
+		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
+
+		subClient.On("GetFinalizedHead").Return(hash, nil)
+		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
+			blockHeader.Number = SubstrateBlockNumber(blockNumber)
+			blockNumber++
+		})
+		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {
+			pullBlock := args[0].(uint64)
+			pulledBlocks = append(pulledBlocks, pullBlock)
+			if pullBlock == stopAt {
+				sender.StopMonitorLoop()
+			}
+		})
+
+		err := sender.MonitorLoop(int64(from), cb, func() {})
+		assert.Nil(t, err)
+		assert.Len(t, monitoredBlocks, int(stopAt-from+1))
+		assert.EqualValues(t, pulledBlocks, monitoredBlocks)
+	})
+}
