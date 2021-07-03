@@ -7,7 +7,7 @@ rust = "1.51"
 
 [workspace]
 members = [
-    "bmc"
+    "bsh-generic"
 ]
 
 [dev-dependencies]
