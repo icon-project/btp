@@ -21,8 +21,11 @@ const (
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
-	DefaultRetryContractCall         = 10
 	DefaultRetryContractCallInterval = 3 * time.Second
+)
+
+var (
+	DefaultRetryContractCall = 10 // reduce testing time
 )
 
 func init() {
@@ -221,6 +224,10 @@ func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 	p := segment.TransactionParam.(*RelayMessageParam)
 	msg := &RelayMessage{}
 	b, err := base64.URLEncoding.DecodeString(p.Msg)
+	if err != nil {
+		return err
+	}
+
 	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
 		return err
 	}

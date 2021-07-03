@@ -27,10 +27,16 @@ type EthClient interface {
 	CallContract(ctx context.Context, callMsg EvmCallMsg, block *big.Int) ([]byte, error)
 }
 
+type BMCContract interface {
+	HandleRelayMessage(opts *bind.TransactOpts, _prev string, _msg string) (*EvmTransaction, error)
+	ParseMessage(log EvmLog) (*binding.BMCMessage, error)
+	GetStatus(opts *bind.CallOpts, _link string) (binding.TypesLinkStats, error)
+}
+
 type Client struct {
 	ethClient         EthClient
 	subAPI            *gsrpc.SubstrateAPI
-	bmc               *binding.BMC
+	bmc               BMCContract
 	log               log.Logger
 	stopMonitorSignal chan bool
 }

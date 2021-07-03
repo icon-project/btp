@@ -9,18 +9,22 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/btp/common/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	TestnetURL                     = "https://sejong.net.solidwallet.io/api/v3/icon_dex"
+	TestnetGooloopURL              = "https://sejong.net.solidwallet.io/api/v3/icon_dex"
+	TestnetMoonbaseURL             = "https://rpc.testnet.moonbeam.network"
 	TestBlockNumberHasReceiptProof = 273042
 )
 
@@ -31,9 +35,22 @@ func init() {
 func genFakeBytes(n int) []byte {
 	b := []byte{}
 	for i := 0; i < n; i++ {
-		b = append(b, 1)
+		b = append(b, uint8(n%127))
 	}
 	return b
+}
+
+func testWallet() wallet.Wallet {
+	privateKey, err := crypto.HexToECDSA("8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b49c6fa7cdbeee8b")
+	if err != nil {
+		panic(err)
+	}
+
+	w, err := wallet.NewEvmWalletFromPrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
+	return w
 }
 
 func TestNewTransactionParam(t *testing.T) {
@@ -288,4 +305,241 @@ func TestParseTransactionError(t *testing.T) {
 
 	ethClient.On("CallContract", ctx, callmsg, mock.AnythingOfType("*big.Int")).Return([]byte(""), nil).Once()
 	assert.EqualError(t, sender.parseTransactionError(address, tx, nil), "parseTransactionError: empty")
+}
+
+func TestUpdateSegment(t *testing.T) {
+	sender := &Sender{log: log.New()}
+	t.Run("should crash if TransactionParam not a *RelayMessageParam", func(t *testing.T) {
+		segment := &chain.Segment{}
+		require.Panics(t, func() { sender.UpdateSegment(&chain.BlockProof{}, segment) })
+	})
+
+	t.Run("should return error msg is not a encoded base64", func(t *testing.T) {
+		p := &RelayMessageParam{
+			Msg: "rawstring",
+		}
+		segment := &chain.Segment{TransactionParam: p}
+		err := sender.UpdateSegment(&chain.BlockProof{}, segment)
+		require.NotNil(t, err)
+		assert.Contains(t, err.Error(), "base64")
+		assert.Equal(t, p, segment.TransactionParam)
+	})
+
+	t.Run("should return error msg is not a encoded rlp", func(t *testing.T) {
+		err := sender.UpdateSegment(&chain.BlockProof{}, &chain.Segment{
+			TransactionParam: &RelayMessageParam{
+				Msg: base64.URLEncoding.EncodeToString([]byte("rawstring")),
+			},
+		})
+		require.NotNil(t, err)
+		assert.Error(t, err, "InvalidFormat(RLPBytes)")
+	})
+
+	t.Run("should return error msg is not RelayMessage", func(t *testing.T) {
+		b := codec.RLP.MustMarshalToBytes("randomgstring")
+		base64encoded := base64.URLEncoding.EncodeToString(b)
+
+		err := sender.UpdateSegment(&chain.BlockProof{}, &chain.Segment{
+			TransactionParam: &RelayMessageParam{
+				Msg: base64encoded,
+			},
+		})
+		require.NotNil(t, err)
+		assert.Error(t, err, "InvalidFormat(RLPBytes)")
+	})
+
+	t.Run("should updated UpdateSegment ok", func(t *testing.T) {
+		rm := &RelayMessage{
+			BlockProof:    genFakeBytes(10),
+			BlockUpdates:  [][]byte{genFakeBytes(11)},
+			ReceiptProofs: [][]byte{genFakeBytes(12)},
+		}
+		b := codec.RLP.MustMarshalToBytes(rm)
+		base64encoded := base64.URLEncoding.EncodeToString(b)
+		p := &RelayMessageParam{Msg: base64encoded}
+		segment := &chain.Segment{TransactionParam: p}
+		bp := &chain.BlockProof{Header: genFakeBytes(13)}
+
+		err := sender.UpdateSegment(bp, segment)
+		require.Nil(t, err)
+		assert.NotNil(t, segment.TransactionParam)
+		p1 := segment.TransactionParam.(*RelayMessageParam)
+		require.NotNil(t, p1)
+		assert.NotEqualValues(t, p, p1)
+
+		rm1 := &RelayMessage{}
+		bp1 := &chain.BlockProof{Header: genFakeBytes(13)}
+
+		b1, _ := base64.URLEncoding.DecodeString(p1.Msg)
+		require.NotNil(t, b1)
+		_, err = codec.RLP.UnmarshalFromBytes(b1, rm1)
+		require.Nil(t, err)
+		_, err = codec.RLP.UnmarshalFromBytes(rm1.BlockProof, bp1)
+		require.Nil(t, err)
+
+		require.Nil(t, err)
+		assert.Equal(t, rm.ReceiptProofs, rm1.ReceiptProofs)
+		assert.Equal(t, rm.BlockUpdates, rm1.BlockUpdates)
+		assert.Equal(t, bp, bp1)
+	})
+}
+
+func TestRelay(t *testing.T) {
+	DefaultRetryContractCall = 0 // reduce test time
+	bmcMock := &mocks.BMCContract{}
+	sender := &Sender{log: log.New(), c: &Client{bmc: bmcMock}, w: testWallet()}
+
+	t.Run("should return error if TransactionParam not a *RelayMessageParam", func(t *testing.T) {
+		_, err := sender.Relay(&chain.Segment{})
+		require.NotNil(t, err)
+		assert.Error(t, err, "casting failure")
+	})
+
+	t.Run("should return error if got error on bmc.HandleRelayMessage", func(t *testing.T) {
+		bmcMock.On("HandleRelayMessage", mock.AnythingOfType("*bind.TransactOpts"), mock.Anything, mock.Anything).Return(nil, errors.New("HandleRelayMessageError")).Once()
+		_, err := sender.Relay(&chain.Segment{
+			TransactionParam: &RelayMessageParam{},
+		})
+		require.NotNil(t, err)
+		assert.Error(t, err, "HandleRelayMessageError")
+	})
+
+	t.Run("should return TransactionHashParam", func(t *testing.T) {
+		p := &RelayMessageParam{
+			Prev: "string",
+			Msg:  "string",
+		}
+		tx := &EvmTransaction{}
+
+		bmcMock.On("HandleRelayMessage", mock.AnythingOfType("*bind.TransactOpts"), mock.Anything, mock.Anything).Return(tx, nil).Once()
+		r, err := sender.Relay(&chain.Segment{
+			TransactionParam: p,
+		})
+		require.Nil(t, err)
+		thp, ok := r.(*TransactionHashParam)
+		require.True(t, ok)
+		assert.Equal(t, tx, thp.Tx)
+		assert.Equal(t, sender.w.Address(), thp.From.Hex())
+		assert.Equal(t, p, thp.Param)
+	})
+}
+
+func TestGetResult(t *testing.T) {
+	ethClient := &mocks.EthClient{}
+	sender := &Sender{log: log.New(), c: &Client{ethClient: ethClient}}
+	ctx := context.Background()
+	fromAddress := EvmHexToAddress("0x0000000000000000000000000000000000000000")
+
+	t.Run("should return error if GetResultParam not a *TransactionHashParam", func(t *testing.T) {
+		_, err := sender.GetResult(nil)
+		require.NotNil(t, err)
+		assert.Contains(t, err.Error(), "fail to casting TransactionHashParam")
+	})
+
+	t.Run("should return error if Status = 0", func(t *testing.T) {
+		p := &TransactionHashParam{
+			From:  fromAddress,
+			Tx:    types.NewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
+			Param: &RelayMessageParam{},
+		}
+		receipt := &EvmReceipt{
+			BlockNumber: big.NewInt(1),
+			Status:      0,
+		}
+
+		ethClient.On("TransactionReceipt", mock.AnythingOfType("*context.emptyCtx"), p.Tx.Hash()).Return(receipt, nil).Once()
+		ethClient.On("CallContract", ctx, mock.AnythingOfType("ethereum.CallMsg"), mock.AnythingOfType("*big.Int")).Return([]byte(""), nil)
+		_, err := sender.GetResult(p)
+		require.NotNil(t, err)
+	})
+
+	t.Run("should return string as TransactionResult if Status = 1", func(t *testing.T) {
+		p := &TransactionHashParam{
+			From:  fromAddress,
+			Tx:    types.NewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
+			Param: &RelayMessageParam{},
+		}
+		receipt := &EvmReceipt{
+			BlockNumber: big.NewInt(1),
+			Status:      1,
+			TxHash:      EvmHexToHash("0x89807d988e91650d41c6cf1127c3106a0d281b0c0523e6af61df5859e1bcd935"),
+		}
+
+		ethClient.On("TransactionReceipt", mock.AnythingOfType("*context.emptyCtx"), p.Tx.Hash()).Return(receipt, nil).Once()
+		tr, err := sender.GetResult(p)
+		require.Nil(t, err)
+		require.IsType(t, "string", tr)
+		assert.Equal(t, receipt.TxHash.Hex(), tr)
+	})
+}
+
+func TestGetStatus(t *testing.T) {
+	DefaultRetryContractCall = 0 // reduce test time
+	bmcMock := &mocks.BMCContract{}
+	sender := &Sender{
+		log: log.New(),
+		src: chain.BtpAddress("btp://0x2c295d.icon/cx8e270cb0610d67daeb0de5fbaebbbd812de28e4d"),
+		c:   &Client{bmc: bmcMock}, w: testWallet()}
+
+	t.Run("should return error if got error on bmc.GetStatus", func(t *testing.T) {
+		getStatusErr := errors.New("GetStatusError")
+		bmcMock.On("GetStatus", mock.AnythingOfType("*bind.CallOpts"), sender.src.String()).Return(binding.TypesLinkStats{}, getStatusErr).Once()
+
+		_, err := sender.GetStatus()
+		require.NotNil(t, err)
+		assert.Contains(t, err.Error(), getStatusErr.Error())
+	})
+
+	t.Run("should return chain.BMCLinkStatus", func(t *testing.T) {
+		input := binding.TypesLinkStats{
+			BlockIntervalDst: big.NewInt(1),
+			BlockIntervalSrc: big.NewInt(2),
+			TxSeq:            big.NewInt(3),
+			RxSeq:            big.NewInt(4),
+			Verifier: binding.TypesVerifierStats{
+				HeightMTA:  big.NewInt(4),
+				OffsetMTA:  big.NewInt(5),
+				LastHeight: big.NewInt(6),
+			},
+			RotateHeight:   big.NewInt(7),
+			RotateTerm:     big.NewInt(8),
+			DelayLimit:     big.NewInt(9),
+			MaxAggregation: big.NewInt(10),
+			RxHeight:       big.NewInt(11),
+			RxHeightSrc:    big.NewInt(12),
+			CurrentHeight:  big.NewInt(13),
+			RelayIdx:       big.NewInt(14),
+			Relays: []binding.TypesRelayStats{
+				{
+					Addr:       EvmHexToAddress("0x3Cd0A705a2DC65e5b1E1205896BaA2be8A07c6e0"),
+					BlockCount: big.NewInt(15),
+					MsgCount:   big.NewInt(16),
+				},
+			},
+		}
+
+		bmcMock.On("GetStatus", mock.AnythingOfType("*bind.CallOpts"), sender.src.String()).Return(input, nil)
+
+		output, err := sender.GetStatus()
+		require.Nil(t, err)
+		assert.EqualValues(t, input.BlockIntervalSrc.Int64(), output.BlockIntervalSrc)
+		assert.EqualValues(t, input.BlockIntervalDst.Int64(), output.BlockIntervalDst)
+		assert.EqualValues(t, input.TxSeq.Int64(), output.TxSeq)
+		assert.EqualValues(t, input.RxSeq.Int64(), output.RxSeq)
+		assert.EqualValues(t, input.Verifier.HeightMTA.Int64(), output.Verifier.Height)
+		assert.EqualValues(t, input.Verifier.OffsetMTA.Int64(), output.Verifier.Offset)
+		assert.EqualValues(t, input.Verifier.LastHeight.Int64(), output.Verifier.LastHeight)
+		assert.EqualValues(t, input.RotateHeight.Int64(), output.RotateHeight)
+		assert.EqualValues(t, input.RotateTerm.Int64(), output.RotateTerm)
+		assert.EqualValues(t, input.DelayLimit.Int64(), output.DelayLimit)
+		assert.EqualValues(t, input.MaxAggregation.Int64(), output.MaxAggregation)
+		assert.EqualValues(t, input.RxHeight.Int64(), output.RxHeight)
+		assert.EqualValues(t, input.RxHeightSrc.Int64(), output.RxHeightSrc)
+		assert.EqualValues(t, input.CurrentHeight.Int64(), output.CurrentHeight)
+		assert.EqualValues(t, input.RelayIdx.Int64(), output.BMRIndex)
+		assert.Len(t, output.BMRs, 1)
+		assert.Equal(t, input.Relays[0].Addr.Hex(), output.BMRs[0].Address)
+		assert.EqualValues(t, input.Relays[0].BlockCount.Int64(), output.BMRs[0].BlockCount)
+		assert.EqualValues(t, input.Relays[0].MsgCount.Int64(), output.BMRs[0].MessageCount)
+	})
 }
