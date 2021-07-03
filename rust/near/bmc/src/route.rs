@@ -1,3 +1,4 @@
+/*
 use btp_common::{Address, BTPAddress};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
@@ -67,3 +68,4 @@ impl Route for Routes {
         Ok(self.0.get(&dst.0).unwrap())
     }
 }
+*/

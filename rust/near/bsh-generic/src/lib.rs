@@ -35,7 +35,10 @@
 )]
 */
 
+pub mod libraries;
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
 
@@ -45,7 +48,8 @@ setup_alloc!();
 
 metadata! {
     #[near_bindgen]
-    #[derive(BorshDeserialize, BorshSerialize)]
+    #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
+    #[serde(crate = "near_sdk::serde")]
     pub struct Token {
         balances: HashMap<Vec<u8>, u64>,
         allowances: HashMap<Vec<u8>, u64>,

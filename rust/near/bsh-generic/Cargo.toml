@@ -7,4 +7,4 @@ edition = "2018"
 [dependencies]
 near-sdk = "3.1.0"
 btp-common = {path="../../btp-common"}
-lazy_static = "1.4.0"
+#lazy_static = "1.4.0"

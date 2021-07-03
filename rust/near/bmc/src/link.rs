@@ -1,3 +1,4 @@
+/* 
 use btp_common::{Address, BTPAddress};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
@@ -169,3 +170,4 @@ impl Link for Links {
         return Err("Not found".to_string());
     }
 }
+*/
