@@ -24,37 +24,6 @@ pub struct BTPMessageCenter {
 }
 
 #[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct LinkStatus {
-    rx_seq: u64,
-    tx_seq: u64,
-    verifier: Verifier,
-    relays: HashMap<Vec<u8>, Relay>,
-    relay_index: u64,
-    rotate_height: u64,
-    rotate_term: u64,
-    delay_limit: u64,
-    max_aggregation: u64,
-    rx_height_src: u64,
-    rx_height: u64,
-    block_interval_src: u64,
-    block_interval_dst: u64,
-    current_height: u64,
-}
-
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Verifier {
-    mta_height: u64,
-    mta_offset: u64,
-    last_height: u64,
-}
-
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Relay {
-    address: Vec<u8>,
-    block_count: u64,
-    message_count: u64,
-}
-#[derive(Default, BorshDeserialize, BorshSerialize)]
 pub struct Message {
     payload: Vec<u8>,
 }
@@ -185,8 +154,7 @@ mod tests {
 
     #[test]
 
-    fn add_route(){
-
+    fn add_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut contract = BTPMessageCenter {
@@ -198,19 +166,15 @@ mod tests {
             BTPAddress("http://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
         match contract.routes.add_route(&dst, &link) {
-
             Ok(true) => println!("route aded"),
             Ok(false) => (),
-            Err(error) => ()
-            
+            Err(error) => (),
         }
-
     }
 
     #[test]
 
-    fn add_failed_route(){
-
+    fn add_failed_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut contract = BTPMessageCenter {
@@ -220,34 +184,30 @@ mod tests {
             BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let link =
             BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        
+
         let dst1 =
             BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1=
+        let link1 =
             BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-
         match contract.routes.add_route(&dst, &link) {
-
-            Ok(res) =>(),
             Ok(res) => (),
-            Err(error) => ()
-            
+            Ok(res) => (),
+            Err(error) => (),
         }
         match contract.routes.add_route(&dst1, &link1) {
-
             Ok(true) => (),
             Ok(false) => (),
-            Err(error) => assert_eq!(error.as_str(), "value already present btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"),
-            
+            Err(error) => assert_eq!(
+                error.as_str(),
+                "value already present btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"
+            ),
         }
-
     }
 
     #[test]
 
-    fn add_multiple_route(){
-
+    fn add_multiple_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut contract = BTPMessageCenter {
@@ -257,32 +217,25 @@ mod tests {
             BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let link =
             BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        
+
         let dst1 =
             BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1=
+        let link1 =
             BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-
         match contract.routes.add_route(&dst, &link) {
-
-            Ok(res) =>(),
             Ok(res) => (),
-            Err(error) => ()
-            
+            Ok(res) => (),
+            Err(error) => (),
         }
         match contract.routes.add_route(&dst1, &link1) {
-
             Ok(res) => assert_eq!(res, true),
             Ok(res) => (),
-            Err(error) => ()
-            
+            Err(error) => (),
         }
-
     }
     #[test]
-    fn delete_route(){
-
+    fn delete_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut contract = BTPMessageCenter {
@@ -292,43 +245,33 @@ mod tests {
             BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let link =
             BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        
+
         let dst1 =
             BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1=
+        let link1 =
             BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-
         match contract.routes.add_route(&dst, &link) {
-
-            Ok(res) =>(),
             Ok(res) => (),
-            Err(error) => ()
-            
+            Ok(res) => (),
+            Err(error) => (),
         }
         match contract.routes.add_route(&dst1, &link1) {
-
             Ok(res) => (),
             Ok(res) => (),
-            Err(error) => ()
-            
+            Err(error) => (),
         }
 
         match contract.routes.remove_route(&dst1) {
-
-            Ok(res) => assert_eq!(res,true),
-            Ok(res) =>(),
-            Err(error) => ()
-            
+            Ok(res) => assert_eq!(res, true),
+            Ok(res) => (),
+            Err(error) => (),
         }
 
         match contract.routes.remove_route(&dst1) {
-
             Ok(res) => (),
-            Ok(res) =>(),
-            Err(error) => assert_eq!(error.as_str(),"value already deleted")
-            
+            Ok(res) => (),
+            Err(error) => assert_eq!(error.as_str(), "value already deleted"),
         }
-
     }
 }

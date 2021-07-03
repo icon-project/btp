@@ -7,27 +7,44 @@ use std::sync::Mutex;
 use std::collections::HashMap;
 
 lazy_static! {
-    static ref keytovalue: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
+    static ref KEYS: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Links(pub LookupMap<Vec<u8>, LinkProps>);
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Default, BorshDeserialize, BorshSerialize)]
 pub struct LinkProps {
     rx_seq: u64,
     tx_seq: u64,
-    relays: Vec<u8>,
+    verifier: Verifier,
+    relays: HashMap<Vec<u8>, Relay>,
     reachable: Vec<u8>,
-    block_interval_src: u128,
-    block_interval_dst: u128,
-    max_aggregation: u128,
-    delay_limit: u128,
     relay_index: u64,
     rotate_height: u64,
     rotate_term: u64,
+    delay_limit: u64,
+    max_aggregation: u64,
     rx_height_src: u64,
+    rx_height: u64,
+    block_interval_src: u64,
+    block_interval_dst: u64,
+    current_height: u64,
     connected: bool,
+}
+
+#[derive(Default, BorshDeserialize, BorshSerialize)]
+pub struct Relay {
+    address: Vec<u8>,
+    block_count: u64,
+    message_count: u64,
+}
+
+#[derive(Default, BorshDeserialize, BorshSerialize)]
+pub struct Verifier {
+    mta_height: u64,
+    mta_offset: u64,
+    last_height: u64,
 }
 
 pub trait Link {
@@ -37,9 +54,9 @@ pub trait Link {
     fn set_link(
         &mut self,
         link: &BTPAddress,
-        block_interval: u128,
-        mxagg: u128,
-        delimit: u128,
+        block_interval: u64,
+        mxagg: u64,
+        delimit: u64,
     ) -> Result<bool, String>;
     fn get_links(&self) -> Result<Vec<u8>, String>;
     fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
@@ -57,7 +74,12 @@ impl Link for Links {
         LinkProps {
             rx_seq: 0,
             tx_seq: 0,
-            relays: b"".to_vec(),
+            verifier: Verifier {
+                mta_height: 0,
+                mta_offset: 0,
+                last_height: 0,
+            },
+            relays: HashMap::new(),
             reachable: b"".to_vec(),
             block_interval_src: 0,
             block_interval_dst: 0,
@@ -67,6 +89,8 @@ impl Link for Links {
             rotate_height: 0,
             rotate_term: 0,
             rx_height_src: 0,
+            rx_height: 0,
+            current_height: 0,
             connected: true,
         }
     }
@@ -84,7 +108,7 @@ impl Link for Links {
                 if !self.0.contains_key(&key) {
                     self.0.insert(&key, &linkprop);
 
-                    keytovalue.lock().unwrap().push(key);
+                    KEYS.lock().unwrap().push(key);
 
                     return Ok(true);
                 }
@@ -113,7 +137,7 @@ impl Link for Links {
         }
     }
     fn get_links(&self) -> Result<Vec<u8>, String> {
-        for key in keytovalue.lock().unwrap().iter() {
+        for key in KEYS.lock().unwrap().iter() {
             return Ok(key.to_vec());
         }
 
@@ -123,9 +147,9 @@ impl Link for Links {
     fn set_link(
         &mut self,
         link: &BTPAddress,
-        block_interval: u128,
-        mxagg: u128,
-        delimit: u128,
+        block_interval: u64,
+        mxagg: u64,
+        delimit: u64,
     ) -> Result<bool, String> {
         //TO-DO
         //validate caller has necessary permission

@@ -10,7 +10,7 @@ pub trait Route {
     fn new() -> Self;
     fn add_route(&mut self, dst: &BTPAddress, link: &BTPAddress) -> Result<bool, String>;
     fn remove_route(&mut self, dst: &BTPAddress) -> Result<bool, String>;
-    fn get_routes(&self) -> Result<(String,String), String>;
+    fn get_routes(&self) -> Result<(String, String), String>;
 }
 
 impl Routes {
@@ -30,7 +30,7 @@ impl Route for Routes {
             Ok(true) => match link.is_valid() {
                 Ok(true) => match self.0.get(&dst.0) {
                     Some(value) => {
-                        return Err(format!("value already present {}",value));
+                        return Err(format!("value already present {}", value));
                     }
 
                     None => {
@@ -51,62 +51,40 @@ impl Route for Routes {
         //TODO :
         //validate caller has necessary permission
 
-
         match dst.is_valid() {
-
             Ok(true) => {
-
-
-                if !self.0.is_empty(){
-
+                if !self.0.is_empty() {
                     match self.0.get(&dst.0) {
-
-                        Some(value) =>{
-
+                        Some(value) => {
                             self.0.remove(&dst.0);
 
                             return Ok(true);
-                        },
+                        }
 
                         None => {
                             return Err(format!("value already deleted"));
                         }
-                        
                     }
-
-
                 }
 
                 return Ok(false);
-
-
-            },
+            }
             Ok(false) => return Ok(false),
-            Err(error) => return Err(error)
-            
+            Err(error) => return Err(error),
         }
-
-    
     }
-    fn get_routes(&self) -> Result<(String,String), String> {
+    fn get_routes(&self) -> Result<(String, String), String> {
         //needs to be changed
 
-       //TO-DO 
+        //TO-DO
 
-       //Add testcases for route and links
+        //Add testcases for route and links
 
-        if !self.0.is_empty(){
-
-            for (key,value) in self.0.iter(){
-
-
-                return Ok((key,value));
+        if !self.0.is_empty() {
+            for (key, value) in self.0.iter() {
+                return Ok((key, value));
             }
-
-
-
         }
-
 
         return Err("value not found".to_string());
     }
