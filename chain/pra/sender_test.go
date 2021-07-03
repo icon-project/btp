@@ -53,7 +53,7 @@ func testWallet() wallet.Wallet {
 	return w
 }
 
-func TestNewTransactionParam(t *testing.T) {
+func TestSenderNewTransactionParam(t *testing.T) {
 
 	prev := "string"
 	rm1 := &RelayMessage{
@@ -77,7 +77,7 @@ func TestNewTransactionParam(t *testing.T) {
 	assert.EqualValues(t, rm1, rm2)
 }
 
-func TestSegment(t *testing.T) {
+func TestSenderSegment(t *testing.T) {
 	f := txSizeLimit
 	txSizeLimit := int(f)
 	sender := &Sender{log: log.New()}
@@ -259,7 +259,7 @@ func TestSegment(t *testing.T) {
 	})
 }
 
-func TestParseTransactionError(t *testing.T) {
+func TestSenderParseTransactionError(t *testing.T) {
 	var encodedErrors = map[string]int{
 		"08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001b424d435265766572743a2052616e646f6d537472696e67486572650000000000":                                                                 10,
 		"08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000027424d43526576657274556e617574686f72697a65643a2052616e646f6d537472696e674865726500000000000000000000000000000000000000000000000000": 11,
@@ -307,7 +307,7 @@ func TestParseTransactionError(t *testing.T) {
 	assert.EqualError(t, sender.parseTransactionError(address, tx, nil), "parseTransactionError: empty")
 }
 
-func TestUpdateSegment(t *testing.T) {
+func TestSenderUpdateSegment(t *testing.T) {
 	sender := &Sender{log: log.New()}
 	t.Run("should crash if TransactionParam not a *RelayMessageParam", func(t *testing.T) {
 		segment := &chain.Segment{}
@@ -384,7 +384,7 @@ func TestUpdateSegment(t *testing.T) {
 	})
 }
 
-func TestRelay(t *testing.T) {
+func TestSenderRelay(t *testing.T) {
 	DefaultRetryContractCall = 0 // reduce test time
 	bmcMock := &mocks.BMCContract{}
 	sender := &Sender{log: log.New(), c: &Client{bmc: bmcMock}, w: testWallet()}
@@ -424,7 +424,7 @@ func TestRelay(t *testing.T) {
 	})
 }
 
-func TestGetResult(t *testing.T) {
+func TestSenderGetResult(t *testing.T) {
 	ethClient := &mocks.EthClient{}
 	sender := &Sender{log: log.New(), c: &Client{ethClient: ethClient}}
 	ctx := context.Background()
@@ -473,7 +473,7 @@ func TestGetResult(t *testing.T) {
 	})
 }
 
-func TestGetStatus(t *testing.T) {
+func TestSenderGetStatus(t *testing.T) {
 	DefaultRetryContractCall = 0 // reduce test time
 	bmcMock := &mocks.BMCContract{}
 	sender := &Sender{
