@@ -18,7 +18,7 @@ type EvmLog = types.Log
 func (e *EventEVMLog) EvmLog() types.Log {
 	topics := []common.Hash{}
 
-	for _, t := range e.Topics {
+	for _, t := range e.Log.Topics {
 		topics = append(topics, common.HexToHash(t.Hex()))
 	}
 
