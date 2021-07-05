@@ -24,6 +24,37 @@ library RLPEncodeStruct {
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
 
+    function encodeBMCService(Types.BMCService memory _bs)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory _rlp = abi.encodePacked(
+            _bs.serviceType.encodeString(),
+            _bs.payload.encodeBytes()
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
+    function encodeGatherFeeMessage(Types.GatherFeeMessage memory _gfm)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory _rlp;
+        bytes memory temp;
+        for (uint256 i = 0; i < _gfm.svcs.length; i++) {
+            temp = abi.encodePacked(_gfm.svcs[i].encodeString());
+            _rlp = abi.encodePacked(_rlp, temp);
+        }
+        _rlp = abi.encodePacked(
+            _gfm.fa.encodeString(),
+            addLength(_rlp.length, false),
+            _rlp
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
     function encodeEventMessage(Types.EventMessage memory _em)
         internal
         pure

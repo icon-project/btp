@@ -533,10 +533,10 @@ contract BSHCoreV1 is
         string calldata _coinName,
         uint256 _value,
         uint256 _fee,
-        uint256 rspCode
+        uint256 _rspCode
     ) external override onlyBSHPeriphery {
         if (_requester == address(this)) {
-            if (rspCode == RC_ERR) {
+            if (_rspCode == RC_ERR) {
                 aggregationFee[_coinName] = aggregationFee[_coinName].add(_value);
             }
             return;
@@ -547,7 +547,7 @@ contract BSHCoreV1 is
         ]
             .lockedBalance
             .sub(_amount);
-        if (rspCode == RC_ERR) {
+        if (_rspCode == RC_ERR) {
             try this.refund(_requester, _coinName, _amount) {} catch {
                 balances[_requester][_coinName].refundableBalance = balances[
                     _requester
@@ -555,7 +555,7 @@ contract BSHCoreV1 is
                     .refundableBalance
                     .add(_amount);
             }
-        } else if (rspCode == RC_OK) {
+        } else if (_rspCode == RC_OK) {
             uint256 _id = coins[_coinName];
             if (_id != 0) {
                 _burn(address(this), _id, _value);

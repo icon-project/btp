@@ -2,19 +2,20 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
-import "../BSHPeriphery.sol";
-import "../BSHCore.sol";
+import "../Interfaces/IBSHPeriphery.sol";
+import "../Interfaces/IBSHCore.sol";
+import "../Libraries/StringsLib.sol";
 
 contract Holder is ERC1155Holder {
-    BSHPeriphery private bshp;
-    BSHCore private bshc;
+    IBSHPeriphery private bshp;
+    IBSHCore private bshc;
     using Strings for string;
 
     function deposit() external payable {}
 
     function addBSHContract(address _bshp, address _bshc) external {
-        bshp = BSHPeriphery(_bshp);
-        bshc = BSHCore(_bshc);
+        bshp = IBSHPeriphery(_bshp);
+        bshc = IBSHCore(_bshc);
     }
 
     function setApprove(address _operator) external {

@@ -246,6 +246,6 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
         string calldata _coinName,
         uint256 _value,
         uint256 _fee,
-        uint256 rspCode
+        uint256 _rspCode
     ) external;
 }

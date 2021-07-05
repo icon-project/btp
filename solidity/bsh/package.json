@@ -6,7 +6,7 @@
     "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
     "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
     "@openzeppelin/truffle-upgrades": "^1.7.0",
-    "@truffle/hdwallet-provider": "^1.4.0"
+    "@truffle/hdwallet-provider": "^1.4.1"
   },
   "devDependencies": {
     "chai": "^4.3.4",
@@ -24,10 +24,8 @@
     "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "truffle test",
-    "integration-bsh": "truffle test ./test/integration/native-coin-bsh.js",
-    "integration-bsh-up": "truffle test ./test/integration/upgradeability-native-coin-bsh.js",
-    "unit-bsh": "truffle test ./test/unit/native-coin-bsh.js",
-    "unit-bsh-up": "truffle test ./test/unit/upgradeability-native-coin-bsh.js"
+    "bsh": "truffle test ./test/integration/2-native-coin-bsh.js",
+    "bsh-up": "truffle test ./test/integration/1-upgradeability-native-coin-bsh.js"
   },
   "husky": {
     "hooks": {

@@ -19,6 +19,18 @@
  */
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+const privKeys = [
+   '0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342',
+   '0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133',
+   '0x8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b49c6fa7cdbeee8b',
+   '0x0b6e18cafb6ed99687ec547bd28139cafdd2bffe70e6b688025de6b445aa5c5b',
+   '0x39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68',
+   '0x7dce9bc8babb68fec1409be38c8e1a52650206a7ed90ff956ae8a6d15eeaaef4',
+   '0xb9d2ea9a615f3165812e8d44de0d24da9bbd164b65c4f0573e1ce2c8dbd9c8df',
+   '0x0d6dcaaef49272a5411896be8ad16c01c35d6f8c18873387b71fbc734759b0ab',
+   '0x4c42532034540267bf568198ccec4cb822a025da542861fcb146a5fab6433ff8',
+   '0x94c49300a58d576011096bcb006aa06f5a91b34b4383891e8029c21dc39fbb8b'
+]; 
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
@@ -47,12 +59,47 @@ module.exports = {
     // tab if you use this network and you must also set the `host`, `port` and `network_id`
     // options below to some value.
     //
-    development: {
+    ganache: {
      host: "127.0.0.1",     // Localhost (default: none)
      port: 8545,            // Standard Ethereum port (default: none)
      network_id: "*",       // Any network (default: none) 
      gas: 12000000
     },
+    development: {
+      provider: () => {
+         return new HDWalletProvider(privKeys, 'http://localhost:9933/')
+      },
+      network_id: 1281
+   },
+   edgewarelocal: {
+    provider: localProvider,
+    network_id: 2021,
+    websocket: true
+  },
+  beresheet: {
+    provider: () => new HDWalletProvider({
+      privateKeys: [privKey],
+      providerOrUrl: "https://beresheet7.edgewa.re",
+      websocket: true
+    }),
+    confirmations: 3,
+    network_id: 2021,
+    production: true
+  },
+  moonbeamlocal: {
+    provider: localProvider,
+    network_id: 1287,
+    websocket: true
+  },
+  moonbase: {
+    provider: () => new HDWalletProvider({
+      privateKeys: [privKey],
+      providerOrUrl: "https://rpc.testnet.moonbeam.network",
+    }),
+    confirmations: 3,
+    network_id: 1287,
+    production: true
+  },
     // Another network with more advanced options...
     //  advanced: {
 	  //    host: "127.0.0.1",
@@ -79,46 +126,18 @@ module.exports = {
     // network_id: 2111,   // This network is yours, in the cloud.
     // production: true    // Treats this network as if it was a public net. (default: false)
     // }
-    edgewarelocal: {
-      provider: localProvider,
-      network_id: 2021,
-      websocket: true
-    },
-    beresheet: {
-      provider: () => new HDWalletProvider({
-        privateKeys: [privKey],
-        providerOrUrl: "https://beresheet7.edgewa.re",
-        websocket: true
-      }),
-      confirmations: 3,
-      network_id: 2021,
-      production: true
-    },
-    moonbeamlocal: {
-      provider: localProvider,
-      network_id: 1287,
-      websocket: true
-    },
-    moonbase: {
-      provider: () => new HDWalletProvider({
-        privateKeys: [privKey],
-        providerOrUrl: "https://rpc.testnet.moonbeam.network",
-      }),
-      confirmations: 3,
-      network_id: 1287,
-      production: true
-    },
   },
+//   plugins: ['moonbeam-truffle-plugin'],
 
   // Set default mocha options here, use special reporters etc.
-  mocha: {
-    // timeout: 100000
-  },
+    mocha: {
+   //  timeout: 100000
+    },
 
   // Configure your compilers
   compilers: {
     solc: {
-       version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
        settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
