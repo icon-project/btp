@@ -16,6 +16,8 @@
 
 package com.iconloop.btp.lib;
 
+import score.annotation.EventLog;
+
 import java.math.BigInteger;
 
 public interface BMCEvent {
@@ -29,6 +31,7 @@ public interface BMCEvent {
      * @param _seq  Integer ( sequence number of the message from current BMC to the next )
      * @param _msg  Bytes ( serialized bytes of BTP Message )
      */
+    @EventLog(indexed = 2)
     void Message(String _next, BigInteger _seq, byte[] _msg);
 
     /**
@@ -44,5 +47,6 @@ public interface BMCEvent {
      * @param _ecode ( BTPException code )
      * @param _emsg  ( BTPException message )
      */
+    @EventLog(indexed = 2)
     void ErrorOnBTPError(String _svc, BigInteger _seq, long _code, String _msg, long _ecode, String _emsg);
 }

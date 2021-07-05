@@ -89,8 +89,8 @@ public final class BMCScoreInterface implements BMC {
   }
 
   @Override
-  public List getLinks() {
-    return Context.call(List.class, this.address, "getLinks");
+  public String[] getLinks() {
+    return Context.call(String[].class, this.address, "getLinks");
   }
 
   @Override

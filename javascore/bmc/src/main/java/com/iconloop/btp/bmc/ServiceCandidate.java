@@ -47,6 +47,27 @@ public class ServiceCandidate {
         this.owner = owner;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ServiceCandidate{");
+        sb.append("svc='").append(svc).append('\'');
+        sb.append(", address=").append(address);
+        sb.append(", owner=").append(owner);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ServiceCandidate that = (ServiceCandidate) o;
+
+        if (svc != null ? !svc.equals(that.svc) : that.svc != null) return false;
+        if (address != null ? !address.equals(that.address) : that.address != null) return false;
+        return owner != null ? owner.equals(that.owner) : that.owner == null;
+    }
 
     public static void writeObject(ObjectWriter writer, ServiceCandidate obj) {
         obj.writeObject(writer);

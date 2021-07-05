@@ -85,12 +85,12 @@ public class OwnerManagerImpl implements OwnerManager {
     }
 
     @Override
-    public List getOwners() {
-        List<Address> owners = new ArrayList<>();
-        owners.add(Context.getOwner());
+    public Address[] getOwners() {
+        Address[] owners = new Address[this.owners.size() + 1];
+        owners[0] = Context.getOwner();
         int size = this.owners.size();
         for (int i = 0; i < size; i++) {
-            owners.add(this.owners.get(i));
+            owners[i+1] = this.owners.get(i);
         }
         return owners;
     }

@@ -48,12 +48,12 @@ public final class OwnerManagerScoreInterface implements OwnerManager {
   }
 
   @Override
-  public List getOwners() {
-    return Context.call(List.class, this.address, "getOwners");
+  public Address[] getOwners() {
+    return Context.call(Address[].class, this.address, "getOwners");
   }
 
   @Override
   public boolean isOwner(Address _addr) {
-    return Context.call(boolean.class, this.address, "isOwner", _addr);
+    return Context.call(Boolean.class, this.address, "isOwner", _addr);
   }
 }

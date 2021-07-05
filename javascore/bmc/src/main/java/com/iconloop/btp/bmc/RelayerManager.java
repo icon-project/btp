@@ -16,6 +16,10 @@
 
 package com.iconloop.btp.bmc;
 
+import score.Address;
+import score.annotation.External;
+import score.annotation.Payable;
+
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -26,6 +30,8 @@ public interface RelayerManager {
      *
      * @param _desc String (description of Relayer)
      */
+    @Payable
+    @External
     void registerRelayer(String _desc);
 
     /**
@@ -34,7 +40,11 @@ public interface RelayerManager {
      * <p>
      * _addr Address (the address of Relayer)
      */
+    @External
     void unregisterRelayer();
+
+    @External
+    void removeRelayer(Address _addr, Address _refund);
 
     /**
      * Get registered the Relayers.
@@ -49,8 +59,10 @@ public interface RelayerManager {
      * }
      * }
      */
-    Map getRelayers();
+    @External(readonly = true)
+    Map<String, Relayer> getRelayers();
 
+    @External
     void distributeRelayerReward();
 
     /**
@@ -59,6 +71,7 @@ public interface RelayerManager {
      *
      * TODO [TBD] Does it need to use 'Address' parameter instead of Context.getCaller()?
      */
+    @External
     void claimRelayerReward();
 
     /**
@@ -66,6 +79,7 @@ public interface RelayerManager {
      *
      * @param _value Integer
      */
+    @External
     void setRelayerMinBond(BigInteger _value);
 
     /**
@@ -73,6 +87,7 @@ public interface RelayerManager {
      *
      * @return Integer minimum bond of the Relayer
      */
+    @External(readonly = true)
     BigInteger getRelayerMinBond();
 
     /**
@@ -80,6 +95,7 @@ public interface RelayerManager {
      *
      * @param _value Integer
      */
+    @External
     void setRelayerTerm(long _value);
 
     /**
@@ -87,9 +103,22 @@ public interface RelayerManager {
      *
      * @return Integer period of reward calculation of the Relayer
      */
+    @External(readonly = true)
     long getRelayerTerm();
 
+    @External
     void setRelayerRewardRank(int _value);
 
+    @External(readonly = true)
     int getRelayerRewardRank();
+
+    @External
+    void setNextRewardDistribution(long _height);
+
+    /**
+     * //FIXME instead of getter pattern
+     * @return
+     */
+    @External(readonly = true)
+    RelayerManagerProperties getRelayerManagerProperties();
 }

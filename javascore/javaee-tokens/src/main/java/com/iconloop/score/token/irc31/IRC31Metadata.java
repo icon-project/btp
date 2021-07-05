@@ -16,6 +16,8 @@
 
 package com.iconloop.score.token.irc31;
 
+import score.annotation.External;
+
 import java.math.BigInteger;
 
 /**
@@ -28,5 +30,6 @@ public interface IRC31Metadata {
      * @param _id ID of the token
      * @return the URI string
      */
+    @External(readonly = true)
     String tokenURI(BigInteger _id);
 }

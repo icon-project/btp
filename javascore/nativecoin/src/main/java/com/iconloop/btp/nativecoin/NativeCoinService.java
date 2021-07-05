@@ -675,7 +675,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External(readonly = true)
-    public List getOwners() {
+    public Address[] getOwners() {
         return ownerManager.getOwners();
     }
 

@@ -17,6 +17,7 @@
 package com.iconloop.score.token.irc31;
 
 import score.Address;
+import score.annotation.External;
 
 import java.math.BigInteger;
 
@@ -27,6 +28,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _id ID of the token
      * @return total amount of tokens in with a given id
      */
+    @External(readonly = true)
     BigInteger totalSupply(BigInteger _id);
 
     /**
@@ -36,6 +38,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _id ID of the token
      * @param _amount amount of the token
      */
+    @External
     void mint(Address _owner, BigInteger _id, BigInteger _amount);
 
     /**
@@ -45,6 +48,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _ids IDs of the tokens
      * @param _amounts transfer amounts per token (order and length must match `_ids` list)
      */
+    @External
     void mintBatch(Address _owner, BigInteger[] _ids, BigInteger[] _amounts);
 
     /**
@@ -54,6 +58,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _id ID of the token
      * @param _amount amount to burn
      */
+    @External
     void burn(Address _owner, BigInteger _id, BigInteger _amount);
 
     /**
@@ -63,6 +68,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _ids IDs of the tokens
      * @param _amounts transfer amounts per token (order and length must match `_ids` list)
      */
+    @External
     void burnBatch(Address _owner, BigInteger[] _ids, BigInteger[] _amounts);
 
     /**
@@ -71,6 +77,7 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
      * @param _id ID of the token
      * @param _uri the URI string
      */
+    @External
     void setTokenURI(BigInteger _id, String _uri);
 
 }

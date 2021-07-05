@@ -16,6 +16,8 @@
 
 package com.iconloop.score.util;
 
+import score.Address;
+
 import java.math.BigInteger;
 import java.util.List;
 
@@ -31,6 +33,14 @@ public class ArrayUtil {
 
     public static BigInteger[] toBigIntegerArray(List<BigInteger> list) {
         BigInteger[] arr = new BigInteger[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            arr[i] = list.get(i);
+        }
+        return arr;
+    }
+
+    public static Address[] toAddressArray(List<Address> list) {
+        Address[] arr = new Address[list.size()];
         for (int i = 0; i < list.size(); i++) {
             arr[i] = list.get(i);
         }
@@ -57,7 +67,9 @@ public class ArrayUtil {
             T v = a[i];
             for (int j = i+1; j < len; j++) {
                 if (v.compareTo(a[j]) > 0) {
+                    T t = v;
                     v = a[j];
+                    a[j] = t;
                 }
             }
             a[i] = v;

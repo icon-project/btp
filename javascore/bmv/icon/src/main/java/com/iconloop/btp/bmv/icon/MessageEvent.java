@@ -17,6 +17,10 @@
 package com.iconloop.btp.bmv.icon;
 
 import com.iconloop.score.util.StringUtil;
+import score.ByteArrayObjectWriter;
+import score.Context;
+import score.ObjectReader;
+import score.ObjectWriter;
 
 import java.math.BigInteger;
 
@@ -57,5 +61,38 @@ public class MessageEvent {
         sb.append(", msg=").append(StringUtil.toString(msg));
         sb.append('}');
         return sb.toString();
+    }
+
+    public static void writeObject(ObjectWriter writer, MessageEvent obj) {
+        obj.writeObject(writer);
+    }
+
+    public static MessageEvent readObject(ObjectReader reader) {
+        MessageEvent obj = new MessageEvent();
+        reader.beginList();
+        obj.setNext(reader.readNullable(String.class));
+        obj.setSeq(reader.readNullable(BigInteger.class));
+        obj.setMsg(reader.readNullable(byte[].class));
+        reader.end();
+        return obj;
+    }
+
+    public void writeObject(ObjectWriter writer) {
+        writer.beginList(3);
+        writer.writeNullable(this.getNext());
+        writer.writeNullable(this.getSeq());
+        writer.writeNullable(this.getMsg());
+        writer.end();
+    }
+
+    public static MessageEvent fromBytes(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        return MessageEvent.readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
+        MessageEvent.writeObject(writer, this);
+        return writer.toByteArray();
     }
 }

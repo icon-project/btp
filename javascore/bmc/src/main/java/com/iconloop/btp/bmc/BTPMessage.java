@@ -84,6 +84,10 @@ public class BTPMessage {
         return sb.toString();
     }
 
+    public static void writeObject(ObjectWriter writer, BTPMessage obj) {
+        obj.writeObject(writer);
+    }
+
     public static BTPMessage readObject(ObjectReader reader) {
         BTPMessage obj = new BTPMessage();
         reader.beginList();
@@ -94,10 +98,6 @@ public class BTPMessage {
         obj.setPayload(reader.readNullable(byte[].class));
         reader.end();
         return obj;
-    }
-
-    public static void writeObject(ObjectWriter writer, BTPMessage obj) {
-        obj.writeObject(writer);
     }
 
     public void writeObject(ObjectWriter writer) {
@@ -115,9 +115,9 @@ public class BTPMessage {
         return BTPMessage.readObject(reader);
     }
 
-    public static byte[] toBytes(BTPMessage obj) {
+    public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        BTPMessage.writeObject(writer, obj);
+        BTPMessage.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

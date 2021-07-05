@@ -16,6 +16,8 @@
 
 package com.iconloop.btp.lib;
 
+import score.annotation.External;
+
 import java.math.BigInteger;
 
 public interface BMV {
@@ -30,6 +32,7 @@ public interface BMV {
      * @param _msg String ( base64 encoded string of serialized bytes of Relay Message )
      * @return List of serialized bytes of a BTP Message
      */
+    @External
     byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg);
 
     /**
@@ -39,5 +42,6 @@ public interface BMV {
      *
      * @return The object contains followings fields.
      */
+    @External(readonly = true)
     BMVStatus getStatus();
 }

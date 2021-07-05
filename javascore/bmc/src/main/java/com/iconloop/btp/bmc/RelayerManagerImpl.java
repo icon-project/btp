@@ -29,25 +29,24 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     private static final Logger logger = Logger.getLogger(RelayerManagerImpl.class);
 
     public static final int DEFAULT_REWARD_PERCENT_SCALE_FACTOR = 4;
-    private final VarDB<Properties> properties;
+    private final VarDB<RelayerManagerProperties> properties;
 
     public RelayerManagerImpl(String id) {
         super(id, Address.class, Relayer.class, logger);
-        properties = Context.newVarDB(super.concatId("properties"), Properties.class);
+        properties = Context.newVarDB(super.concatId("properties"), RelayerManagerProperties.class);
     }
 
-    public Properties getProperties() {
-        return properties.getOrDefault(Properties.DEFAULT);
+    public RelayerManagerProperties getProperties() {
+        return properties.getOrDefault(RelayerManagerProperties.DEFAULT);
     }
 
-    public void setProperties(Properties properties) {
+    public void setProperties(RelayerManagerProperties properties) {
         this.properties.set(properties);
     }
 
     @Override
-    public BigInteger getRelayerMinBond() {
-        Properties properties = getProperties();
-        return properties.getRelayerMinBond();
+    public RelayerManagerProperties getRelayerManagerProperties() {
+        return getProperties();
     }
 
     @Override
@@ -55,15 +54,9 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         if (_value.compareTo(BigInteger.ZERO) < 0) {
             throw BMCException.unknown("minBond must be positive");
         }
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         properties.setRelayerMinBond(_value);
         setProperties(properties);
-    }
-
-    @Override
-    public long getRelayerTerm() {
-        Properties properties = getProperties();
-        return properties.getRelayerTerm();
     }
 
     @Override
@@ -71,15 +64,16 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         if (_value < 1) {
             throw BMCException.unknown("term must be positive");
         }
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         properties.setRelayerTerm(_value);
         setProperties(properties);
     }
 
     @Override
-    public int getRelayerRewardRank() {
-        Properties properties = getProperties();
-        return properties.getRelayerRewardRank();
+    public void setNextRewardDistribution(long _height) {
+        RelayerManagerProperties properties = getProperties();
+        properties.setNextRewardDistribution(StrictMath.max(_height, Context.getBlockHeight()));
+        setProperties(properties);
     }
 
     @Override
@@ -87,9 +81,27 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         if (_value < 1) {
             throw BMCException.unknown("rewardRank must be positive");
         }
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         properties.setRelayerRewardRank(_value);
         setProperties(properties);
+    }
+
+    @Override
+    public BigInteger getRelayerMinBond() {
+        RelayerManagerProperties properties = getProperties();
+        return properties.getRelayerMinBond();
+    }
+
+    @Override
+    public long getRelayerTerm() {
+        RelayerManagerProperties properties = getProperties();
+        return properties.getRelayerTerm();
+    }
+
+    @Override
+    public int getRelayerRewardRank() {
+        RelayerManagerProperties properties = getProperties();
+        return properties.getRelayerRewardRank();
     }
 
     public static Relayer[] filterSince(List<Relayer> list, long since) {
@@ -147,8 +159,10 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         for (int i = 0; i < len; i++) {
             Relayer v = a[i];
             for (int j = i + 1; j < len; j++) {
-                if (compare(v, a[j]) < 0) {
+                if (compare(v, a[j]) > 0) {
+                    Relayer t = v;
                     v = a[j];
+                    a[j] = t;
                 }
             }
             a[i] = v;
@@ -165,52 +179,62 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     public void distributeRelayerReward() {
         logger.println("distributeRelayerReward");
         long currentHeight = Context.getBlockHeight();
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         long nextRewardDistribution = properties.getNextRewardDistribution();
         if (nextRewardDistribution <= currentHeight) {
+            long delayOfDistribution = currentHeight - nextRewardDistribution;
             long relayerTerm = properties.getRelayerTerm();
-            if ((currentHeight - nextRewardDistribution) >= relayerTerm) {
-                logger.println("WARN","rewardDistribution was omitted", currentHeight - nextRewardDistribution);
+            nextRewardDistribution += relayerTerm;
+            if (nextRewardDistribution <= currentHeight) {
+                int omitted = 0;
+                while(nextRewardDistribution < currentHeight) {
+                    nextRewardDistribution += relayerTerm;
+                    omitted++;
+                }
+                logger.println("WARN","rewardDistribution was omitted", omitted, "term:", relayerTerm);
             }
+            long since = nextRewardDistribution - (relayerTerm * 2);
+            properties.setNextRewardDistribution(nextRewardDistribution);
+
             BigInteger balance = Context.getBalance(Context.getAddress());
-            BigInteger remained = properties.getRemained();
+            BigInteger distributed = properties.getDistributed();
             BigInteger bond = properties.getBond();
             BigInteger current = balance.subtract(bond);
-            logger.println("distributeRelayerReward","balance:", balance, "remained:", remained, "bond:", bond);
-            if (current.compareTo(remained) > 0) {
-                remained = current;
-                BigInteger carryover = properties.getCarryover();
-                BigInteger budget = current.subtract(remained).add(carryover);
+            BigInteger carryover = properties.getCarryover();
+            logger.println("distributeRelayerReward", "since:", since, "delay:",delayOfDistribution,
+                    "balance:", balance, "distributed:", distributed, "bond:", bond, "carryover:", carryover);
+            if (current.compareTo(distributed) > 0) {
+                BigInteger budget = current.subtract(distributed);
+                logger.println("distributeRelayerReward","budget:", budget, "transferred:", budget.subtract(carryover));
                 carryover = budget;
-                Relayer[] relayers = filterSince(values(), nextRewardDistribution - relayerTerm);
+                Relayer[] relayers = filterSince(values(), since);
                 sortAsc(relayers);
-                BigInteger sum = BigInteger.ZERO;
-                int len = StrictMath.min(properties.getRelayerRewardRank(), relayers.length);
-                for (int i = 0; i < len; i++) {
-                    sum = sum.add(relayers[i].getBond());
+                BigInteger sumOfBond = BigInteger.ZERO;
+                int lenOfRelayers = StrictMath.min(properties.getRelayerRewardRank(), relayers.length);
+                for (int i = 0; i < lenOfRelayers; i++) {
+                    sumOfBond = sumOfBond.add(relayers[i].getBond());
                 }
-                logger.println("distributeRelayerReward","budget:", budget, "carryover:", carryover, "sum:", sum, "len:");
-                for (int i = 0; i < len; i++) {
+                logger.println("distributeRelayerReward","sumOfBond:", sumOfBond, "lenOfRelayers:", lenOfRelayers);
+                BigInteger sumOfReward = BigInteger.ZERO;
+                for (int i = 0; i < lenOfRelayers; i++) {
                     Relayer relayer = relayers[i];
-                    double percentage = BigIntegerUtil.floorDivide(relayer.getBond(), sum, DEFAULT_REWARD_PERCENT_SCALE_FACTOR);
+                    double percentage = BigIntegerUtil.floorDivide(relayer.getBond(), sumOfBond, DEFAULT_REWARD_PERCENT_SCALE_FACTOR);
                     BigInteger reward = BigIntegerUtil.multiply(budget, percentage);
                     relayer.setReward(relayer.getReward().add(reward));
                     logger.println("distributeRelayerReward", "relayer:",relayer.getAddr(), "percentage:",percentage, "reward:", reward);
                     put(relayer.getAddr(), relayer);
                     carryover = carryover.subtract(reward);
+                    sumOfReward = sumOfReward.add(reward);
                 }
-                while(nextRewardDistribution < currentHeight) {
-                    nextRewardDistribution += relayerTerm;
-                }
-                logger.println("distributeRelayerReward","carryover:", carryover);
-                properties.setRemained(remained);
+
+                logger.println("distributeRelayerReward","sumOfReward:", sumOfReward, "carryover:", carryover, "nextRewardDistribution:", nextRewardDistribution);
+                properties.setDistributed(distributed.add(sumOfReward));
                 properties.setCarryover(carryover);
-                setProperties(properties);
             } else {
                 //reward is zero or negative
-                logger.println("WARN","transferred reward is zero or negative",
-                        "balance:",balance, "remain:", remained);
+                logger.println("WARN","transferred reward is zero or negative");
             }
+            setProperties(properties);
         }
     }
 
@@ -228,8 +252,8 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         Context.transfer(addr, reward);
         relayer.setReward(BigInteger.ZERO);
         put(addr, relayer);
-        Properties properties = getProperties();
-        properties.setRemained(properties.getRemained().subtract(reward));
+        RelayerManagerProperties properties = getProperties();
+        properties.setDistributed(properties.getDistributed().subtract(reward));
         setProperties(properties);
     }
 
@@ -254,7 +278,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         relayer.setReward(BigInteger.ZERO);
         logger.println("registerRelayer", relayer);
         put(addr, relayer);
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         properties.setBond(properties.getBond().add(bond));
         setProperties(properties);
     }
@@ -262,160 +286,33 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     @Override
     public void unregisterRelayer() {
         Address _addr = Context.getCaller();
+        removeRelayer(_addr, _addr);
+    }
+
+    @Override
+    public void removeRelayer(Address _addr, Address _refund) {
         if (!containsKey(_addr)) {
             throw BMCException.unknown("not found registered relayer");
         }
         Relayer relayer = remove(_addr);
-        Properties properties = getProperties();
+        RelayerManagerProperties properties = getProperties();
         BigInteger bond = relayer.getBond();
-        Context.transfer(_addr, bond);
+        Context.transfer(_refund, bond);
         properties.setBond(properties.getBond().subtract(bond));
 
         BigInteger reward = relayer.getReward();
         if (reward.compareTo(BigInteger.ZERO) > 0) {
-            Context.transfer(_addr, reward);
-            properties.setRemained(properties.getRemained().subtract(reward));
+            Context.transfer(_refund, reward);
+            properties.setDistributed(properties.getDistributed().subtract(reward));
         }
         setProperties(properties);
     }
 
     @Override
-    public Map getRelayers() {
+    public Map<String, Relayer> getRelayers() {
         //couldn't use EnumerableDictDB.toMap,
         //  because Unshadower support only String type for key
         return toMapWithKeyToString();
     }
 
-    public static class Properties {
-        public static final Properties DEFAULT;
-        static {
-            DEFAULT = new Properties();
-            DEFAULT.setRelayerMinBond(BigInteger.ONE);
-            DEFAULT.setRelayerTerm(43200);
-            DEFAULT.setNextRewardDistribution(0);
-            DEFAULT.setRelayerRewardRank(25);
-            DEFAULT.setRemained(BigInteger.ZERO);
-            DEFAULT.setCarryover(BigInteger.ZERO);
-            DEFAULT.setBond(BigInteger.ZERO);
-        }
-
-        private BigInteger relayerMinBond;
-        private long relayerTerm;
-        private int relayerRewardRank;
-        private long nextRewardDistribution;
-        private BigInteger remained;
-        private BigInteger carryover;
-        private BigInteger bond;
-
-        public BigInteger getRelayerMinBond() {
-            return relayerMinBond;
-        }
-
-        public void setRelayerMinBond(BigInteger relayerMinBond) {
-            this.relayerMinBond = relayerMinBond;
-        }
-
-        public long getRelayerTerm() {
-            return relayerTerm;
-        }
-
-        public void setRelayerTerm(long relayerTerm) {
-            this.relayerTerm = relayerTerm;
-        }
-
-        public int getRelayerRewardRank() {
-            return relayerRewardRank;
-        }
-
-        public void setRelayerRewardRank(int relayerRewardRank) {
-            this.relayerRewardRank = relayerRewardRank;
-        }
-
-        public long getNextRewardDistribution() {
-            return nextRewardDistribution;
-        }
-
-        public void setNextRewardDistribution(long nextRewardDistribution) {
-            this.nextRewardDistribution = nextRewardDistribution;
-        }
-
-        public BigInteger getRemained() {
-            return remained;
-        }
-
-        public void setRemained(BigInteger remained) {
-            this.remained = remained;
-        }
-
-        public BigInteger getCarryover() {
-            return carryover;
-        }
-
-        public void setCarryover(BigInteger carryover) {
-            this.carryover = carryover;
-        }
-
-        public BigInteger getBond() {
-            return bond;
-        }
-
-        public void setBond(BigInteger bond) {
-            this.bond = bond;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Properties{");
-            sb.append("relayerMinBond=").append(relayerMinBond);
-            sb.append(", relayerTerm=").append(relayerTerm);
-            sb.append(", relayerRewardRank=").append(relayerRewardRank);
-            sb.append(", nextRewardDistribution=").append(nextRewardDistribution);
-            sb.append(", remained=").append(remained);
-            sb.append(", carryover=").append(carryover);
-            sb.append(", bond=").append(bond);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public static void writeObject(ObjectWriter writer, Properties obj) {
-            obj.writeObject(writer);
-        }
-
-        public static Properties readObject(ObjectReader reader) {
-            Properties obj = new Properties();
-            reader.beginList();
-            obj.setRelayerMinBond(reader.readNullable(BigInteger.class));
-            obj.setRelayerTerm(reader.readLong());
-            obj.setRelayerRewardRank(reader.readInt());
-            obj.setNextRewardDistribution(reader.readLong());
-            obj.setRemained(reader.readNullable(BigInteger.class));
-            obj.setCarryover(reader.readNullable(BigInteger.class));
-            obj.setBond(reader.readNullable(BigInteger.class));
-            reader.end();
-            return obj;
-        }
-
-        public void writeObject(ObjectWriter writer) {
-            writer.beginList(7);
-            writer.writeNullable(this.getRelayerMinBond());
-            writer.write(this.getRelayerTerm());
-            writer.write(this.getRelayerRewardRank());
-            writer.write(this.getNextRewardDistribution());
-            writer.writeNullable(this.getRemained());
-            writer.writeNullable(this.getCarryover());
-            writer.writeNullable(this.getBond());
-            writer.end();
-        }
-
-        public static Properties fromBytes(byte[] bytes) {
-            ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-            return Properties.readObject(reader);
-        }
-
-        public byte[] toBytes() {
-            ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-            Properties.writeObject(writer, this);
-            return writer.toByteArray();
-        }
-    }
 }

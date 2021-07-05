@@ -19,6 +19,7 @@ package com.iconloop.score.token.irc31;
 import score.Address;
 import score.ByteArrayObjectWriter;
 import score.Context;
+import score.annotation.External;
 import score.annotation.Optional;
 
 import java.math.BigInteger;
@@ -31,6 +32,7 @@ public interface IRC31 {
      * @param _id ID of the token
      * @return the _owner's balance of the token type requested
      */
+    @External(readonly = true)
     BigInteger balanceOf(Address _owner, BigInteger _id);
 
     /**
@@ -40,6 +42,7 @@ public interface IRC31 {
      * @param _ids IDs of the tokens
      * @return the list of balance (i.e. balance for each owner/id pair)
      */
+    @External(readonly = true)
     BigInteger[] balanceOfBatch(Address[] _owners, BigInteger[] _ids);
 
     /**
@@ -62,6 +65,7 @@ public interface IRC31 {
      * @param _value the amount of transfer
      * @param _data additional data that should be sent unaltered in call to `_to`
      */
+    @External
     void transferFrom(Address _from, Address _to, BigInteger _id, BigInteger _value, @Optional  byte[] _data);
 
     /**
@@ -86,6 +90,7 @@ public interface IRC31 {
      * @param _values transfer amounts per token (order and length must match `_ids` list)
      * @param _data additional data that should be sent unaltered in call to `_to`
      */
+    @External
     void transferFromBatch(Address _from, Address _to, BigInteger[] _ids, BigInteger[] _values, @Optional  byte[] _data);
 
     /**
@@ -95,6 +100,7 @@ public interface IRC31 {
      * @param _operator address to add to the set of authorized operators
      * @param _approved true if the operator is approved, false to revoke approval
      */
+    @External
     void setApprovalForAll(Address _operator, boolean _approved);
 
     /**
@@ -104,6 +110,7 @@ public interface IRC31 {
      * @param _operator the address of authorized operator
      * @return true if the operator is approved, false otherwise
      */
+    @External(readonly = true)
     boolean isApprovedForAll(Address _owner, Address _operator);
 
 }

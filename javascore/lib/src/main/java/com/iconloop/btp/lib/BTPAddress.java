@@ -52,10 +52,14 @@ public class BTPAddress {
         return protocol + DELIM_PROTOCOL + net + DELIM_NET + account;
     }
 
-    public boolean equals(BTPAddress obj) {
-        return obj != null && obj.toString().equals(this.toString());
-    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        BTPAddress that = (BTPAddress) o;
+        return toString().equals(that.toString());
+    }
 
     public boolean isValid() {
         return (!(protocol == null || protocol.isEmpty())) &&

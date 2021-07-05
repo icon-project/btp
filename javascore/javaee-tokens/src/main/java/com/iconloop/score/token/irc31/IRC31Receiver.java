@@ -17,6 +17,7 @@
 package com.iconloop.score.token.irc31;
 
 import score.Address;
+import score.annotation.External;
 
 import java.math.BigInteger;
 
@@ -35,6 +36,7 @@ public interface IRC31Receiver {
      * @param _value the amount of tokens being transferred
      * @param _data additional data with no specified format
      */
+    @External
     void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data);
 
     /**
@@ -48,5 +50,6 @@ public interface IRC31Receiver {
      * @param _values the list of amounts of each token being transferred (order and length must match `_ids` list)
      * @param _data additional data with no specified format
      */
+    @External
     void onIRC31BatchReceived(Address _operator, Address _from, BigInteger[] _ids, BigInteger[] _values, byte[] _data);
 }

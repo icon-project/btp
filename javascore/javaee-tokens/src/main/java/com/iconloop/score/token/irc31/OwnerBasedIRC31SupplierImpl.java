@@ -24,7 +24,6 @@ import score.DictDB;
 import score.annotation.External;
 
 import java.math.BigInteger;
-import java.util.List;
 
 public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31Supplier, OwnerManager {
 
@@ -127,7 +126,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
     }
 
     @External(readonly = true)
-    public List getOwners() {
+    public Address[] getOwners() {
         return ownerManager.getOwners();
     }
 

@@ -17,8 +17,7 @@
 package com.iconloop.score.util;
 
 import score.Address;
-
-import java.util.List;
+import score.annotation.External;
 
 public interface OwnerManager {
     /**
@@ -29,6 +28,7 @@ public interface OwnerManager {
      * @throws IllegalStateException if caller is not contract owner or registered Owner
      * @throws IllegalArgumentException if given address is already registered or contract owner
      */
+    @External
     void addOwner(Address _addr) throws IllegalStateException, IllegalArgumentException;
 
     /**
@@ -39,6 +39,7 @@ public interface OwnerManager {
      * @throws IllegalStateException if caller is not contract owner or registered Owner
      * @throws IllegalArgumentException if given address is not registered or contract owner
      */
+    @External
     void removeOwner(Address _addr);
 
     /**
@@ -46,7 +47,8 @@ public interface OwnerManager {
      *
      * @return A list of Owners. ( Address of Owners )
      */
-    List getOwners();
+    @External(readonly = true)
+    Address[] getOwners();
 
     /**
      * Return given address is registered as owner
@@ -54,5 +56,6 @@ public interface OwnerManager {
      * @param _addr Address
      * @return boolean true if registered, otherwise false
      */
+    @External(readonly = true)
     boolean isOwner(Address _addr);
 }

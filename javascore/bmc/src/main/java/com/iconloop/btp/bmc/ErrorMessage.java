@@ -50,6 +50,10 @@ public class ErrorMessage {
         return sb.toString();
     }
 
+    public static void writeObject(ObjectWriter writer, ErrorMessage obj) {
+        obj.writeObject(writer);
+    }
+
     public static ErrorMessage readObject(ObjectReader reader) {
         ErrorMessage obj = new ErrorMessage();
         reader.beginList();
@@ -57,10 +61,6 @@ public class ErrorMessage {
         obj.setMsg(reader.readNullable(String.class));
         reader.end();
         return obj;
-    }
-
-    public static void writeObject(ObjectWriter writer, ErrorMessage obj) {
-        obj.writeObject(writer);
     }
 
     public void writeObject(ObjectWriter writer) {
@@ -75,9 +75,9 @@ public class ErrorMessage {
         return ErrorMessage.readObject(reader);
     }
 
-    public static byte[] toBytes(ErrorMessage obj) {
+    public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        ErrorMessage.writeObject(writer, obj);
+        ErrorMessage.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

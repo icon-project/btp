@@ -17,8 +17,7 @@
 package com.iconloop.btp.bmc;
 
 import score.Address;
-
-import java.util.List;
+import score.annotation.External;
 
 public interface ICONSpecific {
 
@@ -31,6 +30,7 @@ public interface ICONSpecific {
      * @param _msg  String ( Fragmented base64 encoded string of serialized bytes of Relay Message )
      * @param _idx  Integer ( Index of fragment )
      */
+    @External
     void handleFragment(String _prev, String _msg, int _idx);
 
     /**
@@ -41,6 +41,7 @@ public interface ICONSpecific {
      * @param _link String (BTP Address of connected BMC)
      * @param _addr Address (the address of Relay)
      */
+    @External
     void addRelay(String _link, Address _addr);
 
     /**
@@ -51,6 +52,7 @@ public interface ICONSpecific {
      * @param _link String (BTP Address of connected BMC)
      * @param _addr Address (the address of Relay)
      */
+    @External
     void removeRelay(String _link, Address _addr);
 
     /**
@@ -65,7 +67,8 @@ public interface ICONSpecific {
      * "hx..."
      * ]
      */
-    List getRelays(String _link);
+    @External(readonly = true)
+    Address[] getRelays(String _link);
 
     /**
      * Registers candidate for the smart contract for the service.
@@ -74,6 +77,7 @@ public interface ICONSpecific {
      * @param _svc  String (the name of the service)
      * @param _addr Address (the address of the smart contract handling the service)
      */
+    @External
     void addServiceCandidate(String _svc, Address _addr);
 
     /**
@@ -83,6 +87,7 @@ public interface ICONSpecific {
      * @param _svc  String (the name of the service)
      * @param _addr Address (the address of the smart contract handling the service)
      */
+    @External
     void removeServiceCandidate(String _svc, Address _addr);
 
     /**
@@ -98,13 +103,18 @@ public interface ICONSpecific {
      * }
      * ]
      */
-    List getServiceCandidates();
+    @External(readonly = true)
+    ServiceCandidate[] getServiceCandidates();
 
+    @External(readonly = true)
     long getFeeGatheringTerm();
 
+    @External
     void setFeeGatheringTerm(long _value);
 
+    @External(readonly = true)
     Address getFeeAggregator();
 
+    @External
     void setFeeAggregator(Address _addr);
 }

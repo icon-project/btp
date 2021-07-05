@@ -17,6 +17,7 @@
 package com.iconloop.btp.nativecoin;
 
 import score.Address;
+import score.annotation.External;
 import score.annotation.Payable;
 
 import java.math.BigInteger;
@@ -32,6 +33,7 @@ public interface NCS {
      *
      * @param _name A coin name.
      */
+    @External
     void register(String _name);
 
     /**
@@ -39,6 +41,7 @@ public interface NCS {
      *
      * @return An array of strings.
      */
+    @External(readonly = true)
     String[] coinNames();
 
     /**
@@ -49,6 +52,7 @@ public interface NCS {
      * @param _coinName Coin name.
      * @return id of Native Coin Token.
      */
+    @External(readonly = true)
     BigInteger coinId(String _coinName);
 
     /**
@@ -66,6 +70,7 @@ public interface NCS {
      *      "refundable" : an amount of refundable Coins/WrappedCoins
      *  }
      */
+    @External(readonly = true)
     Balance balanceOf(Address _owner, String _coinName);
 
     /**
@@ -84,6 +89,7 @@ public interface NCS {
      *      }
      *  ]
      */
+    @External(readonly = true)
     Balance[] balanceOfBatch(Address _owner, String[] _coinNames);
 
     /**
@@ -96,6 +102,7 @@ public interface NCS {
      * @param _coinName A given name of coin to be re-claim
      * @param _value An amount of re-claiming
      */
+    @External
     void reclaim(String _coinName, BigInteger _value);
 
     /**
@@ -106,6 +113,7 @@ public interface NCS {
      * @param _to An address that a user expects to receive an equivalent amount of tokens.
      */
     @Payable
+    @External
     void transferNativeCoin(String _to);
 
     /**
@@ -118,6 +126,7 @@ public interface NCS {
      * @param _value Transferring amount.
      * @param _to Target address.
      */
+    @External
     void transfer(String _coinName, BigInteger _value, String _to);
 
     /**
@@ -130,6 +139,8 @@ public interface NCS {
      *  @param _values       Transferring amounts per coin
      *  @param _to          Target BTP Address.
      */
+    @Payable
+    @External
     void transferBatch(String[] _coinNames, BigInteger[] _values, String _to);
 
     /**
@@ -137,6 +148,7 @@ public interface NCS {
      *
      * @param _feeRate
      */
+    @External
     void setFeeRate(String _feeRate);
 
     /**
@@ -144,5 +156,6 @@ public interface NCS {
      *
      * @return
      */
+    @External(readonly = true)
     String getFeeRate();
 }

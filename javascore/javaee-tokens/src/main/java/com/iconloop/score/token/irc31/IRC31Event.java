@@ -17,6 +17,7 @@
 package com.iconloop.score.token.irc31;
 
 import score.Address;
+import score.annotation.EventLog;
 
 import java.math.BigInteger;
 
@@ -32,6 +33,7 @@ public interface IRC31Event {
      * @param _id ID of the token
      * @param _value the amount of transfer
      */
+    @EventLog(indexed = 3)
     void TransferSingle(Address _operator, Address _from, Address _to, BigInteger _id, BigInteger _value);
 
     /**
@@ -47,6 +49,7 @@ public interface IRC31Event {
      *
      * @apiNote RLP (Recursive Length Prefix) would be used for the serialized bytes to represent list type.
      */
+    @EventLog(indexed = 3)
     void TransferBatch(Address _operator, Address _from, Address _to, byte[] _ids, byte[] _values);
 
     /**
@@ -56,6 +59,7 @@ public interface IRC31Event {
      * @param _operator (indexed) the address of authorized operator
      * @param _approved true if the operator is approved, false to revoke approval
      */
+    @EventLog(indexed = 2)
     void ApprovalForAll(Address _owner, Address _operator, boolean _approved);
 
     /**
@@ -66,5 +70,6 @@ public interface IRC31Event {
      * @param _id (indexed) ID of the token
      * @param _value the updated URI string
      */
+    @EventLog(indexed = 1)
     void URI(BigInteger _id, String _value);
 }

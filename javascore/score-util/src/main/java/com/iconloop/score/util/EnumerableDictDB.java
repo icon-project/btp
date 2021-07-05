@@ -57,16 +57,16 @@ public class EnumerableDictDB<K, V> {
         return values.size();
     }
 
-    private Object ensusreKeyType(K key) {
+    private Object ensureKeyType(K key) {
         return supportedKeyType ? key : key.toString();
     }
 
     private Integer getIndex(K key) {
-        return indexes.get(ensusreKeyType(key));
+        return indexes.get(ensureKeyType(key));
     }
 
     private void setIndex(K key, Integer i) {
-        indexes.set(ensusreKeyType(key), i);
+        indexes.set(ensureKeyType(key), i);
     }
 
     private K getKey(Integer i) {
@@ -164,6 +164,18 @@ public class EnumerableDictDB<K, V> {
         return old;
     }
 
+    public void clear() {
+        logger.println("clear");
+        int size = size();
+        for (int i = 0; i < size; i++) {
+            K key = keys.get(i);
+            keys.set(i, null);
+            indexes.set(ensureKeyType(key), null);
+            values.removeLast();
+        }
+        logger.println("clear returns", size);
+    }
+
     public List<K> keySet() {
         ArrayList<K> keySet = new ArrayList<>();
         int size = size();
@@ -177,7 +189,7 @@ public class EnumerableDictDB<K, V> {
         ArrayList<Object> keySet = new ArrayList<>();
         int size = size();
         for (int i = 0; i < size; i++) {
-            keySet.add(ensusreKeyType(getKey(i)));
+            keySet.add(ensureKeyType(getKey(i)));
         }
         return keySet;
     }

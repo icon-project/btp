@@ -16,6 +16,8 @@
 
 package com.iconloop.btp.lib;
 
+import score.annotation.External;
+
 import java.math.BigInteger;
 
 public interface BSH {
@@ -29,6 +31,7 @@ public interface BSH {
      * @param _sn Integer ( serial number of the message )
      * @param _msg Bytes ( serialized bytes of ServiceMessage )
      */
+    @External
     void handleBTPMessage(String _from, String _svc, BigInteger _sn, byte[] _msg);
 
     /**
@@ -41,6 +44,7 @@ public interface BSH {
      * @param _code Integer ( code of the error )
      * @param _msg String ( message of the error )
      */
+    @External
     void handleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg);
 
     /**
@@ -50,5 +54,6 @@ public interface BSH {
      * @param _fa String ( BTP Address of Fee-aggregator contract )
      * @param _svc String ( name of the service )
      */
+    @External
     void handleFeeGathering(String _fa, String _svc);
 }

@@ -17,6 +17,7 @@
 package com.iconloop.btp.nativecoin;
 
 import score.Address;
+import score.annotation.EventLog;
 
 import java.math.BigInteger;
 
@@ -30,6 +31,7 @@ public interface NCSEvents {
      * @param sn
      * @param _assets
      */
+    @EventLog(indexed = 2)
     void TransferStart(Address _from, String _to, BigInteger sn, byte[] _assets);
 
     /**
@@ -40,6 +42,7 @@ public interface NCSEvents {
      * @param _code
      * @param _response
      */
+    @EventLog(indexed = 1)
     void TransferEnd(Address _from, BigInteger sn, long _code, String _response);
 
 }
