@@ -8,8 +8,6 @@ import (
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
-	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
@@ -35,13 +33,13 @@ type BMCContract interface {
 }
 
 type SubstrateClient interface {
-	client.Client
+	Call(result interface{}, method string, args ...interface{}) error
 	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
-	GetFinalizedHead() (types.Hash, error)
+	GetFinalizedHead() (SubstrateHash, error)
 	GetHeader(hash SubstrateHash) (*SubstrateHeader, error)
-	GetHeaderLatest() (*types.Header, error)
+	GetHeaderLatest() (*SubstrateHeader, error)
 	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
-	GetStorageRaw(key types.StorageKey, blockHash types.Hash) (*types.StorageDataRaw, error)
+	GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error)
 	GetBlockHashLatest() (SubstrateHash, error)
 }
 
@@ -60,9 +58,6 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 	}
 
 	ethClient, err := ethclient.Dial(url)
-	if err != nil {
-		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
-	}
 
 	bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
 	if err != nil {

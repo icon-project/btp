@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/binding"
@@ -287,7 +286,7 @@ func TestSenderParseTransactionError(t *testing.T) {
 	sender := &Sender{c: &Client{ethClient: ethClient}}
 
 	address := EvmHexToAddress("0x0000000000000000000000000000000000000000")
-	tx := types.NewTransaction(0, address, big.NewInt(0), 0, big.NewInt(0), []byte(""))
+	tx := NewEvmNewTransaction(0, address, big.NewInt(0), 0, big.NewInt(0), []byte(""))
 	callmsg := EvmCallMsg{From: address, To: tx.To(), Gas: tx.Gas(), GasPrice: tx.GasPrice(), Value: tx.Value(), Data: tx.Data()}
 	ctx := context.Background()
 
@@ -439,7 +438,7 @@ func TestSenderGetResult(t *testing.T) {
 	t.Run("should return error if Status = 0", func(t *testing.T) {
 		p := &TransactionHashParam{
 			From:  fromAddress,
-			Tx:    types.NewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
+			Tx:    NewEvmNewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
 			Param: &RelayMessageParam{},
 		}
 		receipt := &EvmReceipt{
@@ -456,7 +455,7 @@ func TestSenderGetResult(t *testing.T) {
 	t.Run("should return string as TransactionResult if Status = 1", func(t *testing.T) {
 		p := &TransactionHashParam{
 			From:  fromAddress,
-			Tx:    types.NewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
+			Tx:    NewEvmNewTransaction(0, fromAddress, big.NewInt(0), 0, big.NewInt(0), nil),
 			Param: &RelayMessageParam{},
 		}
 		receipt := &EvmReceipt{
