@@ -175,13 +175,13 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 		case <-c.stopMonitorSignal:
 			return nil
 		default:
-			header, err := c.bestLatestBlockHeader()
+			latestHeader, err := c.bestLatestBlockHeader()
 			if err != nil {
 				return err
 			}
 
-			if current > uint64(header.Number) {
-				c.log.Debugf("block not yet finalized target:%v latest:%v", current, header.Number)
+			if current > uint64(latestHeader.Number) {
+				c.log.Debugf("block not yet finalized target:%v latest:%v", current, latestHeader.Number)
 				<-time.After(BlockRetryInterval)
 				continue
 			}
@@ -192,6 +192,11 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 				continue
 			} else if err != nil {
 				c.log.Error("failed to query latest block:%v error:%v", current, err)
+				return err
+			}
+
+			header, err := c.subClient.GetHeader(hash)
+			if err != nil {
 				return err
 			}
 

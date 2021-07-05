@@ -27,7 +27,6 @@ func TestMoonriverEventRecord(t *testing.T) {
 		{blockNumber: 243336, moduleEventNames: []string{
 			"Democracy_PreimageNoted",
 		}},
-		// TODO fix this test case
 		{blockNumber: 223200, moduleEventNames: []string{
 			"Democracy_Tabled",
 			"Democracy_Started",
@@ -60,13 +59,13 @@ func TestMoonriverEventRecord(t *testing.T) {
 		}},
 	}
 
+	meta, err := api.RPC.State.GetMetadataLatest()
+	assert.NoError(t, err)
+
 	for _, test := range tests {
 		i := test.blockNumber
 
 		hash, err := api.RPC.Chain.GetBlockHash(uint64(i))
-		assert.NoError(t, err)
-
-		meta, err := api.RPC.State.GetMetadata(hash)
 		assert.NoError(t, err)
 
 		key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)

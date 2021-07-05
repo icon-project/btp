@@ -17,6 +17,7 @@ type Receiver struct {
 	l   log.Logger
 
 	opt struct {
+		RelayEndpoint string
 	}
 	isFoundOffsetBySeq bool
 	bmcAddress         string
