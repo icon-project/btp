@@ -1,6 +1,7 @@
 package pra
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -81,8 +82,9 @@ func TestMoonriverEventRecord(t *testing.T) {
 		assert.NotPanics(t, func() {
 			values := reflect.ValueOf(eventRecords)
 			for _, me := range test.moduleEventNames {
-				assert.Greaterf(t, values.FieldByName(me).Len(), 0, "Expect System Events contains %s event, num of events %d", me, values.FieldByName(me).Len())
-				t.Logf("System Events contains %s event, num of events %d", me, values.FieldByName(me).Len())
+				t.Run(fmt.Sprintf("should contains %s event", me), func(t *testing.T) {
+					assert.Greater(t, values.FieldByName(me).Len(), 0)
+				})
 			}
 		})
 	}
