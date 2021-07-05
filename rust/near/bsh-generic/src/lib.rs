@@ -36,7 +36,10 @@
 
 pub mod bsh_types;
 pub mod utils;
+pub mod errors;
+
 pub use bsh_types::*;
+pub use errors::BSHError;
 
 use log;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -47,6 +50,8 @@ use std::collections::HashMap;
 setup_alloc!();
 
 metadata! {
+    /// BSH Generic contract is used to handle communications
+    /// among BMC Service and a BSH core contract.
     #[near_bindgen]
     #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, Serialize)]
     #[serde(crate = "near_sdk::serde")]
@@ -110,7 +115,10 @@ impl BshGeneric {
             amounts: values.clone(),
             fees: fees.clone(),
         };
-        let _ = self.requests.insert(self.serial_no, pending_transfer_coin).unwrap();
+        let _ = self
+            .requests
+            .insert(self.serial_no, pending_transfer_coin)
+            .unwrap();
         self.num_of_pending_requests += 1;
         let bsh_event = BshEvents::TransferStart {
             from,
@@ -120,7 +128,6 @@ impl BshGeneric {
         };
         log::info!("New BSH event: {:?}", bsh_event);
         self.serial_no += 1;
-
     }
 
     /// BSH handle BTP Message from BMC contract
@@ -131,7 +138,8 @@ impl BshGeneric {
 
         if sm.service_type == ServiceType::RequestCoinRegister {
             let mut tc: TransferCoin = bincode::deserialize(sm.data.as_slice()).unwrap();
-            
+            //  check receiving address whether is a valid address
+            //  revert() if not a valid one
         }
     }
 
@@ -140,9 +148,33 @@ impl BshGeneric {
         todo!()
     }
 
+    fn handle_response_service(&mut self, sn: u64, code: u64, msg: &str) {
+        todo!()
+    }
+
+    /// Handle a list of minting/transferring coins/tokens
+    pub fn handle_request_service(&mut self, to: &str, assets: Vec<Asset>) {
+        todo!()
+    }
+
+    fn send_response_message(
+        &mut self,
+        service_type: &ServiceType,
+        to: &str,
+        sn: u64,
+        msg: &str,
+        code: u64,
+    ) {
+        todo!()
+    }
+
     /// BSH handle Gather Fee Message request from BMC contract
     /// fa: fee aggregator
     pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) {
+        todo!()
+    }
+
+    pub fn check_parse_address(&mut self, to: &str) {
         todo!()
     }
 }
