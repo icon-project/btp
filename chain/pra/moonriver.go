@@ -1819,14 +1819,6 @@ type MoonriverEventRecord struct {
 	Democracy_Unlocked                                           []EventDemocracyUnlocked
 	Democracy_Vetoed                                             []EventDemocracyVetoed
 	FrontierEventRecord
-	// EVM_BalanceDeposit
-	// EVM_BalanceWithdraw
-	// EVM_Created
-	// EVM_CreatedFailed
-	// EVM_Executed
-	// EVM_ExecutedFailed
-	// EVM_Log
-	// Ethereum_Executed
 	ParachainStaking_BlocksPerRoundSet              []EventParachainStakingBlocksPerRoundSet
 	ParachainStaking_CollatorBackOnline             []EventParachainStakingCollatorBackOnline
 	ParachainStaking_CollatorBondedLess             []EventParachainStakingCollatorBondedLess

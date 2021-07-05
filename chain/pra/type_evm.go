@@ -15,20 +15,6 @@ type EvmDataError = rpc.DataError
 type EvmHash = common.Hash
 type EvmLog = types.Log
 
-func (e *EventEVMLog) EvmLog() types.Log {
-	topics := []common.Hash{}
-
-	for _, t := range e.Log.Topics {
-		topics = append(topics, common.HexToHash(t.Hex()))
-	}
-
-	return types.Log{
-		Address: common.Address(e.Log.Address),
-		Topics:  topics,
-		Data:    []byte(e.Log.Data),
-	}
-}
-
 func EvmHexToHash(s string) common.Hash {
 	return common.HexToHash(s)
 }

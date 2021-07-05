@@ -5,6 +5,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // EventSystemRemarked is emitted on on-chain remark happened.
@@ -63,6 +64,20 @@ type EventEVMLog struct {
 	Phase  types.Phase
 	Log    EthereumLog
 	Topics []types.Hash
+}
+
+func (e *EventEVMLog) EvmLog() EvmLog {
+	topics := []common.Hash{}
+
+	for _, t := range e.Log.Topics {
+		topics = append(topics, common.HexToHash(t.Hex()))
+	}
+
+	return EvmLog{
+		Address: common.Address(e.Log.Address),
+		Topics:  topics,
+		Data:    []byte(e.Log.Data),
+	}
 }
 
 type EventEthereumExecuted struct {
