@@ -62,7 +62,7 @@ func serializeList(v_list []interface{}) ([]byte, *SerializeError) {
 	for idx, v := range v_list {
 		frag, err := serializeValue(v)
 		if err != nil {
-			err.position = "[" + string(idx) + "]." + err.position
+			err.position = "[" + string(rune(idx)) + "]." + err.position
 			return nil, err
 		}
 		if buf.Len() > 0 {

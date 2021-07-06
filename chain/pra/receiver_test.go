@@ -50,4 +50,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
+
+	// t.Run("should call bmc.parseMessage when Parachain emits EVM Log")
+	// t.Run("should build StateProof when EVM Log events contains BMC SendMessage Event")
 }
