@@ -110,18 +110,6 @@ public interface BMC {
     void removeLink(String _link);
 
     /**
-     * Set properties of link for relay rotation
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link           String (BTP Address of connected BMC)
-     * @param _block_interval Integer (Interval of block creation, milliseconds)
-     * @param _max_agg        Integer (Maximum aggregation of block update of a relay message)
-     * @param _delay_limit    Integer (Maximum delay at BTP Event relay, block count)
-     */
-    @External
-    void setLink(String _link, int _block_interval, int _max_agg, int _delay_limit);
-
-    /**
      * Get status of BMC.
      * Used by the relay to resolve next BTP Message to send.
      * If target is not registered, it will fail.

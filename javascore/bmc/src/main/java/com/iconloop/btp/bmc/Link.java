@@ -48,7 +48,7 @@ public class Link {
     private long rxHeight; //initialize with BMC.block_height
     private long rxHeightSrc; //initialize with BMV._offset
 
-    private long sackTerm; //0: disable sack
+    private int sackTerm; //0: disable sack
     private long sackNext;
     private long sackHeight;
     private BigInteger sackSeq;
@@ -205,11 +205,11 @@ public class Link {
         this.rxHeightSrc = rxHeightSrc;
     }
 
-    public long getSackTerm() {
+    public int getSackTerm() {
         return sackTerm;
     }
 
-    public void setSackTerm(long sackTerm) {
+    public void setSackTerm(int sackTerm) {
         this.sackTerm = sackTerm;
     }
 
@@ -295,7 +295,7 @@ public class Link {
         obj.setRotateHeight(reader.readLong());
         obj.setRxHeight(reader.readLong());
         obj.setRxHeightSrc(reader.readLong());
-        obj.setSackTerm(reader.readLong());
+        obj.setSackTerm(reader.readInt());
         obj.setSackNext(reader.readLong());
         obj.setSackHeight(reader.readLong());
         obj.setSackSeq(reader.readNullable(BigInteger.class));

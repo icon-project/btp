@@ -191,29 +191,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.getRelays().clear();
     }
 
-    @External
-    public void setLink(String _link, int _block_interval, int _max_agg, int _delay_limit) {
-        requireOwnerAccess();
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
-        if (_max_agg < 1 || _delay_limit < 1) {
-            throw BMCException.unknown("invalid param");
-        }
-        int oldRotateTerm = link.rotateTerm();
-        link.setBlockIntervalDst(_block_interval);
-        link.setMaxAggregation(_max_agg);
-        link.setDelayLimit(_delay_limit);
-        int rotateTerm = link.rotateTerm();
-        if (oldRotateTerm == 0 && rotateTerm > 0) {
-            long currentHeight = Context.getBlockHeight();
-            link.setRotateHeight(currentHeight + rotateTerm);
-            link.setRxHeight(currentHeight);
-            BMVScoreInterface verifier = getVerifier(target.net());
-            link.setRxHeightSrc(verifier.getStatus().getHeight());
-        }
-        putLink(link);
-    }
-
     @External(readonly = true)
     public BMCStatus getStatus(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
@@ -231,6 +208,10 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         status.setRx_height_src(link.getRxHeightSrc());
         status.setBlock_interval_dst(link.getBlockIntervalDst());
         status.setBlock_interval_src(link.getBlockIntervalSrc());
+        status.setSack_term(link.getSackTerm());
+        status.setSack_next(link.getSackNext());
+        status.setSack_height(link.getSackHeight());
+        status.setSack_seq(link.getSackSeq());
         status.setCur_height(Context.getBlockHeight());
 
         Map<Address, Relay> relayMap = link.getRelays().toMap();
@@ -402,14 +383,14 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
         //gatherFee
         BMCProperties properties = getProperties();
-        Address gatherFeeAddress = properties.getFeeAggregator();
+        Address feeAggregator = properties.getFeeAggregator();
         long gatherFeeTerm = properties.getFeeGatheringTerm();
         long gatherFeeNext = properties.getFeeGatheringNext();
-        if (services.size() > 0 && gatherFeeAddress != null &&
+        if (services.size() > 0 && feeAggregator != null &&
                 gatherFeeTerm > 0 &&
                 gatherFeeNext <= Context.getBlockHeight()) {
             String[] svcs = ArrayUtil.toStringArray(services.keySet());
-            sendFeeGathering(gatherFeeAddress, svcs);
+            sendFeeGathering(feeAggregator, svcs);
             gatherFeeNext = gatherFeeNext + gatherFeeTerm;
             properties.setFeeGatheringNext(gatherFeeNext);
             setProperties(properties);
@@ -755,6 +736,53 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @External
+    public void setLinkRotateTerm(String _link, int _block_interval, int _max_agg) {
+        requireOwnerAccess();
+        BTPAddress target = BTPAddress.valueOf(_link);
+        Link link = getLink(target);
+        if (_block_interval < 0 || _max_agg < 1) {
+            throw BMCException.unknown("invalid param");
+        }
+        int oldRotateTerm = link.rotateTerm();
+        link.setBlockIntervalDst(_block_interval);
+        link.setMaxAggregation(_max_agg);
+        int rotateTerm = link.rotateTerm();
+        if (oldRotateTerm == 0 && rotateTerm > 0) {
+            long currentHeight = Context.getBlockHeight();
+            link.setRotateHeight(currentHeight + rotateTerm);
+            link.setRxHeight(currentHeight);
+            BMVScoreInterface verifier = getVerifier(target.net());
+            link.setRxHeightSrc(verifier.getStatus().getHeight());
+        }
+        putLink(link);
+    }
+
+    @External
+    public void setLinkDelayLimit(String _link, int _value) {
+        requireOwnerAccess();
+        BTPAddress target = BTPAddress.valueOf(_link);
+        Link link = getLink(target);
+        if (_value < 1) {
+            throw BMCException.unknown("invalid param");
+        }
+        link.setDelayLimit(_value);
+        putLink(link);
+    }
+
+    @External
+    public void setLinkSackTerm(String _link, int _value) {
+        requireOwnerAccess();
+        BTPAddress target = BTPAddress.valueOf(_link);
+        Link link = getLink(target);
+        if (_value < 0) {
+            throw BMCException.unknown("invalid param");
+        }
+        link.setSackTerm(_value);
+        link.setSackNext(Context.getBlockHeight()+_value);
+        putLink(link);
+    }
+
+    @External
     public void addRelay(String _link, Address _addr) {
         requireOwnerAccess();
 
@@ -833,6 +861,20 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         return ArrayUtil.toAddressArray(relays.keySet());
     }
 
+    @External
+    public void sendFeeGathering() {
+        requireOwnerAccess();
+        if (services.size() > 0) {
+            throw BMCException.unknown("services is empty");
+        }
+        Address feeAggregator = getFeeAggregator();
+        if (feeAggregator == null) {
+            throw BMCException.unknown("feeAggregator is null");
+        }
+        String[] svcs = ArrayUtil.toStringArray(services.keySet());
+        sendFeeGathering(feeAggregator, svcs);
+    }
+
     @External(readonly = true)
     public long getFeeGatheringTerm() {
         BMCProperties properties = getProperties();
@@ -843,7 +885,11 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     public void setFeeGatheringTerm(long _value) {
         requireOwnerAccess();
         BMCProperties properties = getProperties();
+        if (_value < 0) {
+            throw BMCException.unknown("invalid param");
+        }
         properties.setFeeGatheringTerm(_value);
+        properties.setFeeGatheringNext(Context.getBlockHeight()+_value);
         setProperties(properties);
     }
 
@@ -923,12 +969,12 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         return relayerManager.getRelayers();
     }
 
-    //Optional External method
     @External
     public void distributeRelayerReward() {
         relayerManager.distributeRelayerReward();
     }
-    //Optional External method
+
+    //FIXME fallback is required?
     @Payable
     public void fallback() {
         logger.println("fallback","value:", Context.getValue());

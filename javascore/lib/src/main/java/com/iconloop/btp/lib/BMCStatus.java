@@ -16,6 +16,7 @@
 
 package com.iconloop.btp.lib;
 
+import com.iconloop.score.util.StringUtil;
 import score.annotation.Keep;
 
 import java.math.BigInteger;
@@ -37,13 +38,12 @@ public class BMCStatus {
     private long rx_height; //initialize with BMC.block_height
     private long rx_height_src; //initialize with BMV._offset
 
-    private long cur_height;
+    private int sack_term; //0: disable sack
+    private long sack_next;
+    private long sack_height;
+    private BigInteger sack_seq;
 
-    //SACK
-//    private int sack_term; //0: disable sack
-//    private int sack_next;
-//    private int sack_height;
-//    private int sack_seq;
+    private long cur_height;
 
     @Keep
     public BigInteger getRx_seq() {
@@ -176,6 +176,46 @@ public class BMCStatus {
     }
 
     @Keep
+    public int getSack_term() {
+        return sack_term;
+    }
+
+    @Keep
+    public void setSack_term(int sack_term) {
+        this.sack_term = sack_term;
+    }
+
+    @Keep
+    public long getSack_next() {
+        return sack_next;
+    }
+
+    @Keep
+    public void setSack_next(long sack_next) {
+        this.sack_next = sack_next;
+    }
+
+    @Keep
+    public long getSack_height() {
+        return sack_height;
+    }
+
+    @Keep
+    public void setSack_height(long sack_height) {
+        this.sack_height = sack_height;
+    }
+
+    @Keep
+    public BigInteger getSack_seq() {
+        return sack_seq;
+    }
+
+    @Keep
+    public void setSack_seq(BigInteger sack_seq) {
+        this.sack_seq = sack_seq;
+    }
+
+    @Keep
     public long getCur_height() {
         return cur_height;
     }
@@ -183,5 +223,30 @@ public class BMCStatus {
     @Keep
     public void setCur_height(long cur_height) {
         this.cur_height = cur_height;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BMCStatus{");
+        sb.append("rx_seq=").append(rx_seq);
+        sb.append(", tx_seq=").append(tx_seq);
+        sb.append(", verifier=").append(verifier);
+        sb.append(", relays=").append(StringUtil.toString(relays));
+        sb.append(", block_interval_src=").append(block_interval_src);
+        sb.append(", block_interval_dst=").append(block_interval_dst);
+        sb.append(", max_agg=").append(max_agg);
+        sb.append(", delay_limit=").append(delay_limit);
+        sb.append(", relay_idx=").append(relay_idx);
+        sb.append(", rotate_height=").append(rotate_height);
+        sb.append(", rotate_term=").append(rotate_term);
+        sb.append(", rx_height=").append(rx_height);
+        sb.append(", rx_height_src=").append(rx_height_src);
+        sb.append(", sack_term=").append(sack_term);
+        sb.append(", sack_next=").append(sack_next);
+        sb.append(", sack_height=").append(sack_height);
+        sb.append(", sack_seq=").append(sack_seq);
+        sb.append(", cur_height=").append(cur_height);
+        sb.append('}');
+        return sb.toString();
     }
 }

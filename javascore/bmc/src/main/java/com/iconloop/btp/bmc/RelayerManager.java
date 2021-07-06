@@ -62,6 +62,9 @@ public interface RelayerManager {
     @External(readonly = true)
     Map<String, Relayer> getRelayers();
 
+    /**
+     * Optional External method
+     */
     @External
     void distributeRelayerReward();
 

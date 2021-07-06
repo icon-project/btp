@@ -19,6 +19,8 @@ package com.iconloop.btp.bmc;
 import score.Address;
 import score.annotation.External;
 
+import java.math.BigInteger;
+
 public interface ICONSpecific {
 
     /**
@@ -32,6 +34,37 @@ public interface ICONSpecific {
      */
     @External
     void handleFragment(String _prev, String _msg, int _idx);
+
+    /**
+     * Set properties of link for term of relay rotation
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _link           String (BTP Address of connected BMC)
+     * @param _block_interval Integer (Interval of block creation, milliseconds)
+     * @param _max_agg        Integer (Maximum aggregation of block update of a relay message)
+     */
+    @External
+    void setLinkRotateTerm(String _link, int _block_interval, int _max_agg);
+
+    /**
+     * Set properties of link for delay limitation of relay rotation
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _link     String (BTP Address of connected BMC)
+     * @param _value    Integer (Maximum delay at BTP Event relay, block count)
+     */
+    @External
+    void setLinkDelayLimit(String _link, int _value);
+
+    /**
+     * Set properties of link for term of sending SACK message
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _link     String (BTP Address of connected BMC)
+     * @param _value    Integer (Term of sending SACK message, block count)
+     */
+    @External
+    void setLinkSackTerm(String _link, int _value);
 
     /**
      * TODO [TBD] add 'addRelay' to IIP-25.BMC.Writable methods
@@ -105,6 +138,12 @@ public interface ICONSpecific {
      */
     @External(readonly = true)
     ServiceCandidate[] getServiceCandidates();
+
+    /**
+     * Optional External method
+     */
+    @External
+    void sendFeeGathering();
 
     @External(readonly = true)
     long getFeeGatheringTerm();

@@ -52,4 +52,14 @@ public class BMVStatus {
     public void setLast_height(long last_height) {
         this.last_height = last_height;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BMVStatus{");
+        sb.append("height=").append(height);
+        sb.append(", offset=").append(offset);
+        sb.append(", last_height=").append(last_height);
+        sb.append('}');
+        return sb.toString();
+    }
 }

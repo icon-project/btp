@@ -79,11 +79,6 @@ public final class BMCScoreInterface implements BMC {
   }
 
   @Override
-  public void setLink(String _link, int _block_interval, int _max_agg, int _delay_limit) {
-    Context.call(this.address, "setLink", _link, _block_interval, _max_agg, _delay_limit);
-  }
-
-  @Override
   public BMCStatus getStatus(String _link) {
     return Context.call(BMCStatus.class, this.address, "getStatus", _link);
   }

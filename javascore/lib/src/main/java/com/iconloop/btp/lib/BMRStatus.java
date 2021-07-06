@@ -55,4 +55,14 @@ public class BMRStatus {
     public void setMsg_count(BigInteger msg_count) {
         this.msg_count = msg_count;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BMRStatus{");
+        sb.append("address=").append(address);
+        sb.append(", block_count=").append(block_count);
+        sb.append(", msg_count=").append(msg_count);
+        sb.append('}');
+        return sb.toString();
+    }
 }
