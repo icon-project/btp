@@ -17,6 +17,7 @@ type Receiver struct {
 	l   log.Logger
 
 	opt struct {
+		RelayEndpoint string
 	}
 	isFoundOffsetBySeq bool
 	bmcAddress         string
@@ -41,7 +42,17 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 }
 
 func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
-	return nil, fmt.Errorf("failed to build finality proof for %+s, at %d", v.Hash.Hex(), v.Height)
+	// For edgeware only
+	// // Justification required, when update validators list
+	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
+	// 	signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+
+	// TODO verify this with kusama relay chain
+	return nil, nil
 }
 
 func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
@@ -51,30 +62,21 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		BlockHash: v.Hash[:],
 	}
 
-	// For edgeware only
-	// // Justification required, when update validators list
-	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
-	// 	signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	if bu.Header, err = codec.RLP.MarshalToBytes(SignedHeader{
-	// 		Header:        *v.Header,
-	// 		Justification: signedBlock.Justification,
-	// 	}); err != nil {
-	// 		return nil, err
-	// 	}
-	// } else {
-
-	if bu.Header, err = types.EncodeToBytes(v.Header); err != nil {
+	var update BlockUpdate
+	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
 		return nil, err
 	}
 
-	// if bu.Proof, err = r.newFinalityProof(null); err != nil {
-	// 	return nil, err
-	// }
+	if update.FinalityProof, err = r.newFinalityProof(v); err != nil {
+		return nil, err
+	}
 
+	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+	if err != nil {
+		return nil, err
+	}
+
+	bu.Header = update.ScaleEncodedBlockHeader
 	return bu, nil
 }
 

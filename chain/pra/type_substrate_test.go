@@ -36,8 +36,7 @@ func TestDecodeFinalityProof(t *testing.T) {
 	fp := &FinalityProof{}
 	err = types.DecodeFromHexString(hexStr, fp)
 	assert.NoError(t, err)
-	assert.Equal(t, fp.Justification.EncodedJustification.Round, types.NewU64(3714))
-	assert.Equal(t, fp.Justification.EncodedJustification.Commit.TargetHash.Hex(), "0x61761bf6a47c5429e24d3562294f5f4ddd8f3bea3162a435671b28ce012035c8")
-	assert.Equal(t, fp.Justification.EncodedJustification.Commit.TargetNumber, types.NewU32(8009645))
-	assert.Len(t, fp.Justification.EncodedJustification.Commit.Precommits, 607)
+	assert.Equal(t, fp.Justification.EncodedJustification.Round, types.NewU64(5152))
+	assert.Equal(t, fp.Justification.EncodedJustification.Commit.TargetHash.Hex(), "0x7412c2d47c83266de081fbc0efc5c103a06ac6afbd93ec932df0aee80f0df856")
+	assert.Equal(t, fp.Justification.EncodedJustification.Commit.TargetNumber, types.NewU32(8010648))
 }

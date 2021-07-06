@@ -84,3 +84,8 @@ type ReceiptProof struct {
 	Proof       []byte
 	EventProofs []*chain.EventProof
 }
+
+type BlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+}
