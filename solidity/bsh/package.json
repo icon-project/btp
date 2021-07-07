@@ -21,11 +21,11 @@
   "scripts": {
     "linter": "./node_modules/.bin/solhint -f table ./contracts/**/*.sol -f table ./contracts/*.sol",
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l",
-    "compile": "truffle compile",
-    "migrate": "truffle migrate",
-    "test": "truffle test",
-    "bsh": "truffle test ./test/integration/2-native-coin-bsh.js",
-    "bsh-up": "truffle test ./test/integration/1-upgradeability-native-coin-bsh.js"
+    "contract:compile": "truffle compile --all",
+    "test": "yarn test:unit && yarn test:integration",
+    "test:unit": "rm -rf .openzeppelin && truffle test test/unit/*.js",
+    "test:integration" : "rm -rf .openzeppelin && truffle test test/integration/*.js"
+
   },
   "husky": {
     "hooks": {

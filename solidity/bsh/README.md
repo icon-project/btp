@@ -8,7 +8,7 @@ Install tools
 ```
 $ npm install --global yarn truffle@5.3.0
 ```
-Install dev dependencies
+Install dependencies
 ```
 $ yarn
 ```
@@ -16,12 +16,18 @@ $ yarn
 ## Test
 1. Run in a background process or seperate terminal window
 ```
-// Testing with Moonbeam local testnet
-$ docker run --rm -p 9933:9933 -p 9944:9944 purestake/moonbeam:v0.8.0 --dev --ws-external --rpc-external
+$ docker run --rm -p 9933:9933 -p 9944:9944 purestake/moonbeam:v0.9.2 --dev --ws-external --rpc-external
 ```
-2. Run test
+2. Compile contracts
 ```
-$ truffle compile --all
-//  If testing with Moonbeam local testnet
-$ yarn test     
+$ yarn contract:compile
+```
+3. Run unit and integration test
+```
+$ yarn test
+```
+-  Run specific test
+```
+$ yarn test:unit
+$ yarn test:integration
 ```
