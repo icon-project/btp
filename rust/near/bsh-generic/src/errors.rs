@@ -6,4 +6,7 @@ use thiserror::Error;
 pub enum BSHError {
     #[error("The supplied BTP address is invalid")]
     InvalidBtpAddress,
+
+    #[error("Received invalid data")]
+    InvalidData,
 }

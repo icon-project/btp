@@ -1,11 +1,12 @@
 //! Utility functions for handling BTP addresses
+use crate::BSHError;
 
-pub fn split_btp_address(addr: &str) -> (String, String) {
+pub fn split_btp_address(addr: &str) -> Result<(String, String), BSHError> {
     let tmp = split(addr, "/");
-    (tmp[2].clone(), tmp[3].clone())
+    Ok((tmp[2].clone(), tmp[3].clone()))
 }
 
-pub fn split(base: &str, value: &str) -> Vec<String> {
+fn split(base: &str, value: &str) -> Vec<String> {
     let base_bytes = base.as_bytes();
     let mut offset: usize = 0;
     let mut split_count: usize = 1;
@@ -44,7 +45,7 @@ pub fn split(base: &str, value: &str) -> Vec<String> {
     split_arr
 }
 
-pub fn index_of(base: &str, value: &str, offset: usize) -> i32 {
+fn index_of(base: &str, value: &str, offset: usize) -> i32 {
     let base_bytes = base.as_bytes();
     let value_bytes = value.as_bytes();
 

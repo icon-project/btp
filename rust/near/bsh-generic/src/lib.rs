@@ -35,8 +35,8 @@
 )]
 
 pub mod bsh_types;
-pub mod utils;
 pub mod errors;
+pub mod utils;
 
 pub use bsh_types::*;
 pub use errors::BSHError;
@@ -44,7 +44,7 @@ pub use errors::BSHError;
 use log;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{metadata, near_bindgen, setup_alloc};
+use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
 
 setup_alloc!();
@@ -68,9 +68,12 @@ metadata! {
 
 #[near_bindgen]
 impl BshGeneric {
+    pub const RC_OK: u64 = 0;
+    pub const RC_ERR: u64 = 1;
+
     #[init]
     pub fn initialize(_bmc: &str, _bsh_contract: &str, _service_name: &str) {
-        unimplemented!()
+        unimplemented!() // requires BMC and BSH core
     }
 
     /// Check whether BSH has any pending transferring requests
@@ -89,7 +92,8 @@ impl BshGeneric {
     ) {
         //  Send Service Message to BMC
         //  Throws an error if `to` address is an invalid BTP Address format
-        let (_to_network, _to_address) = utils::split_btp_address(to);
+        let (_to_network, _to_address) =
+            utils::split_btp_address(to).expect("Failed to split BTP address");
         let mut assets: Vec<Asset> = Vec::with_capacity(coin_names.len());
         let mut asset_details: Vec<AssetTransferDetail> = Vec::with_capacity(coin_names.len());
 
@@ -105,7 +109,7 @@ impl BshGeneric {
             };
         }
 
-        // TODO: bmc.send_message();
+        // BMC: bmc.send_message();
 
         // Push pending transactions into Record list
         let pending_transfer_coin = PendingTransferCoin {
@@ -131,50 +135,132 @@ impl BshGeneric {
     }
 
     /// BSH handle BTP Message from BMC contract
-    pub fn handle_btp_message(&mut self, from: &str, svc: &str, sn: u64, msg: &[u8]) {
+    pub fn handle_btp_message(
+        &mut self,
+        from: &str,
+        svc: &str,
+        sn: u64,
+        msg: &[u8],
+    ) -> Result<(), BSHError> {
         assert_eq!(self.service_name.as_str(), svc, "Invalid Svc");
-        let mut sm: ServiceMessage = bincode::deserialize(msg).unwrap();
-        let mut err_msg = String::new();
+        let sm: ServiceMessage = bincode::deserialize(msg).unwrap();
 
         if sm.service_type == ServiceType::RequestCoinRegister {
-            let mut tc: TransferCoin = bincode::deserialize(sm.data.as_slice()).unwrap();
-            //  check receiving address whether is a valid address
-            //  revert() if not a valid one
+            let tc: TransferCoin = bincode::deserialize(sm.data.as_slice()).unwrap();
+            //  check receiving address whether it is a valid address
+            //  or revert if not a valid one
+            if let Ok(_) = self.check_parse_address(&tc.to) {
+                if let Ok(_) = self.handle_request_service(&tc.to, tc.assets) {
+                    self.send_response_message(
+                        ServiceType::ResponseHandleService,
+                        from,
+                        sn,
+                        "",
+                        Self::RC_OK,
+                    );
+                } else {
+                    return Err(BSHError::InvalidData);
+                }
+            } else {
+                return Err(BSHError::InvalidBtpAddress);
+            }
+            self.send_response_message(
+                ServiceType::ResponseHandleService,
+                from,
+                sn,
+                "InvalidAddress",
+                Self::RC_ERR,
+            );
+        } else if sm.service_type == ServiceType::ResponseHandleService {
+            // Check whether `sn` is pending state
+            let res = self.requests.get(&sn).unwrap().from.as_bytes();
+            assert_ne!(res.len(), 0, "InvalidSN");
+            let response: Response = bincode::deserialize(sm.data.as_slice()).unwrap();
+            self.handle_response_service(sn, response.code, response.message.as_str());
+        } else if sm.service_type == ServiceType::UnknownType {
+            let bsh_event = BshEvents::UnknownResponse { from, sn };
+            log::info!("New BSH event: {:?}", bsh_event);
+        } else {
+            // If none of those types above BSH responds with a message of
+            // RES_UNKNOWN_TYPE
+            self.send_response_message(ServiceType::UnknownType, from, sn, "Unknown", Self::RC_ERR);
         }
+        Ok(())
     }
 
     /// BSH handle BTP Error from BMC contract
-    pub fn handle_btp_error(&mut self, src: &str, svc: &str, sn: u64, code: u64, msg: &str) {
-        todo!()
+    pub fn handle_btp_error(&mut self, _src: &str, svc: &str, sn: u64, code: u64, msg: &str) {
+        assert_eq!(svc, self.service_name.as_str(), "InvalidSvc");
+        let res = self.requests.get(&sn).unwrap().from.as_bytes();
+        assert_ne!(res.len(), 0, "InvalidSN");
+        self.handle_response_service(sn, code, msg);
     }
 
     fn handle_response_service(&mut self, sn: u64, code: u64, msg: &str) {
-        todo!()
+        let caller = self.requests.get(&sn).unwrap().from.as_str();
+        let data_len = self.requests.get(&sn).unwrap().coin_names.len();
+        for _i in 0..data_len {
+            // BSH core: bsh_core.handle_response_service();
+        }
+
+        let _ = self.clone().requests.remove(&sn);
+        self.num_of_pending_requests -= 1;
+        let bsh_event = BshEvents::TransferEnd {
+            from: caller,
+            sn,
+            code,
+            response: msg,
+        };
+        log::info!("New BSH event: {:?}", bsh_event);
     }
 
     /// Handle a list of minting/transferring coins/tokens
-    pub fn handle_request_service(&mut self, to: &str, assets: Vec<Asset>) {
-        todo!()
+    #[payable]
+    pub fn handle_request_service(
+        &mut self,
+        _to: &str,
+        assets: Vec<Asset>,
+    ) -> Result<(), BSHError> {
+        assert_eq!(
+            env::current_account_id(),
+            env::signer_account_id(),
+            "Unauthorized"
+        );
+        for _i in 0..assets.len() {
+            // BSH core: assert(bsh_core.is_valid_coin(assets[i].coin_name), "UnregisteredCoin");
+        }
+        // BSH core: if let Ok(_) = bsh_core.mint() {}
+        Ok(())
     }
 
     fn send_response_message(
         &mut self,
-        service_type: &ServiceType,
-        to: &str,
-        sn: u64,
-        msg: &str,
-        code: u64,
+        _service_type: ServiceType,
+        _to: &str,
+        _sn: u64,
+        _msg: &str,
+        _code: u64,
     ) {
-        todo!()
+        // BMC: bmc.send_message();
     }
 
-    /// BSH handle Gather Fee Message request from BMC contract
+    /// BSH handle `Gather Fee Message` request from BMC contract
     /// fa: fee aggregator
+    #[payable]
     pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) {
-        todo!()
+        assert_eq!(self.service_name.as_str(), svc, "InvalidSvc");
+        //  If adress of Fee Aggregator (fa) is invalid BTP address format
+        //  revert(). Then, BMC will catch this error
+        if let Ok(_) = self.check_parse_address(fa) {
+            // BSH core: bsh_core.transfer_fees(fa);
+        }
     }
 
-    pub fn check_parse_address(&mut self, to: &str) {
-        todo!()
+    pub fn check_parse_address(&mut self, addr: &str) -> Result<bool, BSHError> {
+        if let Ok(_) = utils::split_btp_address(addr) {
+            return Ok(true);
+        } else {
+            return Err(BSHError::InvalidBtpAddress);
+        }
     }
 }
