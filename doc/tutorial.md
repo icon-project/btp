@@ -267,17 +267,16 @@ goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
 > `goloop rpc call --to $(cat bmc.$(rpcch)) --method getLinks`
 
 ### Configure Link
-To use multiple-BMR for relay, should set properties of link via `BMC.setLink`
+To use multiple-BMR for relay, should set properties of link via `BMC.setLinkRotateTerm`
 
 Set properties of 'dst' link to 'src' chain
 ````shell
 rpcch src
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
-    --method setLink \
+    --method setLinkRotateTerm \
     --param _link=$(cat btp.dst) \
     --param _block_interval=0x3e8 \
     --param _max_agg=0x10 \
-    --param _delay_limit=3 \
     | jq -r . > tx.setlink.$(rpcch)
 ````
 
@@ -285,11 +284,10 @@ Set properties of 'src' link to 'dst' chain
 ````shell
 rpcch dst
 goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
-    --method setLink \
+    --method setLinkRotateTerm \
     --param _link=$(cat btp.src) \
     --param _block_interval=0x3e8 \
     --param _max_agg=0x10 \
-    --param _delay_limit=3 \
     | jq -r . > tx.setlink.$(rpcch)
 ````
 
@@ -376,7 +374,7 @@ goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
 > `goloop rpc call --to $(cat bmc.src) --method getRelays --param _link=$(cat btp.dst)`
 > `goloop rpc call --to $(cat bmc.dst) --method getRelays --param _link=$(cat btp.src)`
 
-### Register relayer candidate : only for ICON
+### Register relayer candidate : only for testing of ICON main network environment
 Create key store for relayer
 ````shell
 echo -n $(date|md5sum|head -c16) > relayer.secret

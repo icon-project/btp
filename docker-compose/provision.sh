@@ -56,9 +56,9 @@ echo "Configuration for relay"
 bmc_link src dst
 bmc_link dst src
 
-echo "setLink"
-bmc_setLink src dst
-bmc_setLink dst src
+echo "Configure Link for multiple-BMR"
+bmc_setLinkRotateTerm src dst
+bmc_setLinkRotateTerm dst src
 
 ##########################
 # Register BMC-Owner
@@ -82,8 +82,8 @@ bmc_addRelay dst src src.ks.json
 rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
 
 ##########################
-# Configuration for relayer
-echo "Configuration for relayer"
+# Register relayer candidate : only for testing of ICON main network environment
+echo "Register relayer candidate"
 ensure_key_store relayer.ks.json relayer.secret
 rpcch src
 goloop rpc sendtx transfer --to $(rpceoa relayer.ks.json) --value 0x10

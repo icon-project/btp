@@ -91,23 +91,21 @@ bmc_link() {
   ensure_txresult tx.link.${CHAIN}
 }
 
-bmc_setLink() {
+bmc_setLinkRotateTerm() {
   if [ $# -lt 2 ] ; then
-    echo "Usage: bmc_setLink CHAIN LINK [INTERVAL=0x3e8] [MAX_AGG=0x10] [DELAY_LIMIT=0x3]"
+    echo "Usage: bmc_setLinkRotateTerm CHAIN LINK [INTERVAL=0x3e8] [MAX_AGG=0x10]"
     return 1
   fi
   local CHAIN=$1
   local LINK=$2
   local INTERVAL=${3:-0x3e8}
   local MAX_AGG=${4:-0x10}
-  local DELAY_LIMIT=${5:-0x3}
   rpcch ${CHAIN}
   goloop rpc sendtx call --to $(cat bmc.${CHAIN}) \
     --method setLink \
     --param _link=$(cat btp.${LINK}) \
     --param _block_interval=${INTERVAL} \
-    --param _max_agg=${MAX_AGG} \
-    --param _delay_limit=${DELAY_LIMIT} | jq -r . > tx.setlink.${CHAIN}
+    --param _max_agg=${MAX_AGG} | jq -r . > tx.setlink.${CHAIN}
   ensure_txresult tx.setlink.${CHAIN}
 }
 

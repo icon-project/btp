@@ -67,7 +67,7 @@ ensure_txresult() {
   RESULT=$(goloop rpc txresult ${TX})
   RET=$?
   echo $RESULT
-  while [ "$RET" != "0" ] && [ "$(echo $RESULT | grep -E 'Executing|Pending')" == "$RESULT" ]; do
+  while [ "$RET" != "0" ] || [ "$(echo $RESULT | grep -E 'Executing|Pending')" == "$RESULT" ]; do
     sleep 1
     RESULT=$(goloop rpc txresult ${TX})
     RET=$?
