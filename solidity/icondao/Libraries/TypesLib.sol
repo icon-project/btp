@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <=0.8.0;
 
 library Types {
@@ -43,7 +44,7 @@ library Types {
     struct Votes {
         uint256 round;
         BPSI blockPartSetID;
-        TS[] _ts;
+        TS[] ts;
     }
 
     struct BlockWitness {
@@ -57,28 +58,28 @@ library Types {
     }
 
     struct BlockUpdate {
-        BlockHeader _bh;
-        Votes _votes;
-        bytes[] _validators;
+        BlockHeader bh;
+        Votes votes;
+        bytes[] validators;
     }
 
     struct ReceiptProof {
         uint256 index;
         bytes[] txReceipts;
-        EventProof[] _ep;
+        EventProof[] ep;
     }
 
     struct BlockProof {
-        BlockHeader _bh;
-        BlockWitness _bw;
+        BlockHeader bh;
+        BlockWitness bw;
     }
 
     struct RelayMessage {
-        BlockUpdate[] _buArray;
-        BlockProof _bp;
+        BlockUpdate[] buArray;
+        BlockProof bp;
         bool isBPEmpty; //  add to check in a case BlockProof is an empty struct
         //  when RLP RelayMessage, this field will not be serialized
-        ReceiptProof[] _rp;
+        ReceiptProof[] rp;
         bool isRPEmpty; //  add to check in a case ReceiptProof is an empty struct
         //  when RLP RelayMessage, this field will not be serialized
     }
@@ -86,35 +87,41 @@ library Types {
     /**
      * @Notice List of ALL Structs being used by a BSH contract
      */
-   /* enum ServiceType {
+    /*enum ServiceType {
         REQUEST_COIN_TRANSFER,
         REQUEST_COIN_REGISTER,
         REPONSE_HANDLE_SERVICE,
         UNKNOWN_TYPE
     }
 */
+    struct PendingTransferCoin {
+        string from;
+        string to;
+        string[] coinNames;
+        uint256[] amounts;
+        uint256[] fees;
+    }
+
     struct TransferCoin {
         string from;
         string to;
-        string coinName;
-        uint256 value;
+        Asset[] assets;
     }
 
-    struct RegisterCoin {
+/*    struct Asset {
         string coinName;
-        uint256 id;
-        string symbol;
+        uint256 value;
+    } */
+
+    struct AssetTransferDetail {
+        string coinName;
+        uint256 value;
+        uint256 fee;
     }
 
     struct Response {
         uint256 code;
         string message;
-    }
-
-    struct Record {
-        TransferCoin request;
-        Response response;
-        bool isResolved;
     }
 
     struct ServiceMessage {
@@ -133,13 +140,16 @@ library Types {
         uint256 refundableBalance;
     }
 
+    struct Request {
+        string serviceName;
+        address bsh;
+    }
+
     /**
      * @Notice List of ALL Structs being used by a BMC contract
      */
 
-    enum EventType {LINK, UNLINK}
-
-    struct VerifierStatus {
+    struct VerifierStats {
         uint256 heightMTA; // MTA = Merkle Trie Accumulator
         uint256 offsetMTA;
         uint256 lastHeight; // Block height of last verified message which is BTP-Message contained
@@ -163,8 +173,34 @@ library Types {
 
     struct Link {
         address[] relays; //  Address of multiple Relays handle for this link network
-        string reachable; //  A BTP Address of the next BMC that can be reach using this link
+        uint256 rxSeq;
+        uint256 txSeq;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 maxAggregation;
+        uint256 delayLimit;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rxHeight;
+        uint256 rxHeightSrc;
         bool isConnected;
+    }
+
+    struct LinkStats {
+        uint256 rxSeq;
+        uint256 txSeq;
+        VerifierStats verifier;
+        RelayStats[] relays;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rotateTerm;
+        uint256 delayLimit;
+        uint256 maxAggregation;
+        uint256 rxHeightSrc;
+        uint256 rxHeight;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 currentHeight;
     }
 
     struct RelayStats {
@@ -177,22 +213,32 @@ library Types {
         string src; //  an address of BMC (i.e. btp://1234.PARA/0x1234)
         string dst; //  an address of destination BMC
         string svc; //  service name of BSH
-        uint256 sn; //  sequence number of BMC
+        int256 sn; //  sequence number of BMC
         bytes message; //  serializef Service Message from BSH
     }
 
-    struct EventMessage {
-        Types.EventType eventType;
-        string src;
-        string dst;
+    struct Connection {
+        string from;
+        string to;
     }
 
-    // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
-    bytes4 internal constant ERC1155_ACCEPTED = 0xf23a6e61;
+    struct EventMessage {
+        string eventType;
+        Connection conn;
+    }
 
-    // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
-    bytes4 internal constant ERC1155_BATCH_ACCEPTED = 0xbc197c81;
+    struct BMCService {
+        string serviceType;
+        bytes payload;
+    }
 
+    struct GatherFeeMessage {
+        string fa; //  BTP address of Fee Aggregator
+        string[] svcs; //  a list of services
+    }
+
+
+    
 
     struct TransferAssets {
         string from;
@@ -219,4 +265,5 @@ library Types {
         uint256 value;
         uint256 fee;
     }
+
 }

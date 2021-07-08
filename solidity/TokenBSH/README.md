@@ -35,3 +35,5 @@ https://docs.binance.org/smart-chain/developer/fullnode.html
 2. add the private keys of the two accounts in the truffle-config.js 
 3. run the command to test
 ``` truffle test --network testnet test/bep20-token-bsh.js ```
+
+$ ganache-cli -l 12000000 --allowUnlimitedContractSize

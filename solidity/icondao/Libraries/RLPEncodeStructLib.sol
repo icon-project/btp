@@ -5,10 +5,11 @@ import "./RLPEncodeLib.sol";
 import "./TypesLib.sol";
 
 library RLPEncodeStruct {
-    using RLPEncode for bytes;
+   using RLPEncode for bytes;
     using RLPEncode for string;
     using RLPEncode for uint256;
     using RLPEncode for address;
+    using RLPEncode for int256;
 
     using RLPEncodeStruct for Types.BlockHeader;
     using RLPEncodeStruct for Types.BlockWitness;
@@ -18,9 +19,6 @@ library RLPEncodeStruct {
     using RLPEncodeStruct for Types.ReceiptProof;
     using RLPEncodeStruct for Types.Votes;
     using RLPEncodeStruct for Types.RelayMessage;
-    using RLPEncodeStruct for Types.TransferAssets;
-    using RLPEncodeStruct for Types.Asset;
-    
 
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
@@ -31,30 +29,30 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            concat3(
-                uint256(_em.eventType).encodeUint(),
-                _em.src.encodeString(),
-                _em.dst.encodeString()
+            abi.encodePacked(
+                _em.conn.from.encodeString(),
+                _em.conn.to.encodeString()
             );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        _rlp = abi.encodePacked(
+            _em.eventType.encodeString(),
+            addLength(_rlp.length, false),
+            _rlp
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-    function encodeRegisterCoin(Types.RegisterCoin memory _rc)
+    function encodeCoinRegister(string[] memory _coins)
         internal
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            concat3(
-                _rc.coinName.encodeString(),
-                _rc.id.encodeUint(),
-                _rc.symbol.encodeString()
-            );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        bytes memory _rlp;
+        bytes memory temp;
+        for (uint256 i = 0; i < _coins.length; i++) {
+            temp = abi.encodePacked(_coins[i].encodeString());
+            _rlp = abi.encodePacked(_rlp, temp);
+        }
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBMCMessage(Types.BMCMessage memory _bm)
@@ -63,16 +61,14 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            concat5(
+            abi.encodePacked(
                 _bm.src.encodeString(),
                 _bm.dst.encodeString(),
                 _bm.svc.encodeString(),
-                _bm.sn.encodeUint(),
+                _bm.sn.encodeInt(),
                 _bm.message.encodeBytes()
             );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeServiceMessage(Types.ServiceMessage memory _sm)
@@ -81,31 +77,36 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            concat2(
+            abi.encodePacked(
                 uint256(_sm.serviceType).encodeUint(),
                 _sm.data.encodeBytes()
             );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
-
-    function encodeData(Types.TransferCoin memory _data)
+/*
+    function encodeTransferCoinMsg(Types.TransferCoin memory _data)
         internal
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            concat4(
-                _data.from.encodeString(),
-                _data.to.encodeString(),
-                _data.coinName.encodeString(),
-                _data.value.encodeUint()
+        bytes memory _rlp;
+        bytes memory temp;
+        for (uint256 i = 0; i < _data.assets.length; i++) {
+            temp = abi.encodePacked(
+                _data.assets[i].coinName.encodeString(),
+                _data.assets[i].value.encodeUint()
             );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+            _rlp = abi.encodePacked(_rlp, addLength(temp.length, false), temp);
+        }
+        _rlp = abi.encodePacked(
+            _data.from.encodeString(),
+            _data.to.encodeString(),
+            addLength(_rlp.length, false),
+            _rlp
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
+    */
 
     function encodeResponse(Types.Response memory _res)
         internal
@@ -113,11 +114,14 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            concat2(_res.code.encodeUint(), _res.message.encodeString());
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+            abi.encodePacked(
+                _res.code.encodeUint(),
+                _res.message.encodeString()
+            );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
+
+    
 
     function encodeBlockHeader(Types.BlockHeader memory _bh)
         internal
@@ -130,42 +134,34 @@ library RLPEncodeStruct {
         //  Similarly, logsBloom might be also empty
         //  But, encoding this item gives the result as 0x80
         bytes memory _rlp =
-            concat5(
+            abi.encodePacked(
                 _bh.version.encodeUint(),
                 _bh.height.encodeUint(),
                 _bh.timestamp.encodeUint(),
                 _bh.proposer.encodeBytes(),
-                _bh.prevHash.encodeBytes()
+                _bh.prevHash.encodeBytes(),
+                _bh.voteHash.encodeBytes(),
+                _bh.nextValidators.encodeBytes()
             );
         bytes memory temp1;
-        bytes memory temp2;
         if (_bh.patchTxHash.length != 0) {
             temp1 = _bh.patchTxHash.encodeBytes();
         } else {
             temp1 = emptyListHeadStart();
         }
+        _rlp = abi.encodePacked(_rlp, temp1);
 
         if (_bh.txHash.length != 0) {
-            temp2 = _bh.txHash.encodeBytes();
+            temp1 = _bh.txHash.encodeBytes();
         } else {
-            temp2 = emptyListHeadStart();
+            temp1 = emptyListHeadStart();
         }
-
-        bytes memory temp3 =
-            concat5(
-                _bh.voteHash.encodeBytes(),
-                _bh.nextValidators.encodeBytes(),
-                temp1,
-                temp2,
-                _bh.logsBloom.encodeBytes()
-            );
-        _rlp = concat2(_rlp, temp3);
-
-        uint256 length;
+        _rlp = abi.encodePacked(_rlp, temp1, _bh.logsBloom.encodeBytes());
+        bytes memory temp2;
         //  SPR struct could be an empty struct
         //  In that case, serialize(SPR) = 0xF800
         if (_bh.isSPREmpty) {
-            temp3 = emptyListHeadStart();
+            temp2 = emptyListHeadStart();
         } else {
             //  patchReceiptHash and receiptHash might be empty
             //  In that case, encoding these two items gives the result as 0xF800
@@ -174,21 +170,21 @@ library RLPEncodeStruct {
             } else {
                 temp1 = emptyListHeadStart();
             }
+            temp2 = abi.encodePacked(_bh.spr.stateHash.encodeBytes(), temp1);
 
             if (_bh.spr.receiptHash.length != 0) {
-                temp2 = _bh.spr.receiptHash.encodeBytes();
+                temp1 = _bh.spr.receiptHash.encodeBytes();
             } else {
-                temp2 = emptyListHeadStart();
+                temp1 = emptyListHeadStart();
             }
-            temp3 = concat3(_bh.spr.stateHash.encodeBytes(), temp1, temp2);
-            length = numOfBytes(temp3);
-            temp1 = addLength(length, false);
-            temp3 = concat2(temp1, temp3).encodeBytes();
+            temp2 = abi.encodePacked(temp2, temp1);
+            temp2 = abi
+                .encodePacked(addLength(temp2.length, false), temp2)
+                .encodeBytes();
         }
-        _rlp = concat2(_rlp, temp3);
-        length = numOfBytes(_rlp);
-        temp1 = addLength(length, false);
-        return concat2(temp1, _rlp);
+        _rlp = abi.encodePacked(_rlp, temp2);
+
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeVotes(Types.Votes memory _vote)
@@ -196,44 +192,32 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        uint256 length;
-        bytes memory listSize;
         bytes memory _rlp;
         bytes memory temp;
 
         //  First, serialize an array of TS
-        for (uint256 i = 0; i < _vote._ts.length; i++) {
-            temp = concat2(
-                _vote._ts[i].timestamp.encodeUint(),
-                _vote._ts[i].signature.encodeBytes()
+        for (uint256 i = 0; i < _vote.ts.length; i++) {
+            temp = abi.encodePacked(
+                _vote.ts[i].timestamp.encodeUint(),
+                _vote.ts[i].signature.encodeBytes()
             );
-            length = numOfBytes(temp);
-            listSize = addLength(length, false);
-            temp = concat2(listSize, temp);
-            // temp = concat2(listSize, temp).encodeBytes();
-            _rlp = concat2(_rlp, temp);
+            _rlp = abi.encodePacked(_rlp, addLength(temp.length, false), temp);
         }
-        length = numOfBytes(_rlp);
-        listSize = addLength(length, false);
-        _rlp = concat2(listSize, _rlp);
-        // _rlp = concat2(listSize, _rlp).encodeBytes();
 
         //  Next, serialize the blockPartSetID
-        temp = concat2(
+        temp = abi.encodePacked(
             _vote.blockPartSetID.n.encodeUint(),
             _vote.blockPartSetID.b.encodeBytes()
         );
-        length = numOfBytes(temp);
-        listSize = addLength(length, false);
-        temp = concat2(listSize, temp);
-        // temp = concat2(listSize, temp).encodeBytes();
-
         //  Combine all of them
-        _rlp = concat3(_vote.round.encodeUint(), temp, _rlp);
-        //  Calculate the LIST_HEAD_START and attach
-        length = numOfBytes(_rlp);
-        listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        _rlp = abi.encodePacked(
+            _vote.round.encodeUint(),
+            addLength(temp.length, false),
+            temp,
+            addLength(_rlp.length, false),
+            _rlp
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockWitness(Types.BlockWitness memory _bw)
@@ -245,21 +229,14 @@ library RLPEncodeStruct {
         bytes memory temp;
         for (uint256 i = 0; i < _bw.witnesses.length; i++) {
             temp = _bw.witnesses[i].encodeBytes();
-            _rlp = concat2(_rlp, temp);
+            _rlp = abi.encodePacked(_rlp, temp);
         }
-        //  Attach the LIST_HEAD_START
-        uint256 length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        _rlp = concat2(temp, _rlp);
-        // _rlp = concat2(temp, _rlp).encodeBytes();
-
-        //  Combine height and witnesses
-        _rlp = concat2(_bw.height.encodeUint(), _rlp);
-
-        //  Attach the LIST_HEAD_START
-        length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        return concat2(temp, _rlp);
+        _rlp = abi.encodePacked(
+            _bw.height.encodeUint(),
+            addLength(_rlp.length, false),
+            _rlp
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeEventProof(Types.EventProof memory _ep)
@@ -271,21 +248,14 @@ library RLPEncodeStruct {
         bytes memory temp;
         for (uint256 i = 0; i < _ep.eventMptNode.length; i++) {
             temp = _ep.eventMptNode[i].encodeBytes();
-            _rlp = concat2(_rlp, temp);
+            _rlp = abi.encodePacked(_rlp, temp);
         }
-        //  Attach the LIST_HEAD_START
-        uint256 length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        // _rlp = concat2(temp, _rlp);
-        _rlp = concat2(temp, _rlp).encodeBytes();
+        _rlp = abi
+            .encodePacked(addLength(_rlp.length, false), _rlp)
+            .encodeBytes();
 
-        //  Combine index and eventMptNode
-        _rlp = concat2(_ep.index.encodeUint(), _rlp);
-
-        //  Attach the LIST_HEAD_START
-        length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        return concat2(temp, _rlp);
+        _rlp = abi.encodePacked(_ep.index.encodeUint(), _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockUpdate(Types.BlockUpdate memory _bu)
@@ -295,29 +265,27 @@ library RLPEncodeStruct {
     {
         bytes memory temp;
         bytes memory _rlp;
-        uint256 length;
         //  In the case that _validators[] is an empty array, loop will be skipped
         //  and RLP_ENCODE([bytes]) == EMPTY_LIST_HEAD_START (0xF800) instead
-        if (_bu._validators.length != 0) {
-            for (uint256 i = 0; i < _bu._validators.length; i++) {
-                temp = _bu._validators[i].encodeBytes();
-                _rlp = concat2(_rlp, temp);
+        if (_bu.validators.length != 0) {
+            for (uint256 i = 0; i < _bu.validators.length; i++) {
+                temp = _bu.validators[i].encodeBytes();
+                _rlp = abi.encodePacked(_rlp, temp);
             }
-            length = numOfBytes(_rlp);
-            temp = addLength(length, false);
-            _rlp = concat2(temp, _rlp).encodeBytes();
+            _rlp = abi
+                .encodePacked(addLength(_rlp.length, false), _rlp)
+                .encodeBytes();
         } else {
             _rlp = emptyListHeadStart();
         }
 
-        _rlp = concat3(
-            _bu._bh.encodeBlockHeader().encodeBytes(),
-            _bu._votes.encodeVotes().encodeBytes(),
+        _rlp = abi.encodePacked(
+            _bu.bh.encodeBlockHeader().encodeBytes(),
+            _bu.votes.encodeVotes().encodeBytes(),
             _rlp
         );
-        length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        return concat2(temp, _rlp);
+
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeReceiptProof(Types.ReceiptProof memory _rp)
@@ -330,25 +298,25 @@ library RLPEncodeStruct {
         //  Serialize [bytes] which are transaction receipts
         for (uint256 i = 0; i < _rp.txReceipts.length; i++) {
             temp = _rp.txReceipts[i].encodeBytes();
-            _rlp = concat2(_rlp, temp);
+            _rlp = abi.encodePacked(_rlp, temp);
         }
-        uint256 length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        _rlp = concat2(temp, _rlp).encodeBytes();
+        _rlp = abi
+            .encodePacked(addLength(_rlp.length, false), _rlp)
+            .encodeBytes();
 
         bytes memory eventProof;
-        for (uint256 i = 0; i < _rp._ep.length; i++) {
-            temp = _rp._ep[i].encodeEventProof();
-            eventProof = concat2(eventProof, temp);
+        for (uint256 i = 0; i < _rp.ep.length; i++) {
+            temp = _rp.ep[i].encodeEventProof();
+            eventProof = abi.encodePacked(eventProof, temp);
         }
-        length = numOfBytes(eventProof);
-        temp = addLength(length, false); // LIST_HEAD_START of [EVENT_PROOF]
-        eventProof = concat2(temp, eventProof);
+        _rlp = abi.encodePacked(
+            _rp.index.encodeUint(),
+            _rlp,
+            addLength(eventProof.length, false),
+            eventProof
+        );
 
-        _rlp = concat3(_rp.index.encodeUint(), _rlp, eventProof);
-        length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        return concat2(temp, _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeBlockProof(Types.BlockProof memory _bp)
@@ -357,13 +325,11 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            concat2(
-                _bp._bh.encodeBlockHeader().encodeBytes(),
-                _bp._bw.encodeBlockWitness().encodeBytes()
+            abi.encodePacked(
+                _bp.bh.encodeBlockHeader().encodeBytes(),
+                _bp.bw.encodeBlockWitness().encodeBytes()
             );
-        uint256 length = numOfBytes(_rlp);
-        bytes memory listSize = addLength(length, false);
-        return concat2(listSize, _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     function encodeRelayMessage(Types.RelayMessage memory _rm)
@@ -373,43 +339,39 @@ library RLPEncodeStruct {
     {
         bytes memory temp;
         bytes memory _rlp;
-        uint256 length;
-        if (_rm._buArray.length != 0) {
-            for (uint256 i = 0; i < _rm._buArray.length; i++) {
-                temp = _rm._buArray[i].encodeBlockUpdate().encodeBytes();
-                _rlp = concat2(_rlp, temp);
+        if (_rm.buArray.length != 0) {
+            for (uint256 i = 0; i < _rm.buArray.length; i++) {
+                temp = _rm.buArray[i].encodeBlockUpdate().encodeBytes();
+                _rlp = abi.encodePacked(_rlp, temp);
             }
-            length = numOfBytes(_rlp);
-            temp = addLength(length, false);
-            _rlp = concat2(temp, _rlp);
+            _rlp = abi.encodePacked(addLength(_rlp.length, false), _rlp);
         } else {
             _rlp = emptyListShortStart();
         }
 
         if (_rm.isBPEmpty == false) {
-            temp = _rm._bp.encodeBlockProof();
+            temp = _rm.bp.encodeBlockProof();
         } else {
             temp = emptyListHeadStart();
         }
-        _rlp = concat2(_rlp, temp);
+        _rlp = abi.encodePacked(_rlp, temp);
 
         bytes memory receiptProof;
         if (_rm.isRPEmpty == false) {
-            for (uint256 i = 0; i < _rm._rp.length; i++) {
-                temp = _rm._rp[i].encodeReceiptProof().encodeBytes();
-                receiptProof = concat2(receiptProof, temp);
+            for (uint256 i = 0; i < _rm.rp.length; i++) {
+                temp = _rm.rp[i].encodeReceiptProof().encodeBytes();
+                receiptProof = abi.encodePacked(receiptProof, temp);
             }
-            length = numOfBytes(receiptProof);
-            temp = addLength(length, false);
-            receiptProof = concat2(temp, receiptProof);
+            receiptProof = abi.encodePacked(
+                addLength(receiptProof.length, false),
+                receiptProof
+            );
         } else {
             receiptProof = emptyListShortStart();
         }
-        _rlp = concat2(_rlp, receiptProof);
+        _rlp = abi.encodePacked(_rlp, receiptProof);
 
-        length = numOfBytes(_rlp);
-        temp = addLength(length, false);
-        return concat2(temp, _rlp);
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
     //  Adding LIST_HEAD_START by length
@@ -426,9 +388,11 @@ library RLPEncodeStruct {
     {
         if (length > 55 && !isLongList) {
             bytes memory payLoadSize = encodeUintByLength(length);
-            uint256 lengthSize = numOfBytes(payLoadSize);
-            bytes memory listHeadStart = addLength(lengthSize, true);
-            return concat2(listHeadStart, payLoadSize);
+            return
+                abi.encodePacked(
+                    addLength(payLoadSize.length, true),
+                    payLoadSize
+                );
         } else if (length <= 55 && !isLongList) {
             return abi.encodePacked(uint8(LIST_SHORT_START + length));
         }
@@ -437,10 +401,11 @@ library RLPEncodeStruct {
 
     function emptyListHeadStart() internal pure returns (bytes memory) {
         bytes memory payLoadSize = encodeUintByLength(0);
-        uint256 lengthSize = numOfBytes(payLoadSize);
-        bytes memory listHeadStart =
-            abi.encodePacked(uint8(LIST_LONG_START + lengthSize));
-        return concat2(listHeadStart, payLoadSize);
+        return
+            abi.encodePacked(
+                abi.encodePacked(uint8(LIST_LONG_START + payLoadSize.length)),
+                payLoadSize
+            );
     }
 
     function emptyListShortStart() internal pure returns (bytes memory) {
@@ -522,7 +487,9 @@ library RLPEncodeStruct {
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(_rlp1, _rlp2, _rlp3, _rlp4, _rlp5);
     }
- 
+
+
+    
     //TODO: remove fee from encode/decode, as it wont not be used
     function encodeTransferAsset(Types.TransferAssets memory _data)
         internal
@@ -557,5 +524,6 @@ library RLPEncodeStruct {
         listSize = addLength(length, false);
         return concat2(listSize, _rlp);
     } 
+ 
 
 }

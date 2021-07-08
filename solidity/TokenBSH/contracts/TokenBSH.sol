@@ -19,7 +19,7 @@
 pragma solidity >=0.5.0 <=0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../../icondao/Interfaces/IBSH.sol";
+import "./Interfaces/IBSH.sol";
 import "../../icondao/Interfaces/IBMC.sol";
 import "../../icondao/Libraries/TypesLib.sol";
 
@@ -143,8 +143,8 @@ contract TokenBSH is IBSH, Owner {
         balances[msg.sender][_tokenName].refundableBalance = balances[
             msg.sender
         ][_tokenName]
-            .refundableBalance
-            .sub(_value);
+        .refundableBalance
+        .sub(_value);
         address token_addr = tokenAddr[_tokenName];
         ERC20(token_addr).approve(address(this), _value);
         ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
@@ -192,6 +192,7 @@ contract TokenBSH is IBSH, Owner {
 
     function handleFeeGathering(string memory _toFA, string memory _svc)
         external
+        override
     {
         string memory _toNetwork;
         string memory _toAddress;
@@ -213,21 +214,16 @@ contract TokenBSH is IBSH, Owner {
         //  If there's no charged fees, just do nothing and return
         if (pendingFA[serialNo].length == 0) return;
 
-        bytes memory serviceMessage =
+        bytes memory serviceMessage = Types
+        .ServiceMessage(
+            Types.ServiceType.REQUEST_TOKEN_TRANSFER,
             Types
-                .ServiceMessage(
-                Types
-                    .ServiceType
-                    .REQUEST_TOKEN_TRANSFER,
-                Types
-                    .TransferAssets(
-                    address(this).toString(),
-                    _toAddress,
-                    pendingFA[serialNo]
-                )
-                    .encodeTransferAsset()
-            )
-                .encodeServiceMessage();
+            .TransferAssets(
+                address(this).toString(),
+                _toAddress,
+                pendingFA[serialNo]
+            ).encodeTransferAsset()
+        ).encodeServiceMessage();
 
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 
@@ -265,21 +261,13 @@ contract TokenBSH is IBSH, Owner {
         (_toNetwork, _toAddress) = _to.splitBTPAddress();
         Types.Asset[] memory _assets = new Types.Asset[](1);
         _assets[0] = Types.Asset(_tokenName, _value, _fee);
-        bytes memory serviceMessage =
+        bytes memory serviceMessage = Types
+        .ServiceMessage(
+            Types.ServiceType.REQUEST_TOKEN_TRANSFER,
             Types
-                .ServiceMessage(
-                Types
-                    .ServiceType
-                    .REQUEST_TOKEN_TRANSFER,
-                Types
-                    .TransferAssets(
-                    address(msg.sender).toString(),
-                    _toAddress,
-                    _assets
-                )
-                    .encodeTransferAsset()
-            )
-                .encodeServiceMessage();
+            .TransferAssets(address(msg.sender).toString(), _toAddress, _assets)
+            .encodeTransferAsset()
+        ).encodeServiceMessage();
 
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 
@@ -329,8 +317,8 @@ contract TokenBSH is IBSH, Owner {
                     balances[caller][_tokenName].lockedBalance = balances[
                         caller
                     ][_tokenName]
-                        .lockedBalance
-                        .sub(value);
+                    .lockedBalance
+                    .sub(value);
                     //TODO: to burn the tokens
                     feeCollector[_tokenName] = feeCollector[_tokenName].add(
                         fee
@@ -472,8 +460,7 @@ contract TokenBSH is IBSH, Owner {
                 .ServiceMessage(
                 _serviceType,
                 Types.Response(_code, _msg).encodeResponse()
-            )
-                .encodeServiceMessage()
+            ).encodeServiceMessage()
         );
         emit HandleBTPMessageEvent(_sn, _code, _msg);
     }
@@ -494,15 +481,15 @@ contract TokenBSH is IBSH, Owner {
         balances[caller][_tokenName].refundableBalance = balances[caller][
             _tokenName
         ]
-            .refundableBalance
-            .add(value)
-            .add(fee);
+        .refundableBalance
+        .add(value)
+        .add(fee);
 
         balances[caller][_tokenName].lockedBalance = balances[caller][
             _tokenName
         ]
-            .lockedBalance
-            .sub(value);
+        .lockedBalance
+        .sub(value);
 
         delete requests[_sn];
         emit TransferEnd(address(this), _sn, _code, _msg);

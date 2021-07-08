@@ -17,8 +17,9 @@
  */
 
 pragma solidity >=0.5.0 <=0.8.5;
-
-import "../TokenBSH.sol";
+pragma experimental ABIEncoderV2;
+// import "../TokenBSH.sol";
+import "../Interfaces/IBSHImpl.sol";
 import "./BMC.sol";
 
 contract BMCMock is BMC {
@@ -26,13 +27,17 @@ contract BMCMock is BMC {
     using RLPEncodeStruct for Types.Response;
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.TransferAssets;
+    using RLPEncodeStruct for Types.BMCMessage;
     using ParseAddress for address;
-    TokenBSH private bsh;
+    using ParseAddress for string;
+    using Strings for string;
+
+    IBSHImpl private bsh;
 
     constructor(string memory _network) BMC(_network) {}
 
     function setBSH(address _bsh) external {
-        bsh = TokenBSH(_bsh);
+        bsh = IBSHImpl(_bsh);
     }
 
     function sendBTPMessage(
@@ -52,30 +57,54 @@ contract BMCMock is BMC {
 
     Types.Asset[] public assetsMock;
 
-    function handleRequest(
-        string memory _net,
-        string memory _svc,
+    function handleTransferReq(
         string memory _from,
         address _to,
+        string memory _net,
+        string memory _svc,
+        uint256 _sn,
         string memory _tokenName,
         uint256 _value
     ) external {
         assetsMock.push(Types.Asset(_tokenName, _value, 0));
+        bytes memory _ta = Types
+        .TransferAssets(_from, _to.toString(), assetsMock)
+        .encodeTransferAsset();
+        sendBTPMessage(
+            _net,
+            _svc,
+            0,
+            Types
+                .ServiceMessage(Types.ServiceType.REQUEST_TOKEN_TRANSFER, _ta)
+                .encodeServiceMessage()
+        );
+        delete assetsMock;
+    }
+
+    Types.Asset[] public tokensMock;
+
+    function handleTransferReqStrAddr(
+        string memory _from,
+        string memory _to,
+        string memory _net,
+        string memory _svc,
+        string memory _tokenName,
+        uint256 _value
+    ) external {
+        tokensMock.push(Types.Asset(_tokenName, _value, 0));
         sendBTPMessage(
             _net,
             _svc,
             0,
             Types
                 .ServiceMessage(
+                Types.ServiceType.REQUEST_TOKEN_TRANSFER,
                 Types
-                    .ServiceType
-                    .REQUEST_TOKEN_TRANSFER,
-                Types
-                    .TransferAssets(_from, _to.toString(), assetsMock)
+                    .TransferAssets(_from, _to, tokensMock)
                     .encodeTransferAsset()
-            )
-                .encodeServiceMessage()
+            ).encodeServiceMessage()
         );
+        delete tokensMock;
     }
 
     function handleResponse(
@@ -91,49 +120,52 @@ contract BMCMock is BMC {
             _sn,
             Types
                 .ServiceMessage(
-                Types
-                    .ServiceType
-                    .RESPONSE_HANDLE_SERVICE,
+                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
                 Types.Response(_code, _msg).encodeResponse()
-            )
-                .encodeServiceMessage()
+            ).encodeServiceMessage()
         );
     }
 
-    Types.Asset[] public tokensMock;
-
-    function handleRequestWithStringAddress(
-        string memory _net,
-        string memory _svc,
-        string memory _from,
-        string memory _to,
-        string memory _tokenName,
-        uint256 _value
+    function response(
+        Types.ServiceType _serviceType,
+        string calldata _from,
+        string calldata _svc,
+        uint256 _sn,
+        uint256 _code,
+        string calldata _msg
     ) external {
-        tokensMock.push(Types.Asset(_tokenName, _value, 0));
         sendBTPMessage(
-            _net,
+            _from,
             _svc,
-            0,
+            _sn,
             Types
                 .ServiceMessage(
-                Types
-                    .ServiceType
-                    .REQUEST_TOKEN_TRANSFER,
-                Types
-                    .TransferAssets(_from, _to, tokensMock)
-                    .encodeTransferAsset()
-            )
-                .encodeServiceMessage()
+                _serviceType,
+                Types.Response(_code, _msg).encodeResponse()
+            ).encodeServiceMessage()
         );
     }
 
-    /* function sendBTPMessage(
+    function buildBTPRespMessage(
         string memory _from,
+        string memory _to,
         string memory _svc,
-        uint256 _sn,
-        bytes memory _msg
-    ) internal {
-        this.handleBTPMessage(_from, _svc, _sn, _msg);
-    } */
+        int256 _sn,
+        uint256 _code,
+        string memory _msg
+    ) external view returns (bytes memory) {
+        return
+            Types
+                .BMCMessage(
+                _from,
+                _to,
+                _svc,
+                _sn,
+                Types
+                    .ServiceMessage(
+                    Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+                    Types.Response(_code, _msg).encodeResponse()
+                ).encodeServiceMessage()
+            ).encodeBMCMessage();
+    }
 }

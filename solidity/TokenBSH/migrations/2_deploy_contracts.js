@@ -1,4 +1,9 @@
-const BMCMock = artifacts.require("BMCMock"); 
+
+module.exports = async function (deployer) {
+
+};
+
+/*const BMCMock = artifacts.require("BMCMock");
 const BSH = artifacts.require("TokenBSH");
 const PrecompilesMock = artifacts.require("PrecompilesMock");
 const ERC20TKN = artifacts.require("ERC20TKN");
@@ -18,3 +23,4 @@ module.exports = async function (deployer) {
   await deployer.deploy(BEP20TKN);
   await deployer.deploy(PrecompilesMock);
 };
+*/

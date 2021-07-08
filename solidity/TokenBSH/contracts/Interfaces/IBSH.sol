@@ -35,4 +35,13 @@ interface IBSH {
         uint256 _code,
         string calldata _msg
     ) external;
+
+    /**
+     @notice BSH handle Gather Fee Message request from BMC contract
+     @dev Caller must be BMC contract only
+     @param _fa     A BTP address of fee aggregator
+     @param _svc    A name of the service
+    */
+    function handleFeeGathering(string calldata _fa, string calldata _svc)
+        external;
 }
