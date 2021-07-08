@@ -77,6 +77,7 @@ contract BSHCore is
        @param _owner    Address of a new Onwer.
    */
     function addOwner(address _owner) external override onlyOwner {
+        require(owners[_owner] == false, "ExistedOwner");
         owners[_owner] = true;
         listOfOwners.push(_owner);
         emit SetOwnership(msg.sender, _owner);
@@ -90,6 +91,7 @@ contract BSHCore is
    */
     function removeOwner(address _owner) external override onlyOwner {
         require(listOfOwners.length > 1, "Unable to remove last Owner");
+        require(owners[_owner] == true, "Removing Owner not found");
         delete owners[_owner];
         _remove(_owner);
         emit RemoveOwnership(msg.sender, _owner);
