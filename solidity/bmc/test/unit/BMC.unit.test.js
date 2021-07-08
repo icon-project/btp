@@ -27,13 +27,6 @@ contract('BMC tests', (accounts) => {
             bmv4 = await MockBMV.new();
         });
     
-        it('check contract code size', async () => {
-            console.log('BMC Management : ', (BMCManagement.deployedBytecode.length / 2) - 1);
-            assert.isBelow((BMCManagement.deployedBytecode.length / 2) - 1, 24576, 'contract size is restricted to 24KB');
-            console.log('BMC Periphery : ', (BMCPeriphery.deployedBytecode.length / 2) - 1);
-            assert.isBelow((BMCPeriphery.deployedBytecode.length / 2) - 1, 24576, 'contract size is restricted to 24KB');
-        });
-    
         /***************************************************************************************
                                     Set BMC Periphery Unit Tests
         ***************************************************************************************/
@@ -933,7 +926,7 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.txSeq, 2, 'invalid txSeq');
         });
     
-        it('should emit message if dest in msg differs from bmc address (msg.sn >= 0)', async() => {
+        it('should emit message if dest in msg is same as bmc address (msg.sn >= 0)', async() => {
             const transferCoin = [
                 '0xaaa',
                 'btp://1234.pra/0xbbb',
@@ -956,7 +949,7 @@ contract('BMC tests', (accounts) => {
             assert.isNotEmpty(res);
         });
     
-        it('should emit error message if dest in received msg differs from bmc address (msg.sn >= 0) and bsh gets errors', async() => {
+        it('should emit error message if dest in received msg is same as bmc address (msg.sn >= 0) and bsh gets errors', async() => {
             const transferCoin = [
                 '0xaaa',
                 'btp://1234.pra/0xbbb',
@@ -995,7 +988,7 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.txSeq, 2, 'failed to update txSeq');
         });
     
-        it('should emit message if dest in received msg differs from bmc address (msg.sn < 0)', async() => {
+        it('should emit message if dest in received msg is same as bmc address (msg.sn < 0)', async() => {
             const errResponse = [
                 0,
                 'Invalid service',
@@ -1016,7 +1009,7 @@ contract('BMC tests', (accounts) => {
             assert.isNotEmpty(res);
         });
     
-        it('should emit message if dest in received msg differs from bmc address (msg.sn < 0) and bsh gets errors', async() => {
+        it('should emit message if dest in received msg is same as bmc address (msg.sn < 0) and bsh gets errors', async() => {
             const errResponse = [
                 0,
                 'Invalid service',
@@ -1041,7 +1034,7 @@ contract('BMC tests', (accounts) => {
             });
         });
     
-        it('should emit message if dest in received msg differs from bmc address (msg.sn < 0) and bsh gets low level errors', async() => {
+        it('should emit message if dest in received msg is same as bmc address (msg.sn < 0) and bsh gets low level errors', async() => {
             const errResponse = [
                 12,
                 'Invalid service',

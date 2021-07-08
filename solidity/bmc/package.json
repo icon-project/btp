@@ -22,9 +22,11 @@
   "scripts": {
     "linter": "./node_modules/.bin/solhint -f table ./contracts/**/*.sol -f table ./contracts/*.sol",
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l",
-    "test": "truffle test",
-    "compile": "truffle compile",
-    "migrate": "truffle migrate"
+    "contract:compile": "truffle compile --all",
+    "test": "yarn test:unit && yarn test:integration",
+    "test:unit": "rm -rf .openzeppelin && truffle test test/unit/*.js",
+    "test:integration" : "rm -rf .openzeppelin && truffle test test/integration/*.js"
+
   },
   "husky": {
     "hooks": {
