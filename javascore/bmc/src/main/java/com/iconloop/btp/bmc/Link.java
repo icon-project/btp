@@ -29,6 +29,8 @@ import java.util.List;
 public class Link {
     //TODO define default max_aggregation
     public static final int DEFAULT_MAX_AGGREGATION = 10;
+    //TODO define default delay_limit, if delay_limit < 3, too sensitive
+    public static final int DEFAULT_DELAY_LIMIT = 3;
 
     private Relays relays;
 
@@ -41,7 +43,7 @@ public class Link {
     private int blockIntervalSrc;
     private int blockIntervalDst;
     private int maxAggregation = DEFAULT_MAX_AGGREGATION;
-    private int delayLimit; //if delay_limit < 3, too sensitive
+    private int delayLimit = DEFAULT_DELAY_LIMIT;
 
     private int relayIdx;
     private long rotateHeight;
