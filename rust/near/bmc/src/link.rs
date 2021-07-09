@@ -1,7 +1,6 @@
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::{env, near_bindgen};
 use std::sync::Mutex;
 
 use std::collections::HashMap;
@@ -158,7 +157,7 @@ impl Link for Links {
 
         match link.is_valid() {
             Ok(true) => {
-                if !self.0.contains_key(&link.0.clone().into_bytes()) {
+                if self.0.contains_key(&link.0.clone().into_bytes()) {
                     let linkprop = LinkProps {
                         block_interval_src: block_interval,
                         max_aggregation: mxagg,
