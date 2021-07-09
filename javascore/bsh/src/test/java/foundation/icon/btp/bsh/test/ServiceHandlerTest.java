@@ -75,7 +75,7 @@ class ServiceHandlerTest extends TestBase {
                 .map(a -> a.getAddress().toString())
                 .collect(Collectors.joining(","));
         bmc = sm.deploy(owners[0], BMCMock.class);
-        bsh = sm.deploy(owners[0], ServiceHandler.class, bmc.getAddress());
+        bsh = sm.deploy(owners[0], ServiceHandler.class, bmc.getAddress().toString());
         token = sm.deploy(owners[0], IRC2Basic.class, tokenName, symbol, decimals, initialSupply);
 
         BigInteger balance = (BigInteger) token.call("balanceOf", owners[0].getAddress());

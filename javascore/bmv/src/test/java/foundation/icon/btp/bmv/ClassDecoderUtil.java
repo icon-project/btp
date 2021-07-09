@@ -15,11 +15,12 @@
  */
 package foundation.icon.btp.bmv;
 
+import foundation.icon.btp.bmv.lib.Codec;
+import foundation.icon.btp.bmv.types.*;
 import foundation.icon.ee.io.DataReader;
 import foundation.icon.ee.io.DataWriter;
 import foundation.icon.ee.types.Address;
 import foundation.icon.ee.util.Crypto;
-import score.Context;
 import scorex.util.ArrayList;
 
 import java.util.List;
@@ -100,7 +101,7 @@ public class ClassDecoderUtil {
             normalReceiptHash = rr.readByteArray();
 
         while (rr.hasNext()) {
-                rr.skip(1);
+            rr.skip(1);
         }
         rr.readFooter();
         // clean-up remains
@@ -108,7 +109,7 @@ public class ClassDecoderUtil {
             r.skip(1);
         }
         r.readFooter();
-        return new BlockHeader(version,
+       /* return new BlockHeader(version,
                     height,
                     proposer,
                     prevID,
@@ -116,7 +117,8 @@ public class ClassDecoderUtil {
                     votesHash,
                     nextValidatorHash,
                     normalReceiptHash,
-                    hash);
+                    hash);*/
+        return BlockHeader.fromBytes(hash);
 
     }
 
@@ -159,10 +161,10 @@ public class ClassDecoderUtil {
         return validatorList;
     }
 
-    public static byte[] formatAddress(byte[] addr){
-        if(addr.length == 21)
+    public static byte[] formatAddress(byte[] addr) {
+        if (addr.length == 21)
             return addr;
-        var ba2 = new byte[addr.length+1];
+        var ba2 = new byte[addr.length + 1];
         System.arraycopy(addr, 0, ba2, 1, addr.length);
         ba2[0] = 1;
         return ba2;
@@ -177,49 +179,35 @@ public class ClassDecoderUtil {
         w.write(index);
         byte[] mptKey = w.toByteArray();
 
-        byte[][] mptProofs = readMPTProofs(reader.readByteArray());
+        List<byte[]> mptProofs = readMPTProofs(reader.readByteArray());
 
         List<EventProof> eventProofs = new java.util.ArrayList<EventProof>();
 
         reader.readListHeader();
         reader.readListHeader();
-        while(reader.hasNext())
+        while (reader.hasNext())
             eventProofs.add(decodeEventProof(reader.readByteArray()));
 
-        return new ReceiptProof(index, mptKey, mptProofs, eventProofs.toArray(new EventProof[]{}));
+        return new ReceiptProof(index, mptKey, mptProofs, eventProofs, new java.util.ArrayList<>());
     }
 
     public static EventProof decodeEventProof(byte[] serialized) {
         DataReader reader = Codec.rlp.newReader(serialized);
-        DataWriter w = Codec.rlp.newWriter();
-
         reader.readListHeader();
         if (!reader.hasNext())
-            return new EventProof(0, new byte[]{0}, new byte[][]{});
-        // System.out.println(Hex.toHexString(serialized));
+            return new EventProof(0, new byte[]{0});
         int index = reader.readInt();
-
-        w.write(index);
-        byte[] mptKey = w.toByteArray();
-
-        byte[][] mptProofs = null;
-
-        if(reader.hasNext())
-            mptProofs = readMPTProofs(reader.readByteArray());
-
-        //for(byte[] p : mptProofs)
-        //  System.out.println(Hex.toHexString(p));
-
-        return new EventProof(index, mptKey, mptProofs);
+        byte[] proof = reader.readByteArray();
+        return new EventProof(index, proof);
     }
 
-    private static byte[][] readMPTProofs(byte[] serialized) {
+    private static List<byte[]> readMPTProofs(byte[] serialized) {
         List<byte[]> mptProofs = new java.util.ArrayList<>();
         DataReader reader = Codec.rlp.newReader(serialized);
         reader.readListHeader();
         while (reader.hasNext()) {
             mptProofs.add(reader.readByteArray());
         }
-        return mptProofs.toArray(new byte[][]{});
+        return mptProofs;
     }
 }

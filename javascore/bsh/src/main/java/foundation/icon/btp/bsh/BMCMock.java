@@ -1,6 +1,5 @@
 package foundation.icon.btp.bsh;
 
-import score.*;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -14,10 +13,10 @@ public class BMCMock {
     public BMCMock() {
 
     }
+
     @External
     public void addService(String _svc, Address _addr) {
         bshServices.set(_svc, _addr);
-        Context.println("Inside add service");
     }
 
     @External
@@ -27,7 +26,6 @@ public class BMCMock {
 
     @External
     public void handleBTPMessage(String from, String svc, BigInteger sn, byte[] msg) {
-        Context.println("Inside handleBTPMessage");
         Address _addr = bshServices.get(svc);
         Context.call(_addr, "handleBTPMessage", from, svc, sn, msg);
     }

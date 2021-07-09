@@ -1,13 +1,11 @@
 package foundation.icon.btp.bmv;
 
+import foundation.icon.btp.bmv.lib.Codec;
 import foundation.icon.ee.io.DataReader;
 import foundation.icon.ee.io.DataWriter;
-
 import foundation.icon.ee.types.Address;
 import foundation.icon.ee.util.Crypto;
 import org.bouncycastle.util.encoders.Hex;
-import score.ByteArrayObjectWriter;
-import score.Context;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -112,26 +110,26 @@ public class Votes2 {
 
     public static int VOTE_TYPE_PRECOMMIT = 1;
 
-    public boolean verify(long height, byte[] blockId, ValidatorList2 validatorList){
+    public boolean verify(long height, byte[] blockId, ValidatorList2 validatorList) {
         List<Address> positiveValidators = new ArrayList<>();
 
-        for(Votes2.VoteItem voteItem:this.voteItems){
-            byte[] encVoteMessage  = encodeVoteMessage(voteItem, height, blockId);
+        for (Votes2.VoteItem voteItem : this.voteItems) {
+            byte[] encVoteMessage = encodeVoteMessage(voteItem, height, blockId);
             byte[] voteMessageHash = Crypto.sha3_256(encVoteMessage);
-            byte[] publicKey       = Crypto.recoverKey(voteMessageHash, voteItem.signature, true);
-            Address address        = new Address(Crypto.getAddressBytesFromKey(publicKey));
+            byte[] publicKey = Crypto.recoverKey(voteMessageHash, voteItem.signature, true);
+            Address address = new Address(Crypto.getAddressBytesFromKey(publicKey));
 
-            if(validatorList.contains(address) && !positiveValidators.contains(address))
-                    positiveValidators.add(address);
-                else
-                   throw new IllegalStateException("Duplicate Votes");
+            if (validatorList.contains(address) && !positiveValidators.contains(address))
+                positiveValidators.add(address);
+            else
+                throw new IllegalStateException("Duplicate Votes");
 
             System.out.println(Hex.toHexString(address.toByteArray()));
             System.out.println(address.toString());
             System.out.println("found -> " + validatorList.contains(address));
         }
 
-        double r = (validatorList.getValidators().length * (double)2/3);
+        double r = (validatorList.getValidators().length * (double) 2 / 3);
         return (positiveValidators.size() <= r);
     }
 

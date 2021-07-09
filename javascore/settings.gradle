@@ -1,3 +1,5 @@
 rootProject.name = 'javascore-btp'
 
-include 'btp-api', 'bmv', 'bsh'
+include 'bmv', 'bsh', 'integration-tests'
+include 'BMC'
+

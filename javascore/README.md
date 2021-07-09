@@ -31,7 +31,7 @@ This project currently depends on building local maven snapshot for the ICON Jav
 ##### Build bmv and bsh
 ``` ./gradlew bmv:build ```
 
-## Run Integration Tests
+## Run Integration Tests with deployment using integration test cases
 Follow local gochain setup guide:
 [gochain_icon_local_node_guide](https://github.com/icon-project/goloop/blob/master/doc/gochain_icon_local_node_guide.md)
 
@@ -41,4 +41,39 @@ From the integration-tests project, run the following:
 
 For a specific test, use --tests <testname>
 
-``` ./gradlew testJavaScore -DNO_SERVER=true --tests MTATest -DCHAIN_ENV=./data/env.properties ```
+``` ./gradlew <project_name>:testJavaScore -DNO_SERVER=true --tests MTATest -DCHAIN_ENV=./data/env.properties ```
+
+
+### Deployment in a local node using scripts & integration test for local node
+
+Run integration tests from local deployment:
+
+steps:
+
+1. clean & create optimizeJar of BMC, BSH, BMV
+
+``` gradle <project_name>:clean ```
+
+``` gradle <project_name>:optimizedJar```
+
+2. run ```deploy-script.sh deployToLocal```
+4. substitute the BMC score address, BMV score address & BMV score deploy Txn address from the output of above script at setup() method in BMVLocalTest.java file
+5. Also pass appropriate keystore file & password in setup() method in BMVLocalTest.java file
+3. run BMV local Test from integration test
+   ``` gradle bsh:testJavaScore -DNO_SERVER=true --tests BMVLocalTest -DCHAIN_ENV=./data/env.properties -PkeystoreName=keystore -PkeystorePass=Admin@123```
+   
+Other commands:
+
+
+BMC:
+
+``` gradle bmc:deployToLocal -PkeystoreName=../keys/keystore_god.json -PkeystorePass=gochain ```
+
+BMV:
+
+``` gradle bmv:deployToLocal -DBMC_ADDRESS=<BMC_SCORE_ADDRESS> -PkeystoreName=../keys/keystore_god.json -PkeystorePass=gochain ```
+
+BSH:
+
+``` gradle bsh :deployToLocal -DBMC_ADDRESS=<BMC_SCORE_ADDRESS> -PkeystoreName=../keys/keystore_god.json -PkeystorePass=gochain ```
+

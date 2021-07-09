@@ -50,9 +50,9 @@ public class ServiceHandler {
     private final DictDB<BigInteger, TransferAsset> pendingFeesDb = Context.newDictDB("pending_fees", TransferAsset.class);
     DictDB<Address, Boolean> ownersDb = Context.newDictDB("owners", Boolean.class);
 
-    public ServiceHandler(Address _bmc) {
+    public ServiceHandler(String _bmc) {
         //register the BMC link for this BSH
-        bmcDb.set(_bmc);
+        bmcDb.set(Address.fromString(_bmc));
         serialNo.set(BigInteger.ZERO);
         ownersDb.set(Context.getOwner(), true);
         numberOfOwners.set(1);
@@ -211,7 +211,6 @@ public class ServiceHandler {
             try {
                 dataTo = Address.fromString(_ta.getTo());
             } catch (Exception e) {
-                Context.println("################### exception thrown for address");
                 Context.revert(ErrorCodes.BSH_INVALID_ADDRESS_FORMAT, "Invalid Address format");
             }
             Asset _asset = _ta.getAssets().get(0);//TODO: convert this to for loop to transfer all the assets value
@@ -328,13 +327,10 @@ public class ServiceHandler {
     public List<Map<String, BigInteger>> getAccumulatedFees() {
         //ArrayList<Asset> _assets = new ArrayList<Asset>();
         List<Map<String, BigInteger>> tokens = new ArrayList<>();
-        Context.println("############## dbsize ############" + tokenNameDb.size());
         for (int i = 0; i < tokenNameDb.size(); i++) {
             if (feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).compareTo(BigInteger.ZERO) != 0) {
                 // Asset _asset = new Asset(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i)), BigInteger.ZERO);
                 // _assets.add(_asset);
-                Context.println("############## tokenName" + tokenNameDb.get(i));
-                Context.println("############## fees" + feeCollector.getOrDefault(tokenNameDb.get(i), BigInteger.ZERO).toString());
                 tokens.add(Map.of(tokenNameDb.get(i), feeCollector.get(tokenNameDb.get(i))));
             }
         }
@@ -445,8 +441,9 @@ public class ServiceHandler {
 // 3. Fee aggregation handle test- done
 // 4. one Full complete flow test
 // 5. Integration test - done
-// 6. handle error test case
+// 6. handle error test case -done
 // 7. invalid serial number - done
 // 8. check the BTP address format - done
 // 9. Request token register service
 // 10. withdraw/reclaim -
+// add SVC as constructor parameter

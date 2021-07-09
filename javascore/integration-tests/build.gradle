@@ -15,7 +15,6 @@ allprojects {
 }
 
 dependencies {
-    implementation project(':btp-api')
     implementation project(':bmv')
     implementation project(':bsh')
     implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
@@ -27,16 +26,19 @@ dependencies {
     implementation 'org.web3j:rlp:5.0.0'
 
     testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
     testImplementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
+    //testImplementation fileTree(dir: '../lib', include: 'testsvc.jar')
     testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
 }
 
 class ChainTest extends Test {
     String configFile = "./data/config.json"
     String logFile = ".chain/normal.log"
-    String envFile = "./data/env.properties"
+    String envFile = "./data/sejong_env.properties"
+    //String envFile = "./data/env.properties"
     String chainDir = ".chain/normal"
     String gsFile = null
     String gsDir = null
@@ -121,7 +123,7 @@ class ChainTest extends Test {
             if (useDocker != null && useDocker == "true") {
                 startDocker(getServerPort())
             } else {
-                startServer()
+                //startServer()
             }
             systemProperty("CHAIN_ENV", envFile)
 
@@ -179,6 +181,22 @@ task testJavaScore(type: ChainTest) {
     dependsOn 'cleanTestJavaScore'
     testLogging.showStandardStreams = true
 }
+
+
+task testJavaScoreSejong(type: ChainTest) {
+    useJUnitPlatform {
+        includeTags "javaScore"
+    }
+    configFile = "./data/config/java.json"
+    chainDir = ".chain/javascore"
+    logFile = ".chain/javascore.log"
+    envFile = "./data/chainenv/sejong.props"
+    dockerEnv = "javascore"
+
+    dependsOn 'cleanTestJavaScore'
+    testLogging.showStandardStreams = true
+}
+
 
 // need to add this option to retrieve formal parameter names
 compileJava {

@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+}
+
+version 'unspecified'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    compileOnly 'foundation.icon:javaee-api:0.8.9-SNAPSHOT'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.bmc.BMCMock'
+    archivesBaseName = 'bmc'
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
+deployJar {
+    endpoints {
+        Sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 	0x53
+        }
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 0x3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+
+}
+
+
+test {
+    useJUnitPlatform()
+}

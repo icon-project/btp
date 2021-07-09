@@ -8,20 +8,60 @@ repositories {
 }
 
 dependencies {
-    implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
-    implementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
-    implementation 'foundation.icon:javaee-rt:0.8.7-SNAPSHOT'
+    compileOnly 'foundation.icon:javaee-api:0.8.9-SNAPSHOT'
+    compileOnly 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    compileOnly 'foundation.icon:javaee-rt:0.8.9-SNAPSHOT'
     implementation 'com.github.sink772:javaee-scorex:0.5.2'
     implementation 'org.msgpack:msgpack-core:0.8.17'
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
 
-    //Temporarily rlp for some unit testing against the official ICON SDK API
-    implementation 'org.web3j:rlp:5.0.0'
-
+    testImplementation 'foundation.icon:javaee-api:0.8.9-SNAPSHOT'
+    testImplementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    testImplementation 'org.mockito:mockito-core:3.4.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'foundation.icon:javaee-rt:0.8.9-SNAPSHOT'
     testRuntime 'org.slf4j:slf4j-api:1.7.26'
     testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+
+    testImplementation 'org.bouncycastle:bcprov-jdk15on:1.60'
+    testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
+    testImplementation fileTree(dir: '../lib', include: 'testsvc.jar')
+
+}
+
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.bmv.BTPMessageVerifier'
+    archivesBaseName = 'bmv'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        Sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 0x53
+        }
+        local {
+            uri = 'http://localhost:9082/api/v3'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('bmc', System.getProperty("BMC_ADDRESS"))
+        arg('network', '0x1.bsc')
+        arg('validators', '-D-U2HBOHT8zDfCacwYuVQpRvoIlyviUItEW5HJRrlV3-6Cqu-4X8RBlNkOU1uWKFxpNomP9naP9UrKvtF433UI=')
+        arg('offset', '0x37')
+        arg('rootSize', '3')
+        arg('cacheSize', '0xA')
+        arg('isAllowNewerWitness', '0x1')
+        arg('lastBlockHash', 'c93b8edba9a9d845138f2ae0fc38d66958251e13fd18d1549d3e7104585fa10b')
+    }
 }
 
 test {

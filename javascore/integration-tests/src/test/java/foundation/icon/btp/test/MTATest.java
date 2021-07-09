@@ -15,6 +15,8 @@
  */
 package foundation.icon.btp.test;
 
+import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
+import foundation.icon.btp.bmv.types.BlockWitness;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.Wallet;
@@ -35,8 +37,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Base64;
-
-import foundation.icon.btp.bmv.*;
 
 import static foundation.icon.test.common.Env.LOG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +59,7 @@ class MTATest extends TestBase {
         HttpProvider provider = new HttpProvider(channel.getAPIUrl(Env.testApiVer));
         iconService = new IconService(provider);
 
-        System.out.println("iconService => " + channel.getAPIUrl(Env.testApiVer) );
+        System.out.println("iconService => " + channel.getAPIUrl(Env.testApiVer));
         txHandler = new TransactionHandler(iconService, chain);
         secureRandom = new SecureRandom();
 
@@ -91,7 +91,7 @@ class MTATest extends TestBase {
         byte[] data = Base64.getUrlDecoder().decode(enc);
 
         Score score = txHandler.deploy(owner, MerkleTreeAccumulator.class,
-               new RpcObject.Builder().put("mta", new RpcValue(data)).build());
+                new RpcObject.Builder().put("mta", new RpcValue(data)).build());
 
         LOG.info("Deployed address " + score.getAddress());
 
@@ -196,8 +196,8 @@ class MTATest extends TestBase {
                 "4wbhoC0VvFD4PpBqRsEZM7pi5gqn72Sf_eyew2IqETwos4HB");
 
         //"4wbhoC0VvFD4PpBqRsEZM7pi5gqn72Sf_eyew2IqETwos4HB",
-          //      "wgfA",
-            //    "-GYI-GOgG7APaC4bJqueNu5_n4dJR7wAtZJsaUUaItyZ_oz9IcagC0625ghZePK1aO09juXkQVLKj1_6yEUZbJ22fPVoEX2gFHr8ibtLmrXzaRwW_wCbOVg0XwLazrGxrDFy2pgdgJc=");
+        //      "wgfA",
+        //    "-GYI-GOgG7APaC4bJqueNu5_n4dJR7wAtZJsaUUaItyZ_oz9IcagC0625ghZePK1aO09juXkQVLKj1_6yEUZbJ22fPVoEX2gFHr8ibtLmrXzaRwW_wCbOVg0XwLazrGxrDFy2pgdgJc=");
 
         SampleData data1 = new SampleData("4gagAB7_6SlDr-8ReDBwNuRqYGuZv5c_A1k6006BIm765hQ=");
         assertEquals(BigInteger.valueOf(6), bw.call("getHeight", null).asInteger());

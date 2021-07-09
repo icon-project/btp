@@ -37,7 +37,8 @@ import foundation.icon.test.common.*;
 import foundation.icon.test.score.Score;
 import org.junit.jupiter.api.*;
 import scorex.util.ArrayList;
-
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -46,6 +47,9 @@ import java.util.List;
 import static foundation.icon.test.common.Env.LOG;
 import static java.math.BigInteger.TEN;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Tag(Constants.TAG_JAVA_SCORE)
 class ServiceHandlerTest extends TestBase {

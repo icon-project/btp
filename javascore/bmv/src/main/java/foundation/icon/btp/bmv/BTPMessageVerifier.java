@@ -15,23 +15,26 @@
  */
 package foundation.icon.btp.bmv;
 
-import foundation.icon.icx.data.TransactionResult;
-import org.bouncycastle.util.encoders.Hex;
+
+import foundation.icon.btp.bmv.lib.HexConverter;
+import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
+import foundation.icon.btp.bmv.types.*;
 import score.Address;
-import score.ByteArrayObjectWriter;
 import score.Context;
-import score.annotation.EventLog;
+import score.VarDB;
 import score.annotation.External;
-
 import scorex.util.ArrayList;
+import scorex.util.Base64;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * A relay message is composed of both BTP Messages and proof of existence of these BTP Message
  * Merkle Accumulator can be used for verifying old hashes. BMV sustains roots of Merkle Tree Accumulator,
  * and relay will sustain all elements of Merkle Tree Accumulator.
- *
+ * <p>
  * The relay may make the proof of any one of old hashes. So, even if byzantine relay updated the trust information
  * with the proof of new block, normal relay can send BTP Messages in the past block with the proof.
  */
@@ -39,101 +42,149 @@ public class BTPMessageVerifier {
 
     final static String RLPn = "RLPn";
 
-    private long lastHeight;
+    private final VarDB<Address> bmcScoreAddress = Context.newVarDB("bmc", Address.class);
+    private final VarDB<String> network = Context.newVarDB("network", String.class);
+    private final VarDB<BigInteger> lastHeight = Context.newVarDB("lastHeight", BigInteger.class);
+    private final VarDB<MerkleTreeAccumulator> mta = Context.newVarDB("mta", MerkleTreeAccumulator.class);
+    private final VarDB<ValidatorList> validatorList = Context.newVarDB("validators", ValidatorList.class);
+    private final VarDB<Boolean> mtaUpdated = Context.newVarDB("mtaUpdated", Boolean.class);
 
-    private String bmcScoreAddress;
-    private String netAddress;
-    private String network;
-
-    private MerkleTreeAccumulator mta;
-    private ValidatorList validatorList;
-    private Votes votes;
-    private boolean mtaUpdated = false;
-
-    public BTPMessageVerifier(String network,
-                              String bmcScoreAddress,
-                              byte[] validators,
-                              byte[] encMTA,
-                              int offset) {
-
-        this.network         = network;
-        this.bmcScoreAddress = bmcScoreAddress;
-        this.validatorList   = new ValidatorList(new Address[]{});
-        this.mta             = new MerkleTreeAccumulator(null);
-        this.mta.setOffset(offset);
-        this.lastHeight      = offset;
-        //this.bmcScore = bmcScoreAddress
-        //this.bmcScore.addVerifier(network, Context.getAddress())
+    public BTPMessageVerifier(
+            String bmc,
+            String network,
+            String validators,
+            int offset,
+            int rootSize,
+            int cacheSize,
+            boolean isAllowNewerWitness,
+            byte[] lastBlockHash) {
+        this.network.set(network);
+        this.bmcScoreAddress.set(Address.fromString(bmc));
+        byte[] serializedValidator = Base64.getUrlDecoder().decode(validators.getBytes());
+        this.validatorList.set(ValidatorList.fromBytes(serializedValidator));
+        this.lastHeight.set(BigInteger.valueOf(offset));
+        this.mta.set(new MerkleTreeAccumulator(0, offset, rootSize, cacheSize, isAllowNewerWitness, lastBlockHash, null, null));
     }
 
-    /**
-     * @param bmc String address of BMC handling the message
-     * @param prev String BTP address of previous BMC
-     * @param seq int next sequence number to get a message
-     * @param msg serialised bytes of relay Message
-     * @return List of serialised bytes of BTP Message's
-     *
-     * 1 - Decodes Relay Messages and process BTP Messages
-     * 2 - If there is an error, then it sends a BTP Message containing the Error Message
-     * 3 - BTP Messages with old sequence numbers are ignored. A BTP Message contains future sequence number will fail.
-     */
     @External
-    public byte[] handleRelayMessage(String bmc, String prev, int seq, byte[] msg) {
-
+    public List<byte[]> handleRelayMessage(String bmc, String prev, BigInteger seq, byte[] msg) {
+        byte[] messageEventSignature = HexConverter.hexStringToByteArray("37be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1b"); // kekak256("Message(string,uint256,bytes)");
+        List<byte[]> msgList = new ArrayList<>();
         BTPAddress currBMCAddress = BTPAddress.fromString(bmc);
         BTPAddress prevBMCAddress = BTPAddress.fromString(prev);
-
-        RelayMessage relayMessage = RelayMessage.fromBytes(msg);
-
-        Context.require(relayMessage.getBlockUpdates().length > 0 || relayMessage.getBlockProof() != null);
-
-        byte[] receiptHash = lastReceiptHash(relayMessage);
-
-        int nextSeq = seq + 1;
-        List<byte[]> msgList = new ArrayList<>();
-        for(ReceiptProof receiptProof : relayMessage.getReceiptProofs()) {
-           Receipt receipt = receiptProof.prove(receiptHash);
+        canBMCAccess(currBMCAddress, prevBMCAddress);
+        byte[] _msg = null;
+        try {
+            _msg = Base64.getUrlDecoder().decode(msg);
+        } catch (Exception e) {
+            Context.revert(BMVErrorCodes.INVALID_RELAY_MSG, "Failed to decode relay message");
+        }
+        RelayMessage relayMessage = RelayMessage.fromBytes(_msg);
+        if (relayMessage.getBlockUpdates().length == 0
+                && (relayMessage.getBlockProof() == null
+                || (relayMessage.getBlockProof() != null && relayMessage.getBlockProof().getBlockHeader() == null))) {
+            Context.revert(BMVErrorCodes.FAILED_TO_DECODE, "Invalid relay message");
+        }
+        List<Object> result = lastReceiptRootHash(relayMessage);
+        byte[] receiptRootHash = (byte[]) result.get(0);
+        BigInteger lastHeight = (BigInteger) result.get(1);
+        BigInteger nextSeq = seq.add(BigInteger.ONE);// nextSeq= seq + 1
+        for (ReceiptProof receiptProof : relayMessage.getReceiptProofs()) {
+            Receipt receipt = receiptProof.prove(receiptRootHash);
+            for (ReceiptEventLog eventLog : receipt.getLogs()) {
+                //TODO: check better way, now the event log doesnt have the prefix
+                if (!prevBMCAddress.getContract().contains(HexConverter.bytesToHex(eventLog.getAddress()).toLowerCase())) {
+                    continue;
+                }
+                //skip : if the 0th of the topic(which has the method signature) doesnt match the signature of keccak(Message(string,uint256,bytes))
+                if (!Arrays.equals(messageEventSignature, eventLog.getTopics().get(0))) {
+                    continue;
+                }
+                //TODO: check why _next value is indexed? and remove later
+                EventDataBTPMessage messageEvent = EventDataBTPMessage.fromBytes(eventLog.getTopics().get(1), eventLog.getData());
+                if (messageEvent.getSeq().compareTo(nextSeq) != 0) {
+                    Context.revert(BMVErrorCodes.INVALID_SEQ_NUMBER, "Invalid sequence No:" + messageEvent.getSeq() + ", Expected: " + nextSeq);
+                } else {
+                    msgList.add(messageEvent.getMsg());
+                    //BTPMessage.fromBytes(messageEvent.getMsg());
+                    nextSeq = nextSeq.add(BigInteger.ONE);
+                }
+            }
+        }
+        if (msgList.size() > 0) {
+            this.lastHeight.set(lastHeight);
         }
 
-        return new byte[0];
+        return msgList;
     }
 
-    private byte[] lastReceiptHash(RelayMessage relayMessage) {
-        lastHeight = 0;
-        byte[] receiptHash = null;
-        for(BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
-            int nextHeight = this.mta.getHeight() + 1;
-            log("Receipt Hash -> " + nextHeight + " " + blockUpdate.getBlockHeader().getHeight());
-            if (nextHeight == blockUpdate.getBlockHeader().getHeight()) {
-                if (blockUpdate.verify(this.validatorList))
-                    this.validatorList = ValidatorList.fromAddressBytes(blockUpdate.getNextValidators());
-                this.mta.add(blockUpdate.getBlockHeader().getHash());
-                this.mtaUpdated = true;
-                receiptHash = blockUpdate.getBlockHeader().getNormalReceiptHash();
-                lastHeight = blockUpdate.getBlockHeader().getHeight();
-            } else
-                Context.println("invalid blockUpdate height "
-                        + blockUpdate.getBlockHeader().getHeight() + ", expected " + nextHeight);
+
+    private void canBMCAccess(BTPAddress currBMCAddress, BTPAddress prevAddress) {
+        if (!(Context.getCaller().equals(this.bmcScoreAddress.get()) || Context.getCaller().equals(Context.getOwner()))) {
+            Context.revert(BMVErrorCodes.INVALID_BMC_SENDER, "Invalid message sender from BMC");
+        }
+
+        if (!this.network.get().equals(prevAddress.getNet())) {
+            Context.revert(BMVErrorCodes.INVALID_BMC_PREV, "Invalid previous BMC " + prevAddress.getNet());
+        }
+
+        if (!currBMCAddress.getContract().equals(this.bmcScoreAddress.get().toString())) {
+            Context.revert(BMVErrorCodes.INVALID_BMC_CURR, "Invalid Current BMC " + currBMCAddress.getContract());
+        }
+    }
+
+    private List<Object> lastReceiptRootHash(RelayMessage relayMessage) {
+        byte[] receiptRoot = null;
+        BigInteger lastHeight = BigInteger.ZERO;
+        MerkleTreeAccumulator mta = this.mta.get();
+        for (BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
+            int nextHeight = (int) (mta.getHeight() + 1);
+            if (BigInteger.valueOf(nextHeight).compareTo(blockUpdate.getBlockHeader().getNumber()) == 0) {
+                if (blockUpdate.verify(this.validatorList.get())) {
+                    this.validatorList.set(ValidatorList.fromAddressBytes(blockUpdate.getNextValidators()));
+                }
+                mta.add(blockUpdate.getBlockHeader().getHash());
+                this.mtaUpdated.set(true);
+                receiptRoot = blockUpdate.getBlockHeader().getReceiptsRoot();
+                lastHeight = blockUpdate.getBlockHeader().getNumber();
+            } else if (nextHeight < blockUpdate.getBlockHeader().getNumber().intValue()) {
+                Context.revert(BMVErrorCodes.INVALID_BLOCK_UPDATE_HEIGHT_HIGH, "Invalid block update due to higher height");
+            } else {
+                Context.revert(BMVErrorCodes.INVALID_BLOCK_UPDATE_HEIGHT_LOW, "Invalid block update due to lower height");
+            }
         }
         BlockProof blockProof = relayMessage.getBlockProof();
         if (blockProof != null) {
-            blockProof.verify(this.mta);
-            receiptHash = blockProof.getBlockHeader().getHash();
-            lastHeight = blockProof.getBlockHeader().getHeight();
+            blockProof.verify(mta);
+            receiptRoot = blockProof.getBlockHeader().getReceiptsRoot();
+            lastHeight = blockProof.getBlockHeader().getNumber();
         }
-        return receiptHash;
+        if (receiptRoot == null) {
+            Context.revert(BMVErrorCodes.INVALID_RECEIPT_PROOFS, "Invalid receipt proofs with wrong sequence");
+        }
+        List<Object> result = new ArrayList<>();
+        result.add(receiptRoot);
+        result.add(lastHeight);
+
+        this.mta.set(mta);
+        return result;
     }
-
-    @EventLog(indexed = 1)
-    public void log(String msg){}
-
+/*
     @External(readonly = true)
-    public int getVotesCount() {
-        return votes.getVoteItems().length;
-    }
-
-    @External(readonly = true)
-    public long getLastHeight() {
-        return this.lastHeight;
-    }
+    public BigInteger getLastHeight() {
+        return this.lastHeight.get();
+    }*/
 }
+
+
+/**
+ * @param bmc String address of BMC handling the message
+ * @param prev String BTP address of previous BMC
+ * @param seq int next sequence number to get a message
+ * @param msg serialised bytes of relay Message
+ * @return List of serialised bytes of BTP Message's
+ * <p>
+ * 1 - Decodes Relay Messages and process BTP Messages
+ * 2 - If there is an error, then it sends a BTP Message containing the Error Message
+ * 3 - BTP Messages with old sequence numbers are ignored. A BTP Message contains future sequence number will fail.
+ */

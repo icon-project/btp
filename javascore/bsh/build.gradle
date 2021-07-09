@@ -7,36 +7,52 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation 'foundation.icon:javaee-api:0.8.9'
-    implementation 'com.github.sink772:javaee-tokens:0.5.5'
-    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+version 'unspecified'
 
-    testImplementation 'org.mockito:mockito-core:3.3.3'
+
+dependencies {
+    compileOnly 'foundation.icon:javaee-api:0.8.9-SNAPSHOT'
+    compileOnly 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    compileOnly 'foundation.icon:javaee-rt:0.8.9-SNAPSHOT'
+    compileOnly 'foundation.icon:javaee-tooling:0.8.7-SNAPSHOT'
+    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+    implementation 'com.github.sink772:javaee-tokens:0.5.5'
+
+    implementation 'org.msgpack:msgpack-core:0.8.17'
+    testImplementation 'foundation.icon:javaee-api:0.8.9-SNAPSHOT'
     testImplementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
-    testImplementation 'com.github.sink772:javaee-tokens:0.5.5'
-    testImplementation 'com.github.sink772:javaee-scorex:0.5.2'
+    testImplementation 'foundation.icon:javaee-rt:0.8.9-SNAPSHOT'
+    testImplementation 'foundation.icon:javaee-tooling:0.8.7-SNAPSHOT'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'org.bouncycastle:bcprov-jdk15on:1.60'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+
     testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
     testImplementation fileTree(dir: '../lib', include: 'testsvc.jar')
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
 
-/*
 
 optimizedJar {
     mainClassName = 'foundation.icon.btp.bsh.ServiceHandler'
+    archivesBaseName = 'bsh'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
-*/
-
-/*
-
+logging.println("BMC Address   :" + System.getProperty("BMC_ADDRESS"))
 deployJar {
     endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        Sejong {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 0x53
+        }
         local {
             uri = 'http://localhost:9082/api/v3'
             nid = 3
@@ -45,8 +61,10 @@ deployJar {
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
 
-}*/
-
+    parameters {
+        arg('_bmc', System.getProperty("BMC_ADDRESS"))
+    }
+}
 
 test {
     useJUnitPlatform()

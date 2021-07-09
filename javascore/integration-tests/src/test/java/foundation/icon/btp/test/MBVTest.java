@@ -15,20 +15,20 @@
  */
 package foundation.icon.btp.test;
 
+import foundation.icon.btp.bmv.BTPMessageVerifier;
+import foundation.icon.btp.bmv.lib.mpt.MerklePatriciaTree;
+import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
+import foundation.icon.btp.bmv.types.BlockHeader;
+import foundation.icon.btp.bmv.types.ValidatorList;
+import foundation.icon.btp.bmv.types.Votes;
+import foundation.icon.btp.bmv.types.*;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
 import foundation.icon.icx.transport.http.HttpProvider;
-import foundation.icon.icx.transport.jsonrpc.RpcItem;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
 import foundation.icon.icx.transport.jsonrpc.RpcValue;
-
-import foundation.icon.btp.bmv.*;
-import foundation.icon.btp.bmv.BlockHeader;
-import foundation.icon.btp.bmv.ValidatorList;
-import foundation.icon.btp.bmv.Votes;
-
 import foundation.icon.test.common.*;
 import foundation.icon.test.score.Score;
 import org.bouncycastle.util.encoders.Hex;
@@ -62,7 +62,7 @@ class MBVTest extends TestBase {
         HttpProvider provider = new HttpProvider(channel.getAPIUrl(Env.testApiVer));
         iconService = new IconService(provider);
 
-        System.out.println("iconService => " + channel.getAPIUrl(Env.testApiVer) );
+        System.out.println("iconService => " + channel.getAPIUrl(Env.testApiVer));
         txHandler = new TransactionHandler(iconService, chain);
         secureRandom = new SecureRandom();
 
@@ -125,11 +125,7 @@ class MBVTest extends TestBase {
         return score;
     }
 
-    public void shouldDeploy() throws Exception {
-        Score mtaScore = deployMessageVerifier(txHandler, ownerWallet);
-    }
-
-     public static Score deployBlockWitness(TransactionHandler txHandler, Wallet owner)
+    public static Score deployBlockWitness(TransactionHandler txHandler, Wallet owner)
             throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "BlockWitness");
 
@@ -140,6 +136,10 @@ class MBVTest extends TestBase {
 
         LOG.infoExiting();
         return score;
+    }
+
+    public void shouldDeploy() throws Exception {
+        Score mtaScore = deployMessageVerifier(txHandler, ownerWallet);
     }
 
     @Test

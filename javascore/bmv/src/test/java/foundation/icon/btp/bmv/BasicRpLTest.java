@@ -28,7 +28,7 @@ public class BasicRpLTest {
     }
 
     @Test
-    public void testRplDecoder(){
+    public void testRplDecoder() {
         String data = "-EcF-ESgLRW8UPg-kGpGwRkzumLmCqfvZJ_97J7DYioRPCizgcH4AKAUevyJu0uatfNpHBb_AJs5WDRfAtrOsbGsMXLamB2Alw==";
         StringBuilder res = new StringBuilder();
         byte[] bytes = Base64.getUrlDecoder().decode(data);
