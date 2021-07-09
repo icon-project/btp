@@ -60,6 +60,13 @@ pub trait Link {
     fn get_links(&self) -> Result<Vec<u8>, String>;
     fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
     fn init_linkprops(&self) -> LinkProps;
+    fn set_link_status(
+        &mut self,
+        link: &BTPAddress,
+        block_interval: u64,
+        mxagg: u64,
+        delimit: u64,
+    ) -> Result<bool, String>;
 }
 
 impl Link for Links {
@@ -143,20 +150,30 @@ impl Link for Links {
         return Err("links are empty".to_string());
     }
 
-    fn set_link(
+    
+    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String> {
+        if self.0.contains_key(&link.0.clone().into_bytes()) {
+            let linkprop = self.0.get(&link.0.clone().into_bytes());
+
+            return Ok(linkprop.unwrap());
+        }
+
+        return Err("Not found".to_string());
+    }
+    fn set_link_status(
         &mut self,
         link: &BTPAddress,
         block_interval: u64,
         mxagg: u64,
         delimit: u64,
     ) -> Result<bool, String> {
-        //TO-DO
-        //validate caller has necessary permission
-        //Check if either max_aggregation < 1 or delay_limit
-        //Add link status information to the link based on rotate term
-
         match link.is_valid() {
             Ok(true) => {
+                //TO-DO : check owner permission
+                //Verify if the caller is owner
+                //Check if either max_aggregation < 1 or delay_limit
+                //Add link status information to the link based on rotate term
+
                 if self.0.contains_key(&link.0.clone().into_bytes()) {
                     let linkprop = LinkProps {
                         block_interval_src: block_interval,
@@ -174,15 +191,5 @@ impl Link for Links {
             Ok(false) => return Ok(false),
             Err(error) => Err(format!("unable to set the link {}", error)),
         }
-    }
-
-    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String> {
-        if self.0.contains_key(&link.0.clone().into_bytes()) {
-            let linkprop = self.0.get(&link.0.clone().into_bytes());
-
-            return Ok(linkprop.unwrap());
-        }
-
-        return Err("Not found".to_string());
     }
 }
