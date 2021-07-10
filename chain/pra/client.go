@@ -181,7 +181,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 			}
 
 			if current > uint64(latestHeader.Number) {
-				c.log.Debugf("block not yet finalized target:%v latest:%v", current, latestHeader.Number)
+				c.log.Tracef("block not yet finalized target:%v latest:%v", current, latestHeader.Number)
 				<-time.After(BlockRetryInterval)
 				continue
 			}

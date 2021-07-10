@@ -409,6 +409,7 @@ func (c *Client) wsReadJSONLoop(conn *websocket.Conn, respPtr interface{}, cb ws
 }
 
 func NewClient(uri string, l log.Logger) *Client {
+
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
 	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
 	c := &Client{
