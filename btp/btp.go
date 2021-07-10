@@ -83,7 +83,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 
 	switch cfg.Src.Address.BlockChain() {
 	case "icon":
-		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Dst.Endpoint, nil, l)
+		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, nil, l)
 	case "pra":
 		receiver = pra.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Dst.Options, l)
 	default:
