@@ -57,6 +57,8 @@ metadata! {
     #[serde(crate = "near_sdk::serde")]
     pub struct BshGeneric {
         /// A list of transferring requests
+        /// Use `HashMap` because `LookupMap` doesn't implement 
+        /// Clone, Debug, and Default traits
         requests: HashMap<u64, PendingTransferCoin>,
         /// BSH Service name
         service_name: String,
