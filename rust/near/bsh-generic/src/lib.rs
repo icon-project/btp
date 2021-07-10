@@ -36,11 +36,11 @@
 
 pub mod bsh_types;
 pub mod errors;
-pub mod utils;
 
 pub use bsh_types::*;
 pub use errors::BSHError;
 
+use btp_common::BTPAddress;
 use log;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
@@ -90,10 +90,16 @@ impl BshGeneric {
         values: Vec<u64>,
         fees: Vec<u64>,
     ) {
-        //  Send Service Message to BMC
-        //  Throws an error if `to` address is an invalid BTP Address format
-        let (_to_network, _to_address) =
-            utils::split_btp_address(to).expect("Failed to split BTP address");
+        let btp_addr = BTPAddress(to.to_string());
+        let _network_addr = btp_addr
+            .network_address()
+            .expect("Failed to retrieve network address")
+            .as_str();
+        let _contract_addr = btp_addr
+            .contract_address()
+            .expect("Failed to retrieve contract address")
+            .as_str();
+
         let mut assets: Vec<Asset> = Vec::with_capacity(coin_names.len());
         let mut asset_details: Vec<AssetTransferDetail> = Vec::with_capacity(coin_names.len());
 
@@ -108,7 +114,7 @@ impl BshGeneric {
                 fee: fees[i],
             };
         }
-
+        // Send Service Message to BMC
         // BMC: bmc.send_message();
 
         // Push pending transactions into Record list
@@ -149,7 +155,8 @@ impl BshGeneric {
             let tc: TransferCoin = bincode::deserialize(sm.data.as_slice()).unwrap();
             //  check receiving address whether it is a valid address
             //  or revert if not a valid one
-            if let Ok(_) = self.check_parse_address(&tc.to) {
+            let btp_addr = BTPAddress(tc.to.clone());
+            if let Ok(_) = btp_addr.is_valid() {
                 if let Ok(_) = self.handle_request_service(&tc.to, tc.assets) {
                     self.send_response_message(
                         ServiceType::ResponseHandleService,
@@ -251,16 +258,9 @@ impl BshGeneric {
         assert_eq!(self.service_name.as_str(), svc, "InvalidSvc");
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        if let Ok(_) = self.check_parse_address(fa) {
+        let btp_addr = BTPAddress(fa.to_string());
+        if let Ok(_) = btp_addr.is_valid() {
             // BSH core: bsh_core.transfer_fees(fa);
-        }
-    }
-
-    pub fn check_parse_address(&mut self, addr: &str) -> Result<bool, BSHError> {
-        if let Ok(_) = utils::split_btp_address(addr) {
-            return Ok(true);
-        } else {
-            return Err(BSHError::InvalidBtpAddress);
         }
     }
 }
