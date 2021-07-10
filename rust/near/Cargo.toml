@@ -11,6 +11,7 @@ members = [
 
 [dev-dependencies]
 bmc = { path = "./bmc" }
+bsh-generic = { path = "./bsh-generic"}
 near-sdk = "3.1.0"
 lazy_static = "1.4.0"
 

@@ -50,8 +50,8 @@ impl BshGeneric {
     }
 
     /// Check whether BSH has any pending transferring requests
-    pub fn has_pending_request(&self) -> bool {
-        self.num_of_pending_requests != 0
+    pub fn has_pending_requests(&self) -> Result<bool, &str> {
+        Ok(self.num_of_pending_requests != 0)
     }
 
     /// Send Service Message from BSH contract to BMCService contract
@@ -62,7 +62,7 @@ impl BshGeneric {
         coin_names: Vec<String>,
         values: Vec<u64>,
         fees: Vec<u64>,
-    ) {
+    ) -> Result<(), &str> {
         let btp_addr = BTPAddress(to.to_string());
         let _network_addr = btp_addr
             .network_address()
@@ -101,7 +101,7 @@ impl BshGeneric {
         let _ = self
             .requests
             .insert(self.serial_no, pending_transfer_coin)
-            .unwrap();
+            .expect("Failed to insert request");
         self.num_of_pending_requests += 1;
         let bsh_event = BshEvents::TransferStart {
             from,
@@ -112,6 +112,7 @@ impl BshGeneric {
         let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
         env::log(&bsh_event);
         self.serial_no += 1;
+        Ok(())
     }
 
     /// BSH handle BTP Message from BMC contract
@@ -122,7 +123,7 @@ impl BshGeneric {
         sn: u64,
         msg: &[u8],
     ) -> Result<(), &str> {
-        assert_eq!(self.service_name.as_str(), svc, "Invalid Svc");
+        assert_eq!(self.service_name, svc.to_string(), "Invalid Svc");
         let sm: ServiceMessage = bincode::deserialize(msg).expect("Failed to deserialize msg");
 
         if sm.service_type == ServiceType::RequestCoinRegister {
@@ -155,10 +156,14 @@ impl BshGeneric {
             );
         } else if sm.service_type == ServiceType::ResponseHandleService {
             // Check whether `sn` is pending state
-            let res = self.requests.get(&sn).unwrap().from.as_bytes();
+            let req = self.requests.get(&sn).expect("Failed to retrieve request");
+            let res = req.from.as_bytes();
+
             assert_ne!(res.len(), 0, "InvalidSN");
-            let response: Response = bincode::deserialize(sm.data.as_slice()).unwrap();
-            self.handle_response_service(sn, response.code, response.message.as_str());
+            let response: Response = bincode::deserialize(sm.data.as_slice())
+                .expect("Failed to deserialize service message");
+            self.handle_response_service(sn, response.code, response.message.as_str())
+                .expect("Error in handling response service");
         } else if sm.service_type == ServiceType::UnknownType {
             let bsh_event = BshEvents::UnknownResponse { from, sn };
             let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
@@ -172,17 +177,28 @@ impl BshGeneric {
     }
 
     /// BSH handle BTP Error from BMC contract
-    pub fn handle_btp_error(&mut self, _src: &str, svc: &str, sn: u64, code: u64, msg: &str) {
-        assert_eq!(svc, self.service_name.as_str(), "InvalidSvc");
-        let res = self.requests.get(&sn).unwrap().from.as_bytes();
+    pub fn handle_btp_error(
+        &mut self,
+        _src: &str,
+        svc: &str,
+        sn: u64,
+        code: u64,
+        msg: &str,
+    ) -> Result<(), &str> {
+        assert_eq!(svc.to_string(), self.service_name, "InvalidSvc");
+        let req = self.requests.get(&sn).expect("Failed to retrieve request");
+        let res = req.from.as_bytes();
         assert_ne!(res.len(), 0, "InvalidSN");
-        self.handle_response_service(sn, code, msg);
+        self.handle_response_service(sn, code, msg)
+            .expect("Error in handling response service");
+        Ok(())
     }
 
     #[private]
-    pub fn handle_response_service(&mut self, sn: u64, code: u64, msg: &str) {
-        let caller = self.requests.get(&sn).unwrap().from.as_str();
-        let data_len = self.requests.get(&sn).unwrap().coin_names.len();
+    pub fn handle_response_service(&mut self, sn: u64, code: u64, msg: &str) -> Result<(), &str> {
+        let req = self.requests.get(&sn).expect("Failed to retrieve request");
+        let caller = req.from.as_str();
+        let data_len = req.coin_names.len();
         for _i in 0..data_len {
             // BSH core: bsh_core.handle_response_service();
         }
@@ -197,6 +213,7 @@ impl BshGeneric {
         };
         let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
         env::log(&bsh_event);
+        Ok(())
     }
 
     /// Handle a list of minting/transferring coins/tokens
@@ -229,13 +246,14 @@ impl BshGeneric {
     /// BSH handle `Gather Fee Message` request from BMC contract
     /// fa: fee aggregator
     #[payable]
-    pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) {
-        assert_eq!(self.service_name.as_str(), svc, "InvalidSvc");
+    pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) -> Result<(), &str> {
+        assert_eq!(self.service_name, svc.to_string(), "InvalidSvc");
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
         let btp_addr = BTPAddress(fa.to_string());
         if let Ok(_) = btp_addr.is_valid() {
             // BSH core: bsh_core.transfer_fees(fa);
         }
+        Ok(())
     }
 }

@@ -2251,6 +2251,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "bmc",
+ "bsh-generic",
  "lazy_static",
  "near-chain-configs",
  "near-logger-utils",

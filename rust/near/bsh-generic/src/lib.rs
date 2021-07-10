@@ -34,7 +34,7 @@
     unused_results
 )]
 
-mod bsh_generic;
-mod bsh_types;
+pub mod bsh_generic;
+pub mod bsh_types;
 pub use bsh_generic::BshGeneric;
 pub use bsh_types::*;
