@@ -51,6 +51,7 @@ setup_alloc!();
 metadata! {
     /// BSH Generic contract is used to handle communications
     /// among BMC Service and a BSH core contract.
+    /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
     #[near_bindgen]
     #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, Serialize)]
     #[serde(crate = "near_sdk::serde")]
