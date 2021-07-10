@@ -53,6 +53,8 @@ metadata! {
     #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, Serialize)]
     #[serde(crate = "near_sdk::serde")]
     pub struct BshGeneric {
+        bmc_contract: String,
+        bsh_contract: String,
         /// A list of transferring requests
         /// Use `HashMap` because `LookupMap` doesn't implement
         /// Clone, Debug, and Default traits
@@ -70,9 +72,12 @@ impl BshGeneric {
     pub const RC_OK: u64 = 0;
     pub const RC_ERR: u64 = 1;
 
-    #[init]
-    pub fn initialize(_bmc: &str, _bsh_contract: &str, _service_name: &str) {
-        unimplemented!() // requires BMC and BSH core
+    pub fn initialize(&mut self, bmc: &str, bsh_contract: &str, _service_name: &str) {
+        // TODO: fully implement after BMC and BSH core contracts are written
+
+        // Save new states for BMC and BSH contracts
+        self.bmc_contract = bmc.to_string();
+        self.bsh_contract = bsh_contract.to_string();
     }
 
     /// Check whether BSH has any pending transferring requests
