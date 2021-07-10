@@ -663,7 +663,6 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "btp-common",
- "log",
  "near-sdk",
  "num-derive",
  "num-traits",

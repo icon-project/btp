@@ -41,7 +41,6 @@ pub use bsh_types::*;
 pub use errors::BSHError;
 
 use btp_common::BTPAddress;
-use log;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, metadata, near_bindgen, setup_alloc};
@@ -136,7 +135,8 @@ impl BshGeneric {
             sn: self.serial_no,
             asset_details: asset_details.clone(),
         };
-        log::info!("New BSH event: {:?}", bsh_event);
+        let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+        env::log(&bsh_event);
         self.serial_no += 1;
     }
 
@@ -149,10 +149,11 @@ impl BshGeneric {
         msg: &[u8],
     ) -> Result<(), BSHError> {
         assert_eq!(self.service_name.as_str(), svc, "Invalid Svc");
-        let sm: ServiceMessage = bincode::deserialize(msg).unwrap();
+        let sm: ServiceMessage = bincode::deserialize(msg).expect("Failed to deserialize msg");
 
         if sm.service_type == ServiceType::RequestCoinRegister {
-            let tc: TransferCoin = bincode::deserialize(sm.data.as_slice()).unwrap();
+            let tc: TransferCoin =
+                bincode::deserialize(sm.data.as_slice()).expect("Failed to deserialize sm data");
             //  check receiving address whether it is a valid address
             //  or revert if not a valid one
             let btp_addr = BTPAddress(tc.to.clone());
@@ -186,7 +187,8 @@ impl BshGeneric {
             self.handle_response_service(sn, response.code, response.message.as_str());
         } else if sm.service_type == ServiceType::UnknownType {
             let bsh_event = BshEvents::UnknownResponse { from, sn };
-            log::info!("New BSH event: {:?}", bsh_event);
+            let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+            env::log(&bsh_event);
         } else {
             // If none of those types above BSH responds with a message of
             // RES_UNKNOWN_TYPE
@@ -218,7 +220,8 @@ impl BshGeneric {
             code,
             response: msg,
         };
-        log::info!("New BSH event: {:?}", bsh_event);
+        let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+        env::log(&bsh_event);
     }
 
     /// Handle a list of minting/transferring coins/tokens
