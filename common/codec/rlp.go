@@ -391,19 +391,23 @@ func (w *rlpWriter) WriteValue(v reflect.Value) error {
 	w.countN(1)
 	switch v.Kind() {
 	case reflect.Bool:
-		var buffer [1]byte
 		if v.Bool() {
-			buffer[0] = 1
+			return w.writeBytes([]byte{0x1})
 		} else {
-			buffer[0] = 0
+			return w.writeBytes([]byte{})
 		}
-		return w.writeBytes(buffer[:])
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return w.writeBytes(intconv.Uint64ToBytes(v.Uint()))
+		if v.Uint() == 0 {
+			return w.writeBytes([]byte{})
+		}
+		return w.writeBytes(bytes.Trim(intconv.Uint64ToBytes(v.Uint()), "\x00"))
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return w.writeBytes(intconv.Int64ToBytes(v.Int()))
+		if v.Int() == 0 {
+			return w.writeBytes([]byte{})
+		}
+		return w.writeBytes(bytes.Trim(intconv.Int64ToBytes(v.Int()), "\x00"))
 
 	case reflect.String:
 		return w.writeBytes([]byte(v.String()))
@@ -413,7 +417,7 @@ func (w *rlpWriter) WriteValue(v reflect.Value) error {
 	}
 }
 
-func (w *rlpWriter) WriteNull() error {
+func (w *rlpWriter) WriteNull(v reflect.Value) error {
 	w.countN(1)
 	return w.writeNull()
 }

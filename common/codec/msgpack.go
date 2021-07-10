@@ -211,7 +211,7 @@ func (w *mpWriter) WriteValue(v reflect.Value) error {
 	return w.real.EncodeValue(v)
 }
 
-func (w *mpWriter) WriteNull() error {
+func (w *mpWriter) WriteNull(v reflect.Value) error {
 	w.countN(1)
 	return w.real.EncodeNil()
 }

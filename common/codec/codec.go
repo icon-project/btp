@@ -76,7 +76,7 @@ type Writer interface {
 	WriteBytes(b []byte) error
 	WriteRaw(b []byte) error
 	WriteValue(v reflect.Value) error
-	WriteNull() error
+	WriteNull(v reflect.Value) error
 	Close() error
 }
 
@@ -209,7 +209,7 @@ type encodeFunc func(e *encoderImpl, v reflect.Value) error
 
 func (e *encoderImpl) encodeNullable(v reflect.Value, encode encodeFunc) error {
 	if v.IsNil() {
-		return e.real.WriteNull()
+		return e.real.WriteNull(v.Elem())
 	}
 	return encode(e, v)
 }
@@ -307,7 +307,7 @@ func (e *encoderImpl) encodeValue(v reflect.Value) error {
 
 	default:
 		if !v.IsValid() || v.IsNil() {
-			return e.real.WriteNull()
+			return e.real.WriteNull(v)
 		}
 		return cerrors.Wrapf(ErrIllegalType, "IllegalType(%s)", v.Kind())
 	}
@@ -320,7 +320,7 @@ func (e *encoderImpl) Encode(o interface{}) error {
 	switch o := o.(type) {
 	case []byte:
 		if o == nil {
-			return e.real.WriteNull()
+			return e.real.WriteNull(reflect.ValueOf(o))
 		}
 		return e.real.WriteBytes(o)
 	case reflect.Value:
