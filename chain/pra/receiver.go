@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -71,7 +71,7 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		return nil, err
 	}
 
-	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+	bu.Proof, err = rlp.EncodeToBytes(&update)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,10 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				}
 
 				rp := &chain.ReceiptProof{}
-				if rp.Proof, err = codec.RLP.MarshalToBytes(proof); err != nil {
+				if rp.Proof, err = rlp.EncodeToBytes(&StateProof{
+					Key:   key,
+					Value: proof.Proof,
+				}); err != nil {
 					return nil, err
 				}
 				rps = append(rps, rp)
