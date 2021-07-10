@@ -63,18 +63,16 @@ test {
     testLogging.exceptionFormat = "full"
 }
 
-def metaDataFileName
-
 tasks.register('buildKusamaDecoder') {
     archivesBaseName = 'KusamaEventDecoder'
-    metaDataFileName = 'KusamaMetaData.json'
+    project.ext.metaDataFilePath = 'KusamaMetaData.json'
     dependsOn loadMetaData
     buildKusamaDecoder.finalizedBy optimizedJar
 }
 
 tasks.register('buildMoonriverDecoder') {
     archivesBaseName = 'MoonriverEventDecoder'
-    metaDataFileName = 'MoonriverMetaData.json'
+    project.ext.metaDataFilePath = 'MoonriverMetaData.json'
     project.ext.accountIdSize = 20
     dependsOn loadMetaData
     buildMoonriverDecoder.finalizedBy optimizedJar
@@ -82,7 +80,7 @@ tasks.register('buildMoonriverDecoder') {
 
 tasks.register('buildEdgewareDecoder') {
     archivesBaseName = 'EdgewareEventDecoder'
-    metaDataFileName = 'EdgewareMetaData.json'
+    project.ext.metaDataFilePath = 'EdgewareMetaData.json'
     dependsOn loadMetaData
     buildEdgewareDecoder.finalizedBy optimizedJar
 }
@@ -106,10 +104,12 @@ tasks.register('loadMetaData') {
         if (project.hasProperty('accountIdSize')) {
             accountIdSize = project.ext.accountIdSize
         }
-        if (metaDataFileName == null) {
-            metaDataFileName = "metaData.json"
+        if (!project.hasProperty('metaDataFilePath')) {
+            throw new Exception("missing metadata file path")
         }
-        def inputFile = new File(projectDir, metaDataFileName)
+
+        new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/Base").mkdirs()
+        def inputFile = new File(project.ext.metaDataFilePath)
         def json = new groovy.json.JsonSlurper().parseText(inputFile.text)
         def modules = json.metadata.v12 != null ? json.metadata.v12.modules : json.metadata.v13.modules
         def geratingEventDecoderCode =

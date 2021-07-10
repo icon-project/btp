@@ -483,7 +483,7 @@
             {
               "name": "BlockHashCount",
               "type": "BlockNumber",
-              "value": "0xfa000000",
+              "value": "0x00010000",
               "documentation": [
                 " Maximum number of block number to block hash mappings to keep (oldest pruned first)."
               ]
@@ -499,15 +499,15 @@
             {
               "name": "Version",
               "type": "RuntimeVersion",
-              "value": "0x246d6f6f6e7269766572246d6f6f6e726976657203000000310000000100000034df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000d2bc9897eed08f1502000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f01000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d01000000ea93e3f16f3d69620100000002000000",
+              "value": "0x246d6f6f6e7269766572246d6f6f6e7269766572030000009b0000000000000034d2bc9897eed08f1502000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f01000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d01000000ea93e3f16f3d69620100000002000000",
               "documentation": [
                 " Get the chain's current version."
               ]
             },
             {
               "name": "SS58Prefix",
-              "type": "u8",
-              "value": "0x31",
+              "type": "u16",
+              "value": "0x0505",
               "documentation": [
                 " The designated SS85 prefix of this chain.",
                 "",
@@ -1155,6 +1155,22 @@
                 ]
               },
               {
+                "name": "Reserves",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AccountId",
+                    "value": "Vec<ReserveData>",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "documentation": [
+                  " Named reserves on some account balances."
+                ]
+              },
+              {
                 "name": "StorageVersion",
                 "modifier": "Default",
                 "type": {
@@ -1299,6 +1315,39 @@
                 " - DB Weight: 1 Read and 1 Write to dest (sender is in overlay already)",
                 " #</weight>"
               ]
+            },
+            {
+              "name": "transfer_all",
+              "args": [
+                {
+                  "name": "dest",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "keep_alive",
+                  "type": "bool"
+                }
+              ],
+              "documentation": [
+                " Transfer the entire transferable balance from the caller account.",
+                "",
+                " NOTE: This function only attempts to transfer _transferable_ balances. This means that",
+                " any locked, reserved, or existential deposits (when `keep_alive` is `true`), will not be",
+                " transferred by this function. To ensure that this function results in a killed account,",
+                " you might need to prepare the account by removing any reference counters, storage",
+                " deposits, etc...",
+                "",
+                " The dispatch origin of this call must be Signed.",
+                "",
+                " - `dest`: The recipient of the transfer.",
+                " - `keep_alive`: A boolean to determine if the `transfer_all` operation should send all",
+                "   of the funds the account has, causing the sender account to be killed (false), or",
+                "   transfer everything except at least the existential deposit, which will guarantee to",
+                "   keep the sender account alive (true).",
+                "   # <weight>",
+                " - O(1). Just like transfer, but reading the user's transferable balance first.",
+                "   #</weight>"
+              ]
             }
           ],
           "events": [
@@ -1442,6 +1491,12 @@
               "documentation": [
                 " Beneficiary account must pre-exist"
               ]
+            },
+            {
+              "name": "TooManyReserves",
+              "documentation": [
+                " Number of named reserves exceed MaxReserves"
+              ]
             }
           ],
           "index": 10
@@ -1477,7 +1532,7 @@
             {
               "name": "TransactionByteFee",
               "type": "BalanceOf",
-              "value": "0x00a0724e180900000000000000000000",
+              "value": "0x00407a10f35a00000000000000000000",
               "documentation": [
                 " The fee to be paid for making a transaction; the per-byte portion."
               ]
@@ -1560,13 +1615,13 @@
                 ]
               },
               {
-                "name": "CollatorState",
+                "name": "CollatorState2",
                 "modifier": "Optional",
                 "type": {
                   "map": {
                     "hasher": "Twox64Concat",
                     "key": "AccountId",
-                    "value": "Collator",
+                    "value": "Collator2",
                     "linked": false
                   }
                 },
@@ -1765,7 +1820,7 @@
               "name": "set_collator_commission",
               "args": [
                 {
-                  "name": "pct",
+                  "name": "new",
                   "type": "Perbill"
                 }
               ],
@@ -1794,6 +1849,10 @@
                 {
                   "name": "bond",
                   "type": "BalanceOf"
+                },
+                {
+                  "name": "candidate_count",
+                  "type": "u32"
                 }
               ],
               "documentation": [
@@ -1802,7 +1861,12 @@
             },
             {
               "name": "leave_candidates",
-              "args": [],
+              "args": [
+                {
+                  "name": "candidate_count",
+                  "type": "u32"
+                }
+              ],
               "documentation": [
                 " Request to leave the set of candidates. If successful, the account is immediately",
                 " removed from the candidate pool to prevent selection as a collator, but unbonding is",
@@ -1857,6 +1921,14 @@
                 {
                   "name": "amount",
                   "type": "BalanceOf"
+                },
+                {
+                  "name": "collator_nominator_count",
+                  "type": "u32"
+                },
+                {
+                  "name": "nomination_count",
+                  "type": "u32"
                 }
               ],
               "documentation": [
@@ -1866,7 +1938,12 @@
             },
             {
               "name": "leave_nominators",
-              "args": [],
+              "args": [
+                {
+                  "name": "nomination_count",
+                  "type": "u32"
+                }
+              ],
               "documentation": [
                 " Leave the set of nominators and, by implication, revoke all ongoing nominations"
               ]
@@ -2017,6 +2094,7 @@
                 "AccountId",
                 "AccountId",
                 "BalanceOf",
+                "bool",
                 "BalanceOf"
               ],
               "documentation": []
@@ -2027,6 +2105,7 @@
                 "AccountId",
                 "AccountId",
                 "BalanceOf",
+                "bool",
                 "BalanceOf"
               ],
               "documentation": []
@@ -2047,10 +2126,10 @@
                 "AccountId",
                 "BalanceOf",
                 "AccountId",
-                "BalanceOf"
+                "NominatorAdded"
               ],
               "documentation": [
-                " Nominator, Amount Locked, Collator, New Total Amt backing Collator"
+                " Nominator, Amount Locked, Collator, Nominator Position with New Total Backing if in Top"
               ]
             },
             {
@@ -2209,10 +2288,6 @@
               "documentation": []
             },
             {
-              "name": "TooManyNominators",
-              "documentation": []
-            },
-            {
               "name": "CannotActivateIfLeaving",
               "documentation": []
             },
@@ -2229,7 +2304,7 @@
               "documentation": []
             },
             {
-              "name": "Underflow",
+              "name": "CannotBondLessGEQTotalBond",
               "documentation": []
             },
             {
@@ -2238,6 +2313,30 @@
             },
             {
               "name": "CannotSetBelowMin",
+              "documentation": []
+            },
+            {
+              "name": "NoWritingSameValue",
+              "documentation": []
+            },
+            {
+              "name": "TooLowCandidateCountWeightHintJoinCandidates",
+              "documentation": []
+            },
+            {
+              "name": "TooLowCollatorCandidateCountToLeaveCandidates",
+              "documentation": []
+            },
+            {
+              "name": "TooLowNominationCountToNominate",
+              "documentation": []
+            },
+            {
+              "name": "TooLowCollatorNominationCountToNominate",
+              "documentation": []
+            },
+            {
+              "name": "TooLowNominationCountToLeaveNominators",
               "documentation": []
             }
           ],
@@ -3028,7 +3127,7 @@
             {
               "name": "ProxyDepositBase",
               "type": "BalanceOf",
-              "value": "0x0000f91a76ffe00d0000000000000000",
+              "value": "0x0000362b4c8ee30d0000000000000000",
               "documentation": [
                 " The base amount of currency needed to reserve for creating a proxy.",
                 "",
@@ -3039,7 +3138,7 @@
             {
               "name": "ProxyDepositFactor",
               "type": "BalanceOf",
-              "value": "0x0020676ffebe00000000000000000000",
+              "value": "0x0040075af07507000000000000000000",
               "documentation": [
                 " The amount of currency needed per proxy added.",
                 "",
@@ -3050,8 +3149,8 @@
             },
             {
               "name": "MaxProxies",
-              "type": "u16",
-              "value": "0x2000",
+              "type": "u32",
+              "value": "0x20000000",
               "documentation": [
                 " The maximum amount of proxies allowed for a single account."
               ]
@@ -3067,7 +3166,7 @@
             {
               "name": "AnnouncementDepositBase",
               "type": "BalanceOf",
-              "value": "0x0000f91a76ffe00d0000000000000000",
+              "value": "0x0000362b4c8ee30d0000000000000000",
               "documentation": [
                 " The base amount of currency needed to reserve for creating an announcement.",
                 "",
@@ -3077,7 +3176,7 @@
             {
               "name": "AnnouncementDepositFactor",
               "type": "BalanceOf",
-              "value": "0x0000132951fd01000000000000000000",
+              "value": "0x0000be9a2be513000000000000000000",
               "documentation": [
                 " The amount of currency needed per announcement made.",
                 "",
@@ -4962,7 +5061,7 @@
               "type": "BlockNumber",
               "value": "0x201c0000",
               "documentation": [
-                " Minimum voting period allowed for an emergency referendum."
+                " Minimum voting period allowed for a fast-track referendum."
               ]
             },
             {
@@ -4976,7 +5075,7 @@
             {
               "name": "PreimageByteDeposit",
               "type": "BalanceOf",
-              "value": "0x00a0724e180900000000000000000000",
+              "value": "0x00407a10f35a00000000000000000000",
               "documentation": [
                 " The amount of balance that must be deposited per byte of preimage stored."
               ]
@@ -4986,7 +5085,10 @@
               "type": "u32",
               "value": "0x64000000",
               "documentation": [
-                " The maximum number of votes for an account."
+                " The maximum number of votes for an account.",
+                "",
+                " Also used to compute weight, an overly big value can",
+                " lead to extrinsic with very big weight: see `delegate` for instance."
               ]
             }
           ],

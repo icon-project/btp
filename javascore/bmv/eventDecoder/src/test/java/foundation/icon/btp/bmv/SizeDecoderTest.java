@@ -443,4 +443,17 @@ class SizeDecoderTest {
         int decodedSize = SizeDecoder.Option_AccountId(input, 4);
         assertEquals(decodedSize, 33);
     }
+
+    @Test
+    void NominatorAdded() {
+        byte[] encoded = HexConverter.hexStringToByteArray("01230800");
+        ByteSliceInput input = new ByteSliceInput(encoded);
+        int decodedSize = SizeDecoder.NominatorAdded(input, 3);
+        assertEquals(decodedSize, 1);
+
+        encoded = HexConverter.hexStringToByteArray("01230801630192341e7e5c46f8b32cd39f8e425d");
+        input = new ByteSliceInput(encoded);
+        decodedSize = SizeDecoder.NominatorAdded(input, 3);
+        assertEquals(decodedSize, 17);
+    }
 }

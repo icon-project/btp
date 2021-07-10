@@ -51,8 +51,8 @@ public class BTPEvent {
         ByteSliceOutput eventLeafNode = new ByteSliceOutput(100);
 
         eventLeafNode.addMany(HexConverter.hexStringToByteArray("5ed41e5e16056765bc8461851072c9d7")); // node header
-        ScaleWriter.writeCompactUint(eventLeafNode, 37 + 3 + eventData.size() + 1);
-        eventLeafNode.addMany(HexConverter.hexStringToByteArray("0c00000000000000480e0d0b000000000200000001000000000080b2e60e00000000020000")); // other events
+        ScaleWriter.writeCompactUint(eventLeafNode, 31 + 3 + eventData.size() + 1);
+        eventLeafNode.addMany(HexConverter.hexStringToByteArray("0c000000000001019a177e0000000000000000000000000000000000020000")); // other events
         eventLeafNode.addMany(HexConverter.hexStringToByteArray("013300")); // evm event phase, index
         eventLeafNode.addMany(eventData.toArray());
         eventLeafNode.addMany(HexConverter.hexStringToByteArray("00")); // empty topic

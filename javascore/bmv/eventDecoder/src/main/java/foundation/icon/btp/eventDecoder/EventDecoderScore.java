@@ -10,14 +10,15 @@ import foundation.icon.btp.lib.utils.ByteSliceInput;
 
 import java.util.List;
 import java.util.Map;
+import score.Context;
 
 public class EventDecoderScore {
   public EventDecoderScore() {}
 
   /**
-   * decode edgeware event
+   * decode event
    */
-  @External(readonly=true)
+  @External
   public List<Map<String, Object>> decodeEvent(byte[] encodedEventList) {
     ByteSliceInput input = new ByteSliceInput(encodedEventList);
     int eventSize = ScaleReader.readUintCompactSize(input);

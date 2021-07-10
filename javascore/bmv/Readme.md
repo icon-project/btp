@@ -1,11 +1,33 @@
 # build bmv score
 
+## Requirements
+
+Gradle  6.7.1
+Java OpenJDK 11
+goloop/gochain 0.9.7 or higher
+
 ## build event decoder SCORE
 
-### get meta data of chain
+BMV smart contracts consists of Event decoder score that exists per chain and BMV score (either Sovereign chain type or Relay chain and Parachain type). According to the chain you're trying to connect, to build a complete BMV score, you should build Event decoder score (or use predefined ones) and choose BMV score type.
 
 Each chain has different type of event and data structure, we need meta data file to know what modules and data structure these chain has. Event decoder code will be genereated base on meta data file.
 
+### predefined metaData
+
+we have predefined meta data for Kusama, Edgeware and Moonriver chain. It's stored in `./eventDecoder/KusamaMetaData.json`, `./eventDecoder/EdgewareMetaData.json` and `./eventDecoder/MoonriverMetaData.json`. To build score for these chains use the following command:
+
+```bash
+cd eventDecoder
+gradle buildKusamaDecoder
+gradle buildEdgewareDecoder
+gradle buildMoonriverDecoder
+```
+
+`KusamaEventDecoder-optimized.jar`, `EdgewareEventDecoder-optimized.jar`, `MoonriverDecoder-optimized.jar` file will be generated in `eventDecoder/build/libs/`
+
+### get meta data of chain
+
+In case that you need to build event decoder for other parachains rather than there chain above, you can use two ways bellow to get meta data file.
 #### get through polkadot.js.org
 
 1. access to https://polkadot.js.org/apps/#/explorer, select chain in the left corner
@@ -13,41 +35,41 @@ Each chain has different type of event and data structure, we need meta data fil
 3. choose `state` on `call the selected endpoint` box, and api `getMetadata(at)`
 4. Submit RPC call
 
-#### get through javascript
+#### get through typescript helper
 
-code snippet
+We have set up yarn project to get metadata through typescript.
 
-```javascript
-import { ApiPromise, WsProvider } from '@polkadot/api';
+1. Go to helper directory
 
-async function main () {
-    const wssEndpoint = ""; // wss endpoint of chain
-    const wsProvider = new WsProvider(wssEndpoint);
-    const api = await ApiPromise.create({ provider: wsProvider });
-
-    // get genesis hash
-    console.log("genesis hash: ", api.genesisHash.toHex());
-    // get chain name
-    const chain = await api.rpc.system.chain();
-    console.log("chain: ", JSON.stringify(chain));
-
-    /*
-     * get meta data
-     */
-    const metaData = await api.rpc.state.getMetadata();
-    fs.writeFileSync('./metaData.json', JSON.stringify(metaData));
-    console.log("----- metadata: ", JSON.stringify(metaData));
-}
+```bash
+cd javascore/bmv/helper
 ```
+
+2. Install yarn package
+
+```bash
+yarn install
+```
+
+3. Specify chain endpoint, open file `javascore/bmv/helper/getMetaData.ts`, replace `CHAIN_ENDPOINT` in line 10 with your chain endpoint
+
+4. Run `yarn getMetaData` in `javascore/bmv/helper` directory
+
+```bash
+cd javascore/bmv/helper
+
+yarn getMetaData
+```
+
 
 ### build event decoder with meta data
 
 1. Store meta data in `metadata.json` file
-2. copy `metadata.json` file to `./eventDecoder/`
+2. Get metaData file path
 3. execute 
 ```bash
 cd eventDecoder
-gradle loadMetaData
+gradle loadMetaData -PmetaDataFilePath=${path of your meta data file}
 gradle optimizedJar
 ```
 
@@ -55,23 +77,11 @@ gradle optimizedJar
 
 ```bash
 cd eventDecoder
-gradle loadMetaData -PaccountIdSize=20
+gradle loadMetaData -PmetaDataFilePath=${path of your meta data file} -PaccountIdSize=20
 gradle optimizedJar
 ```
 
 `eventDecoder-optimized.jar` file will be generated in `eventDecoder/build/libs/`
-
-### predefined metaData
-
-we have predefined meta data for Kusama, Edgeware and Moonriver chain. It's stored in `./eventDecoder/KusamaMetaData.json`, `./eventDecoder/EdgewareMetaData.json` and `./eventDecoder/MoonriverMetaData.json`. To build score for these chains use the following command:
-
-```bash
-gradle buildKusamaDecoder
-gradle buildEdgewareDecoder
-gradle buildMoonriverDecoder
-```
-
-`KusamaEventDecoder-optimized.jar`, `EdgewareEventDecoder-optimized.jar`, `MoonriverDecoder-optimized.jar` file will be generated in `eventDecoder/build/libs/`
 
 ## build BMV SCORE
 ### build BMV SCORE for sovereign chain
@@ -94,6 +104,9 @@ gradle optimizedJar
 
 ## run integration test
 
+Before running integration test, make sure local icon node is running. Follow https://github.com/icon-project/gochain-local to know how to start your local node.
+
+We expect that your local ICON node using port 9082 for RPC and default godWallet.json. If you change any default configuration, please update it to `testinteg/conf/env.props` file.
 ### sovereign chain intergration test
 
 Data generated for test is base on Edgeware chain, to be albe to test on other chain, plase update test data generator and event decoder score first. To run intergration please build Edgeware event decoder first
@@ -118,7 +131,7 @@ gradle buildKusamaDecoder
 gradle buildMoonriverDecoder
 
 # run integration test
-cd sovereignChain
+cd parachain
 gradle integrationTest
 ```
 
@@ -174,7 +187,7 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./sovereignChain/bui
     --content_type application/java \
     --param mtaOffset=0x28 \
     --param bmc=cxaba68cb5d3dbcd0ae1ca626a85f2ddbfa3be6559 \
-    --param net=Edgeware.frontier \
+    --param net=0x123.edge \
     --param mtaRootSize=0x10 \
     --param mtaCacheSize=0x10 \
     --param mtaIsAllowNewerWitness=0x1 \
@@ -227,19 +240,19 @@ goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873
 ### register link to BMC
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method addLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method addLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
 ```
 
 ### Configure link
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method setLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _block_interval=0x3e8 --param _max_agg=0x10 --param _delay_limit=3
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method setLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _block_interval=0x3e8 --param _max_agg=0x10 --param _delay_limit=3
 ```
 
 ### Retrieve properties of link
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method getStatus --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
+goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method getStatus --param _link=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
 ```
 
 ### Register Relayer and Relay
@@ -252,7 +265,7 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e
 
 - add relay:
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method addRelay --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method addRelay --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
 ```
 ### retrieve list of registered relayers
 
@@ -263,12 +276,12 @@ goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873
 - retrieve list of registered relay of link:
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method getRelays --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
+goloop rpc --uri http://localhost:9082/api/v3 call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method getRelays --param _link=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
 ```
 ### call handleRelayMessage of BMC contract
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method handleRelayMessage --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _prev=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _msg=
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cxf3e336ff003356e3ee3873c31c929e6c01ef739b --method handleRelayMessage --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _prev=btp://0x123.edge/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _msg=
 ```
 
 ## deploy para chain BMV
@@ -279,7 +292,7 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy bmc.zip \
     --key_store godWallet.json --key_password gochain \
     --nid 3 --step_limit 13610920001 \
     --content_type application/zip \
-    --param _net="0x07.icon"
+    --param _net="0x3.icon"
 ```
 
 - get transaction result and score address:
@@ -311,7 +324,7 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./eventDecoder/build
 - `relayMtaOffset`: offset of Merkle Tree Accumulator, block height BMV start to sync block of relay chain
 - `paraMtaOffset`: offset of Merkle Tree Accumulator, block height BMV start to sync block of para chain
 - `bmc`: address of BMC score
-- `net`: network that BMV handle (of parachain), (Edgeware.frontier)
+- `net`: network that BMV handle (of parachain), (example 0x501.pra)
 - `mtaRootSize`: size of MTA roots use for both parachain and relay chain
 - `mtaCacheSize`: size of mta cache use for both parachain and relay chain
 - `mtaIsAllowNewerWitness`: is allow to verify newer witness (client MTA height higher than contract MTA height)
@@ -330,20 +343,18 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./parachain/build/li
     --content_type application/java \
     --param relayMtaOffset=0x48 \
     --param paraMtaOffset=0x38 \
-    --param bmc=cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c \
-    --param net=Edgeware.frontier \
+    --param bmc=cxdf018cda3b8f041b2468775412f683e2650dac62 \
+    --param net=0x501.pra \
     --param mtaRootSize=0x10 \
     --param mtaCacheSize=0x10 \
     --param mtaIsAllowNewerWitness=0x1 \
     --param relayLastBlockHash=0xf94a5e262b7192fb951813c50de551761fcc13f2493f41a2f0105cb931cedd89 \
     --param paraLastBlockHash=0xcd9932baef2bc7fc9bca5155594394c96e15491e6eb45587df66fbafe43a3dbc \
     --param encodedValidators=4aCI3DQX1QWOxLRQPgwS6hoKib4gD-mJIkI9QzQBT6aw7g \
-    --param relayEventDecoderAddress=cxc1be732548c34c8b7d63199e4507a0d3bad8342d \
-    --param paraEventDecoderAddress=cx426e568aa64f9f885a5853fcfabdec25634ccc87 \
+    --param relayEventDecoderAddress=cx567425fd292e032c79617ebeb38acf2e34b01497 \
+    --param paraEventDecoderAddress=cxa6525b38f8bf513fdd55c506f7cf6bc95d0d30a0 \
     --param relayCurrentSetId=0x0 \
     --param paraChainId=0x3e9
-
-gradle bmv:deployToLocal -P keystoreName=/Users/leclevietnam/mwork/btp/icon-bmv/godWallet.json -P keystorePass=gochain
 ```
 
 ### get encode of Merkle tree accumulator
@@ -366,7 +377,7 @@ result = Base64.encode(RLP.encode(mta))
 ```
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 call --to cx0fe6bff6d229bf78d365534d0a20ddd9c5683f22 --method paraMta
+goloop rpc --uri http://localhost:9082/api/v3 call --to cxb46cc4f33b80a5a6e8312968e325f8834f9fc810 --method paraMta
 goloop rpc --uri http://localhost:9082/api/v3 call --to cx0fe6bff6d229bf78d365534d0a20ddd9c5683f22 --method relayMta
 ```
 
@@ -399,13 +410,13 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70b
 ### Configure link
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method setLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _block_interval=0x3e8 --param _max_agg=0x10 --param _delay_limit=3
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method setLink --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://0x501.pra/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _block_interval=0x3e8 --param _max_agg=0x10 --param _delay_limit=3
 ```
 
 ### Retrieve properties of link
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method getStatus --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
+goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method getStatus --param _link=btp://0x501.pra/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
 ```
 
 ### Register Relayer and Relay
@@ -413,12 +424,12 @@ goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b
 - add relayer:
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method addRelayer --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd --param _desc="edgeware relayer"
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method addRelayer --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd --param _desc="moonbeam parachain relayer"
 ```
 
 - add relay:
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method addRelay --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method addRelay --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _link=btp://0x501.pra/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _addr=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
 ```
 ### retrieve list of registered relayers
 
@@ -429,10 +440,10 @@ goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b
 - retrieve list of registered relay of link:
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method getRelays --param _link=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
+goloop rpc --uri http://localhost:9082/api/v3 call --to cx9e8a72eb07ae70bbfb8f5b835a20cb25688a549c --method getRelays --param _link=btp://0x501.pra/08425D9Df219f93d5763c3e85204cb5B4cE33aAa
 ```
 ### call handleRelayMessage of BMC contract
 
 ```bash
-goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx0fe6bff6d229bf78d365534d0a20ddd9c5683f22 --method handleRelayMessage --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _prev=btp://Edgeware.frontier/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _msg=
+goloop rpc --uri http://localhost:9082/api/v3 sendtx call --to cx0fe6bff6d229bf78d365534d0a20ddd9c5683f22 --method handleRelayMessage --key_store godWallet.json --step_limit 10000000000 --nid 3 --key_password gochain --param _prev=btp://0x501.pra/08425D9Df219f93d5763c3e85204cb5B4cE33aAa --param _msg=
 ```

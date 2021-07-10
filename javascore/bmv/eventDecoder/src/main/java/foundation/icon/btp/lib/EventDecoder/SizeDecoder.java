@@ -797,4 +797,19 @@ public class SizeDecoder {
     public static int AuthorId(ByteSliceInput input, int offset) {
         return 32;
     }
+
+    public static int NominatorAdded(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+        
+        input.seek(startPoint + offset);
+
+        int size = 1;
+        byte nominatorAddedEnum = input.takeByte();
+        if ((nominatorAddedEnum & 0xff) == 1) {
+            size += 16;
+        }
+
+        input.seek(startPoint);
+        return size;
+    }
 }

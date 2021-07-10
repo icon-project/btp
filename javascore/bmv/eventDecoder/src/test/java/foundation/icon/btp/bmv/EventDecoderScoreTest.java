@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 // only compatible with edgeware metadata, comment @Disabled to test event decoder of edgeware chain
-// @Disabled
+@Disabled
 class EventDecoderScoreTest extends TestBase {
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
