@@ -27,6 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/pra"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -41,37 +42,73 @@ const (
 	DefaultRelayReSendInterval    = time.Second
 )
 
+type SenderOptions struct {
+	StepLimit int64 `json:"stepLimit"`
+}
+
 type sender struct {
 	c   *Client
 	src chain.BtpAddress
 	dst chain.BtpAddress
 	w   Wallet
 	l   log.Logger
-	opt struct {
-		StepLimit int64
+	opt SenderOptions
+}
+
+func (s *sender) adaptRelayMessageStructure(rm *RelayMessage) ([]byte, error) {
+	for i, bur := range rm.BlockUpdates {
+		s.l.Debugf("msg.BlockUpdates[%d]: %x\n", i, bur)
 	}
 
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
+	switch s.dst.BlockChain() {
+	case "icon":
+		if b, err := codec.RLP.MarshalToBytes(rm); err != nil {
+			return b, err
+		} else {
+			// s.l.Debugf("RLP encoded: %x\n", b)
+			return b, err
+		}
+	case "pra":
+		// rps := []ReceiptProof{}
+		// rps, err := codec.RLP.UnmarshalFromBytes(rm.ReceiptProofs, rps)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		prm := &struct {
+			BlockUpdates [][]byte
+			BlockProof   []byte
+			StateProof   *pra.StateProof
+		}{
+			BlockUpdates: rm.BlockUpdates,
+			BlockProof:   rm.BlockProof,
+			StateProof:   nil,
+		}
+
+		if b, err := codec.RLP.MarshalToBytes(prm); err != nil {
+			return b, err
+		} else {
+			// s.l.Debugf("RLP encoded: %x\n", b)
+			return b, err
+		}
+	default:
+		return nil, fmt.Errorf("chain not supported yet: %s", s.dst.BlockChain())
 	}
-	evtReq             *BlockRequest
-	bh                 *BlockHeader
-	isFoundOffsetBySeq bool
-	cb                 chain.ReceiveCallback
 }
 
 func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
-	b, err := codec.RLP.MarshalToBytes(rm)
+	b, err := s.adaptRelayMessageStructure(rm)
 	if err != nil {
 		return nil, err
 	}
+
 	rmp := BMCRelayMethodParams{
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
+
+	s.l.Debugf("RLPEncoded: %x\n", b)
+	s.l.Debugf("Base64: %s\n", rmp.Messages)
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),

@@ -87,5 +87,12 @@ type ReceiptProof struct {
 
 type BlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
-	FinalityProof           []byte
+	FinalityProof           *[]byte
+}
+
+type PrachainFinalityProof struct{}
+
+type StateProof struct {
+	Key   []byte
+	Value []byte
 }

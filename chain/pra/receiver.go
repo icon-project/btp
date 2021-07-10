@@ -41,7 +41,7 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
-func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
+func (r *Receiver) newFinalityProof(v *BlockNotification) (*[]byte, error) {
 	// For edgeware only
 	// // Justification required, when update validators list
 	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
