@@ -34,11 +34,8 @@
     unused_results
 )]
 
-pub mod bsh_types;
-pub mod errors;
-
+mod bsh_types;
 pub use bsh_types::*;
-pub use errors::BSHError;
 
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -57,7 +54,7 @@ metadata! {
     #[serde(crate = "near_sdk::serde")]
     pub struct BshGeneric {
         /// A list of transferring requests
-        /// Use `HashMap` because `LookupMap` doesn't implement 
+        /// Use `HashMap` because `LookupMap` doesn't implement
         /// Clone, Debug, and Default traits
         requests: HashMap<u64, PendingTransferCoin>,
         /// BSH Service name
@@ -150,7 +147,7 @@ impl BshGeneric {
         svc: &str,
         sn: u64,
         msg: &[u8],
-    ) -> Result<(), BSHError> {
+    ) -> Result<(), &str> {
         assert_eq!(self.service_name.as_str(), svc, "Invalid Svc");
         let sm: ServiceMessage = bincode::deserialize(msg).expect("Failed to deserialize msg");
 
@@ -170,10 +167,10 @@ impl BshGeneric {
                         Self::RC_OK,
                     );
                 } else {
-                    return Err(BSHError::InvalidData);
+                    return Err("InvalidData");
                 }
             } else {
-                return Err(BSHError::InvalidBtpAddress);
+                return Err("InvalidBtpAddress");
             }
             self.send_response_message(
                 ServiceType::ResponseHandleService,
@@ -229,11 +226,7 @@ impl BshGeneric {
 
     /// Handle a list of minting/transferring coins/tokens
     #[payable]
-    pub fn handle_request_service(
-        &mut self,
-        _to: &str,
-        assets: Vec<Asset>,
-    ) -> Result<(), BSHError> {
+    pub fn handle_request_service(&mut self, _to: &str, assets: Vec<Asset>) -> Result<(), &str> {
         assert_eq!(
             env::current_account_id(),
             env::signer_account_id(),

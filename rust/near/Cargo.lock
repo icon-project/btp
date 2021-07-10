@@ -664,9 +664,6 @@ dependencies = [
  "bincode",
  "btp-common",
  "near-sdk",
- "num-derive",
- "num-traits",
- "thiserror",
 ]
 
 [[package]]
@@ -3046,17 +3043,6 @@ dependencies = [
  "autocfg 1.0.1",
  "num-integer",
  "num-traits",
-]
-
-[[package]]
-name = "num-derive"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
