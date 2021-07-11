@@ -33,7 +33,9 @@ pub enum ServiceType {
     UnknownType,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(
+    BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, PartialEq, Serialize,
+)]
 #[serde(crate = "near_sdk::serde")]
 pub struct PendingTransferCoin {
     pub from: String,
@@ -51,7 +53,7 @@ pub struct TransferCoin {
     pub assets: Vec<Asset>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Asset {
     pub coin_name: String,
