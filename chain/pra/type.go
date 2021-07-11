@@ -51,6 +51,12 @@ type DecodedRelayMessage struct {
 	StateProof   *StateProof
 }
 
+type PraRelayMessage struct {
+	BlockUpdates [][]byte
+	BlockProof   []byte
+	StateProof   []byte
+}
+
 type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte

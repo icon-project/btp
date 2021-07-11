@@ -164,7 +164,7 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 
 	case "pra":
-		msg := &pra.DecodedRelayMessage{}
+		pramsg := &pra.PraRelayMessage{}
 		for _, bu := range rm.BlockUpdates {
 			if bu.Height <= height {
 				continue
@@ -174,35 +174,35 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
 			}
 
-			pbu := &pra.BlockUpdate{}
-			if err = rlp.DecodeBytes(bu.Proof, pbu); err != nil {
-				return nil, err
-			}
-
 			s.l.Debugf("BlockProof: %x\n", bu.Proof)
-			msg.BlockUpdates = append(msg.BlockUpdates, *pbu)
+			pramsg.BlockUpdates = append(pramsg.BlockUpdates, bu.Proof)
 		}
 
 		if rm.BlockProof != nil {
-			msg.BlockProof = &pra.BlockProof{
+			if pramsg.BlockProof, err = rlp.EncodeToBytes(&pra.BlockProof{
 				Header: rm.BlockProof.Header,
 				BlockWitness: &pra.BlockWitness{
 					Height:  uint64(rm.BlockProof.BlockWitness.Height),
 					Witness: rm.BlockProof.BlockWitness.Witness,
 				},
+			}); err != nil {
+				return nil, err
 			}
 		}
 
 		for _, rp := range rm.ReceiptProofs {
 			sp := &pra.StateProof{}
 
-			if err = rlp.DecodeBytes(rp.Proof, msg); err != nil {
+			if err = rlp.DecodeBytes(rp.Proof, sp); err != nil {
 				return nil, err
 			}
-			msg.StateProof = sp
+
+			if sp != nil {
+				pramsg.StateProof = rp.Proof
+			}
 		}
 
-		b, err := rlp.EncodeToBytes(msg)
+		b, err := rlp.EncodeToBytes(pramsg)
 		if err != nil {
 			return nil, err
 		}
