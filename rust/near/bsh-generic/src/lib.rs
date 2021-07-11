@@ -39,7 +39,6 @@ pub use bsh_types::*;
 
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
 
@@ -49,8 +48,7 @@ metadata! {
     /// among BMC Service and a BSH core contract.
     /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
     #[near_bindgen]
-    #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, Serialize)]
-    #[serde(crate = "near_sdk::serde")]
+    #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default)]
     pub struct BshGeneric {
         bmc_contract: String,
         bsh_contract: String,
@@ -145,7 +143,10 @@ impl BshGeneric {
             sn: self.serial_no,
             asset_details: asset_details.clone(),
         };
-        let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+        let bsh_event = bsh_event
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
+
         env::log(&bsh_event);
         self.serial_no += 1;
         Ok(())
@@ -160,11 +161,11 @@ impl BshGeneric {
         msg: &[u8],
     ) -> Result<(), &str> {
         assert_eq!(self.service_name, svc.to_string(), "Invalid Svc");
-        let sm: ServiceMessage = bincode::deserialize(msg).expect("Failed to deserialize msg");
+        let sm = ServiceMessage::try_from_slice(msg).expect("Failed to deserialize msg");
 
         if sm.service_type == ServiceType::RequestCoinRegister {
-            let tc: TransferCoin =
-                bincode::deserialize(sm.data.as_slice()).expect("Failed to deserialize sm data");
+            let tc = TransferCoin::try_from_slice(sm.data.as_slice())
+                .expect("Failed to deserialize sm data");
             //  check receiving address whether it is a valid address
             //  or revert if not a valid one
             let btp_addr = BTPAddress(tc.to.clone());
@@ -196,13 +197,15 @@ impl BshGeneric {
             let res = req.from.as_bytes();
 
             assert_ne!(res.len(), 0, "InvalidSN");
-            let response: Response = bincode::deserialize(sm.data.as_slice())
+            let response = Response::try_from_slice(sm.data.as_slice())
                 .expect("Failed to deserialize service message");
             self.handle_response_service(sn, response.code, response.message.as_str())
                 .expect("Error in handling response service");
         } else if sm.service_type == ServiceType::UnknownType {
             let bsh_event = BshEvents::UnknownResponse { from, sn };
-            let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+            let bsh_event = bsh_event
+                .try_to_vec()
+                .expect("Failed to serialize bsh event");
             env::log(&bsh_event);
         } else {
             // If none of those types above BSH responds with a message of
@@ -247,7 +250,9 @@ impl BshGeneric {
             code,
             response: msg,
         };
-        let bsh_event = bincode::serialize(&bsh_event).expect("Failed to serialize bsh event");
+        let bsh_event = bsh_event
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
         env::log(&bsh_event);
         Ok(())
     }
