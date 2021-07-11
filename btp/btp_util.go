@@ -76,7 +76,6 @@ func (b *BTP) newBlockProof(height int64, header []byte) (*chain.BlockProof, err
 		return nil, err
 	}
 
-	b.log.Debugf("newBlockProof height:%d, at:%d, w:%d", height, at, len(w))
 	bp := &chain.BlockProof{
 		Header: header,
 		BlockWitness: &chain.BlockWitness{
@@ -84,6 +83,8 @@ func (b *BTP) newBlockProof(height int64, header []byte) (*chain.BlockProof, err
 			Witness: mta.WitnessesToHashes(w),
 		},
 	}
+
+	b.log.Debugf("newBlockProof height:%d, at:%d, w:%v", height, at, bp.BlockWitness)
 	return bp, nil
 }
 

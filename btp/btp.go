@@ -311,6 +311,11 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 		rm = b.newRelayMessage()
 	} else {
 		if bu.Height <= b.bmcLinkStatus.Verifier.Height {
+			var err error
+			rm.BlockProof, err = b.newBlockProof(bu.Height, bu.Header)
+			if err != nil {
+				b.log.Debugf("addRelayMessage add BlockProof fails:%d, %v", bu.Height, err.Error())
+			}
 			return
 		}
 		rm.BlockUpdates = append(rm.BlockUpdates, bu)

@@ -103,6 +103,8 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				}); err != nil {
 					return nil, err
 				}
+
+				rp.Index = int(v.Height)
 				rps = append(rps, rp)
 				continue
 			}

@@ -48,13 +48,13 @@ type BlockProof struct {
 type DecodedRelayMessage struct {
 	BlockUpdates []BlockUpdate
 	BlockProof   *BlockProof
-	StateProof   *StateProof
+	StateProof   *[]StateProof
 }
 
 type PraRelayMessage struct {
 	BlockUpdates [][]byte
 	BlockProof   []byte
-	StateProof   []byte
+	StateProof   [][]byte
 }
 
 type RelayMessage struct {

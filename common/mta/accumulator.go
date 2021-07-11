@@ -351,6 +351,11 @@ func (a *Accumulator) WitnessFor(idx int64) (w []Witness, err error) {
 		return nil, errors.ErrNotFound
 	}
 	offset := len(a.roots)
+
+	// FIXME fix this case MTA root := a.roots[0]
+	// if offset == 0 {
+	// }
+
 	for offset > 0 {
 		offset -= 1
 		if a.roots[offset] == nil {
@@ -507,13 +512,13 @@ func GetDepthByHeightAndAccLength(height, accLength int64) int {
 	depth := 0
 	v := accLength
 	//calculate max depth
-	for ; 0 < v ; v >>= 1 {
+	for ; 0 < v; v >>= 1 {
 		depth++
 	}
-	for ; depth > 0; {
+	for depth > 0 {
 		depth--
 		bitFlag := int64(1) << uint(depth)
-		if accLength & bitFlag == bitFlag {
+		if accLength&bitFlag == bitFlag {
 			if height < bitFlag {
 				return depth
 			}

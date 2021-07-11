@@ -62,8 +62,8 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
 
-	s.l.Debugf("RLPEncoded: %x\n", b)
-	s.l.Debugf("Base64: %s\n", rmp.Messages)
+	// s.l.Debugf("RLPEncodedRelayMessage: %x\n", b)
+	// s.l.Debugf("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
@@ -222,7 +222,13 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 		segments = append(segments, segment)
 	case "pra":
-		pramsg := &pra.PraRelayMessage{}
+		segment := &chain.Segment{}
+
+		pramsg := &pra.PraRelayMessage{
+			BlockUpdates: make([][]byte, 0),
+			StateProof:   make([][]byte, 0),
+		}
+
 		for _, bu := range rm.BlockUpdates {
 			if bu.Height <= height {
 				continue
@@ -232,20 +238,24 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
 			}
 
-			s.l.Debugf("BlockProof: %x\n", bu.Proof)
+			// s.l.Debugf("BlockUpdate: %x\n", bu.Proof)
 			pramsg.BlockUpdates = append(pramsg.BlockUpdates, bu.Proof)
 		}
 
 		if rm.BlockProof != nil {
-			if pramsg.BlockProof, err = rlp.EncodeToBytes(&pra.BlockProof{
+			pramsg.BlockProof, err = rlp.EncodeToBytes(&pra.BlockProof{
 				Header: rm.BlockProof.Header,
 				BlockWitness: &pra.BlockWitness{
 					Height:  uint64(rm.BlockProof.BlockWitness.Height),
 					Witness: rm.BlockProof.BlockWitness.Witness,
 				},
-			}); err != nil {
+			})
+
+			if err != nil {
 				return nil, err
 			}
+
+			// s.l.Debugf("BlockProof: %x", pramsg.BlockProof)
 		}
 
 		for _, rp := range rm.ReceiptProofs {
@@ -256,7 +266,8 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			}
 
 			if sp != nil {
-				pramsg.StateProof = rp.Proof
+				pramsg.StateProof = append(pramsg.StateProof, rp.Proof)
+				// s.l.Debugf("StateProof[]: %x", rp.Proof)
 			}
 		}
 
@@ -268,9 +279,10 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), b); err != nil {
 			return nil, err
 		}
+
+		segments = append(segments, segment)
 	}
 
-	segments = append(segments, segment)
 	return segments, nil
 }
 
