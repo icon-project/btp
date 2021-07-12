@@ -44,14 +44,6 @@ type SubstrateClient interface {
 	GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error)
 }
 
-type PraClient interface {
-	IsSendMessageEvent(e EventEVMLog) bool
-	MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNotification) error) error
-	CloseAllMonitor() error
-	CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error)
-	SubstrateClient() SubstrateClient
-}
-
 type Client struct {
 	ethClient         EthClient
 	subClient         SubstrateClient

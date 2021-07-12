@@ -11,7 +11,7 @@ import (
 )
 
 type Receiver struct {
-	c   PraClient
+	c   *Client
 	src chain.BtpAddress
 	dst chain.BtpAddress
 	l   log.Logger
