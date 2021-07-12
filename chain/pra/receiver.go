@@ -91,7 +91,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					return nil, err
 				}
 
-				proof, err := r.c.GetReadProof(key, v.Hash)
+				proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
 				if err != nil {
 					return nil, err
 				}

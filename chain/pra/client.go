@@ -49,7 +49,7 @@ type PraClient interface {
 	MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNotification) error) error
 	CloseAllMonitor() error
 	CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error)
-	GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error)
+	SubstrateClient() SubstrateClient
 }
 
 type Client struct {
@@ -81,6 +81,10 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 		stopMonitorSignal: make(chan bool),
 	}
 	return c
+}
+
+func (c *Client) SubstrateClient() SubstrateClient {
+	return c.subClient
 }
 
 func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
