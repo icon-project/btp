@@ -50,13 +50,7 @@ pub trait Link {
     fn new() -> Self;
     fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
     fn remove_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
-    fn set_link(
-        &mut self,
-        link: &BTPAddress,
-        block_interval: u64,
-        mxagg: u64,
-        delimit: u64,
-    ) -> Result<bool, String>;
+
     fn get_links(&self) -> Result<Vec<u8>, String>;
     fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
     fn init_linkprops(&self) -> LinkProps;
@@ -150,7 +144,6 @@ impl Link for Links {
         return Err("links are empty".to_string());
     }
 
-    
     fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String> {
         if self.0.contains_key(&link.0.clone().into_bytes()) {
             let linkprop = self.0.get(&link.0.clone().into_bytes());

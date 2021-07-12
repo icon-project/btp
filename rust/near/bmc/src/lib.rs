@@ -1,16 +1,16 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::AccountId;
 use near_sdk::{env, near_bindgen};
-use std::collections::HashMap;
-use std::str;
 mod link;
+mod permission;
 mod route;
 use btp_common::BTPAddress;
+use permission::{Owner, Owners};
 use route::{Route, Routes};
 #[macro_use]
 extern crate lazy_static;
 
-use link::{Link, LinkProps, Links};
+use link::{Link, Links};
 
 #[global_allocator]
 static ALLOC: near_sdk::wee_alloc::WeeAlloc = near_sdk::wee_alloc::WeeAlloc::INIT;
@@ -21,6 +21,7 @@ pub struct BTPMessageCenter {
     message: Message,
     links: Links,
     routes: Routes,
+    owners: Owners,
 }
 
 #[derive(Default, BorshDeserialize, BorshSerialize)]
@@ -34,10 +35,12 @@ impl Default for BTPMessageCenter {
         let message: Message = Default::default();
         let links = Links::new();
         let routes = Routes::new();
+        let owners = Owners::new();
         Self {
             message,
             links,
             routes,
+            owners,
         }
     }
 }
@@ -50,6 +53,41 @@ impl BTPMessageCenter {
 
     pub fn send_message(&mut self, message: String) {
         self.message.payload = message.as_bytes().to_vec()
+    }
+
+    pub fn add_link(&mut self, link: &BTPAddress) {
+        assert!(
+            self.owners.is_owner(env::signer_account_id()),
+            "BMCRevertUnauthorized"
+        );
+
+        self.links
+            .add_link(link)
+            .expect_err("BMCRevertUnauthorized");
+    }
+    pub fn add_routes(&mut self, dst: &BTPAddress, link: &BTPAddress) {
+        self.routes
+            .add_route(dst, link)
+            .expect_err("Not able to add route");
+    }
+
+    pub fn remove_route(&mut self, dst: &BTPAddress) {
+        assert!(
+            self.owners.is_owner(env::signer_account_id()),
+            "BMCRevertUnauthorized"
+        );
+        self.routes.remove_route(dst).expect_err("Failed to remove");
+    }
+
+    pub fn add_owner(&mut self, address: &AccountId) {
+        assert!(
+            self.owners.is_owner(env::signer_account_id()),
+            "BMCRevertUnauthorized"
+        );
+
+        self.owners
+            .add_owner(address)
+            .expect_err("failed to add owner");
     }
 }
 #[cfg(test)]
@@ -89,189 +127,5 @@ mod tests {
         let mut s = String::from("");
         contract.send_message("dddddd".to_string());
         assert_eq!("dddddd".to_string(), contract.get_message());
-    }
-    // #[test]
-    // fn link() {
-    //     let context = get_context(vec![], false);
-    //     testing_env!(context);
-
-    //     let address =
-    //         BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    //     let link =
-    //         BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-    //     let mut contract = BTPMessageCenter {
-    //         ..Default::default()
-    //     };
-
-    //     contract.routes.add_link(&address, &link);
-    //     match contract.routes.get_staus(&address) {
-    //         Ok(res) => assert_eq!(
-    //             res,
-    //             "btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()
-    //         ),
-    //         Err(res) => (),
-    //     }
-    // }
-
-    #[test]
-
-    fn link_test() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let address =
-            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        contract.links.add_link(&address);
-        match contract.links.get_links() {
-            Ok(res) => assert_eq!(
-                str::from_utf8(&res).unwrap(),
-                "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"
-            ),
-            Err(res) => (),
-        }
-    }
-
-    #[test]
-
-    fn add_invalid_link() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let address =
-            BTPAddress("http://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        match contract.links.add_link(&address) {
-            Ok(res) => (),
-            Err(error) => assert_eq!(error.as_str(), "not supported protocol http"),
-        }
-    }
-
-    #[test]
-
-    fn add_route() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let dst =
-            BTPAddress("http://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link =
-            BTPAddress("http://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        match contract.routes.add_route(&dst, &link) {
-            Ok(true) => println!("route aded"),
-            Ok(false) => (),
-            Err(error) => (),
-        }
-    }
-
-    #[test]
-
-    fn add_failed_route() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let dst =
-            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link =
-            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        let dst1 =
-            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1 =
-            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        match contract.routes.add_route(&dst, &link) {
-            Ok(res) => (),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-        match contract.routes.add_route(&dst1, &link1) {
-            Ok(true) => (),
-            Ok(false) => (),
-            Err(error) => assert_eq!(
-                error.as_str(),
-                "value already present btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"
-            ),
-        }
-    }
-
-    #[test]
-
-    fn add_multiple_route() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let dst =
-            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link =
-            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        let dst1 =
-            BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1 =
-            BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        match contract.routes.add_route(&dst, &link) {
-            Ok(res) => (),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-        match contract.routes.add_route(&dst1, &link1) {
-            Ok(res) => assert_eq!(res, true),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-    }
-    #[test]
-    fn delete_route() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
-        let dst =
-            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link =
-            BTPAddress("btp://0x2.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        let dst1 =
-            BTPAddress("btp://0x3.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let link1 =
-            BTPAddress("btp://0x4.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
-        match contract.routes.add_route(&dst, &link) {
-            Ok(res) => (),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-        match contract.routes.add_route(&dst1, &link1) {
-            Ok(res) => (),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-
-        match contract.routes.remove_route(&dst1) {
-            Ok(res) => assert_eq!(res, true),
-            Ok(res) => (),
-            Err(error) => (),
-        }
-
-        match contract.routes.remove_route(&dst1) {
-            Ok(res) => (),
-            Ok(res) => (),
-            Err(error) => assert_eq!(error.as_str(), "value already deleted"),
-        }
     }
 }
