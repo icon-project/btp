@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
@@ -115,8 +116,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 
 	t.Run("should build StateProof when EVM Log events contains BMC SendMessage Event", func(t *testing.T) {
 		subClient := &MockSubstrateClient{}
-		ethClient, err := ethclient.Dial("wss://icon-btp.ecl.vn:34008")
-		require.NoError(t, err)
+		ethClient := ethclient.NewClient(&rpc.Client{})
 
 		bmc, err := binding.NewBMC(EvmHexToAddress("0x5b5B619E6A040EBCB620155E0aAAe89AfA45D090"), ethClient)
 		require.NoError(t, err)
