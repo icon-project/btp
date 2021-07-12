@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
 
 type Receiver struct {
-	c   *Client
+	c   PraClient
 	src chain.BtpAddress
 	dst chain.BtpAddress
 	l   log.Logger
@@ -41,7 +41,7 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
-func (r *Receiver) newFinalityProof(v *BlockNotification) (*[]byte, error) {
+func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
 	// For edgeware only
 	// // Justification required, when update validators list
 	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
@@ -71,7 +71,7 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		return nil, err
 	}
 
-	bu.Proof, err = rlp.EncodeToBytes(&update)
+	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
 	if err != nil {
 		return nil, err
 	}
@@ -86,25 +86,24 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 	if len(v.Events.EVM_Log) > 0 {
 		for _, e := range v.Events.EVM_Log {
 			if r.c.IsSendMessageEvent(e) {
-				key, err := r.c.getSystemEventReadProofKey(v.Hash)
+				key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 				if err != nil {
 					return nil, err
 				}
 
-				proof, err := r.c.getReadProof(key, v.Hash)
+				proof, err := r.c.GetReadProof(key, v.Hash)
 				if err != nil {
 					return nil, err
 				}
 
 				rp := &chain.ReceiptProof{}
-				if rp.Proof, err = rlp.EncodeToBytes(&StateProof{
+				if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
 					Key:   key,
 					Value: proof.Proof,
 				}); err != nil {
 					return nil, err
 				}
 
-				rp.Index = int(v.Height)
 				rps = append(rps, rp)
 				continue
 			}

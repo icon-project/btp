@@ -41,6 +41,15 @@ type SubstrateClient interface {
 	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
 	GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error)
 	GetBlockHashLatest() (SubstrateHash, error)
+	GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error)
+}
+
+type PraClient interface {
+	IsSendMessageEvent(e EventEVMLog) bool
+	MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNotification) error) error
+	CloseAllMonitor() error
+	CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error)
+	GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error)
 }
 
 type Client struct {
@@ -113,17 +122,8 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
-	metadata, err := c.subClient.GetMetadata(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
-}
-
-func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorageKey, error) {
-	meta, err := c.getMetadata(hash)
+func (c *Client) CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error) {
+	meta, err := c.subClient.GetMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -131,10 +131,8 @@ func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorag
 	return CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
-func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
-	var res ReadProof
-	err := c.subClient.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
-	return res, err
+func (c *Client) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
+	return c.subClient.GetReadProof(key, hash)
 }
 
 func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
@@ -224,7 +222,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 
 func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, error) {
 	c.log.Trace("fetching block for events", "hash", blockHash.Hex())
-	meta, err := c.getMetadata(blockHash)
+	meta, err := c.subClient.GetMetadata(blockHash)
 	if err != nil {
 		return nil, err
 	}

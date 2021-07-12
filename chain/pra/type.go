@@ -51,12 +51,6 @@ type DecodedRelayMessage struct {
 	StateProof   *[]StateProof
 }
 
-type PraRelayMessage struct {
-	BlockUpdates [][]byte
-	BlockProof   []byte
-	StateProof   [][]byte
-}
-
 type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte
@@ -114,7 +108,7 @@ type ReceiptProof struct {
 
 type BlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
-	FinalityProof           *[]byte
+	FinalityProof           []byte
 }
 
 type PrachainFinalityProof struct{}
