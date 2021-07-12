@@ -32,7 +32,7 @@ type RelayMessageParam struct {
 
 type StateProof struct {
 	Key   []byte
-	Value []string
+	Value [][]byte
 }
 
 type BlockWitness struct {

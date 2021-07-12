@@ -102,10 +102,19 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					return nil, err
 				}
 
+				proofs := [][]byte{}
+				for _, p := range proof.Proof {
+					bp, err := types.HexDecodeString(p)
+					if err != nil {
+						return nil, err
+					}
+					proofs = append(proofs, bp)
+				}
+
 				rp := &chain.ReceiptProof{}
 				if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
 					Key:   key,
-					Value: proof.Proof,
+					Value: proofs,
 				}); err != nil {
 					return nil, err
 				}

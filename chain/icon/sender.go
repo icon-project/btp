@@ -254,7 +254,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 	size := 0
 	//TODO rm.BlockUpdates[len(rm.BlockUpdates)-1].Height <= s.bmcStatus.Verifier.Height
 	//	using only rm.BlockProof
-	for _, bu := range rm.BlockUpdates {
+	for i, bu := range rm.BlockUpdates {
 		if bu.Height <= height {
 			continue
 		}
@@ -285,6 +285,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 			size = buSize
 		}
+		s.l.Tracef("BlockUpdates[%d]: Height:%d EncodedData:%x", i, bu.Height, bu.Proof)
 		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -306,7 +307,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		return nil, ErrInvalidBlockUpdateProofSize
 	}
 
-	for _, rp := range rm.ReceiptProofs {
+	for i, rp := range rm.ReceiptProofs {
 		if s.isOverSizeLimit(len(rp.Proof)) {
 			return nil, ErrInvalidReceiptProofSize
 		}
@@ -318,6 +319,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		size += len(rp.Proof)
 
+		s.l.Tracef("StateProof[%d]: %x", i, rp.Proof)
 		msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
 	}
 
