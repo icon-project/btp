@@ -28,7 +28,7 @@ let sha3FIPS256 = (input) => {
    It means ICON RLP encode (`None`) = ETH ELP encode (`[[]]`).
  */
 let convertEthRlpToIconRlp = (buff, prefix=true) => {
-    return ((prefix) ? '0x': '') + buff.toString('hex').replaceAll('c1c0', 'f800');
+    return ((prefix) ? '0x': '') + buff.toString('hex').replace(/c1c0/g, 'f800');
 };
 
 contract('BMV unit tests', async () => {
