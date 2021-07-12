@@ -64,7 +64,6 @@ type sender struct {
 		seq       []byte
 	}
 	evtReq             *BlockRequest
-	bh                 *BlockHeader
 	isFoundOffsetBySeq bool
 	cb                 module.ReceiveCallback
 }
@@ -100,7 +99,7 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 		}
 		buSize := len(bu.Proof)
 		if s.isOverLimit(buSize) {
-			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
+			return nil, fmt.Errorf("invalid BlockUpdate.StorageProof size")
 		}
 		size += buSize
 		if s.isOverLimit(size) {
@@ -229,7 +228,6 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 		return nil, fmt.Errorf("casting failure")
 	}
 	t, err := s.c.newTransactOpts(s.opt.ChainID)
-	t.GasLimit = uint64(s.opt.GasLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +253,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 				<-time.After(DefaultGetRelayResultInterval)
 				continue
 			}
-			tx, err := s.c.GetTransactionResult(txh)
+			tx, err := s.c.GetTransactionReceipt(txh.Hash)
 			if err != nil {
 				return nil, err
 			}
