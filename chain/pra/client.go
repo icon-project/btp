@@ -58,6 +58,9 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 	}
 
 	ethClient, err := ethclient.Dial(url)
+	if err != nil {
+		l.Fatal("failed to connect to Parachain EVM", err.Error())
+	}
 
 	bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
 	if err != nil {
