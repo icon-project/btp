@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"math/big"
 	"strconv"
 	"strings"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -62,21 +64,6 @@ const (
 	ResultStatusFailureCodeRevert = 32
 	ResultStatusFailureCodeEnd    = 99
 )
-
-type BlockHeader struct {
-	Version                int
-	Height                 int64
-	Timestamp              int64
-	Proposer               []byte
-	PrevID                 []byte
-	VotesHash              []byte
-	NextValidatorsHash     []byte
-	PatchTransactionsHash  []byte
-	NormalTransactionsHash []byte
-	LogsBloom              []byte
-	Result                 []byte
-	serialized             []byte
-}
 
 type EventLog struct {
 	Addr    []byte
@@ -154,20 +141,6 @@ type TransactionHashParam struct {
 	Hash common.Hash
 }
 
-type BlockHeightParam struct {
-	Height *big.Int `json:"height" validate:"required,t_int"`
-}
-
-type ProofResultParam struct {
-	BlockHash HexBytes `json:"hash" validate:"required,t_hash"`
-	Index     HexInt   `json:"index" validate:"required,t_int"`
-}
-type ProofEventsParam struct {
-	BlockHash common.Hash `json:"hash" validate:"required,t_hash"`
-	Index     HexInt      `json:"index" validate:"required,t_int"`
-	Events    []HexInt    `json:"events"`
-}
-
 type BlockRequest struct {
 	Height       *big.Int       `json:"height"`
 	EventFilters []*EventFilter `json:"eventFilters,omitempty"`
@@ -181,17 +154,63 @@ type EventFilter struct {
 }
 
 type BlockNotification struct {
-	Hash    common.Hash
-	Height  *big.Int
-	Indexes [][]HexInt   `json:"indexes,omitempty"`
-	Events  [][][]HexInt `json:"events,omitempty"`
+	Hash   common.Hash
+	Height *big.Int
+	Header *types.Header
+}
+
+type BlockUpdate struct {
+	BlockHeader []byte
+	Validators  []byte
+}
+
+type RelayMessage struct {
+	BlockUpdates  [][]byte
+	BlockProof    []byte
+	ReceiptProofs [][]byte
+	//
+	height              int64
+	numberOfBlockUpdate int
+	eventSequence       int64
+	numberOfEvent       int
+}
+
+type ReceiptProof struct {
+	Index       int
+	Proof       []byte
+	EventProofs []*module.EventProof
+}
+
+type ConsensusStates struct {
+	PreValidatorSetChangeHeight uint64
+	AppHash                     [32]byte
+	CurValidatorSetHash         [32]byte
+	NextValidatorSet            []byte
+}
+
+type StorageProof struct {
+	StateRoot    common.Hash     `json:"stateRoot"`
+	Height       *big.Int        `json:"height"`
+	Address      common.Address  `json:"address"`
+	AccountProof []string        `json:"accountProof"`
+	Balance      *hexutil.Big    `json:"balance"`
+	CodeHash     common.Hash     `json:"codeHash"`
+	Nonce        hexutil.Uint64  `json:"nonce"`
+	StorageHash  common.Hash     `json:"storageHash"`
+	StorageProof []StorageResult `json:"storageProof"`
+}
+
+type StorageResult struct {
+	Key   string       `json:"key"`
+	Value *hexutil.Big `json:"value"`
+	Proof []string     `json:"proof"`
 }
 
 func HexToAddress(s string) common.Address {
 	return common.HexToAddress(s)
 }
 
-//T_BIN_DATA, T_HASH
+// HexBytes T_BIN_DATA, T_HASH
 type HexBytes string
 
 func (hs HexBytes) Value() ([]byte, error) {
@@ -200,11 +219,8 @@ func (hs HexBytes) Value() ([]byte, error) {
 	}
 	return hex.DecodeString(string(hs[2:]))
 }
-func NewHexBytes(b []byte) HexBytes {
-	return HexBytes("0x" + hex.EncodeToString(b))
-}
 
-//T_INT
+// HexInt T_INT
 type HexInt string
 
 func (i HexInt) Value() (int64, error) {
@@ -224,11 +240,7 @@ func (i HexInt) Int() (int, error) {
 	return int(v), err
 }
 
-func NewHexInt(v int64) HexInt {
-	return HexInt("0x" + strconv.FormatInt(v, 16))
-}
-
-//T_ADDR_EOA, T_ADDR_SCORE
+// Address T_ADDR_EOA, T_ADDR_SCORE
 type Address string
 
 func (a Address) Value() ([]byte, error) {
@@ -250,28 +262,5 @@ func (a Address) Value() ([]byte, error) {
 	return b[:], nil
 }
 
-//T_SIG
+// Signature T_SIG
 type Signature string
-
-type BlockUpdate struct {
-	BlockHeader []byte
-	Votes       []byte
-	Validators  []byte
-}
-
-type RelayMessage struct {
-	BlockUpdates  [][]byte
-	BlockProof    []byte
-	ReceiptProofs [][]byte
-	//
-	height              int64
-	numberOfBlockUpdate int
-	eventSequence       int64
-	numberOfEvent       int
-}
-
-type ReceiptProof struct {
-	Index       int
-	Proof       []byte
-	EventProofs []*module.EventProof
-}

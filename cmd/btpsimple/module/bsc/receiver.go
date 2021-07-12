@@ -17,213 +17,107 @@
 package bsc
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
-	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/log"
-	"github.com/icon-project/btp/common/mpt"
 	"math/big"
-)
-
-const (
-	EventSignature      = "Message(str,int,bytes)"
-	EventIndexSignature = 0
-	EventIndexNext      = 1
-	EventIndexSequence  = 2
 )
 
 type receiver struct {
 	c   *Client
 	src module.BtpAddress
 	dst module.BtpAddress
-	l   log.Logger
+	log log.Logger
 	opt struct {
 	}
-
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
-	}
+	consensusStates    ConsensusStates
 	evtReq             *BlockRequest
-	bh                 *BlockHeader
 	isFoundOffsetBySeq bool
 }
 
-func (r *receiver) getBlockHeader(height *big.Int) (*BlockHeader, error) {
-	//p := &BlockHeightParam{Height: height}
-	b, err := r.c.GetBlockHeaderByHeight(height)
-	if err != nil {
-		return nil, mapError(err)
-	}
-	var bh BlockHeader
-	//_, err = codec.RLP.UnmarshalFromBytes(b, &bh)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//bh.serialized = b
-	bh.Timestamp = int64(b.Time)
-	bh.Height = b.Number.Int64()
-	bh.Version = 2
-	bh.LogsBloom = b.Bloom.Bytes()
-
-	return &bh, nil
-}
-
 func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, error) {
-	bh, err := r.getBlockHeader(v.Height)
-	if err != nil {
-		return nil, err
-	}
-	if !bytes.Equal(v.Hash.Bytes(), crypto.SHA3Sum256(bh.serialized)) {
-		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
-	}
-
-	var update BlockUpdate
-	update.BlockHeader = bh.serialized
+	var err error
 
 	bu := &module.BlockUpdate{
 		BlockHash: v.Hash.Bytes(),
-		Height:    bh.Height,
-		Header:    bh.serialized,
+		Height:    v.Height.Int64(),
 	}
-	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+
+	bu.Header, err = codec.RLP.MarshalToBytes(*v.Header)
 	if err != nil {
 		return nil, err
 	}
-	r.bh = bh
+
+	/*proof, err := r.c.GetProof(v.Height, HexToAddress(r.src.ContractAddress()))
+	if err != nil {
+		return nil, err
+	}*/
+
+	/*if (v.Height % epoch) == 0 {
+	   If (height % epoch)==0, should fetch ValidatorSet from BSCValidatorSet contract.
+		r.consensusStates , err = r.c.GetLatestConsensusState()
+	}*/
+
+	update := &BlockUpdate{}
+	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*v.Header)
+	update.Validators = r.consensusStates.NextValidatorSet
+
+	bu.Proof, err = codec.RLP.MarshalToBytes(update)
+	if err != nil {
+		return nil, err
+	}
+
 	return bu, nil
 }
 
 func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProof, error) {
-	nextEp := 0
 	rps := make([]*module.ReceiptProof, 0)
-	if len(v.Indexes) > 0 {
-		l := v.Indexes[0]
-	RpLoop:
-		for i, index := range l {
-			p := &ProofEventsParam{BlockHash: v.Hash, Index: index, Events: v.Events[0][i]}
-			proofs, err := r.c.GetProofForEvents(p)
-			if err != nil {
-				return nil, mapError(err)
-			}
-			if !r.isFoundOffsetBySeq {
-			EpLoop:
-				for j := 0; j < len(p.Events); j++ {
-					if el, err := toEventLog(proofs[j+1]); err != nil {
-						return nil, err
-					} else if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
-						bytes.Equal(el.Indexed[EventIndexSignature], r.evtLogRawFilter.signature) &&
-						bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) &&
-						bytes.Equal(el.Indexed[EventIndexSequence], r.evtLogRawFilter.seq) {
-						r.isFoundOffsetBySeq = true
-						r.l.Debugln("onCatchUp found offset sequence", j, v)
-						if (j + 1) < len(p.Events) {
-							nextEp = j + 1
-							break EpLoop
-						}
-					}
-				}
-				if nextEp == 0 {
-					continue RpLoop
-				}
-			}
-			idx, _ := index.Value()
-			rp := &module.ReceiptProof{
-				Index:       int(idx),
-				EventProofs: make([]*module.EventProof, 0),
-			}
-			if rp.Proof, err = codec.RLP.MarshalToBytes(proofs[0]); err != nil {
-				return nil, err
-			}
-			for k := nextEp; k < len(p.Events); k++ {
-				eIdx, _ := p.Events[k].Value()
-				ep := &module.EventProof{
-					Index: int(eIdx),
-				}
-				if ep.Proof, err = codec.RLP.MarshalToBytes(proofs[k+1]); err != nil {
-					return nil, err
-				}
-				var evt *module.Event
-				if evt, err = r.toEvent(proofs[k+1]); err != nil {
-					return nil, err
-				}
-				rp.Events = append(rp.Events, evt)
-				rp.EventProofs = append(rp.EventProofs, ep)
-			}
-			rps = append(rps, rp)
-			nextEp = 0
-		}
+
+	block, err := r.c.GetBlockByHeight(v.Height)
+	if err != nil {
+		return nil, err
 	}
+
+	receipts, err := r.c.GetBlockReceipts(block)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, receipt := range receipts {
+		rp := &module.ReceiptProof{}
+		rp.Index = int(receipt.TransactionIndex)
+		rp.Proof, err = codec.RLP.MarshalToBytes(receipt)
+		if err != nil {
+			return nil, err
+		}
+		eventProofs := make([]*module.EventProof, 0)
+		for _, eventLog := range receipt.Logs {
+			ep := &module.EventProof{}
+			ep.Proof, err = codec.RLP.MarshalToBytes(eventLog)
+			ep.Index = int(eventLog.Index)
+			eventProofs = append(eventProofs, ep)
+		}
+		rps = append(rps, rp)
+	}
+
 	return rps, nil
 }
 
-func (r *receiver) toEvent(proof [][]byte) (*module.Event, error) {
-	el, err := toEventLog(proof)
-	if err != nil {
-		return nil, err
-	}
-	if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
-		bytes.Equal(el.Indexed[EventIndexSignature], r.evtLogRawFilter.signature) &&
-		bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) {
-		var i common.HexInt
-		i.SetBytes(el.Indexed[EventIndexSequence])
-		evt := &module.Event{
-			Next:     module.BtpAddress(el.Indexed[EventIndexNext]),
-			Sequence: i.Int64(),
-			Message:  el.Data[0],
-		}
-		return evt, nil
-	}
-	return nil, fmt.Errorf("invalid event")
-}
-
-func toEventLog(proof [][]byte) (*EventLog, error) {
-	mp, err := mpt.NewMptProof(proof)
-	if err != nil {
-		return nil, err
-	}
-	el := &EventLog{}
-	if _, err := codec.RLP.UnmarshalFromBytes(mp.Leaf().Data, el); err != nil {
-		return nil, fmt.Errorf("fail to parse EventLog on leaf err:%+v", err)
-	}
-	return el, nil
-}
-
 func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallback, scb func()) error {
-	s := r.dst.String()
-	ef := &EventFilter{
-		Addr:      Address(r.src.ContractAddress()),
-		Signature: EventSignature,
-		Indexed:   []*string{&s},
-	}
-	r.evtReq = &BlockRequest{
-		Height:       big.NewInt(height),
-		EventFilters: []*EventFilter{ef},
-	}
-	if height < 1 {
-		return fmt.Errorf("cannot catchup from zero height")
+	r.log.Debugf("ReceiveLoop connected")
+	br := &BlockRequest{
+		Height: big.NewInt(height),
 	}
 	var err error
-	if r.bh, err = r.getBlockHeader(big.NewInt(height - 1)); err != nil {
-		return err
-	}
 	if seq < 1 {
 		r.isFoundOffsetBySeq = true
 	}
-	if r.evtLogRawFilter.addr, err = ef.Addr.Value(); err != nil {
-		r.l.Panicf("ef.Addr.Value() err:%+v", err)
+	r.consensusStates, err = r.c.GetLatestConsensusState()
+	if err != nil {
+		r.log.Fatalf(err.Error())
 	}
-	r.evtLogRawFilter.signature = []byte(EventSignature)
-	r.evtLogRawFilter.next = []byte(s)
-	r.evtLogRawFilter.seq = common.NewHexInt(seq).Bytes()
-
-	err = r.c.MonitorBlock(r.evtReq,
+	return r.c.MonitorBlock(br,
 		func(v *BlockNotification) error {
 			var bu *module.BlockUpdate
 			var rps []*module.ReceiptProof
@@ -240,7 +134,6 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallbac
 			return nil
 		},
 	)
-	return err
 }
 
 func (r *receiver) StopReceiveLoop() {
@@ -251,7 +144,7 @@ func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]int
 	r := &receiver{
 		src: src,
 		dst: dst,
-		l:   l,
+		log: l,
 	}
 	b, err := json.Marshal(opt)
 	if err != nil {

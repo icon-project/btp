@@ -22,10 +22,12 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/systemcontracts"
 	"math/big"
 	"strconv"
 	"strings"
@@ -41,16 +43,32 @@ const (
 	ChainID                                    = 56
 )
 
+var (
+	tendermintLightClientContractAddr = common.HexToAddress("0x0000000000000000000000000000000000001003")
+)
+
 type Wallet interface {
 	Sign(data []byte) ([]byte, error)
 	Address() string
 }
 
 type Client struct {
-	l log.Logger
-	*rpc.Client
-	*rpc.ClientSubscription
-	ethClient *ethclient.Client
+	log                   log.Logger
+	subscription          *rpc.ClientSubscription
+	ethClient             *ethclient.Client
+	rpcClient             *rpc.Client
+	tendermintLightClient *systemcontracts.Tendermintlightclient
+}
+
+func toBlockNumArg(number *big.Int) string {
+	if number == nil {
+		return "latest"
+	}
+	pending := big.NewInt(-1)
+	if number.Cmp(pending) == 0 {
+		return "pending"
+	}
+	return hexutil.EncodeBig(number)
 }
 
 func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *types.Transaction {
@@ -62,20 +80,6 @@ func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit u
 		GasPrice: gasPrice,
 		Data:     data,
 	})
-}
-
-func (c *Client) NewTransaction(p *TransactionParam) *types.Transaction {
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-	defer cancel()
-
-	fromAddress := common.HexToAddress(p.FromAddress)
-	toAddress := common.HexToAddress(p.ToAddress)
-
-	txCount, _ := c.ethClient.PendingTransactionCount(ctx)
-	nonce, _ := c.ethClient.NonceAt(ctx, fromAddress, nil)
-	nonce = uint64(txCount) + nonce
-
-	return newTransaction(nonce, toAddress, nil, 6000000, big.NewInt(6000000), nil)
 }
 
 func (c *Client) newTransactOpts(chainID int64) (*bind.TransactOpts, error) {
@@ -92,7 +96,7 @@ func (c *Client) SignTransaction(signerKey *ecdsa.PrivateKey, tx *types.Transact
 	signer := types.LatestSignerForChainID(big.NewInt(ChainID))
 	tx, err := types.SignTx(tx, signer, signerKey)
 	if err != nil {
-		c.l.Errorf("could not sign tx: %v", err)
+		c.log.Errorf("could not sign tx: %v", err)
 		return err
 	}
 	return nil
@@ -105,21 +109,23 @@ func (c *Client) SendTransaction(tx *types.Transaction) error {
 	err := c.ethClient.SendTransaction(ctx, tx)
 
 	if err != nil {
-		c.l.Errorf("could not send tx: %v", err)
+		c.log.Errorf("could not send tx: %v", err)
 		return nil
 	}
 
 	return nil
 }
-func (c *Client) GetTransactionResult(p *TransactionHashParam) (*types.Receipt, error) {
+
+func (c *Client) GetTransactionReceipt(hash common.Hash) (*types.Receipt, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	tr, err := c.ethClient.TransactionReceipt(ctx, p.Hash)
+	tr, err := c.ethClient.TransactionReceipt(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
 	return tr, nil
 }
+
 func (c *Client) GetTransaction(hash common.Hash) (*types.Transaction, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
@@ -130,22 +136,65 @@ func (c *Client) GetTransaction(hash common.Hash) (*types.Transaction, bool, err
 	return tx, pending, err
 }
 
-func (c *Client) GetBlockHeaderByHeight(height *big.Int) (*types.Header, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func (c *Client) GetBlockByHeight(height *big.Int) (*types.Block, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	head, _ := c.ethClient.HeaderByNumber(ctx, height)
-	return head, nil
+	block, err := c.ethClient.BlockByNumber(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
-func (c *Client) GetProofForResult(p *ProofResultParam) ([][]byte, error) {
-	var result [][]byte
-	// TODO: get proof for result
-	return result, nil
+func (c *Client) GetHeaderByHeight(height *big.Int) (*types.Block, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	block, err := c.ethClient.BlockByNumber(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
-func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
-	var result [][][]byte
-	// TODO: het proof for event
-	return result, nil
+
+func (c *Client) GetProof(height *big.Int, addr common.Address) (StorageProof, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	var proof StorageProof
+	if err := c.rpcClient.CallContext(ctx, &proof, "eth_getProof", addr, nil, toBlockNumArg(height)); err != nil {
+		return proof, err
+	}
+	return proof, nil
+}
+
+func (c *Client) GetBlockReceipts(block *types.Block) ([]*types.Receipt, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	var receipts []*types.Receipt
+	for _, tx := range block.Transactions() {
+		receipt, err := c.ethClient.TransactionReceipt(ctx, tx.Hash())
+		if err != nil {
+			return nil, err
+		}
+		receipts = append(receipts, receipt)
+	}
+	return receipts, nil
+}
+
+func (c *Client) GetLatestConsensusState() (ConsensusStates, error) {
+	callOpts := &bind.CallOpts{
+		Pending: true,
+		Context: context.Background(),
+	}
+	lastHeight, _ := c.tendermintLightClient.LatestHeight(callOpts)
+	return c.tendermintLightClient.LightClientConsensusStates(callOpts, lastHeight)
+}
+
+func (c *Client) GetConsensusState(height *big.Int) (ConsensusStates, error) {
+	callOpts := &bind.CallOpts{
+		Pending: true,
+		Context: context.Background(),
+	}
+	return c.tendermintLightClient.LightClientConsensusStates(callOpts, height.Uint64())
 }
 
 func (c *Client) MonitorBlock(p *BlockRequest, cb func(b *BlockNotification) error) error {
@@ -163,14 +212,14 @@ func (c *Client) Monitor(cb func(b *BlockNotification) error) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				c.l.Fatal(err)
+				c.log.Fatal(err)
 			case header := <-subch:
-				b := &BlockNotification{Hash: header.Hash(), Height: header.Number}
+				b := &BlockNotification{Hash: header.Hash(), Height: header.Number, Header: header}
 				err := cb(b)
 				if err != nil {
 					return
 				}
-				c.l.Debugf("MonitorBlock %v", header.Number.Int64())
+				c.log.Debugf("MonitorBlock %v", header.Number.Int64())
 			}
 		}
 	}()
@@ -179,10 +228,10 @@ func (c *Client) Monitor(cb func(b *BlockNotification) error) error {
 }
 
 func (c *Client) CloseMonitor() {
-	c.l.Debugf("CloseMonitor %s", c.Client)
-	c.ClientSubscription.Unsubscribe()
+	c.log.Debugf("CloseMonitor %s", c.rpcClient)
+	c.subscription.Unsubscribe()
 	c.ethClient.Close()
-	c.Client.Close()
+	c.rpcClient.Close()
 }
 
 func (c *Client) CloseAllMonitor() {
@@ -190,15 +239,17 @@ func (c *Client) CloseAllMonitor() {
 	c.CloseMonitor()
 }
 
-func NewClient(uri string, l log.Logger) *Client {
-	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
-	//tr := &http.Transport{MaxIdleConnsPerHost: 1000}
-	client, _ := rpc.Dial(uri)
-
+func NewClient(uri string, log log.Logger) *Client {
+	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump} }
+	rpcClient, err := rpc.Dial(uri)
 	c := &Client{
-		Client:    client,
-		ethClient: ethclient.NewClient(client),
-		l:         l,
+		rpcClient: rpcClient,
+		ethClient: ethclient.NewClient(rpcClient),
+		log:       log,
+	}
+	c.tendermintLightClient, err = systemcontracts.NewTendermintlightclient(tendermintLightClientContractAddr, c.ethClient)
+	if err != nil {
+		c.log.Fatal(err)
 	}
 	opts := BinanceOptions{}
 	opts.SetBool(IconOptionsDebug, true)
@@ -206,9 +257,8 @@ func NewClient(uri string, l log.Logger) *Client {
 }
 
 const (
-	HeaderKeyIconOptions = "Icon-Options"
-	IconOptionsDebug     = "debug"
-	IconOptionsTimeout   = "timeout"
+	IconOptionsDebug   = "debug"
+	IconOptionsTimeout = "timeout"
 )
 
 type BinanceOptions map[string]string
