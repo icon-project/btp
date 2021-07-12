@@ -10,9 +10,9 @@ import (
 )
 
 func TestReceiver_ReceiveLoop(t *testing.T) {
-	r := NewReceiver("btp://0x53.icon/cxdc2a468aada7a4826176e87ae72d6ee24c50df0a", "btp://0x507.pra/0x6a436465184fA9b0b5f20fbeFADaF83CaC466ACD", "https://sejong.net.solidwallet.io/api/v3/icon_dex", nil, log.New())
-
 	t.Run("should monitor from the given height", func(t *testing.T) {
+		t.Skip("This is for manual run")
+		r := NewReceiver("btp://0x53.icon/cxdc2a468aada7a4826176e87ae72d6ee24c50df0a", "btp://0x507.pra/0x6a436465184fA9b0b5f20fbeFADaF83CaC466ACD", "https://sejong.net.solidwallet.io/api/v3/icon_dex", nil, log.New())
 		err := r.ReceiveLoop(560733, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 			assert.EqualValues(t, bu.Height, 560733)
 			assert.Equal(t, "0x6ee5f7dfc438f30818fe31351328bf3f84bb5791a77d1bba127fb7f7651f2b9f", fmt.Sprintf("0x%x", bu.BlockHash))
