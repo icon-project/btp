@@ -179,8 +179,8 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
-					ReceiptProofs: make([][]byte, 0),
 					BlockProof:    lbu.Proof,
+					ReceiptProofs: make([][]byte, 0),
 				}
 
 				trp = &ReceiptProof{
