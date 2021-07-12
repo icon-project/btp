@@ -41,7 +41,7 @@ type SubstrateClient interface {
 	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
 	GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error)
 	GetBlockHashLatest() (SubstrateHash, error)
-	GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error)
+	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (ReadProof, error)
 }
 
 type Client struct {
@@ -81,7 +81,7 @@ func (c *Client) SubstrateClient() SubstrateClient {
 
 func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
 	_, err := c.bmc.ParseMessage(e.EvmLog())
-	return err != nil
+	return err == nil
 }
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
@@ -217,7 +217,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 }
 
 func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, error) {
-	c.log.Trace("fetching block for events", "hash", blockHash.Hex())
+	// c.log.Trace("fetching block for events", "hash", blockHash.Hex())
 	meta, err := c.subClient.GetMetadata(blockHash)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package pra
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -20,15 +21,13 @@ type Receiver struct {
 		RelayEndpoint string
 	}
 	isFoundOffsetBySeq bool
-	bmcAddress         string
 }
 
 func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
 	r := &Receiver{
-		src:        src,
-		dst:        dst,
-		l:          l,
-		bmcAddress: src.ContractAddress(),
+		src: src,
+		dst: dst,
+		l:   l,
 	}
 	b, err := json.Marshal(opt)
 	if err != nil {
@@ -85,6 +84,13 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 	if len(v.Events.EVM_Log) > 0 {
 		for _, e := range v.Events.EVM_Log {
+			a := e.Log.Address.Hex()
+			ua := r.src.ContractAddress()
+			// EVM_Log.Log.Address is case-insensitive, src.ContractAddress is case-sensitive
+			if !bytes.EqualFold([]byte(a), []byte(ua)) {
+				continue
+			}
+
 			if r.c.IsSendMessageEvent(e) {
 				key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 				if err != nil {
@@ -105,6 +111,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				}
 
 				rps = append(rps, rp)
+				r.isFoundOffsetBySeq = true
 				continue
 			}
 		}
