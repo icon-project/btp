@@ -62,7 +62,7 @@ public class StringUtil {
 
     public static String bytesToHex(byte[] bytes) {
         if (bytes == null) {
-            return "";
+            return null;
         }
         char[] hexChars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {

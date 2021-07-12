@@ -17,14 +17,14 @@
 package com.iconloop.btp.bmc;
 
 import com.iconloop.btp.lib.BTPAddress;
-import com.iconloop.score.util.EnumerableDictDB;
+import com.iconloop.score.data.EnumerableDictDB;
 import com.iconloop.score.util.Logger;
 
 public class Routes extends EnumerableDictDB<String, BTPAddress> {
     private static final Logger logger = Logger.getLogger(Routes.class);
 
     public Routes(String id) {
-        super(id, String.class, BTPAddress.class, logger);
+        super(id, String.class, BTPAddress.class);
     }
 
 }

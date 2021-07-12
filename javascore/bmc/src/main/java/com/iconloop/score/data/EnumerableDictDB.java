@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.util;
+package com.iconloop.score.data;
 
 import score.Address;
 import score.ArrayDB;
@@ -27,17 +27,14 @@ import java.util.List;
 import java.util.Map;
 
 public class EnumerableDictDB<K, V> {
-    private static final Logger defaultLogger = Logger.getLogger(EnumerableDictDB.class);
-
     protected final String id;
     private final DictDB<Object, Integer> indexes;
     private final DictDB<Integer, K> keys;
     private final ArrayDB<Object> values;
     private final boolean supportedKeyType;
-    private final Logger logger;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public EnumerableDictDB(String id, Class<K> keyClass, Class<? extends V> valueClass, Logger logger) {
+    public EnumerableDictDB(String id, Class<K> keyClass, Class<? extends V> valueClass) {
         this.id = id;
         supportedKeyType = isSupportedKeyType(keyClass);
         // key => array index
@@ -46,7 +43,6 @@ public class EnumerableDictDB<K, V> {
         this.keys = Context.newDictDB(concatId("keys"), keyClass);
         // array of valueClass
         this.values = Context.newArrayDB(id, (Class) valueClass);
-        this.logger = logger == null ? defaultLogger : logger;
     }
 
     protected String concatId(Object id) {
@@ -123,15 +119,12 @@ public class EnumerableDictDB<K, V> {
     }
 
     public V get(K key) {
-        logger.println("get", key);
         Integer i = getIndex(key);
         V value =  getValue(i);
-        logger.println("get returns", value);
         return value;
     }
 
     public V put(K key, V value) {
-        logger.printKeyValue("put", key, value);
         Integer i = getIndex(key);
         V old = putValue(i, value);
         if (old == null) {
@@ -139,12 +132,10 @@ public class EnumerableDictDB<K, V> {
             setIndex(key, i);
             setKey(i, key);
         }
-        logger.println("put returns", old);
         return old;
     }
 
     public V remove(K key) {
-        logger.println("remove", key);
         Integer i = getIndex(key);
         V old = removeValue(i);
         if (old != null) {
@@ -160,12 +151,10 @@ public class EnumerableDictDB<K, V> {
                 setKey(i, lastKey);
             }
         }
-        logger.println("remove returns", old);
         return old;
     }
 
     public void clear() {
-        logger.println("clear");
         int size = size();
         for (int i = 0; i < size; i++) {
             K key = keys.get(i);
@@ -173,7 +162,6 @@ public class EnumerableDictDB<K, V> {
             indexes.set(ensureKeyType(key), null);
             values.removeLast();
         }
-        logger.println("clear returns", size);
     }
 
     public List<K> keySet() {

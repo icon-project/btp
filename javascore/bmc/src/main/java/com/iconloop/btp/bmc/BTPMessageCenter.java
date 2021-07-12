@@ -375,6 +375,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
 
         //sack
+        link = getLink(prev);
         if (link.getSackTerm() > 0 && link.getSackNext() <= Context.getBlockHeight()) {
             sendSack(prev, status.getHeight(), link.getRxSeq());
             link.setSackNext(link.getSackNext() + link.getSackTerm());

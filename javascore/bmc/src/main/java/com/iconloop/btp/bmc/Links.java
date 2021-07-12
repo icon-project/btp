@@ -17,7 +17,7 @@
 package com.iconloop.btp.bmc;
 
 import com.iconloop.btp.lib.BTPAddress;
-import com.iconloop.score.util.EnumerableDictDB;
+import com.iconloop.score.data.EnumerableDictDB;
 import com.iconloop.score.util.Logger;
 
 import java.util.Map;
@@ -26,12 +26,12 @@ public class Links extends EnumerableDictDB<BTPAddress, Link> {
     private static final Logger logger = Logger.getLogger(Links.class);
 
     public Links(String id) {
-        super(id, BTPAddress.class, Link.class, logger);
+        super(id, BTPAddress.class, Link.class);
     }
 
     public Link ensureRelays(Link link) {
         if (link != null && link.getRelays() == null) {
-            String linkId = concatId(link.getAddr());
+            String linkId = super.concatId(link.getAddr());
             link.setRelays(new Relays(concatId(linkId, "relays")));
         }
         return link;

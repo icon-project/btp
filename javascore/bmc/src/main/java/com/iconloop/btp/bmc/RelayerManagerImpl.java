@@ -17,7 +17,7 @@
 package com.iconloop.btp.bmc;
 
 import com.iconloop.score.util.BigIntegerUtil;
-import com.iconloop.score.util.EnumerableDictDB;
+import com.iconloop.score.data.EnumerableDictDB;
 import com.iconloop.score.util.Logger;
 import score.*;
 
@@ -32,7 +32,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     private final VarDB<RelayerManagerProperties> properties;
 
     public RelayerManagerImpl(String id) {
-        super(id, Address.class, Relayer.class, logger);
+        super(id, Address.class, Relayer.class);
         properties = Context.newVarDB(super.concatId("properties"), RelayerManagerProperties.class);
     }
 
@@ -207,7 +207,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
                 BigInteger budget = current.subtract(distributed);
                 logger.println("distributeRelayerReward","budget:", budget, "transferred:", budget.subtract(carryover));
                 carryover = budget;
-                Relayer[] relayers = filterSince(values(), since);
+                Relayer[] relayers = filterSince(super.values(), since);
                 sortAsc(relayers);
                 BigInteger sumOfBond = BigInteger.ZERO;
                 int lenOfRelayers = StrictMath.min(properties.getRelayerRewardRank(), relayers.length);
@@ -222,7 +222,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
                     BigInteger reward = BigIntegerUtil.multiply(budget, percentage);
                     relayer.setReward(relayer.getReward().add(reward));
                     logger.println("distributeRelayerReward", "relayer:",relayer.getAddr(), "percentage:",percentage, "reward:", reward);
-                    put(relayer.getAddr(), relayer);
+                    super.put(relayer.getAddr(), relayer);
                     carryover = carryover.subtract(reward);
                     sumOfReward = sumOfReward.add(reward);
                 }
@@ -241,17 +241,17 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     @Override
     public void claimRelayerReward() {
         Address addr = Context.getCaller();
-        if (!containsKey(addr)) {
+        if (!super.containsKey(addr)) {
             throw BMCException.unknown("not found registered relayer");
         }
-        Relayer relayer = get(addr);
+        Relayer relayer = super.get(addr);
         BigInteger reward = relayer.getReward();
         if (reward.compareTo(BigInteger.ZERO) < 1) {
             throw BMCException.unknown("reward is not remained");
         }
         Context.transfer(addr, reward);
         relayer.setReward(BigInteger.ZERO);
-        put(addr, relayer);
+        super.put(addr, relayer);
         RelayerManagerProperties properties = getProperties();
         properties.setDistributed(properties.getDistributed().subtract(reward));
         setProperties(properties);
@@ -260,7 +260,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     @Override
     public void registerRelayer(String _desc) {
         Address addr = Context.getCaller();
-        if (containsKey(addr)) {
+        if (super.containsKey(addr)) {
             throw BMCException.unknown("already registered relayer");
         }
         BigInteger bond = Context.getValue();
@@ -277,7 +277,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
         relayer.setBond(bond);
         relayer.setReward(BigInteger.ZERO);
         logger.println("registerRelayer", relayer);
-        put(addr, relayer);
+        super.put(addr, relayer);
         RelayerManagerProperties properties = getProperties();
         properties.setBond(properties.getBond().add(bond));
         setProperties(properties);
@@ -291,10 +291,10 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
 
     @Override
     public void removeRelayer(Address _addr, Address _refund) {
-        if (!containsKey(_addr)) {
+        if (!super.containsKey(_addr)) {
             throw BMCException.unknown("not found registered relayer");
         }
-        Relayer relayer = remove(_addr);
+        Relayer relayer = super.remove(_addr);
         RelayerManagerProperties properties = getProperties();
         BigInteger bond = relayer.getBond();
         Context.transfer(_refund, bond);
@@ -312,7 +312,7 @@ public class RelayerManagerImpl extends EnumerableDictDB<Address, Relayer> imple
     public Map<String, Relayer> getRelayers() {
         //couldn't use EnumerableDictDB.toMap,
         //  because Unshadower support only String type for key
-        return toMapWithKeyToString();
+        return super.toMapWithKeyToString();
     }
 
 }

@@ -26,6 +26,7 @@ public class Result {
     private byte[] stateHash;
     private byte[] patchReceiptHash;
     private byte[] receiptHash;
+    private ExtensionData extensionData;
 
     public byte[] getStateHash() {
         return stateHash;
@@ -51,12 +52,21 @@ public class Result {
         this.receiptHash = receiptHash;
     }
 
+    public ExtensionData getExtensionData() {
+        return extensionData;
+    }
+
+    public void setExtensionData(ExtensionData extensionData) {
+        this.extensionData = extensionData;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Result{");
-        sb.append("stateHash=").append(StringUtil.bytesToHex(stateHash));
-        sb.append(", patchReceiptHash=").append(StringUtil.bytesToHex(patchReceiptHash));
-        sb.append(", receiptHash=").append(StringUtil.bytesToHex(receiptHash));
+        sb.append("stateHash=").append(StringUtil.toString(stateHash));
+        sb.append(", patchReceiptHash=").append(StringUtil.toString(patchReceiptHash));
+        sb.append(", receiptHash=").append(StringUtil.toString(receiptHash));
+        sb.append(", extensionData=").append(extensionData);
         sb.append('}');
         return sb.toString();
     }
@@ -71,15 +81,26 @@ public class Result {
         obj.setStateHash(reader.readNullable(byte[].class));
         obj.setPatchReceiptHash(reader.readNullable(byte[].class));
         obj.setReceiptHash(reader.readNullable(byte[].class));
+        if (reader.hasNext()) {
+            byte[] extensionDataBytes = reader.readNullable(byte[].class);
+            ObjectReader extensionDataReader = Context.newByteArrayObjectReader("RLPn",extensionDataBytes);
+            obj.setExtensionData(extensionDataReader.read(ExtensionData.class));
+        }
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
-        writer.beginList(3);
+        writer.beginList(4);
         writer.writeNullable(this.getStateHash());
         writer.writeNullable(this.getPatchReceiptHash());
         writer.writeNullable(this.getReceiptHash());
+        ExtensionData extensionData = this.getExtensionData();
+        if (extensionData != null) {
+            ByteArrayObjectWriter extensionDataWriter = Context.newByteArrayObjectWriter("RLPn");
+            extensionDataWriter.write(extensionData);
+            writer.writeNullable(extensionDataWriter.toByteArray());
+        }
         writer.end();
     }
 

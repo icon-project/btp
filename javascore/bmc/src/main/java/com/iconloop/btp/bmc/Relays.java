@@ -16,7 +16,7 @@
 
 package com.iconloop.btp.bmc;
 
-import com.iconloop.score.util.EnumerableDictDB;
+import com.iconloop.score.data.EnumerableDictDB;
 import com.iconloop.score.util.Logger;
 import score.Address;
 
@@ -24,7 +24,7 @@ public class Relays extends EnumerableDictDB<Address, Relay> {
     private static final Logger logger = Logger.getLogger(Relays.class);
 
     public Relays(String id) {
-        super(id, Address.class, Relay.class, logger);
+        super(id, Address.class, Relay.class);
     }
 
 }
