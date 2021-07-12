@@ -245,7 +245,6 @@ public class FeeAggregationSCORE extends IRC31Receiver {
         BigInteger value = Context.getValue();
 
         // Check if minimum value is 100 ICX
-        Context.require(value.compareTo(minimumBidAmount.get()) > -1);
         if (value.compareTo(minimumBidAmount.get()) < 0) {
             Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough minimum value to bid");
         }

@@ -1,19 +1,26 @@
 ## FeeAggregation
 
 
-### Build
-### Build & deploy contract
+### Requirements
+- Install [ICON Local Node](https://github.com/icon-project/goloop/blob/master/doc/gochain_icon_local_node_guide.md)
 
-Open a terminal window
+### Build
 ```
 $ ./gradlew build
 $ ./gradlew optimizedJar
-# Deploy contract
-$ make build GOCHAIN_LOCAL_ROOT=$(GOLOOP_ROOT) URI=$(URI of JSON-RPC API) KEY_STORE=$(KeyStore file for wallet) KEY_SECRET=$(Secret(password) file for KeyStore) NID=$(Network ID) STEP_LIMIT=$(StepLimit) CPS_ADDRESS=$(Contribution Proposal System Address) 
-
-# Check result
-$ make result GOCHAIN_LOCAL_ROOT=$(GOLOOP_ROOT) URI=$(URI of JSON-RPC API) HASH=$(Transaction hash)
+```
+### Deploy contract
+```
+./gradlew deployToLocal -PkeystoreName=<your_wallet_json> -PkeystorePass=<password> 
 ```
 
-### Test
+### Tests
+```
+$ ./gradlew test
+```
+
+### Integration Tests
+```
+$ ./gradlew integrationTest
+```
 

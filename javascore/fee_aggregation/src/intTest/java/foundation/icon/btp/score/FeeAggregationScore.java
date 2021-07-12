@@ -89,7 +89,7 @@ public class FeeAggregationScore extends Score {
         if (!Constants.STATUS_SUCCESS.equals(result.getStatus())) {
             throw new TransactionFailureException(result.getFailure());
         }
-        if (findEventLog(result, getAddress(), "AuctionStart(int,str,Address,int,int)") == null && findEventLog(result, getAddress(), "BidInfo(int,str,Address,int,Address,int)") == null) {
+        if (findEventLog(result, getAddress(), "AuctionStart(int,str,int,Address,int,int)") == null && findEventLog(result, getAddress(), "BidInfo(int,str,Address,int,Address,int)") == null) {
             throw new TransactionFailureException(result.getFailure());
         }
     }

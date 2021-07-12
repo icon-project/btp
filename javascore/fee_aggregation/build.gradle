@@ -72,6 +72,24 @@ dependencies {
     intTestImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
 }
 
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9080/api/v3/icon'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('_cps_address', 'hx00000000000000000000000000000000000000000')
+    }
+}
+
 test {
     useJUnitPlatform()
 }

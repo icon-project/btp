@@ -96,8 +96,7 @@ public class Env {
             this.nodeUrl = url;
         }
 
-        public String getEndpointURL(int v) {
-//            return this.nodeUrl + "/api/v" + v;
+        public String getEndpointURL() {
             return this.nodeUrl;
         }
     }

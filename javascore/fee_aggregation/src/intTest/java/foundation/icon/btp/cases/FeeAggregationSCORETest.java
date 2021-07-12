@@ -30,7 +30,7 @@ public class FeeAggregationSCORETest extends TestBase {
     static void setup() throws Exception {
         Env.Chain chain = Env.getDefaultChain();
         OkHttpClient ohc = new OkHttpClient.Builder().build();
-        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3), 3));
+        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL()));
         txHandler = new TransactionHandler(iconService, chain);
 
         // init wallets
