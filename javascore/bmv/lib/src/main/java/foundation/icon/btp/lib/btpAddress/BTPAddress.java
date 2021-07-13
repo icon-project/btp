@@ -70,7 +70,7 @@ public class BTPAddress {
             } 
         }
 
-        if (address.charAt(0) == '0' && address.charAt(1) == 'x') {
+        if (address != null && address.length() > 2 && address.charAt(0) == '0' && address.charAt(1) == 'x') {
             address = address.substring(2, address.length());
         }
 

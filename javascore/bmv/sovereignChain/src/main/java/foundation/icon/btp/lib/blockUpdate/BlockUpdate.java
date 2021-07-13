@@ -24,7 +24,7 @@ public class BlockUpdate {
         } else {
             this.blockHeader = null;
         }
-        byte[] encodedVotes = rlpReader.readByteArray();
+        byte[] encodedVotes = rlpReader.readNullable(byte[].class);
         if (encodedVotes != null && encodedVotes.length > 0) {
             this.votes = Votes.fromBytes(encodedVotes);
         } else {
