@@ -1,23 +1,34 @@
 package icon
 
-import (
-	"testing"
+// import (
+// 	"encoding/base64"
+// 	"testing"
 
-	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/common/log"
-)
+// 	"github.com/icon-project/btp/common/codec"
+// 	"github.com/icon-project/btp/common/log"
+// 	"github.com/stretchr/testify/assert"
+// 	"github.com/stretchr/testify/require"
+// )
 
-func TestSender_Segment(t *testing.T) {
-	s := NewSender(
-		"btp://0x501.pra/0x5b5B619E6A040EBCB620155E0aAAe89AfA45D090",
-		"btp://0x3.icon/cx8eb24849a7ceb16b8fa537f5a8b378c6af4a0247",
-		nil, // wallet
-		"http://goloop.linhnc.info/api/v3/icondao",
-		nil,
-		log.New(),
-	)
+// func TestSender_NewTransactionParam(t *testing.T) {
+// 	prev := "string"
+// 	rm1 := &RelayMessage{
+// 		BlockUpdates:  [][]byte{{1, 2, 3, 4}},
+// 		BlockProof:    []byte{1, 2, 3, 4},
+// 		ReceiptProofs: [][]byte{{1, 2, 3, 4}},
+// 	}
 
-	t.Run("should append a new Segment with BaseMessage", func(t *testing.T) {
-		s.Segment(&chain.RelayMessage{}, 10000)
-	})
-}
+// 	sender := &sender{l: log.New()}
+// 	p, err := sender.newTransactionParam(prev, rm1)
+// 	require.Nil(t, err)
+// 	require.NotNil(t, p)
+// 	assert.Equal(t, prev, p.Prev)
+
+// 	d, err := base64.URLEncoding.DecodeString(p.Msg)
+// 	require.Nil(t, err)
+// 	rm2 := &RelayMessage{}
+
+// 	_, err = codec.RLP.UnmarshalFromBytes(d, rm2)
+// 	require.Nil(t, err)
+// 	assert.EqualValues(t, rm1, rm2)
+// }

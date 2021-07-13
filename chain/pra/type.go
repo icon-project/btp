@@ -35,19 +35,9 @@ type StateProof struct {
 	Value [][]byte
 }
 
-type BlockWitness struct {
-	Height  uint64
-	Witness [][]byte
-}
-
-type BlockProof struct {
-	Header       []byte
-	BlockWitness *BlockWitness
-}
-
 type DecodedRelayMessage struct {
 	BlockUpdates []BlockUpdate
-	BlockProof   *BlockProof
+	BlockProof   *chain.BlockProof
 	StateProof   *[]StateProof
 }
 

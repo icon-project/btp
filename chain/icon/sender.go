@@ -285,7 +285,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 			size = buSize
 		}
-		s.l.Tracef("Sender: BlockUpdates[%d]: %x at %d", i, bu.Proof, bu.Height)
+		s.l.Tracef("Sender: at %d BlockUpdates[%d]: %x", i, bu.Proof, bu.Height)
 		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -410,10 +410,10 @@ func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 			return err
 		}
 
-		msg.BlockProof = &pra.BlockProof{
+		msg.BlockProof = &chain.BlockProof{
 			Header: bp.Header,
-			BlockWitness: &pra.BlockWitness{
-				Height:  uint64(bp.BlockWitness.Height),
+			BlockWitness: &chain.BlockWitness{
+				Height:  bp.BlockWitness.Height,
 				Witness: bp.BlockWitness.Witness,
 			},
 		}
