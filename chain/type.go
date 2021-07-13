@@ -18,6 +18,7 @@ type BlockProof struct {
 }
 
 type ReceiptProof struct {
+	Height      int64
 	Index       int
 	Proof       []byte
 	EventProofs []*EventProof

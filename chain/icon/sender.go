@@ -285,7 +285,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 			size = buSize
 		}
-		s.l.Tracef("Sender: at %d BlockUpdates[%d]: %x", i, bu.Proof, bu.Height)
+		s.l.Tracef("Sender: at %d BlockUpdates[%d]: %x", bu.Height, i, bu.Proof)
 		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -306,7 +306,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		}
 
 		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
-			if msg.BlockProof == nil {
+			if len(bp) == 0 {
 				return nil, ErrMissingBothBlockUpdatesBlockProof
 			}
 
@@ -319,7 +319,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
 			size += len(rp.Proof)
-			s.l.Tracef("Sender: StateProof[%d]: %x", i, rp.Proof)
+			s.l.Tracef("Sender: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
 			if s.isOverSizeLimit(size) {
 				return nil, ErrInvalidStateProofSize
 			}
@@ -343,23 +343,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
 			s.l.Tracef("Sender: StateProof[%d]: %x", i, rp.Proof)
 		}
-	}
-
-	if len(msg.BlockUpdates) > 0 {
-		segment := &chain.Segment{
-			Height:              msg.height,
-			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		}
-
-		rmb, err := codec.RLP.MarshalToBytes(msg)
-		if err != nil {
-			return nil, err
-		}
-
-		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
-			return nil, err
-		}
-		segments = append(segments, segment)
 	}
 
 	return segments, nil

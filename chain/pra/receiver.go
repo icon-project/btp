@@ -112,6 +112,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				}
 
 				rp := &chain.ReceiptProof{}
+				rp.Height = int64(v.Height)
 				if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
 					Key:   key,
 					Value: proofs,

@@ -10,6 +10,7 @@ package icon
 // 	"github.com/stretchr/testify/require"
 // )
 
+// TODO add tests
 // func TestSender_NewTransactionParam(t *testing.T) {
 // 	prev := "string"
 // 	rm1 := &RelayMessage{
