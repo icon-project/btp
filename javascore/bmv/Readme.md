@@ -28,12 +28,6 @@ gradle buildMoonriverDecoder
 ### get meta data of chain
 
 In case that you need to build event decoder for other parachains rather than there chain above, you can use two ways bellow to get meta data file.
-#### get through polkadot.js.org
-
-1. access to https://polkadot.js.org/apps/#/explorer, select chain in the left corner
-2. choose `Developer` => `RPC calls`
-3. choose `state` on `call the selected endpoint` box, and api `getMetadata(at)`
-4. Submit RPC call
 
 #### get through typescript helper
 
@@ -60,7 +54,6 @@ cd javascore/bmv/helper
 
 yarn getMetaData
 ```
-
 
 ### build event decoder with meta data
 

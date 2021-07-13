@@ -28,7 +28,7 @@ public class ParaBlockUpdate {
         }
 
         // decode Relay chain data
-        byte[] encodedRelayChainData = rlpReader.readByteArray();
+        byte[] encodedRelayChainData = rlpReader.readNullable(byte[].class);
         if (encodedRelayChainData != null && encodedRelayChainData.length > 0) {
             this.relayChainData = RelayChainData.fromBytes(encodedRelayChainData);
         } else {
