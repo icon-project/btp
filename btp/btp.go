@@ -307,22 +307,8 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 				rm.HeightOfDst = guessHeightOfDst
 			}
 		}
+		b.log.Debugf("addRelayMessage rms:%d bu:%d rps:%d HeightOfDst:%d", len(b.rms), bu.Height, len(rps), rm.HeightOfDst)
 
-		// create rm.BlockProof if lastblockupdate smaller than BMV height
-		if b.lastBlockUpdate.Height <= b.bmcLinkStatus.Verifier.Height {
-			var err error
-			if rm.BlockProof, err = b.newBlockProof(b.lastBlockUpdate.Height, b.lastBlockUpdate.Header); err != nil {
-				b.log.Errorf("addRelayMessage fails to add BlockProof: %v", err)
-			}
-		}
-
-		b.log.Debugf("addRelayMessage rms:%d bu:%d bp:%d rps:%d HeightOfDst:%d",
-			len(b.rms),
-			bu.Height,
-			rm.BlockProof.BlockWitness.Height,
-			len(rps),
-			rm.HeightOfDst,
-		)
 		rm = b.newRelayMessage()
 	} else {
 		if bu.Height <= b.bmcLinkStatus.Verifier.Height {
