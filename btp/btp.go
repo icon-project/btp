@@ -307,6 +307,15 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 				rm.HeightOfDst = guessHeightOfDst
 			}
 		}
+
+		// create rm.BlockProof if lastblockupdate smaller than BMV height
+		if b.lastBlockUpdate.Height <= b.bmcLinkStatus.Verifier.Height {
+			var err error
+			if rm.BlockProof, err = b.newBlockProof(b.lastBlockUpdate.Height, b.lastBlockUpdate.Header); err != nil {
+				b.log.Errorf("addRelayMessage fails to add BlockProof: %v", err)
+			}
+		}
+
 		b.log.Debugf("addRelayMessage rms:%d bu:%d rps:%d HeightOfDst:%d", len(b.rms), bu.Height, len(rps), rm.HeightOfDst)
 		rm = b.newRelayMessage()
 	} else {
@@ -326,12 +335,13 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 	rrm := 0
 	for i, rm := range b.rms {
 		if len(rm.ReceiptProofs) > 0 {
-			b.updateProofs(rm, rxSeq)
+			b.updateReceiptProofs(rm, rxSeq)
 		}
 
 		if rm.BlockProof != nil {
 			if len(rm.ReceiptProofs) > 0 {
 				if rm.BlockProof, err = b.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header); err != nil {
+					b.log.Tracef("updateRelayMessages: rm: %d bp at %d", i, rm.BlockProof.BlockWitness.Height)
 					return
 				}
 			} else {
@@ -349,6 +359,7 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 				if len(rm.ReceiptProofs) > 0 {
 					lbu := rm.BlockUpdates[len(rm.BlockUpdates)-1]
 					if rm.BlockProof, err = b.newBlockProof(lbu.Height, lbu.Header); err != nil {
+						b.log.Tracef("updateRelayMessages: rm: %d bp at %d", i, rm.BlockProof.BlockWitness.Height)
 						return
 					}
 					rm.BlockUpdates = rm.BlockUpdates[:0]
@@ -430,7 +441,7 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 	return nil
 }
 
-func (b *BTP) updateProofs(rm *chain.RelayMessage, rxSeq int64) {
+func (b *BTP) updateReceiptProofs(rm *chain.RelayMessage, rxSeq int64) {
 	rrp := 0
 	for j, rp := range rm.ReceiptProofs {
 		// only update on have Events or EventProofs
