@@ -36,11 +36,13 @@ func (b *BTP) prepareDatabase(offset int64) error {
 			return errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
 		}
 		b.log.Debugf("recover Accumulator offset:%d, height:%d", b.store.Offset(), b.store.Height())
+		// b.log.Fatal("Stop")
 		//TODO sync offset
 	}
 	return nil
 }
 
+// receiveHeight return min(max(b.store.Height(), b.bmcLinkStatus.Verifier.Offset), b.bmcLinkStatus.Verifier.LastHeight)
 func (b *BTP) receiveHeight() int64 {
 
 	max := b.store.Height()
