@@ -20,7 +20,8 @@ type Receiver struct {
 	opt struct {
 		RelayEndpoint string
 	}
-	isFoundOffsetBySeq bool
+
+	isfoundSendMessageEvent bool
 }
 
 func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
@@ -111,17 +112,28 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					proofs = append(proofs, bp)
 				}
 
-				rp := &chain.ReceiptProof{}
-				rp.Height = int64(v.Height)
-				if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
-					Key:   key,
-					Value: proofs,
-				}); err != nil {
-					return nil, err
+				duplicate := false
+
+				for _, rp := range rps {
+					if rp.Height == int64(v.Height) {
+						duplicate = true
+						break
+					}
 				}
 
-				rps = append(rps, rp)
-				r.isFoundOffsetBySeq = true
+				if !duplicate {
+					rp := &chain.ReceiptProof{}
+					rp.Height = int64(v.Height)
+					if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
+						Key:   key,
+						Value: proofs,
+					}); err != nil {
+						return nil, err
+					}
+
+					rps = append(rps, rp)
+					r.isfoundSendMessageEvent = true
+				}
 				continue
 			}
 		}
@@ -132,7 +144,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
 	if seq < 1 {
-		r.isFoundOffsetBySeq = true
+		r.isfoundSendMessageEvent = true
 	}
 
 	if err := r.c.MonitorBlock(uint64(height), true, func(v *BlockNotification) error {
@@ -145,7 +157,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 
 		if sp, err = r.newReceiptProofs(v); err != nil {
 			return err
-		} else if r.isFoundOffsetBySeq {
+		} else if r.isfoundSendMessageEvent {
 			cb(bu, sp)
 		} else {
 			cb(bu, nil)
