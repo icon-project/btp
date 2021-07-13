@@ -3,7 +3,9 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use std::sync::Mutex;
 
-use std::collections::HashMap;
+#[path = "./relay.rs"]
+mod relay;
+use relay::Relays;
 
 lazy_static! {
     static ref KEYS: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
@@ -12,12 +14,12 @@ lazy_static! {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Links(pub LookupMap<Vec<u8>, LinkProps>);
 
-#[derive(Default, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct LinkProps {
     rx_seq: u64,
     tx_seq: u64,
     verifier: Verifier,
-    relays: HashMap<Vec<u8>, Relay>,
+   pub relays: Relays,
     reachable: Vec<u8>,
     relay_index: u64,
     rotate_height: u64,
@@ -32,12 +34,12 @@ pub struct LinkProps {
     connected: bool,
 }
 
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Relay {
-    address: Vec<u8>,
-    block_count: u64,
-    message_count: u64,
-}
+// #[derive(Default, BorshDeserialize, BorshSerialize)]
+// pub struct Relay {
+//     address: Vec<u8>,
+//     block_count: u64,
+//     message_count: u64,
+// }
 
 #[derive(Default, BorshDeserialize, BorshSerialize)]
 pub struct Verifier {
@@ -53,7 +55,7 @@ pub trait Link {
 
     fn get_links(&self) -> Result<Vec<u8>, String>;
     fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
-    fn init_linkprops(&self) -> LinkProps;
+    fn init_linkprops(&self, link: &BTPAddress) -> LinkProps;
     fn set_link_status(
         &mut self,
         link: &BTPAddress,
@@ -61,16 +63,24 @@ pub trait Link {
         mxagg: u64,
         delimit: u64,
     ) -> Result<bool, String>;
+
+    fn is_connected(&self, link: &BTPAddress) -> bool;
 }
 
 impl Link for Links {
+    fn is_connected(&self, link: &BTPAddress) -> bool {
+        let key = link.0.clone().into_bytes();
+
+        self.0.contains_key(&key)
+    }
+
     fn new() -> Self {
         let links: LookupMap<Vec<u8>, LinkProps> = LookupMap::new(b"links".to_vec());
 
         Self(links)
     }
 
-    fn init_linkprops(&self) -> LinkProps {
+    fn init_linkprops(&self, link: &BTPAddress) -> LinkProps {
         LinkProps {
             rx_seq: 0,
             tx_seq: 0,
@@ -79,7 +89,7 @@ impl Link for Links {
                 mta_offset: 0,
                 last_height: 0,
             },
-            relays: HashMap::new(),
+            relays: Relays::new(link),
             reachable: b"".to_vec(),
             block_interval_src: 0,
             block_interval_dst: 0,
@@ -96,7 +106,7 @@ impl Link for Links {
     }
 
     fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String> {
-        let linkprop = self.init_linkprops();
+        let linkprop = self.init_linkprops(link);
         let key = link.0.clone().into_bytes();
 
         //TO-DO
@@ -168,14 +178,18 @@ impl Link for Links {
                 //Add link status information to the link based on rotate term
 
                 if self.0.contains_key(&link.0.clone().into_bytes()) {
-                    let linkprop = LinkProps {
-                        block_interval_src: block_interval,
-                        max_aggregation: mxagg,
-                        delay_limit: delimit,
-                        ..self.init_linkprops()
-                    };
+                    let mut link = self.0.get(&link.0.clone().into_bytes()).unwrap();
+                    link.max_aggregation = mxagg;
+                    link.block_interval_src = block_interval;
+                    link.delay_limit = delimit;
+                    // let linkprop = LinkProps {
+                    //     block_interval_src: block_interval,
+                    //     max_aggregation: mxagg,
+                    //     delay_limit: delimit,
+                    //     ..self.init_linkprops()
+                    // };
 
-                    self.0.insert(&link.0.clone().into_bytes(), &linkprop);
+                    // self.0.insert(&link.0.clone().into_bytes(), &linkprop);
 
                     return Ok(true);
                 }

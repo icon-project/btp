@@ -8,7 +8,12 @@ impl BTPAddress {
 
     pub fn blockchain(&self) -> Result<String, String> {
         match self.network() {
-            Ok((_, blockchain)) => return Ok(blockchain.to_string()),
+            Ok((_, blockchain)) => return {
+                if blockchain.to_string().is_empty(){
+                    return Ok("empty".to_string())
+                }
+                Ok(blockchain.to_string())
+            },
             Err(error) => return Err(error),
         }
     }
@@ -22,7 +27,7 @@ impl BTPAddress {
 
     pub fn protocol(&self) -> Result<(&str, &str), String> {
         match self.0.find("://").unwrap_or(0) {
-            0 => return Err(format!("invalid btp address")),
+            0 => return Err("invalid btp address".to_string()),
             size => return Ok((&self.0[..size], &self.0[size..])),
         }
     }
@@ -34,7 +39,7 @@ impl BTPAddress {
                 if s.len() > 2 {
                     return Ok(s[2].to_string());
                 }
-                return Err(format!("empty network address"));
+                return Err("empty network address".to_string());
             }
             Err(error) => return Err(error),
         }
@@ -49,7 +54,7 @@ impl BTPAddress {
                 } else if s.len() > 0 {
                     return Ok(("".to_string(), s[0].to_string()));
                 }
-                return Err(format!("invalid address"));
+                return Err("invalid address".to_string());
             }
             Err(error) => return Err(error),
         }
