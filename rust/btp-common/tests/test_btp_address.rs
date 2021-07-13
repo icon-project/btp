@@ -69,5 +69,5 @@ fn check_blockchain() {
 fn check_blockchain_wrong_network() {
     let address =
         BTPAddress("btp://".to_string());
-    assert_eq!("near", address.blockchain().unwrap());
+    assert_ne!("near", address.blockchain().unwrap());
 }
