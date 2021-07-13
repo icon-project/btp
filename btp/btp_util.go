@@ -78,7 +78,6 @@ func (b *BTP) newBlockProof(height int64, header []byte) (*chain.BlockProof, err
 		return nil, err
 	}
 
-	b.log.Debugf("newBlockProof height:%d, at:%d, w:%d", height, at, len(w))
 	bp := &chain.BlockProof{
 		Header: header,
 		BlockWitness: &chain.BlockWitness{
@@ -86,17 +85,29 @@ func (b *BTP) newBlockProof(height int64, header []byte) (*chain.BlockProof, err
 			Witness: mta.WitnessesToHashes(w),
 		},
 	}
+
+	b.log.Debugf("newBlockProof height:%d, at:%d, w:%x", height, at, bp.BlockWitness.Witness)
 	return bp, nil
 }
 
 func (b *BTP) logRelaying(prefix string, rm *chain.RelayMessage, segment *chain.Segment, segmentIdx int) {
 	if segment == nil {
-		b.log.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
-			prefix,
-			rm.Seq,
-			rm.BlockUpdates[0].Height,
-			rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
-			len(rm.ReceiptProofs))
+		if len(rm.BlockUpdates) > 0 {
+			b.log.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
+				prefix,
+				rm.Seq,
+				rm.BlockUpdates[0].Height,
+				rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
+				len(rm.ReceiptProofs))
+		} else {
+			b.log.Debugf("%s rm:%d bp:%d ~ %d rps:%d",
+				prefix,
+				rm.Seq,
+				rm.BlockProof.BlockWitness.Height,
+				rm.ReceiptProofs[0],
+				len(rm.ReceiptProofs))
+		}
+
 	} else {
 		b.log.Debugf("%s rm:%d [i:%d,h:%d,bu:%d,seq:%d,evt:%d,txh:%v]",
 			prefix,

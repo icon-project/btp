@@ -547,7 +547,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 	log := log.New()
 
 	t.Run("monitor from current finallized header", func(t *testing.T) {
-		subClient := &mocks.SubstrateClient{}
+		subClient := &MockSubstrateClient{}
 		sender := &Sender{
 			log: log,
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
@@ -586,7 +586,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 	})
 
 	t.Run("monitor from a heigher finallized header", func(t *testing.T) {
-		subClient := &mocks.SubstrateClient{}
+		subClient := &MockSubstrateClient{}
 		sender := &Sender{
 			log: log,
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},

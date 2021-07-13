@@ -41,6 +41,7 @@ type SubstrateClient interface {
 	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
 	GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error)
 	GetBlockHashLatest() (SubstrateHash, error)
+	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (ReadProof, error)
 }
 
 type Client struct {
@@ -77,9 +78,13 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 	return c
 }
 
+func (c *Client) SubstrateClient() SubstrateClient {
+	return c.subClient
+}
+
 func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
 	_, err := c.bmc.ParseMessage(e.EvmLog())
-	return err != nil
+	return err == nil
 }
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
@@ -116,17 +121,8 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) getMetadata(hash SubstrateHash) (*SubstrateMetaData, error) {
-	metadata, err := c.subClient.GetMetadata(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
-}
-
-func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorageKey, error) {
-	meta, err := c.getMetadata(hash)
+func (c *Client) CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error) {
+	meta, err := c.subClient.GetMetadata(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +130,8 @@ func (c *Client) getSystemEventReadProofKey(hash SubstrateHash) (SubstrateStorag
 	return CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
-func (c *Client) getReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
-	var res ReadProof
-	err := c.subClient.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
-	return res, err
+func (c *Client) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
+	return c.subClient.GetReadProof(key, hash)
 }
 
 func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
@@ -226,8 +220,8 @@ func (c *Client) MonitorBlock(height uint64, fetchEvent bool, cb func(v *BlockNo
 }
 
 func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, error) {
-	c.log.Trace("fetching block for events", "hash", blockHash.Hex())
-	meta, err := c.getMetadata(blockHash)
+	// c.log.Trace("fetching block for events", "hash", blockHash.Hex())
+	meta, err := c.subClient.GetMetadata(blockHash)
 	if err != nil {
 		return nil, err
 	}

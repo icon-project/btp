@@ -1,6 +1,7 @@
 package pra
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -20,15 +21,13 @@ type Receiver struct {
 		RelayEndpoint string
 	}
 	isFoundOffsetBySeq bool
-	bmcAddress         string
 }
 
 func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
 	r := &Receiver{
-		src:        src,
-		dst:        dst,
-		l:          l,
-		bmcAddress: src.ContractAddress(),
+		src: src,
+		dst: dst,
+		l:   l,
 	}
 	b, err := json.Marshal(opt)
 	if err != nil {
@@ -85,22 +84,44 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 	if len(v.Events.EVM_Log) > 0 {
 		for _, e := range v.Events.EVM_Log {
+			a := e.Log.Address.Hex()
+			ua := r.src.ContractAddress()
+			// EVM_Log.Log.Address is case-insensitive, src.ContractAddress is case-sensitive
+			if !bytes.EqualFold([]byte(a), []byte(ua)) {
+				continue
+			}
+
 			if r.c.IsSendMessageEvent(e) {
-				key, err := r.c.getSystemEventReadProofKey(v.Hash)
+				key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 				if err != nil {
 					return nil, err
 				}
 
-				proof, err := r.c.getReadProof(key, v.Hash)
+				proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
 				if err != nil {
 					return nil, err
+				}
+
+				proofs := [][]byte{}
+				for _, p := range proof.Proof {
+					bp, err := types.HexDecodeString(p)
+					if err != nil {
+						return nil, err
+					}
+					proofs = append(proofs, bp)
 				}
 
 				rp := &chain.ReceiptProof{}
-				if rp.Proof, err = codec.RLP.MarshalToBytes(proof); err != nil {
+				rp.Height = int64(v.Height)
+				if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
+					Key:   key,
+					Value: proofs,
+				}); err != nil {
 					return nil, err
 				}
+
 				rps = append(rps, rp)
+				r.isFoundOffsetBySeq = true
 				continue
 			}
 		}

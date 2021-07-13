@@ -27,6 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/pra"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -41,37 +42,27 @@ const (
 	DefaultRelayReSendInterval    = time.Second
 )
 
+type SenderOptions struct {
+	StepLimit int64 `json:"stepLimit"`
+}
+
 type sender struct {
 	c   *Client
 	src chain.BtpAddress
 	dst chain.BtpAddress
 	w   Wallet
 	l   log.Logger
-	opt struct {
-		StepLimit int64
-	}
-
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
-	}
-	evtReq             *BlockRequest
-	bh                 *BlockHeader
-	isFoundOffsetBySeq bool
-	cb                 chain.ReceiveCallback
+	opt SenderOptions
 }
 
-func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
-	b, err := codec.RLP.MarshalToBytes(rm)
-	if err != nil {
-		return nil, err
-	}
+func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, error) {
 	rmp := BMCRelayMethodParams{
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
+
+	s.l.Tracef("RLPEncodedRelayMessage: %x\n", b)
+	s.l.Tracef("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
@@ -87,7 +78,7 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 	return p, nil
 }
 
-func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
 	segments := make([]*chain.Segment, 0)
 	var err error
 	msg := &RelayMessage{
@@ -102,16 +93,22 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			continue
 		}
 		buSize := len(bu.Proof)
-		if s.isOverLimit(buSize) {
-			return nil, fmt.Errorf("invalid BlockUpdate.Proof size")
+		if s.isOverSizeLimit(buSize) {
+			return nil, ErrInvalidBlockUpdateProofSize
 		}
 		size += buSize
-		if s.isOverLimit(size) {
+		if s.isOverSizeLimit(size) {
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+
+			rmb, err := codec.RLP.MarshalToBytes(msg)
+			if err != nil {
+				return nil, err
+			}
+
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
 				return nil, err
 			}
 			segments = append(segments, segment)
@@ -126,103 +123,293 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		msg.numberOfBlockUpdate += 1
 	}
 
-	var bp []byte
-	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
-		return nil, err
-	}
-	if s.isOverLimit(len(bp)) {
-		return nil, fmt.Errorf("invalid BlockProof size")
+	lbu := &chain.BlockUpdate{}
+	if rm.BlockProof != nil {
+		if bp, err := codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
+			return nil, err
+		} else {
+			// FIXME: this BlockUpdate.Proof is different from RelayMessage.BlockProof
+			lbu.Proof = bp
+			lbu.Height = rm.BlockProof.BlockWitness.Height
+		}
+	} else {
+		lbu = rm.BlockUpdates[len(rm.BlockUpdates)-1]
 	}
 
-	var b []byte
-	for _, rp := range rm.ReceiptProofs {
-		if s.isOverLimit(len(rp.Proof)) {
-			return nil, fmt.Errorf("invalid ReceiptProof.Proof size")
+	if s.isOverSizeLimit(len(lbu.Proof)) {
+		return nil, ErrInvalidBlockUpdateProofSize
+	}
+
+	for i, rp := range rm.ReceiptProofs {
+		if s.isOverSizeLimit(len(rp.Proof)) {
+			return nil, ErrInvalidReceiptProofSize
 		}
-		if len(msg.BlockUpdates) == 0 {
-			size += len(bp)
-			msg.BlockProof = bp
-			msg.height = rm.BlockProof.BlockWitness.Height
+		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
+			size += len(lbu.Proof)
+			// FIXME: this BlockUpdate.Proof is different from RelayMessage.BlockProof
+			msg.BlockProof = lbu.Proof
+			msg.height = lbu.Height
 		}
+
 		size += len(rp.Proof)
 		trp := &ReceiptProof{
 			Index:       rp.Index,
 			Proof:       rp.Proof,
 			EventProofs: make([]*chain.EventProof, 0),
 		}
+
 		for j, ep := range rp.EventProofs {
-			if s.isOverLimit(len(ep.Proof)) {
-				return nil, fmt.Errorf("invalid EventProof.Proof size")
+			if s.isOverSizeLimit(len(ep.Proof)) {
+				return nil, ErrInvalidEventProofProofSize
 			}
+
 			size += len(ep.Proof)
-			if s.isOverLimit(size) {
-				if j == 0 && len(msg.BlockUpdates) == 0 {
-					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
+			if s.isOverSizeLimit(size) {
+				if i == 0 && j == 0 && len(msg.BlockUpdates) == 0 {
+					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit %v", i)
 				}
-				//
+
+				// TODO: need a confirmation
+				// I'm not sure why this EventProofs is missing
+				// at here this https://github.com/icon-project/btp/blob/master/cmd/btpsimple/module/icon/sender.go#L162
+
+				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
+					return nil, err
+				} else {
+					msg.ReceiptProofs = append(msg.ReceiptProofs, b)
+				}
+
 				segment := &chain.Segment{
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 					EventSequence:       msg.eventSequence,
 					NumberOfEvent:       msg.numberOfEvent,
 				}
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+
+				rmb, err := codec.RLP.MarshalToBytes(msg)
+				if err != nil {
 					return nil, err
 				}
+
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+					return nil, err
+				}
+
 				segments = append(segments, segment)
 
 				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
 					ReceiptProofs: make([][]byte, 0),
-					BlockProof:    bp,
+					BlockProof:    lbu.Proof,
 				}
-				size = len(ep.Proof)
-				size += len(rp.Proof)
-				size += len(bp)
 
 				trp = &ReceiptProof{
 					Index:       rp.Index,
 					Proof:       rp.Proof,
 					EventProofs: make([]*chain.EventProof, 0),
 				}
+
+				size = len(ep.Proof)
+				size += len(rp.Proof)
+				size += len(lbu.Proof)
 			}
+
 			trp.EventProofs = append(trp.EventProofs, ep)
 			msg.eventSequence = rp.Events[j].Sequence
 			msg.numberOfEvent += 1
 		}
 
-		if b, err = codec.RLP.MarshalToBytes(trp); err != nil {
+		if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
 			return nil, err
+		} else {
+			msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 		}
-		msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 	}
-	//
+
 	segment := &chain.Segment{
 		Height:              msg.height,
 		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 		EventSequence:       msg.eventSequence,
 		NumberOfEvent:       msg.numberOfEvent,
 	}
-	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+
+	rmb, err := codec.RLP.MarshalToBytes(msg)
+	if err != nil {
 		return nil, err
 	}
+
+	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+		return nil, err
+	}
+
 	segments = append(segments, segment)
 	return segments, nil
+}
+
+func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+	segments := make([]*chain.Segment, 0)
+	var err error
+	msg := &RelayMessage{
+		BlockUpdates:  make([][]byte, 0),
+		ReceiptProofs: make([][]byte, 0),
+	}
+	size := 0
+	for i, bu := range rm.BlockUpdates {
+		if bu.Height <= height {
+			continue
+		}
+		buSize := len(bu.Proof)
+		if s.isOverSizeLimit(buSize) {
+			return nil, ErrInvalidBlockUpdateProofSize
+		}
+		size += buSize
+		if s.isOverSizeLimit(size) {
+			segment := &chain.Segment{
+				Height:              msg.height,
+				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			}
+
+			rmb, err := codec.RLP.MarshalToBytes(msg)
+			if err != nil {
+				return nil, err
+			}
+
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				return nil, err
+			}
+
+			segments = append(segments, segment)
+			msg = &RelayMessage{
+				BlockUpdates:  make([][]byte, 0),
+				ReceiptProofs: make([][]byte, 0),
+			}
+			size = buSize
+		}
+		s.l.Tracef("Sender: at %d BlockUpdates[%d]: %x", bu.Height, i, bu.Proof)
+		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
+		msg.height = bu.Height
+		msg.numberOfBlockUpdate += 1
+	}
+
+	var bp []byte
+	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
+		return nil, err
+	} else {
+		if s.isOverLimit(len(bp)) {
+			return nil, ErrInvalidBlockProofSize
+		}
+	}
+
+	for i, rp := range rm.ReceiptProofs {
+		if s.isOverSizeLimit(len(rp.Proof)) {
+			return nil, ErrInvalidStateProofSize
+		}
+
+		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
+			if len(bp) == 0 {
+				return nil, ErrMissingBothBlockUpdatesBlockProof
+			}
+
+			msg.BlockProof = bp
+			size += len(bp)
+			s.l.Tracef("Sender: at %d BlockProof: %x", rm.BlockProof.BlockWitness.Height, msg.BlockProof)
+			if s.isOverLimit(size) {
+				return nil, ErrInvalidBlockProofSize
+			}
+
+			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
+			size += len(rp.Proof)
+			s.l.Tracef("Sender: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
+			if s.isOverSizeLimit(size) {
+				return nil, ErrInvalidStateProofSize
+			}
+
+			segment := &chain.Segment{
+				Height:              rm.BlockProof.BlockWitness.Height,
+				NumberOfBlockUpdate: len(msg.BlockUpdates),
+			}
+
+			rmb, err := codec.RLP.MarshalToBytes(msg)
+			if err != nil {
+				return nil, err
+			}
+
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				return nil, err
+			}
+
+			segments = append(segments, segment)
+		} else {
+			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
+			s.l.Tracef("Sender: StateProof[%d]: %x", i, rp.Proof)
+		}
+	}
+
+	return segments, nil
+}
+
+func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+	switch s.src.BlockChain() {
+	case "icon":
+		return s.iconSegment(rm, height)
+	case "pra":
+		return s.praSegment(rm, height)
+	default:
+		return nil, ErrNotSupportedSrcChain
+	}
+}
+
+func (s *sender) isOverSizeLimit(size int) bool {
+	return txSizeLimit < float64(size)
 }
 
 func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
 	p := segment.TransactionParam.(*TransactionParam)
 	cd := p.Data.(CallData)
 	rmp := cd.Params.(BMCRelayMethodParams)
-	msg := &RelayMessage{}
-	b, err := base64.URLEncoding.DecodeString(rmp.Messages)
-	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
+	b64, err := base64.URLEncoding.DecodeString(rmp.Messages)
+
+	switch s.src.BlockChain() {
+	case "icon":
+		msg := &RelayMessage{}
+		if _, err = codec.RLP.UnmarshalFromBytes(b64, msg); err != nil {
+			return err
+		}
+		if msg.BlockProof, err = codec.RLP.MarshalToBytes(bp); err != nil {
+			return err
+		}
+
+		b, err := codec.RLP.MarshalToBytes(msg)
+		if err != nil {
+			return err
+		}
+
+		segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, b)
+		return err
+
+	case "pra":
+		msg := &pra.DecodedRelayMessage{}
+		if _, err = codec.RLP.UnmarshalFromBytes(b64, msg); err != nil {
+			return err
+		}
+
+		msg.BlockProof = &chain.BlockProof{
+			Header: bp.Header,
+			BlockWitness: &chain.BlockWitness{
+				Height:  bp.BlockWitness.Height,
+				Witness: bp.BlockWitness.Witness,
+			},
+		}
+
+		b, err := codec.RLP.MarshalToBytes(msg)
+		if err != nil {
+			return err
+		}
+
+		segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, b)
 		return err
 	}
-	if msg.BlockProof, err = codec.RLP.MarshalToBytes(bp); err != nil {
-		return err
-	}
-	segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, msg)
+
 	return err
 }
 

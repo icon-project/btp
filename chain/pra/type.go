@@ -30,6 +30,17 @@ type RelayMessageParam struct {
 	Msg  string `json:"_msg"`
 }
 
+type StateProof struct {
+	Key   []byte
+	Value [][]byte
+}
+
+type DecodedRelayMessage struct {
+	BlockUpdates []BlockUpdate
+	BlockProof   *chain.BlockProof
+	StateProof   *[]StateProof
+}
+
 type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte
@@ -89,3 +100,5 @@ type BlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
 }
+
+type PrachainFinalityProof struct{}

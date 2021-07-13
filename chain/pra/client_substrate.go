@@ -55,3 +55,9 @@ func (c *SubstrateAPI) GetStorageRaw(key SubstrateStorageKey, blockHash Substrat
 func (c *SubstrateAPI) GetBlockHashLatest() (SubstrateHash, error) {
 	return c.RPC.Chain.GetBlockHashLatest()
 }
+
+func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
+	var res ReadProof
+	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
+	return res, err
+}
