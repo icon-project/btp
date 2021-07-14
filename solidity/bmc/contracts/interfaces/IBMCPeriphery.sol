@@ -11,14 +11,6 @@ interface IBMCPeriphery {
     function getBmcBtpAddress() external view returns (string memory);
 
     /**
-        @notice BSH contract sends a request to add its service name and contract address to BMC
-        @param _serviceName    Service name of BSH contract
-        @param _addr    Address of BSH contract
-     */
-    function requestAddService(string memory _serviceName, address _addr)
-        external;
-
-    /**
         @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
         @dev Caller must be a registered relayer.     
         @param _prev    BTP Address of the BMC generates the message

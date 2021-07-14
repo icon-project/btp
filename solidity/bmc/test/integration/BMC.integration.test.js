@@ -30,112 +30,45 @@ contract('BMC tests', (accounts) => {
         /***************************************************************************************
                                     Add/Remove Service Integration Tests
         ***************************************************************************************/
-        it('Service management - Scenario 1: Request add service successfully if service not requested nor registered', async () => {
+        it('Service management - Scenario 1: Add service successfully if service is not registered', async () => {
             let service = 'Coin/WrappedCoin';
             
-            await bmcPeriphery.requestAddService(service, accounts[5]);
+            await bmcManagement.addService(service, accounts[5]);
             
-            let output = await bmcManagement.getPendingRequest();
+            let output = await bmcManagement.getServices();
             assert(
-                output[0].serviceName === service, output[0].bsh === accounts[5],
+                output[0].svc === service, output[0].addr === accounts[5],
             );
         });
-    
-        it('Service management - Scenario 2: Fail to request add service if service is already added to pending requests', async () => {
-            let service = 'Coin/WrappedCoin';
-        
-            await truffleAssert.reverts(
-                bmcPeriphery.requestAddService.call(service, accounts[6]),
-                'BMCRevertRequestPending'
-            );
-        });
-    
-        it('Service management - Scenario 3: Fail to request add service if service is already registered', async () => {
+
+        it('Service management - Scenario 2: Fail to add service if service is registered', async () => {
             let service = 'Coin/WrappedCoin';
             
-            await bmcManagement.approveService(service, true);
             await truffleAssert.reverts(
-                bmcPeriphery.requestAddService.call(service, accounts[6]),
+                bmcManagement.addService.call(service, accounts[4]),
                 'BMCRevertAlreadyExistsBSH'
             );
         });
-    
-        it('Service management - Scenario 4: Fail to approve service if service is already registered', async () => {
+
+        it('Service management - Scenario 3: Fail to add service if caller is not contract owner', async () => {
             let service = 'Coin/WrappedCoin';
+            
             await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertAlreadyExistsBSH'
-            );
-        });
-    
-        it('Service management - Scenario 5: Fail to reject service if service is already registered', async () => {
-            let service = 'Coin/WrappedCoin';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, false),
-                'BMCRevertAlreadyExistsBSH'
-            );
-        });
-    
-    
-        it('Service management - Scenario 6: Fail to approve service if service request does not exists', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertNotExistRequest'
-            );
-        });
-    
-        it('Service management - Scenario 7: Fail to reject service if service request does not exists', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertNotExistRequest'
-            );
-        });
-    
-        it('Service management - Scenario 8: Fail to approve service if caller is not contract owner', async () => {
-            let service = 'Token';
-            await bmcPeriphery.requestAddService(service, accounts[6]);
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true, {from: accounts[1]}),
+                bmcManagement.addService.call(service, accounts[4], { from: accounts[6] }),
                 'BMCRevertUnauthorized'
             );
         });
-    
-        it('Service management - Scenario 9: Fail to reject service if caller is not contract owner', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, false, {from: accounts[1]}),
-                'BMCRevertUnauthorized'
-            );
-        });
-    
-        it('Service management - Scenario 10: Approve service successfully if caller is contract owner', async () => {
-            let service = 'Token';
+
+        it('Service management - Scenario 4: Fail to add service if service\'scontract address is invalid', async () => {
+            let service = 'Coin/WrappedCoin';
             
-            await bmcManagement.approveService(service, true);
-            let output = await bmcManagement.getServices();
-            assert(
-                output.length === 2,
-                output[1].svc === service,
-                output[1].addr === accounts[6]
+            await truffleAssert.reverts(
+                bmcManagement.addService.call(service, '0x0000000000000000000000000000000000000000'),
+                'BMCRevertInvalidAddress'
             );
         });
     
-        it('Service management - Scenario 11: Reject service successfully if caller is contract owner', async () => {
-            let service = 'TokenA';
-    
-            await bmcPeriphery.requestAddService(service, accounts[6]);
-            await bmcManagement.approveService(service, false);
-            let output = await bmcManagement.getServices();
-            assert(
-                output.length === 2,
-                output[1].svc === service,
-                output[1].addr === accounts[6]
-            );
-        });
-    
-        it('Service management - Scenario 12: Fail to remove service if caller is not contract owner', async () => {
+        it('Service management - Scenario 5: Fail to remove service if caller is not contract owner', async () => {
             let service = 'Coin/WrappedCoin';
             await truffleAssert.reverts(
                 bmcManagement.removeService.call(service, {from: accounts[1]}),
@@ -143,7 +76,7 @@ contract('BMC tests', (accounts) => {
             );
         });
     
-        it('Service management - Scenario 13: Fail to remove service if service does not exist', async () => {
+        it('Service management - Scenario 6: Fail to remove service if service does not exist', async () => {
             let service = 'Token A';
             await truffleAssert.reverts(
                 bmcManagement.removeService.call(service),
@@ -151,9 +84,10 @@ contract('BMC tests', (accounts) => {
             );
         });
     
-        it('Service management - Scenario 14: Remove service successfully if service does exist and caller is contract owner', async () => {
-            let service1 = 'Token';
-            await bmcManagement.removeService(service1);
+        it('Service management - Scenario 7: Remove service successfully if service does exist and caller is contract owner', async () => {
+            let service = 'Token';
+            await bmcManagement.addService(service, accounts[4]);
+            await bmcManagement.removeService(service);
             let output = await bmcManagement.getServices();
             assert(
                 output.length === 1,
@@ -568,8 +502,7 @@ contract('BMC tests', (accounts) => {
             await bmcManagement.setBMCPeriphery(bmcPeriphery.address);
             bmv = await MockBMV.new();
             bsh = await MockBSH.new();
-            await bmcPeriphery.requestAddService('Token', bsh.address);
-            await bmcManagement.approveService('Token', true);
+            await bmcManagement.addService('Token', bsh.address);
             await bmcManagement.addVerifier(network, bmv.address);
             link = 'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3';
             await bmcManagement.addLink(link); // txSeq += 1 due to link progagation

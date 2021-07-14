@@ -61,21 +61,6 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         return bmcBtpAddress;
     }
 
-    function requestAddService(string memory _serviceName, address _addr)
-        external
-        override
-    {
-        revert("test upgradable for BMC Periphery");
-    }
-
-    function getPendingRequest()
-        external
-        view
-        returns (Types.Request[] memory)
-    {
-        return IBMCManagement(bmcManagement).getPendingRequest();
-    }
-
     /**
        @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
        @dev Caller must be a registered relayer.     
@@ -360,42 +345,13 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         }
     }
 
-    /**
-       @notice Send the message to a specific network.
-       @dev Caller must be an registered BSH.
-       @param _to      Network Address of destination network
-       @param _svc     Name of the service
-       @param _sn      Serial number of the message, it should be positive
-       @param _msg     Serialized bytes of Service Message
-    */
     function sendMessage(
-        string memory _to,
-        string memory _svc,
-        uint256 _sn,
-        bytes memory _msg
-    ) external override {
-        require(
-            msg.sender == bmcManagement ||
-                IBMCManagement(bmcManagement).getBshServiceByName(_svc) ==
-                msg.sender,
-            "BMCRevertUnauthorized"
-        );
-        require(_sn >= 0, "BMCRevertInvalidSN");
-        //  In case BSH sends a REQUEST_COIN_TRANSFER,
-        //  but '_to' is a network which is not supported by BMC
-        //  revert() therein
-        if (
-            IBMCManagement(bmcManagement).getBmvServiceByNet(_to) == address(0)
-        ) {
-            revert("BMCRevertNotExistsBMV");
-        }
-        (string memory _nextLink, string memory _dst) =
-            IBMCManagement(bmcManagement).resolveRoute(_to);
-        bytes memory _rlp =
-            Types
-                .BMCMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
-                .encodeBMCMessage();
-        _sendMessage(_dst, _rlp);
+        string memory,
+        string memory,
+        uint256,
+        bytes memory
+    ) external pure override {
+        revert("Upgrade successfully");
     }
 
     /*

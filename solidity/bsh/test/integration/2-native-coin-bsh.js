@@ -22,7 +22,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         encode_msg = await EncodeMsg.new();
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
     });
@@ -299,7 +299,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         nonrefundable = await NonRefundable.new();
         refundable = await Refundable.new();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
     });
@@ -523,7 +523,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
@@ -751,7 +751,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         notpayable = await NotPayable.new();
         refundable = await Refundable.new();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await bsh_core.transfer(_to, {from: accounts[0], value: 100000000});
@@ -848,7 +848,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         notpayable = await NotPayable.new();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
@@ -949,7 +949,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         btpAddr = await bmc.bmcAddress();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net1, accounts[1]);
         await bmc.addVerifier(_net2, accounts[2]);
         await bmc.addLink(_bmcICON);
@@ -1114,7 +1114,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         holder = await Holder.new();
         refundable = await Refundable.new();
         btpAddr = await bmc.bmcAddress();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net1, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
@@ -1326,7 +1326,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         await bsh_core.initialize(_uri, _native, _fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
-        await bmc.approveService(service);
+        await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);

@@ -35,11 +35,13 @@ interface IBMCManagement {
     function isOwner(address _owner) external view returns (bool);
 
     /**
-        @notice Registers the smart contract for the service.
-        @dev Caller must be an operator of BTP network.
-        @param _svc     Name of the service
+       @notice Add the smart contract for the service.
+       @dev Caller must be an operator of BTP network.
+       @dev Service being approved must be in the pending request list
+       @param _svc     Name of the service
+       @param _addr    Service's contract address
      */
-    function approveService(string calldata _svc, bool isAccepted) external;
+    function addService(string memory _svc, address _addr) external;
 
     /**
        @notice De-registers the smart contract for the service.  
@@ -184,12 +186,6 @@ interface IBMCManagement {
         returns (address);
 
     /**
-        @notice Get pending service requests. Only called by BMC periphery.
-        @return List of all requests.
-     */
-    function getPendingRequest() external view returns (Types.Request[] memory);
-
-    /**
         @notice Get link info. Only called by BMC periphery.
         @param _to link's BTP address
         @return Link info
@@ -238,12 +234,6 @@ interface IBMCManagement {
         external
         view
         returns (Types.RelayStats[] memory);
-
-    /**
-        @notice Update pending request. Only called by BMC periphery.
-        @param _req service request
-     */
-    function updatePendingReq(Types.Request memory _req) external;
 
     /**
         @notice Update rotation sequence by link. Only called by BMC periphery.

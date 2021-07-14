@@ -61,36 +61,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         return bmcBtpAddress;
     }
 
-    function requestAddService(string memory _serviceName, address _addr)
-        external
-        override
-    {
-        require(_addr != address(0), "BMCRevertInvalidAddress");
-        require(
-            IBMCManagement(bmcManagement).getBshServiceByName(_serviceName) ==
-                address(0),
-            "BMCRevertAlreadyExistsBSH"
-        );
-        Types.Request[] memory pendingReqs =
-            IBMCManagement(bmcManagement).getPendingRequest();
-        for (uint256 i = 0; i < pendingReqs.length; i++) {
-            if (pendingReqs[i].serviceName.compareTo(_serviceName)) {
-                revert("BMCRevertRequestPending");
-            }
-        }
-        IBMCManagement(bmcManagement).updatePendingReq(
-            Types.Request(_serviceName, _addr)
-        );
-    }
-
-    function getPendingRequest()
-        external
-        view
-        returns (Types.Request[] memory)
-    {
-        return IBMCManagement(bmcManagement).getPendingRequest();
-    }
-
     /**
        @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
        @dev Caller must be a registered relayer.     

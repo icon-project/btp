@@ -81,18 +81,15 @@ contract MockBMV is IBMV {
         @notice Decodes Relay Messages and process BTP Messages.
                 If there is an error, then it sends a BTP Message containing the Error Message.
                 BTP Messages with old sequence numbers are ignored. A BTP Message contains future sequence number will fail.
-        @param _bmc BTP Address of the BMC handling the message
-        @param _prev BTP Address of the previous BMC
-        @param _seq next sequence number to get a message
         @param _msg serialized bytes of Relay Message
         @return serializedMessages List of serialized bytes of a BTP Message
      */
     function handleRelayMessage(
-        string memory _bmc,
-        string memory _prev,
-        uint256 _seq,
+        string memory,
+        string memory,
+        uint256,
         string calldata _msg
-    ) external override returns (bytes[] memory) {
+    ) external pure override returns (bytes[] memory) {
         bytes[] memory btpMsgs = new bytes[](1);
         btpMsgs[0] = _msg.decode();
         return btpMsgs;

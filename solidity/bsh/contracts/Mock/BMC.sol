@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../Interfaces/IBSH.sol";
@@ -46,7 +46,6 @@ contract BMC is IBMCPeriphery {
     mapping(address => bool) private _owners;
     uint256 private numOfOwner;
 
-    mapping(uint256 => Types.Request[]) private pendingReq;
     mapping(string => address) internal bshServices;
     mapping(string => address) private bmvServices;
     mapping(string => string) private connectedBMC;
@@ -83,27 +82,12 @@ contract BMC is IBMCPeriphery {
         _owners[msg.sender] = true;
         numOfOwner++;
     }
+
     /*****************************************************************************************
 
     *****************************************************************************************/
     function getBmcBtpAddress() external view override returns (string memory) {
         return bmcAddress;
-    }
-
-    function requestAddService(string memory _serviceName, address _addr)
-        external
-        override
-    {
-        require(
-            bshServices[_serviceName] == address(0),
-            "BMCRevertAlreadyExistsBSH"
-        );
-        for (uint256 i = 0; i < pendingReq[0].length; i++) {
-            if (pendingReq[0][i].serviceName.compareTo(_serviceName)) {
-                revert("BMCRevertRequestPending");
-            }
-        }
-        pendingReq[0].push(Types.Request(_serviceName, _addr));
     }
 
     function handleRelayMessage(string calldata _prev, string calldata _msg)
@@ -292,33 +276,16 @@ contract BMC is IBMCPeriphery {
     }
 
     /**
-       @notice Registers the smart contract for the service.
+       @notice Add the smart contract for the service.
        @dev Caller must be an operator of BTP network.
-       @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
-   */
-    function approveService(string memory _svc) external owner {
+       @param _addr    Service's contract address
+     */
+    function addService(string memory _svc, address _addr) external owner {
+        require(_addr != address(0), "BMCRevertInvalidAddress");
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
-        bool foundReq = false;
-        Types.Request[] memory temp = new Types.Request[](pendingReq[0].length);
-        temp = pendingReq[0];
-        delete pendingReq[0];
-        address _addr;
-        for (uint256 i = 0; i < temp.length; i++) {
-            if (!temp[i].serviceName.compareTo(_svc)) {
-                pendingReq[0].push(temp[i]);
-            } else {
-                foundReq = true;
-                _addr = temp[i].bsh;
-            }
-        }
-        //  If service not existed in a pending request list,
-        //  then revert()
-        require(foundReq == true, "BMCRevertNotExistRequest");
-
         bshServices[_svc] = _addr;
         listBSHNames.push(_svc);
-        numOfBSHService++;
     }
 
     /**
@@ -384,8 +351,6 @@ contract BMC is IBMCPeriphery {
         external
         view
         override
-        returns (
-            Types.LinkStats memory _linkStats
-        )
+        returns (Types.LinkStats memory _linkStats)
     {}
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../Interfaces/IBSHPeriphery.sol";
@@ -43,11 +43,11 @@ contract BSHCoreV2 is
 
     IBSHPeriphery private bshPeriphery;
     mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
-    mapping(address => mapping(string => Types.Balance)) internal balances; 
+    mapping(address => mapping(string => Types.Balance)) internal balances;
     mapping(string => uint256) private coins; //  a list of all supported coins
-    string[] internal coinsName; // a string array stores names of supported coins 
-    string[] private chargedCoins;  //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
-    uint256[] private chargedAmounts;   //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
+    string[] internal coinsName; // a string array stores names of supported coins
+    string[] private chargedCoins; //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
+    uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
     uint256 private feeNumerator;
@@ -125,7 +125,6 @@ contract BSHCoreV2 is
         return listOfOwners;
     }
 
-
     //  @notice This is just an example to show how to add more function in upgrading a contract
     function addStake(string calldata _coinName, uint256 _value)
         external
@@ -178,7 +177,7 @@ contract BSHCoreV2 is
             delete aggregationFee[coinsName[i]];
         }
     }
-    
+
     //  @notice This is just an example to show how to add more function in upgrading a contract
     function clearBSHPerifSetting() external {
         bshPeriphery = IBSHPeriphery(address(0));
@@ -206,7 +205,10 @@ contract BSHCoreV2 is
     {
         require(_bshPeriphery != address(0), "InvalidSetting");
         if (address(bshPeriphery) != address(0)) {
-            require(bshPeriphery.hasPendingRequest() == false, "HasPendingRequest");
+            require(
+                bshPeriphery.hasPendingRequest() == false,
+                "HasPendingRequest"
+            );
         }
         bshPeriphery = IBSHPeriphery(_bshPeriphery);
     }
@@ -453,7 +455,7 @@ contract BSHCoreV2 is
     ) private {
         //  Lock this requested _value as a record of a pending transferring transaction
         //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
-        //  The true amount to receive at a destination receiver is calculated by 
+        //  The true amount to receive at a destination receiver is calculated by
         //  _amounts[0] = _value.sub(_chargeAmt);
         lockBalance(_from, _coinName, _value);
         string[] memory _coins = new string[](1);
@@ -509,7 +511,7 @@ contract BSHCoreV2 is
             _amounts[i] = _values[i].sub(_chargeAmts[i]);
             //  Lock this requested _value as a record of a pending transferring transaction
             //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
-            //  The true amount to receive at a destination receiver is calculated by 
+            //  The true amount to receive at a destination receiver is calculated by
             //  _amounts[i] = _values[i].sub(_chargeAmts[i]);
             lockBalance(msg.sender, _coinNames[i], _values[i]);
         }
@@ -609,7 +611,9 @@ contract BSHCoreV2 is
     ) external override onlyBSHPeriphery {
         if (_requester == address(this)) {
             if (_rspCode == RC_ERR) {
-                aggregationFee[_coinName] = aggregationFee[_coinName].add(_value);
+                aggregationFee[_coinName] = aggregationFee[_coinName].add(
+                    _value
+                );
             }
             return;
         }
@@ -661,7 +665,7 @@ contract BSHCoreV2 is
             _fa,
             chargedCoins,
             chargedAmounts,
-            new uint256[](chargedCoins.length)      //  chargedFees is an array of 0 since this is a fee gathering request
+            new uint256[](chargedCoins.length) //  chargedFees is an array of 0 since this is a fee gathering request
         );
         delete chargedCoins;
         delete chargedAmounts;

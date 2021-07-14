@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -29,10 +29,11 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp = abi.encodePacked(
-            _bs.serviceType.encodeString(),
-            _bs.payload.encodeBytes()
-        );
+        bytes memory _rlp =
+            abi.encodePacked(
+                _bs.serviceType.encodeString(),
+                _bs.payload.encodeBytes()
+            );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 

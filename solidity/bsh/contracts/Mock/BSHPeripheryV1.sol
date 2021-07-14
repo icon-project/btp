@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../Interfaces/IBSHPeriphery.sol";
@@ -83,7 +83,6 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
         string memory _serviceName
     ) public initializer {
         bmc = IBMCPeriphery(_bmc);
-        bmc.requestAddService(_serviceName, address(this));
         bshCore = IBSHCore(_bshCore);
         serviceName = _serviceName;
     }
@@ -92,7 +91,7 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
      @notice Check whether BSHPeriphery has any pending transferring requests
      @return true or false
     */
-    function hasPendingRequest() external override view returns (bool) {
+    function hasPendingRequest() external view override returns (bool) {
         return numOfPendingRequests != 0;
     }
 
@@ -127,10 +126,16 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
             _toNetwork,
             serviceName,
             serialNo,
-            Types.ServiceMessage(
-                Types.ServiceType.REQUEST_COIN_TRANSFER,
-                Types.TransferCoin(_strFrom, _toAddress, _assets).encodeTransferCoinMsg()
-            ).encodeServiceMessage()
+            Types
+                .ServiceMessage(
+                Types
+                    .ServiceType
+                    .REQUEST_COIN_TRANSFER,
+                Types
+                    .TransferCoin(_strFrom, _toAddress, _assets)
+                    .encodeTransferCoinMsg()
+            )
+                .encodeServiceMessage()
         );
         //  Push pending tx into Record list
         requests[serialNo] = Types.PendingTransferCoin(
@@ -305,10 +310,12 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
             _to,
             serviceName,
             _sn,
-            Types.ServiceMessage(
+            Types
+                .ServiceMessage(
                 _serviceType,
                 Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+            )
+                .encodeServiceMessage()
         );
     }
 

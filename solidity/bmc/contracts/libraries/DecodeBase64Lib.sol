@@ -71,6 +71,7 @@ library DecodeBase64 {
         } else if (uint8(_char) >= 97 && uint8(_char) <= 122) {
             return a + (uint8(_char) - 97);
         }
+        return 0;
     }
 
     function decode4(

@@ -33,7 +33,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV2.address);
             await bmc.addVerifier(_net, accounts[1]);
             await bmc.addLink(_bmcICON);
         });
@@ -320,7 +320,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service,bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             nonrefundable = await NonRefundable.new();
@@ -543,7 +543,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             holder = await Holder.new();
@@ -770,7 +770,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             notpayable = await NotPayable.new();
@@ -867,7 +867,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             holder = await Holder.new();
@@ -968,7 +968,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             holder = await Holder.new();
@@ -1128,7 +1128,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             holder = await Holder.new();
@@ -1343,7 +1343,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
-            await bmc.approveService(service);
+            await bmc.addService(service, bsh_perifV1.address);
             bsh_perifV2 = await upgradeProxy(bsh_perifV1.address, BSHPerifV2);
             bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
             holder = await Holder.new();
