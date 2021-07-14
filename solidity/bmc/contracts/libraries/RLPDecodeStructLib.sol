@@ -45,17 +45,11 @@ library RLPDecodeStruct {
     function decodeEventMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.EventMessage memory)
+        returns (Types.Connection memory)
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         return
-            Types.EventMessage(
-                string(ls[0].toBytes()),
-                Types.Connection(
-                    string(ls[1].toList()[0].toBytes()),
-                    string(ls[1].toList()[1].toBytes())
-                )
-            );
+            Types.Connection(string(ls[0].toBytes()), string(ls[1].toBytes()));
     }
 
     function decodeRegisterCoin(bytes memory _rlp)

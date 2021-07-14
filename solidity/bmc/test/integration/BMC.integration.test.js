@@ -582,16 +582,16 @@ contract('BMC tests', (accounts) => {
             const btpAddress = 'btp://0x01.eth/' + web3.utils.randomHex(20);
             let eventMsg = [
                 'Link', 
-                [
+                rlp.encode([
                     'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3',
                     btpAddress,
-                ]
+                ])
             ];
     
             let btpMsg = rlp.encode([
                 'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3',
                 'btp://0x27.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x00',
                 rlp.encode(eventMsg)
             ]);
@@ -609,16 +609,16 @@ contract('BMC tests', (accounts) => {
     
             eventMsg = [
                 'Unlink', 
-                [
+                rlp.encode([
                     'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3',
                     btpAddress
-                ]
+                ])
             ];
     
             btpMsg = rlp.encode([
                 'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3',
                 'btp://0x27.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x01',
                 rlp.encode(eventMsg)
             ]);
@@ -648,7 +648,7 @@ contract('BMC tests', (accounts) => {
             let btpMsg = rlp.encode([
                 'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a3',
                 'btp://0x27.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x00',
                 rlp.encode(eventMsg)
             ]);
@@ -886,7 +886,7 @@ contract('BMC tests', (accounts) => {
                 'btp://0x27.pra/' + bmcPeriphery.address,
                 'bmc',
                 '0x02',
-                'invalide rlp of service message'
+                'invalid rlp of service message'
             ]);
     
             let relayMsg = URLSafeBase64.encode(btpMsg);
@@ -912,7 +912,7 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.txSeq, 2, 'failed to update txSeq');
         });
     
-        it('Scenario 14: Dispatch gather fee message to BSH services', async() => {
+        it('Scenario 14: Emit event to send BTP error response if fee gathering message is failed to decode', async() => {
             const serviceMsg = [
                 'FeeGathering',
                 'invalid rlp of fee gather messgage',
@@ -949,7 +949,7 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.txSeq, 2, 'failed to update txSeq');
         });
     
-        it('Scenario 15: Emit event to send BTP error response if fee gathering message is failed to decode', async() => {
+        it('Scenario 15: Dispatch gather fee message to BSH services', async() => {
             const gatherFeeMsg = [
                 'btp://0x03.icon/cx10c8c08724e7a95c84829c07239ae2b839a262a35678',
                 ['service1', 'service2', 'service3']

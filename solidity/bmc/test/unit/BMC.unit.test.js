@@ -721,16 +721,16 @@ contract('BMC tests', (accounts) => {
             const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
             let eventMsg = [
                 'Link', 
-                [
+                rlp.encode([
                     'btp://1234.iconee/0x1234',
                     btpAddress,
-                ]
+                ])
             ];
     
             let btpMsg = rlp.encode([
                 'btp://1234.iconee/0x1234',
                 'btp://1234.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x00',
                 rlp.encode(eventMsg)
             ]);
@@ -748,16 +748,16 @@ contract('BMC tests', (accounts) => {
     
             eventMsg = [
                 'Unlink', 
-                [
+                rlp.encode([
                     'btp://1234.iconee/0x1234',
                     btpAddress
-                ]
+                ])
             ];
     
             btpMsg = rlp.encode([
                 'btp://1234.iconee/0x1234',
                 'btp://1234.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x01',
                 rlp.encode(eventMsg)
             ]);
@@ -774,6 +774,33 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
         });
     
+        it('should revert if event handle does not exist', async () => {
+            const btpAddress = 'btp://0x01.eth/' + web3.utils.randomHex(20);
+            let eventMsg = [
+                'Unknown', 
+                rlp.encode([
+                    'btp://1234.iconee/0x1234',
+                    btpAddress
+                ])
+            ];
+    
+            btpMsg = rlp.encode([
+                'btp://1234.iconee/0x1234',
+                'btp://1234.pra/' + bmcPeriphery.address,
+                'bmc',
+                '0x01',
+                rlp.encode(eventMsg)
+            ]);
+    
+            let relayMsg = URLSafeBase64.encode(btpMsg);
+            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
+    
+            await truffleAssert.reverts(
+                bmcPeriphery.handleRelayMessage.call(link, relayMsg, {from: accounts[3]}),
+                'BMCRevert: not exists event handler'
+            );
+        });
+
         it('should emit event if routes are failed to resolve', async() => {
             const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
             let eventMsg = [
@@ -998,7 +1025,7 @@ contract('BMC tests', (accounts) => {
                 'btp://1234.pra/' + bmcPeriphery.address,
                 'bmc',
                 '0x02',
-                'invalide rlp of service message'
+                'invalid rlp of service message'
             ]);
     
             let relayMsg = URLSafeBase64.encode(btpMsg);

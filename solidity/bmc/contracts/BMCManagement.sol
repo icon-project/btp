@@ -432,7 +432,7 @@ contract BMCManagement is IBMCManagement, Initializable {
                 (_net, ) = listLinkNames[i].splitBTPAddress();
                 IBMCPeriphery(bmcPeriphery).sendMessage(
                     _net,
-                    "_event",
+                    "bmc",
                     0,
                     Types
                         .EventMessage(

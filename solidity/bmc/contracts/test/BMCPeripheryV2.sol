@@ -173,37 +173,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         internal
     {
         address _bshAddr;
-        if (_msg.svc.compareTo("_event")) {
-            Types.EventMessage memory _eventMsg =
-                _msg.message.decodeEventMessage();
-            Types.Link memory link =
-                IBMCManagement(bmcManagement).getLink(_eventMsg.conn.from);
-            if (_eventMsg.eventType.compareTo("Link")) {
-                bool check;
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++)
-                        if (_eventMsg.conn.to.compareTo(link.reachable[i])) {
-                            check = true;
-                            break;
-                        }
-                    if (!check)
-                        IBMCManagement(bmcManagement).updateLinkReachable(
-                            _eventMsg.conn.from,
-                            _eventMsg.conn.to
-                        );
-                }
-            } else if (_eventMsg.eventType.compareTo("Unlink")) {
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++) {
-                        if (_eventMsg.conn.to.compareTo(link.reachable[i]))
-                            IBMCManagement(bmcManagement).deleteLinkReachable(
-                                _eventMsg.conn.from,
-                                i
-                            );
-                    }
-                }
-            } else revert("BMCRevert: not exists event handler");
-        } else if (_msg.svc.compareTo("FeeGathering")) {
+        if (_msg.svc.compareTo("bmc")) {
             Types.BMCService memory _sm;
             try this.tryDecodeBMCService(_msg.message) returns (
                 Types.BMCService memory res
@@ -235,6 +205,38 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
                         {} catch {
                             //  If BSH contract throws a revert error, ignore and continue
                         }
+                    }
+                }
+            } else if (_msg.svc.compareTo("Link")) {
+                Types.Connection memory _conn =
+                    _sm.payload.decodeEventMessage();
+                Types.Link memory link =
+                    IBMCManagement(bmcManagement).getLink(_conn.from);
+                bool check;
+                if (link.isConnected) {
+                    for (uint256 i = 0; i < link.reachable.length; i++)
+                        if (_conn.to.compareTo(link.reachable[i])) {
+                            check = true;
+                            break;
+                        }
+                    if (!check)
+                        IBMCManagement(bmcManagement).updateLinkReachable(
+                            _conn.from,
+                            _conn.to
+                        );
+                }
+            } else if (_msg.svc.compareTo("Unlink")) {
+                Types.Connection memory _conn =
+                    _sm.payload.decodeEventMessage();
+                Types.Link memory link =
+                    IBMCManagement(bmcManagement).getLink(_conn.from);
+                if (link.isConnected) {
+                    for (uint256 i = 0; i < link.reachable.length; i++) {
+                        if (_conn.to.compareTo(link.reachable[i]))
+                            IBMCManagement(bmcManagement).deleteLinkReachable(
+                                _conn.from,
+                                i
+                            );
                     }
                 }
             }
