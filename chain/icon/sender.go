@@ -361,6 +361,8 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
 			return nil, err
 		}
+
+		segments = append(segments, segment)
 	}
 
 	return segments, nil
