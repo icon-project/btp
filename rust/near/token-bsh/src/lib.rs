@@ -37,11 +37,10 @@
 use bsh_generic::other_bsh_types::*;
 
 //use btp_common::BTPAddress;
+use bsh_generic::BshGeneric;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{metadata, near_bindgen, setup_alloc};
+use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
-
-pub type Balances = HashMap<String, HashMap<String, Balance>>;
 
 setup_alloc!();
 metadata! {
@@ -54,9 +53,10 @@ metadata! {
     pub struct TokenBsh {
         owners: HashMap<String, bool>,
         list_of_owners: Vec<String>,
-        //bsh_generic: BshGeneric,
+        /// Address of generic BSH contract
+        bsh_generic: BshGeneric,
         aggregation_fee: HashMap<String, u64>,
-        balances: Balances,
+        balances: HashMap<String, HashMap<String, Balance>>,
         coins: HashMap<String, u64>,
         coin_names: Vec<String>,
         charged_coins: Vec<String>,
@@ -72,52 +72,139 @@ impl TokenBsh {
     pub const RC_ERR: usize = 1;
 
     #[init]
-    pub fn new(uri: &str, native_coin_name: &str, fee_numerator: u64) {
-        todo!()
+    pub fn new(uri: &str, native_coin_name: &str, fee_numerator: u64) -> Self {
+        let mut owners: HashMap<String, bool> = HashMap::new();
+        let mut list_of_owners: Vec<String> = vec![];
+        let mut coins: HashMap<String, u64> = HashMap::new();
+        let mut coin_names: Vec<String> = vec![];
+        let fee_numerator = fee_numerator;
+        let mut bsh_generic = BshGeneric::default();
+
+        let _ = owners.insert(env::current_account_id(), true);
+        list_of_owners.push(env::current_account_id());
+        let _ = coins.insert(native_coin_name.to_string(), 0);
+        coin_names.push(native_coin_name.to_string());
+        bsh_generic.bsh_contract = uri.to_string();
+
+        let bsh_event = BshEvents::SetOwnership {
+            promoter: &env::predecessor_account_id(),
+            new_owner: &env::current_account_id(),
+        };
+        let bsh_event = bsh_event
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
+        env::log(&bsh_event);
+
+        Self {
+            owners,
+            list_of_owners,
+            bsh_generic,
+            aggregation_fee: HashMap::new(),
+            balances: HashMap::new(),
+            coins,
+            coin_names,
+            charged_coins: vec![],
+            charged_amounts: vec![],
+            fee_numerator,
+        }
     }
 
     /// Add another owner.
     /// Caller must be an owner of BTP network
-    pub fn add_owner(address: &str) {
-        todo!()
+    pub fn add_owner(&mut self, owner: &str) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        assert!(self.owners[owner] == false, "ExistedOwner");
+        let _ = self.owners.insert(owner.to_string(), true);
+        self.list_of_owners.push(owner.to_string());
+        let bsh_event = BshEvents::SetOwnership {
+            promoter: &env::current_account_id(),
+            new_owner: owner,
+        };
+        let bsh_event = bsh_event
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
+        env::log(&bsh_event);
     }
 
     /// Remove an existing owner.
     /// Caller must be an owner of BTP network
-    pub fn remove_owner(address: &str) {
-        todo!()
+    pub fn remove_owner(&mut self, owner: &str) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        assert!(self.list_of_owners.len() > 1, "Unable to remove last owner");
+        assert_eq!(self.owners[owner], true, "Removing owner not found");
+        let _ = self.owners.remove(owner);
+        self.remove(owner);
+        let bsh_event = BshEvents::RemoveOwnership {
+            remover: &env::current_account_id(),
+            former_owner: owner,
+        };
+        let bsh_event = bsh_event
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
+        env::log(&bsh_event);
     }
 
-    fn remove(addr: &str) {
-        todo!()
+    fn remove(&mut self, addr: &str) {
+        for i in 0..self.list_of_owners.len() {
+            if self.list_of_owners[i] == addr.to_string() {
+                self.list_of_owners[i] = self.list_of_owners[self.list_of_owners.len() - 1].clone();
+                let _ = self.list_of_owners.pop();
+                break;
+            }
+        }
     }
 
     /// Check whether one specific address has `Owner` role.
     /// Anyone can call this function.
     /// Address needs to be verified.
-    pub fn is_owner(address: &str) -> bool {
-        todo!()
+    pub fn is_owner(&self, owner: &str) -> bool {
+        self.owners[owner]
     }
 
     /// Get a list of current owners.
     /// Anyone can call this function.
     /// Returns an array of addresses.
-    pub fn get_owners() -> Vec<String> {
-        todo!()
+    pub fn get_owners(&self) -> &Vec<String> {
+        &self.list_of_owners
     }
 
     /// Update generic BSH address.
     /// Caller must be an owner of this contract.
     /// `address` must be different from the existing BSH generic contract address.
-    pub fn update_generic_bsh_addr(address: &str) {
-        todo!()
+    pub fn update_generic_bsh_addr(&mut self, addr: &str) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        assert_ne!(
+            addr.to_string(),
+            env::predecessor_account_id(),
+            "InvalidSetting"
+        );
+        if self.bsh_generic.bsh_contract != env::predecessor_account_id() {
+            assert!(
+                self.bsh_generic.has_pending_requests() == false,
+                "HasPendingRequest"
+            );
+        }
+        self.bsh_generic.bsh_contract = addr.to_string();
     }
 
     /// Update base URI.
     /// Caller must be an owner of this contract.
     /// The URI must be initialized in construction.
-    pub fn update_uri(new_uri: &str) {
-        todo!()
+    pub fn update_uri(&mut self, _new_uri: &str) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        // TODO: set_uri(_new_uri);
     }
 
     /// Set fee ratio.
@@ -125,8 +212,13 @@ impl TokenBsh {
     /// The transfer fee is calculated as fee_numerator / FEE_DEMONINATOR.
     /// The fee_numetator should be less than FEE_DEMONINATOR.
     /// fee_numerator is set to `10` in construction by default, which means the default fee ratio is 0.1%.
-    pub fn set_fee_ratio(fee_numerator: u64) {
-        todo!()
+    pub fn set_fee_ratio(&mut self, fee_numerator: u64) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        assert!(fee_numerator <= Self::FEE_DENOMINATOR, "InvalidSetting");
+        self.fee_numerator = fee_numerator;
     }
 
     /// Register a wrapped coin and ID number of a supporting coin.
@@ -134,26 +226,34 @@ impl TokenBsh {
     /// `name` must be different from the native coin name.
     /// ID of a wrapped coin is generated by using keccak256.
     /// ID = 0 is fixed to assign to native coin.
-    pub fn register(name: &str) {
-        todo!()
+    pub fn register(&mut self, name: &str) {
+        assert!(
+            self.owners[&env::current_account_id()] == true,
+            "Unauthorized"
+        );
+        assert!(self.coins[name] == 0, "TokenExists");
+        let name_bytes = env::keccak256(name.as_bytes());
+        let name_ptr = name_bytes.as_ptr() as u64;
+        let _ = self.coins.insert(name.to_string(), name_ptr);
+        self.coin_names.push(name.to_string());
     }
 
     /// Return all supported coin names.
     /// Returns an array of strings.
-    pub fn get_coin_names() -> Vec<String> {
-        todo!()
+    pub fn get_coin_names(&self) -> &Vec<String> {
+        &self.coin_names
     }
 
     /// Return an ID number of the given coin name.
     /// Return `None` if nothing found.
-    pub fn get_coin_id(coin_name: &str) -> Option<u64> {
-        todo!()
+    pub fn get_coin_id(&self, coin_name: &str) -> Option<&u64> {
+        self.coins.get(coin_name)
     }
 
     /// Check validity of a coin name.
     /// Call generic BSH contract to validate a requested coin name.
-    pub fn is_valid_coin(coin_name: &str) -> bool {
-        todo!()
+    pub fn is_valid_coin(&self, coin_name: &str) -> bool {
+        self.coins[coin_name] != 0 || coin_name.to_string() == self.coin_names[0]
     }
 
     /// Return a usable/locked/refundable balance of an account based on the coin name.
@@ -161,7 +261,7 @@ impl TokenBsh {
     /// [] - locked_balance: when users transfer the coin, it will be locked until
     ///      service message response is received.
     /// [] - refundable_balance: what will be refunded to users.
-    pub fn get_balance_of(owner: &str, coin_name: &str) -> (u64, u64, u64) {
+    pub fn get_balance_of(&self, owner: &str, coin_name: &str) -> (u64, u64, u64) {
         todo!()
     }
 

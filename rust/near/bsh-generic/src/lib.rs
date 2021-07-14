@@ -55,7 +55,7 @@ metadata! {
     #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default)]
     pub struct BshGeneric {
         bmc_contract: String,
-        bsh_contract: String,
+        pub bsh_contract: String,
         /// A list of transferring requests
         /// Use `HashMap` because `LookupMap` doesn't implement
         /// Clone, Debug, and Default traits
@@ -88,8 +88,8 @@ impl BshGeneric {
     }
 
     /// Check whether BSH has any pending transferring requests
-    pub fn has_pending_requests(&self) -> Result<bool, &str> {
-        Ok(self.num_of_pending_requests != 0)
+    pub fn has_pending_requests(&self) -> bool {
+        self.num_of_pending_requests != 0
     }
 
     /// Send Service Message from BSH contract to BMCService contract
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     fn check_has_pending_request() {
         let bsh = BshGeneric::default();
-        assert_eq!(bsh.has_pending_requests().unwrap(), false);
+        assert_eq!(bsh.has_pending_requests(), false);
     }
 
     #[test]
