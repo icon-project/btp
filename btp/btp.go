@@ -143,7 +143,7 @@ func (b *BTP) Serve() error {
 	}()
 	go func() {
 		h := b.receiveHeight()
-		b.log.Debugf("start receiveloop from heigh: %v", h)
+		b.log.Debugf("start receiveloop from height: %v", h)
 
 		err := b.receiver.ReceiveLoop(
 			h,
@@ -300,6 +300,14 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 	}
 
 	if len(rps) > 0 {
+		if bu.Height <= b.bmcLinkStatus.Verifier.Height {
+			// b.log.Debugf("addRelayMessage: ignore ReceiptProofs at %d", bu.Height)
+			// return
+			var err error
+			if rm.BlockProof, err = b.newBlockProof(bu.Height, bu.Header); err != nil {
+				b.log.Warnf("addRelayMessage: fails to build newBlockProof %+v", err)
+			}
+		}
 		rm.BlockUpdates = append(rm.BlockUpdates, bu)
 
 		rm.ReceiptProofs = rps
@@ -425,6 +433,7 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 				case chain.BMVRevertInvalidSequenceHigher, chain.BMVRevertInvalidBlockUpdateHigher, chain.BMVRevertInvalidBlockProofHigher:
 					segment.GetResultParam = nil
 				case chain.BMCRevertUnauthorized:
+					b.log.Warnf("not authorized to send BMC.handleMessage")
 					segment.GetResultParam = nil
 				default:
 					b.log.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
