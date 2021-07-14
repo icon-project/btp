@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.util;
+package com.iconloop.btp.lib;
 
 import score.Address;
 import score.ArrayDB;
 import score.Context;
-import scorex.util.ArrayList;
-
-import java.util.List;
 
 public class OwnerManagerImpl implements OwnerManager {
     private final ArrayDB<Address> owners;

@@ -114,8 +114,8 @@ dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
 	cd javascore ; \
     ./gradlew :nativecoin:optimizedJar ; \
     cp ./nativecoin/build/libs/nativecoin-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/nativecoin.jar; \
-    ./gradlew :javaee-tokens:optimizedJar ; \
-    cp ./javaee-tokens/build/libs/irc31-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc31.jar
+    ./gradlew :nativecoin:optimizedJarIRC31 ; \
+    cp ./nativecoin/build/libs/irc31-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc31.jar
 
 dist-java: dist-java-bmc dist-java-bmv-icon dist-java-nativecoin
 

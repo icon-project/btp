@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.util;
+package com.iconloop.btp.lib;
 
 import score.Address;
 import score.annotation.External;

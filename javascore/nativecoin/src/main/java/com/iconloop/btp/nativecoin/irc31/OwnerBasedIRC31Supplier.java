@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.token.irc31;
+package com.iconloop.btp.nativecoin.irc31;
 
-import com.iconloop.score.util.OwnerManager;
-import com.iconloop.score.util.OwnerManagerImpl;
+import com.iconloop.btp.lib.OwnerManager;
+import com.iconloop.btp.lib.OwnerManagerImpl;
+import com.iconloop.score.token.irc31.IRC31Basic;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -25,7 +26,7 @@ import score.annotation.External;
 
 import java.math.BigInteger;
 
-public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31Supplier, OwnerManager {
+public class OwnerBasedIRC31Supplier extends IRC31Basic implements IRC31Supplier, OwnerManager {
 
     private final DictDB<BigInteger, BigInteger> supplies = Context.newDictDB("supplies", BigInteger.class);
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
@@ -46,7 +47,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
 
         supplies.set(_id, supplies.getOrDefault(_id, BigInteger.ZERO).add(_amount));
 
-        super.mint(Context.getCaller(), _id, _amount);
+        super._mint(Context.getCaller(), _id, _amount);
     }
 
     @External
@@ -64,7 +65,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
             supplies.set(id, supplies.getOrDefault(id, BigInteger.ZERO).add(amount));
         }
 
-        super.mintBatch(_owner, _ids, _amounts);
+        super._mintBatch(_owner, _ids, _amounts);
     }
 
     @External
@@ -77,7 +78,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
         Context.require(supply != null);
         supplies.set(_id, supply.subtract(_amount));
 
-        super.burn(_owner, _id, _amount);
+        super._burn(_owner, _id, _amount);
     }
 
     @External
@@ -98,7 +99,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
             supplies.set(id, supply.subtract(amount));
         }
 
-        super.burnBatch(_owner, _ids, _amounts);
+        super._burnBatch(_owner, _ids, _amounts);
     }
 
     @External
@@ -107,7 +108,7 @@ public class OwnerBasedIRC31SupplierImpl extends AbstractIRC31 implements IRC31S
         //"Uri should be set"
         Context.require(!_uri.isEmpty());
 
-        super.setTokenURI(_id, _uri);
+        super._setTokenURI(_id, _uri);
     }
 
     /* Delegate OwnerManager */

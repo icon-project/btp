@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.token.irc31;
+package com.iconloop.btp.nativecoin.irc31;
 
+import com.iconloop.score.token.irc31.IRC31;
 import score.Address;
+import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
 
-public interface IRC31Supplier extends IRC31, IRC31Metadata {
+public interface IRC31Supplier extends IRC31 {
+
     /**
      * Returns total amount of tokens in with a given id
      *
@@ -80,4 +83,16 @@ public interface IRC31Supplier extends IRC31, IRC31Metadata {
     @External
     void setTokenURI(BigInteger _id, String _uri);
 
+    //Annotate for ScoreInterface generation
+    @EventLog
+    void TransferSingle(Address _operator, Address _from, Address _to, BigInteger _id, BigInteger _value);
+
+    @EventLog
+    void TransferBatch(Address _operator, Address _from, Address _to, byte[] _ids, byte[] _values);
+
+    @EventLog
+    void ApprovalForAll(Address _owner, Address _operator, boolean _approved);
+
+    @EventLog
+    void URI(BigInteger _id, String _value);
 }

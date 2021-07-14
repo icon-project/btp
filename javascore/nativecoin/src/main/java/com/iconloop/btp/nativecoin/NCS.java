@@ -158,4 +158,5 @@ public interface NCS {
      */
     @External(readonly = true)
     String getFeeRate();
+
 }

@@ -5,8 +5,7 @@ dependencies {
     implementation("foundation.icon:javaee-scorex:$scorexVersion")
     implementation project(':score-util')
     implementation project(':lib')
-//    implementation("com.github.sink772:javaee-tokens:0.5.4")
-    implementation project(':javaee-tokens')
+    implementation("com.github.sink772:javaee-tokens:0.6.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
@@ -19,7 +18,19 @@ optimizedJar {
 //    archivesBaseName = 'nativecoin'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+    } { exclude "score/*" }
+    enableDebug = !rootProject.hasProperty("release")
+}
+
+import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
+
+task optimizedJarIRC31(type: OptimizedJar) {
+    mainClassName = 'com.iconloop.btp.nativecoin.irc31.OwnerBasedIRC31Supplier'
+    archiveName("irc31-" + archiveVersion.get() + "." + archiveExtension.get());
+    from { sourceSets.main.output }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
     enableDebug = !rootProject.hasProperty("release")
 }
 

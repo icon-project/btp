@@ -17,8 +17,8 @@
 package com.iconloop.btp.nativecoin;
 
 import com.iconloop.btp.lib.*;
+import com.iconloop.btp.nativecoin.irc31.IRC31SupplierScoreInterface;
 import com.iconloop.score.token.irc31.IRC31Receiver;
-import com.iconloop.score.token.irc31.IRC31SupplierScoreInterface;
 import com.iconloop.score.util.*;
 import score.*;
 import score.annotation.EventLog;
