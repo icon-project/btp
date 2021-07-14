@@ -440,10 +440,6 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 func (b *BTP) updateReceiptProofs(rm *chain.RelayMessage, rxSeq int64) {
 	rrp := 0
 	for j, rp := range rm.ReceiptProofs {
-		// only update on have Events or EventProofs
-		if len(rp.Events) == 0 || len(rp.EventProofs) == 0 {
-			continue
-		}
 		revt := rxSeq - rp.Events[0].Sequence + 1
 		if revt < 1 {
 			break

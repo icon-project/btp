@@ -21,7 +21,8 @@ type Receiver struct {
 		RelayEndpoint string
 	}
 
-	isfoundSendMessageEvent bool
+	rxSeq                       uint64
+	isFoundMessageEventByOffset bool
 }
 
 func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
@@ -84,6 +85,11 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 	rps := make([]*chain.ReceiptProof, 0)
 
 	if len(v.Events.EVM_Log) > 0 {
+		rp := &chain.ReceiptProof{}
+		rp.Height = int64(v.Height)
+
+		foundMessageEvent := false
+
 		for _, e := range v.Events.EVM_Log {
 			a := e.Log.Address.Hex()
 			ua := r.src.ContractAddress()
@@ -92,60 +98,70 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				continue
 			}
 
-			if r.c.IsSendMessageEvent(e) {
-				key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
-				if err != nil {
-					return nil, err
+			var evt *chain.Event
+			if mevent, err := r.c.bmc.ParseMessage(e.EvmLog()); err == nil {
+				foundMessageEvent = true
+				evt.Message = mevent.Msg
+				evt.Next = chain.BtpAddress(mevent.Next)
+				evt.Sequence = mevent.Seq.Int64()
+				if evt.Sequence == int64(r.rxSeq) {
+					r.isFoundMessageEventByOffset = true
 				}
-
-				proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
-				if err != nil {
-					return nil, err
-				}
-
-				proofs := [][]byte{}
-				for _, p := range proof.Proof {
-					bp, err := types.HexDecodeString(p)
-					if err != nil {
-						return nil, err
-					}
-					proofs = append(proofs, bp)
-				}
-
-				duplicate := false
-
-				for _, rp := range rps {
-					if rp.Height == int64(v.Height) {
-						duplicate = true
-						break
-					}
-				}
-
-				if !duplicate {
-					rp := &chain.ReceiptProof{}
-					rp.Height = int64(v.Height)
-					if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
-						Key:   key,
-						Value: proofs,
-					}); err != nil {
-						return nil, err
-					}
-
-					rps = append(rps, rp)
-					r.isfoundSendMessageEvent = true
-				}
-				continue
+				rp.Events = append(rp.Events, evt)
 			}
+		}
+
+		if foundMessageEvent {
+			key, proofs, err := r.getProofs(v)
+			if err != nil {
+				return nil, err
+			}
+
+			rp := &chain.ReceiptProof{}
+			rp.Height = int64(v.Height)
+			if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
+				Key:   key,
+				Value: proofs,
+			}); err != nil {
+				return nil, err
+			}
+
+			rps = append(rps, rp)
 		}
 	}
 
 	return rps, nil
 }
 
+func (r *Receiver) getProofs(v *BlockNotification) (SubstrateStorageKey, [][]byte, error) {
+	key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	proofs := [][]byte{}
+	for _, p := range proof.Proof {
+		bp, err := types.HexDecodeString(p)
+		if err != nil {
+			return nil, nil, err
+		}
+		proofs = append(proofs, bp)
+	}
+
+	return key, proofs, nil
+}
+
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
 	if seq < 1 {
-		r.isfoundSendMessageEvent = true
+		r.isFoundMessageEventByOffset = true
 	}
+
+	r.rxSeq = uint64(seq)
 
 	if err := r.c.MonitorBlock(uint64(height), true, func(v *BlockNotification) error {
 		var err error
@@ -157,7 +173,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 
 		if sp, err = r.newReceiptProofs(v); err != nil {
 			return err
-		} else if r.isfoundSendMessageEvent {
+		} else if r.isFoundMessageEventByOffset {
 			cb(bu, sp)
 		} else {
 			cb(bu, nil)
