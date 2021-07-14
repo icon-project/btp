@@ -13,7 +13,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'com.iconloop.btp.bmc.BTPMessageCenter'
+    mainClassName = 'foundation.icon.btp.bmc.BTPMessageCenter'
 //    archivesBaseName = 'bmc'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

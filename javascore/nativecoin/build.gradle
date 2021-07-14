@@ -14,7 +14,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'com.iconloop.btp.nativecoin.NativeCoinService'
+    mainClassName = 'foundation.icon.btp.nativecoin.NativeCoinService'
 //    archivesBaseName = 'nativecoin'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -25,7 +25,7 @@ optimizedJar {
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
 
 task optimizedJarIRC31(type: OptimizedJar) {
-    mainClassName = 'com.iconloop.btp.nativecoin.irc31.OwnerBasedIRC31Supplier'
+    mainClassName = 'foundation.icon.btp.nativecoin.irc31.OwnerBasedIRC31Supplier'
     archiveName("irc31-" + archiveVersion.get() + "." + archiveExtension.get());
     from { sourceSets.main.output }
     from {
