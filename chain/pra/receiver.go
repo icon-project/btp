@@ -86,10 +86,8 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 	if len(v.Events.EVM_Log) > 0 {
 		rp := &chain.ReceiptProof{}
-		rp.Height = int64(v.Height)
 
 		foundMessageEvent := false
-
 		for _, e := range v.Events.EVM_Log {
 			a := e.Log.Address.Hex()
 			ua := r.src.ContractAddress()
@@ -98,7 +96,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				continue
 			}
 
-			var evt *chain.Event
+			evt := &chain.Event{}
 			if mevent, err := r.c.bmc.ParseMessage(e.EvmLog()); err == nil {
 				foundMessageEvent = true
 				evt.Message = mevent.Msg
@@ -112,13 +110,12 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 		}
 
 		if foundMessageEvent {
+			rp.Height = int64(v.Height)
 			key, proofs, err := r.getProofs(v)
 			if err != nil {
 				return nil, err
 			}
 
-			rp := &chain.ReceiptProof{}
-			rp.Height = int64(v.Height)
 			if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
 				Key:   key,
 				Value: proofs,
