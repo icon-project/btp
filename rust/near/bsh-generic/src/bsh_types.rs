@@ -6,6 +6,14 @@ use near_sdk::serde::{Deserialize, Serialize};
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum BshEvents<'a> {
+    SetOwnership {
+        promoter: &'a str,
+        new_owner: &'a str,
+    },
+    RemoveOwnership {
+        remover: &'a str,
+        former_owner: &'a str,
+    },
     /// Sends a receipt to user
     TransferStart {
         from: &'a str,

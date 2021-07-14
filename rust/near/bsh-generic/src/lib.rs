@@ -34,13 +34,17 @@
     unused_results
 )]
 
-mod bsh_types;
+pub mod bsh_types;
 pub use bsh_types::*;
+pub use bsh_types::{self as other_bsh_types};
 
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
+
+/// Re-export types for specific BSH contracts
+pub use bsh_types::*;
 
 setup_alloc!();
 metadata! {
