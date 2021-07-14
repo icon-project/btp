@@ -31,6 +31,7 @@ public class Auction {
 
     public Auction(BigInteger _tokenAmount, Address _bidder, BigInteger _bidAmount, long _startTime) {
         this.id = FeeAggregationSCORE.auctionCount.getOrDefault(BigInteger.ZERO).add(BigInteger.ONE);
+        FeeAggregationSCORE.auctionCount.set(this.id);
         this.tokenAmount = _tokenAmount;
         this.bidAmount = _bidAmount;
         this.bidder = _bidder;

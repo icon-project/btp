@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./interfaces/IBMV.sol";
-import "./interfaces/IBMC.sol";
+import "./interfaces/IDataValidator.sol";
 
 import "./libraries/LibBase64.sol";
 import "./libraries/LibMTA.sol";
@@ -12,7 +12,9 @@ import "./libraries/LibTypes.sol";
 import "./libraries/LibMsgDecoder.sol";
 import "./libraries/LibVerifier.sol";
 
-contract BMV is IBMV {
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+
+contract BMV is IBMV, Initializable {
     using LibMerkleTreeAccumulator for LibMerkleTreeAccumulator.MTA;
     using LibMerkleTreeAccumulator for bytes;
     using LibString for string;
@@ -20,37 +22,38 @@ contract BMV is IBMV {
     using LibBase64 for bytes;
     using LibBase64 for string;
     using LibMsgDecoder for bytes;
-    using LibMsgDecoder for string;
     using LibMsgDecoder for LibTypes.Validators;
-    using LibMsgDecoder for LibTypes.EventLog;
     using LibVerifier for LibTypes.BlockUpdate;
     using LibVerifier for LibTypes.BlockProof;
-    using LibVerifier for LibTypes.ReceiptProof;
 
     address private bmcAddr;
+    address private subBmvAddr;
     string private netAddr;
     uint256 private lastBlockHeight;
-    bytes32 private lastBlockHash;
+    bytes32 internal lastBlockHash;
     LibTypes.Validators private validators;
-    LibMerkleTreeAccumulator.MTA private mta;
-    IBMC private bmc;
-    bytes[] private msgs;
+    LibMerkleTreeAccumulator.MTA internal mta;
 
-    constructor(
+    function initialize(
         address _bmcAddr,
+        address _subBmvAddr,
         string memory _netAddr,
-        string memory _validators,
+        bytes memory _rlpValidators,
         uint256 _offset,
+        uint256 _rootsSize,
+        uint256 _cacheSize,
         bytes32 _lastBlockHash
-    ) {
+    ) public initializer {
         bmcAddr = _bmcAddr;
+        subBmvAddr = _subBmvAddr;
         netAddr = _netAddr;
-        validators.decodeValidators(_validators.decode());
+        validators.decodeValidators(_rlpValidators);
         mta.setOffset(_offset);
+        mta.rootsSize = _rootsSize;
+        mta.cacheSize = _cacheSize;
+        mta.isAllowNewerWitness = true;
+        lastBlockHeight = _offset;
         lastBlockHash = _lastBlockHash;
-
-        bmc = IBMC(_bmcAddr);
-        bmc.addVerifier(_netAddr, address(this));
     }
 
     /**
@@ -112,75 +115,76 @@ contract BMV is IBMV {
         returns (bytes32 receiptHash, uint256 lastHeight)
     {
         for (uint256 i = 0; i < relayMsg.blockUpdates.length; i++) {
-            // // verify prev block hash
-            // if (i == 0)
-            //     require(
-            //         relayMsg.blockUpdates[i].blockHeader.prevHash ==
-            //             lastBlockHash,
-            //         "BMVRevertInvalidBlockUpdate: Invalid block hash"
-            //     );
-            // else {
-            //     require(
-            //         relayMsg.blockUpdates[i].blockHeader.prevHash ==
-            //             relayMsg.blockUpdates[i - 1].blockHeader.blockHash,
-            //         "BMVRevertInvalidBlockUpdate: Invalid block hash"
-            //     );
-            // }
+            // verify prev block hash
+            if (i == 0)
+                require(
+                    relayMsg.blockUpdates[i].blockHeader.prevHash ==
+                        lastBlockHash,
+                    "BMVRevertInvalidBlockUpdate: Invalid block hash"
+                );
+            else {
+                require(
+                    relayMsg.blockUpdates[i].blockHeader.prevHash ==
+                        relayMsg.blockUpdates[i - 1].blockHeader.blockHash,
+                    "BMVRevertInvalidBlockUpdate: Invalid block hash"
+                );
+            }
 
-            // // verify height
-            // require(
-            //     relayMsg.blockUpdates[i].blockHeader.height >= mta.height + 1,
-            //     "BMVRevertInvalidBlockUpdateHigher"
-            // );
+            // verify height
+            require(
+                relayMsg.blockUpdates[i].blockHeader.height <= mta.height + 1,
+                "BMVRevertInvalidBlockUpdateHigher"
+            );
 
-            // require(
-            //     relayMsg.blockUpdates[i].blockHeader.height < mta.height + 1,
-            //     "BMVRevertInvalidBlockUpdateLower"
-            // );
+            require(
+                relayMsg.blockUpdates[i].blockHeader.height == mta.height + 1,
+                "BMVRevertInvalidBlockUpdateLower"
+            );
 
-            // only verify validators of last block for saving gas
             if (i == relayMsg.blockUpdates.length - 1) {
-                // require(
-                //     relayMsg.blockUpdates[i].verifyValidators(validators),
-                //     "BMV Exception: Invalid validators in block updates"
-                // );
                 receiptHash = relayMsg.blockUpdates[i]
                     .blockHeader
-                    .spr
+                    .result
                     .receiptHash;
                 lastHeight = relayMsg.blockUpdates[i].blockHeader.height;
                 lastBlockHash = relayMsg.blockUpdates[i].blockHeader.blockHash;
             }
 
-            delete validators;
-            if (relayMsg.blockUpdates[i].nextValidators.length > 0)
-                validators.decodeValidators(
-                    relayMsg.blockUpdates[i].nextValidatorsRlp
-                );
+            if (
+                validators.validatorsHash !=
+                relayMsg.blockUpdates[i].nextValidatorsHash ||
+                i == relayMsg.blockUpdates.length - 1
+            ) {
+                if (relayMsg.blockUpdates[i].verifyValidators(validators)) {
+                    delete validators;
+                    validators.decodeValidators(
+                        relayMsg.blockUpdates[i].nextValidatorsRlp
+                    );
+                }
+            }
+
             mta.add(relayMsg.blockUpdates[i].blockHeader.blockHash);
         }
 
-        if (relayMsg.blockProof.blockWitness.witnesses.length != 0) {
+        if (!relayMsg.isBPEmpty) {
             relayMsg.blockProof.verifyMTAProof(mta);
-            receiptHash = relayMsg.blockProof.blockHeader.spr.receiptHash;
+            receiptHash = relayMsg.blockProof.blockHeader.result.receiptHash;
             lastHeight = relayMsg.blockProof.blockHeader.height;
         }
 
         return (receiptHash, lastHeight);
     }
 
-    function checkAccessible(string memory currentAddr, string memory fromAddr)
-        internal
-        view
-    {
-        string memory net;
-        string memory contractAddr;
-        (net, ) = fromAddr.splitBTPAddress();
-        require(netAddr.compareTo(net), "BMVRevert: Invalid previous BMC");
+    function checkAccessible(
+        string memory _currentAddr,
+        string memory _fromAddr
+    ) internal view {
+        (string memory _net, ) = _fromAddr.splitBTPAddress();
+        require(netAddr.compareTo(_net), "BMVRevert: Invalid previous BMC");
         require(msg.sender == bmcAddr, "BMVRevert: Invalid BMC");
-        (, contractAddr) = currentAddr.splitBTPAddress();
+        (, string memory _contractAddr) = _currentAddr.splitBTPAddress();
         require(
-            contractAddr.compareTo(bmcAddr.addressToString(false)),
+            _contractAddr.parseAddress() == bmcAddr,
             "BMVRevert: Invalid BMC"
         );
     }
@@ -203,47 +207,28 @@ contract BMV is IBMV {
     ) external override returns (bytes[] memory) {
         checkAccessible(_bmc, _prev);
 
+        bytes memory _serializedMsg = _msg.decode();
         LibTypes.RelayMessage memory relayMsg =
-            _msg.decode().decodeRelayMessage();
-        if (relayMsg.blockUpdates.length == 0 && relayMsg.isBPEmpty)
-            revert(
-                "BMVRevert: Invalid relay message - not exists BlockUpdate or BlockProof"
+            _serializedMsg.decodeRelayMessage();
+
+        require(
+            relayMsg.blockUpdates.length != 0 || !relayMsg.isBPEmpty,
+            "BMVRevert: Invalid relay message"
+        );
+
+        (bytes32 _receiptHash, uint256 _lastHeight) =
+            getLastReceiptHash(relayMsg);
+
+        bytes[] memory msgs =
+            IDataValidator(subBmvAddr).validateReceipt(
+                _bmc,
+                _prev,
+                _seq,
+                _serializedMsg,
+                _receiptHash
             );
 
-        bytes32 receiptHash;
-        uint256 lastHeight;
-        (receiptHash, lastHeight) = getLastReceiptHash(relayMsg);
-
-        uint256 nextSeq = _seq + 1;
-        LibTypes.Receipt memory receipt;
-        LibTypes.MessageEvent memory messageEvent;
-        string memory contractAddr;
-        if (msgs.length > 0) delete msgs;
-        for (uint256 i = 0; i < relayMsg.receiptProof.length; i++) {
-            receipt = relayMsg.receiptProof[i].verifyMPTProof(receiptHash);
-            for (uint256 j = 0; j < receipt.eventLogs.length; j++) {
-                (, contractAddr) = _prev.splitBTPAddress();
-                if (!receipt.eventLogs[j].addr.compareTo(contractAddr))
-                    continue;
-                messageEvent = receipt.eventLogs[j].toMessageEvent();
-                if (bytes(messageEvent.nextBmc).length != 0) {
-                    if (messageEvent.seq > nextSeq)
-                        revert("BMVRevertInvalidSequenceHigher");
-                    else if (messageEvent.seq < nextSeq)
-                        revert("BMVRevertInvalidSequence");
-                    else if (
-                        // TODO: pending for integration test
-                        // messageEvent.nextBmc.compareTo(_bmc)
-                        bytes(messageEvent.nextBmc).length > 0
-                    ) {
-                        msgs.push(messageEvent.message);
-                        nextSeq += 1;
-                    }
-                }
-            }
-        }
-
-        if (msgs.length > 0) lastBlockHeight = lastHeight;
+        if (msgs.length > 0) lastBlockHeight = _lastHeight;
         return msgs;
     }
 }

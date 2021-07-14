@@ -11,3 +11,8 @@ bin/
 **/**/node_modules/
 
 /testnet/goloop/pyscore/*.zip
+.gradle/*
+javascore/bmv/godWallet.json
+**/**/Module/*
+EventDecoder.java
+metaData.json

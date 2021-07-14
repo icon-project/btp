@@ -2,6 +2,7 @@ package foundation.icon.btp.cases;
 
 import foundation.icon.btp.*;
 import foundation.icon.btp.score.FeeAggregationScore;
+import foundation.icon.btp.score.SampleMultiTokenScore;
 import foundation.icon.btp.score.SampleTokenScore;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
@@ -22,17 +23,18 @@ public class FeeAggregationSCORETest extends TestBase {
     private static KeyWallet[] wallets;
     private static KeyWallet ownerWallet;
     private static SampleTokenScore tokenScore;
+    private static SampleMultiTokenScore irc31TokenScore;
     private static FeeAggregationScore feeAggregationScore;
 
     @BeforeAll
     static void setup() throws Exception {
         Env.Chain chain = Env.getDefaultChain();
         OkHttpClient ohc = new OkHttpClient.Builder().build();
-        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3), 3));
+        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL()));
         txHandler = new TransactionHandler(iconService, chain);
 
         // init wallets
-        wallets = new KeyWallet[5];
+        wallets = new KeyWallet[6];
         BigInteger amount = ICX.multiply(BigInteger.valueOf(200));
         for (int i = 0; i < wallets.length; i++) {
             wallets[i] = KeyWallet.create();
@@ -49,6 +51,10 @@ public class FeeAggregationSCORETest extends TestBase {
         tokenScore = SampleTokenScore.mustDeploy(txHandler, ownerWallet,
                 decimals, initialSupply);
 
+        // Deploy multi-token SCORE && mint token
+        irc31TokenScore = SampleMultiTokenScore.mustDeploy(txHandler, ownerWallet);
+        irc31TokenScore.mintToken(ownerWallet);
+
         // Deploy FAS
         feeAggregationScore = FeeAggregationScore.mustDeploy(txHandler, ownerWallet);
 
@@ -58,8 +64,17 @@ public class FeeAggregationSCORETest extends TestBase {
         tokenScore.ensureTransfer(resultOfTransfer10TokenToFAS, ownerWallet.getAddress(), feeAggregationScore.getAddress(), ICX.multiply(BigInteger.TEN), null);
         LOG.infoExiting();
 
-        LOG.infoEntering("call", "register() - register " + SampleTokenScore.NAME);
-        feeAggregationScore.ensureRegisterSuccess(ownerWallet, SampleTokenScore.NAME, tokenScore.getAddress());
+        LOG.infoEntering("transfer multi-token", "100000 " + SampleMultiTokenScore.ID + " to FeeAggregationSCORE");
+        TransactionResult resultOfTransfer100000MultiTokenToFAS = irc31TokenScore.transfer(ownerWallet, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(100000), null);
+        irc31TokenScore.ensureTransfer(resultOfTransfer100000MultiTokenToFAS, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(100000), null);
+        LOG.infoExiting();
+
+        LOG.infoEntering("call", "registerIRC2() - register " + SampleTokenScore.NAME);
+        feeAggregationScore.ensureRegisterIRC2Success(ownerWallet, SampleTokenScore.NAME, tokenScore.getAddress());
+        LOG.infoExiting();
+
+        LOG.infoEntering("call", "registerIRC31() - register IRC31 Token " + SampleMultiTokenScore.NAME);
+        feeAggregationScore.ensureRegisterIRC31Success(ownerWallet, SampleMultiTokenScore.NAME, irc31TokenScore.getAddress(), SampleMultiTokenScore.ID);
         LOG.infoExiting();
     }
 
@@ -165,8 +180,8 @@ public class FeeAggregationSCORETest extends TestBase {
     void scenario4Test() throws Exception {
         KeyWallet userC = wallets[3];
         String tokenNameB = "SampleTokenB";
-        LOG.infoEntering("call", "register() - register " + tokenNameB);
-        feeAggregationScore.ensureRegisterSuccess(ownerWallet, "tokenNameB", tokenScore.getAddress());
+        LOG.infoEntering("call", "registerIRC2() - register " + tokenNameB);
+        feeAggregationScore.ensureRegisterIRC2Success(ownerWallet, "tokenNameB", tokenScore.getAddress());
         LOG.infoExiting();
 
         // UserC bid 100 ICX for 0 SampleTokenB
@@ -197,23 +212,74 @@ public class FeeAggregationSCORETest extends TestBase {
     }
 
     /**
+     * Scenario 6: if User submits a bid for the auction ended to the Fee Aggregation system
+     *
+     * Given:
+     *      - There are 100000 MyIRC31SampleToken in the Fee Aggregation system and ended
+     *      - Winner of the ended auction is UserC
+     *      - TokenName MyIRC31SampleToken available balance is 150000
+     *      - UserD has 200 ICX
+     * When:
+     *      - UserD send the request to bid for TokenName MyIRC31SampleToken by 100 ICX to the Fee Aggregation system
+     * Then:
+     *      - Transfer 100000 TokenName MyIRC31SampleToken to winner UserC
+     *      - Start a new auction for 50000 (150000 - 100000) TokenName MyIRC31SampleToken
+     *      - UserD bid for new auction
+     */
+    @Test
+    void scenario6Test() throws Exception {
+        KeyWallet userC = wallets[3];
+        KeyWallet userD = wallets[4];
+
+        feeAggregationScore.ensureSetDurationSuccess(ownerWallet, BigInteger.valueOf(1000));
+
+        // UserC bid 100 ICX for 100000 MyIRC31SampleToken
+        LOG.infoEntering("transact", "bid() - UserC deposit 100 ICX to bid 100000 " + SampleMultiTokenScore.NAME);
+        feeAggregationScore.ensureBidSuccess(txHandler, userC, SampleMultiTokenScore.NAME, ICX.multiply(BigInteger.valueOf(100)));
+
+        LOG.infoEntering("transfer more multi-token", "50000 " + SampleMultiTokenScore.ID + " to FeeAggregationSCORE");
+        TransactionResult resultOfTransfer50000MultiTokenToFAS = irc31TokenScore.transfer(ownerWallet, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(50000), null);
+        irc31TokenScore.ensureTransfer(resultOfTransfer50000MultiTokenToFAS, ownerWallet.getAddress(), feeAggregationScore.getAddress(), SampleMultiTokenScore.ID, BigInteger.valueOf(50000), null);
+        LOG.infoExiting();
+
+        feeAggregationScore.ensureSetDurationSuccess(ownerWallet, BigInteger.valueOf(1000*3600*12));
+
+        // UserD bid 150 ICX for this below ended auction
+        LOG.infoEntering("transact", "bid() - UserD deposit 150 ICX to bid 50000 " + SampleMultiTokenScore.NAME + " and start new auction");
+        feeAggregationScore.ensureBidSuccess(txHandler, userD, SampleMultiTokenScore.NAME, ICX.multiply(BigInteger.valueOf(150)));
+
+        // UserC remain less than (200 - 100) ICX
+        BigInteger balanceICXOfC = txHandler.getBalance(userC.getAddress());
+        assertNotEquals(balanceICXOfC.compareTo(ICX.multiply(BigInteger.valueOf(100))), 1);
+
+        // UserC receive 100000 MyIRC31SampleToken
+        BigInteger balanceTokenOfC = irc31TokenScore.balanceOf(userC.getAddress(), SampleMultiTokenScore.ID);
+        assertNotEquals(balanceTokenOfC.compareTo(BigInteger.valueOf(100000)), 1);
+
+        // UserD remain less than (200 - 150) ICX
+        BigInteger balanceICXOfD = txHandler.getBalance(userD.getAddress());
+        assertNotEquals(balanceICXOfD.compareTo(ICX.multiply(BigInteger.valueOf(50))), 1);
+        feeAggregationScore.ensureAuctionInfo(userD, SampleMultiTokenScore.NAME, ICX.multiply(BigInteger.valueOf(150)), userD.getAddress());
+    }
+
+    /**
      * Scenario 7: if User submits a bid value not 10% higher than the current highest bid of the auction to the Fee Aggregation system
      *
      * Given:
-     *      - The current highest bid is 150 ICX for 10 SampleToken by UserB
-     *      - UserC has 200 ICX
+     *      - The current highest bid is 150 ICX for 50000 MyIRC31SampleToken by UserD
+     *      - UserE has 200 ICX
      * When:
-     *      - UserC send the request to bid for 10 SampleToken by 160 ICX to the Fee Aggregation system
+     *      - UserE send the request to bid for 50000 MyIRC31SampleToken by 160 ICX to the Fee Aggregation system
      * Then:
      *      - Transaction Revert
      */
     @Test
     void scenario7Test() {
-        KeyWallet userC = wallets[3];
+        KeyWallet userE = wallets[5];
 
-        // UserC bid 160 ICX for 10 SampleToken
-        LOG.infoEntering("transact", "bid() - UserC deposit 90 ICX to bid 10 " + SampleTokenScore.NAME);
-        assertThrows(TransactionFailureException.class, () -> feeAggregationScore.ensureBidSuccess(txHandler, userC, SampleTokenScore.NAME, ICX.multiply(BigInteger.valueOf(160))));
+        // UserE bid 160 ICX for 50000 MyIRC31SampleToken
+        LOG.infoEntering("transact", "bid() - UserE deposit 160 ICX to bid 50000 " + SampleMultiTokenScore.NAME);
+        assertThrows(TransactionFailureException.class, () -> feeAggregationScore.ensureBidSuccess(txHandler, userE, SampleMultiTokenScore.NAME, ICX.multiply(BigInteger.valueOf(160))));
         LOG.infoExiting("Transaction Revert");
     }
 }

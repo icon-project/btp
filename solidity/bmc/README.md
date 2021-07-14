@@ -6,9 +6,9 @@ v15.12.0
 ```
 Install tools
 ```
-$ npm install --global yarn truffle ganache-cli
+$ npm install --global yarn truffle@5.3.0
 ```
-Install dev dependencies
+Install dependencies
 ```
 $ yarn
 ```
@@ -16,9 +16,19 @@ $ yarn
 ## Test
 1. Run in a background process or seperate terminal window
 ```
-$ ganache-cli -l 12000000 --allowUnlimitedContractSize
+$ docker run --rm -p 9933:9933 -p 9944:9944 purestake/moonbeam:v0.9.2 --dev --ws-external --rpc-external
 ```
-2. Run test
+2. Compile contracts
+```
+$ yarn contract:compile
+```
+3. Run unit and integration test
 ```
 $ yarn test
 ```
+-  Run specific test
+```
+$ yarn test:unit
+$ yarn test:integration
+```
+

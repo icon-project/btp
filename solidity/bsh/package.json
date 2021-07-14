@@ -1,9 +1,14 @@
 {
   "name": "pra-bsh",
   "version": "1.0.0",
-  "license": "MIT",
-  "devDependencies": {
+  "license": "Apache-2.0",
+  "dependencies": {
     "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
+    "@openzeppelin/truffle-upgrades": "^1.7.0",
+    "@truffle/hdwallet-provider": "^1.4.1"
+  },
+  "devDependencies": {
     "chai": "^4.3.4",
     "husky": "^6.0.0",
     "prettier": "^2.2.1",
@@ -16,9 +21,11 @@
   "scripts": {
     "linter": "./node_modules/.bin/solhint -f table ./contracts/**/*.sol -f table ./contracts/*.sol",
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l",
-    "compile": "truffle compile",
-    "migrate": "truffle migrate",
-    "test": "truffle test"
+    "contract:compile": "truffle compile --all",
+    "test": "yarn test:unit && yarn test:integration",
+    "test:unit": "rm -rf .openzeppelin && truffle test test/unit/*.js",
+    "test:integration" : "rm -rf .openzeppelin && truffle test test/integration/*.js"
+
   },
   "husky": {
     "hooks": {

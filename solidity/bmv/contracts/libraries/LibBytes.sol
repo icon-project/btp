@@ -1,14 +1,10 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
 library LibBytes {
     using LibBytes for bytes;
 
-    function bytesToBytes32(bytes memory b)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function bytesToBytes32(bytes memory b) internal pure returns (bytes32) {
         bytes32 out;
         if (b.length != 0)
             for (uint256 i = 0; i < 32; i++) {
@@ -33,7 +29,7 @@ library LibBytes {
         pure
         returns (uint256)
     {
-        require(b.length >= start + 1, "toUint8_outOfBounds");
+        require(b.length >= start + 1);
         uint8 tempUint;
 
         assembly {
@@ -55,8 +51,8 @@ library LibBytes {
     ) internal pure returns (bytes memory result) {
         // Ensure that the from and to positions are valid positions for a slice within
         // the byte array that is being used.
-        require(from <= to, "From <= to required");
-        require(to <= b.length, "To <= length required");
+        require(from <= to);
+        require(to <= b.length);
 
         // Create a new bytes structure and copy contents
         result = new bytes(to - from);

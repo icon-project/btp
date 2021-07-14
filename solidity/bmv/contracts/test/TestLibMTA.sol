@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -57,7 +57,7 @@ contract TestLibMTA {
         bytes32 leaf,
         uint256 height,
         uint256 at
-    ) public view {
+    ) public {
         mta.verify(proof, leaf, height, at);
     }
 

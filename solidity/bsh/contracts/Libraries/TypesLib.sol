@@ -97,9 +97,9 @@ library Types {
     struct PendingTransferCoin {
         string from;
         string to;
-        string coinName;
-        uint256 value;
-        uint256 fee;
+        string[] coinNames;
+        uint256[] amounts;
+        uint256[] fees;
     }
 
     struct TransferCoin {
@@ -133,7 +133,6 @@ library Types {
         uint256 id;
         string symbol;
         uint256 decimals;
-        uint256 feeNumerator;        
     }
 
     struct Balance {
@@ -174,36 +173,34 @@ library Types {
 
     struct Link {
         address[] relays; //  Address of multiple Relays handle for this link network
-        string[] reachable; //  A BTP Address of the next BMC that can be reach using this link
-        uint rxSeq;
-        uint txSeq;
-        uint blockIntervalSrc;
-        uint blockIntervalDst;
-        uint maxAggregation;
-        uint delayLimit;
-        uint relayIdx;
-        uint rotateHeight;
-        uint rxHeight;
-        uint rxHeightSrc;
-
+        uint256 rxSeq;
+        uint256 txSeq;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 maxAggregation;
+        uint256 delayLimit;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rxHeight;
+        uint256 rxHeightSrc;
         bool isConnected;
     }
 
     struct LinkStats {
-        uint rxSeq;
-        uint txSeq;
+        uint256 rxSeq;
+        uint256 txSeq;
         VerifierStats verifier;
         RelayStats[] relays;
-        uint relayIdx;
-        uint rotateHeight;
-        uint rotateTerm;
-        uint delayLimit;
-        uint maxAggregation;
-        uint rxHeightSrc;
-        uint rxHeight;
-        uint blockIntervalSrc;
-        uint blockIntervalDst;
-        uint currentHeight;
+        uint256 relayIdx;
+        uint256 rotateHeight;
+        uint256 rotateTerm;
+        uint256 delayLimit;
+        uint256 maxAggregation;
+        uint256 rxHeightSrc;
+        uint256 rxHeight;
+        uint256 blockIntervalSrc;
+        uint256 blockIntervalDst;
+        uint256 currentHeight;
     }
 
     struct RelayStats {
@@ -216,7 +213,7 @@ library Types {
         string src; //  an address of BMC (i.e. btp://1234.PARA/0x1234)
         string dst; //  an address of destination BMC
         string svc; //  service name of BSH
-        uint256 sn; //  sequence number of BMC
+        int256 sn; //  sequence number of BMC
         bytes message; //  serializef Service Message from BSH
     }
 
@@ -230,9 +227,13 @@ library Types {
         Connection conn;
     }
 
-    struct GatherFeeMessage {
-        string fa;          //  BTP address of Fee Aggregator
-        string[] svcs;      //  a list of services
+    struct BMCService {
+        string serviceType;
+        bytes payload;
     }
 
+    struct GatherFeeMessage {
+        string fa; //  BTP address of Fee Aggregator
+        string[] svcs; //  a list of services
+    }
 }

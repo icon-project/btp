@@ -6,7 +6,11 @@ pragma solidity >=0.5.0 <0.8.0;
 contract NonRefundable {
     function deposit() external payable {}
 
-    function transfer(address _bsh, string calldata _to, uint _amt) external {
+    function transfer(
+        address _bsh,
+        string calldata _to,
+        uint256 _amt
+    ) external {
         _bsh.call{value: _amt}(
             abi.encodeWithSignature("transfer(string)", _to)
         );

@@ -2,30 +2,24 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
-import "../NativeCoinBSH.sol";
+import "../Interfaces/IBSHPeriphery.sol";
+import "../Interfaces/IBSHCore.sol";
+import "../Libraries/StringsLib.sol";
 
 contract Holder is ERC1155Holder {
-    NativeCoinBSH private bsh;
+    IBSHPeriphery private bshp;
+    IBSHCore private bshc;
+    using Strings for string;
 
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    // function supportsInterface(bytes4 interfaceId)
-    //     public
-    //     view
-    //     virtual
-    //     override(ERC1155Receiver)
-    //     returns (bool)
-    // {
-    //     return ERC1155Receiver.supportsInterface(interfaceId);
-    // }
+    function deposit() external payable {}
 
-    function addBSHContract(address _bsh) external {
-        bsh = NativeCoinBSH(_bsh);
+    function addBSHContract(address _bshp, address _bshc) external {
+        bshp = IBSHPeriphery(_bshp);
+        bshc = IBSHCore(_bshc);
     }
 
     function setApprove(address _operator) external {
-        bsh.setApprovalForAll(_operator, true);
+        bshc.setApprovalForAll(_operator, true);
     }
 
     function callTransfer(
@@ -33,6 +27,42 @@ contract Holder is ERC1155Holder {
         uint256 _value,
         string calldata _to
     ) external {
-        bsh.transfer(_coinName, _value, _to);
+        bshc.transfer(_coinName, _value, _to);
+    }
+
+    function isSendingNative(string[] memory _coinNames)
+        private
+        pure
+        returns (int256)
+    {
+        for (uint256 i = 0; i < _coinNames.length; i++) {
+            if (_coinNames[i].compareTo("PARA")) {
+                return int256(i);
+            }
+        }
+        return -1;
+    }
+
+    function callTransferBatch(
+        address _bsh,
+        string[] memory _coinNames,
+        uint256[] memory _values,
+        string calldata _to
+    ) external {
+        int256 pos = isSendingNative(_coinNames);
+        if (pos >= 0) {
+            (bool success, bytes memory err) =
+                _bsh.call{value: _values[uint256(pos)]}(
+                    abi.encodeWithSignature(
+                        "transferBatch(string[],uint256[],string)",
+                        _coinNames,
+                        _values,
+                        _to
+                    )
+                );
+            require(success, string(err));
+        } else {
+            bshc.transferBatch(_coinNames, _values, _to);
+        }
     }
 }

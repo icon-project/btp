@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -45,7 +45,8 @@ library LibRLPDecode {
         pure
         returns (RLPItem[] memory)
     {
-        require(isList(item), "RLPDecoder iterator is not a list");
+        // require(isList(item), "RLPDecoder iterator is not a list");
+        require(isList(item));
 
         uint256 items = numItems(item);
         RLPItem[] memory result = new RLPItem[](items);
@@ -97,7 +98,8 @@ library LibRLPDecode {
 
     // any non-zero byte except "0x80" is considered true
     function toBoolean(RLPItem memory item) internal pure returns (bool) {
-        require(item.len == 1, "RLPDecoder toBoolean invalid length");
+        // require(item.len == 1, "RLPDecoder toBoolean invalid length");
+        require(item.len == 1);
         uint256 result;
         uint256 memPtr = item.memPtr;
         assembly {
@@ -117,16 +119,17 @@ library LibRLPDecode {
 
     function toAddress(RLPItem memory item) internal pure returns (address) {
         // 1 byte for the length prefix
-        require(item.len == 21, "RLPDecoder toAddress invalid length");
-
+        // require(item.len == 21, "RLPDecoder toAddress invalid length");
+        require(item.len == 21);
         return address(toUint(item));
     }
 
     function toUint(RLPItem memory item) internal pure returns (uint256) {
-        require(
-            item.len > 0 && item.len <= 33,
-            "RLPDecoder toUint invalid length"
-        );
+        // require(
+        //     item.len > 0 && item.len <= 33,
+        //     "RLPDecoder toUint invalid length"
+        // );
+        require(item.len > 0 && item.len <= 33);
 
         uint256 offset = _payloadOffset(item.memPtr);
         uint256 len = item.len - offset;
@@ -146,7 +149,8 @@ library LibRLPDecode {
     }
 
     function toBytes(RLPItem memory item) internal pure returns (bytes memory) {
-        require(item.len > 0, "RLPDecoder toBytes invalid length");
+        // require(item.len > 0, "RLPDecoder toBytes invalid length");
+        require(item.len > 0);
 
         uint256 offset = _payloadOffset(item.memPtr);
         uint256 len = item.len - offset; // data length

@@ -85,6 +85,37 @@ dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*
 
+SOLIDITY_DIST_DIR = $(BUILD_ROOT)/build/solidity
+
+$(SOLIDITY_DIST_DIR)/%:
+	$(eval MODULE := $(patsubst $(SOLIDITY_DIST_DIR)/%,%,$@))
+	mkdir -p $@/contracts ; \
+	mkdir -p $@/migrations ; \
+	cp -r solidity/$(MODULE)/contracts/* $@/contracts ; \
+	cp -r solidity/$(MODULE)/migrations/* $@/migrations ; \
+	cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
+	rm -rf $@/contracts/Mock ; \
+
+dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
+	cd $(SOLIDITY_DIST_DIR)/bmc ; \
+	yarn --production ; \
+	truffle compile
+
+dist-sol-bsh: $(SOLIDITY_DIST_DIR)/bsh
+	cd $(SOLIDITY_DIST_DIR)/bsh ; \
+	yarn --production ; \
+	truffle compile
+
+dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
+	cd $(SOLIDITY_DIST_DIR)/bmv ; \
+	yarn --production ; \
+	truffle compile
+
+dist-sol: dist-sol-bmc dist-sol-bsh dist-sol-bmv
+
+clean-dist-sol:
+	rm -rf $(SOLIDITY_DIST_DIR)
+
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
 

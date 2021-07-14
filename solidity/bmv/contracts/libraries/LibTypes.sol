@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
 library LibTypes {
@@ -6,11 +6,12 @@ library LibTypes {
      * @Notice List of ALL Struct being used to Encode and Decode RLP Messages
      */
 
-    //  SPR = State Hash + Pathch Receipt Hash + Receipt Hash
-    struct SPR {
+    //  Result = State Hash + Patch Receipt Hash + Receipt Hash + Extension Data
+    struct Result {
         bytes32 stateHash;
         bytes32 patchReceiptHash;
         bytes32 receiptHash;
+        bytes extensionData;
     }
 
     struct BlockHeader {
@@ -25,8 +26,8 @@ library LibTypes {
         bytes patchTxHash;
         bytes txHash;
         bytes logsBloom;
-        SPR spr;
-        bool isSPREmpty; //  add to check whether SPR is an empty struct
+        Result result;
+        bool isResultEmpty; //  add to check whether SPR is an empty struct
         //  It will not be included in serializing thereafter
     }
 
@@ -70,7 +71,7 @@ library LibTypes {
     struct BlockUpdate {
         BlockHeader blockHeader;
         Votes votes;
-        bytes[] nextValidators;
+        address[] nextValidators;
         bytes nextValidatorsRlp;
         bytes32 nextValidatorsHash;
     }
@@ -108,9 +109,6 @@ library LibTypes {
         BlockUpdate[] blockUpdates;
         BlockProof blockProof;
         bool isBPEmpty; //  add to check in a case BlockProof is an empty struct
-        //  when RLP RelayMessage, this field will not be serialized
-        ReceiptProof[] receiptProof;
-        bool isRPEmpty; //  add to check in a case ReceiptProof is an empty struct
         //  when RLP RelayMessage, this field will not be serialized
     }
 }

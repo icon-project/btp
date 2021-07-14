@@ -9,7 +9,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-public class FeeAggregationSCORE {
+public class FeeAggregationSCORE extends IRC31Receiver {
     private static final BigInteger ONE_ICX = new BigInteger("1000000000000000000");
     private static final VarDB<BigInteger> minimumBidAmount = Context.newVarDB("minimumBidAmount", BigInteger.class);
     private static final VarDB<BigInteger> minimumIncrementalBidPercent = Context.newVarDB("minimumIncrementalBidPercent", BigInteger.class);
@@ -65,7 +65,7 @@ public class FeeAggregationSCORE {
         this.tokenBalances = Context.newBranchDB("tokenBalances", BigInteger.class);
         this.refundableBalances = Context.newDictDB("refundableBalances", BigInteger.class);
         this.lockedBalances = Context.newDictDB("lockedBalances", BigInteger.class);
-        durationTime.set(1000*60*60*12L);
+        durationTime.set(43200000000L);
         auctionCount.set(BigInteger.ZERO);
         minimumBidAmount.set(BigInteger.valueOf(100L).multiply(ONE_ICX));
         minimumIncrementalBidPercent.set(BigInteger.valueOf(10L));
@@ -99,29 +99,82 @@ public class FeeAggregationSCORE {
         }
     }
 
+    /**
+     * (Operator)
+     * Operator register a IRC2 token
+     *
+     * @param _tokenName        Name of a token
+     * @param _tokenAddress     Address of token contract
+     */
     @External
-    public void register(String _tokenName, Address _tokenAddress) {
-        Context.require(Context.getCaller().equals(Context.getOwner()));
-        Context.require(getSafeTokenScore(_tokenName) == null);
-        Context.require(_tokenAddress.isContract());
+    public void registerIRC2(String _tokenName, Address _tokenAddress) {
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (getSafeTokenScore(_tokenName) != null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is existed");
+        }
+        if (!_tokenAddress.isContract()) {
+            Context.revert(ErrorCode.INVALID_CONTRACT_ADDRESS, "_tokenAddress is invalid");
+        }
 
         this.tokensScore.set(_tokenName, new Token(_tokenName, _tokenAddress));
         this.supportedTokens.add(_tokenName);
     }
 
+    /**
+     * (Operator)
+     * Operator register a IRC31 Token
+     *
+     * @param _tokenName        Name of a token
+     * @param _tokenAddress     Address of token contract
+     * @param _tokenId          Id of token
+     */
     @External
     public void registerIRC31(String _tokenName, Address _tokenAddress, BigInteger _tokenId) {
-        Context.require(Context.getCaller().equals(Context.getOwner()));
-        Context.require(getSafeTokenScore(_tokenName) == null);
-        Context.require(_tokenAddress.isContract());
-        Context.require(_tokenId.compareTo(BigInteger.ZERO) > 0);
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (getSafeTokenScore(_tokenName) != null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is existed");
+        }
+        if (!_tokenAddress.isContract()) {
+            Context.revert(ErrorCode.INVALID_CONTRACT_ADDRESS, "_tokenAddress is invalid");
+        }
+        if (_tokenId.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.INVALID_VALUE, "_tokenId is invalid, must > 0");
+        }
 
         this.tokensScore.set(_tokenName, new Token(_tokenName, _tokenAddress, _tokenId));
         this.supportedTokens.add(_tokenName);
     }
 
     /**
-     *  List of tokens which defined in supportedTokens and tokensScore
+     * (Operator)
+     * Operator set the duration time for auction
+     *
+     * @param _duration        Duration time of a auction
+     */
+    @External
+    public void setDurationTime(BigInteger _duration) {
+        if (!Context.getCaller().equals(Context.getOwner())) {
+            Context.revert(ErrorCode.PERMISSION_DENIED, "permission denied");
+        }
+        if (_duration.equals(BigInteger.ZERO)) {
+            Context.revert(ErrorCode.INVALID_VALUE, "_duration is invalid, must > 0");
+        }
+
+        durationTime.set(_duration.longValueExact());
+    }
+
+    @External
+    public BigInteger getDurationTime() {
+        return BigInteger.valueOf(durationTime.getOrDefault(0L));
+    }
+
+    /**
+     * (User)
+     * List of tokens which defined in supportedTokens and tokensScore
      *
      * @return List of Token
      */
@@ -137,6 +190,7 @@ public class FeeAggregationSCORE {
         return List.of(tokens);
     }
 
+
     /**
      * Get auction information.
      *
@@ -145,7 +199,11 @@ public class FeeAggregationSCORE {
      */
     @External(readonly = true)
     public Map<String, String> getCurrentAuction(String _tokenName) {
-        Context.require(getSafeTokenScore(_tokenName) != null);
+        if (getSafeTokenScore(_tokenName) == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
+
+        if (isAuctionExpired(_tokenName)) return null;
         return getSafeAuction(_tokenName).toMap();
     }
 
@@ -154,16 +212,15 @@ public class FeeAggregationSCORE {
      */
     @Payable
     public void fallback() {
-        // TODO: used for unit test, will be removed
         Address _from = Context.getCaller();
         BigInteger _value = Context.getValue();
         Context.require(_value.compareTo(BigInteger.ZERO) > 0);
+
+        Context.call(_value, this.addressCPS.get(), "add_fund");
     }
 
-    // TODO: used for receive token from IRC2 contract, will be removed
     @External
-    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
-    }
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) { }
 
     /**
      * Called when a user submit a bid on asset. This function will:
@@ -176,16 +233,23 @@ public class FeeAggregationSCORE {
     @Payable
     public void bid(String _tokenName) {
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
         BigInteger balance = getTokenBalance(token, Context.getAddress());
-        Context.require(!balance.equals(BigInteger.ZERO));
+
+        if (balance.equals(BigInteger.ZERO)) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+        }
 
         BigInteger value = Context.getValue();
 
         // Check if minimum value is 100 ICX
-        Context.require(value.compareTo(minimumBidAmount.get()) > -1);
+        if (value.compareTo(minimumBidAmount.get()) < 0) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough minimum value to bid");
+        }
 
-        long now = Context.getTransactionTimestamp();
+        long now = Context.getBlockTimestamp();
         Auction auction = getSafeAuction(_tokenName);
         Address caller = Context.getCaller();
 
@@ -193,43 +257,57 @@ public class FeeAggregationSCORE {
         if (auction == null) {
             // Check available balance of token enough to start an auction
             BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName));
-            Context.require(availableBalance.compareTo(BigInteger.ZERO) > -1);
+            if (availableBalance.compareTo(BigInteger.ZERO) <= 0) {
+                Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+            }
 
             auction = new Auction(availableBalance, caller, value, now);
             this.auctions.set(_tokenName, auction);
 
             // Event log
-            AuctionStart(caller, auction.id(), _tokenName, value, auction.endTime());
+            AuctionStart(auction.id(), _tokenName, availableBalance, caller , value, auction.endTime());
         } else {
             // Check auction is ended
             if (isAuctionExpired(_tokenName)) {
-                endAuction(token, auction);
+                Auction oldAuction = this.auctions.get(_tokenName);
 
                 // Bid for new auction
                 balance = getTokenBalance(token, Context.getAddress());
-                BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName));
+                BigInteger availableBalance = balance.subtract(getSafeLockBalance(_tokenName)).subtract(oldAuction.tokenAmount());
+                if (availableBalance.compareTo(BigInteger.ZERO) <= 0) {
+                    Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "available token balance is 0");
+                }
+
                 auction = new Auction(availableBalance, caller, value, now);
                 this.auctions.set(_tokenName, auction);
 
+                // Transfer token to winner & ICX to CPS
+                endAuction(token, oldAuction);
+
                 // Event log
-                AuctionStart(caller, auction.id(), _tokenName, value, auction.endTime());
+                AuctionStart(auction.id(), _tokenName, availableBalance, caller, value, auction.endTime());
             } else {
                 BigInteger existingBidAmount = auction.bidAmount();
 
                 // Check if minimum value is greater MINIMUM_INCREMENTAL_BID_PERCENT than old value
                 BigInteger minimumBidAmount = existingBidAmount.add(existingBidAmount.multiply(minimumIncrementalBidPercent.get()).divide(BigInteger.valueOf(100)));
-                Context.require(minimumBidAmount.compareTo(value) <= 0);
+                if (value.compareTo(minimumBidAmount) < 0) {
+                    Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough minimum value to bid");
+                }
+
+                Address previousBidder = auction.bidder();
+
+                this.auctions.set(_tokenName, this.auctions.get(_tokenName).setNewBidder(caller, value));
 
                 // Refund to the previous bidder
-                Address previousBidder = auction.bidder();
                 try {
                     Context.transfer(previousBidder, existingBidAmount);
                 } catch (Exception e) {
                     Context.println("[Exception] " + e.getMessage());
-                    this.refundableBalances.set(caller, getSafeRefundableBalance(caller).add(auction.bidAmount()));
+                    this.refundableBalances.set(previousBidder, getSafeRefundableBalance(previousBidder).add(existingBidAmount));
                 }
 
-                this.auctions.set(_tokenName, this.auctions.get(_tokenName).setNewBidder(caller, value));
+                auction = getSafeAuction(_tokenName);
 
                 // Event Log
                 BidInfo(auction.id(), _tokenName, previousBidder, existingBidAmount, auction.bidder(), auction.bidAmount());
@@ -237,38 +315,47 @@ public class FeeAggregationSCORE {
         }
     }
 
+    /**
+     * (User)
+     * User use to withdraw their ICX when another bid higher but the system can not transfer ICX to them
+     */
     @External
     public void withdrawal() {
         Address caller = Context.getCaller();
         BigInteger amount = getSafeRefundableBalance(caller);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
-
-        // refund to loser
-        Context.transfer(caller, amount);
+        if (amount.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.NOT_FOUND_BALANCE, "not found ICX balance");
+        }
 
         // Remove loser in
         this.refundableBalances.set(caller, BigInteger.ZERO);
+
+        // refund to loser
+        try {
+            Context.transfer(caller, amount);
+        } catch (Exception e) {
+            Context.println("[Exception] Withdrawal " + e.getMessage());
+            this.refundableBalances.set(caller, getSafeRefundableBalance(caller).add(amount));
+        }
     }
 
+    /**
+     * (User)
+     * User use to claim their tokens when User win this token but the system can not transfer tokens to them
+     */
     @External
     public void claim(String _tokenName) {
-        // End Auction
-        if (isAuctionExpired(_tokenName)) {
-            endAuction(getSafeTokenScore(_tokenName), getSafeAuction(_tokenName));
-        }
-
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
 
         Address caller = Context.getCaller();
         BigInteger amount = getSafeTokenBalance(caller, _tokenName);
         Context.require(amount.compareTo(BigInteger.ZERO) > 0);
-
-        // transfer token to loser
-        if (!token.isIRC31()) {
-            Context.call(token.address(), "safeTransferFrom", Context.getAddress(), caller, token.tokenId(), amount, "transfer to bidder".getBytes());
-        } else {
-            Context.call(token.address(), "transfer", caller, amount, "transfer to bidder".getBytes());
+        if (amount.compareTo(BigInteger.ZERO) <= 0) {
+            Context.revert(ErrorCode.NOT_FOUND_BALANCE, "not found _tokenName balance");
         }
 
         // release Token locked
@@ -276,12 +363,36 @@ public class FeeAggregationSCORE {
 
         // Remove loser in
         this.tokenBalances.at(caller).set(_tokenName, BigInteger.ZERO);
+
+        try {
+            // transfer token to winner
+            if (!token.isIRC31()) {
+                Context.call(token.address(), "transferFrom", Context.getAddress(), caller, token.tokenId(), amount, "transfer to bidder".getBytes());
+            } else {
+                Context.call(token.address(), "transfer", caller, amount, "transfer to bidder".getBytes());
+            }
+        } catch (Exception e) {
+            Context.println("[Exception] " + e.getMessage());
+
+            // Lock amount token to winner claims manually
+            this.lockedBalances.set(_tokenName, getSafeLockBalance(_tokenName).add(amount));
+            this.tokenBalances.at(caller).set(_tokenName, amount);
+        }
+
+        // End Auction
+        Auction auction = getSafeAuction(_tokenName);
+        if (auction != null && Context.getBlockTimestamp() >= auction.endTime()) {
+            this.auctions.set(_tokenName, null);
+            endAuction(getSafeTokenScore(_tokenName), auction);
+        }
     }
 
     @External(readonly = true)
     public BigInteger availableBalance(String _tokenName) {
         Token token = getSafeTokenScore(_tokenName);
-        Context.require(token != null);
+        if (token == null) {
+            Context.revert(ErrorCode.INVALID_TOKEN_NAME, "_tokenName is not registered yet");
+        }
         BigInteger balance = getTokenBalance(token, Context.getAddress());
         Auction auction = getSafeAuction(_tokenName);
         BigInteger lockedBalance = getSafeLockBalance(_tokenName);
@@ -309,11 +420,18 @@ public class FeeAggregationSCORE {
     private void endAuction(Token _token, Auction _auction) {
         // Send token to winner
         BigInteger balance = getTokenBalance(_token, Context.getAddress());
-        Context.require(balance.compareTo(this.auctions.get(_token.name()).tokenAmount()) >= 0);
+        if (balance.compareTo(_auction.tokenAmount()) < 0) {
+            Context.revert(ErrorCode.INVALID_TOKEN_BALANCE, "not enough token");
+        }
+
+        // Send ICX to CPS
+        if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
+            Context.call(_auction.bidAmount(), this.addressCPS.get(), "add_fund");
+        }
 
         try {
             if (_token.isIRC31()) {
-                Context.call(_token.address(), "safeTransferFrom", Context.getAddress(), _auction.bidder(), _token.tokenId(), _auction.tokenAmount(), "transfer to bidder".getBytes());
+                Context.call(_token.address(), "transferFrom", Context.getAddress(), _auction.bidder(), _token.tokenId(), _auction.tokenAmount(), "transfer to bidder".getBytes());
             } else {
                 Context.call(_token.address(), "transfer", _auction.bidder(), _auction.tokenAmount(), "transfer to bidder".getBytes());
             }
@@ -325,29 +443,21 @@ public class FeeAggregationSCORE {
             this.tokenBalances.at(_auction.bidder()).set(_token.name(), getSafeTokenBalance(_auction.bidder(), _token.name()).add(_auction.tokenAmount()));
         }
 
-        // Send ICX to CPS
-        if (!_auction.bidAmount().equals(BigInteger.ZERO)) {
-            Context.call(_auction.bidAmount(), this.addressCPS.get(), "add_fund");
-        }
-
-        // Reset auction
-        this.auctions.set(_token.name(), null);
-
         // Event log
-        AuctionEnded(_auction.id(), _token.name(), _auction.bidder(), _auction.tokenAmount(), _auction.bidAmount(), Context.getTransactionTimestamp());
+        AuctionEnded(_auction.id(), _token.name(), _auction.bidder(), _auction.tokenAmount(), _auction.bidAmount(), Context.getBlockTimestamp());
     }
 
     boolean isAuctionExpired(String _tokenName) {
         Auction auction = getSafeAuction(_tokenName);
         // checks if auction is not started yet or ended
-        return auction == null || Context.getTransactionTimestamp() >= auction.endTime();
+        return auction == null || Context.getBlockTimestamp() >= auction.endTime();
     }
 
     @EventLog(indexed = 3)
-    protected void BidInfo(BigInteger auctionID, String tokenName, Address currentBidder, BigInteger currentBidAmount, Address newBidder,  BigInteger newBidAmount ) {}
+    protected void BidInfo(BigInteger auctionID, String tokenName, Address currentBidder, BigInteger currentBidAmount, Address newBidder,  BigInteger newBidAmount) {}
 
     @EventLog(indexed = 3)
-    protected void AuctionStart(Address firstBidder, BigInteger auctionID, String tokenName, BigInteger bidAmount, long deadline) {}
+    protected void AuctionStart(BigInteger auctionID, String tokenName, BigInteger tokenAmount, Address firstBidder,  BigInteger bidAmount, long deadline) {}
 
     @EventLog(indexed = 3)
     protected void AuctionEnded(BigInteger auctionID, String tokenName, Address winner, BigInteger tokenAmount, BigInteger bidAmount, long deadline) {}

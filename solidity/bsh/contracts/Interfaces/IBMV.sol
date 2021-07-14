@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
+
 interface IBMV {
     /**
         @return base64EncodedMTA Base64 encode of Merkle Tree
      */
     function getMTA() external view returns (string memory base64EncodedMTA);
+
     /**
         @return addr connected BMC address
      */
     function getConnectedBMC() external view returns (address addr);
+
     /**
         @return net network address of the blockchain
      */
     function getNetAddress() external view returns (string memory net);
+
     /**
         @return serializedHash hash of RLP encode from given list of validators
         @return addresses list of validators' addresses
@@ -22,6 +26,7 @@ interface IBMV {
         external
         view
         returns (bytes32 serializedHash, address[] memory addresses);
+
     /**
         @notice Used by the relay to resolve next BTP Message to send.
                 Called by BMC.
@@ -37,6 +42,7 @@ interface IBMV {
             uint256 offset,
             uint256 lastHeight
         );
+
     /**
         @notice Decodes Relay Messages and process BTP Messages.
                 If there is an error, then it sends a BTP Message containing the Error Message.
@@ -50,12 +56,7 @@ interface IBMV {
     function handleRelayMessage(
         string calldata _bmc,
         string calldata _prev,
-        string calldata _seq,
+        uint256 _seq,
         string calldata _msg
     ) external returns (bytes[] memory serializedMessages);
 }
-
-
-
-
-

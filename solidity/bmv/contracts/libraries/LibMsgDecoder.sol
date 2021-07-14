@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <=0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -6,6 +6,7 @@ import "./LibRLPDecode.sol";
 import "./LibTypes.sol";
 import "./LibString.sol";
 import "./LibBytes.sol";
+import "./LibHash.sol";
 
 library LibMsgDecoder {
     using LibRLPDecode for LibRLPDecode.RLPItem;
@@ -15,22 +16,23 @@ library LibMsgDecoder {
     using LibBytes for bytes;
     using LibBytes for bytes;
     using LibMsgDecoder for bytes;
+    using LibMsgDecoder for LibRLPDecode.RLPItem;
+    using LibHash for bytes;
 
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
 
     function decodeBlockHeader(bytes memory _rlp)
         internal
-        pure
         returns (LibTypes.BlockHeader memory)
     {
         //  Decode RLP bytes into a list of items
         LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        bool isSPREmpty = true;
+        bool isResultEmpty = true;
         if (ls[10].toBytes().length == 0) {
             return
                 LibTypes.BlockHeader(
-                    keccak256(_rlp),
+                    _rlp.sha3FIPS256(),
                     ls[0].toUint(),
                     ls[1].toUint(),
                     ls[2].toUint(),
@@ -41,16 +43,16 @@ library LibMsgDecoder {
                     ls[7].toBytes(),
                     ls[8].toBytes(),
                     ls[9].toBytes(),
-                    LibTypes.SPR("", "", ""),
-                    isSPREmpty
+                    LibTypes.Result("", "", "", ""),
+                    isResultEmpty
                 );
         }
         LibRLPDecode.RLPItem[] memory subList =
             ls[10].toBytes().toRlpItem().toList();
-        isSPREmpty = false;
+        isResultEmpty = false;
         return
             LibTypes.BlockHeader(
-                keccak256(_rlp),
+                _rlp.sha3FIPS256(),
                 ls[0].toUint(),
                 ls[1].toUint(),
                 ls[2].toUint(),
@@ -61,12 +63,13 @@ library LibMsgDecoder {
                 ls[7].toBytes(),
                 ls[8].toBytes(),
                 ls[9].toBytes(),
-                LibTypes.SPR(
+                LibTypes.Result(
                     subList[0].toBytes().bytesToBytes32(),
                     subList[1].toBytes().bytesToBytes32(),
-                    subList[2].toBytes().bytesToBytes32()
+                    subList[2].toBytes().bytesToBytes32(),
+                    subList[3].toBytes()
                 ),
-                isSPREmpty
+                isResultEmpty
             );
     }
 
@@ -82,17 +85,20 @@ library LibMsgDecoder {
         LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
 
         LibTypes.TS memory item;
-        LibTypes.TS[] memory tsList = new LibTypes.TS[](ls[2].toList().length);
-        LibRLPDecode.RLPItem[] memory rlpTs = ls[2].toList();
-        for (uint256 i = 0; i < ls[2].toList().length; i++) {
-            item = LibTypes.TS(
-                rlpTs[i].toList()[0].toUint(),
-                rlpTs[i].toList()[1].toBytes()
-            );
-            tsList[i] = item;
-        }
-        return
-            LibTypes.Votes(
+        LibTypes.TS[] memory tsList;
+        LibTypes.Votes memory votes;
+        if (ls.length > 0) {
+            tsList = new LibTypes.TS[](ls[2].toList().length);
+            LibRLPDecode.RLPItem[] memory rlpTs = ls[2].toList();
+            for (uint256 i = 0; i < ls[2].toList().length; i++) {
+                item = LibTypes.TS(
+                    rlpTs[i].toList()[0].toUint(),
+                    rlpTs[i].toList()[1].toBytes()
+                );
+                tsList[i] = item;
+            }
+
+            votes = LibTypes.Votes(
                 ls[0].toUint(),
                 LibTypes.BPSI(
                     ls[1].toList()[0].toUint(),
@@ -100,18 +106,19 @@ library LibMsgDecoder {
                 ),
                 tsList
             );
+        }
+        return votes;
     }
 
-    function decodeBlockWitness(bytes memory _rlp)
+    function decodeBlockWitness(LibRLPDecode.RLPItem memory _rlpItem)
         internal
         pure
         returns (LibTypes.BlockWitness memory)
     {
-        LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        LibRLPDecode.RLPItem[] memory ls = _rlpItem.toList();
 
         bytes32[] memory witnesses = new bytes32[](ls[1].toList().length);
-        //  witnesses is an array of hash of leaf node
-        //  The array size may also vary, thus loop is needed therein
+
         for (uint256 i = 0; i < ls[1].toList().length; i++) {
             witnesses[i] = ls[1].toList()[i].toBytes().bytesToBytes32();
         }
@@ -137,7 +144,6 @@ library LibMsgDecoder {
 
     function decodeBlockUpdate(bytes memory _rlp)
         internal
-        pure
         returns (LibTypes.BlockUpdate memory)
     {
         LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
@@ -151,16 +157,20 @@ library LibMsgDecoder {
         //  Thus, length of data will be 0. Therein, loop will be skipped
         //  and the _validators[] will be empty
         //  Otherwise, executing normally to read and assign value into the array _validators[]
-        bytes[] memory _validators;
+        address[] memory _validators;
         bytes32 _validatorsHash;
         bytes memory _rlpBytes;
         if (ls[2].toBytes().length != 0) {
+            LibRLPDecode.RLPItem[] memory _rlpItems =
+                ls[2].toBytes().toRlpItem().toList();
             _rlpBytes = ls[2].toBytes();
-            // TODO: should use SHA3_256 instead
-            _validatorsHash = keccak256(_rlpBytes);
-            _validators = new bytes[](ls[2].toList().length);
-            for (uint256 i = 0; i < ls[2].toList().length; i++) {
-                _validators[i] = ls[2].toList()[i].toBytes();
+            _validatorsHash = _rlpBytes.sha3FIPS256();
+            _validators = new address[](_rlpItems.length);
+            for (uint256 i = 0; i < _rlpItems.length; i++) {
+                _validators[i] = _rlpItems[i]
+                    .toBytes()
+                    .slice(1, 21)
+                    .bytesToAddress();
             }
         }
         return
@@ -230,20 +240,18 @@ library LibMsgDecoder {
 
     function decodeBlockProof(bytes memory _rlp)
         internal
-        pure
         returns (LibTypes.BlockProof memory)
     {
         LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
 
         LibTypes.BlockHeader memory _bh = ls[0].toBytes().decodeBlockHeader();
-        LibTypes.BlockWitness memory _bw = ls[1].toBytes().decodeBlockWitness();
+        LibTypes.BlockWitness memory _bw = ls[1].decodeBlockWitness();
 
         return LibTypes.BlockProof(_bh, _bw);
     }
 
     function decodeRelayMessage(bytes memory _rlp)
         internal
-        pure
         returns (LibTypes.RelayMessage memory)
     {
         //  _rlp.toRlpItem() removes the LIST_HEAD_START of RelayMessage
@@ -281,21 +289,22 @@ library LibMsgDecoder {
             //  it will not be serialized thereafter
         }
 
-        bool isRPEmpty = true;
-        LibTypes.ReceiptProof[] memory _rp;
-        //  If [RLP_ENCODE(ReceiptProof)] is omitted,
-        //  ls[2].toBytes() should be null (length = 0)
+        return LibTypes.RelayMessage(_buArray, _bp, isBPEmpty);
+    }
+
+    function decodeReceiptProofs(bytes memory _rlp)
+        internal
+        pure
+        returns (LibTypes.ReceiptProof[] memory _rp)
+    {
+        LibRLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+
         if (ls[2].toBytes().length != 0) {
             _rp = new LibTypes.ReceiptProof[](ls[2].toList().length);
             for (uint256 i = 0; i < ls[2].toList().length; i++) {
                 _rp[i] = ls[2].toList()[i].toBytes().decodeReceiptProof();
             }
-            isRPEmpty = false; //  add this field into RelayMessage
-            //  to specify whether ReceiptProof is omitted
-            //  to make it easy on encoding
-            //  it will not be serialized thereafter
         }
-        return LibTypes.RelayMessage(_buArray, _bp, isBPEmpty, _rp, isRPEmpty);
     }
 
     function decodeValidators(
@@ -303,14 +312,13 @@ library LibMsgDecoder {
         bytes memory _rlp
     ) internal {
         validators.serializedBytes = _rlp;
-        // TODO: should use SHA3_256 instead
-        validators.validatorsHash = keccak256(validators.serializedBytes);
+        validators.validatorsHash = validators.serializedBytes.sha3FIPS256();
 
-        LibRLPDecode.RLPItem[] memory validatorsList =
+        LibRLPDecode.RLPItem[] memory _rlpItems =
             validators.serializedBytes.toRlpItem().toList();
-        address[] memory newVals = new address[](validatorsList.length);
-        for (uint256 i = 0; i < validatorsList.length; i++) {
-            newVals[i] = validatorsList[i].toAddress();
+        address[] memory newVals = new address[](_rlpItems.length);
+        for (uint256 i = 0; i < _rlpItems.length; i++) {
+            newVals[i] = _rlpItems[i].toBytes().slice(1, 21).bytesToAddress();
             validators.containedValidators[newVals[i]] = true;
         }
         validators.validatorAddrs = newVals;

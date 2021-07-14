@@ -6,7 +6,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'foundation.icon:gradle-javaee-plugin:0.7.5'
+        classpath 'foundation.icon:gradle-javaee-plugin:0.7.8'
     }
 }
 
@@ -62,15 +62,32 @@ dependencies {
     implementation 'com.github.sink772:javaee-scorex:0.5.1'
     implementation 'com.github.sink772:javaee-tokens:0.5.4'
     implementation 'com.github.sink772:minimal-json:0.9.6'
-    compile files('api-0.8.7-SNAPSHOT.jar')
 
-    implementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    implementation 'foundation.icon:icon-sdk:2.0.0'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 
-    intTestImplementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
+    intTestImplementation 'foundation.icon:icon-sdk:2.0.0'
     intTestImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9080/api/v3/icon'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('_cps_address', 'hx00000000000000000000000000000000000000000')
+    }
 }
 
 test {

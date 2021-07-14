@@ -3,7 +3,6 @@ package foundation.icon.btp.score;
 import foundation.icon.btp.*;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
-import foundation.icon.icx.data.IconAmount;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.icx.transport.jsonrpc.RpcItem;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
@@ -19,7 +18,6 @@ public class FeeAggregationScore extends Score {
 
     public static FeeAggregationScore mustDeploy(TransactionHandler txHandler, Wallet wallet)
             throws ResultTimeoutException, TransactionFailureException, IOException {
-        // TODO: need deploy CPS contract
         // Deploy CPS
         Score cps = txHandler.deploy(wallet, "CPFTreasury.zip", null);
 
@@ -47,13 +45,13 @@ public class FeeAggregationScore extends Score {
         return invokeAndWaitResult(wallet, "safeWithdrawal", null, null);
     }
 
-    public void ensureRegisterSuccess(Wallet wallet, String tokenName, Address tokenAddress) throws Exception {
+    public void ensureRegisterIRC2Success(Wallet wallet, String tokenName, Address tokenAddress) throws Exception {
         RpcObject params = new RpcObject.Builder()
                 .put("_tokenName", new RpcValue(tokenName))
                 .put("_tokenAddress", new RpcValue(tokenAddress))
                 .build();
 
-        invokeAndWaitResult(wallet, "register", params);
+        invokeAndWaitResult(wallet, "registerIRC2", params);
 
         List<RpcItem> tokens = call("tokens", null).asArray().asList();
         for (RpcItem token : tokens) {
@@ -62,6 +60,24 @@ public class FeeAggregationScore extends Score {
             }
         }
         throw new IOException("ensureRegisterSuccess failed.");
+    }
+
+    public void ensureRegisterIRC31Success(Wallet wallet, String tokenName, Address tokenAddress, BigInteger id) throws Exception {
+        RpcObject params = new RpcObject.Builder()
+                .put("_tokenName", new RpcValue(tokenName))
+                .put("_tokenAddress", new RpcValue(tokenAddress))
+                .put("_tokenId", new RpcValue(id))
+                .build();
+
+        invokeAndWaitResult(wallet, "registerIRC31", params);
+
+        List<RpcItem> tokens = call("tokens", null).asArray().asList();
+        for (RpcItem token : tokens) {
+            if (token.asObject().getItem("name").asString().equals(tokenName)) {
+                return;
+            }
+        }
+        throw new IOException("ensureRegisterIRC2Success failed.");
     }
 
     public void ensureBidSuccess(TransactionHandler txHandler, Wallet wallet, String tokenName, BigInteger amount) throws Exception {
@@ -73,7 +89,7 @@ public class FeeAggregationScore extends Score {
         if (!Constants.STATUS_SUCCESS.equals(result.getStatus())) {
             throw new TransactionFailureException(result.getFailure());
         }
-        if (findEventLog(result, getAddress(), "AuctionStart(Address,int,str,int,int)") == null && findEventLog(result, getAddress(), "BidInfo(int,str,Address,int,Address,int)") == null) {
+        if (findEventLog(result, getAddress(), "AuctionStart(int,str,int,Address,int,int)") == null && findEventLog(result, getAddress(), "BidInfo(int,str,Address,int,Address,int)") == null) {
             throw new TransactionFailureException(result.getFailure());
         }
     }
@@ -107,5 +123,16 @@ public class FeeAggregationScore extends Score {
         }
 
         return;
+    }
+
+    public void ensureSetDurationSuccess(Wallet wallet, BigInteger duration) throws Exception {
+        RpcObject params = new RpcObject.Builder()
+                .put("_duration", new RpcValue(duration))
+                .build();
+
+        TransactionResult result = invokeAndWaitResult(wallet, "setDurationTime", params, null);
+        if (!result.getStatus().equals(BigInteger.ONE)) {
+            throw new IOException("ensureSetDurationSuccess failed");
+        };
     }
 }
