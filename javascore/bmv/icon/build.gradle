@@ -13,7 +13,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'com.iconloop.btp.bmv.icon.BTPMessageVerifier'
+    mainClassName = 'foundation.icon.btp.bmv.icon.BTPMessageVerifier'
     archivesBaseName = 'bmv-icon'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
