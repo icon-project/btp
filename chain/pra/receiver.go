@@ -1,9 +1,9 @@
 package pra
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
@@ -85,32 +85,30 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 	rps := make([]*chain.ReceiptProof, 0)
 
 	if len(v.Events.EVM_Log) > 0 {
-		rp := &chain.ReceiptProof{}
+		rp := &chain.ReceiptProof{
+			Height: int64(v.Height),
+		}
 
-		foundMessageEvent := false
 		for _, e := range v.Events.EVM_Log {
-			a := e.Log.Address.Hex()
-			ua := r.src.ContractAddress()
-			// EVM_Log.Log.Address is case-insensitive, src.ContractAddress is case-sensitive
-			if !bytes.EqualFold([]byte(a), []byte(ua)) {
+			if !strings.EqualFold(e.Log.Address.Hex(), r.src.ContractAddress()) {
 				continue
 			}
 
-			evt := &chain.Event{}
-			if mevent, err := r.c.bmc.ParseMessage(e.EvmLog()); err == nil {
-				foundMessageEvent = true
-				evt.Message = mevent.Msg
-				evt.Next = chain.BtpAddress(mevent.Next)
-				evt.Sequence = mevent.Seq.Int64()
-				if evt.Sequence == int64(r.rxSeq) {
+			if bmcMsg, err := r.c.bmc.ParseMessage(e.EvmLog()); err == nil {
+				rp.Events = append(rp.Events, &chain.Event{
+					Message:  bmcMsg.Msg,
+					Next:     chain.BtpAddress(bmcMsg.Next),
+					Sequence: bmcMsg.Seq.Int64(),
+				})
+
+				if bmcMsg.Seq.Int64() == int64(r.rxSeq) {
 					r.isFoundMessageEventByOffset = true
 				}
-				rp.Events = append(rp.Events, evt)
 			}
 		}
 
-		if foundMessageEvent {
-			rp.Height = int64(v.Height)
+		// only get ReceiptProof that has right Events
+		if len(rp.Events) > 0 {
 			key, proofs, err := r.getProofs(v)
 			if err != nil {
 				return nil, err
@@ -126,7 +124,6 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			rps = append(rps, rp)
 		}
 	}
-
 	return rps, nil
 }
 
