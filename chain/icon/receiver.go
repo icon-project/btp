@@ -146,7 +146,9 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				}
 			}
 			idx, _ := index.Value()
+			h, _ := v.Height.Value()
 			rp := &chain.ReceiptProof{
+				Height:      h,
 				Index:       int(idx),
 				EventProofs: make([]*chain.EventProof, 0),
 			}

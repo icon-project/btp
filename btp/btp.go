@@ -143,7 +143,7 @@ func (b *BTP) Serve() error {
 	}()
 	go func() {
 		h := b.receiveHeight()
-		b.log.Debugf("start receiveloop from heigh: %v", h)
+		b.log.Debugf("start receiveloop from height: %v", h)
 
 		err := b.receiver.ReceiveLoop(
 			h,
