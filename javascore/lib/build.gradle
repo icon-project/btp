@@ -1,3 +1,5 @@
+version = '0.1.0'
+
 apply plugin: 'java-library'
 
 dependencies {
@@ -8,7 +10,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
-    testRuntimeOnly("foundation.icon:javaee-api:$javaeeVersion")
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
 }
 
 test {

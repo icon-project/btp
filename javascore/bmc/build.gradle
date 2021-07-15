@@ -8,8 +8,15 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.6.0")
 
-    testImplementation("org.mockito:mockito-core:3.3.3")
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+    testImplementation project(':test-lib')
+    testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    testImplementation("com.github.javafaker:javafaker:1.0.2")
 }
 
 optimizedJar {
@@ -17,7 +24,7 @@ optimizedJar {
 //    archivesBaseName = 'bmc'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+    } { exclude "score/*" }
     enableDebug = !rootProject.hasProperty("release")
 }
 
@@ -41,4 +48,42 @@ deployJar {
 
 test {
     useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        systemProperty 'url', project.tasks.deployToLocal.uri.get()
+        systemProperty 'nid', project.tasks.deployToLocal.nid.get()
+        systemProperty 'keyStore', project.extensions.deployJar.keystore.get()
+        systemProperty 'keyPassword', project.extensions.deployJar.password.get()
+//        systemProperty 'address', "cx9d9febc3a11565e26b6a0dbea2a4c3fd402bae86"
+//        systemProperty 'isUpdate', "true"
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each {
+            arg -> systemProperty 'params.'+arg.name, arg.value
+        }
+
+        //only for foundation.icon.btp.bmc.ScoreIntegrationTest
+        systemProperty 'tester.keyStore', rootProject.getProperty('tester.keyStore')
+        systemProperty 'tester.keySecret', rootProject.getProperty('tester.keySecret')
+
+        //for bmv-mock client
+        systemProperty 'bmv-mock.url', project.tasks.deployToLocal.uri.get()
+        systemProperty 'bmv-mock.nid', project.tasks.deployToLocal.nid.get()
+        systemProperty 'bmv-mock.keyStore', project.extensions.deployJar.keystore.get()
+        systemProperty 'bmv-mock.keyPassword', project.extensions.deployJar.password.get()
+//        systemProperty 'bmv-mock.address', "cx0f549056aeebed9c06833bebfe8b17113958532f"
+//        systemProperty 'bmv-mock.isUpdate', "true"
+        dependsOn ":test-lib:optimizedJarMockBMV"
+        systemProperty 'bmv-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMV").outputJarName
+
+        //for bmv-mock client
+        systemProperty 'bsh-mock.url', project.tasks.deployToLocal.uri.get()
+        systemProperty 'bsh-mock.nid', project.tasks.deployToLocal.nid.get()
+        systemProperty 'bsh-mock.keyStore', project.extensions.deployJar.keystore.get()
+        systemProperty 'bsh-mock.keyPassword', project.extensions.deployJar.password.get()
+//        systemProperty 'bsh-mock.address', "cx47853622a461b34885c42d74e8354b03a3e88a42"
+//        systemProperty 'bsh-mock.isUpdate', "true"
+        dependsOn ":test-lib:optimizedJarMockBSH"
+        systemProperty 'bsh-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBSH").outputJarName
+    }
 }

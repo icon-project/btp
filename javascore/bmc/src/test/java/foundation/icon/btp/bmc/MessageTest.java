@@ -1,0 +1,296 @@
+/*
+ * Copyright 2021 ICON Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package foundation.icon.btp.bmc;
+
+import foundation.icon.btp.lib.BMCScoreClient;
+import foundation.icon.btp.lib.BMCStatus;
+import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.mock.MockBSH;
+import foundation.icon.btp.mock.MockBSHScoreClient;
+import foundation.icon.btp.mock.MockRelayMessage;
+import foundation.icon.btp.test.*;
+import foundation.icon.jsonrpc.Address;
+import foundation.icon.jsonrpc.model.TransactionResult;
+import foundation.icon.score.test.ScoreIntegrationTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class MessageTest implements BMCIntegrationTest {
+    static BTPAddress linkBtpAddress = BMCIntegrationTest.Faker.btpLink();
+    static String link = linkBtpAddress.toString();
+    static String net = linkBtpAddress.net();
+    static Address relay = Address.of(bmcClient._wallet());
+    static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
+    static String svc = MockBSH.SERVICE;
+
+    @BeforeAll
+    static void beforeAll() {
+        System.out.println("beforeAll start");
+        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
+        LinkManagementTest.addLink(link);
+        LinkManagementTest.addRelay(link, relay);
+
+        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
+        System.out.println("beforeAll end");
+    }
+
+    @AfterAll
+    static void afterAll() {
+        System.out.println("afterAll start");
+        BSHManagementTest.clearService(svc);
+
+        LinkManagementTest.clearRelay(link, relay);
+        LinkManagementTest.clearLink(link);
+        BMVManagementTest.clearVerifier(net);
+        System.out.println("afterAll end");
+    }
+
+    static BTPMessage btpMessage(BTPMessageCenter.Internal internal, byte[] payload) {
+        BMCMessage bmcMsg = new BMCMessage();
+        bmcMsg.setType(internal.name());
+        bmcMsg.setPayload(payload);
+        return btpMessage(BTPMessageCenter.INTERNAL_SERVICE, BigInteger.ZERO, bmcMsg.toBytes());
+    }
+
+    static BTPMessage btpMessage(String svc, BigInteger sn, byte[] payload) {
+        BTPMessage btpMsg = new BTPMessage();
+        btpMsg.setSrc(linkBtpAddress);
+        btpMsg.setDst(btpAddress);
+        btpMsg.setSvc(svc);
+        btpMsg.setSn(sn);
+        btpMsg.setPayload(payload);
+        return btpMsg;
+    }
+
+    static byte[][] toBytesArray(List<BTPMessage> btpMessages) {
+        int len = btpMessages.size();
+        byte[][] bytesArray = new byte[len][];
+        for (int i = 0; i < len; i++) {
+            bytesArray[i] = btpMessages.get(i).toBytes();
+        }
+        return bytesArray;
+    }
+
+    static Consumer<List<BMCMessage>> sackMessageChecker(long height, BigInteger seq) {
+        return (bmcMessages) -> {
+            List<SackMessage> sackMessages = BMCIntegrationTest.internalMessages(
+                    bmcMessages, BTPMessageCenter.Internal.Sack, SackMessage::fromBytes);
+            assertEquals(1, sackMessages.size());
+            SackMessage sackMessage = sackMessages.get(0);
+            assertEquals(height, sackMessage.getHeight());
+            assertEquals(seq, sackMessage.getSeq());
+        };
+    }
+
+    static Consumer<List<BMCMessage>> feeGatheringMessageChecker(BTPAddress fa, List<String> services, int size) {
+        return (bmcMessages) -> {
+            List<FeeGatheringMessage> feeGatheringMessages = BMCIntegrationTest.internalMessages(
+                    bmcMessages, BTPMessageCenter.Internal.FeeGathering, FeeGatheringMessage::fromBytes);
+            assertEquals(size, feeGatheringMessages.size());
+            assertTrue(feeGatheringMessages.stream()
+                    .allMatch((feeGatheringMsg) -> feeGatheringMsg.getFa().equals(fa)
+                            && services.size() == feeGatheringMsg.getSvcs().length
+                            && services.containsAll(Arrays.asList(feeGatheringMsg.getSvcs()))));
+        };
+    }
+
+    @Test
+    void sackMessageShouldUpdateSackHeightAndSackSeq() {
+        SackMessage sackMessage = new SackMessage();
+        sackMessage.setHeight(1);
+        sackMessage.setSeq(BigInteger.ONE);
+        List<BTPMessage> btpMessages = new ArrayList<>();
+        btpMessages.add(btpMessage(BTPMessageCenter.Internal.Sack, sackMessage.toBytes()));
+
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setBtpMessages(toBytesArray(btpMessages));
+        bmc.handleRelayMessage(link, relayMessage.toBase64String());
+        BMCStatus status = bmc.getStatus(link);
+        System.out.println(status);
+        assertEquals(sackMessage.getHeight(), status.getSack_height());
+        assertEquals(sackMessage.getSeq(), status.getSack_seq());
+    }
+
+    @Test
+    void handleRelayMessageShouldSendSackMessageToPrev() {
+        //if sackTerm > 0 && sackNext <= blockHeight
+        int sackTerm = 2;
+        iconSpecific.setLinkSackTerm(link, sackTerm);
+        BigInteger seq = bmc.getStatus(link).getRx_seq();
+        long height = 1;
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setHeight(height);
+        //check SackMessage
+        Consumer<TransactionResult> sackMessageCheck = (txr) -> {
+            sackMessageChecker(height, seq)
+                    .accept(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)));
+        };
+        ((BMCScoreClient) bmc).handleRelayMessage(sackMessageCheck, link, relayMessage.toBase64String());
+    }
+
+    @Test
+    void handleRelayMessageShouldNotSendSackMessage() {
+        int sackTerm = 10;
+        iconSpecific.setLinkSackTerm(link, sackTerm);
+        long height = 1;
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setHeight(height);
+
+        Consumer<TransactionResult> notExistsSackMessageCheck = (txr) -> {
+            assertFalse(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)).stream()
+                    .anyMatch((bmcMsg) -> bmcMsg.getType().equals(BTPMessageCenter.Internal.Sack.name())));
+        };
+        ((BMCScoreClient) bmc).handleRelayMessage(notExistsSackMessageCheck, link, relayMessage.toBase64String());
+    }
+
+    @Test
+    void feeGatheringMessageShouldCallHandleFeeGathering() {
+        //handleRelayMessage -> BSHMock.handleFeeGathering -> EventLog
+        FeeGatheringMessage feeGatheringMessage = new FeeGatheringMessage();
+        BTPAddress fa = new BTPAddress(
+                BTPAddress.PROTOCOL_BTP,
+                net,
+                ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString());
+        feeGatheringMessage.setFa(fa);
+        feeGatheringMessage.setSvcs(new String[]{svc});
+        List<BTPMessage> btpMessages = new ArrayList<>();
+        btpMessages.add(btpMessage(BTPMessageCenter.Internal.FeeGathering, feeGatheringMessage.toBytes()));
+
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setBtpMessages(toBytesArray(btpMessages));
+        Consumer<TransactionResult> handleFeeGatheringCheck = (txr) -> {
+            List<HandleFeeGatheringEventLog> eventLogs = MockBSHIntegrationTest.handleFeeGatheringEventLogs(
+                    txr,
+                    (el) -> el.getFa().equals(fa.toString()) &&
+                            el.getSvc().equals(svc));
+            assertEquals(1, eventLogs.size());
+        };
+        ((BMCScoreClient) bmc).handleRelayMessage(handleFeeGatheringCheck, link, relayMessage.toBase64String());
+    }
+
+    @Test
+    void handleRelayMessageShouldSendFeeGatheringMessage() {
+        //if gatherFeeTerm > 0 && gatherFeeNext <= blockHeight
+        int gatherFeeTerm = 2;
+        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
+
+        Address feeAggregator = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT);
+        iconSpecific.setFeeAggregator(feeAggregator);
+        BTPAddress fa = new BTPAddress(BTPAddress.PROTOCOL_BTP, btpAddress.net(), feeAggregator.toString());
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        List<String> services = new ArrayList<>(bmc.getServices().keySet());
+
+        List<String> links = Arrays.asList(bmc.getLinks());
+        Consumer<TransactionResult> feeGatheringMessageCheck = (txr) -> {
+            feeGatheringMessageChecker(fa, services, links.size())
+                    .accept(BMCIntegrationTest.bmcMessages(txr, links::contains));
+        };
+        ((BMCScoreClient) bmc).handleRelayMessage(feeGatheringMessageCheck, link, new MockRelayMessage().toBase64String());
+    }
+
+    @Test
+    void handleRelayMessageShouldNotSendFeeGatheringMessage() {
+        //check FeeGathering notExists
+        int gatherFeeTerm = 10;
+        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
+
+        List<String> links = Arrays.asList(bmc.getLinks());
+        Consumer<TransactionResult> notExistsSackMessageCheck = (txr) -> {
+            assertFalse(BMCIntegrationTest.bmcMessages(txr, links::contains).stream()
+                    .anyMatch((bmcMsg) -> bmcMsg.getType().equals(BTPMessageCenter.Internal.FeeGathering.name())));
+        };
+        ((BMCScoreClient) bmc).handleRelayMessage(notExistsSackMessageCheck, link, new MockRelayMessage().toBase64String());
+    }
+
+    @Test
+    void handleRelayMessageShouldCallHandleBTPMessage() {
+        //BMC.handleRelayMessage -> BSHMock.HandleBTPMessage(str,str,int,bytes)
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+        List<BTPMessage> btpMessages = new ArrayList<>();
+        btpMessages.add(btpMessage(svc, sn, payload));
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setBtpMessages(toBytesArray(btpMessages));
+        ((BMCScoreClient) bmc).handleRelayMessage(
+                MockBSHIntegrationTest.handleBTPMessageEventLogChecker(
+                        (el) -> {
+                            assertEquals(net, el.getFrom());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(payload, el.getMsg());
+                        }),
+                link,
+                relayMessage.toBase64String());
+    }
+
+    @Test
+    void handleRelayMessageShouldCallHandleBTPError() {
+        //BMC.handleRelayMessage -> BSHMock.HandleBTPError(str,str,int,int,str)
+        ErrorMessage errorMessage = new ErrorMessage();
+        errorMessage.setCode(1);
+        errorMessage.setMsg("error");
+        BigInteger sn = BigInteger.ONE;
+        List<BTPMessage> btpMessages = new ArrayList<>();
+        btpMessages.add(btpMessage(svc, sn.negate(), errorMessage.toBytes()));
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setBtpMessages(toBytesArray(btpMessages));
+        ((BMCScoreClient) bmc).handleRelayMessage(
+                MockBSHIntegrationTest.handleBTPErrorEventLogChecker(
+                        (el) -> {
+                            assertEquals(link, el.getSrc());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertEquals(errorMessage.getCode(), el.getCode());
+                            assertEquals(errorMessage.getMsg(), el.getMsg());
+                        }),
+                link,
+                relayMessage.toBase64String());
+    }
+
+    @Test
+    void sendMessageShouldSuccess() {
+        //BSHMock.sendMessage -> BMC.Message(str,int,bytes)
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+
+        BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
+        ;
+        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
+                BMCIntegrationTest.messageEventLogChecker((el) -> {
+                    assertEquals(link, el.getNext());
+                    assertEquals(seq, el.getSeq());
+                    BTPMessage btpMessage = el.getMsg();
+                    assertEquals(btpAddress, btpMessage.getSrc());
+                    assertEquals(linkBtpAddress, btpMessage.getDst());
+                    assertEquals(svc, btpMessage.getSvc());
+                    assertEquals(sn, btpMessage.getSn());
+                    assertArrayEquals(payload, btpMessage.getPayload());
+                }),
+                ((BMCScoreClient) bmc)._address(),
+                net, svc, sn, payload);
+    }
+}
