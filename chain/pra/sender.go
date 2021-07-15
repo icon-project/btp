@@ -68,6 +68,9 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 	// 	s.log.Debugf("sending rp _msg: %v", rmp.Msg)
 	// }
 
+	s.log.Tracef("RLPEncodedRelayMessage: %x\n", b)
+	s.log.Tracef("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
+
 	return rmp, nil
 }
 
@@ -83,7 +86,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 	size := 0
 	//TODO rm.BlockUpdates[len(rm.BlockUpdates)-1].Height <= s.bmcStatus.Verifier.Height
 	//	using only rm.BlockProof
-	for _, bu := range rm.BlockUpdates {
+	for i, bu := range rm.BlockUpdates {
 		if bu.Height <= height {
 			continue
 		}
@@ -107,6 +110,8 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			}
 			size = buSize
 		}
+
+		s.log.Tracef("Segment: at %d BlockUpdates[%d]: %x", bu.Height, i, bu.Proof)
 		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -134,6 +139,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
 			size += len(lbu.Proof)
+			s.log.Tracef("Segment: at %d BlockProof: %x", rm.BlockProof.BlockWitness.Height, msg.BlockProof)
 			msg.BlockProof = lbu.Proof
 			msg.height = lbu.Height
 		}
@@ -163,6 +169,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
 					return nil, err
 				} else {
+					s.log.Tracef("Segment: at %d ReceiptProofs[%d]: %x", rp.Height, i, b)
 					msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 				}
 
@@ -202,6 +209,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
 			return nil, err
 		} else {
+			s.log.Tracef("Segment: at %d ReceiptProofs[%d]: %x", rp.Height, i, b)
 			msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 		}
 	}
