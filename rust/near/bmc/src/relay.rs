@@ -1,14 +1,37 @@
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedSet;
+use near_sdk::env::keccak256;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Relays(UnorderedSet<String>);
 
+impl Default for Relays {
+    fn default() -> Relays {
+        let relays: UnorderedSet<String> =
+            UnorderedSet::new(keccak256("relay".to_string().as_bytes()));
+        Self(relays)
+    }
+}
+
+impl Eq for Relays {}
+impl PartialEq for Relays {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_vec() == other.0.to_vec()
+    }
+}
+
+impl std::fmt::Debug for Relays {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self.0.iter()).finish()
+    }
+}
+
 impl Relays {
     pub fn new(link: &BTPAddress) -> Self {
         link.to_string().push_str("_relay");
-        let relays: UnorderedSet<String> = UnorderedSet::new(link.to_string().into_bytes());
+        let relays: UnorderedSet<String> =
+            UnorderedSet::new(keccak256(link.to_string().as_bytes()));
         Self(relays)
     }
 
@@ -19,9 +42,9 @@ impl Relays {
         return Err("relay already added".to_string());
     }
 
-    pub fn clear(&mut self)  -> Result<(), String> {
+    pub fn clear(&mut self) -> Result<(), String> {
         if !self.0.is_empty() {
-            return Ok(self.0.clear())
+            return Ok(self.0.clear());
         }
         return Err("no relays present".to_string());
     }
@@ -72,7 +95,8 @@ mod tests {
     fn add_single_relay_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
         assert_eq!(relays.to_vec(), vec!["test".to_string()]);
@@ -82,53 +106,70 @@ mod tests {
     fn add_multiple_relays_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
         relays.add("test 2".to_string()).expect("Failed");
-        assert_eq!(relays.to_vec(), vec!["test".to_string(), "test 2".to_string()]);
+        assert_eq!(
+            relays.to_vec(),
+            vec!["test".to_string(), "test 2".to_string()]
+        );
     }
 
     #[test]
     fn add_existing_relay_fail() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
-        assert_eq!(relays.add("test".to_string()), Err("relay already added".to_string()));
+        assert_eq!(
+            relays.add("test".to_string()),
+            Err("relay already added".to_string())
+        );
     }
 
     #[test]
     fn remove_existing_relay_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
         relays.add("test 2".to_string()).expect("Failed");
         relays.add("test 3".to_string()).expect("Failed");
         relays.remove("test 2".to_string()).expect("Failed");
-        assert_eq!(relays.to_vec(), vec!["test".to_string(), "test 3".to_string()]);
+        assert_eq!(
+            relays.to_vec(),
+            vec!["test".to_string(), "test 3".to_string()]
+        );
     }
 
     #[test]
     fn remove_non_existing_relay_fail() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
         relays.add("test 2".to_string()).expect("Failed");
         relays.add("test 3".to_string()).expect("Failed");
-        assert_eq!(relays.remove("test 4".to_string()), Err("relay not added".to_string()));
+        assert_eq!(
+            relays.remove("test 4".to_string()),
+            Err("relay not added".to_string())
+        );
     }
 
     #[test]
     fn clear_relays_list_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         relays.add("test".to_string()).expect("Failed");
         relays.add("test 2".to_string()).expect("Failed");
@@ -141,7 +182,8 @@ mod tests {
     fn clear_empty_relays_list_fail() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut relays = Relays::new(&link);
         assert_eq!(relays.clear(), Err("no relays present".to_string()));
     }
