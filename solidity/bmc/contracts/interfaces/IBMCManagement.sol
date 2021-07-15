@@ -37,7 +37,6 @@ interface IBMCManagement {
     /**
        @notice Add the smart contract for the service.
        @dev Caller must be an operator of BTP network.
-       @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
        @param _addr    Service's contract address
      */
