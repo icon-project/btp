@@ -355,7 +355,7 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 				if len(rm.ReceiptProofs) > 0 {
 					lbu := rm.BlockUpdates[len(rm.BlockUpdates)-1]
 					if rm.BlockProof, err = b.newBlockProof(lbu.Height, lbu.Header); err != nil {
-						b.log.Tracef("updateRelayMessages: rm: %d bp at %d", i, rm.BlockProof.BlockWitness.Height)
+						b.log.Tracef("updateRelayMessages: fails rm: %d bp at %d", i, lbu.Height)
 						return
 					}
 					rm.BlockUpdates = rm.BlockUpdates[:0]

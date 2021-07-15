@@ -130,6 +130,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				stopMonitorSignal: make(chan bool),
 				bmc:               bmc,
 			},
+			rxSeq: 10,
 		}
 
 		bi := &blockinfo{}

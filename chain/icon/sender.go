@@ -341,7 +341,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			segments = append(segments, segment)
 		} else {
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			s.l.Tracef("Sender: StateProof[%d]: %x", i, rp.Proof)
+			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
 		}
 	}
 
