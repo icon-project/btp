@@ -140,11 +140,11 @@ func (r *Receiver) getProofs(v *BlockNotification) (SubstrateStorageKey, [][]byt
 
 	proofs := [][]byte{}
 	for _, p := range proof.Proof {
-		bp, err := types.HexDecodeString(p)
-		if err != nil {
+		if bp, err := types.HexDecodeString(p); err != nil {
 			return nil, nil, err
+		} else {
+			proofs = append(proofs, bp)
 		}
-		proofs = append(proofs, bp)
 	}
 
 	return key, proofs, nil
