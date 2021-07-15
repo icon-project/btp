@@ -182,7 +182,15 @@ mod tests {
             BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let mut links = Links::new();
         links.insert(&link_param).expect("Failed");
-        links.set(&link_param, None, None, None, Some(vec!["test".to_string()])).expect("Failed");
+        links
+            .set(
+                &link_param,
+                None,
+                None,
+                None,
+                Some(vec!["test".to_string()]),
+            )
+            .expect("Failed");
         let mut expected = Link {
             ..Default::default()
         };
