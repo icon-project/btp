@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::AccountId;
-use near_sdk::{env, near_bindgen};
+use near_sdk::{setup_alloc, env, near_bindgen, log};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 mod link;
 mod permission;
@@ -15,8 +15,7 @@ extern crate lazy_static;
 
 use link::{Link, Links};
 
-#[global_allocator]
-static ALLOC: near_sdk::wee_alloc::WeeAlloc = near_sdk::wee_alloc::WeeAlloc::INIT;
+setup_alloc!();
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -93,40 +92,33 @@ impl BTPMessageCenter {
     //         .expect_err("failed to add owner");
     // }
 
-    pub fn add_relays(&mut self, link: &BTPAddress, address: &Vec<AccountId>) -> Vec<String> {
-        if let Some(mut link) = self.links.0.get(&link.to_string().into_bytes()) {
-            
-           
-            for add in address.to_vec().iter_mut() {
+    pub fn add_relays(&mut self, link: &BTPAddress, address: &Vec<AccountId>) -> bool {
+        self.links.set(&link, None, None, None, Some(address.to_vec())).is_ok()
+    }    
 
-               
-                link.relays.add_relay(add.to_string());
-
-
-               
+    pub fn add_relay(&mut self, link: &BTPAddress, address: &AccountId) -> bool {
+        match self.links.get(&link) {
+            Ok(mut link_property) => {
+                let _ = link_property.relays.add(address.to_string()).is_ok();
+                return self.links.set(&link, None, None, None, Some(link_property.relays.to_vec())).is_ok();
+            },
+            Err(error) => {
+                log!(error);
             }
+        }
+        false
+    } 
 
-            return  link.relays.0.to_vec();
+    // pub fn remove_relay(&self,link:&BTPAddress, address: &Vec<AccountId>) -> bool {
 
-        } 
-
-        return  vec![];
-
-        
-        // if self.links.is_connected(&link) {
-        //     for i in address.iter() {
-        //         let link 
-        //     }
-        // }
-    }
-
+    // }
     
 
     pub fn get_relays(&self,link:&BTPAddress) -> Vec<String> {
 
       
 
-        let link = self.links.0.get(key: &K)
+        // let link = self.links.0.get(key: &K);
 
             // if !link.relays.0.is_empty(){
             //    for v in link.relays.0.iter(){
@@ -184,37 +176,37 @@ mod tests {
         contract.send_message("dddddd".to_string());
         assert_eq!("dddddd".to_string(), contract.get_message());
     }
-    #[test]
-    fn relay_handling(){
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut contract = BTPMessageCenter {
-            ..Default::default()
-        };
+    // #[test]
+    // fn relay_handling(){
+    //     let context = get_context(vec![], false);
+    //     testing_env!(context);
+    //     let mut contract = BTPMessageCenter {
+    //         ..Default::default()
+    //     };
 
-        let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    //     let link = BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-        match contract.links.add_link(&link){
+    //     match contract.links.add_link(&link){
 
-            Ok(res) => println!("{}",res),
-            Err(err) => println!("{}",err)
-        }
-        let address  = vec![String::from("xyz"),String::from("abc"),String::from("tuv")];
+    //         Ok(res) => println!("{}",res),
+    //         Err(err) => println!("{}",err)
+    //     }
+    //     let address  = vec![String::from("xyz"),String::from("abc"),String::from("tuv")];
        
-       let result=  contract.add_relays(&link, &address);
+    //    let result=  contract.add_relays(&link, &address);
 
-       println!("{:#?}",result);
+    //    println!("{:#?}",result);
     
 
         
-      let r = contract.get_relays(&link);
+    //   let r = contract.get_relays(&link);
 
-      println!("{:?}",r);
+    //   println!("{:?}",r);
 
      
 
       
          
        
-    }
+    // }
 }

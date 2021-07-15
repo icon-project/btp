@@ -1,25 +1,20 @@
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
-use std::sync::Mutex;
+use near_sdk::collections::UnorderedMap;
 
 #[path = "./relay.rs"]
 mod relay;
 use relay::Relays;
 
-lazy_static! {
-    static ref KEYS: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
-}
-
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Links(pub LookupMap<Vec<u8>, LinkProps>);
+pub struct Links(UnorderedMap<String, Link>);
 
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct LinkProps {
+#[derive(Debug, Default, BorshDeserialize, BorshSerialize, Eq, PartialEq)]
+pub struct Link {
     rx_seq: u64,
     tx_seq: u64,
     verifier: Verifier,
-   pub relays: Relays,
+    pub relays: Relays,
     reachable: Vec<u8>,
     relay_index: u64,
     rotate_height: u64,
@@ -31,172 +26,167 @@ pub struct LinkProps {
     block_interval_src: u64,
     block_interval_dst: u64,
     current_height: u64,
-    connected: bool,
 }
 
-// #[derive(Default, BorshDeserialize, BorshSerialize)]
-// pub struct Relay {
-//     address: Vec<u8>,
-//     block_count: u64,
-//     message_count: u64,
-// }
-
-#[derive(Default, BorshDeserialize, BorshSerialize)]
+#[derive(Debug, Default, BorshDeserialize, BorshSerialize, Eq, PartialEq)]
 pub struct Verifier {
     mta_height: u64,
     mta_offset: u64,
     last_height: u64,
 }
 
-pub trait Link {
-    fn new() -> Self;
-    fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
-    fn remove_link(&mut self, link: &BTPAddress) -> Result<bool, String>;
-
-    fn get_links(&self) -> Result<Vec<u8>, String>;
-    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String>;
-    fn init_linkprops(&self, link: &BTPAddress) -> LinkProps;
-    fn set_link_status(
-        &mut self,
-        link: &BTPAddress,
-        block_interval: u64,
-        mxagg: u64,
-        delimit: u64,
-    ) -> Result<bool, String>;
-
-    fn is_connected(&self, link: &BTPAddress) -> bool;
-}
-
-impl Link for Links {
-    fn is_connected(&self, link: &BTPAddress) -> bool {
-        let key = link.0.clone().into_bytes();
-
-        self.0.contains_key(&key)
-    }
-
-    fn new() -> Self {
-        let links: LookupMap<Vec<u8>, LinkProps> = LookupMap::new(b"links".to_vec());
-
+impl Links {
+    pub fn new() -> Self {
+        let links: UnorderedMap<String, Link> = UnorderedMap::new(b"links".to_vec());
         Self(links)
     }
 
-    fn init_linkprops(&self, link: &BTPAddress) -> LinkProps {
-        LinkProps {
-            rx_seq: 0,
-            tx_seq: 0,
-            verifier: Verifier {
-                mta_height: 0,
-                mta_offset: 0,
-                last_height: 0,
-            },
-            relays: Relays::new(link),
-            reachable: b"".to_vec(),
-            block_interval_src: 0,
-            block_interval_dst: 0,
-            max_aggregation: 0,
-            delay_limit: 0,
-            relay_index: 0,
-            rotate_height: 0,
-            rotate_term: 0,
-            rx_height_src: 0,
-            rx_height: 0,
-            current_height: 0,
-            connected: true,
+    pub fn insert(&mut self, link: &BTPAddress) -> Result<bool, String> {
+        if self.0.get(&link.to_string()).is_none() {
+            let link_property = Link {
+                rx_seq: 0,
+                tx_seq: 0,
+                verifier: Verifier {
+                    mta_height: 0,
+                    mta_offset: 0,
+                    last_height: 0,
+                },
+                relays: Relays::new(link),
+                reachable: b"".to_vec(),
+                block_interval_src: 0,
+                block_interval_dst: 0,
+                max_aggregation: 0,
+                delay_limit: 0,
+                relay_index: 0,
+                rotate_height: 0,
+                rotate_term: 0,
+                rx_height_src: 0,
+                rx_height: 0,
+                current_height: 0,
+            };
+            return Ok(self.0.insert(&link.to_string(), &link_property).is_some());
         }
+        Err("link already added".to_string())
     }
 
-    fn add_link(&mut self, link: &BTPAddress) -> Result<bool, String> {
-        let linkprop = self.init_linkprops(link);
-        let key = link.0.clone().into_bytes();
-
-        //TO-DO
-        //validate caller has necessary permission
-        // check if verifiers are already added
-
-        match link.is_valid() {
-            Ok(true) => {
-                if !self.0.contains_key(&key) {
-                    self.0.insert(&key, &linkprop);
-
-                    KEYS.lock().unwrap().push(key);
-
-                    return Ok(true);
-                }
-                return Ok(false);
-            }
-            Ok(false) => return Ok(false),
-            Err(res) => return Err(res),
+    pub fn remove(&mut self, link: &BTPAddress) -> Result<bool, String> {
+        if self.0.get(&link.to_string()).is_some() {
+            return Ok(self.0.remove(&link.0.clone()).is_some());
         }
+        Err("link does not exist".to_string())
     }
 
-    fn remove_link(&mut self, link: &BTPAddress) -> Result<bool, String> {
-        //TO-DO
-        //validate caller has necessary permission
-        match link.is_valid() {
-            Ok(true) => {
-                if self.0.contains_key(&link.0.clone().into_bytes()) {
-                    self.0.remove(&link.0.clone().into_bytes());
-
-                    return Ok(true);
-                }
-
-                return Ok(false);
-            }
-            Ok(false) => return Ok(false),
-            Err(error) => return Err(format!("Unable to remove link {}", error)),
+    pub fn to_vec(&self) -> Vec<String> {
+        if !self.0.is_empty() {
+            return self.0.keys().collect();
         }
-    }
-    fn get_links(&self) -> Result<Vec<u8>, String> {
-        for key in KEYS.lock().unwrap().iter() {
-            return Ok(key.to_vec());
-        }
-
-        return Err("links are empty".to_string());
+        vec![]
     }
 
-    fn get_status(&self, link: &BTPAddress) -> Result<LinkProps, String> {
-        if self.0.contains_key(&link.0.clone().into_bytes()) {
-            let linkprop = self.0.get(&link.0.clone().into_bytes());
-
-            return Ok(linkprop.unwrap());
+    pub fn get(&self, link: &BTPAddress) -> Result<Link, String> {
+        if let Some(link) = self.0.get(&link.to_string()) {
+            return Ok(link);
         }
-
-        return Err("Not found".to_string());
+        Err("link does not exist".to_string())
     }
-    fn set_link_status(
+
+    pub fn set(
         &mut self,
-        link: &BTPAddress,
-        block_interval: u64,
-        mxagg: u64,
-        delimit: u64,
+        link_param: &BTPAddress,
+        block_interval: Option<u64>,
+        max_aggregation: Option<u64>,
+        delay_limit: Option<u64>,
+        relays: Option<Vec<String>>,
     ) -> Result<bool, String> {
-        match link.is_valid() {
-            Ok(true) => {
-                //TO-DO : check owner permission
-                //Verify if the caller is owner
-                //Check if either max_aggregation < 1 or delay_limit
-                //Add link status information to the link based on rotate term
-
-                if self.0.contains_key(&link.0.clone().into_bytes()) {
-                    let mut link = self.0.get(&link.0.clone().into_bytes()).unwrap();
-                    link.max_aggregation = mxagg;
-                    link.block_interval_src = block_interval;
-                    link.delay_limit = delimit;
-                    // let linkprop = LinkProps {
-                    //     block_interval_src: block_interval,
-                    //     max_aggregation: mxagg,
-                    //     delay_limit: delimit,
-                    //     ..self.init_linkprops()
-                    // };
-
-                    // self.0.insert(&link.0.clone().into_bytes(), &linkprop);
-
-                    return Ok(true);
-                }
-                return Ok(false);
+        if let Some(mut link) = self.0.get(&link_param.to_string()) {
+            if let Some(max_aggregation) = max_aggregation {
+                link.max_aggregation = max_aggregation;
             }
-            Ok(false) => return Ok(false),
-            Err(error) => Err(format!("unable to set the link {}", error)),
+            if let Some(block_interval) = block_interval {
+                link.block_interval_src = block_interval;
+            }
+            if let Some(delay_limit) = delay_limit {
+                link.delay_limit = delay_limit;
+            }
+            if let Some(relays) = relays {
+                for relay in relays.iter() {
+                    match link.relays.add(relay.clone()) {
+                        Ok(_) => (),
+                        Err(_) => (),
+                    }
+                }
+            }
+            return Ok(self.0.insert(&link_param.to_string(), &link).is_some());
         }
+        Err("link does not exist".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::MockedBlockchain;
+    use near_sdk::{testing_env, VMContext};
+
+    fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
+        VMContext {
+            current_account_id: "alice.testnet".to_string(),
+            signer_account_id: "robert.testnet".to_string(),
+            signer_account_pk: vec![0, 1, 2],
+            predecessor_account_id: "jane.testnet".to_string(),
+            input,
+            block_index: 0,
+            block_timestamp: 0,
+            account_balance: 0,
+            account_locked_balance: 0,
+            storage_usage: 0,
+            attached_deposit: 0,
+            prepaid_gas: 10u64.pow(18),
+            random_seed: vec![0, 1, 2],
+            is_view,
+            output_data_receivers: vec![],
+            epoch_height: 19,
+        }
+    }
+
+    #[test]
+    fn add_link_pass() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let mut links = Links::new();
+        links.insert(&link).expect("Failed");
+        let expected = Link {
+            ..Default::default()
+        };
+        assert_eq!(links.get(&link).unwrap(), expected);
+    }
+
+    #[test]
+    fn add_existing_link_fail() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let link =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let mut links = Links::new();
+        links.insert(&link).expect("Failed");
+        assert_eq!(links.insert(&link), Err("link already added".to_string()));
+    }
+
+    #[test]
+    fn add_link_relay_pass() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let link_param =
+            BTPAddress("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let mut links = Links::new();
+        links.insert(&link_param).expect("Failed");
+        links.set(&link_param, None, None, None, Some(vec!["test".to_string()])).expect("Failed");
+        let mut expected = Link {
+            ..Default::default()
+        };
+        expected.relays.add("test".to_string()).expect("Failed");
+        assert_eq!(links.get(&link_param).unwrap(), expected);
     }
 }
