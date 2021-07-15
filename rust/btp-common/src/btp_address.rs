@@ -1,3 +1,8 @@
+use serde::Serialize;
+
+
+
+#[derive(serde::Serialize)]
 pub struct BTPAddress(pub String);
 
 impl BTPAddress {
