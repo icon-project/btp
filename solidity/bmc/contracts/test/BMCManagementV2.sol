@@ -16,7 +16,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 contract BMCManagementV2 is IBMCManagement, Initializable {
     using ParseAddress for address;
     using ParseAddress for string;
-    using RLPEncodeStruct for Types.EventMessage;
+    using RLPEncodeStruct for Types.BMCService;
     using Strings for string;
     using Utils for uint256;
     using Utils for string[];
@@ -440,14 +440,8 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
                     "bmc",
                     0,
                     Types
-                        .EventMessage(
-                        _eventType,
-                        Types.Connection(
-                            IBMCPeriphery(bmcPeriphery).getBmcBtpAddress(),
-                            _link
-                        )
-                    )
-                        .encodeEventMessage()
+                        .BMCService(_eventType, bytes(_link))
+                        .encodeBMCService()
                 );
             }
         }
@@ -646,14 +640,16 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         links[_prev].txSeq++;
     }
 
-    function updateLinkReachable(string memory _prev, string memory _to)
+    function updateLinkReachable(string memory _prev, string[] memory _to)
         external
         override
         onlyBMCPeriphery
     {
-        links[_prev].reachable.push(_to);
-        (string memory _net, ) = _to.splitBTPAddress();
-        getLinkFromReachableNet[_net] = Types.Tuple(_prev, _to);
+        for (uint256 i = 0; i < _to.length; i++) {
+            links[_prev].reachable.push(_to[i]);
+            (string memory _net, ) = _to[i].splitBTPAddress();
+            getLinkFromReachableNet[_net] = Types.Tuple(_prev, _to[i]);
+        }
     }
 
     function deleteLinkReachable(string memory _prev, uint256 _index)

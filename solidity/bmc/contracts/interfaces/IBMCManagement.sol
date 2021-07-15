@@ -252,7 +252,7 @@ interface IBMCManagement {
         @param _prev BTP Address of the previous BMC
         @param _to BTP Address of the reachable
      */
-    function updateLinkReachable(string memory _prev, string memory _to)
+    function updateLinkReachable(string memory _prev, string[] memory _to)
         external;
 
     /**

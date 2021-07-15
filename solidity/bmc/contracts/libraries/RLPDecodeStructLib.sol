@@ -42,14 +42,25 @@ library RLPDecodeStruct {
         return Types.GatherFeeMessage(string(ls[0].toBytes()), _svcs);
     }
 
-    function decodeEventMessage(bytes memory _rlp)
+    function decodePropagateMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.Connection memory)
+        returns (string memory)
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        return
-            Types.Connection(string(ls[0].toBytes()), string(ls[1].toBytes()));
+        return string(ls[0].toBytes());
+    }
+
+    function decodeInitMessage(bytes memory _rlp)
+        internal
+        pure
+        returns (string[] memory _links)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        RLPReader.RLPItem[] memory rlpLinks = ls[0].toList();
+        _links = new string[](rlpLinks.length);
+        for (uint256 i = 0; i < rlpLinks.length; i++)
+            _links[i] = string(rlpLinks[i].toBytes());
     }
 
     function decodeRegisterCoin(bytes memory _rlp)

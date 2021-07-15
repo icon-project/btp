@@ -222,16 +222,6 @@ library Types {
         bytes message; //  serialized Service Message from BSH
     }
 
-    struct Connection {
-        string from;
-        string to;
-    }
-
-    struct EventMessage {
-        string eventType;
-        Connection conn;
-    }
-
     struct BMCService {
         string serviceType;
         bytes payload;

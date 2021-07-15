@@ -182,6 +182,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
                 return;
             }
+
             if (_sm.serviceType.compareTo("FeeGathering")) {
                 Types.GatherFeeMessage memory _gatherFee;
                 try this.tryDecodeGatherFeeMessage(_sm.payload) returns (
@@ -209,38 +210,47 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                     }
                 }
             } else if (_sm.serviceType.compareTo("Link")) {
-                Types.Connection memory _conn =
-                    _sm.payload.decodeEventMessage();
+                string memory _to = _sm.payload.decodePropagateMessage();
                 Types.Link memory link =
-                    IBMCManagement(bmcManagement).getLink(_conn.from);
+                    IBMCManagement(bmcManagement).getLink(_prev);
                 bool check;
                 if (link.isConnected) {
                     for (uint256 i = 0; i < link.reachable.length; i++)
-                        if (_conn.to.compareTo(link.reachable[i])) {
+                        if (_to.compareTo(link.reachable[i])) {
                             check = true;
                             break;
                         }
-                    if (!check)
+                    if (!check) {
+                        string[] memory _links = new string[](1);
+                        _links[0] = _to;
                         IBMCManagement(bmcManagement).updateLinkReachable(
-                            _conn.from,
-                            _conn.to
+                            _prev,
+                            _links
                         );
+                    }
                 }
             } else if (_sm.serviceType.compareTo("Unlink")) {
-                Types.Connection memory _conn =
-                    _sm.payload.decodeEventMessage();
+                string memory _to = _sm.payload.decodePropagateMessage();
                 Types.Link memory link =
-                    IBMCManagement(bmcManagement).getLink(_conn.from);
+                    IBMCManagement(bmcManagement).getLink(_prev);
                 if (link.isConnected) {
                     for (uint256 i = 0; i < link.reachable.length; i++) {
-                        if (_conn.to.compareTo(link.reachable[i]))
+                        if (_to.compareTo(link.reachable[i]))
                             IBMCManagement(bmcManagement).deleteLinkReachable(
-                                _conn.from,
+                                _prev,
                                 i
                             );
                     }
                 }
-            } else revert("BMCRevert: not exists event handler");
+            } else if (_sm.serviceType.compareTo("Init")) {
+                string[] memory _links = _sm.payload.decodeInitMessage();
+                IBMCManagement(bmcManagement).updateLinkReachable(
+                    _prev,
+                    _links
+                );
+            } else if (_sm.serviceType.compareTo("Sack")) {
+                // skip this case since it has been removed from internal services
+            } else revert("BMCRevert: not exists internal handler");
         } else {
             _bshAddr = IBMCManagement(bmcManagement).getBshServiceByName(
                 _msg.svc
