@@ -262,7 +262,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			return nil, ErrInvalidBlockUpdateProofSize
 		}
 		size += buSize
-		if s.isOverSizeLimit(size) {
+		osl := s.isOverSizeLimit(size)
+		if osl {
+			s.l.Tracef("Segment: over size limit: %t", osl)
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -367,6 +369,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 }
 
 func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+	s.l.Tracef("Segments: create Segment for height %d", height)
 	switch s.src.BlockChain() {
 	case "icon":
 		return s.iconSegment(rm, height)

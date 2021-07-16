@@ -76,7 +76,7 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 
 // Segment split the give RelayMessage into small segments
 func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
-
+	s.log.Tracef("Segments: create Segment for height %d", height)
 	segments := make([]*chain.Segment, 0)
 	var err error
 	msg := &RelayMessage{
