@@ -90,6 +90,10 @@ func (thp TransactionHashParam) Hash() string {
 	return thp.Tx.Hash().Hex()
 }
 
+func (thp TransactionHashParam) String() string {
+	return thp.Tx.Hash().Hex()
+}
+
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte

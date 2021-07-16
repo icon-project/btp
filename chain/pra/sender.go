@@ -95,7 +95,10 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			return nil, ErrInvalidBlockUpdateProofSize
 		}
 		size += buSize
-		if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
+		osl := s.isOverSizeLimit(size)
+		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
+		if osl || obl {
+			s.log.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
