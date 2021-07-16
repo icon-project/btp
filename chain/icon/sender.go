@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -40,6 +41,8 @@ const (
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
 )
+
+var RetryGetRelayResultRetryError = regexp.MustCompile(`connection reset by peer|EOF`)
 
 type SenderOptions struct {
 	StepLimit int64 `json:"stepLimit"`
@@ -463,6 +466,11 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		for {
 			txr, err := s.c.GetTransactionResult(txh)
 			if err != nil {
+				if RetryGetRelayResultRetryError.MatchString(err.Error()) {
+					<-time.After(DefaultGetRelayResultInterval)
+					continue
+				}
+
 				if je, ok := err.(*jsonrpc.Error); ok {
 					switch je.Code {
 					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
