@@ -307,6 +307,21 @@ type wsConnectError struct {
 	httpResp *http.Response
 }
 
+func (c *Client) keepAlive(conn *websocket.Conn) {
+	go func() {
+		ticker := time.NewTicker(DefaultKeepAliveInterval)
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
+				c.l.Warnf("fail to WriteControl err: %v", err)
+				return
+			}
+		}
+	}()
+}
+
 func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Conn, error) {
 	wsEndpoint := strings.Replace(c.Endpoint, "http", "ws", 1)
 	conn, httpResp, err := websocket.DefaultDialer.Dial(wsEndpoint+reqUrl, reqHeader)
@@ -319,25 +334,6 @@ func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Con
 	c.keepAlive(conn)
 	c._addWsConn(conn)
 	return conn, nil
-}
-
-func (c *Client) keepAlive(conn *websocket.Conn) {
-	go func() {
-		ticker := time.NewTicker(DefaultKeepAliveInterval)
-		defer ticker.Stop()
-
-		for {
-			<-ticker.C
-			if conn == nil {
-				return
-			}
-
-			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
-				c.l.Warnf("Ping failed error: %v", err)
-				return
-			}
-		}
-	}()
 }
 
 type wsRequestError struct {
