@@ -55,7 +55,7 @@ metadata! {
     #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default)]
     pub struct BshGeneric {
         bmc_contract: String,
-        pub bsh_contract: String,
+        bsh_contract: String,
         /// A list of transferring requests
         /// Use `HashMap` because `LookupMap` doesn't implement
         /// Clone, Debug, and Default traits
@@ -98,8 +98,8 @@ impl BshGeneric {
         from: &str,
         to: &str,
         coin_names: Vec<String>,
-        values: Vec<u64>,
-        fees: Vec<u64>,
+        values: Vec<u128>,
+        fees: Vec<u128>,
     ) -> Result<(), &str> {
         let btp_addr = BTPAddress(to.to_string());
         let _network_addr = btp_addr
@@ -300,6 +300,16 @@ impl BshGeneric {
             // BSH core: bsh_core.transfer_fees(fa);
         }
         Ok(())
+    }
+
+    /// Return contract address
+    pub fn get_contract_address(&self) -> String {
+        env::current_account_id()
+    }
+
+    /// Update contract address
+    pub fn set_contract_address(&mut self, new_addr: &str) {
+        self.bsh_contract = new_addr.to_string();
     }
 }
 

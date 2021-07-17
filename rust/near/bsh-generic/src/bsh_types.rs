@@ -49,8 +49,8 @@ pub struct PendingTransferCoin {
     pub from: String,
     pub to: String,
     pub coin_names: Vec<String>,
-    pub amounts: Vec<u64>,
-    pub fees: Vec<u64>,
+    pub amounts: Vec<u128>,
+    pub fees: Vec<u128>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
@@ -65,15 +65,15 @@ pub struct TransferCoin {
 #[serde(crate = "near_sdk::serde")]
 pub struct Asset {
     pub coin_name: String,
-    pub value: u64,
+    pub value: u128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AssetTransferDetail {
     pub coin_name: String,
-    pub value: u64,
-    pub fee: u64,
+    pub value: u128,
+    pub fee: u128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
@@ -101,8 +101,8 @@ pub struct Coin {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Balance {
-    pub locked_balance: u64,
-    pub refundable_balance: u64,
+    pub locked_balance: u128,
+    pub refundable_balance: u128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]

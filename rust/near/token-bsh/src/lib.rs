@@ -36,8 +36,8 @@
 
 use bsh_generic::other_bsh_types::*;
 
-//use btp_common::BTPAddress;
 use bsh_generic::BshGeneric;
+use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 use std::collections::HashMap;
@@ -55,36 +55,37 @@ metadata! {
         list_of_owners: Vec<String>,
         /// Address of generic BSH contract
         bsh_generic: BshGeneric,
-        aggregation_fee: HashMap<String, u64>,
+        aggregation_fee: HashMap<String, u128>,
         balances: HashMap<String, HashMap<String, Balance>>,
         coins: HashMap<String, u64>,
         coin_names: Vec<String>,
+        coin_balances: HashMap<u64, HashMap<String, u128>>,
         charged_coins: Vec<String>,
-        charged_amounts: Vec<u64>,
-        fee_numerator: u64,
+        charged_amounts: Vec<u128>,
+        fee_numerator: u128,
+        uri: String,
     }
 }
 
 #[near_bindgen]
 impl TokenBsh {
-    pub const FEE_DENOMINATOR: u64 = u64::pow(10, 4);
+    pub const FEE_DENOMINATOR: u128 = u128::pow(10, 4);
     pub const RC_OK: usize = 0;
     pub const RC_ERR: usize = 1;
 
     #[init]
-    pub fn new(uri: &str, native_coin_name: &str, fee_numerator: u64) -> Self {
+    pub fn new(uri: &str, native_coin_name: &str, fee_numerator: u128) -> Self {
+        assert!(is_valid_btp_address(uri), "Invalid BTP address");
         let mut owners: HashMap<String, bool> = HashMap::new();
         let mut list_of_owners: Vec<String> = vec![];
         let mut coins: HashMap<String, u64> = HashMap::new();
         let mut coin_names: Vec<String> = vec![];
         let fee_numerator = fee_numerator;
-        let mut bsh_generic = BshGeneric::default();
 
         let _ = owners.insert(env::current_account_id(), true);
         list_of_owners.push(env::current_account_id());
         let _ = coins.insert(native_coin_name.to_string(), 0);
         coin_names.push(native_coin_name.to_string());
-        bsh_generic.bsh_contract = uri.to_string();
 
         let bsh_event = BshEvents::SetOwnership {
             promoter: &env::predecessor_account_id(),
@@ -98,25 +99,25 @@ impl TokenBsh {
         Self {
             owners,
             list_of_owners,
-            bsh_generic,
+            bsh_generic: BshGeneric::default(),
             aggregation_fee: HashMap::new(),
             balances: HashMap::new(),
             coins,
             coin_names,
+            coin_balances: HashMap::new(),
             charged_coins: vec![],
             charged_amounts: vec![],
             fee_numerator,
+            uri: uri.to_string(),
         }
     }
 
     /// Add another owner.
     /// Caller must be an owner of BTP network
     pub fn add_owner(&mut self, owner: &str) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
-        assert!(self.owners[owner] == false, "ExistedOwner");
+        assert!(is_valid_btp_address(owner), "Invalid BTP address");
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
+        assert!(!self.owners[owner], "ExistingOwner");
         let _ = self.owners.insert(owner.to_string(), true);
         self.list_of_owners.push(owner.to_string());
         let bsh_event = BshEvents::SetOwnership {
@@ -132,12 +133,10 @@ impl TokenBsh {
     /// Remove an existing owner.
     /// Caller must be an owner of BTP network
     pub fn remove_owner(&mut self, owner: &str) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
+        assert!(is_valid_btp_address(owner), "Invalid BTP address");
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
         assert!(self.list_of_owners.len() > 1, "Unable to remove last owner");
-        assert_eq!(self.owners[owner], true, "Removing owner not found");
+        assert!(self.owners[owner], "Removing owner not found");
         let _ = self.owners.remove(owner);
         self.remove(owner);
         let bsh_event = BshEvents::RemoveOwnership {
@@ -151,8 +150,9 @@ impl TokenBsh {
     }
 
     fn remove(&mut self, addr: &str) {
+        assert!(is_valid_btp_address(addr), "Invalid BTP address");
         for i in 0..self.list_of_owners.len() {
-            if self.list_of_owners[i] == addr.to_string() {
+            if self.list_of_owners[i] == *addr {
                 self.list_of_owners[i] = self.list_of_owners[self.list_of_owners.len() - 1].clone();
                 let _ = self.list_of_owners.pop();
                 break;
@@ -164,6 +164,7 @@ impl TokenBsh {
     /// Anyone can call this function.
     /// Address needs to be verified.
     pub fn is_owner(&self, owner: &str) -> bool {
+        assert!(is_valid_btp_address(owner), "Invalid BTP address");
         self.owners[owner]
     }
 
@@ -178,33 +179,29 @@ impl TokenBsh {
     /// Caller must be an owner of this contract.
     /// `address` must be different from the existing BSH generic contract address.
     pub fn update_generic_bsh_addr(&mut self, addr: &str) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
+        assert!(is_valid_btp_address(addr), "Invalid BTP address");
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
         assert_ne!(
             addr.to_string(),
             env::predecessor_account_id(),
             "InvalidSetting"
         );
-        if self.bsh_generic.bsh_contract != env::predecessor_account_id() {
+        if self.bsh_generic.get_contract_address() != env::predecessor_account_id() {
             assert!(
-                self.bsh_generic.has_pending_requests() == false,
+                !self.bsh_generic.has_pending_requests(),
                 "HasPendingRequest"
             );
         }
-        self.bsh_generic.bsh_contract = addr.to_string();
+        self.bsh_generic.set_contract_address(addr);
     }
 
     /// Update base URI.
     /// Caller must be an owner of this contract.
     /// The URI must be initialized in construction.
-    pub fn update_uri(&mut self, _new_uri: &str) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
-        // TODO: set_uri(_new_uri);
+    pub fn update_uri(&mut self, new_uri: &str) {
+        assert!(is_valid_btp_address(new_uri), "Invalid BTP address");
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
+        self.uri = new_uri.to_string();
     }
 
     /// Set fee ratio.
@@ -212,11 +209,8 @@ impl TokenBsh {
     /// The transfer fee is calculated as fee_numerator / FEE_DEMONINATOR.
     /// The fee_numetator should be less than FEE_DEMONINATOR.
     /// fee_numerator is set to `10` in construction by default, which means the default fee ratio is 0.1%.
-    pub fn set_fee_ratio(&mut self, fee_numerator: u64) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
+    pub fn set_fee_ratio(&mut self, fee_numerator: u128) {
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
         assert!(fee_numerator <= Self::FEE_DENOMINATOR, "InvalidSetting");
         self.fee_numerator = fee_numerator;
     }
@@ -227,10 +221,7 @@ impl TokenBsh {
     /// ID of a wrapped coin is generated by using keccak256.
     /// ID = 0 is fixed to assign to native coin.
     pub fn register(&mut self, name: &str) {
-        assert!(
-            self.owners[&env::current_account_id()] == true,
-            "Unauthorized"
-        );
+        assert!(self.owners[&env::current_account_id()], "Unauthorized");
         assert!(self.coins[name] == 0, "TokenExists");
         let name_bytes = env::keccak256(name.as_bytes());
         let name_ptr = name_bytes.as_ptr() as u64;
@@ -246,14 +237,14 @@ impl TokenBsh {
 
     /// Return an ID number of the given coin name.
     /// Return `None` if nothing found.
-    pub fn get_coin_id(&self, coin_name: &str) -> Option<&u64> {
-        self.coins.get(coin_name)
+    pub fn get_coin_id(&self, coin_name: &str) -> u64 {
+        self.coins[coin_name]
     }
 
     /// Check validity of a coin name.
     /// Call generic BSH contract to validate a requested coin name.
     pub fn is_valid_coin(&self, coin_name: &str) -> bool {
-        self.coins[coin_name] != 0 || coin_name.to_string() == self.coin_names[0]
+        self.coins[coin_name] != 0 || *coin_name == self.coin_names[0]
     }
 
     /// Return a usable/locked/refundable balance of an account based on the coin name.
@@ -261,8 +252,19 @@ impl TokenBsh {
     /// [] - locked_balance: when users transfer the coin, it will be locked until
     ///      service message response is received.
     /// [] - refundable_balance: what will be refunded to users.
-    pub fn get_balance_of(&self, owner: &str, coin_name: &str) -> (u64, u64, u64) {
-        todo!()
+    pub fn get_balance_of(&self, owner: &str, coin_name: &str) -> (u128, u128, u128) {
+        assert!(is_valid_btp_address(owner), "Invalid BTP address");
+        let locked_balance = self.balances[owner][coin_name].locked_balance;
+        let refundable_balance = self.balances[owner][coin_name].refundable_balance;
+
+        if *coin_name == self.coin_names[0] {
+            return (env::account_balance(), locked_balance, refundable_balance);
+        }
+        (
+            self.balance_of(owner, self.coins[coin_name]),
+            locked_balance,
+            refundable_balance,
+        )
     }
 
     /// Return a list of balances in an account.
@@ -272,85 +274,350 @@ impl TokenBsh {
     /// [] - locked_balances: an array of locked balances.
     /// [] - refundable_balances: an array of refundable balances.
     pub fn get_balance_of_batch(
+        &self,
         owner: &str,
         coin_names: &[&str],
-    ) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
-        todo!()
+    ) -> (Vec<u128>, Vec<u128>, Vec<u128>) {
+        assert!(is_valid_btp_address(owner), "Invalid BTP address");
+        let mut usable_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
+        let mut locked_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
+        let mut refundable_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
+        for i in 0..coin_names.len() {
+            let (usable_bal, locked_bal, refundable_bal) =
+                self.get_balance_of(owner, coin_names[i]);
+            usable_balances.push(usable_bal);
+            locked_balances.push(locked_bal);
+            refundable_balances.push(refundable_bal);
+        }
+        (usable_balances, locked_balances, refundable_balances)
+    }
+
+    fn balance_of(&self, account: &str, id: u64) -> u128 {
+        assert!(is_valid_btp_address(account), "Invalid BTP address");
+        assert!(
+            *account != env::predecessor_account_id(),
+            "Balance query for the zero address"
+        );
+        self.coin_balances[&id][account]
     }
 
     /// Return a list of accumulated fees.
     /// Only return an asset if it has a value greater than 0.
     /// Returns an array of assets.
-    pub fn get_accumulated_fees() -> Vec<Asset> {
-        todo!()
+    pub fn get_accumulated_fees(&self) -> Vec<Asset> {
+        let mut accumulated_fees: Vec<Asset> = Vec::with_capacity(self.coin_names.len());
+        for i in 0..self.coin_names.len() {
+            let asset = Asset {
+                coin_name: self.coin_names[i].clone(),
+                value: self.aggregation_fee[&self.coin_names[i]],
+            };
+            accumulated_fees.push(asset);
+        }
+        accumulated_fees
     }
 
     /// Allow users to deposit an amount of native coin into the contract.
     /// The amount must be specified.
     #[payable]
-    pub fn transfer(to: &str) {
-        todo!()
+    pub fn transfer(&mut self, to: &str) {
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        let charge_amt = env::attached_deposit()
+            .checked_mul(self.fee_numerator)
+            .expect("Failed to safely multiply")
+            .checked_div(Self::FEE_DENOMINATOR)
+            .expect("Failed to safely divide");
+        assert!(charge_amt > 0, "InvalidAmount");
+        self.send_service_message(
+            &env::signer_account_id(),
+            to,
+            &self.coin_names[0].clone(),
+            env::attached_deposit(),
+            charge_amt,
+        );
+    }
+
+    fn safe_transfer_from(&mut self, from: &str, to: &str, id: u64, amount: u128) {
+        assert!(is_valid_btp_address(from), "Invalid BTP address");
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        let from_balance = self.coin_balances[&id][from];
+        let to_balance = self.coin_balances[&id][to];
+        assert!(from_balance >= amount, "Insufficient balance for transfer");
+        let _ = self.coin_balances.entry(id).and_modify(|coin| {
+            let _ = coin.insert(from.to_string(), from_balance - amount);
+        });
+        let _ = self.coin_balances.entry(id).and_modify(|coin| {
+            let _ = coin.insert(to.to_string(), to_balance + amount);
+        });
     }
 
     /// Allow users to deposit an amount of wrapped native coin into the contract.
     /// Caller must set condition to approve transfer of wrapped tokens out of source account.
     /// Revert if balance of source account is less than specified transfer amount.
-    pub fn transfer_to(coin_name: &str, value: u64, to: &str) {
-        todo!()
+    pub fn transfer_to_contract(&mut self, coin_name: &str, value: u128, to: &str) {
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        assert!(self.coins[coin_name] != 0, "UnregisteredCoin");
+        let charge_amt = value
+            .checked_mul(self.fee_numerator)
+            .expect("Failed to safely multiply")
+            .checked_div(Self::FEE_DENOMINATOR)
+            .expect("Failed to safely divide");
+        assert!(charge_amt > 0, "InvalidAmount");
+        self.safe_transfer_from(
+            &env::signer_account_id(),
+            &env::current_account_id(),
+            self.coins[coin_name],
+            value,
+        );
+        self.send_service_message(&env::signer_account_id(), to, coin_name, value, charge_amt);
     }
 
-    fn send_service_message(from: &str, to: &str, coin_name: &str, value: u64, charge_amt: u64) {
-        todo!()
+    fn send_service_message(
+        &mut self,
+        from: &str,
+        to: &str,
+        coin_name: &str,
+        value: u128,
+        charge_amt: u128,
+    ) {
+        assert!(is_valid_btp_address(from), "Invalid BTP address");
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        self.lock_balance(from, coin_name, value);
+        let coins: Vec<String> = vec![coin_name.to_string()];
+        let amounts: Vec<u128> = vec![value
+            .checked_sub(charge_amt)
+            .expect("Failed to safely subtract")];
+        let fees: Vec<u128> = vec![charge_amt];
+        let _ = self
+            .bsh_generic
+            .send_service_message(from, to, coins, amounts, fees);
     }
 
     /// Allow users to transfer multiple coins/wrapped coins to another chain.
     /// Caller must set condition to approve transfer of wrapped tokens out of source account.
     /// Revert if balance of source account is less than specified transfer amount.
     #[payable]
-    pub fn transfer_batch(coin_names: &[&str], values: &[u64], to: &[&str]) {
-        todo!()
+    pub fn transfer_batch(&mut self, coin_names: &[String], values: &[u128], to: &str) {
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        assert!(coin_names.len() == values.len(), "InvalidRequest");
+        let size = coin_names.len();
+        let mut amounts: Vec<u128> = Vec::with_capacity(size);
+        let mut charge_amts: Vec<u128> = Vec::with_capacity(size);
+        for i in 0..size {
+            charge_amts.push(
+                values[i]
+                    .checked_mul(self.fee_numerator)
+                    .expect("Failed to safely multiply")
+                    .checked_div(Self::FEE_DENOMINATOR)
+                    .expect("Failed to safely divide"),
+            );
+            if coin_names[i] == self.coin_names[i] {
+                assert!(
+                    charge_amts[i] > 0 && values[i] == env::attached_deposit(),
+                    "InvalidAmount"
+                );
+            } else {
+                let id = self.coins[&coin_names[i]];
+                assert!(id != 0, "UnregisteredCoin");
+                assert!(charge_amts[i] > 0, "InvalidAmount");
+                self.safe_transfer_from(
+                    &env::signer_account_id(),
+                    &env::current_account_id(),
+                    id,
+                    values[i],
+                );
+            }
+            amounts.push(
+                values[i]
+                    .checked_sub(charge_amts[i])
+                    .expect("Failed to safely subtract"),
+            );
+            self.lock_balance(&env::signer_account_id(), &coin_names[i], values[i]);
+        }
+        let _ = self.bsh_generic.send_service_message(
+            &env::signer_account_id(),
+            to,
+            coin_names.to_vec(),
+            amounts,
+            charge_amts,
+        );
     }
 
     /// Reclaim the token's refundable balance.
     /// Caller must be an owner of coin.
     /// The amount to claim must be less than or equal to the refundable balance.
-    pub fn reclaim(coin_name: &str, value: u64) {
-        todo!()
+    pub fn reclaim(&mut self, coin_name: &str, value: u128) {
+        let refundable_balance =
+            self.balances[&env::signer_account_id()][coin_name].refundable_balance;
+        assert!(refundable_balance >= value, "Imbalance");
+        let _ = self
+            .balances
+            .entry(env::signer_account_id())
+            .and_modify(|coin| {
+                let _ = coin.entry(coin_name.to_string()).and_modify(|balance| {
+                    let _ = balance
+                        .refundable_balance
+                        .checked_sub(value)
+                        .expect("Failed to safely subtract");
+                });
+            });
+        self.refund(&env::signer_account_id(), coin_name, value)
+            .expect("Failed to refund");
     }
 
     /// Return coin for the failed transfer.
     /// Caller must be itself.
-    pub fn refund(to: &str, coin_name: &str, value: u64) {
-        todo!()
+    pub fn refund(&mut self, to: &str, coin_name: &str, value: u128) -> Result<(), &str> {
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        assert!(
+            env::signer_account_id() == env::current_account_id(),
+            "Unauthorized"
+        );
+        let id = self.coins[coin_name];
+        if id == 0 {
+            self.transfer_to_contract(coin_name, value, to);
+            return Ok(());
+        } else {
+            self.safe_transfer_from(&env::current_account_id(), to, id, value);
+        }
+        Ok(())
     }
 
     /// Mint the wrapped coin.
     /// Caller must be a generic BSH contract.
     /// Generic BSH contract must check validity of requested coin name.
-    pub fn mint(to: &str, coin_name: &str, value: u64) {
-        todo!()
+    pub fn mint(&mut self, to: &str, coin_name: &str, value: u128) {
+        assert!(is_valid_btp_address(to), "Invalid BTP address");
+        let bsh_generic_addr = self.bsh_generic.get_contract_address();
+        assert!(env::signer_account_id() == bsh_generic_addr, "Unauthorized");
+        let id = self.coins[coin_name];
+        if id == 0 {
+            self.transfer_to_contract(coin_name, value, to);
+        } else {
+            let _ = self.coin_balances.entry(id).and_modify(|coin| {
+                let bal = coin[coin_name];
+                let _ = coin.insert(coin_name.to_string(), bal + value);
+            });
+        }
     }
 
     /// Handle response of a requested service.
     /// Caller must be a generic BSH contract.
     pub fn handle_response_service(
+        &mut self,
         requester: &str,
         coin_name: &str,
-        value: u64,
-        fee: u64,
-        rsp_code: u64,
-    ) {
-        todo!()
+        value: u128,
+        fee: u128,
+        rsp_code: u128,
+    ) -> Result<(), &str> {
+        assert!(is_valid_btp_address(requester), "Invalid BTP address");
+        let bsh_generic_addr = self.bsh_generic.get_contract_address();
+        assert!(env::signer_account_id() == bsh_generic_addr, "Unauthorized");
+        if *requester == env::current_account_id() {
+            if rsp_code == Self::RC_ERR as u128 {
+                let _ = self
+                    .aggregation_fee
+                    .entry(coin_name.to_string())
+                    .and_modify(|fee| {
+                        let _ = fee.checked_add(value).expect("Failed to safely add");
+                    });
+            }
+            return Ok(());
+        }
+        let amount = value.checked_add(fee).expect("Failed to safely add");
+        let _ = self
+            .balances
+            .entry(requester.to_string())
+            .and_modify(|balances| {
+                let _ = balances.entry(coin_name.to_string()).and_modify(|balance| {
+                    let _ = balance.locked_balance.checked_sub(amount);
+                });
+            });
+        if rsp_code == Self::RC_ERR as u128 {
+            if self.refund(requester, coin_name, amount).is_err() {
+                let _ = self
+                    .balances
+                    .entry(requester.to_string())
+                    .and_modify(|balances| {
+                        let _ = balances.entry(coin_name.to_string()).and_modify(|balance| {
+                            let _ = balance.refundable_balance.checked_add(amount);
+                        });
+                    });
+            }
+        } else if rsp_code == Self::RC_OK as u128 {
+            let id = self.coins[coin_name];
+            if id != 0 {
+                self.burn(&env::current_account_id(), id, value);
+            }
+            let _ = self
+                .aggregation_fee
+                .entry(coin_name.to_string())
+                .and_modify(|result| {
+                    let _ = result.checked_add(fee).expect("Failed to safely add");
+                });
+        }
+
+        Ok(())
+    }
+
+    fn burn(&mut self, addr: &str, id: u64, amount: u128) {
+        assert!(is_valid_btp_address(addr), "Invalid BTP address");
+        let account_balance = self.coin_balances[&id][addr];
+        assert!(account_balance >= amount, "Burn amount exceeds balance");
+        let _ = self.coin_balances.entry(id).and_modify(|coin| {
+            let _ = coin
+                .insert(addr.to_string(), account_balance - amount)
+                .expect("Failed to insert key-value");
+        });
     }
 
     /// Handle a request of fee gathering.
     /// Caller must be a generic BSH contract.
     /// `fa`: BTP address of fee aggregator.
-    pub fn transfer_fees(fa: &str) {
-        todo!()
+    pub fn transfer_fees(&mut self, fa: &str) {
+        assert!(is_valid_btp_address(fa), "Invalid BTP address");
+        for i in 0..self.coin_names.len() {
+            if self.aggregation_fee[&self.coin_names[i]] != 0 {
+                self.charged_coins.push(self.coin_names[i].clone());
+                self.charged_amounts
+                    .push(self.aggregation_fee[&self.coin_names[i]]);
+                let _ = self.aggregation_fee.remove(&self.coin_names[i]);
+            }
+        }
+        let charged_fees: Vec<u128> = Vec::with_capacity(self.charged_coins.len());
+        self.bsh_generic
+            .send_service_message(
+                &env::current_account_id(),
+                fa,
+                self.charged_coins.clone(),
+                self.charged_amounts.clone(),
+                charged_fees,
+            )
+            .expect("Failed to send service message");
+        self.charged_coins.clear();
+        self.charged_amounts.clear();
     }
 
-    fn lock_balance(to: &str, coin_name: &str, value: u64) {
-        todo!()
+    fn lock_balance(&mut self, addr: &str, coin_name: &str, value: u128) {
+        assert!(is_valid_btp_address(addr), "Invalid BTP address");
+        let _ = self
+            .balances
+            .entry(addr.to_string())
+            .and_modify(|balances| {
+                let _ = balances.entry(coin_name.to_string()).and_modify(|balance| {
+                    let _ = balance.locked_balance.checked_add(value);
+                });
+            });
     }
+
+    /// Return contract address
+    pub fn get_contract_address(&self) -> String {
+        env::current_account_id()
+    }
+}
+
+/// Helper for checking validity of BTP addresses
+pub fn is_valid_btp_address(addr: &str) -> bool {
+    let btp_addr = BTPAddress(addr.to_string());
+    BTPAddress::is_valid(&btp_addr).expect("Failed to validate BTP address")
 }
