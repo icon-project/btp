@@ -244,6 +244,7 @@ func (b *BTP) relay() {
 		if hasWait || (!skippable && !relayable) {
 			break
 		} else {
+			b.logRelaying("before segment", rm, nil, -1)
 			if len(rm.Segments) == 0 {
 				if segments, err := b.sender.Segment(rm, b.bmcLinkStatus.Verifier.Height); err != nil {
 					b.log.Panicf("fail to segment err:%+v", err)
@@ -358,6 +359,11 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 						b.log.Tracef("updateRelayMessages: fails rm: %d bp at %d", i, lbu.Height)
 						return
 					}
+					b.log.Debugf("updateRelayMessage rm:%d removeBlockUpdates %d ~ %d",
+						rm.Seq,
+						rm.BlockUpdates[0].Height,
+						rm.BlockUpdates[len(rm.BlockUpdates)].Height,
+					)
 					rm.BlockUpdates = rm.BlockUpdates[:0]
 				} else {
 					rrm = i + 1
