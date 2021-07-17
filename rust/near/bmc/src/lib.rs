@@ -5,9 +5,11 @@ use near_sdk::{env, log, near_bindgen, setup_alloc};
 mod link;
 mod permission;
 mod route;
+mod service;
+use service::{getPendingRequest, removePendingRequest, updatePendingRequest, BSHServices};
 
 use btp_common::BTPAddress;
-use permission::{Owner, Owners};
+use permission::Owners;
 use route::{Route, Routes};
 #[macro_use]
 extern crate lazy_static;
@@ -22,6 +24,7 @@ pub struct BTPMessageCenter {
     message: Message,
     links: Links,
     routes: Routes,
+    services: BSHServices,
     // owners: Owners,
 }
 
@@ -36,11 +39,13 @@ impl Default for BTPMessageCenter {
         let message: Message = Default::default();
         let links = Links::new();
         let routes = Routes::new();
+        let services = BSHServices::new();
         // let owners = Owners::new();
         Self {
             message,
             links,
             routes,
+            services,
             // owners,
         }
     }
@@ -136,6 +141,40 @@ impl BTPMessageCenter {
         //    return v;
         //    }
         // }
+    }
+
+    pub fn approve_service(&mut self, service: String, is_accepted: bool) {
+        let pendingrq = getPendingRequest();
+
+        for i in 0..pendingrq.len() {
+            if pendingrq[i] == service.clone() {
+                if is_accepted {
+                    match self.services.add(service.clone(), pendingrq[i].clone()) {
+                        Ok(true) => println!("service Added"),
+                        Ok(false) => println!("service not added"),
+                        Err(err) => println!("{}", err),
+                    }
+                }
+
+                removePendingRequest(pendingrq[i].clone())
+            }
+
+            log!("BMCRevertNotExistRequest");
+        }
+    }
+
+    pub fn remove_service(&mut self, service: String) {
+        if self.services.contains(service.clone()) {
+            self.services.remove(service.clone());
+        }
+        log!("BMCRevertNotExistsBSH");
+    }
+
+    pub fn get_services(&self) {
+        match self.services.get() {
+            Ok(value) => println!("{:?}", value),
+            Err(err) => println!("{}", err),
+        }
     }
 }
 #[cfg(test)]

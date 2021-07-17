@@ -1,7 +1,6 @@
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::{env, near_bindgen};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Routes(pub UnorderedMap<String, String>);
