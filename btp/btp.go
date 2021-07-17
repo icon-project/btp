@@ -256,9 +256,6 @@ func (b *BTP) relay() {
 			b.logRelaying("before relay", rm, nil, -1)
 			reSegment := true
 			for j, segment := range rm.Segments {
-				if segment == nil {
-					continue
-				}
 				reSegment = false
 
 				if segment.GetResultParam == nil {
@@ -276,7 +273,7 @@ func (b *BTP) relay() {
 			}
 
 			if reSegment {
-				rm.Segments = rm.Segments[:0]
+				rm.Segments = make([]*chain.Segment, 0)
 			}
 		}
 	}
@@ -286,6 +283,8 @@ func (b *BTP) relay() {
 // addRelayMessage adds messages to the buffered rms
 func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 	b.log.Debugf("addRelayMessage bu.Height:%v b.bmcLinkStatus.Verifier.Height:%v", bu.Height, b.bmcLinkStatus.Verifier.Height)
+	b.rmsMutex.Lock()
+	defer b.rmsMutex.Unlock()
 
 	if b.lastBlockUpdate != nil {
 		//TODO consider remained bu when reconnect
@@ -362,9 +361,9 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 					b.log.Debugf("updateRelayMessage rm:%d removeBlockUpdates %d ~ %d",
 						rm.Seq,
 						rm.BlockUpdates[0].Height,
-						rm.BlockUpdates[len(rm.BlockUpdates)].Height,
-					)
-					rm.BlockUpdates = rm.BlockUpdates[:0]
+						lbu.Height)
+
+					rm.BlockUpdates = make([]*chain.BlockUpdate, 0)
 				} else {
 					rrm = i + 1
 				}
@@ -373,6 +372,7 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 					rm.Seq,
 					rm.BlockUpdates[0].Height,
 					rm.BlockUpdates[rbu-1].Height)
+
 				rm.BlockUpdates = rm.BlockUpdates[rbu:]
 			}
 		}
@@ -420,7 +420,7 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 				case chain.BMVRevertInvalidSequence, chain.BMVRevertInvalidBlockUpdateLower:
 					for i := 0; i < len(rm.Segments); i++ {
 						if rm.Segments[i] == segment {
-							rm.Segments[i] = nil
+							rm.RemoveSegment(i)
 							break
 						}
 					}

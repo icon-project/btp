@@ -1,5 +1,7 @@
 package chain
 
+import "fmt"
+
 type BlockWitness struct {
 	Height  int64
 	Witness [][]byte
@@ -58,6 +60,20 @@ func (rm RelayMessage) HasWait() bool {
 		}
 	}
 	return false
+}
+
+func (rm RelayMessage) BuRange() string {
+	return fmt.Sprintf("bu: %d ~ %d", rm.BlockUpdates[0].Height, rm.BlockUpdates[len(rm.BlockUpdates)-1].Height)
+}
+
+func (rm RelayMessage) RemoveSegment(index int) {
+	if l := len(rm.Segments); l == 0 {
+		rm.Segments = nil
+	} else if index == l-1 {
+		rm.Segments = rm.Segments[:l-2]
+	} else {
+		rm.Segments = append(rm.Segments[:index], rm.Segments[index+1:]...)
+	}
 }
 
 type Segment struct {
