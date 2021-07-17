@@ -78,7 +78,7 @@ contract BMC is IBMCPeriphery {
     }
 
     constructor(string memory _network) {
-        bmcAddress = _network.concat("/").concat(address(this).toString());
+        bmcAddress = string("btp://").concat(_network).concat("/").concat(address(this).toString());
         _owners[msg.sender] = true;
         numOfOwner++;
     }
@@ -269,9 +269,11 @@ contract BMC is IBMCPeriphery {
                 .BMCMessage(bmcAddress, _toBMC, _svc, int256(_sn), _msg)
                 .encodeBMCMessage();
         if (_svc.compareTo("_EVENT")) {
-            emit Event(_toBMC, links[_toBMC].txSeq + 1, _rlp);
+            links[_toBMC].txSeq += 1;
+            emit Event(_toBMC, links[_toBMC].txSeq, _rlp);
         } else {
-            emit Message(_toBMC, links[_toBMC].txSeq + 1, _rlp);
+            links[_toBMC].txSeq += 1;
+            emit Message(_toBMC, links[_toBMC].txSeq, _rlp);
         }
     }
 
@@ -352,5 +354,7 @@ contract BMC is IBMCPeriphery {
         view
         override
         returns (Types.LinkStats memory _linkStats)
-    {}
+    {
+        _linkStats.txSeq = links[_link].txSeq;
+    }
 }

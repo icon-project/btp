@@ -9,6 +9,15 @@ const Refundable = artifacts.require("Refundable");
 const EncodeMsg = artifacts.require("EncodeMessage");
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
+const rlp = require('rlp');
+
+let toHex = (buf) => { 
+    buf = buf.toString('hex');
+    if (buf.substring(0, 2) == '0x')
+        return buf;
+    return '0x' + buf.toString('hex');
+};
+
 
 contract('PRA BSHCore Query and Management', (accounts) => {
     let bsh_core, bsh_perif;                    let _uri = 'https://github.com/icon-project/btp'
@@ -342,21 +351,45 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
 
     it('Scenario 5: Should succeed when Account client transferring a valid native coin to a side chain', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
-        let output = await bsh_core.transfer(_to, {from: accounts[0], value: _amt});
+        let tx = await bsh_core.transfer(_to, {from: accounts[0], value: _amt});
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let chargedFee = Math.floor(_amt/ 1000);
-        //  TODO: 
-        //  - catch emit event Message throwing from BMC contract
-        //  - catch emit event TransferStart throwing from BSHPeriphery contract
 
-        // truffleAssert.eventEmitted(output, 'TransferStart', (ev) => {
-        //     return ev._from === accounts[0] && ev._to === _to && ev._sn === 0 &&
-        //         ev._assetDetails.length === 1 &&
-        //         ev._assetDetails[0].coinName === 'PARA' && 
-        //         ev._assetDetails[0].value === _amt - chargedFee &&
-        //         ev._assetDetails[0].fee === chargedFee
-        // });
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, accounts[0]);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 0);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, 'PARA'); 
+        assert.equal(event._assetDetails[0].value, _amt - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 0);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), accounts[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _amt - chargedFee);
+
         assert(
             web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() === _amt &&
             web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === 0 && 
