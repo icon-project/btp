@@ -3,6 +3,7 @@ package pra
 import (
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -10,9 +11,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
 	"github.com/icon-project/btp/common/codec"
+	iconcrypto "github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
@@ -624,4 +627,55 @@ func TestSenderMonitorLoop(t *testing.T) {
 		assert.Len(t, monitoredBlocks, int(stopAt-from+1))
 		assert.EqualValues(t, pulledBlocks, monitoredBlocks)
 	})
+}
+
+func TestBUContinoution(t *testing.T) {
+	s0 := "f901bdb90141f9013e028303f48c8705c73f8a874b499500b6b5791be0b5ef67063b3c10b840fb81514db2fda06624a505f5781074eff5f822eee1fb5702341e05bccb46b105fc51f09c7ff4d9a0f9f36e5b5486ef0dd3ccce85ee181a7ef4dc4864348584258570fac4cffc86e9a0ed9e644e59b2ff65446f5f3d7d77c27858facf8aeb3b969470d7499c79f9757cf800f80080b8b1f8afa01474a2eb5c9b0502f2d4f3a8ea3f9d1e7b8d534117a08623f73e6fbbb347ea9af800f800b888f886a0226cb7bc34e56a0743b282debdef5b8d70094514f8b942593dc0b3a9ed9687fea0ad1143249979c2887875944681a7f3747467a750ae6b50a2cd2d4d6b48fcfb60a0266dc753fb2e92b774873ba531d1dec92cb12ce32e227f06372dc319667133a8a00a8281f2f67931457e64e02b23bff0c9f5f8f7d13a72bd6163f456dd85c54a5bf800b875f87300e201a0cd28fe742528e29b35a3ac929167c5bac928d3945a959111faec41df8d211c49f84df84b8705c73f8aa5ecafb841e9744967e09326ee9d3f1b7fbb48667980e4bb282d3214230dc2bae61bf1d0c51cbb2d779a76cdc728bd2870e119669d4b88e971db654e1f3f68173717af6eb900f800"
+	s1 := "f901bdb90141f9013e028303f48d8705c73f8aa5ecaf9500b6b5791be0b5ef67063b3c10b840fb81514db2fda0b358f98a851fc6d5520687e6af2de6bd117b3f03ffa1caaded131f73e9cb94e6a08287fce416c4197c0e3052477489a1f2eb7f657e7a417b0f760e91d215c0b25fa0ed9e644e59b2ff65446f5f3d7d77c27858facf8aeb3b969470d7499c79f9757cf800f80080b8b1f8afa01474a2eb5c9b0502f2d4f3a8ea3f9d1e7b8d534117a08623f73e6fbbb347ea9af800f800b888f886a0226cb7bc34e56a0743b282debdef5b8d70094514f8b942593dc0b3a9ed9687fea0ad1143249979c2887875944681a7f3747467a750ae6b50a2cd2d4d6b48fcfb60a0266dc753fb2e92b774873ba531d1dec92cb12ce32e227f06372dc319667133a8a00a8281f2f67931457e64e02b23bff0c9f5f8f7d13a72bd6163f456dd85c54a5bf800b875f87300e201a0e16a716239df33cdaee5a7f7a8342ba673e6b4b3aa90caf0b35678124ffcef98f84df84b8705c73f8ac470d9b84126b95cee5c2533578949f0190618301fd718920a28b3dff8b582667790159bfb4a7905ca591e5895b40ca62b15b3c3a474d1e32f0117100c072bc6012fae1fa400f800"
+	s2 := "f901bdb90141f9013e028303f48e8705c73f8ac470d99500b6b5791be0b5ef67063b3c10b840fb81514db2fda05639bb8547b320f2534155d3472459e78910a7ff253eea6c8d662166d9563899a02054a1a176939920e9eff36d00be0f6f143bfeb09f9c13dcd1fba54a64935edfa0ed9e644e59b2ff65446f5f3d7d77c27858facf8aeb3b969470d7499c79f9757cf800f80080b8b1f8afa01474a2eb5c9b0502f2d4f3a8ea3f9d1e7b8d534117a08623f73e6fbbb347ea9af800f800b888f886a0226cb7bc34e56a0743b282debdef5b8d70094514f8b942593dc0b3a9ed9687fea0ad1143249979c2887875944681a7f3747467a750ae6b50a2cd2d4d6b48fcfb60a0266dc753fb2e92b774873ba531d1dec92cb12ce32e227f06372dc319667133a8a00a8281f2f67931457e64e02b23bff0c9f5f8f7d13a72bd6163f456dd85c54a5bf800b875f87300e201a087f05c8a6e56372d152fd07b6b779e28bde76283fbd4ed4d56ff54bbc6acfd1ef84df84b8705c73f8ae4d95fb8412f53f86cf4979559daa764024529ad94fad6e8620bcf2cfd5e9cf628770a550a6f91cca4e6c4dcb49dd92d7bf7254c8d96cbeafc676cd13980c589607f4d40f700f800"
+	s3 := "f901bdb90141f9013e028303f48f8705c73f8ae4d95f9500b6b5791be0b5ef67063b3c10b840fb81514db2fda096424b18d5a53354a75b4cb3b49c908b132409e9775b7ac70a746cfee5637944a0ed1246c04ba4a430e10dee3ac760053cfdf112ac8fdb899baeaf52c2a2465122a0ed9e644e59b2ff65446f5f3d7d77c27858facf8aeb3b969470d7499c79f9757cf800f80080b8b1f8afa01474a2eb5c9b0502f2d4f3a8ea3f9d1e7b8d534117a08623f73e6fbbb347ea9af800f800b888f886a0226cb7bc34e56a0743b282debdef5b8d70094514f8b942593dc0b3a9ed9687fea0ad1143249979c2887875944681a7f3747467a750ae6b50a2cd2d4d6b48fcfb60a0266dc753fb2e92b774873ba531d1dec92cb12ce32e227f06372dc319667133a8a00a8281f2f67931457e64e02b23bff0c9f5f8f7d13a72bd6163f456dd85c54a5bf800b875f87300e201a055f8a3320ea19ce31036a333049d1c90dd264aa04a9647fbdf1201e0cf555265f84df84b8705c73f8b016097b8414e5d5635d3d5d3ccd771ac45c6cf5193ccecd33a8eabe8c325aca6bf291a1d9818e6f502acd88d9c41d1999e1d646171cf70081aa006d6c8ebbd8099d3514ef301f800"
+
+	b0, err := hex.DecodeString(s0)
+	require.Nil(t, err)
+	bu0 := &icon.BlockUpdate{}
+	_, err0 := codec.RLP.UnmarshalFromBytes(b0, bu0)
+	require.Nil(t, err0)
+	bh0 := &icon.BlockHeader{}
+	_, err0 = codec.RLP.UnmarshalFromBytes(bu0.BlockHeader, bh0)
+	require.Nil(t, err0)
+
+	b1, err := hex.DecodeString(s1)
+	require.Nil(t, err)
+	bu1 := &icon.BlockUpdate{}
+	_, err1 := codec.RLP.UnmarshalFromBytes(b1, bu1)
+	require.Nil(t, err1)
+	bh1 := &icon.BlockHeader{}
+	_, err1 = codec.RLP.UnmarshalFromBytes(bu1.BlockHeader, bh1)
+	require.Nil(t, err1)
+
+	b2, err := hex.DecodeString(s2)
+	require.Nil(t, err)
+	bu2 := &icon.BlockUpdate{}
+	_, err2 := codec.RLP.UnmarshalFromBytes(b2, bu2)
+	require.Nil(t, err2)
+	bh2 := &icon.BlockHeader{}
+	_, err2 = codec.RLP.UnmarshalFromBytes(bu2.BlockHeader, bh2)
+	require.Nil(t, err2)
+
+	b3, err := hex.DecodeString(s3)
+	require.Nil(t, err)
+	bu3 := &icon.BlockUpdate{}
+	_, err3 := codec.RLP.UnmarshalFromBytes(b3, bu3)
+	require.Nil(t, err3)
+	bh3 := &icon.BlockHeader{}
+	_, err3 = codec.RLP.UnmarshalFromBytes(bu3.BlockHeader, bh3)
+	require.Nil(t, err3)
+
+	assert.Equal(t, bh0.Height+1, bh1.Height)
+	assert.Equal(t, bh1.Height+1, bh2.Height)
+	assert.Equal(t, bh2.Height+1, bh3.Height)
+
+	assert.Equal(t, hex.EncodeToString(bh1.PrevID), hex.EncodeToString(iconcrypto.SHA3Sum256(bu0.BlockHeader)))
+	assert.Equal(t, hex.EncodeToString(bh2.PrevID), hex.EncodeToString(iconcrypto.SHA3Sum256(bu1.BlockHeader)))
+	assert.Equal(t, hex.EncodeToString(bh3.PrevID), hex.EncodeToString(iconcrypto.SHA3Sum256(bu2.BlockHeader)))
 }
