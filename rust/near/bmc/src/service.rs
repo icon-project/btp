@@ -1,74 +1,91 @@
-use lazy_static::lazy_static;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{ self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::UnorderedSet;
 use std::collections::HashMap;
-use std::sync::Mutex;
 
-lazy_static! {
-    static ref PENDINGREQUESTS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-    static ref BSHNAMESLIST: Mutex<Vec<String>> = Mutex::new(Vec::new());
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct BSH {
+   pub services: Services,
+   pub requests: Requests,
 }
 
-pub fn getPendingRequest() -> Vec<String> {
-    return PENDINGREQUESTS.lock().unwrap().to_vec();
-}
-
-pub fn updatePendingRequest(service: String) {
-    PENDINGREQUESTS.lock().unwrap().push(service);
-}
-
-pub fn removePendingRequest(service: String) {
-    if let Some(pos) = PENDINGREQUESTS
-        .lock()
-        .unwrap()
-        .iter()
-        .position(|x| x == &service)
-    {
-        PENDINGREQUESTS.lock().unwrap().remove(pos);
+impl BSH {
+    pub fn new() ->Self{
+        Self{
+            services: Services::new(),
+            requests : Requests::new()
+        }
     }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct BSHServices(HashMap<String, String>);
+pub struct Services(HashMap<String, String>);
 
-impl BSHServices {
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct Requests(UnorderedSet<String>);
+
+impl Requests {
     pub fn new() -> Self {
-        let bshservices = HashMap::new();
-
-        Self(bshservices)
+        let requests = UnorderedSet::new(b"request".to_vec());
+        Self(requests)
     }
-    pub fn contains(&self, key: String) -> bool {
-        return self.0.contains_key(&key);
-    }
-    pub fn add(&mut self, service: String, pendingrq: String) -> Result<bool, String> {
-        if !self.0.contains_key(&service) {
-            self.0.insert(service.clone(), pendingrq);
-            BSHNAMESLIST.lock().unwrap().push(service.clone());
+    
 
+    pub fn get(&self) -> Result<Vec<String>, String> {
+        if !self.0.is_empty() {
+            return Ok(self.0.to_vec());
+        }
+
+        return Err("No pending request".to_string());
+    }
+    pub fn add(&mut self, service: String) -> Result<bool, String> {
+            if !self.0.contains(&service) {
+                return Ok(self.0.insert(&service));
+            }
+            return Err("BMCRevertAlreadyexist".to_string());  
+    }
+
+    pub fn remove(&mut self, service: String) -> Result<bool, String> {
+        if !self.0.is_empty() && self.0.contains(&service) {
+                return Ok(self.0.remove(&service));
+            }
+        return Err("BMCRevertnotExist".to_string());
+    }
+}
+
+impl Services {
+    pub fn new() -> Self {
+        let services = HashMap::new();
+        Self(services)
+    }
+
+    pub fn add(&mut self, name: String, address: String) -> Result<bool, String> {
+        if !self.0.contains_key(&name) {
+            self.0.insert(name.clone(), address);
             return Ok(true);
         }
-
         return Err("BMCRevertAlreadyExistBSH".to_string());
     }
-    pub fn remove(&mut self, service: String) -> Result<bool, String> {
-        self.0.remove(&service);
-        if let Some(pos) = BSHNAMESLIST
-            .lock()
-            .unwrap()
-            .iter()
-            .position(|x| x == &service)
-        {
-            BSHNAMESLIST.lock().unwrap().remove(pos);
-        }
 
-        return Ok(true);
+    pub fn remove(&mut self, name: String) -> Result<bool, String> {
+        if self.0.contains_key(&name) {
+            self.0.remove(&name);
+            return Ok(true);
+        }
+        return Err("BMCRevertnotExist".to_string());
     }
 
-    pub fn get(&self) -> Result<HashMap<String, String>, String> {
-        if !self.0.is_empty() {
-            return Ok(self.0.clone());
+    pub fn get(&self, name: String) -> Result<String, String> {
+        if let Some(service) = self.0.get(&name) {
+            return Ok(service.to_string())
         }
+        return Err("BMCRevertnotExist".to_string());
+    }
 
-        return Err("Services Empty".to_string());
+    pub fn to_vec(&self) -> Vec<(String, String)> {
+        if !self.0.is_empty() {
+            return self.0.clone().into_iter().collect();
+        }
+        vec![]
     }
 }
 
@@ -99,21 +116,7 @@ mod tests {
         }
     }
 
-    #[test]
-    fn updaterelay() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
+    
 
-        updatePendingRequest("helloworld".to_string());
-
-        assert_eq!(getPendingRequest(), vec!["helloworld".to_string()]);
-    }
-
-    #[test]
-    fn getrelay() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-
-        assert_eq!(getPendingRequest(), vec!["helloworld".to_string()]);
-    }
+    
 }

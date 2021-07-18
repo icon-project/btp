@@ -6,7 +6,7 @@ mod link;
 mod permission;
 mod route;
 mod service;
-use service::{getPendingRequest, removePendingRequest, updatePendingRequest, BSHServices};
+use service::{BSH};
 
 use btp_common::BTPAddress;
 use permission::Owners;
@@ -24,7 +24,7 @@ pub struct BTPMessageCenter {
     message: Message,
     links: Links,
     routes: Routes,
-    services: BSHServices,
+    bsh: BSH,
     // owners: Owners,
 }
 
@@ -39,13 +39,13 @@ impl Default for BTPMessageCenter {
         let message: Message = Default::default();
         let links = Links::new();
         let routes = Routes::new();
-        let services = BSHServices::new();
+        let bsh = BSH::new();
         // let owners = Owners::new();
         Self {
             message,
             links,
             routes,
-            services,
+            bsh,
             // owners,
         }
     }
@@ -144,37 +144,35 @@ impl BTPMessageCenter {
     }
 
     pub fn approve_service(&mut self, service: String, is_accepted: bool) {
-        let pendingrq = getPendingRequest();
+        let pendingrq = self.bsh.requests.get().unwrap();
 
         for i in 0..pendingrq.len() {
             if pendingrq[i] == service.clone() {
                 if is_accepted {
-                    match self.services.add(service.clone(), pendingrq[i].clone()) {
+                    match self.bsh.services.add(service.clone(), pendingrq[i].clone()) {
                         Ok(true) => println!("service Added"),
                         Ok(false) => println!("service not added"),
                         Err(err) => println!("{}", err),
                     }
                 }
 
-                removePendingRequest(pendingrq[i].clone())
+                self.bsh.requests.remove(pendingrq[i].clone());
             }
 
             log!("BMCRevertNotExistRequest");
         }
     }
-
+ 
     pub fn remove_service(&mut self, service: String) {
-        if self.services.contains(service.clone()) {
-            self.services.remove(service.clone());
-        }
+        self.bsh.services.remove(service.clone());
         log!("BMCRevertNotExistsBSH");
     }
 
     pub fn get_services(&self) {
-        match self.services.get() {
-            Ok(value) => println!("{:?}", value),
-            Err(err) => println!("{}", err),
-        }
+        // match self.bsh.services.get() {
+        //     Ok(value) => println!("{:?}", value),
+        //     Err(err) => println!("{}", err),
+        // }
     }
 }
 #[cfg(test)]
