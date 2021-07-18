@@ -115,6 +115,17 @@ contract BMV is IBMV, Initializable {
         returns (bytes32 receiptHash, uint256 lastHeight)
     {
         for (uint256 i = 0; i < relayMsg.blockUpdates.length; i++) {
+            // verify height
+            require(
+                relayMsg.blockUpdates[i].blockHeader.height <= mta.height + 1,
+                "BMVRevertInvalidBlockUpdateHigher"
+            );
+
+            require(
+                relayMsg.blockUpdates[i].blockHeader.height == mta.height + 1,
+                "BMVRevertInvalidBlockUpdateLower"
+            );
+
             // verify prev block hash
             if (i == 0)
                 require(
@@ -129,17 +140,6 @@ contract BMV is IBMV, Initializable {
                     "BMVRevertInvalidBlockUpdate: Invalid block hash"
                 );
             }
-
-            // verify height
-            require(
-                relayMsg.blockUpdates[i].blockHeader.height <= mta.height + 1,
-                "BMVRevertInvalidBlockUpdateHigher"
-            );
-
-            require(
-                relayMsg.blockUpdates[i].blockHeader.height == mta.height + 1,
-                "BMVRevertInvalidBlockUpdateLower"
-            );
 
             if (i == relayMsg.blockUpdates.length - 1) {
                 receiptHash = relayMsg.blockUpdates[i]
