@@ -1,12 +1,13 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
+use std::collections::HashMap;
 use near_sdk::AccountId;
 use near_sdk::{env, log, near_bindgen, setup_alloc};
 mod link;
 mod permission;
 mod route;
 mod service;
-use service::{BSH};
+use service::BSH;
 
 use btp_common::BTPAddress;
 use permission::Owners;
@@ -143,29 +144,49 @@ impl BTPMessageCenter {
         // }
     }
 
-    pub fn approve_service(&mut self, service: String, is_accepted: bool) {
-        let pendingrq = self.bsh.requests.get().unwrap();
-
-        for i in 0..pendingrq.len() {
-            if pendingrq[i] == service.clone() {
+    pub fn approve_service(&mut self, service: String, is_accepted: bool) -> bool {
+        match self.bsh.requests.get(service.to_string()) {
+            Ok(address) => {
                 if is_accepted {
-                    match self.bsh.services.add(service.clone(), pendingrq[i].clone()) {
-                        Ok(true) => println!("service Added"),
-                        Ok(false) => println!("service not added"),
-                        Err(err) => println!("{}", err),
-                    }
+                    match self.bsh.services.add(service.to_string(), address) {
+                        Ok(true) => {
+                            return self.bsh.requests.remove(service.to_string()).is_ok();
+                        }
+                        _ => {
+                            return self.bsh.requests.remove(service.to_string()).is_ok();
+                        }
+                    };
                 }
 
-                self.bsh.requests.remove(pendingrq[i].clone());
+                return false;
             }
+            Err(error) => {
 
-            log!("BMCRevertNotExistRequest");
+                log!(error);
+                return false;
+            
+            }
         }
+
+        // for i in 0..pendingrq.len() {
+        //     if pendingrq[i] == service.clone() {
+        //         if is_accepted {
+        //             match self.bsh.services.add(service.clone(), pendingrq[i].clone()) {
+        //                 Ok(true) => println!("service Added"),
+        //                 Ok(false) => println!("service not added"),
+        //                 Err(err) => println!("{}", err),
+        //             }
+        //         }
+
+        //         self.bsh.requests.remove(pendingrq[i].clone());
+        //     }
+
+        //     log!("BMCRevertNotExistRequest");
+        // }
     }
- 
+
     pub fn remove_service(&mut self, service: String) {
-        self.bsh.services.remove(service.clone());
-        log!("BMCRevertNotExistsBSH");
+      
     }
 
     pub fn get_services(&self) {
@@ -236,12 +257,57 @@ mod tests {
 
         let result = contract.add_relays(&link, &address);
 
-        println!("{:#?}", result);
+        println!("{:#?}", result); 
 
         let r = contract.get_relays(&link);
 
         assert_eq!(r, address);
 
         println!("{:?}", r);
+    }
+
+    #[test]
+    fn service_management(){
+
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = BTPMessageCenter {
+            ..Default::default()
+        };
+
+        let mut pendingrequest:HashMap<String,String> = HashMap::new(); 
+
+        pendingrequest.insert("servicename1".to_string(), "serviceaddress1".to_string());
+        pendingrequest.insert("servicename2".to_string(), "serviceaddress2".to_string());
+        pendingrequest.insert("servicename3".to_string(), "serviceaddress3".to_string());
+        pendingrequest.insert("servicename4".to_string(), "serviceaddress4".to_string());
+
+        // let request = contract.bsh.requests.add(name: String, address: String)
+        for (k,v) in pendingrequest.iter(){
+
+            match contract.bsh.requests.add(k.to_string(),v.to_string()){
+                Ok(true) => {
+                    println!("value added")
+                },
+                Ok(false) => {
+                    println!("value not added")
+                },
+                Err(error) => {
+
+                    println!("{}",error);
+                }
+            }
+        }
+
+        let result = contract.approve_service("servicename1".to_string(),true);
+
+        assert_eq!(result,true);
+
+        let value = contract.bsh.requests.get("servicename1".to_string()).unwrap_err();
+
+        assert_eq!(value,"BMCRevertnotExist")
+
+
+
     }
 }
