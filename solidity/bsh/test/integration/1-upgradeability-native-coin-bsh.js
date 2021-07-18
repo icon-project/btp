@@ -97,7 +97,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             );
             //  Clear pending request
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-            await bmc.receiveResponse(_net, service, 0, _msg);
+            await bmc.receiveResponse(_net, service, 1, _msg);
         });
 
 
@@ -392,7 +392,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         it('Scenario 6: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
             let account_balanceBefore = await bsh_coreV2.getBalanceOf(accounts[0], _native);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-            await bmc.receiveResponse(_net, service, 0, _msg);
+            await bmc.receiveResponse(_net, service, 1, _msg);
             let account_balanceAfter = await bsh_coreV2.getBalanceOf(accounts[0], _native);
             let fees = await bsh_coreV2.getAccumulatedFees();
             // TODO: catch emit event TransferEnd throwing from BSHService contract
@@ -433,7 +433,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let account_balanceBefore = await bsh_coreV2.getBalanceOf(accounts[0], _native);
             let bsh_coin_balance_before = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 1, _msg);
+            await bmc.receiveResponse(_net, service, 2, _msg);
             let account_balanceAfter = await bsh_coreV2.getBalanceOf(accounts[0], _native);
             let bsh_coin_balance_after = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -472,7 +472,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let contract_balanceBefore = await bsh_coreV2.getBalanceOf(nonrefundable.address, _native);
             let bsh_coin_balance_before = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 2, _msg);
+            await bmc.receiveResponse(_net, service, 3, _msg);
             let contract_balanceAfter = await bsh_coreV2.getBalanceOf(nonrefundable.address, _native);
             let bsh_coin_balance_after = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             // TODO: catch emit event TransferEnd throwing from BSHService contract    
@@ -512,7 +512,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let contract_balanceBefore = await bsh_coreV2.getBalanceOf(refundable.address, _native);
             let bsh_coin_balance_before = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 3, _msg);
+            await bmc.receiveResponse(_net, service, 4, _msg);
             let contract_balanceAfter = await bsh_coreV2.getBalanceOf(refundable.address, _native);
             let bsh_coin_balance_after = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _native);
             // TODO: catch emit event TransferEnd throwing from BSHService contract
@@ -701,7 +701,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _value = 1000;
             let contract_balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-            await bmc.receiveResponse(_net, service, 0, _msg);
+            await bmc.receiveResponse(_net, service, 1, _msg);
             let contract_balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let fees = await bsh_coreV2.getAccumulatedFees();
             let bsh_core_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
@@ -743,7 +743,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _value = 100000000000000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 1, _msg);
+            await bmc.receiveResponse(_net, service, 2, _msg);
             let balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
             // TODO: catch emit event TransferEnd throwing from BSHService contract
             assert(
@@ -960,7 +960,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         let _txAmt = 10000;                                 let _txAmt1 = 1000000;          let _txAmt2 = 5000000;
         let RC_OK = 0;                                      let RC_ERR = 1;                                                         
         let REPONSE_HANDLE_SERVICE = 2;                     let _bmcICON = 'btp://1234.iconee/0x1234567812345678'; 
-        let _sn0 = 0;           let _sn1 = 1;               let _sn2 = 2;
+        let _sn0 = 1;           let _sn1 = 2;               let _sn2 = 3;
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
@@ -1035,7 +1035,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         //      + all states of Aggregation Fee are push into pendingAggregation Fee list
         //      + state Aggregation Fee of each type of Coins are reset
         it('Scenario 3: Should handle GatherFee request from BMCService contract', async () => {
-            let _sn3 = 3;
+            let _sn3 = 4;
             let FA1Before = await bsh_perifV2.getAggregationFeeOf(_native);     //  state Aggregation Fee of each type of Coins
             let FA2Before = await bsh_perifV2.getAggregationFeeOf(_name1);
             let FA3Before = await bsh_perifV2.getAggregationFeeOf(_name2);
@@ -1067,7 +1067,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         });
 
         it('Scenario 4: Should reset a pending state when receiving a successful response', async () => {
-            let _sn3 = 3;
+            let _sn3 = 4;
             let feesBefore = await bsh_perifV2.getPendingRequest(_sn3);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
             await bmc.receiveResponse(_net1, service, _sn3, _responseMsg);
@@ -1082,7 +1082,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         });
 
         it('Scenario 5: Should restore aggregationFA state when receiving an error response', async () => {
-            let _sn4 = 4;   let _sn5 = 5;   let _sn6 = 6;
+            let _sn4 = 5;   let _sn5 = 6;   let _sn6 = 7;
             let _amt1 = 2000000;                    let _amt2 = 6000000;
             await holder.callTransfer(_name1, _amt1, _to1);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
@@ -1716,7 +1716,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _coins = [_native, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-            await bmc.receiveResponse(_net, service, 1, _responseMsg);
+            await bmc.receiveResponse(_net, service, 2, _responseMsg);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let fees = await bsh_coreV2.getAccumulatedFees();
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
@@ -1785,7 +1785,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _coins = [_coin3, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 2, _responseMsg);
+            await bmc.receiveResponse(_net, service, 3, _responseMsg);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
             // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -1850,7 +1850,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _coins = [_coin3, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 3, _responseMsg);
+            await bmc.receiveResponse(_net, service, 4, _responseMsg);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
             // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -1915,7 +1915,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _coins = [_native, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-            await bmc.receiveResponse(_net, service, 4, _responseMsg);
+            await bmc.receiveResponse(_net, service, 5, _responseMsg);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
             // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract

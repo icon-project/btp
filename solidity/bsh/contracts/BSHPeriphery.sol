@@ -29,6 +29,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     using ParseAddress for address;
     using ParseAddress for string;
     using Strings for string;
+    using Strings for uint256;
 
     /**   @notice Sends a receipt to user
         The `_from` sender
@@ -64,7 +65,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
 
     IBMCPeriphery private bmc;
     IBSHCore internal bshCore;
-    mapping(uint256 => Types.PendingTransferCoin) internal requests; // a list of transferring requests
+    mapping(uint256 => Types.PendingTransferCoin) public requests; // a list of transferring requests
     string public serviceName; //    BSH Service Name
 
     uint256 private constant RC_OK = 0;
@@ -119,6 +120,9 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
                 _fees[i]
             );
         }
+
+        serialNo++;
+
         //  Because `stack is too deep`, must create `_strFrom` to waive this error
         //  `_strFrom` is a string type of an address `_from`
         string memory _strFrom = _from.toString();
@@ -147,7 +151,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         );
         numOfPendingRequests++;
         emit TransferStart(_from, _to, serialNo, _assetDetails);
-        serialNo++;
     }
 
     /**
@@ -244,7 +247,12 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
-        handleResponseService(_sn, _code, _msg);
+        string memory _emitMsg =
+            string("errCode: ")
+                .concat(_code.toString())
+                .concat(", errMsg: ")
+                .concat(_msg);
+        handleResponseService(_sn, RC_ERR, _emitMsg);
     }
 
     function handleResponseService(

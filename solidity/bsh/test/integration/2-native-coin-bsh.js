@@ -81,7 +81,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
         //  Clear pending request
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 0, _msg);
+        await bmc.receiveResponse(_net, service, 1, _msg);
     });
 
     it('Scenario 7: Should allow contract owner to update a new URI', async () => {
@@ -360,7 +360,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         let event = transferEvents[0].returnValues;
         assert.equal(event._from, accounts[0]);
         assert.equal(event._to, _to);
-        assert.equal(event._sn, 0);
+        assert.equal(event._sn, 1);
         assert.equal(event._assetDetails.length, 1);
         assert.equal(event._assetDetails[0].coinName, 'PARA'); 
         assert.equal(event._assetDetails[0].value, _amt - chargedFee);
@@ -379,7 +379,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
         assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
         assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
-        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 0);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 1);
 
         const ServiceMsg = rlp.decode(bmcMsg[4]);
         assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
@@ -400,7 +400,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
     it('Scenario 6: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 0, _msg);
+        await bmc.receiveResponse(_net, service, 1, _msg);
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let fees = await bsh_core.getAccumulatedFees();
         // TODO: catch emit event TransferEnd throwing from BSHService contract
@@ -442,7 +442,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 1, _msg);
+        await bmc.receiveResponse(_net, service, 2, _msg);
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
         // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -481,7 +481,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         let contract_balanceBefore = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 2, _msg);
+        await bmc.receiveResponse(_net, service, 3, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
         // TODO: catch emit event TransferEnd throwing from BSHService contract    
@@ -521,7 +521,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         let contract_balanceBefore = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 3, _msg);
+        await bmc.receiveResponse(_net, service, 4, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
         // TODO: catch emit event TransferEnd throwing from BSHService contract
@@ -711,7 +711,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         let _value = 1000;
         let contract_balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 0, _msg);
+        await bmc.receiveResponse(_net, service, 1, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
         let fees = await bsh_core.getAccumulatedFees();
         let bsh_core_balance = await bsh_core.getBalanceOf(bsh_core.address, _name);
@@ -753,7 +753,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         let _value = 100000000000000;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 1, _msg);
+        await bmc.receiveResponse(_net, service, 2, _msg);
         let balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
         // TODO: catch emit event TransferEnd throwing from BSHService contract
         assert(
@@ -970,7 +970,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
     let _txAmt = 10000;                                 let _txAmt1 = 1000000;          let _txAmt2 = 5000000;
     let RC_OK = 0;                                      let RC_ERR = 1;                                                         
     let REPONSE_HANDLE_SERVICE = 2;                     let _bmcICON = 'btp://1234.iconee/0x1234567812345678'; 
-    let _sn0 = 0;           let _sn1 = 1;               let _sn2 = 2; 
+    let _sn0 = 1;           let _sn1 = 2;               let _sn2 = 3; 
 
     before(async () => {
         bsh_perif = await MockBSHPeriphery.new();
@@ -1045,7 +1045,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
     //      + all states of Aggregation Fee are push into pendingAggregation Fee list
     //      + state Aggregation Fee of each type of Coins are reset
     it('Scenario 3: Should handle GatherFee request from BMCService contract', async () => {
-        let _sn3 = 3;
+        let _sn3 = 4;
         let FA1Before = await bsh_perif.getAggregationFeeOf(_native);     //  state Aggregation Fee of each type of Coins
         let FA2Before = await bsh_perif.getAggregationFeeOf(_name1);
         let FA3Before = await bsh_perif.getAggregationFeeOf(_name2);
@@ -1079,7 +1079,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
     });
 
     it('Scenario 4: Should reset a pending state when receiving a successful response', async () => {
-        let _sn3 = 3;
+        let _sn3 = 4;
         let feesBefore = await bsh_perif.getFees(_sn3);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
         await bmc.receiveResponse(_net1, service, _sn3, _responseMsg);
@@ -1095,7 +1095,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
     });
 
     it('Scenario 5: Should restore aggregationFA state when receiving an error response', async () => {
-        let _sn4 = 4;   let _sn5 = 5;   let _sn6 = 6;
+        let _sn4 = 5;   let _sn5 = 6;   let _sn6 = 7;
         let _amt1 = 2000000;                    let _amt2 = 6000000;
         await holder.callTransfer(_name1, _amt1, _to1);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
@@ -1729,7 +1729,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         let _coins = [_native, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 1, _responseMsg);
+        await bmc.receiveResponse(_net, service, 2, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let fees = await bsh_core.getAccumulatedFees();
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
@@ -1798,7 +1798,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         let _coins = [_coin3, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 2, _responseMsg);
+        await bmc.receiveResponse(_net, service, 3, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
         // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -1863,7 +1863,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         let _coins = [_coin3, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 3, _responseMsg);
+        await bmc.receiveResponse(_net, service, 4, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
         // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
@@ -1928,7 +1928,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         let _coins = [_native, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 4, _responseMsg);
+        await bmc.receiveResponse(_net, service, 5, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
         // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract

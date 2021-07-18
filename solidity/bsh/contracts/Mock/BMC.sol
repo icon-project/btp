@@ -78,7 +78,9 @@ contract BMC is IBMCPeriphery {
     }
 
     constructor(string memory _network) {
-        bmcAddress = string("btp://").concat(_network).concat("/").concat(address(this).toString());
+        bmcAddress = string("btp://").concat(_network).concat("/").concat(
+            address(this).toString()
+        );
         _owners[msg.sender] = true;
         numOfOwner++;
     }

@@ -119,6 +119,9 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
                 _fees[i]
             );
         }
+
+        serialNo++;
+
         //  Because `stack is too deep`, must create `_strFrom` to waive this error
         //  `_strFrom` is a string type of an address `_from`
         string memory _strFrom = _from.toString();
@@ -147,7 +150,6 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
         );
         numOfPendingRequests++;
         emit TransferStart(_from, _to, serialNo, _assetDetails);
-        serialNo++;
     }
 
     /**
