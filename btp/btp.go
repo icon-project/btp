@@ -107,13 +107,14 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 }
 
 func (b *BTP) init() error {
-	if err := b.prepareDatabase(b.cfg.Offset); err != nil {
-		return err
-	}
-
 	if err := b.refreshStatus(); err != nil {
 		return err
 	}
+
+	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset); err != nil {
+		return err
+	}
+
 	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
 	b.relayLoop()
 	b.newRelayMessage()
