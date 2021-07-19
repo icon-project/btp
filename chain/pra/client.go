@@ -116,7 +116,7 @@ func (c *Client) CreateSystemEventsStorageKey(hash substrate.SubstrateHash) (sub
 		return nil, err
 	}
 
-	return CreateStorageKey(meta, "System", "Events", nil, nil)
+	return c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
 func (c *Client) lastFinalizedHeader() (*substrate.SubstrateHeader, error) {
@@ -215,7 +215,7 @@ func (c *Client) getEvents(blockHash substrate.SubstrateHash) (*MoonriverEventRe
 		return nil, err
 	}
 
-	key, err := CreateStorageKey(meta, "System", "Events", nil, nil)
+	key, err := c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -78,3 +78,11 @@ func (fp *FinalityProof) Decode(decoder scale.Decoder) error {
 func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData, records interface{}) error {
 	return types.EventRecordsRaw(event).DecodeEventRecords(meta, records)
 }
+
+func NewSubstrateHashFromHexString(s string) SubstrateHash {
+	hash, err := types.NewHashFromHexString(s)
+	if err != nil {
+		panic(err)
+	}
+	return hash
+}

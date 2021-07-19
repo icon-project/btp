@@ -61,3 +61,12 @@ func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash)
 	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	return res, err
 }
+
+func (c *SubstrateAPI) CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
+	key, err := types.CreateStorageKey(meta, prefix, method, arg, arg2)
+	if err != nil {
+		return nil, err
+	}
+
+	return SubstrateStorageKey(key), nil
+}

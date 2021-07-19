@@ -568,7 +568,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 		blockNumber := uint64(1)
 		stopAt := uint64(10)
 		blockHeader := &substrate.SubstrateHeader{}
-		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
+		hash := substrate.NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
 
 		subClient.On("GetFinalizedHead").Return(hash, nil)
 		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
@@ -608,7 +608,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 		stopAt := uint64(10)
 		from := blockNumber + 2
 		blockHeader := &substrate.SubstrateHeader{}
-		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
+		hash := substrate.NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
 
 		subClient.On("GetFinalizedHead").Return(hash, nil)
 		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {

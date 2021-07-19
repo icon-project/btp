@@ -29,6 +29,29 @@ func (_m *MockSubstrateClient) Call(result interface{}, method string, args ...i
 	return r0
 }
 
+// CreateStorageKey provides a mock function with given fields: meta, prefix, method, arg, arg2
+func (_m *MockSubstrateClient) CreateStorageKey(meta *types.Metadata, prefix string, method string, arg []byte, arg2 []byte) (types.StorageKey, error) {
+	ret := _m.Called(meta, prefix, method, arg, arg2)
+
+	var r0 types.StorageKey
+	if rf, ok := ret.Get(0).(func(*types.Metadata, string, string, []byte, []byte) types.StorageKey); ok {
+		r0 = rf(meta, prefix, method, arg, arg2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.StorageKey)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*types.Metadata, string, string, []byte, []byte) error); ok {
+		r1 = rf(meta, prefix, method, arg, arg2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBlockHash provides a mock function with given fields: blockNumber
 func (_m *MockSubstrateClient) GetBlockHash(blockNumber uint64) (types.Hash, error) {
 	ret := _m.Called(blockNumber)
