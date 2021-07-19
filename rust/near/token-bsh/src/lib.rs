@@ -67,7 +67,6 @@ metadata! {
         charged_coins: Vec<String>,
         charged_amounts: Vec<u128>,
         fee_numerator: u128,
-        uri: String,
     }
 }
 
@@ -118,7 +117,6 @@ impl TokenBsh {
             charged_coins: vec![],
             charged_amounts: vec![],
             fee_numerator,
-            uri: uri.to_string(),
         }
     }
 
@@ -224,20 +222,6 @@ impl TokenBsh {
             );
         }
         self.bsh_generic.set_contract_address(addr);
-    }
-
-    /// Update base URI.
-    /// Caller must be an owner of this contract.
-    /// The URI must be initialized in construction.
-    pub fn update_uri(&mut self, new_uri: &str) {
-        assert!(is_valid_btp_address(new_uri), "Invalid BTP address");
-        assert!(
-            self.owners
-                .get(&env::current_account_id())
-                .expect("Lookup error"),
-            "Unauthorized"
-        );
-        self.uri = new_uri.to_string();
     }
 
     /// Set fee ratio.
