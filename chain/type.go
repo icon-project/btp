@@ -66,11 +66,11 @@ func (rm RelayMessage) BuRange() string {
 	return fmt.Sprintf("bu: %d ~ %d", rm.BlockUpdates[0].Height, rm.BlockUpdates[len(rm.BlockUpdates)-1].Height)
 }
 
-func (rm RelayMessage) RemoveSegment(index int) {
-	if l := len(rm.Segments); l == 0 {
+func (rm *RelayMessage) RemoveSegment(index int) {
+	if l := len(rm.Segments); l-1 <= 0 {
 		rm.Segments = nil
 	} else if index == l-1 {
-		rm.Segments = rm.Segments[:l-2]
+		rm.Segments = rm.Segments[:index]
 	} else {
 		rm.Segments = append(rm.Segments[:index], rm.Segments[index+1:]...)
 	}
