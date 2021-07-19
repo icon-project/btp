@@ -14,7 +14,7 @@ import (
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
-	"github.com/icon-project/btp/chain/substrate"
+	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	iconcrypto "github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"

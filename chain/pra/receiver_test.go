@@ -13,7 +13,7 @@ import (
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
-	"github.com/icon-project/btp/chain/substrate"
+	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/log"
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"

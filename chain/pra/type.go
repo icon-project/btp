@@ -3,7 +3,7 @@ package pra
 import (
 	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/substrate"
+	"github.com/icon-project/btp/chain/pra/substrate"
 )
 
 const (

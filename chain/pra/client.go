@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
-	"github.com/icon-project/btp/chain/substrate"
+	"github.com/icon-project/btp/chain/pra/substrate"
 )
 
 const (

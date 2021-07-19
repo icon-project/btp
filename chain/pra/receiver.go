@@ -7,7 +7,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/substrate"
+	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
