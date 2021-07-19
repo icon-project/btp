@@ -1,4 +1,4 @@
-package pra
+package substrate
 
 import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
@@ -56,8 +56,8 @@ func (c *SubstrateAPI) GetBlockHashLatest() (SubstrateHash, error) {
 	return c.RPC.Chain.GetBlockHashLatest()
 }
 
-func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
-	var res ReadProof
+func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (SubstrateReadProof, error) {
+	var res SubstrateReadProof
 	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	return res, err
 }

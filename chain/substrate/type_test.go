@@ -1,4 +1,4 @@
-package pra
+package substrate
 
 import (
 	"io/ioutil"
@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/icon-project/btp/chain/substrate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +33,7 @@ func TestDecodeFinalityProof(t *testing.T) {
 	  }
 	]
 	**/
-	fp := &substrate.FinalityProof{}
+	fp := &FinalityProof{}
 	err = types.DecodeFromHexString(hexStr, fp)
 	assert.NoError(t, err)
 	assert.Equal(t, fp.Justification.EncodedJustification.Round, types.NewU64(5152))

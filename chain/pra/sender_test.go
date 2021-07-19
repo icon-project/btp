@@ -14,6 +14,7 @@ import (
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
+	"github.com/icon-project/btp/chain/substrate"
 	"github.com/icon-project/btp/common/codec"
 	iconcrypto "github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
@@ -550,7 +551,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 	log := log.New()
 
 	t.Run("monitor from current finallized header", func(t *testing.T) {
-		subClient := &MockSubstrateClient{}
+		subClient := &substrate.MockSubstrateClient{}
 		sender := &Sender{
 			log: log,
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
@@ -566,12 +567,12 @@ func TestSenderMonitorLoop(t *testing.T) {
 
 		blockNumber := uint64(1)
 		stopAt := uint64(10)
-		blockHeader := &SubstrateHeader{}
+		blockHeader := &substrate.SubstrateHeader{}
 		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
 
 		subClient.On("GetFinalizedHead").Return(hash, nil)
 		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
-			blockHeader.Number = SubstrateBlockNumber(blockNumber)
+			blockHeader.Number = substrate.SubstrateBlockNumber(blockNumber)
 			blockNumber++
 		})
 		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {
@@ -589,7 +590,7 @@ func TestSenderMonitorLoop(t *testing.T) {
 	})
 
 	t.Run("monitor from a heigher finallized header", func(t *testing.T) {
-		subClient := &MockSubstrateClient{}
+		subClient := &substrate.MockSubstrateClient{}
 		sender := &Sender{
 			log: log,
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
@@ -606,12 +607,12 @@ func TestSenderMonitorLoop(t *testing.T) {
 		blockNumber := uint64(1)
 		stopAt := uint64(10)
 		from := blockNumber + 2
-		blockHeader := &SubstrateHeader{}
+		blockHeader := &substrate.SubstrateHeader{}
 		hash := NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
 
 		subClient.On("GetFinalizedHead").Return(hash, nil)
 		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
-			blockHeader.Number = SubstrateBlockNumber(blockNumber)
+			blockHeader.Number = substrate.SubstrateBlockNumber(blockNumber)
 			blockNumber++
 		})
 		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {

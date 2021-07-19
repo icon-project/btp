@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
+	"github.com/icon-project/btp/chain/substrate"
 )
 
 const (
@@ -32,28 +33,16 @@ type BMCContract interface {
 	GetStatus(opts *bind.CallOpts, _link string) (binding.TypesLinkStats, error)
 }
 
-type SubstrateClient interface {
-	Call(result interface{}, method string, args ...interface{}) error
-	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
-	GetFinalizedHead() (SubstrateHash, error)
-	GetHeader(hash SubstrateHash) (*SubstrateHeader, error)
-	GetHeaderLatest() (*SubstrateHeader, error)
-	GetBlockHash(blockNumber uint64) (SubstrateHash, error)
-	GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error)
-	GetBlockHashLatest() (SubstrateHash, error)
-	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (ReadProof, error)
-}
-
 type Client struct {
 	ethClient         EthClient
-	subClient         SubstrateClient
+	subClient         substrate.SubstrateClient
 	bmc               BMCContract
 	log               log.Logger
 	stopMonitorSignal chan bool
 }
 
 func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
-	subClient, err := NewSubstrateClient(url)
+	subClient, err := substrate.NewSubstrateClient(url)
 	if err != nil {
 		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
 	}
@@ -78,7 +67,7 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 	return c
 }
 
-func (c *Client) SubstrateClient() SubstrateClient {
+func (c *Client) SubstrateClient() substrate.SubstrateClient {
 	return c.subClient
 }
 
@@ -121,7 +110,7 @@ func (c *Client) CloseAllMonitor() error {
 	return nil
 }
 
-func (c *Client) CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStorageKey, error) {
+func (c *Client) CreateSystemEventsStorageKey(hash substrate.SubstrateHash) (substrate.SubstrateStorageKey, error) {
 	meta, err := c.subClient.GetMetadata(hash)
 	if err != nil {
 		return nil, err
@@ -130,11 +119,7 @@ func (c *Client) CreateSystemEventsStorageKey(hash SubstrateHash) (SubstrateStor
 	return CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
-func (c *Client) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (ReadProof, error) {
-	return c.subClient.GetReadProof(key, hash)
-}
-
-func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
+func (c *Client) lastFinalizedHeader() (*substrate.SubstrateHeader, error) {
 	finalizedHash, err := c.subClient.GetFinalizedHead()
 	if err != nil {
 		return nil, err
@@ -150,7 +135,7 @@ func (c *Client) lastFinalizedHeader() (*SubstrateHeader, error) {
 
 // bestLatestBlockHeader returns the best latest header
 // in testnet if the chain do not support finalizing headers, it returns latest header
-func (c *Client) bestLatestBlockHeader() (*SubstrateHeader, error) {
+func (c *Client) bestLatestBlockHeader() (*substrate.SubstrateHeader, error) {
 	finalizedHeader, err := c.lastFinalizedHeader()
 	if err != nil {
 		return nil, err
@@ -223,7 +208,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvents bool, cb func(v *BlockN
 	}
 }
 
-func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, error) {
+func (c *Client) getEvents(blockHash substrate.SubstrateHash) (*MoonriverEventRecord, error) {
 	// c.log.Trace("fetching block for events", "hash", blockHash.Hex())
 	meta, err := c.subClient.GetMetadata(blockHash)
 	if err != nil {
@@ -241,7 +226,7 @@ func (c *Client) getEvents(blockHash SubstrateHash) (*MoonriverEventRecord, erro
 	}
 
 	records := &MoonriverEventRecord{}
-	if err = SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
 		return nil, err
 	}
 

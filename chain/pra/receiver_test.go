@@ -13,6 +13,7 @@ import (
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/mocks"
+	"github.com/icon-project/btp/chain/substrate"
 	"github.com/icon-project/btp/common/log"
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
@@ -21,13 +22,13 @@ import (
 
 type blockinfo struct {
 	BlockNumber            uint64
-	Hash                   SubstrateHash
-	Header                 SubstrateHeader
+	Hash                   substrate.SubstrateHash
+	Header                 substrate.SubstrateHeader
 	ScaleEncodedHeader     []byte
-	MetaData               SubstrateMetaData
-	StorageKey             SubstrateStorageKey
-	SystemEventsStorageRaw SubstrateStorageDataRaw
-	SystemEventsReadProof  ReadProof
+	MetaData               substrate.SubstrateMetaData
+	StorageKey             substrate.SubstrateStorageKey
+	SystemEventsStorageRaw substrate.SubstrateStorageDataRaw
+	SystemEventsReadProof  substrate.SubstrateReadProof
 }
 
 func readBlockInfoFromAssets(path string, bi *blockinfo) error {
@@ -41,7 +42,7 @@ func readBlockInfoFromAssets(path string, bi *blockinfo) error {
 
 func TestReceiver_ReceiveLoop(t *testing.T) {
 	t.Run("should monitor from the given height", func(t *testing.T) {
-		subClient := &MockSubstrateClient{}
+		subClient := &substrate.MockSubstrateClient{}
 		r := &Receiver{
 			l: log.New(),
 			c: &Client{
@@ -76,7 +77,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 	})
 
 	t.Run("should call bmc.parseMessage when Parachain emits EVM Log", func(t *testing.T) {
-		subClient := &MockSubstrateClient{}
+		subClient := &substrate.MockSubstrateClient{}
 		bmcContract := &mocks.BMCContract{}
 		r := &Receiver{
 			l: log.New(),
@@ -115,7 +116,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 	})
 
 	t.Run("should build StateProof when EVM Log events contains BMC SendMessage Event", func(t *testing.T) {
-		subClient := &MockSubstrateClient{}
+		subClient := &substrate.MockSubstrateClient{}
 		ethClient := ethclient.NewClient(&rpc.Client{})
 
 		bmc, err := binding.NewBMC(EvmHexToAddress("0x5b5B619E6A040EBCB620155E0aAAe89AfA45D090"), ethClient)

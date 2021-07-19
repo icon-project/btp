@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
@@ -127,7 +128,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 	return rps, nil
 }
 
-func (r *Receiver) getProofs(v *BlockNotification) (SubstrateStorageKey, [][]byte, error) {
+func (r *Receiver) getProofs(v *BlockNotification) (substrate.SubstrateStorageKey, [][]byte, error) {
 	key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 	if err != nil {
 		return nil, nil, err

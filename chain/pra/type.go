@@ -3,6 +3,7 @@ package pra
 import (
 	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/substrate"
 )
 
 const (
@@ -70,16 +71,10 @@ type SignedHeader struct {
 
 type BlockNotification struct {
 	Header *stypes.Header
-	Hash   SubstrateHash
+	Hash   substrate.SubstrateHash
 	Height uint64
 	Events *MoonriverEventRecord
 }
-
-type ReadProof struct {
-	At    SubstrateHash `json:"at"`
-	Proof []string      `json:"proof"`
-}
-
 type TransactionHashParam struct {
 	From  EvmAddress
 	Tx    *EvmTransaction

@@ -7,18 +7,18 @@ import (
 
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v3"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/icon-project/btp/chain/pra"
+	"github.com/icon-project/btp/chain/substrate"
 )
 
 type BlockInfo struct {
 	BlockNumber            uint64
-	Hash                   pra.SubstrateHash
-	Header                 pra.SubstrateHeader
+	Hash                   substrate.SubstrateHash
+	Header                 substrate.SubstrateHeader
 	ScaleEncodedHeader     []byte
-	MetaData               pra.SubstrateMetaData
-	StorageKey             pra.SubstrateStorageKey
-	SystemEventsStorageRaw pra.SubstrateStorageDataRaw
-	SystemEventsReadProof  pra.ReadProof
+	MetaData               substrate.SubstrateMetaData
+	StorageKey             substrate.SubstrateStorageKey
+	SystemEventsStorageRaw substrate.SubstrateStorageDataRaw
+	SystemEventsReadProof  substrate.SubstrateReadProof
 }
 
 func main() {
@@ -55,7 +55,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	var readProof pra.ReadProof
+	var readProof substrate.SubstrateReadProof
 	err = api.Client.Call(&readProof, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	if err != nil {
 		fmt.Println(err)
