@@ -885,7 +885,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     @External
     public void sendFeeGathering() {
         requireOwnerAccess();
-        if (services.size() > 0) {
+        if (services.size() == 0) {
             throw BMCException.unknown("services is empty");
         }
         Address feeAggregator = getFeeAggregator();
