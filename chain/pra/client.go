@@ -183,7 +183,12 @@ func (c *Client) MonitorBlock(height uint64, fetchHeader bool, cb func(v *BlockN
 			}
 
 			if fetchHeader {
-				v.Header = latestHeader
+				header, err := c.subClient.GetHeader(hash)
+				if err != nil {
+					return err
+				}
+
+				v.Header = header
 			}
 
 			if err := cb(v); err != nil {
