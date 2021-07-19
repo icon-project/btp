@@ -12,11 +12,6 @@ import (
 	"github.com/icon-project/btp/common/log"
 )
 
-type BlockNotificationWithEvents struct {
-	BlockNotification
-	Events MoonriverEventRecord
-}
-
 type Receiver struct {
 	c   *Client
 	src chain.BtpAddress
@@ -48,7 +43,7 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
-func (r *Receiver) newFinalityProof(v *BlockNotificationWithEvents) ([]byte, error) {
+func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
 	// For edgeware only
 	// // Justification required, when update validators list
 	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
@@ -62,7 +57,7 @@ func (r *Receiver) newFinalityProof(v *BlockNotificationWithEvents) ([]byte, err
 	return nil, nil
 }
 
-func (r *Receiver) newBlockUpdate(v *BlockNotificationWithEvents) (*chain.BlockUpdate, error) {
+func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
 	var err error
 	bu := &chain.BlockUpdate{
 		Height:    int64(v.Height),
@@ -70,7 +65,7 @@ func (r *Receiver) newBlockUpdate(v *BlockNotificationWithEvents) (*chain.BlockU
 	}
 
 	var update BlockUpdate
-	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.BlockNotification.Header); err != nil {
+	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
 		return nil, err
 	}
 
@@ -87,15 +82,44 @@ func (r *Receiver) newBlockUpdate(v *BlockNotificationWithEvents) (*chain.BlockU
 	return bu, nil
 }
 
-func (r *Receiver) newReceiptProofs(v *BlockNotificationWithEvents) ([]*chain.ReceiptProof, error) {
-	rps := make([]*chain.ReceiptProof, 0)
+func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]EventEVMLog, error) {
+	meta, err := r.c.subClient.GetMetadata(v.Hash)
+	if err != nil {
+		return nil, err
+	}
 
-	if len(v.Events.EVM_Log) > 0 {
+	key, err := r.c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	sdr, err := r.c.subClient.GetStorageRaw(key, v.Hash)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build parachain adapter here
+	records := &MoonriverEventRecord{}
+	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+		return nil, err
+	}
+
+	return records.EVM_Log, nil
+}
+
+func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
+	rps := make([]*chain.ReceiptProof, 0)
+	els, err := r.getEvmLogEvents(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(els) > 0 {
 		rp := &chain.ReceiptProof{
 			Height: int64(v.Height),
 		}
 
-		for _, e := range v.Events.EVM_Log {
+		for _, e := range els {
 			if !strings.EqualFold(e.Log.Address.Hex(), r.src.ContractAddress()) {
 				continue
 			}
@@ -133,13 +157,13 @@ func (r *Receiver) newReceiptProofs(v *BlockNotificationWithEvents) ([]*chain.Re
 	return rps, nil
 }
 
-func (r *Receiver) getProofs(v *BlockNotificationWithEvents) (substrate.SubstrateStorageKey, [][]byte, error) {
+func (r *Receiver) getProofs(v *BlockNotification) (substrate.SubstrateStorageKey, [][]byte, error) {
 	key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	proof, err := r.c.SubstrateClient().GetReadProof(key, v.BlockNotification.Hash)
+	proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -156,35 +180,6 @@ func (r *Receiver) getProofs(v *BlockNotificationWithEvents) (substrate.Substrat
 	return key, proofs, nil
 }
 
-func (r *Receiver) addDecodedSystemEvents(v *BlockNotification) (*BlockNotificationWithEvents, error) {
-	meta, err := r.c.subClient.GetMetadata(v.Hash)
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := r.c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	sdr, err := r.c.subClient.GetStorageRaw(key, v.Hash)
-	if err != nil {
-		return nil, err
-	}
-
-	records := &MoonriverEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, err
-	}
-
-	ve := &BlockNotificationWithEvents{
-		BlockNotification: *v,
-		Events:            *records,
-	}
-
-	return ve, nil
-}
-
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
 	if seq < 1 {
 		r.isFoundMessageEventByOffset = true
@@ -196,17 +191,16 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
-		ve, err := r.addDecodedSystemEvents(v)
 
 		if err != nil {
 			return err
 		}
 
-		if bu, err = r.newBlockUpdate(ve); err != nil {
+		if bu, err = r.newBlockUpdate(v); err != nil {
 			return err
 		}
 
-		if sp, err = r.newReceiptProofs(ve); err != nil {
+		if sp, err = r.newReceiptProofs(v); err != nil {
 			return err
 		} else if r.isFoundMessageEventByOffset {
 			cb(bu, sp)

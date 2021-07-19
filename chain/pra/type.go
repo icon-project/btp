@@ -70,7 +70,7 @@ type SignedHeader struct {
 }
 
 type BlockNotification struct {
-	Header substrate.SubstrateHeader
+	Header *substrate.SubstrateHeader
 	Hash   substrate.SubstrateHash
 	Height uint64
 }

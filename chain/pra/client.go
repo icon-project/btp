@@ -149,7 +149,7 @@ func (c *Client) bestLatestBlockHeader() (*substrate.SubstrateHeader, error) {
 }
 
 // MonitorBlock pulls block from the given height
-func (c *Client) MonitorBlock(height uint64, fetchEvents bool, cb func(v *BlockNotification) error) error {
+func (c *Client) MonitorBlock(height uint64, fetchHeader bool, cb func(v *BlockNotification) error) error {
 	current := height
 
 	for {
@@ -180,7 +180,10 @@ func (c *Client) MonitorBlock(height uint64, fetchEvents bool, cb func(v *BlockN
 			v := &BlockNotification{
 				Height: current,
 				Hash:   hash,
-				Header: *latestHeader,
+			}
+
+			if fetchHeader {
+				v.Header = latestHeader
 			}
 
 			if err := cb(v); err != nil {
