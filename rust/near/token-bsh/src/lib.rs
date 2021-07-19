@@ -72,7 +72,19 @@ metadata! {
 
 impl Default for TokenBsh {
     fn default() -> Self {
-        todo!()
+        Self {
+            owners: UnorderedMap::new(StorageKey::TokenBsh),
+            list_of_owners: vec![],
+            bsh_generic: BshGeneric::default(),
+            aggregation_fee: UnorderedMap::new(StorageKey::TokenBsh),
+            balances: UnorderedMap::new(StorageKey::TokenBsh),
+            coins: UnorderedMap::new(StorageKey::TokenBsh),
+            coin_names: vec![],
+            coin_balances: UnorderedMap::new(StorageKey::TokenBsh),
+            charged_coins: vec![],
+            charged_amounts: vec![],
+            fee_numerator: 0,
+        }
     }
 }
 
