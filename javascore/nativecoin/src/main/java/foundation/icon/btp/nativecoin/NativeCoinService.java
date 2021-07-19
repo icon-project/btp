@@ -37,6 +37,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
 
     public static final String SERVICE = "nativecoin";
     public static final BigInteger NATIVE_COIN_ID = BigInteger.ZERO;
+    public static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(10000);
 
     //
     private final Address bmc;
@@ -227,14 +228,15 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     private void sendRequest(Address owner, BTPAddress to, List<String> coinNames, List<BigInteger> amounts) {
         logger.println("sendRequest","begin");
         NCSProperties properties = getProperties();
-        double feeRate = properties.getFeeRate();
+
+        BigInteger feeRatio = properties.getFeeRatio();
         int len = coinNames.size();
         AssetTransferDetail[] assetTransferDetails = new AssetTransferDetail[len];
         Asset[] assets = new Asset[len];
         for (int i = 0; i < len; i++) {
             String coinName = coinNames.get(i);
             BigInteger amount = amounts.get(i);
-            AssetTransferDetail assetTransferDetail = newAssetTransferDetail(coinName, amount, feeRate);
+            AssetTransferDetail assetTransferDetail = newAssetTransferDetail(coinName, amount, feeRatio);
             lock(coinName, owner, amount);
             assetTransferDetails[i] = assetTransferDetail;
             assets[i] = new Asset(assetTransferDetail);
@@ -538,22 +540,28 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External
-    public void setFeeRate(String _feeRate) {
+    public void setFeeRatio(BigInteger _feeNumerator) {
         requireOwnerAccess();
+        require(_feeNumerator.compareTo(BigInteger.ONE) >= 0 &&
+                _feeNumerator.compareTo(FEE_DENOMINATOR) < 0,
+                "The feeNumetator should be less than FEE_DEMONINATOR and greater than 1");
         NCSProperties properties = getProperties();
-        properties.setFeeRate(Double.parseDouble(_feeRate));
+        properties.setFeeRatio(_feeNumerator);
         setProperties(properties);
     }
 
     @External(readonly = true)
-    public String getFeeRate() {
+    public BigInteger feeRatio() {
         NCSProperties properties = getProperties();
-        return Double.toString(properties.getFeeRate());
+        return properties.getFeeRatio();
     }
 
-    private AssetTransferDetail newAssetTransferDetail(String coinName, BigInteger amount, double feeRate) {
+    private AssetTransferDetail newAssetTransferDetail(String coinName, BigInteger amount, BigInteger feeRatio) {
         logger.println("newAssetTransferDetail","begin");
-        BigInteger fee = BigIntegerUtil.multiply(amount, feeRate);
+        BigInteger fee = amount.multiply(feeRatio).divide(FEE_DENOMINATOR);
+        if (fee.compareTo(BigInteger.ZERO) == 0) {
+            fee = BigInteger.ONE;
+        }
         BigInteger transferAmount = amount.subtract(fee);
         logger.println("newAssetTransferDetail","amount:",amount,"fee:",fee);
         if (transferAmount.compareTo(BigInteger.ZERO) < 1) {

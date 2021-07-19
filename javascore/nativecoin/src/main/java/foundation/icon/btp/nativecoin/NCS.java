@@ -144,19 +144,24 @@ public interface NCS {
     void transferBatch(String[] _coinNames, BigInteger[] _values, String _to);
 
     /**
-     * FIXME
+     *  Sets a new transfer fee ratio.
      *
-     * @param _feeRate
+     *  The caller must be the owner.
+     *  The transfer fee is calculated by feeNumerator/FEE_DEMONINATOR. The feeNumetator should be less than FEE_DEMONINATOR and greater than 1
+     *  feeNumetator is set to `10` in construction by default, which means the default fee ratio is 0.1%.
+     *
+     *  @param _feeNumerator  the fee numerator
      */
     @External
-    void setFeeRate(String _feeRate);
+    void setFeeRatio(BigInteger _feeNumerator);
 
     /**
-     * FIXME
+     *  Get transfer fee ratio.
      *
-     * @return
+     *  @return BigInteger   the fee ratio
+     *
      */
     @External(readonly = true)
-    String getFeeRate();
+    BigInteger feeRatio();
 
 }

@@ -29,11 +29,11 @@ public class NCSProperties {
     static {
         DEFAULT = new NCSProperties();
         DEFAULT.setSn(BigInteger.ZERO);
-        DEFAULT.setFeeRate(0.0d);
+        DEFAULT.setFeeRatio(BigInteger.valueOf(10));
     }
 
     private BigInteger sn;
-    private double feeRate = 0d;
+    private BigInteger feeRatio;
 
     public BigInteger getSn() {
         return sn;
@@ -43,19 +43,19 @@ public class NCSProperties {
         this.sn = sn;
     }
 
-    public double getFeeRate() {
-        return feeRate;
+    public BigInteger getFeeRatio() {
+        return feeRatio;
     }
 
-    public void setFeeRate(double feeRate) {
-        this.feeRate = feeRate;
+    public void setFeeRatio(BigInteger feeRatio) {
+        this.feeRatio = feeRatio;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("NCSProperties{");
         sb.append("sn=").append(sn);
-        sb.append(", feeRate=").append(feeRate);
+        sb.append(", feeRatio=").append(feeRatio);
         sb.append('}');
         return sb.toString();
     }
@@ -68,7 +68,7 @@ public class NCSProperties {
         NCSProperties obj = new NCSProperties();
         reader.beginList();
         obj.setSn(reader.readNullable(BigInteger.class));
-        obj.setFeeRate(reader.readDouble());
+        obj.setFeeRatio(reader.readNullable(BigInteger.class));
         reader.end();
         return obj;
     }
@@ -76,7 +76,7 @@ public class NCSProperties {
     public void writeObject(ObjectWriter writer) {
         writer.beginList(2);
         writer.writeNullable(this.getSn());
-        writer.write(this.getFeeRate());
+        writer.writeNullable(this.getFeeRatio());
         writer.end();
     }
 

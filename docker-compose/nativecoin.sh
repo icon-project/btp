@@ -38,15 +38,15 @@ deploy_nc() {
 
 nc_fee() {
   if [ $# -lt 2 ] ; then
-    echo "Usage: nc_fee CHAIN FEE_RATE"
+    echo "Usage: nc_fee CHAIN FEE_RATIO"
     return 1
   fi
   local CHAIN=$1
-  local FEE_RATE=$2
+  local FEE_RATIO=$2
   rpcch ${CHAIN}
   goloop rpc sendtx call --to $(cat nativecoin.${CHAIN}) \
-    --method setFeeRate \
-    --param _feeRate=${FEE_RATE} | jq -r . > tx.nativecoin.fee.${CHAIN}
+    --method setFeeRatio \
+    --param _feeNumerator=${FEE_RATIO} | jq -r . > tx.nativecoin.fee.${CHAIN}
   ensure_txresult tx.nativecoin.fee.${CHAIN}
 }
 
