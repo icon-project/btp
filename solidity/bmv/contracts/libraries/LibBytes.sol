@@ -24,21 +24,6 @@ library LibBytes {
         }
     }
 
-    function bytesToUint8(bytes memory b, uint256 start)
-        internal
-        pure
-        returns (uint256)
-    {
-        require(b.length >= start + 1);
-        uint8 tempUint;
-
-        assembly {
-            tempUint := mload(add(add(b, 0x1), start))
-        }
-
-        return tempUint;
-    }
-
     /// @dev Returns a slices from a byte array.
     /// @param b The byte array to take a slice from.
     /// @param from The starting index for the slice (inclusive).

@@ -334,7 +334,7 @@ library LibMsgDecoder {
             return
                 LibTypes.MessageEvent(
                     string(eventLog.idx[1]),
-                    eventLog.idx[2].bytesToUint8(0),
+                    eventLog.idx[2].toRlpItem().toUint(),
                     eventLog.data[0]
                 );
         }
