@@ -16,9 +16,9 @@
 
 package foundation.icon.btp.nativecoin;
 
-import foundation.icon.btp.nativecoin.irc31.IRC31SupplierScoreInterface;
 import com.iconloop.score.token.irc31.IRC31Receiver;
 import foundation.icon.btp.lib.*;
+import foundation.icon.btp.nativecoin.irc31.IRC31SupplierScoreInterface;
 import foundation.icon.score.util.ArrayUtil;
 import foundation.icon.score.util.BigIntegerUtil;
 import foundation.icon.score.util.Logger;
@@ -211,10 +211,13 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @EventLog(indexed = 1)
-    public void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assets) {}
+    public void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assetDetails) {}
 
     @EventLog(indexed = 1)
-    public void TransferEnd(Address _from, BigInteger sn, long _code, String _response) {}
+    public void TransferEnd(Address _from, BigInteger _sn, BigInteger _code, byte[] _msg) {}
+
+    @EventLog(indexed = 1)
+    public void UnknownResponse(String _from, BigInteger _sn) { }
 
     @External(readonly = true)
     public TransferTransaction getTransaction(BigInteger _sn) {
@@ -244,7 +247,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
 
         TransferTransaction transaction = new TransferTransaction();
         transaction.setFrom(owner.toString());
-        transaction.setTo(to.account());
+        transaction.setTo(to.toString());
         transaction.setAssets(assetTransferDetails);
 
         BigInteger sn = properties.getSn().add(BigInteger.ONE);
@@ -253,7 +256,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         transactions.set(sn, transaction);
 
         sendMessage(to.net(), NCSMessage.REQUEST_COIN_TRANSFER, sn, request.toBytes());
-        TransferStart(owner, to.account(), sn, encode(assetTransferDetails));
+        TransferStart(owner, to.toString(), sn, encode(assetTransferDetails));
         logger.println("sendRequest","end");
     }
 
@@ -281,7 +284,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     private void responseSuccess(String to, BigInteger sn) {
         TransferResponse response = new TransferResponse();
         response.setCode(TransferResponse.RC_OK);
-        response.setMessage("Transfer Success");
+        response.setMessage(TransferResponse.OK_MSG);
         sendMessage(to, NCSMessage.REPONSE_HANDLE_SERVICE, sn, response.toBytes());
     }
 
@@ -307,11 +310,12 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         } else if (serviceType == NCSMessage.UNKNOWN_TYPE) {
             //  If receiving a RES_UNKNOWN_TYPE, ignore this message
             //  or re-send another correct message
+            UnknownResponse(_from, _sn);
         } else {
             //  If none of those types above, BSH responds a message of RES_UNKNOWN_TYPE
             TransferResponse response = new TransferResponse();
             response.setCode(TransferResponse.RC_ERR);
-            response.setMessage("UNKNOWN_TYPE");
+            response.setMessage(TransferResponse.ERR_MSG_UNKNOWN_TYPE);
             sendMessage(_from, NCSMessage.UNKNOWN_TYPE, _sn, response.toBytes());
         }
     }
@@ -397,7 +401,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         logger.println("refund","coinName:",coinName,"owner:",owner,"value:",value);
         //unlock and add refundable
         Balance balance = getBalance(coinName, owner);
-        balance.setLocked(balance.getLocked().add(value));
+        balance.setLocked(balance.getLocked().subtract(value));
         balance.setRefundable(balance.getRefundable().add(value));
         setBalance(coinName, owner, balance);
     }
@@ -469,12 +473,12 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         List<String> registeredCoinNames = getCoinNamesAsList();
         // ignore when not exists pending request
         if (transaction != null) {
-            long code = response.getCode();
+            BigInteger code = response.getCode();
             Address owner = Address.fromString(transaction.getFrom());
             AssetTransferDetail[] assets = transaction.getAssets();
 
             logger.println("handleResponse","code:",code);
-            if (code == TransferResponse.RC_OK) {
+            if (TransferResponse.RC_OK.equals(code)) {
                 List<String> coinNames = new ArrayList<>();
                 List<BigInteger> amounts = new ArrayList<>();
                 for (AssetTransferDetail asset : assets) {
@@ -518,7 +522,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
             }
 
             transactions.set(sn, null);
-            TransferEnd(owner, sn, code, response.getMessage());
+            TransferEnd(owner, sn, code, response.getMessage() != null ? response.getMessage().getBytes() : null);
         }
         logger.println("handleResponse","end");
     }

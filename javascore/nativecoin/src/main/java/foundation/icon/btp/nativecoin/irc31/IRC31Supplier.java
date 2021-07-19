@@ -84,15 +84,15 @@ public interface IRC31Supplier extends IRC31 {
     void setTokenURI(BigInteger _id, String _uri);
 
     //Annotate for ScoreInterface generation
-    @EventLog
+    @EventLog(indexed=3)
     void TransferSingle(Address _operator, Address _from, Address _to, BigInteger _id, BigInteger _value);
 
-    @EventLog
+    @EventLog(indexed=3)
     void TransferBatch(Address _operator, Address _from, Address _to, byte[] _ids, byte[] _values);
 
-    @EventLog
+    @EventLog(indexed=2)
     void ApprovalForAll(Address _owner, Address _operator, boolean _approved);
 
-    @EventLog
+    @EventLog(indexed=1)
     void URI(BigInteger _id, String _value);
 }

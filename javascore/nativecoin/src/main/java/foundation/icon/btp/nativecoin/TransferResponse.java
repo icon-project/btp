@@ -21,18 +21,22 @@ import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-public class TransferResponse {
-    public static long RC_OK = 0;
-    public static long RC_ERR = 1;
+import java.math.BigInteger;
 
-    private long code;
+public class TransferResponse {
+    public static BigInteger RC_OK = BigInteger.ZERO;
+    public static BigInteger RC_ERR = BigInteger.ONE;
+    public static String OK_MSG = "Transfer Success";
+    public static String ERR_MSG_UNKNOWN_TYPE = "UNKNOWN_TYPE";
+
+    private BigInteger code;
     private String message;
 
-    public long getCode() {
+    public BigInteger getCode() {
         return code;
     }
 
-    public void setCode(long code) {
+    public void setCode(BigInteger code) {
         this.code = code;
     }
 
@@ -61,7 +65,7 @@ public class TransferResponse {
     public static TransferResponse readObject(ObjectReader reader) {
         TransferResponse obj = new TransferResponse();
         reader.beginList();
-        obj.setCode(reader.readLong());
+        obj.setCode(reader.readBigInteger());
         obj.setMessage(reader.readNullable(String.class));
         reader.end();
         return obj;

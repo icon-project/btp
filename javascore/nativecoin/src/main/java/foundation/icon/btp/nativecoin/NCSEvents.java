@@ -24,25 +24,33 @@ import java.math.BigInteger;
 public interface NCSEvents {
 
     /**
-     * (EventLog)
+     * (EventLog) Sends a receipt to sender
      *
-     * @param _from
-     * @param _to
-     * @param sn
-     * @param _assets
-     */
-    @EventLog(indexed = 2)
-    void TransferStart(Address _from, String _to, BigInteger sn, byte[] _assets);
-
-    /**
-     * (EventLog)
-     *
-     * @param _from
-     * @param sn
-     * @param _code
-     * @param _response
+     * @param _from   The {@code _from} sender. (Indexed)
+     * @param _to     The {@code _to} receiver.
+     * @param _sn     The {@code _sn} sequence number of the service message.
+     * @param _assets The {@code _assets} asset details that is the serialized data of AssetTransferDetail
      */
     @EventLog(indexed = 1)
-    void TransferEnd(Address _from, BigInteger sn, long _code, String _response);
+    void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assets);
 
+    /**
+     * (EventLog) Sends a receipt to sender to notify the transfer's result
+     *
+     * @param _sender The {@code _sender} account sends the service message. (Indexed)
+     * @param _sn     The {@code _sn} sequence number of the service message.
+     * @param _code   The {@code _code} response code.
+     * @param _msg    The {@code _msg} response message.
+     */
+    @EventLog(indexed = 1)
+    void TransferEnd(Address _sender, BigInteger _sn, BigInteger _code, byte[] _msg);
+
+    /**
+     * Notify to the BSH owner that it has received unknown response
+     *
+     * @param _from The {@code _from} Network Address of source network.
+     * @param _sn   The {@code _sn} sequence number of the service message.
+     */
+    @EventLog(indexed = 1)
+    void UnknownResponse(String _from, BigInteger _sn);
 }

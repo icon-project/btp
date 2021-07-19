@@ -47,7 +47,9 @@ public class OwnerBasedIRC31Supplier extends IRC31Basic implements IRC31Supplier
 
         supplies.set(_id, supplies.getOrDefault(_id, BigInteger.ZERO).add(_amount));
 
-        super._mint(Context.getCaller(), _id, _amount);
+        //FIXME IRC31Basic._mint should emit
+        //  TransferSingle(Context.caller(), ZERO_ADDRESS, owner, id, amount);
+        super._mint(_owner, _id, _amount);
     }
 
     @External
@@ -65,6 +67,8 @@ public class OwnerBasedIRC31Supplier extends IRC31Basic implements IRC31Supplier
             supplies.set(id, supplies.getOrDefault(id, BigInteger.ZERO).add(amount));
         }
 
+        //FIXME IRC31Basic._mintBatch should emit
+        //  TransferBatch(Context.caller(), ZERO_ADDRESS, owner, ids, amounts);
         super._mintBatch(_owner, _ids, _amounts);
     }
 
