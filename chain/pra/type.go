@@ -70,11 +70,11 @@ type SignedHeader struct {
 }
 
 type BlockNotification struct {
-	Header *stypes.Header
+	Header substrate.SubstrateHeader
 	Hash   substrate.SubstrateHash
 	Height uint64
-	Events *MoonriverEventRecord
 }
+
 type TransactionHashParam struct {
 	From  EvmAddress
 	Tx    *EvmTransaction

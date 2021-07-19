@@ -180,24 +180,7 @@ func (c *Client) MonitorBlock(height uint64, fetchEvents bool, cb func(v *BlockN
 			v := &BlockNotification{
 				Height: current,
 				Hash:   hash,
-			}
-
-			// TODO: move this block of code to Receiver.
-			// This block code is only being used by Receiver.
-			// BlockNotification should contain only Hash and Height
-
-			if fetchEvents {
-				if header, err := c.subClient.GetHeader(hash); err != nil {
-					return err
-				} else {
-					v.Header = header
-				}
-
-				if events, err := c.getEvents(v.Hash); err != nil {
-					return err
-				} else {
-					v.Events = events
-				}
+				Header: *latestHeader,
 			}
 
 			if err := cb(v); err != nil {
@@ -206,31 +189,6 @@ func (c *Client) MonitorBlock(height uint64, fetchEvents bool, cb func(v *BlockN
 			current++
 		}
 	}
-}
-
-func (c *Client) getEvents(blockHash substrate.SubstrateHash) (*MoonriverEventRecord, error) {
-	// c.log.Trace("fetching block for events", "hash", blockHash.Hex())
-	meta, err := c.subClient.GetMetadata(blockHash)
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	sdr, err := c.subClient.GetStorageRaw(key, blockHash)
-	if err != nil {
-		return nil, err
-	}
-
-	records := &MoonriverEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, err
-	}
-
-	return records, nil
 }
 
 // CallContract executes a message call transaction, which is directly executed in the VM
