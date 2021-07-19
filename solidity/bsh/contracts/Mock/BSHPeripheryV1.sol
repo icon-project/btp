@@ -113,7 +113,7 @@ contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
             new Types.AssetTransferDetail[](_coinNames.length);
         for (uint256 i = 0; i < _coinNames.length; i++) {
             _assets[i] = Types.Asset(_coinNames[i], _values[i]);
-            _assetDetails[0] = Types.AssetTransferDetail(
+            _assetDetails[i] = Types.AssetTransferDetail(
                 _coinNames[i],
                 _values[i],
                 _fees[i]

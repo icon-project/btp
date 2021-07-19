@@ -1630,12 +1630,12 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
     });
 
     it('Scenario 8: Should revert when an account client sends an invalid request of transferBatch', async () => {
-        let _to = 'btp://1234.eos/0x12345678';
+        let _to = 'btp://1234.iconee/0x12345678';
         let _coins = [_native, _native, _native];
-        let _values = [1000, 2000, 3000];
+        let _values = [1000, 1000, 1000];
         let balanceBefore = await bsh_core.getBalanceOfBatch(accounts[2], _coins);
         await truffleAssert.reverts(
-            bsh_core.transferBatch.call(_coins, _values, _to, {from: accounts[2], value: 6000}),
+            bsh_core.transferBatch.call(_coins, _values, _to, {from: accounts[2], value: 1000}),
             "VM Exception while processing transaction: revert"
         ); 
         let balanceAfter = await bsh_core.getBalanceOfBatch(accounts[2], _coins);

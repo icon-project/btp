@@ -489,13 +489,16 @@ contract BSHCoreV2 is
         uint256 size = _coinNames.length;
         uint256[] memory _amounts = new uint256[](size);
         uint256[] memory _chargeAmts = new uint256[](size);
+        bool isRequested;               //  checking whether native coin has been requested
         for (uint256 i = 0; i < size; i++) {
             _chargeAmts[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
             if (_coinNames[i].compareTo(coinsName[0])) {
+                require(!isRequested, "AlreadyRequested");
                 require(
                     _chargeAmts[i] > 0 && _values[i] == msg.value,
                     "InvalidAmount"
                 );
+                isRequested = true;
             } else {
                 uint256 _id = coins[_coinNames[i]];
                 require(_id != 0, "UnregisterCoin");
