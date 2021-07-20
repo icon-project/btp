@@ -181,14 +181,12 @@ public class MessageTest implements BMCIntegrationTest {
 
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        Consumer<TransactionResult> handleFeeGatheringCheck = (txr) -> {
-            List<HandleFeeGatheringEventLog> eventLogs = MockBSHIntegrationTest.handleFeeGatheringEventLogs(
-                    txr,
-                    (el) -> el.getFa().equals(fa.toString()) &&
-                            el.getSvc().equals(svc));
-            assertEquals(1, eventLogs.size());
-        };
-        ((BMCScoreClient) bmc).handleRelayMessage(handleFeeGatheringCheck, link, relayMessage.toBase64String());
+        ((BMCScoreClient) bmc).handleRelayMessage(
+                MockBSHIntegrationTest.eventLogChecker(HandleFeeGatheringEventLog::eventLogs, (el) -> {
+                    assertEquals(fa.toString(), el.getFa());
+                    assertEquals(svc, el.getSvc());
+                }),
+                link, relayMessage.toBase64String());
     }
 
     @Test
@@ -236,13 +234,12 @@ public class MessageTest implements BMCIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
         ((BMCScoreClient) bmc).handleRelayMessage(
-                MockBSHIntegrationTest.handleBTPMessageEventLogChecker(
-                        (el) -> {
-                            assertEquals(net, el.getFrom());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(payload, el.getMsg());
-                        }),
+                MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
+                    assertEquals(net, el.getFrom());
+                    assertEquals(svc, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    assertArrayEquals(payload, el.getMsg());
+                }),
                 link,
                 relayMessage.toBase64String());
     }
@@ -259,14 +256,13 @@ public class MessageTest implements BMCIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
         ((BMCScoreClient) bmc).handleRelayMessage(
-                MockBSHIntegrationTest.handleBTPErrorEventLogChecker(
-                        (el) -> {
-                            assertEquals(link, el.getSrc());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertEquals(errorMessage.getCode(), el.getCode());
-                            assertEquals(errorMessage.getMsg(), el.getMsg());
-                        }),
+                MockBSHIntegrationTest.eventLogChecker(HandleBTPErrorEventLog::eventLogs, (el) -> {
+                    assertEquals(link, el.getSrc());
+                    assertEquals(svc, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    assertEquals(errorMessage.getCode(), el.getCode());
+                    assertEquals(errorMessage.getMsg(), el.getMsg());
+                }),
                 link,
                 relayMessage.toBase64String());
     }

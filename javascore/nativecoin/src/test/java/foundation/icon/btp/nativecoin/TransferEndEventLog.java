@@ -14,71 +14,65 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.test;
+package foundation.icon.btp.nativecoin;
 
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.IconJsonModule;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
+import foundation.icon.score.util.StringUtil;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class HandleBTPErrorEventLog {
-    static final String SIGNATURE = "HandleBTPError(str,str,int,int,str)";
-    private String src;
-    private String svc;
+public class TransferEndEventLog {
+    static final String SIGNATURE = "TransferEnd(Address,int,int,bytes)";
+    private Address from;
     private BigInteger sn;
-    private long code;
-    private String msg;
+    private BigInteger code;
+    private byte[] msg;
 
-    public HandleBTPErrorEventLog(TransactionResult.EventLog el) {
-        src = el.getData().get(0);
-        svc = el.getData().get(1);
-        sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(2));
-        code = IconJsonModule.NumberDeserializer.LONG.convert(el.getData().get(3));
-        msg = el.getData().get(4);
+    public TransferEndEventLog(TransactionResult.EventLog el) {
+        from = new Address(el.getIndexed().get(1));
+        sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(0));
+        code = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(1));
+        msg = IconJsonModule.ByteArrayDeserializer.BYTE_ARRAY.convert(el.getData().get(2));
     }
 
-    public String getSrc() {
-        return src;
-    }
-
-    public String getSvc() {
-        return svc;
+    public Address getFrom() {
+        return from;
     }
 
     public BigInteger getSn() {
         return sn;
     }
 
-    public long getCode() {
+    public BigInteger getCode() {
         return code;
     }
 
-    public String getMsg() {
+    public byte[] getMsg() {
         return msg;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("HandleBTPErrorEventLog{");
-        sb.append("src='").append(src).append('\'');
-        sb.append(", svc='").append(svc).append('\'');
+        final StringBuilder sb = new StringBuilder("TransferEndEventLog{");
+        sb.append("from=").append(from);
         sb.append(", sn=").append(sn);
         sb.append(", code=").append(code);
-        sb.append(", msg='").append(msg).append('\'');
+        sb.append(", msg=").append(StringUtil.toString(msg));
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<HandleBTPErrorEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<HandleBTPErrorEventLog> filter) {
+    public static List<TransferEndEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<TransferEndEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                HandleBTPErrorEventLog.SIGNATURE,
+                TransferEndEventLog.SIGNATURE,
                 address,
-                HandleBTPErrorEventLog::new,
+                TransferEndEventLog::new,
                 filter);
     }
 }

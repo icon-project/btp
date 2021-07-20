@@ -21,6 +21,7 @@ import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.btp.test.AssertBTPException;
 import foundation.icon.btp.test.BTPIntegrationTest;
+import foundation.icon.btp.test.HandleRelayMessageEventLog;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
@@ -44,8 +46,10 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(btpMessages.toArray(new byte[btpMessages.size()][]));
 
-        ((MockBMVScoreClient)mockBMV).handleRelayMessage(
-                MockBMVIntegrationTest.handleRelayMessageEventLogChecker(relayMessage),
+        ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+                MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
+                    assertArrayEquals(relayMessage.getBtpMessages(), el.getRet());
+                }),
                 bmc, prev, seq, relayMessage.toBase64String());
     }
 
@@ -57,7 +61,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         //noinspection ThrowableNotThrown
         AssertBTPException.assertBTPException(
                 new BTPException.BMV(relayMessage.getRevertCode(), relayMessage.getRevertMessage()),
-                () ->mockBMV.handleRelayMessage(bmc, prev, seq, relayMessage.toBase64String())
+                () -> mockBMV.handleRelayMessage(bmc, prev, seq, relayMessage.toBase64String())
         );
     }
 
@@ -68,8 +72,10 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         relayMessage.setLastHeight(2L);
         relayMessage.setOffset(1L);
 
-        ((MockBMVScoreClient)mockBMV).handleRelayMessage(
-                MockBMVIntegrationTest.handleRelayMessageEventLogChecker(relayMessage),
+        ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+                MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
+                    assertArrayEquals(new byte[][]{}, el.getRet());
+                }),
                 bmc, prev, seq, relayMessage.toBase64String());
         BMVStatus status = mockBMV.getStatus();
         assertEquals(relayMessage.getHeight(), status.getHeight());

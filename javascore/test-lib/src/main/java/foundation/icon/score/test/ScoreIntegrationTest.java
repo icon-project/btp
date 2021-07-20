@@ -16,13 +16,13 @@
 
 package foundation.icon.score.test;
 
+import foundation.icon.icx.KeyWallet;
+import foundation.icon.icx.Wallet;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.IconJsonModule;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.RevertedException;
-import foundation.icon.icx.KeyWallet;
-import foundation.icon.icx.Wallet;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import score.UserRevertedException;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -148,8 +149,33 @@ public interface ScoreIntegrationTest {
         assertEquals(balance.add(value), client._balance(address));
     }
 
-    Wallet tester = getOrGenerateWallet("tester.", System.getProperties());
+    @FunctionalInterface
+    interface EventLogsSupplier<T> {
+        List<T> apply(TransactionResult txr, Address address, Predicate<T> filter);
+    }
 
+    static <T> Consumer<TransactionResult> eventLogChecker(
+            Address address, EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return (txr) -> {
+            List<T> eventLogs = supplier.apply(txr, address, null);
+            assertEquals(1, eventLogs.size());
+            if (consumer != null) {
+                consumer.accept(eventLogs.get(0));
+            }
+        };
+    }
+
+    static <T> Consumer<TransactionResult> eventLogsChecker(
+            Address address, EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
+        return (txr) -> {
+            List<T> eventLogs = supplier.apply(txr, address, null);
+            if (consumer != null) {
+                consumer.accept(eventLogs);
+            }
+        };
+    }
+
+    Wallet tester = getOrGenerateWallet("tester.", System.getProperties());
     static Wallet getOrGenerateWallet(String prefix, Properties properties) {
         Wallet wallet = DefaultScoreClient.wallet(prefix, properties);
         return wallet == null ? generateWallet() : wallet;

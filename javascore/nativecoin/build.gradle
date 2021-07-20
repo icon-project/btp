@@ -10,7 +10,13 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
 
-    testImplementation("org.mockito:mockito-core:3.3.3")
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+    testImplementation project(':test-lib')
+    testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    testImplementation("com.github.javafaker:javafaker:1.0.2")
 }
 
 optimizedJar {
@@ -41,12 +47,12 @@ deployJar {
             nid = 7
         }
         local {
-            uri = 'http://localhost:9080/api/v3/src'
-            nid = 0x944c77
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
         }
     }
-    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
-    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
     parameters {[
             arg('_bmc', 'cx...'),
             arg('_irc31', 'cx...'),
@@ -57,4 +63,41 @@ deployJar {
 
 test {
     useJUnitPlatform()
+    options {
+        testLogging.showStandardStreams = true
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+        systemProperty 'keyStore', scoreTest.default.keyStore
+        systemProperty 'keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'address', "cxd81b47925568321bdf8bb123cb1738a0dc4c5458"
+//        systemProperty 'isUpdate', "true"
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each {
+            arg -> systemProperty 'params.'+arg.name, arg.value
+        }
+
+        systemProperty 'tester.keyStore', scoreTest.tester.keyStore
+        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
+
+        systemProperty 'irc31.url', scoreTest.url
+        systemProperty 'irc31.nid', scoreTest.nid
+        systemProperty 'irc31.keyStore', scoreTest.default.keyStore
+        systemProperty 'irc31.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'irc31.address', "cxb25cd0f4535726517800983c262c081df0a48731"
+//        systemProperty 'irc31.isUpdate', "true"
+        dependsOn optimizedJarIRC31
+        systemProperty 'irc31.scoreFilePath', project.tasks.optimizedJarIRC31.outputJarName
+
+        //for bmc-mock client
+        systemProperty 'bmc-mock.url', scoreTest.url
+        systemProperty 'bmc-mock.nid', scoreTest.nid
+        systemProperty 'bmc-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bmc-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'bmc-mock.address', "cxb0b4e42d25e8f7a0e4f9d4c3853c3515c6cf2f2b"
+//        systemProperty 'bmc-mock.isUpdate', "true"
+        dependsOn ":test-lib:optimizedJarMockBMC"
+        systemProperty 'bmc-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMC").outputJarName
+        systemProperty 'bmc-mock.params._net', scoreTest.nid+'.icon'
+    }
 }

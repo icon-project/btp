@@ -17,9 +17,7 @@
 package foundation.icon.btp.mock;
 
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.test.BTPIntegrationTest;
-import foundation.icon.btp.test.MockBMCIntegrationTest;
-import foundation.icon.btp.test.MockBSHIntegrationTest;
+import foundation.icon.btp.test.*;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -37,58 +35,54 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
     static String svc = BTPIntegrationTest.Faker.btpService();
     static BigInteger sn = BigInteger.ONE;
     static long errCode = 1;
-    static String errMsg = "err"+svc;
+    static String errMsg = "err" + svc;
     static String fa = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString();
 
     @Test
     void intercallSendMessage() {
-        ((MockBSHScoreClient)mockBSH).intercallSendMessage(
-                MockBMCIntegrationTest.sendMessageEventLogChecker(
-                        (el) -> {
-                            assertEquals(to, el.getTo());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(msg, el.getMsg());
-                        }),
+        ((MockBSHScoreClient) mockBSH).intercallSendMessage(
+                MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
+                    assertEquals(to, el.getTo());
+                    assertEquals(svc, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    assertArrayEquals(msg, el.getMsg());
+                }),
                 MockBMCIntegrationTest.mockBMCClient._address(),
                 to, svc, sn, msg);
     }
 
     @Test
     void handleBTPMessageShouldMakeEventLog() {
-        ((MockBSHScoreClient)mockBSH).handleBTPMessage(
-                MockBSHIntegrationTest.handleBTPMessageEventLogChecker(
-                        (el) -> {
-                            assertEquals(to, el.getFrom());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(msg, el.getMsg());
-                        }),
+        ((MockBSHScoreClient) mockBSH).handleBTPMessage(
+                MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
+                    assertEquals(to, el.getFrom());
+                    assertEquals(svc, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    assertArrayEquals(msg, el.getMsg());
+                }),
                 to, svc, sn, msg);
     }
 
     @Test
     void handleBTPErrorShouldMakeEventLog() {
-        ((MockBSHScoreClient)mockBSH).handleBTPError(
-                MockBSHIntegrationTest.handleBTPErrorEventLogChecker(
-                        (el) -> {
-                            assertEquals(prev, el.getSrc());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertEquals(errCode, el.getCode());
-                            assertEquals(errMsg, el.getMsg());
-                        }),
+        ((MockBSHScoreClient) mockBSH).handleBTPError(
+                MockBSHIntegrationTest.eventLogChecker(HandleBTPErrorEventLog::eventLogs, (el) -> {
+                    assertEquals(prev, el.getSrc());
+                    assertEquals(svc, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    assertEquals(errCode, el.getCode());
+                    assertEquals(errMsg, el.getMsg());
+                }),
                 prev, svc, sn, errCode, errMsg);
     }
 
     @Test
     void handleFeeGatheringShouldMakeEventLog() {
-        ((MockBSHScoreClient)mockBSH).handleFeeGathering(
-                MockBSHIntegrationTest.handleFeeGatheringEventLogChecker(
-                        (el) -> {
-                            assertEquals(fa, el.getFa());
-                            assertEquals(svc, el.getSvc());
-                        }),
+        ((MockBSHScoreClient) mockBSH).handleFeeGathering(
+                MockBSHIntegrationTest.eventLogChecker(HandleFeeGatheringEventLog::eventLogs, (el) -> {
+                    assertEquals(fa, el.getFa());
+                    assertEquals(svc, el.getSvc());
+                }),
                 fa, svc);
     }
 }

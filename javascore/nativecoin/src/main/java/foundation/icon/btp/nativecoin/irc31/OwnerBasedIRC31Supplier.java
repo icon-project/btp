@@ -19,6 +19,7 @@ package foundation.icon.btp.nativecoin.irc31;
 import foundation.icon.btp.lib.OwnerManager;
 import foundation.icon.btp.lib.OwnerManagerImpl;
 import com.iconloop.score.token.irc31.IRC31Basic;
+import foundation.icon.btp.nativecoin.NCSException;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -122,12 +123,20 @@ public class OwnerBasedIRC31Supplier extends IRC31Basic implements IRC31Supplier
 
     @External
     public void addOwner(Address _addr) {
-        ownerManager.addOwner(_addr);
+        try {
+            ownerManager.addOwner(_addr);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            Context.revert(0, e.getMessage());
+        }
     }
 
     @External
     public void removeOwner(Address _addr) {
-        ownerManager.removeOwner(_addr);
+        try {
+            ownerManager.removeOwner(_addr);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            Context.revert(0, e.getMessage());
+        }
     }
 
     @External(readonly = true)

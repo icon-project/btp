@@ -14,48 +14,51 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.test;
+package foundation.icon.btp.nativecoin.irc31;
+
 
 import foundation.icon.jsonrpc.Address;
+import foundation.icon.jsonrpc.IconJsonModule;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class HandleFeeGatheringEventLog {
-    static final String SIGNATURE = "HandleFeeGathering(str,str)";
-    private String fa;
-    private String svc;
+public class URIEventLog {
+    static final String SIGNATURE = "URI(int,str)";
+    private BigInteger id;
+    private String value;
 
-    public HandleFeeGatheringEventLog(TransactionResult.EventLog el) {
-        fa = el.getData().get(0);
-        svc = el.getData().get(1);
+    public URIEventLog(TransactionResult.EventLog el) {
+        this.id = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getIndexed().get(1));
+        this.value = el.getData().get(0);
     }
 
-    public String getFa() {
-        return fa;
+    public BigInteger getId() {
+        return id;
     }
 
-    public String getSvc() {
-        return svc;
+    public String getValue() {
+        return value;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("HandleFeeGatheringEventLog{");
-        sb.append("fa='").append(fa).append('\'');
-        sb.append(", svc='").append(svc).append('\'');
+        final StringBuilder sb = new StringBuilder("URIEventLog{");
+        sb.append("id=").append(id);
+        sb.append(", value='").append(value).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<HandleFeeGatheringEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<HandleFeeGatheringEventLog> filter) {
+    public static List<URIEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<URIEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                HandleFeeGatheringEventLog.SIGNATURE,
+                URIEventLog.SIGNATURE,
                 address,
-                HandleFeeGatheringEventLog::new,
+                URIEventLog::new,
                 filter);
     }
 }

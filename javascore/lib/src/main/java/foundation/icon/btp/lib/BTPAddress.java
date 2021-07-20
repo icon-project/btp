@@ -29,6 +29,10 @@ public class BTPAddress {
     String net;
     String account;
 
+    public BTPAddress(String net, String account) {
+        this(PROTOCOL_BTP, net, account);
+    }
+
     public BTPAddress(String protocol, String net, String account) {
         this.protocol = protocol;
         this.net = net;

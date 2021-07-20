@@ -14,65 +14,54 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.test;
+package foundation.icon.btp.nativecoin;
 
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.IconJsonModule;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import foundation.icon.score.util.StringUtil;
+import score.Context;
+import score.ObjectReader;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class HandleBTPMessageEventLog {
-    static final String SIGNATURE = "HandleBTPMessage(str,str,int,bytes)";
+public class UnknownResponseEventLog {
+    static final String SIGNATURE = "UnknownResponse(str,int)";
     private String from;
-    private String svc;
     private BigInteger sn;
-    private byte[] msg;
 
-    public HandleBTPMessageEventLog(TransactionResult.EventLog el) {
-        from = el.getData().get(0);
-        svc = el.getData().get(1);
-        sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(2));
-        msg = IconJsonModule.ByteArrayDeserializer.BYTE_ARRAY.convert(el.getData().get(3));
+    public UnknownResponseEventLog(TransactionResult.EventLog el) {
+        from = el.getIndexed().get(1);
+        sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(0));
     }
 
     public String getFrom() {
         return from;
     }
 
-    public String getSvc() {
-        return svc;
-    }
-
     public BigInteger getSn() {
         return sn;
     }
 
-    public byte[] getMsg() {
-        return msg;
-    }
-
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("HandleBTPMessageEventLog{");
+        final StringBuilder sb = new StringBuilder("UnknownResponseEventLog{");
         sb.append("from='").append(from).append('\'');
-        sb.append(", svc='").append(svc).append('\'');
         sb.append(", sn=").append(sn);
-        sb.append(", msg=").append(StringUtil.toString(msg));
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<HandleBTPMessageEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<HandleBTPMessageEventLog> filter) {
+    public static List<UnknownResponseEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<UnknownResponseEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                HandleBTPMessageEventLog.SIGNATURE,
+                UnknownResponseEventLog.SIGNATURE,
                 address,
-                HandleBTPMessageEventLog::new,
+                UnknownResponseEventLog::new,
                 filter);
     }
 }

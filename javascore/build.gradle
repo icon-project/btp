@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 buildscript {
     repositories {
         mavenLocal()
@@ -39,4 +41,49 @@ subprojects {
         iconsdkVersion = getProperty("iconsdk.version")
         jacksonVersion = getProperty("jackson.version")
     }
+
+    def loadProperties = {
+        def prefix = 'score-test.'
+        def props = project.getProperties()
+        def scoreTest = new HashMap<String, Object>()
+        def keySet = ['keyStore','keyPassword','keySecret']
+        props.each {
+            if (it.key.startsWith(prefix)) {
+                def splited = it.key.split("\\.")
+                if (splited.length == 3) {
+                    def user = splited[1]
+                    def key = splited[2]
+                    if (keySet.contains(key)) {
+                        def obj = scoreTest.getOrDefault(user, new HashMap<String, String>())
+                        obj.put(key, it.value.toString())
+                        scoreTest.put(user, obj)
+                    }
+                }
+            }
+        }
+        scoreTest.each {
+            def resolvedKeyPassword = it.value.get('keyPassword')
+            if (resolvedKeyPassword == null) {
+                if (it.value.containsKey('keySecret')) {
+                    resolvedKeyPassword = Files.readString(
+                            java.nio.file.Path.of(it.value.get('keySecret').toString()))
+                }
+                it.value.put('resolvedKeyPassword', resolvedKeyPassword)
+            }
+        }
+
+        scoreTest.put('url', props.getOrDefault(prefix + 'url', 'http://localhost:9082/api/v3'))
+        scoreTest.put('nid', props.getOrDefault(prefix + 'nid', 3))
+        scoreTest.put('parseNid', { Object v ->
+            if (v instanceof String) {
+                return v.startsWith("0x") ?
+                        Integer.parseInt(v.substring(2), 16) :
+                        Integer.parseInt(v)
+            } else {
+                return v as int
+            }
+        })
+        ext['scoreTest'] = scoreTest
+    }
+    loadProperties()
 }

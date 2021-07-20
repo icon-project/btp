@@ -35,14 +35,14 @@ deployJar {
             nid = 7
         }
         local {
-            uri = 'http://localhost:9082/api/v3'
-            nid = 3
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
         }
     }
-    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
-    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
     parameters {
-        arg('_net', '0x3.icon')
+        arg('_net', scoreTest.nid+'.icon')
     }
 }
 
@@ -50,10 +50,10 @@ test {
     useJUnitPlatform()
     options {
         testLogging.showStandardStreams = true
-        systemProperty 'url', project.tasks.deployToLocal.uri.get()
-        systemProperty 'nid', project.tasks.deployToLocal.nid.get()
-        systemProperty 'keyStore', project.extensions.deployJar.keystore.get()
-        systemProperty 'keyPassword', project.extensions.deployJar.password.get()
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+        systemProperty 'keyStore', scoreTest.default.keyStore
+        systemProperty 'keyPassword', scoreTest.default.resolvedKeyPassword
 //        systemProperty 'address', "cx9d9febc3a11565e26b6a0dbea2a4c3fd402bae86"
 //        systemProperty 'isUpdate', "true"
         dependsOn optimizedJar
@@ -63,24 +63,24 @@ test {
         }
 
         //only for foundation.icon.btp.bmc.ScoreIntegrationTest
-        systemProperty 'tester.keyStore', rootProject.getProperty('tester.keyStore')
-        systemProperty 'tester.keySecret', rootProject.getProperty('tester.keySecret')
+        systemProperty 'score-test.tester.keyStore', scoreTest.tester.keyStore
+        systemProperty 'score-test.tester.keySecret', scoreTest.tester.keySecret
 
         //for bmv-mock client
-        systemProperty 'bmv-mock.url', project.tasks.deployToLocal.uri.get()
-        systemProperty 'bmv-mock.nid', project.tasks.deployToLocal.nid.get()
-        systemProperty 'bmv-mock.keyStore', project.extensions.deployJar.keystore.get()
-        systemProperty 'bmv-mock.keyPassword', project.extensions.deployJar.password.get()
+        systemProperty 'bmv-mock.url', scoreTest.url
+        systemProperty 'bmv-mock.nid', scoreTest.nid
+        systemProperty 'bmv-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bmv-mock.keyPassword', scoreTest.default.resolvedKeyPassword
 //        systemProperty 'bmv-mock.address', "cx0f549056aeebed9c06833bebfe8b17113958532f"
 //        systemProperty 'bmv-mock.isUpdate', "true"
         dependsOn ":test-lib:optimizedJarMockBMV"
         systemProperty 'bmv-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMV").outputJarName
 
         //for bmv-mock client
-        systemProperty 'bsh-mock.url', project.tasks.deployToLocal.uri.get()
-        systemProperty 'bsh-mock.nid', project.tasks.deployToLocal.nid.get()
-        systemProperty 'bsh-mock.keyStore', project.extensions.deployJar.keystore.get()
-        systemProperty 'bsh-mock.keyPassword', project.extensions.deployJar.password.get()
+        systemProperty 'bsh-mock.url', scoreTest.url
+        systemProperty 'bsh-mock.nid', scoreTest.nid
+        systemProperty 'bsh-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bsh-mock.keyPassword', scoreTest.default.resolvedKeyPassword
 //        systemProperty 'bsh-mock.address', "cx47853622a461b34885c42d74e8354b03a3e88a42"
 //        systemProperty 'bsh-mock.isUpdate', "true"
         dependsOn ":test-lib:optimizedJarMockBSH"

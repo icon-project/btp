@@ -18,31 +18,21 @@ package foundation.icon.btp.test;
 
 import foundation.icon.btp.mock.MockBMV;
 import foundation.icon.btp.mock.MockBMVScoreClient;
-import foundation.icon.btp.mock.MockRelayMessage;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
+import foundation.icon.score.test.ScoreIntegrationTest;
 
-import java.util.List;
 import java.util.function.Consumer;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public interface MockBMVIntegrationTest {
 
     DefaultScoreClient mockBMVClient = DefaultScoreClient.of("bmv-mock.", System.getProperties());
     MockBMV mockBMV = new MockBMVScoreClient(mockBMVClient);
 
-    static Consumer<TransactionResult> handleRelayMessageEventLogChecker(
-            MockRelayMessage relayMessage) {
-        return (txr) -> {
-            List<HandleRelayMessageEventLog> eventLogs =
-                    HandleRelayMessageEventLog.eventLogs(txr, mockBMVClient._address(), null);
-            assertEquals(1, eventLogs.size());
-            byte[][] ret = relayMessage.getBtpMessages();
-            assertArrayEquals(
-                    ret == null ? new byte[][]{} : ret,
-                    eventLogs.get(0).getRet());
-        };
+    static <T> Consumer<TransactionResult> eventLogChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return ScoreIntegrationTest.eventLogChecker(
+                mockBMVClient._address(), supplier, consumer);
     }
+
 }

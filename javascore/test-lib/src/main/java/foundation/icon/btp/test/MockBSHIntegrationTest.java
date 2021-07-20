@@ -22,59 +22,17 @@ import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public interface MockBSHIntegrationTest {
 
     DefaultScoreClient mockBSHClient = DefaultScoreClient.of("bsh-mock.", System.getProperties());
     MockBSH mockBSH = new MockBSHScoreClient(mockBSHClient);
 
-    static Consumer<TransactionResult> handleBTPMessageEventLogChecker(
-            Consumer<HandleBTPMessageEventLog> consumer) {
-        return (txr) -> {
-            List<HandleBTPMessageEventLog> eventLogs =
-                    HandleBTPMessageEventLog.eventLogs(txr, mockBSHClient._address(), null);
-            assertEquals(1, eventLogs.size());
-            if (consumer != null) {
-                consumer.accept(eventLogs.get(0));
-            }
-        };
+    static <T> Consumer<TransactionResult> eventLogChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return ScoreIntegrationTest.eventLogChecker(
+                mockBSHClient._address(), supplier, consumer);
     }
 
-    static Consumer<TransactionResult> handleBTPErrorEventLogChecker(
-            Consumer<HandleBTPErrorEventLog> consumer) {
-        return (txr) -> {
-            List<HandleBTPErrorEventLog> eventLogs =
-                    HandleBTPErrorEventLog.eventLogs(txr, mockBSHClient._address(), null);
-            assertEquals(1, eventLogs.size());
-            if (consumer != null) {
-                consumer.accept(eventLogs.get(0));
-            }
-        };
-    }
-
-    static Consumer<TransactionResult> handleFeeGatheringEventLogChecker(
-            Consumer<HandleFeeGatheringEventLog> consumer) {
-        return (txr) -> {
-            List<HandleFeeGatheringEventLog> eventLogs =
-                    HandleFeeGatheringEventLog.eventLogs(txr, mockBSHClient._address(), null);
-            assertEquals(1, eventLogs.size());
-            if (consumer != null) {
-                consumer.accept(eventLogs.get(0));
-            }
-        };
-    }
-
-    static List<HandleFeeGatheringEventLog> handleFeeGatheringEventLogs(
-            TransactionResult txr, Predicate<HandleFeeGatheringEventLog> filter) {
-        return ScoreIntegrationTest.eventLogs(txr,
-                HandleFeeGatheringEventLog.SIGNATURE,
-                mockBSHClient._address(),
-                HandleFeeGatheringEventLog::new,
-                filter);
-    }
 }
