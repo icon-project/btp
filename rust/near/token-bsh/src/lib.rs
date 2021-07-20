@@ -40,7 +40,7 @@ use bsh_generic::BshGeneric;
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, metadata, near_bindgen, setup_alloc};
+use near_sdk::{env, metadata, near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
 metadata! {
@@ -126,6 +126,21 @@ impl TokenBsh {
             charged_amounts: vec![],
             fee_numerator,
         }
+    }
+
+    pub fn deploy_token_bsh_contract(&self, account_id: AccountId, amount: u128) {
+        let promise_idx = env::promise_batch_create(&account_id);
+        env::promise_batch_action_create_account(promise_idx);
+        env::promise_batch_action_transfer(promise_idx, amount);
+        env::promise_batch_action_add_key_with_full_access(
+            promise_idx,
+            &env::signer_account_pk(),
+            0,
+        );
+        // let code: &[u8] = include_bytes!("../rust/near/token-bsh/res/token-bsh.wasm");
+        // FIXME^ uncomment once contract is compiled to WASM
+        let code: Vec<u8> = vec![];
+        env::promise_batch_action_deploy_contract(promise_idx, code.as_slice());
     }
 
     /// Add another owner.

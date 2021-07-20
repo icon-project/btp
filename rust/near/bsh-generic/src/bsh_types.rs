@@ -3,7 +3,10 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::BorshStorageKey;
 
-#[derive(BorshSerialize, BorshStorageKey)]
+#[derive(
+    BorshDeserialize, BorshSerialize, BorshStorageKey, Clone, Debug, Deserialize, Serialize,
+)]
+#[serde(crate = "near_sdk::serde")]
 pub enum BshStorageKey {
     BshGeneric,
     TokenBsh,
