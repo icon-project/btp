@@ -191,11 +191,6 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
-
-		if err != nil {
-			return err
-		}
-
 		if bu, err = r.newBlockUpdate(v); err != nil {
 			return err
 		}
