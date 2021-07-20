@@ -267,6 +267,60 @@ public class MessageTest implements BMCIntegrationTest {
                 relayMessage.toBase64String());
     }
 
+    static String[] fragments(String s, int count) {
+        int len = s.length();
+        if (len < count || count < 1) {
+            throw new IllegalArgumentException();
+        }
+        int fLen = len / count;
+        if (len % count != 0) {
+            fLen++;
+        }
+        int begin = 0;
+        String[] arr = new String[count];
+        for (int i = 0; i < count; i++) {
+            int end = begin + fLen;
+            if (end < len) {
+                arr[i] = s.substring(begin, end);
+            } else {
+                arr[i] = s.substring(begin);
+            }
+            begin = end;
+        }
+        return arr;
+    }
+
+    @Test
+    void handleFragment() {
+        //BMC.handleFragment -> BSHMock.HandleBTPMessage(str,str,int,bytes)
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+        List<BTPMessage> btpMessages = new ArrayList<>();
+        btpMessages.add(btpMessage(svc, sn, payload));
+        MockRelayMessage relayMessage = new MockRelayMessage();
+        relayMessage.setBtpMessages(toBytesArray(btpMessages));
+        String msg = relayMessage.toBase64String();
+        int count = 3;
+        int last = count - 1;
+        String[] fragments = fragments(msg, count);
+        for (int i = 0; i < count; i++) {
+            if (i == 0) {
+                iconSpecific.handleFragment(link, fragments[i], -1 * last);
+            } else if (i == last) {
+                ((ICONSpecificScoreClient) iconSpecific).handleFragment(
+                        MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
+                            assertEquals(net, el.getFrom());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(payload, el.getMsg());
+                        }),
+                        link, fragments[i], 0);
+            } else {
+                iconSpecific.handleFragment(link, fragments[i], last - i);
+            }
+        }
+    }
+
     @Test
     void sendMessageShouldSuccess() {
         //BSHMock.sendMessage -> BMC.Message(str,int,bytes)
@@ -274,7 +328,6 @@ public class MessageTest implements BMCIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
 
         BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
-        ;
         ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
                 BMCIntegrationTest.messageEventLogChecker((el) -> {
                     assertEquals(link, el.getNext());

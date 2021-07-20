@@ -751,7 +751,12 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 handleRelayMessage(_prev, msg.toString());;
             } else {
                 fragments.set(INDEX_NEXT, Integer.toString(_idx - 1));
-                fragments.set(last - _idx + INDEX_OFFSET, _msg);
+                int INDEX_MSG = last - _idx + INDEX_OFFSET;
+                if (INDEX_MSG < fragments.size()) {
+                    fragments.set(INDEX_MSG, _msg);
+                } else {
+                    fragments.add(_msg);
+                }
             }
         }
     }
