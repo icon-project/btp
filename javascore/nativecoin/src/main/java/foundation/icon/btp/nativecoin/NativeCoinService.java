@@ -133,7 +133,14 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
 
     @External(readonly = true)
     public Balance balanceOf(Address _owner, String _coinName) {
-        return getBalance(_coinName, _owner);
+        if (_owner.equals(Context.getAddress())) {
+            Balance balance = new Balance();
+            balance.setLocked(BigInteger.ZERO);
+            balance.setRefundable(feeBalances.getOrDefault(_coinName, BigInteger.ZERO));
+            return balance;
+        } else {
+            return getBalance(_coinName, _owner);
+        }
     }
 
     @External(readonly = true)
@@ -141,7 +148,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         int len = _coinNames.length;
         Balance[] balances = new Balance[len];
         for (int i = 0; i < len; i++) {
-            balances[i] = getBalance(_coinNames[i], _owner);
+            balances[i] = balanceOf(_owner, _coinNames[i]);
         }
         return balances;
     }
@@ -230,6 +237,9 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         NCSProperties properties = getProperties();
 
         BigInteger feeRatio = properties.getFeeRatio();
+        if (owner.equals(Context.getAddress())) {
+            feeRatio = BigInteger.ZERO;
+        }
         int len = coinNames.size();
         AssetTransferDetail[] assetTransferDetails = new AssetTransferDetail[len];
         Asset[] assets = new Asset[len];
@@ -332,9 +342,9 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External
-    public void handleFeeGathering(String _from, String _svc) {
+    public void handleFeeGathering(String _fa, String _svc) {
         require(Context.getCaller().equals(bmc), "Only BMC");
-        BTPAddress from = BTPAddress.valueOf(_from);
+        BTPAddress from = BTPAddress.valueOf(_fa);
         Address owner = Context.getAddress();
 
         List<String> coinNames = new ArrayList<>();
@@ -404,7 +414,9 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         //unlock and add refundable
         Balance balance = getBalance(coinName, owner);
         balance.setLocked(balance.getLocked().subtract(value));
-        balance.setRefundable(balance.getRefundable().add(value));
+        if (!owner.equals(Context.getAddress())) {
+            balance.setRefundable(balance.getRefundable().add(value));
+        }
         setBalance(coinName, owner, balance);
     }
 
@@ -559,7 +571,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     private AssetTransferDetail newAssetTransferDetail(String coinName, BigInteger amount, BigInteger feeRatio) {
         logger.println("newAssetTransferDetail","begin");
         BigInteger fee = amount.multiply(feeRatio).divide(FEE_DENOMINATOR);
-        if (fee.compareTo(BigInteger.ZERO) == 0) {
+        if (feeRatio.compareTo(BigInteger.ZERO) > 0 && fee.compareTo(BigInteger.ZERO) == 0) {
             fee = BigInteger.ONE;
         }
         BigInteger transferAmount = amount.subtract(fee);

@@ -34,6 +34,11 @@ public class Asset {
         setAmount(asset.getAmount());
     }
 
+    public Asset(String coinName, BigInteger amount) {
+        this.coinName = coinName;
+        this.amount = amount;
+    }
+
     public String getCoinName() {
         return coinName;
     }
