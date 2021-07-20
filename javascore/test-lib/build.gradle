@@ -33,7 +33,7 @@ task optimizedJarMockBMC(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = !rootProject.hasProperty("release")
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 task optimizedJarMockBMV(type: OptimizedJar) {
@@ -43,7 +43,7 @@ task optimizedJarMockBMV(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = !rootProject.hasProperty("release")
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 task optimizedJarMockBSH(type: OptimizedJar) {
@@ -53,7 +53,7 @@ task optimizedJarMockBSH(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = !rootProject.hasProperty("release")
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 deployJar {

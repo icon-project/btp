@@ -25,7 +25,7 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = !rootProject.hasProperty("release")
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
@@ -37,7 +37,7 @@ task optimizedJarIRC31(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = !rootProject.hasProperty("release")
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 deployJar {

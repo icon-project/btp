@@ -17,8 +17,8 @@ optimizedJar {
     archivesBaseName = 'bmv-icon'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    enableDebug = !rootProject.hasProperty("release")
+    } { exclude "score/*" }
+    enableDebug = rootProject.hasProperty("debugJar")
 }
 
 deployJar {

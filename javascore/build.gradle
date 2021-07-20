@@ -83,6 +83,14 @@ subprojects {
                 return v as int
             }
         })
+
+        if (!scoreTest.containsKey("default")) {
+            scoreTest.put("default", Map.of("keyStore","","keySecret","","resolvedKeyPassword",""))
+        }
+        if (!scoreTest.containsKey("tester")) {
+            scoreTest.put("tester", Map.of("keyStore","","keySecret","","resolvedKeyPassword",""))
+        }
+
         ext['scoreTest'] = scoreTest
     }
     loadProperties()
