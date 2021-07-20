@@ -43,7 +43,7 @@ use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, metadata, near_bindgen, setup_alloc, BorshStorageKey};
 
 #[derive(BorshSerialize, BorshStorageKey)]
-enum StorageKey {
+enum TokenBshKey {
     TokenBsh,
 }
 
@@ -78,13 +78,13 @@ metadata! {
 impl Default for TokenBsh {
     fn default() -> Self {
         Self {
-            owners: UnorderedMap::new(StorageKey::TokenBsh),
+            owners: UnorderedMap::new(TokenBshKey::TokenBsh),
             list_of_owners: vec![],
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(StorageKey::TokenBsh),
-            coin_balances: UnorderedMap::new(StorageKey::TokenBsh),
-            account_balances: UnorderedMap::new(StorageKey::TokenBsh),
-            coins: UnorderedMap::new(StorageKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(TokenBshKey::TokenBsh),
+            coin_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
+            account_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
+            coins: UnorderedMap::new(TokenBshKey::TokenBsh),
             coin_names: vec![],
             charged_coins: vec![],
             charged_amounts: vec![],
@@ -101,9 +101,9 @@ impl TokenBsh {
 
     #[init]
     pub fn new(native_coin_name: &str, fee_numerator: u128) -> Self {
-        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(StorageKey::TokenBsh);
+        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(TokenBshKey::TokenBsh);
         let list_of_owners: Vec<String> = vec![env::current_account_id()];
-        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(StorageKey::TokenBsh);
+        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(TokenBshKey::TokenBsh);
         let coin_names: Vec<String> = vec![native_coin_name.to_string()];
 
         let _ = owners.insert(&env::current_account_id(), &true);
@@ -122,9 +122,9 @@ impl TokenBsh {
             owners,
             list_of_owners,
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(StorageKey::TokenBsh),
-            coin_balances: UnorderedMap::new(StorageKey::TokenBsh),
-            account_balances: UnorderedMap::new(StorageKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(TokenBshKey::TokenBsh),
+            coin_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
+            account_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
             coins,
             coin_names,
             charged_coins: vec![],

@@ -40,11 +40,16 @@ pub use bsh_types::{self as other_bsh_types};
 
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, metadata, near_bindgen, setup_alloc};
-use std::collections::HashMap;
+use near_sdk::{env, metadata, near_bindgen, setup_alloc, BorshStorageKey};
+use near_sdk::collections::UnorderedMap;
 
 /// Re-export types for specific BSH contracts
 pub use bsh_types::*;
+
+#[derive(BorshSerialize, BorshStorageKey)]
+enum BshGenericKey {
+    BshGeneric,
+}
 
 setup_alloc!();
 metadata! {
@@ -52,19 +57,32 @@ metadata! {
     /// among BMC Service and a BSH core contract.
     /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
     #[near_bindgen]
-    #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Default)]
+    #[derive(BorshDeserialize, BorshSerialize)]
     pub struct BshGeneric {
         bmc_contract: String,
         bsh_contract: String,
         /// A list of transferring requests
         /// Use `HashMap` because `LookupMap` doesn't implement
         /// Clone, Debug, and Default traits
-        requests: HashMap<u64, PendingTransferCoin>,
+        pub requests: UnorderedMap<u64, PendingTransferCoin>,
         /// BSH Service name
-        service_name: String,
+        pub service_name: String,
         /// A counter of sequence number of service message
         serial_no: u64,
         num_of_pending_requests: u64,
+    }
+}
+
+impl Default for BshGeneric {
+    fn default() -> Self {
+        Self {
+            bmc_contract: "".to_string(),
+            bsh_contract: "".to_string(),
+            requests: UnorderedMap::new(BshGenericKey::BshGeneric),
+            service_name: "".to_string(),
+            serial_no: 0,
+            num_of_pending_requests: 0,
+        }
     }
 }
 
@@ -80,7 +98,7 @@ impl BshGeneric {
         Self {
             bmc_contract: bmc.to_string(),
             bsh_contract: bsh_contract.to_string(),
-            requests: HashMap::new(),
+            requests: UnorderedMap::new(BshGenericKey::BshGeneric),
             service_name: service_name.to_string(),
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -138,7 +156,7 @@ impl BshGeneric {
         };
         let _ = self
             .requests
-            .insert(self.serial_no, pending_transfer_coin)
+            .insert(&self.serial_no, &pending_transfer_coin)
             .expect("Failed to insert request");
         self.num_of_pending_requests += 1;
         let bsh_event = BshEvents::TransferStart {
@@ -246,7 +264,7 @@ impl BshGeneric {
             // BSH core: bsh_core.handle_response_service();
         }
 
-        let _ = self.clone().requests.remove(&sn);
+        let _ = self.requests.remove(&sn);
         self.num_of_pending_requests -= 1;
         let bsh_event = BshEvents::TransferEnd {
             from: caller,
@@ -341,9 +359,9 @@ mod tests {
             amounts: vec![400, 500, 600],
             fees: vec![4, 5, 6],
         };
-        let _ = bsh.requests.insert(1, pt1);
-        let _ = bsh.requests.insert(2, pt2.clone());
-        assert_eq!(bsh.requests.get(&2).unwrap(), &pt2);
+        let _ = bsh.requests.insert(&1, &pt1);
+        let _ = bsh.requests.insert(&2, &pt2);
+        assert_eq!(bsh.requests.get(&2).unwrap(), pt2);
     }
 
     #[test]
