@@ -40,16 +40,11 @@ pub use bsh_types::{self as other_bsh_types};
 
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, metadata, near_bindgen, setup_alloc, BorshStorageKey};
 use near_sdk::collections::UnorderedMap;
+use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 
 /// Re-export types for specific BSH contracts
 pub use bsh_types::*;
-
-#[derive(BorshSerialize, BorshStorageKey)]
-enum BshGenericKey {
-    BshGeneric,
-}
 
 setup_alloc!();
 metadata! {
@@ -78,7 +73,7 @@ impl Default for BshGeneric {
         Self {
             bmc_contract: "".to_string(),
             bsh_contract: "".to_string(),
-            requests: UnorderedMap::new(BshGenericKey::BshGeneric),
+            requests: UnorderedMap::new(BshStorageKey::BshGeneric),
             service_name: "".to_string(),
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -98,7 +93,7 @@ impl BshGeneric {
         Self {
             bmc_contract: bmc.to_string(),
             bsh_contract: bsh_contract.to_string(),
-            requests: UnorderedMap::new(BshGenericKey::BshGeneric),
+            requests: UnorderedMap::new(BshStorageKey::BshGeneric),
             service_name: service_name.to_string(),
             serial_no: 0,
             num_of_pending_requests: 0,

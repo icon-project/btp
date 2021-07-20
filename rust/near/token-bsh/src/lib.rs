@@ -40,12 +40,7 @@ use bsh_generic::BshGeneric;
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, metadata, near_bindgen, setup_alloc, BorshStorageKey};
-
-#[derive(BorshSerialize, BorshStorageKey)]
-enum TokenBshKey {
-    TokenBsh,
-}
+use near_sdk::{env, metadata, near_bindgen, setup_alloc};
 
 setup_alloc!();
 metadata! {
@@ -78,13 +73,13 @@ metadata! {
 impl Default for TokenBsh {
     fn default() -> Self {
         Self {
-            owners: UnorderedMap::new(TokenBshKey::TokenBsh),
+            owners: UnorderedMap::new(BshStorageKey::TokenBsh),
             list_of_owners: vec![],
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(TokenBshKey::TokenBsh),
-            coin_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
-            account_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
-            coins: UnorderedMap::new(TokenBshKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(BshStorageKey::TokenBsh),
+            coin_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
+            account_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
+            coins: UnorderedMap::new(BshStorageKey::TokenBsh),
             coin_names: vec![],
             charged_coins: vec![],
             charged_amounts: vec![],
@@ -101,9 +96,9 @@ impl TokenBsh {
 
     #[init]
     pub fn new(native_coin_name: &str, fee_numerator: u128) -> Self {
-        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(TokenBshKey::TokenBsh);
+        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(BshStorageKey::TokenBsh);
         let list_of_owners: Vec<String> = vec![env::current_account_id()];
-        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(TokenBshKey::TokenBsh);
+        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(BshStorageKey::TokenBsh);
         let coin_names: Vec<String> = vec![native_coin_name.to_string()];
 
         let _ = owners.insert(&env::current_account_id(), &true);
@@ -122,9 +117,9 @@ impl TokenBsh {
             owners,
             list_of_owners,
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(TokenBshKey::TokenBsh),
-            coin_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
-            account_balances: UnorderedMap::new(TokenBshKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(BshStorageKey::TokenBsh),
+            coin_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
+            account_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
             coins,
             coin_names,
             charged_coins: vec![],
