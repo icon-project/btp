@@ -16,7 +16,7 @@ import (
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/log"
 	"github.com/stretchr/testify/assert"
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,6 +58,8 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Twice()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
 		subClient.On("GetMetadata", bi.Hash).Return(&bi.MetaData, nil).Once()
+		var nilSlices []byte
+		subClient.On("CreateStorageKey", &bi.MetaData, "System", "Events", nilSlices, nilSlices).Return(bi.StorageKey, nil).Once()
 		subClient.On("GetStorageRaw", bi.StorageKey, bi.Hash).Return(&bi.SystemEventsStorageRaw, nil).Once()
 
 		err := r.ReceiveLoop(243221, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
@@ -95,6 +97,8 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetMetadata", bi.Hash).Return(&bi.MetaData, nil).Twice()
+		var nilSlices []byte
+		subClient.On("CreateStorageKey", &bi.MetaData, "System", "Events", nilSlices, nilSlices).Return(bi.StorageKey, nil).Once()
 		subClient.On("GetStorageRaw", bi.StorageKey, bi.Hash).Return(&bi.SystemEventsStorageRaw, nil).Once()
 		// 4 EVM_Logs event
 		bmcContract.On("ParseMessage", mock.AnythingOfType("types.Log")).Return(nil, errors.New("abi: could not locate named method or event")).Times(4)
@@ -140,6 +144,8 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetMetadata", bi.Hash).Return(&bi.MetaData, nil).Twice()
+		var nilSlices []byte
+		subClient.On("CreateStorageKey", &bi.MetaData, "System", "Events", nilSlices, nilSlices).Return(bi.StorageKey, nil).Twice()
 		subClient.On("GetStorageRaw", bi.StorageKey, bi.Hash).Return(&bi.SystemEventsStorageRaw, nil).Once()
 		subClient.On("GetReadProof", bi.StorageKey, bi.Hash).Return(bi.SystemEventsReadProof, nil).Once()
 
