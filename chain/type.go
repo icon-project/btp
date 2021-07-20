@@ -120,12 +120,16 @@ type TransactionResult interface{}
 type MonitorCallback func(height int64) error
 
 type Sender interface {
+	// Segment split the give RelayMessage into small segments. One Segment is equal to one RelayMessage
 	Segment(rm *RelayMessage, height int64) ([]*Segment, error)
+	// Decode segment and update BlockProof for the given segment
 	UpdateSegment(bp *BlockProof, segment *Segment) error
+	// Send relay message to BMC.handleRelayMessage
 	Relay(segment *Segment) (GetResultParam, error)
+	// Get result based on usually transaction hash
 	GetResult(p GetResultParam) (TransactionResult, error)
 	GetStatus() (*BMCLinkStatus, error)
-	//
+	// Monitor destination chain for update new BMCStatusLink with callback(height)
 	MonitorLoop(height int64, cb MonitorCallback, scb func()) error
 	StopMonitorLoop()
 	FinalizeLatency() int
@@ -134,6 +138,7 @@ type Sender interface {
 type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
 
 type Receiver interface {
+	// Monitor src chain with given transaction sequence to callback(BlockUpdate, ReceiptProof)
 	ReceiveLoop(height int64, seq int64, cb ReceiveCallback, scb func()) error
 	StopReceiveLoop()
 }

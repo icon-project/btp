@@ -111,6 +111,7 @@ func (b *BTP) init() error {
 		return err
 	}
 
+	// MTA store
 	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset); err != nil {
 		return err
 	}
@@ -129,6 +130,7 @@ func (b *BTP) Serve() error {
 	}
 
 	errCh := make(chan error)
+	// Update bufferd rms
 	go func() {
 		err := b.sender.MonitorLoop(
 			b.bmcLinkStatus.CurrentHeight,
@@ -142,6 +144,7 @@ func (b *BTP) Serve() error {
 		default:
 		}
 	}()
+	// Add relay message to buffer rms
 	go func() {
 		h := b.receiveHeight()
 		b.log.Debugf("start receiveloop from height: %v", h)
@@ -336,6 +339,9 @@ func (b *BTP) updateRelayMessages(verifierHeight int64, rxSeq int64) (err error)
 		}
 
 		if rm.BlockProof != nil {
+			// BTP.store.MTA                   < BMCStatus.Link.Verifier.Height
+			// buffered rm ReceiptProof.Height < BMCStatus.Link.Verifier.Height
+			// can't use BlockProof at ReceiptProof.Height
 			if len(rm.ReceiptProofs) > 0 {
 				if rm.BlockProof, err = b.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header); err != nil {
 					b.log.Tracef("updateRelayMessages: rm: %d bp at %d", i, rm.BlockProof.BlockWitness.Height)
@@ -444,6 +450,9 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 	return nil
 }
 
+// dst.BMCStatusLink.RxSequence = 5
+// btp.rms[0].ReceiptProofs[0].TxSeq = 4
+// remove btp.rms[0]
 func (b *BTP) updateReceiptProofs(rm *chain.RelayMessage, rxSeq int64) {
 	rrp := 0
 	for j, rp := range rm.ReceiptProofs {
