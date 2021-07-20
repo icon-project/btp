@@ -557,36 +557,31 @@ func TestSenderMonitorLoop(t *testing.T) {
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
 		}
 
+		startBlock := uint64(1)
+		endBlock := uint64(10)
+		expectedBlocks := []uint64{}
 		monitoredBlocks := []uint64{}
-		pulledBlocks := []uint64{}
+
+		for i := startBlock; i <= endBlock; i++ {
+			hash := hashSubstrateInt(i)
+			subClient.On("GetBlockHash", i).Return(hash, nil).Once()
+			header := &substrate.SubstrateHeader{Number: substrate.SubstrateBlockNumber(i)}
+			subClient.On("GetHeader", hash).Return(header, nil)
+			subClient.On("GetFinalizedHead").Return(hash, nil).Once()
+			expectedBlocks = append(expectedBlocks, i)
+		}
 
 		cb := func(height int64) error {
 			monitoredBlocks = append(monitoredBlocks, uint64(height))
-			return nil
-		}
-
-		blockNumber := uint64(1)
-		stopAt := uint64(10)
-		blockHeader := &substrate.SubstrateHeader{}
-		hash := substrate.NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
-
-		subClient.On("GetFinalizedHead").Return(hash, nil)
-		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
-			blockHeader.Number = substrate.SubstrateBlockNumber(blockNumber)
-			blockNumber++
-		})
-		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {
-			pullBlock := args[0].(uint64)
-			pulledBlocks = append(pulledBlocks, pullBlock)
-			if pullBlock == stopAt {
+			if height == int64(endBlock) {
 				sender.StopMonitorLoop()
 			}
-		})
-
-		err := sender.MonitorLoop(int64(blockNumber), cb, func() {})
+			return nil
+		}
+		err := sender.MonitorLoop(int64(startBlock), cb, func() {})
 		assert.Nil(t, err)
-		assert.Len(t, monitoredBlocks, int(stopAt))
-		assert.EqualValues(t, pulledBlocks, monitoredBlocks)
+		assert.Len(t, monitoredBlocks, int(endBlock))
+		assert.EqualValues(t, expectedBlocks, monitoredBlocks)
 	})
 
 	t.Run("monitor from a heigher finallized header", func(t *testing.T) {
@@ -596,37 +591,34 @@ func TestSenderMonitorLoop(t *testing.T) {
 			c:   &Client{log: log, subClient: subClient, stopMonitorSignal: make(chan bool)},
 		}
 
+		startBlock := uint64(1)
+		endBlock := uint64(10)
+		monitorFromBlock := uint64(5)
+		expectedBlocks := []uint64{}
 		monitoredBlocks := []uint64{}
-		pulledBlocks := []uint64{}
+
+		for i := startBlock; i <= endBlock; i++ {
+			hash := hashSubstrateInt(i)
+			subClient.On("GetBlockHash", i).Return(hash, nil).Once()
+			header := &substrate.SubstrateHeader{Number: substrate.SubstrateBlockNumber(i)}
+			subClient.On("GetHeader", hash).Return(header, nil)
+			subClient.On("GetFinalizedHead").Return(hash, nil).Once()
+			if i >= monitorFromBlock {
+				expectedBlocks = append(expectedBlocks, i)
+			}
+		}
 
 		cb := func(height int64) error {
 			monitoredBlocks = append(monitoredBlocks, uint64(height))
-			return nil
-		}
-
-		blockNumber := uint64(1)
-		stopAt := uint64(10)
-		from := blockNumber + 2
-		blockHeader := &substrate.SubstrateHeader{}
-		hash := substrate.NewSubstrateHashFromHexString("0xe11336d6e16cce664b5e9c83ecfaecb9c2f5d5866cf605493d215ca79d88b3e9")
-
-		subClient.On("GetFinalizedHead").Return(hash, nil)
-		subClient.On("GetHeader", hash).Return(blockHeader, nil).Run(func(args mock.Arguments) {
-			blockHeader.Number = substrate.SubstrateBlockNumber(blockNumber)
-			blockNumber++
-		})
-		subClient.On("GetBlockHash", mock.AnythingOfType("uint64")).Return(hash, nil).Run(func(args mock.Arguments) {
-			pullBlock := args[0].(uint64)
-			pulledBlocks = append(pulledBlocks, pullBlock)
-			if pullBlock == stopAt {
+			if height == int64(endBlock) {
 				sender.StopMonitorLoop()
 			}
-		})
-
-		err := sender.MonitorLoop(int64(from), cb, func() {})
+			return nil
+		}
+		err := sender.MonitorLoop(int64(monitorFromBlock), cb, func() {})
 		assert.Nil(t, err)
-		assert.Len(t, monitoredBlocks, int(stopAt-from+1))
-		assert.EqualValues(t, pulledBlocks, monitoredBlocks)
+		assert.Len(t, monitoredBlocks, int(endBlock-monitorFromBlock)+1)
+		assert.EqualValues(t, expectedBlocks, monitoredBlocks)
 	})
 }
 
