@@ -59,7 +59,7 @@ chain.godPassword=gochain
 
 - With goloop, config:
 ```
-node.url=http://localhost:9082/api/v3/{channel}
+node.url=http://localhost:9080/api/v3/{channel}
 
 chain.nid={{ nid in channel config }}
 chain.godWallet=godWallet.json          # need update follow by channel config
