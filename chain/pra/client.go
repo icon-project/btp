@@ -47,33 +47,32 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
 	}
 
-	ethClient, err := ethclient.Dial(url)
-	if err != nil {
-		l.Fatal("failed to connect to Parachain EVM", err.Error())
-	}
-
-	bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
-	if err != nil {
-		l.Fatal("failed to connect to Parachain BMC contract", err.Error())
-	}
-
 	c := &Client{
 		subClient:         subClient,
-		bmc:               bmc,
-		ethClient:         ethClient,
 		log:               l,
 		stopMonitorSignal: make(chan bool),
 	}
+
+	if len(bmcContractAddress) > 0 {
+
+		ethClient, err := ethclient.Dial(url)
+		if err != nil {
+			l.Fatal("failed to connect to Parachain EVM", err.Error())
+		}
+
+		bmc, err := binding.NewBMC(EvmHexToAddress(bmcContractAddress), ethClient)
+		if err != nil {
+			l.Fatal("failed to connect to Parachain BMC contract", err.Error())
+		}
+		c.bmc = bmc
+		c.ethClient = ethClient
+	}
+
 	return c
 }
 
 func (c *Client) SubstrateClient() substrate.SubstrateClient {
 	return c.subClient
-}
-
-func (c *Client) IsSendMessageEvent(e EventEVMLog) bool {
-	_, err := c.bmc.ParseMessage(e.EvmLog())
-	return err == nil
 }
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {

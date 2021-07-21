@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/icon-project/btp/chain/pra/frontier"
 )
 
 type EvmReceipt = types.Receipt
@@ -16,6 +17,20 @@ type EvmAddress = common.Address
 type EvmDataError = rpc.DataError
 type EvmHash = common.Hash
 type EvmLog = types.Log
+
+func NewEvmLog(e frontier.EventEVMLog) EvmLog {
+	topics := []EvmHash{}
+
+	for _, t := range e.Log.Topics {
+		topics = append(topics, EvmHexToHash(t.Hex()))
+	}
+
+	return EvmLog{
+		Address: EvmAddress(e.Log.Address),
+		Topics:  topics,
+		Data:    []byte(e.Log.Data),
+	}
+}
 
 func EvmHexToHash(s string) common.Hash {
 	return common.HexToHash(s)

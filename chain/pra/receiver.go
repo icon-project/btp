@@ -3,25 +3,26 @@ package pra
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/moonriver"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
 
+type ReceiverOptions struct {
+	NoRelayChain bool `json:"no_relay_chain"`
+}
+
 type Receiver struct {
-	c   *Client
-	src chain.BtpAddress
-	dst chain.BtpAddress
-	l   log.Logger
-
-	opt struct {
-		RelayEndpoint string
-	}
-
+	c                           *Client
+	src                         chain.BtpAddress
+	dst                         chain.BtpAddress
+	l                           log.Logger
+	opt                         ReceiverOptions
 	rxSeq                       uint64
 	isFoundMessageEventByOffset bool
 }
@@ -43,46 +44,41 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	return r
 }
 
-func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
-	// For edgeware only
-	// // Justification required, when update validators list
-	// if len(v.Events.Grandpa_NewAuthorities) > 0 {
-	// 	signedBlock, err := r.c.subAPI.RPC.Chain.GetBlock(v.Hash.Hash())
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-
-	// TODO verify this with kusama relay chain
-	return nil, nil
-}
-
 func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
-	var err error
-	bu := &chain.BlockUpdate{
-		Height:    int64(v.Height),
-		BlockHash: v.Hash[:],
-	}
+	if r.opt.NoRelayChain {
+		// For testing without relay chain
+		var err error
+		bu := &chain.BlockUpdate{
+			Height:    int64(v.Height),
+			BlockHash: v.Hash[:],
+		}
 
-	var update BlockUpdate
-	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
-		return nil, err
-	}
+		var update BlockUpdate
+		if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
+			return nil, err
+		}
 
-	if update.FinalityProof, err = r.newFinalityProof(v); err != nil {
-		return nil, err
-	}
+		update.FinalityProof = nil
 
-	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
-	if err != nil {
-		return nil, err
-	}
+		bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+		if err != nil {
+			return nil, err
+		}
 
-	bu.Header = update.ScaleEncodedBlockHeader
-	return bu, nil
+		bu.Header = update.ScaleEncodedBlockHeader
+		return bu, nil
+	} else {
+		// Real use
+		bu := &chain.BlockUpdate{
+			Height:    int64(v.Height),
+			BlockHash: v.Hash[:],
+		}
+
+		return bu, nil
+	}
 }
 
-func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]EventEVMLog, error) {
+func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog, error) {
 	meta, err := r.c.subClient.GetMetadata(v.Hash)
 	if err != nil {
 		return nil, err
@@ -99,7 +95,7 @@ func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]EventEVMLog, error) 
 	}
 
 	// Build parachain adapter here
-	records := &MoonriverEventRecord{}
+	records := &moonriver.MoonriverEventRecord{}
 	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
 		return nil, err
 	}
@@ -120,11 +116,11 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 		}
 
 		for _, e := range els {
-			if !strings.EqualFold(e.Log.Address.Hex(), r.src.ContractAddress()) {
+			if !e.CompareAddressCaseInsensitive(r.src.ContractAddress()) {
 				continue
 			}
 
-			if bmcMsg, err := r.c.bmc.ParseMessage(e.EvmLog()); err == nil {
+			if bmcMsg, err := r.c.bmc.ParseMessage(NewEvmLog(e)); err == nil {
 				rp.Events = append(rp.Events, &chain.Event{
 					Message:  bmcMsg.Msg,
 					Next:     chain.BtpAddress(bmcMsg.Next),

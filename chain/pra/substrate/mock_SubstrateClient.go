@@ -98,6 +98,29 @@ func (_m *MockSubstrateClient) GetBlockHashLatest() (types.Hash, error) {
 	return r0, r1
 }
 
+// GetFinalitiyProof provides a mock function with given fields: blockNumber
+func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
+	ret := _m.Called(blockNumber)
+
+	var r0 *FinalityProof
+	if rf, ok := ret.Get(0).(func(types.U32) *FinalityProof); ok {
+		r0 = rf(blockNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*FinalityProof)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.U32) error); ok {
+		r1 = rf(blockNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetFinalizedHead provides a mock function with given fields:
 func (_m *MockSubstrateClient) GetFinalizedHead() (types.Hash, error) {
 	ret := _m.Called()

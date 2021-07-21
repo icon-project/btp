@@ -70,3 +70,19 @@ func (c *SubstrateAPI) CreateStorageKey(meta *types.Metadata, prefix, method str
 
 	return SubstrateStorageKey(key), nil
 }
+
+func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
+	var finalityProofHexstring string
+	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", blockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	fp := &FinalityProof{}
+	err = types.DecodeFromHexString(finalityProofHexstring, fp)
+	if err != nil {
+		return nil, err
+	}
+
+	return fp, err
+}

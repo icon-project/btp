@@ -1,4 +1,4 @@
-package pra
+package moonriver
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/icon-project/btp/chain/pra/frontier"
 )
 
 type EventCouncilCollectiveApproved = types.EventCollectiveApproved
@@ -60,6 +61,14 @@ type BlockNumber = types.U32
 
 func (ea *EthereumAccountId) Hex() string {
 	return fmt.Sprintf("%#x", *ea)
+}
+
+// EventSystemRemarked is emitted on on-chain remark happened.
+type EventSystemRemarked struct {
+	Phase      types.Phase
+	Origin     types.AccountID
+	RemarkHash types.Hash
+	Topics     []types.Hash
 }
 
 // COPY FROM GSRPC
@@ -1774,6 +1783,7 @@ type EventParachainSystemValidationFunctionStored struct {
 }
 
 type MoonriverEventRecord struct {
+	frontier.FrontierEventRecord
 	AuthorFilter_EligibleUpdated                                 []EventAuthorFilterEligibleUpdated
 	AuthorMapping_AuthorDeRegistered                             []EventAuthorMappingAuthorDeRegistered
 	AuthorMapping_AuthorRegistered                               []EventAuthorMappingAuthorRegistered
@@ -1818,66 +1828,65 @@ type MoonriverEventRecord struct {
 	Democracy_Undelegated                                        []EventDemocracyUndelegated
 	Democracy_Unlocked                                           []EventDemocracyUnlocked
 	Democracy_Vetoed                                             []EventDemocracyVetoed
-	FrontierEventRecord
-	ParachainStaking_BlocksPerRoundSet              []EventParachainStakingBlocksPerRoundSet
-	ParachainStaking_CollatorBackOnline             []EventParachainStakingCollatorBackOnline
-	ParachainStaking_CollatorBondedLess             []EventParachainStakingCollatorBondedLess
-	ParachainStaking_CollatorBondedMore             []EventParachainStakingCollatorBondedMore
-	ParachainStaking_CollatorChosen                 []EventParachainStakingCollatorChosen
-	ParachainStaking_CollatorCommissionSet          []EventParachainStakingCollatorCommissionSet
-	ParachainStaking_CollatorLeft                   []EventParachainStakingCollatorLeft
-	ParachainStaking_CollatorScheduledExit          []EventParachainStakingCollatorScheduledExit
-	ParachainStaking_CollatorWentOffline            []EventParachainStakingCollatorWentOffline
-	ParachainStaking_InflationSet                   []EventParachainStakingInflationSet
-	ParachainStaking_JoinedCollatorCandidates       []EventParachainStakingJoinedCollatorCandidates
-	ParachainStaking_NewRound                       []EventParachainStakingNewRound
-	ParachainStaking_Nomination                     []EventParachainStakingNomination
-	ParachainStaking_NominationDecreased            []EventParachainStakingNominationDecreased
-	ParachainStaking_NominationIncreased            []EventParachainStakingNominationIncreased
-	ParachainStaking_NominatorLeft                  []EventParachainStakingNominatorLeft
-	ParachainStaking_NominatorLeftCollator          []EventParachainStakingNominatorLeftCollator
-	ParachainStaking_ParachainBondAccountSet        []EventParachainStakingParachainBondAccountSet
-	ParachainStaking_ParachainBondReservePercentSet []EventParachainStakingParachainBondReservePercentSet
-	ParachainStaking_ReservedForParachainBond       []EventParachainStakingReservedForParachainBond
-	ParachainStaking_Rewarded                       []EventParachainStakingRewarded
-	ParachainStaking_StakeExpectationsSet           []EventParachainStakingStakeExpectationsSet
-	ParachainStaking_TotalSelectedSet               []EventParachainStakingTotalSelectedSet
-	ParachainSystem_DownwardMessagesProcessed       []EventParachainSystemDownwardMessagesProcessed
-	ParachainSystem_DownwardMessagesReceived        []EventParachainSystemDownwardMessagesReceived
-	ParachainSystem_UpgradeAuthorized               []EventParachainSystemUpgradeAuthorized
-	ParachainSystem_ValidationFunctionApplied       []EventParachainSystemValidationFunctionApplied
-	ParachainSystem_ValidationFunctionStored        []EventParachainSystemValidationFunctionStored
-	Proxy_Announced                                 []EventProxyAnnounced
-	Proxy_AnonymousCreated                          []EventProxyAnonymousCreated
-	Proxy_ProxyExecuted                             []EventProxyProxyExecuted
-	Scheduler_Canceled                              []EventSchedulerCanceled
-	Scheduler_Dispatched                            []EventSchedulerDispatched
-	Scheduler_Scheduled                             []EventSchedulerScheduled
-	Sudo_KeyChanged                                 []EventSudoKeyChanged
-	Sudo_Sudid                                      []EventSudoSudid
-	Sudo_SudoAsDone                                 []EventSudoAsDone
-	System_CodeUpdated                              []EventSystemCodeUpdated
-	System_ExtrinsicFailed                          []EventSystemExtrinsicFailed
-	System_ExtrinsicSuccess                         []EventSystemExtrinsicSuccess
-	System_KilledAccount                            []EventSystemKilledAccount
-	System_NewAccount                               []EventSystemNewAccount
-	System_Remarked                                 []EventSystemRemarked
-	TechComitteeCollective_Approved                 []EventTechComitteeCollectiveApproved
-	TechComitteeCollective_Closed                   []EventTechComitteeCollectiveClosed
-	TechComitteeCollective_Disapproved              []EventTechComitteeCollectiveDisapproved
-	TechComitteeCollective_Executed                 []EventTechComitteeCollectiveExecuted
-	TechComitteeCollective_MemberExecuted           []EventTechComitteeCollectiveMemberExecuted
-	TechComitteeCollective_Proposed                 []EventTechComitteeCollectiveProposed
-	TechComitteeCollective_Voted                    []EventTechComitteeCollectiveVoted
-	Treasury_Awarded                                []EventTreasuryAwarded
-	Treasury_Burnt                                  []EventTreasuryBurnt
-	Treasury_Deposit                                []EventTreasuryDeposit
-	Treasury_Proposed                               []EventTreasuryProposed
-	Treasury_Rejected                               []EventTreasuryRejected
-	Treasury_Rollover                               []EventTreasuryRollover
-	Treasury_Spending                               []EventTreasurySpending
-	Utility_BatchCompleted                          []EventUtilityBatchCompleted
-	Utility_BatchInterrupted                        []EventUtilityBatchInterrupted
+	ParachainStaking_BlocksPerRoundSet                           []EventParachainStakingBlocksPerRoundSet
+	ParachainStaking_CollatorBackOnline                          []EventParachainStakingCollatorBackOnline
+	ParachainStaking_CollatorBondedLess                          []EventParachainStakingCollatorBondedLess
+	ParachainStaking_CollatorBondedMore                          []EventParachainStakingCollatorBondedMore
+	ParachainStaking_CollatorChosen                              []EventParachainStakingCollatorChosen
+	ParachainStaking_CollatorCommissionSet                       []EventParachainStakingCollatorCommissionSet
+	ParachainStaking_CollatorLeft                                []EventParachainStakingCollatorLeft
+	ParachainStaking_CollatorScheduledExit                       []EventParachainStakingCollatorScheduledExit
+	ParachainStaking_CollatorWentOffline                         []EventParachainStakingCollatorWentOffline
+	ParachainStaking_InflationSet                                []EventParachainStakingInflationSet
+	ParachainStaking_JoinedCollatorCandidates                    []EventParachainStakingJoinedCollatorCandidates
+	ParachainStaking_NewRound                                    []EventParachainStakingNewRound
+	ParachainStaking_Nomination                                  []EventParachainStakingNomination
+	ParachainStaking_NominationDecreased                         []EventParachainStakingNominationDecreased
+	ParachainStaking_NominationIncreased                         []EventParachainStakingNominationIncreased
+	ParachainStaking_NominatorLeft                               []EventParachainStakingNominatorLeft
+	ParachainStaking_NominatorLeftCollator                       []EventParachainStakingNominatorLeftCollator
+	ParachainStaking_ParachainBondAccountSet                     []EventParachainStakingParachainBondAccountSet
+	ParachainStaking_ParachainBondReservePercentSet              []EventParachainStakingParachainBondReservePercentSet
+	ParachainStaking_ReservedForParachainBond                    []EventParachainStakingReservedForParachainBond
+	ParachainStaking_Rewarded                                    []EventParachainStakingRewarded
+	ParachainStaking_StakeExpectationsSet                        []EventParachainStakingStakeExpectationsSet
+	ParachainStaking_TotalSelectedSet                            []EventParachainStakingTotalSelectedSet
+	ParachainSystem_DownwardMessagesProcessed                    []EventParachainSystemDownwardMessagesProcessed
+	ParachainSystem_DownwardMessagesReceived                     []EventParachainSystemDownwardMessagesReceived
+	ParachainSystem_UpgradeAuthorized                            []EventParachainSystemUpgradeAuthorized
+	ParachainSystem_ValidationFunctionApplied                    []EventParachainSystemValidationFunctionApplied
+	ParachainSystem_ValidationFunctionStored                     []EventParachainSystemValidationFunctionStored
+	Proxy_Announced                                              []EventProxyAnnounced
+	Proxy_AnonymousCreated                                       []EventProxyAnonymousCreated
+	Proxy_ProxyExecuted                                          []EventProxyProxyExecuted
+	Scheduler_Canceled                                           []EventSchedulerCanceled
+	Scheduler_Dispatched                                         []EventSchedulerDispatched
+	Scheduler_Scheduled                                          []EventSchedulerScheduled
+	Sudo_KeyChanged                                              []EventSudoKeyChanged
+	Sudo_Sudid                                                   []EventSudoSudid
+	Sudo_SudoAsDone                                              []EventSudoAsDone
+	System_CodeUpdated                                           []EventSystemCodeUpdated
+	System_ExtrinsicFailed                                       []EventSystemExtrinsicFailed
+	System_ExtrinsicSuccess                                      []EventSystemExtrinsicSuccess
+	System_KilledAccount                                         []EventSystemKilledAccount
+	System_NewAccount                                            []EventSystemNewAccount
+	System_Remarked                                              []EventSystemRemarked
+	TechComitteeCollective_Approved                              []EventTechComitteeCollectiveApproved
+	TechComitteeCollective_Closed                                []EventTechComitteeCollectiveClosed
+	TechComitteeCollective_Disapproved                           []EventTechComitteeCollectiveDisapproved
+	TechComitteeCollective_Executed                              []EventTechComitteeCollectiveExecuted
+	TechComitteeCollective_MemberExecuted                        []EventTechComitteeCollectiveMemberExecuted
+	TechComitteeCollective_Proposed                              []EventTechComitteeCollectiveProposed
+	TechComitteeCollective_Voted                                 []EventTechComitteeCollectiveVoted
+	Treasury_Awarded                                             []EventTreasuryAwarded
+	Treasury_Burnt                                               []EventTreasuryBurnt
+	Treasury_Deposit                                             []EventTreasuryDeposit
+	Treasury_Proposed                                            []EventTreasuryProposed
+	Treasury_Rejected                                            []EventTreasuryRejected
+	Treasury_Rollover                                            []EventTreasuryRollover
+	Treasury_Spending                                            []EventTreasurySpending
+	Utility_BatchCompleted                                       []EventUtilityBatchCompleted
+	Utility_BatchInterrupted                                     []EventUtilityBatchInterrupted
 }
 
 func (me *MoonriverEventRecord) Len() int {

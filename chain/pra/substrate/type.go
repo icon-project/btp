@@ -65,4 +65,5 @@ type SubstrateClient interface {
 	GetBlockHashLatest() (SubstrateHash, error)
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
+	GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error)
 }

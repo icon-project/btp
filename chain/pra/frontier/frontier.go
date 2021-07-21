@@ -1,19 +1,12 @@
-package pra
+package frontier
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 )
-
-// EventSystemRemarked is emitted on on-chain remark happened.
-type EventSystemRemarked struct {
-	Phase      types.Phase
-	Origin     types.AccountID
-	RemarkHash types.Hash
-	Topics     []types.Hash
-}
 
 type EthereumAddress = types.H160
 type ContractAddress = EthereumAddress
@@ -65,18 +58,8 @@ type EventEVMLog struct {
 	Topics []types.Hash
 }
 
-func (e *EventEVMLog) EvmLog() EvmLog {
-	topics := []EvmHash{}
-
-	for _, t := range e.Log.Topics {
-		topics = append(topics, EvmHexToHash(t.Hex()))
-	}
-
-	return EvmLog{
-		Address: EvmAddress(e.Log.Address),
-		Topics:  topics,
-		Data:    []byte(e.Log.Data),
-	}
+func (eel *EventEVMLog) CompareAddressCaseInsensitive(address string) bool {
+	return strings.EqualFold(eel.Log.Address.Hex(), address)
 }
 
 type EventEthereumExecuted struct {
