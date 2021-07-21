@@ -155,7 +155,7 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
        @dev MUST specify msg.value
        @param _to  An address that a user expects to receive an amount of tokens.
     */
-    function transfer(string calldata _to) external payable;
+    function transferNativeCoin(string calldata _to) external payable;
 
     /**
        @notice Allow users to deposit an amount of wrapped native coin `_coinName` from the `msg.sender` address into the BSHCore contract.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
 //  This contract does not have any method
@@ -11,8 +12,9 @@ contract NonRefundable {
         string calldata _to,
         uint256 _amt
     ) external {
-        _bsh.call{value: _amt}(
-            abi.encodeWithSignature("transfer(string)", _to)
+        (bool success, bytes memory err) =_bsh.call{value: _amt}(
+            abi.encodeWithSignature("transferNativeCoin(string)", _to)
         );
+        require(success, string(err));
     }
 }
