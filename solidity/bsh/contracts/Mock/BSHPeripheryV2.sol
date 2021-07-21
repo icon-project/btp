@@ -264,7 +264,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
      @param _msg     A response message
     */
     function handleBTPError(
-        string calldata _src,
+        string calldata /* _src */,
         string calldata _svc,
         uint256 _sn,
         uint256 _code,

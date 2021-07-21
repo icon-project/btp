@@ -27,7 +27,7 @@ contract EncodeMessage {
         int256 _sn,
         address _bsh,
         Types.Asset[] memory _fees
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         (, string memory _to) = _toAddress.splitBTPAddress();
         return
             Types
@@ -43,7 +43,7 @@ contract EncodeMessage {
 
     function encodeBMCService(string calldata _fa, string[] memory _svcs)
         external
-        view
+        pure
         returns (bytes memory)
     {
         return
@@ -81,7 +81,7 @@ contract EncodeMessage {
 
     function hashCoinName(string memory _coinName)
         external
-        view
+        pure
         returns (uint256)
     {
         return uint256(keccak256(abi.encodePacked(_coinName)));
@@ -91,7 +91,7 @@ contract EncodeMessage {
         Types.ServiceType _serviceType,
         uint256 _code,
         string calldata _msg
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         return
             Types
                 .ServiceMessage(
@@ -105,7 +105,7 @@ contract EncodeMessage {
         string calldata _from,
         address _to,
         Types.Asset[] memory _assets
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         return encodeServiceMessage(_from, _to.toString(), _assets);
     }
 
@@ -113,7 +113,7 @@ contract EncodeMessage {
         string calldata _from,
         string calldata _to,
         Types.Asset[] memory _assets
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         return encodeServiceMessage(_from, _to, _assets);
     }
 
@@ -122,7 +122,7 @@ contract EncodeMessage {
         address _to,
         string memory _coinName,
         uint256 _value
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         Types.Asset[] memory asset = new Types.Asset[](1);
         asset[0] = Types.Asset(_coinName, _value);
         return encodeServiceMessage(_from, _to.toString(), asset);
@@ -133,7 +133,7 @@ contract EncodeMessage {
         string calldata _to,
         string calldata _coinName,
         uint256 _value
-    ) external view returns (bytes memory) {
+    ) external pure returns (bytes memory) {
         Types.Asset[] memory asset = new Types.Asset[](1);
         asset[0] = Types.Asset(_coinName, _value);
         return encodeServiceMessage(_from, _to, asset);
