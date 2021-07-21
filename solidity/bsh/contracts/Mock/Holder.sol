@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -30,29 +31,30 @@ contract Holder is ERC1155Holder {
         bshc.transfer(_coinName, _value, _to);
     }
 
-    function isSendingNative(string[] memory _coinNames)
-        private
-        pure
-        returns (int256)
-    {
-        for (uint256 i = 0; i < _coinNames.length; i++) {
-            if (_coinNames[i].compareTo("PARA")) {
-                return int256(i);
-            }
-        }
-        return -1;
-    }
+    // function isSendingNative(string[] memory _coinNames)
+    //     private
+    //     pure
+    //     returns (int256)
+    // {
+    //     for (uint256 i = 0; i < _coinNames.length; i++) {
+    //         if (_coinNames[i].compareTo("PARA")) {
+    //             return int256(i);
+    //         }
+    //     }
+    //     return -1;
+    // }
 
     function callTransferBatch(
         address _bsh,
         string[] memory _coinNames,
         uint256[] memory _values,
-        string calldata _to
+        string calldata _to,
+        uint256 _native
     ) external {
-        int256 pos = isSendingNative(_coinNames);
-        if (pos >= 0) {
+        // int256 pos = isSendingNative(_coinNames);
+        if (_native != 0) {
             (bool success, bytes memory err) =
-                _bsh.call{value: _values[uint256(pos)]}(
+                _bsh.call{value: _native}(
                     abi.encodeWithSignature(
                         "transferBatch(string[],uint256[],string)",
                         _coinNames,
