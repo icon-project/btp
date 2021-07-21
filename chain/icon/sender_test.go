@@ -9,6 +9,7 @@ import (
 )
 
 func TestSender_newTransactionParam(t *testing.T) {
+	t.Skip()
 	prev := "btp://0x3.icon/cx0c59775cb325c1aea9c872546dbe8365af7c9d07"
 	rm1 := &RelayMessage{
 		BlockUpdates:  [][]byte{{1, 2, 3, 4}},
@@ -35,5 +36,5 @@ func TestSender_newTransactionParam(t *testing.T) {
 }
 
 func TestSender_praSegment(t *testing.T) {
-
+	t.Skip()
 }
