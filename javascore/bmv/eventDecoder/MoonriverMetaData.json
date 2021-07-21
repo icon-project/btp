@@ -499,7 +499,7 @@
             {
               "name": "Version",
               "type": "RuntimeVersion",
-              "value": "0x246d6f6f6e7269766572246d6f6f6e7269766572030000009b0000000000000034d2bc9897eed08f1502000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f01000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d01000000ea93e3f16f3d69620100000002000000",
+              "value": "0x246d6f6f6e7269766572246d6f6f6e7269766572030000009f0000000000000034d2bc9897eed08f1503000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f02000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d02000000ea93e3f16f3d69620100000002000000",
               "documentation": [
                 " Get the chain's current version."
               ]
@@ -1001,7 +1001,7 @@
               }
             ]
           },
-          "calls": [],
+          "calls": null,
           "events": null,
           "constants": [],
           "errors": [],
@@ -1532,7 +1532,7 @@
             {
               "name": "TransactionByteFee",
               "type": "BalanceOf",
-              "value": "0x00407a10f35a00000000000000000000",
+              "value": "0x00a0724e180900000000000000000000",
               "documentation": [
                 " The fee to be paid for making a transaction; the per-byte portion."
               ]
@@ -2304,10 +2304,6 @@
               "documentation": []
             },
             {
-              "name": "CannotBondLessGEQTotalBond",
-              "documentation": []
-            },
-            {
               "name": "InvalidSchedule",
               "documentation": []
             },
@@ -2574,12 +2570,6 @@
               "name": "NotYourAssociation",
               "documentation": [
                 " The association can't be cleared because it belongs to another account."
-              ]
-            },
-            {
-              "name": "CannotSetAuthor",
-              "documentation": [
-                " This account cannot set an author because it fails the preliminary check"
               ]
             },
             {
@@ -5059,7 +5049,7 @@
             {
               "name": "FastTrackVotingPeriod",
               "type": "BlockNumber",
-              "value": "0x201c0000",
+              "value": "0x84030000",
               "documentation": [
                 " Minimum voting period allowed for a fast-track referendum."
               ]
@@ -6527,6 +6517,17 @@
                 ]
               },
               {
+                "name": "EndRelayBlock",
+                "modifier": "Default",
+                "type": {
+                  "plain": "BlockNumber"
+                },
+                "fallback": "0x00000000",
+                "documentation": [
+                  " Relay block height at the initialization of the pallet"
+                ]
+              },
+              {
                 "name": "InitializedRewardAmount",
                 "modifier": "Default",
                 "type": {
@@ -6586,8 +6587,7 @@
               "name": "claim",
               "args": [],
               "documentation": [
-                " Collect whatever portion of your reward are currently vested. The first time each",
-                " contributor calls this function pays no fees"
+                " Collect whatever portion of your reward are currently vested."
               ]
             },
             {
@@ -6603,27 +6603,32 @@
               ]
             },
             {
+              "name": "complete_initialization",
+              "args": [
+                {
+                  "name": "lease_ending_block",
+                  "type": "BlockNumber"
+                }
+              ],
+              "documentation": [
+                " This extrinsic completes the initialization if some checks are fullfiled. These checks are:",
+                "  -The reward contribution money matches the crowdloan pot",
+                "  -The end relay block is higher than the init relay block",
+                "  -The initialization has not complete yet"
+              ]
+            },
+            {
               "name": "initialize_reward_vec",
               "args": [
                 {
                   "name": "rewards",
                   "type": "Vec<(RelayChainAccountId,Option<AccountId>,BalanceOf)>"
-                },
-                {
-                  "name": "index",
-                  "type": "u32"
-                },
-                {
-                  "name": "limit",
-                  "type": "u32"
                 }
               ],
               "documentation": [
                 " Initialize the reward distribution storage. It shortcuts whenever an error is found",
                 " We can change this behavior to check this beforehand if we prefer",
-                " We only set this to \"initialized\" once we receive index==limit",
-                " This is expected to be executed with batch_all, that atomically initializes contributions",
-                " TODO Should we perform sanity checks here? (i.e., min contribution)"
+                " We check that the number of contributors inserted is less than T::MaxInitContributors::get()"
               ]
             }
           ],
@@ -6704,13 +6709,10 @@
               ]
             },
             {
-              "name": "VestingPeriod",
-              "type": "BlockNumber",
-              "value": "0x00ea2400",
-              "documentation": [
-                " The total vesting period. Ideally this should be less or equal",
-                " than the lease period to ensure contributors vest the tokens during the lease"
-              ]
+              "name": "MaxInitContributors",
+              "type": "u32",
+              "value": "0xe8030000",
+              "documentation": []
             }
           ],
           "errors": [
@@ -6783,6 +6785,18 @@
               "name": "RewardsDoNotMatchFund",
               "documentation": [
                 " Reward vec has already been initialized"
+              ]
+            },
+            {
+              "name": "TooManyContributors",
+              "documentation": [
+                " Initialize_reward_vec received too many contributors"
+              ]
+            },
+            {
+              "name": "VestingPeriodNonValid",
+              "documentation": [
+                " Provided vesting period is not valid"
               ]
             }
           ],

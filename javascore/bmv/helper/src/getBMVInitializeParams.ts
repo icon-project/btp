@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as RLP from 'rlp';
 import * as URLSafeBase64 from 'urlsafe-base64';
 
+require('dotenv').config()
+
 function convertLEtoBE (input) {
     let result = "";
     for (let i = Math.floor(input.length / 2) - 1; i >= 0; i--) {
@@ -27,11 +29,11 @@ async function main () {
     // const wssEndpoint = "wss://wss.testnet.moonbeam.network"; // moonbase alpha parachain
     // const wssEndpoint = "wss://icon-btp.ecl.vn:34008/"; // lecle moonbase parachain
 
-    const relayWssEndpoint = "RELAY_ENDPOINT"; // wss endpoint of relay chain
-    const paraWssEndpoint = "PARA_ENDPOINT"; // wss endpoint of para chain
+    const relayWssEndpoint = process.env.RELAY_ENDPOINT; // wss endpoint of relay chain
+    const paraWssEndpoint = process.env.PARA_ENDPOINT; // wss endpoint of para chain
 
-    const relayChainOffset = "RELAY_OFFSET"; // offset of relay chain
-    const paraChainOffset = "PARA_OFFSET"; // offset of para chain
+    const relayChainOffset = process.env.RELAY_CHAIN_OFFSET; // offset of relay chain
+    const paraChainOffset = process.env.PARA_CHAIN_OFFSET; // offset of para chain
 
     const relayWsProvider = new WsProvider(relayWssEndpoint);
     const paraWsProvider = new WsProvider(paraWssEndpoint);

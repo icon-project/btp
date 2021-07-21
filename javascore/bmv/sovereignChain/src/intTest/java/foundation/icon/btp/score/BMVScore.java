@@ -66,6 +66,8 @@ public class BMVScore extends Score {
                 .put("lastBlockHash", new RpcValue(HexConverter.bytesToHex(lastBlockHash)))
                 .put("eventDecoderAddress", new RpcValue(eventDecoderAddress))
                 .put("currentSetId", new RpcValue(currentSetId.toString()))
+                .put("newAuthoritiesEvent", new RpcValue("0e00"))
+                .put("evmEventIndex", new RpcValue("2200"))
                 .build();
         Score score = txHandler.deploy(owner, getFilePath("sovereignChain"), params);
         LOG.info("bmv score address = " + score.getAddress());
