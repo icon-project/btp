@@ -10,13 +10,21 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestBTP_updateResult(t *testing.T) {
+func TestBTP_UpdateResult(t *testing.T) {
 	mockSender := &chain.MockSender{}
 
 	btp := &BTP{
 		sender: mockSender,
 		wp:     workerpool.New(DefaultMaxWorkers),
 	}
+
+	t.Run("should panic if error in unknown", func(t *testing.T) {
+		t.Skip()
+	})
+
+	t.Run("should panic if error is not decodable", func(t *testing.T) {
+		t.Skip()
+	})
 
 	t.Run("should remove segment when receive BMVRevertInvalidSequence, BMVRevertInvalidBlockUpdateLower", func(t *testing.T) {
 		t.Skip()
@@ -38,5 +46,17 @@ func TestBTP_updateResult(t *testing.T) {
 
 		btp.updateResult(rm, segment)
 		assert.Len(t, rm.Segments, 3)
+	})
+
+	t.Run("should call senderUpdateSegment when receive BMVRevertInvalidBlockWitnessOld", func(t *testing.T) {
+		t.Skip()
+	})
+
+	t.Run("should call only set segment.GetResultParam = nil when receive BMVRevertInvalidSequenceHigher or BMVRevertInvalidBlockUpdateHigher, BMVRevertInvalidBlockProofHigher", func(t *testing.T) {
+		t.Skip()
+	})
+
+	t.Run("should call only set segment.GetResultParam = nil when receiver BMCRevertUnauthorized", func(t *testing.T) {
+		t.Skip()
 	})
 }
