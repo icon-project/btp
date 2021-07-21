@@ -1,27 +1,33 @@
-package pra
+package kusama
 
-// type EventSocietyMemberSuspended = types.EventSocietyMemberSuspended
-// type EventSocietyChallenged = types.EventSocietyChallenged
-// type EventSocietyVote = types.EventSocietyVote
-// type EventSocietyDefenderVote = types.EventSocietyDefenderVote
-// type EventSocietyNewMaxMembers = types.EventSocietyNewMaxMembers
-// type EventSocietyUnfounded = types.EventSocietyUnfounded
-// type EventSocietyDeposit = types.EventSocietyDeposit
+import (
+	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+)
+
+type EventSocietyMemberSuspended = types.EventSocietyMemberSuspended
+type EventSocietyChallenged = types.EventSocietyChallenged
+type EventSocietyVote = types.EventSocietyVote
+type EventSocietyDefenderVote = types.EventSocietyDefenderVote
+type EventSocietyNewMaxMembers = types.EventSocietyNewMaxMembers
+type EventSocietyUnfounded = types.EventSocietyUnfounded
+type EventSocietyDeposit = types.EventSocietyDeposit
+
 // type EventRecoveryRecoveryCreated = types.EventRecoveryRecoveryCreated
 // type EventRecoveryRecoveryInitiated = types.EventRecoveryRecoveryInitiated
 // type EventRecoveryRecoveryVouched = types.EventRecoveryRecoveryVouched
 // type EventRecoveryRecoveryClosed = types.EventRecoveryRecoveryClosed
 // type EventRecoveryAccountRecovered = types.EventRecoveryAccountRecovered
 // type EventRecoveryRecoveryRemoved = types.EventRecoveryRecoveryRemoved
-// type EventVestingVestingUpdated = types.EventVestingVestingUpdated
-// type EventVestingVestingCompleted = types.EventVestingVestingCompleted
-// type EventSchedulerScheduled = types.EventSchedulerScheduled
-// type EventSchedulerCanceled = types.EventSchedulerCanceled
-// type EventSchedulerDispatched = types.EventSchedulerDispatched
-// type EventProxyProxyExecuted = types.EventProxyProxyExecuted
-// type EventProxyAnonymousCreated = types.EventProxyAnonymousCreated
-// type EventProxyAnnounced = types.EventProxyAnnounced
-// type EventMultisigNewMultisig = types.EventMultisigNewMultisig
+type EventVestingVestingUpdated = types.EventVestingVestingUpdated
+type EventVestingVestingCompleted = types.EventVestingVestingCompleted
+type EventSchedulerScheduled = types.EventSchedulerScheduled
+type EventSchedulerCanceled = types.EventSchedulerCanceled
+type EventSchedulerDispatched = types.EventSchedulerDispatched
+type EventProxyProxyExecuted = types.EventProxyProxyExecuted
+type EventProxyAnonymousCreated = types.EventProxyAnonymousCreated
+type EventProxyAnnounced = types.EventProxyAnnounced
+type EventMultisigNewMultisig = types.EventMultisigNewMultisig
+
 // type EventMultisigMultisigApproval = types.EventMultisigMultisigApproval
 // type EventMultisigMultisigExecuted = types.EventMultisigMultisigExecuted
 // type EventMultisigMultisigCancelled = types.EventMultisigMultisigCancelled
@@ -88,92 +94,92 @@ package pra
 // type EventXcmPalletAttempted = types.EventXcmPalletAttempted
 // type EventXcmPalletSent = types.EventXcmPalletSent
 
-// type KusamaEventRecord struct {
-// 	Society_MemberSuspended                         []EventSocietyMemberSuspended
-// 	Society_Challenged                              []EventSocietyChallenged
-// 	Society_Vote                                    []EventSocietyVote
-// 	Society_DefenderVote                            []EventSocietyDefenderVote
-// 	Society_NewMaxMembers                           []EventSocietyNewMaxMembers
-// 	Society_Unfounded                               []EventSocietyUnfounded
-// 	Society_Deposit                                 []EventSocietyDeposit
-// 	Recovery_RecoveryCreated                        []EventRecoveryRecoveryCreated
-// 	Recovery_RecoveryInitiated                      []EventRecoveryRecoveryInitiated
-// 	Recovery_RecoveryVouched                        []EventRecoveryRecoveryVouched
-// 	Recovery_RecoveryClosed                         []EventRecoveryRecoveryClosed
-// 	Recovery_AccountRecovered                       []EventRecoveryAccountRecovered
-// 	Recovery_RecoveryRemoved                        []EventRecoveryRecoveryRemoved
-// 	Vesting_VestingUpdated                          []EventVestingVestingUpdated
-// 	Vesting_VestingCompleted                        []EventVestingVestingCompleted
-// 	Scheduler_Scheduled                             []EventSchedulerScheduled
-// 	Scheduler_Canceled                              []EventSchedulerCanceled
-// 	Scheduler_Dispatched                            []EventSchedulerDispatched
-// 	Proxy_ProxyExecuted                             []EventProxyProxyExecuted
-// 	Proxy_AnonymousCreated                          []EventProxyAnonymousCreated
-// 	Proxy_Announced                                 []EventProxyAnnounced
-// 	Multisig_NewMultisig                            []EventMultisigNewMultisig
-// 	Multisig_MultisigApproval                       []EventMultisigMultisigApproval
-// 	Multisig_MultisigExecuted                       []EventMultisigMultisigExecuted
-// 	Multisig_MultisigCancelled                      []EventMultisigMultisigCancelled
-// 	Bounties_BountyProposed                         []EventBountiesBountyProposed
-// 	Bounties_BountyRejected                         []EventBountiesBountyRejected
-// 	Bounties_BountyBecameActive                     []EventBountiesBountyBecameActive
-// 	Bounties_BountyAwarded                          []EventBountiesBountyAwarded
-// 	Bounties_BountyClaimed                          []EventBountiesBountyClaimed
-// 	Bounties_BountyCanceled                         []EventBountiesBountyCanceled
-// 	Bounties_BountyExtended                         []EventBountiesBountyExtended
-// 	Tips_NewTip                                     []EventTipsNewTip
-// 	Tips_TipClosing                                 []EventTipsTipClosing
-// 	Tips_TipClosed                                  []EventTipsTipClosed
-// 	Tips_TipRetracted                               []EventTipsTipRetracted
-// 	Tips_TipSlashed                                 []EventTipsTipSlashed
-// 	ElectionProviderMultiPhase_SolutionStored       []EventElectionProviderMultiPhaseSolutionStored
-// 	ElectionProviderMultiPhase_ElectionFinalized    []EventElectionProviderMultiPhaseElectionFinalized
-// 	ElectionProviderMultiPhase_Rewarded             []EventElectionProviderMultiPhaseRewarded
-// 	ElectionProviderMultiPhase_Slashed              []EventElectionProviderMultiPhaseSlashed
-// 	ElectionProviderMultiPhase_SignedPhaseStarted   []EventElectionProviderMultiPhaseSignedPhaseStarted
-// 	ElectionProviderMultiPhase_UnsignedPhaseStarted []EventElectionProviderMultiPhaseUnsignedPhaseStarted
-// 	Gilt_BidPlaced                                  []EventGiltBidPlaced
-// 	Gilt_BidRetracted                               []EventGiltBidRetracted
-// 	Gilt_GiltIssued                                 []EventGiltGiltIssued
-// 	Gilt_GiltThawed                                 []EventGiltGiltThawed
-// 	ParasInclusion_CandidateBacked                  []EventParasInclusionCandidateBacked
-// 	ParasInclusion_CandidateIncluded                []EventParasInclusionCandidateIncluded
-// 	ParasInclusion_CandidateTimedOut                []EventParasInclusionCandidateTimedOut
-// 	Paras_CurrentCodeUpdated                        []EventParasCurrentCodeUpdated
-// 	Paras_CurrentHeadUpdated                        []EventParasCurrentHeadUpdated
-// 	Paras_CodeUpgradeScheduled                      []EventParasCodeUpgradeScheduled
-// 	Paras_NewHeadNoted                              []EventParasNewHeadNoted
-// 	Paras_ActionQueued                              []EventParasActionQueued
-// 	ParasUmp_InvalidFormat                          []EventParasUmpInvalidFormat
-// 	ParasUmp_UnsupportedVersion                     []EventParasUmpUnsupportedVersion
-// 	ParasUmp_ExecutedUpward                         []EventParasUmpExecutedUpward
-// 	ParasUmp_WeightExhausted                        []EventParasUmpWeightExhausted
-// 	ParasUmp_UpwardMessagesReceived                 []EventParasUmpUpwardMessagesReceived
-// 	ParasHrmp_OpenChannelRequested                  []EventParasHrmpOpenChannelRequested
-// 	ParasHrmp_OpenChannelAccepted                   []EventParasHrmpOpenChannelAccepted
-// 	ParasHrmp_ChannelClosed                         []EventParasHrmpChannelClosed
-// 	Registrar_Registered                            []EventRegistrarRegistered
-// 	Registrar_Deregistered                          []EventRegistrarDeregistered
-// 	Registrar_Reserved                              []EventRegistrarReserved
-// 	Slots_NewLeasePeriod                            []EventSlotsNewLeasePeriod
-// 	Slots_Leased                                    []EventSlotsLeased
-// 	Auctions_AuctionStarted                         []EventAuctionsAuctionStarted
-// 	Auctions_AuctionClosed                          []EventAuctionsAuctionClosed
-// 	Auctions_Reserved                               []EventAuctionsReserved
-// 	Auctions_Unreserved                             []EventAuctionsUnreserved
-// 	Auctions_ReserveConfiscated                     []EventAuctionsReserveConfiscated
-// 	Auctions_BidAccepted                            []EventAuctionsBidAccepted
-// 	Auctions_WinningOffset                          []EventAuctionsWinningOffset
-// 	Crowdloan_Created                               []EventCrowdloanCreated
-// 	Crowdloan_Contributed                           []EventCrowdloanContributed
-// 	Crowdloan_Withdrew                              []EventCrowdloanWithdrew
-// 	Crowdloan_PartiallyRefunded                     []EventCrowdloanPartiallyRefunded
-// 	Crowdloan_AllRefunded                           []EventCrowdloanAllRefunded
-// 	Crowdloan_Dissolved                             []EventCrowdloanDissolved
-// 	Crowdloan_HandleBidResult                       []EventCrowdloanHandleBidResult
-// 	Crowdloan_Edited                                []EventCrowdloanEdited
-// 	Crowdloan_MemoUpdated                           []EventCrowdloanMemoUpdated
-// 	Crowdloan_AddedToNewRaise                       []EventCrowdloanAddedToNewRaise
-// 	XcmPallet_Attempted                             []EventXcmPalletAttempted
-// 	XcmPallet_Sent                                  []EventXcmPalletSent
-// }
+type KusamaEventRecord struct {
+	Society_MemberSuspended []EventSocietyMemberSuspended
+	Society_Challenged      []EventSocietyChallenged
+	Society_Vote            []EventSocietyVote
+	Society_DefenderVote    []EventSocietyDefenderVote
+	Society_NewMaxMembers   []EventSocietyNewMaxMembers
+	Society_Unfounded       []EventSocietyUnfounded
+	Society_Deposit         []EventSocietyDeposit
+	// Recovery_RecoveryCreated   []EventRecoveryRecoveryCreated
+	// Recovery_RecoveryInitiated []EventRecoveryRecoveryInitiated
+	// Recovery_RecoveryVouched   []EventRecoveryRecoveryVouched
+	// Recovery_RecoveryClosed    []EventRecoveryRecoveryClosed
+	// Recovery_AccountRecovered  []EventRecoveryAccountRecovered
+	// Recovery_RecoveryRemoved   []EventRecoveryRecoveryRemoved
+	Vesting_VestingUpdated   []EventVestingVestingUpdated
+	Vesting_VestingCompleted []EventVestingVestingCompleted
+	Scheduler_Scheduled      []EventSchedulerScheduled
+	Scheduler_Canceled       []EventSchedulerCanceled
+	Scheduler_Dispatched     []EventSchedulerDispatched
+	Proxy_ProxyExecuted      []EventProxyProxyExecuted
+	Proxy_AnonymousCreated   []EventProxyAnonymousCreated
+	Proxy_Announced          []EventProxyAnnounced
+	Multisig_NewMultisig     []EventMultisigNewMultisig
+	// 	Multisig_MultisigApproval                       []EventMultisigMultisigApproval
+	// 	Multisig_MultisigExecuted                       []EventMultisigMultisigExecuted
+	// 	Multisig_MultisigCancelled                      []EventMultisigMultisigCancelled
+	// 	Bounties_BountyProposed                         []EventBountiesBountyProposed
+	// 	Bounties_BountyRejected                         []EventBountiesBountyRejected
+	// 	Bounties_BountyBecameActive                     []EventBountiesBountyBecameActive
+	// 	Bounties_BountyAwarded                          []EventBountiesBountyAwarded
+	// 	Bounties_BountyClaimed                          []EventBountiesBountyClaimed
+	// 	Bounties_BountyCanceled                         []EventBountiesBountyCanceled
+	// 	Bounties_BountyExtended                         []EventBountiesBountyExtended
+	// 	Tips_NewTip                                     []EventTipsNewTip
+	// 	Tips_TipClosing                                 []EventTipsTipClosing
+	// 	Tips_TipClosed                                  []EventTipsTipClosed
+	// 	Tips_TipRetracted                               []EventTipsTipRetracted
+	// 	Tips_TipSlashed                                 []EventTipsTipSlashed
+	// 	ElectionProviderMultiPhase_SolutionStored       []EventElectionProviderMultiPhaseSolutionStored
+	// 	ElectionProviderMultiPhase_ElectionFinalized    []EventElectionProviderMultiPhaseElectionFinalized
+	// 	ElectionProviderMultiPhase_Rewarded             []EventElectionProviderMultiPhaseRewarded
+	// 	ElectionProviderMultiPhase_Slashed              []EventElectionProviderMultiPhaseSlashed
+	// 	ElectionProviderMultiPhase_SignedPhaseStarted   []EventElectionProviderMultiPhaseSignedPhaseStarted
+	// 	ElectionProviderMultiPhase_UnsignedPhaseStarted []EventElectionProviderMultiPhaseUnsignedPhaseStarted
+	// 	Gilt_BidPlaced                                  []EventGiltBidPlaced
+	// 	Gilt_BidRetracted                               []EventGiltBidRetracted
+	// 	Gilt_GiltIssued                                 []EventGiltGiltIssued
+	// 	Gilt_GiltThawed                                 []EventGiltGiltThawed
+	// 	ParasInclusion_CandidateBacked                  []EventParasInclusionCandidateBacked
+	// 	ParasInclusion_CandidateIncluded                []EventParasInclusionCandidateIncluded
+	// 	ParasInclusion_CandidateTimedOut                []EventParasInclusionCandidateTimedOut
+	// 	Paras_CurrentCodeUpdated                        []EventParasCurrentCodeUpdated
+	// 	Paras_CurrentHeadUpdated                        []EventParasCurrentHeadUpdated
+	// 	Paras_CodeUpgradeScheduled                      []EventParasCodeUpgradeScheduled
+	// 	Paras_NewHeadNoted                              []EventParasNewHeadNoted
+	// 	Paras_ActionQueued                              []EventParasActionQueued
+	// 	ParasUmp_InvalidFormat                          []EventParasUmpInvalidFormat
+	// 	ParasUmp_UnsupportedVersion                     []EventParasUmpUnsupportedVersion
+	// 	ParasUmp_ExecutedUpward                         []EventParasUmpExecutedUpward
+	// 	ParasUmp_WeightExhausted                        []EventParasUmpWeightExhausted
+	// 	ParasUmp_UpwardMessagesReceived                 []EventParasUmpUpwardMessagesReceived
+	// 	ParasHrmp_OpenChannelRequested                  []EventParasHrmpOpenChannelRequested
+	// 	ParasHrmp_OpenChannelAccepted                   []EventParasHrmpOpenChannelAccepted
+	// 	ParasHrmp_ChannelClosed                         []EventParasHrmpChannelClosed
+	// 	Registrar_Registered                            []EventRegistrarRegistered
+	// 	Registrar_Deregistered                          []EventRegistrarDeregistered
+	// 	Registrar_Reserved                              []EventRegistrarReserved
+	// 	Slots_NewLeasePeriod                            []EventSlotsNewLeasePeriod
+	// 	Slots_Leased                                    []EventSlotsLeased
+	// 	Auctions_AuctionStarted                         []EventAuctionsAuctionStarted
+	// 	Auctions_AuctionClosed                          []EventAuctionsAuctionClosed
+	// 	Auctions_Reserved                               []EventAuctionsReserved
+	// 	Auctions_Unreserved                             []EventAuctionsUnreserved
+	// 	Auctions_ReserveConfiscated                     []EventAuctionsReserveConfiscated
+	// 	Auctions_BidAccepted                            []EventAuctionsBidAccepted
+	// 	Auctions_WinningOffset                          []EventAuctionsWinningOffset
+	// 	Crowdloan_Created                               []EventCrowdloanCreated
+	// 	Crowdloan_Contributed                           []EventCrowdloanContributed
+	// 	Crowdloan_Withdrew                              []EventCrowdloanWithdrew
+	// 	Crowdloan_PartiallyRefunded                     []EventCrowdloanPartiallyRefunded
+	// 	Crowdloan_AllRefunded                           []EventCrowdloanAllRefunded
+	// 	Crowdloan_Dissolved                             []EventCrowdloanDissolved
+	// 	Crowdloan_HandleBidResult                       []EventCrowdloanHandleBidResult
+	// 	Crowdloan_Edited                                []EventCrowdloanEdited
+	// 	Crowdloan_MemoUpdated                           []EventCrowdloanMemoUpdated
+	// 	Crowdloan_AddedToNewRaise                       []EventCrowdloanAddedToNewRaise
+	// 	XcmPallet_Attempted                             []EventXcmPalletAttempted
+	// 	XcmPallet_Sent                                  []EventXcmPalletSent
+}

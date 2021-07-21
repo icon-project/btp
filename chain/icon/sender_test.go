@@ -1,35 +1,39 @@
 package icon
 
-// import (
-// 	"encoding/base64"
-// 	"testing"
+import (
+	"testing"
 
-// 	"github.com/icon-project/btp/common/codec"
-// 	"github.com/icon-project/btp/common/log"
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
-// )
+	"github.com/icon-project/btp/common/codec"
+	"github.com/icon-project/btp/common/log"
+	"github.com/stretchr/testify/require"
+)
 
-// TODO add tests
-// func TestSender_NewTransactionParam(t *testing.T) {
-// 	prev := "string"
-// 	rm1 := &RelayMessage{
-// 		BlockUpdates:  [][]byte{{1, 2, 3, 4}},
-// 		BlockProof:    []byte{1, 2, 3, 4},
-// 		ReceiptProofs: [][]byte{{1, 2, 3, 4}},
-// 	}
+func TestSender_newTransactionParam(t *testing.T) {
+	prev := "btp://0x3.icon/cx0c59775cb325c1aea9c872546dbe8365af7c9d07"
+	rm1 := &RelayMessage{
+		BlockUpdates:  [][]byte{{1, 2, 3, 4}},
+		BlockProof:    []byte{1, 2, 3, 4},
+		ReceiptProofs: [][]byte{{1, 2, 3, 4}},
+	}
 
-// 	sender := &sender{l: log.New()}
-// 	p, err := sender.newTransactionParam(prev, rm1)
-// 	require.Nil(t, err)
-// 	require.NotNil(t, p)
-// 	assert.Equal(t, prev, p.Prev)
+	rm1b, err := codec.RLP.MarshalToBytes(rm1)
+	require.NoError(t, err)
 
-// 	d, err := base64.URLEncoding.DecodeString(p.Msg)
-// 	require.Nil(t, err)
-// 	rm2 := &RelayMessage{}
+	sender := &sender{l: log.New()}
+	p, err := sender.newTransactionParam(prev, rm1b)
+	require.Nil(t, err)
+	require.NotNil(t, p)
+	// assert.Equal(t, prev, p.Data.Params)
 
-// 	_, err = codec.RLP.UnmarshalFromBytes(d, rm2)
-// 	require.Nil(t, err)
-// 	assert.EqualValues(t, rm1, rm2)
-// }
+	// d, err := base64.URLEncoding.DecodeString(p.Msg)
+	// require.Nil(t, err)
+	// rm2 := &RelayMessage{}
+
+	// _, err = codec.RLP.UnmarshalFromBytes(d, rm2)
+	// require.Nil(t, err)
+	// assert.EqualValues(t, rm1, rm2)
+}
+
+func TestSender_praSegment(t *testing.T) {
+
+}
