@@ -20,6 +20,7 @@ import (
 
 const (
 	coinTypeICON    = "icx"
+	coinTypeEVM     = "evm"
 	cipherAES128CTR = "aes-128-ctr"
 	kdfScrypt       = "scrypt"
 )
@@ -131,7 +132,7 @@ func EncryptKeyAsKeyStore(s *crypto.PrivateKey, pw []byte) ([]byte, error) {
 	return json.Marshal(&ks)
 }
 
-func DecryptKeyStore(data, pw []byte) (*crypto.PrivateKey, error) {
+func ReadAddressFromKeyStore(data []byte) (*common.Address, error) {
 	var ksData KeyStoreData
 	if err := json.Unmarshal(data, &ksData); err != nil {
 		return nil, err
@@ -139,7 +140,43 @@ func DecryptKeyStore(data, pw []byte) (*crypto.PrivateKey, error) {
 	if ksData.CoinType != coinTypeICON {
 		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksData.CoinType)
 	}
+	return &ksData.Address, nil
+}
 
+func DecryptKeyStore(data, pw []byte) (Wallet, error) {
+	ksdata, err := NewKeyStoreData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	switch ksdata.CoinType {
+	case coinTypeICON:
+		secret, err := DecryptICONKeyStore(ksdata, pw)
+		if err != nil {
+			return nil, err
+		}
+		return NewIcxWalletFromPrivateKey(secret)
+	case coinTypeEVM:
+		key, err := DecryptEvmKeyStore(data, pw)
+		if err != nil {
+			return nil, err
+		}
+		return NewEvmWalletFromPrivateKey(key)
+	default:
+		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksdata.CoinType)
+	}
+}
+
+func KeyStoreFromWallet(w interface{}, pw []byte) ([]byte, error) {
+	s, ok := w.(*softwareWallet)
+	if ok {
+		return EncryptKeyAsKeyStore(s.skey, pw)
+	} else {
+		return nil, nil
+	}
+}
+
+func DecryptICONKeyStore(ksData *KeyStoreData, pw []byte) (*crypto.PrivateKey, error) {
 	if ksData.Crypto.Cipher != cipherAES128CTR {
 		return nil, errors.Errorf("UnsupportedCipher(cipher=%s)",
 			ksData.Crypto.Cipher)
@@ -195,30 +232,11 @@ func DecryptKeyStore(data, pw []byte) (*crypto.PrivateKey, error) {
 	return secret, nil
 }
 
-func ReadAddressFromKeyStore(data []byte) (*common.Address, error) {
+func NewKeyStoreData(data []byte) (*KeyStoreData, error) {
 	var ksData KeyStoreData
 	if err := json.Unmarshal(data, &ksData); err != nil {
 		return nil, err
 	}
-	if ksData.CoinType != coinTypeICON {
-		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksData.CoinType)
-	}
-	return &ksData.Address, nil
-}
 
-func NewFromKeyStore(data, pw []byte) (*softwareWallet, error) {
-	secret, err := DecryptKeyStore(data, pw)
-	if err != nil {
-		return nil, err
-	}
-	return NewFromPrivateKey(secret)
-}
-
-func KeyStoreFromWallet(w interface{}, pw []byte) ([]byte, error) {
-	s, ok := w.(*softwareWallet)
-	if ok {
-		return EncryptKeyAsKeyStore(s.skey, pw)
-	} else {
-		return nil, nil
-	}
+	return &ksData, nil
 }
