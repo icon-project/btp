@@ -47,9 +47,9 @@ const (
 
 type Config struct {
 	chain.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData json.RawMessage `json:"key_store"`
-	KeyStorePass string          `json:"key_password,omitempty"`
-	KeySecret    string          `json:"key_secret,omitempty"`
+	KeyStoreData json.RawMessage  `json:"key_store"`
+	KeyStorePass string           `json:"key_password,omitempty"`
+	KeySecret    string           `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -62,7 +62,7 @@ func (c *Config) Wallet() (wallet.Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wallet.NewFromKeyStore(c.KeyStoreData, pw)
+	return wallet.DecryptKeyStore(c.KeyStoreData, pw)
 }
 
 func (c *Config) resolvePassword() ([]byte, error) {
@@ -265,7 +265,7 @@ func main() {
 
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("%+v",err)
+		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
 }
