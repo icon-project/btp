@@ -127,7 +127,6 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         } else if (isRegistered(_coinName)) {
             return generateTokenId(_coinName);
         }
-        //FIXME throw NotExists? or null?
         return null;
     }
 
@@ -181,7 +180,6 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     @External
     public void transfer(String _coinName, BigInteger _value, String _to) {
         require(_value != null && _value.compareTo(BigInteger.ZERO) > 0, "Invalid amount");
-        //TODO TBD nativeCoin check is not exists in solidity
         require(!name.equals(_coinName) && isRegistered(_coinName), "Not supported Token");
 
         Address owner = Context.getCaller();
@@ -525,8 +523,6 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
                     BigInteger locked = amount.add(fee);
                     boolean isNativeCoin = name.equals(coinName);
                     if(isNativeCoin || registeredCoinNames.contains(coinName)) {
-                        //TODO [TBD] when failure of transfer, NCS try refund in solidity
-                        //  but in requirements, user could refund by reclaim only
                         refund(coinName, owner, locked);
                     } else {
                         //This should not happen

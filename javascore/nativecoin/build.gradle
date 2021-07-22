@@ -7,8 +7,8 @@ dependencies {
     implementation project(':lib')
     implementation("com.github.sink772:javaee-tokens:0.6.0")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
     testImplementation project(':test-lib')
@@ -25,7 +25,7 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
@@ -37,7 +37,7 @@ task optimizedJarIRC31(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 deployJar {
@@ -62,7 +62,11 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
     options {
         testLogging.showStandardStreams = true
         systemProperty 'url', scoreTest.url

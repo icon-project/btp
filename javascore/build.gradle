@@ -40,6 +40,8 @@ subprojects {
         scoreClientVersion = getProperty("score-client.version")
         iconsdkVersion = getProperty("iconsdk.version")
         jacksonVersion = getProperty("jackson.version")
+        debugJar = Boolean.parseBoolean(getProperty("debugJar").toString())
+        integrationTest = Boolean.parseBoolean(getProperty("integrationTest").toString())
     }
 
     def loadProperties = {

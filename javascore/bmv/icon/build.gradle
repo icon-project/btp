@@ -6,8 +6,8 @@ dependencies {
     implementation project(':score-util')
     implementation project(':lib')
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
     testImplementation("org.mockito:mockito-core:3.3.3")
 }
@@ -18,7 +18,7 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 deployJar {
@@ -28,12 +28,12 @@ deployJar {
             nid = 7
         }
         local {
-            uri = 'http://localhost:9082/api/v3'
-            nid = 3
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
         }
     }
-    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
-    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
     parameters {[
             arg('_bmc', 'cx?'),
             arg('_net', '0x?.icon'),
@@ -44,5 +44,9 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
 }

@@ -6,9 +6,9 @@ dependencies {
     implementation project(':score-util')
     implementation project(':lib')
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.2")
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
     testImplementation project(':test-lib')
@@ -25,7 +25,7 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 deployJar {
@@ -47,7 +47,12 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+
     options {
         testLogging.showStandardStreams = true
         systemProperty 'url', scoreTest.url
@@ -62,9 +67,9 @@ test {
             arg -> systemProperty 'params.'+arg.name, arg.value
         }
 
-        //only for foundation.icon.btp.bmc.ScoreIntegrationTest
-        systemProperty 'score-test.tester.keyStore', scoreTest.tester.keyStore
-        systemProperty 'score-test.tester.keySecret', scoreTest.tester.keySecret
+        //for foundation.icon.btp.test.ScoreIntegrationTest
+        systemProperty 'tester.keyStore', scoreTest.tester.keyStore
+        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
 
         //for bmv-mock client
         systemProperty 'bmv-mock.url', scoreTest.url

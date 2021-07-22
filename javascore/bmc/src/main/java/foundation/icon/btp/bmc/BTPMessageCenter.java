@@ -249,9 +249,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
         BMVScoreInterface bmv = getVerifier(link.getAddr().net());
         BMVStatus bmvStatus = bmv.getStatus();
-        //FIXME currently javaee-rt eliminate not-called functions include default constructor
-        //  and @Keep has not ElementType.CONSTRUCTOR in @Target
-        status.setVerifier(new BMVStatus());
         status.setVerifier(bmvStatus);
         return status;
     }
@@ -317,7 +314,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                     return links.get(key);
                 }
             }
-            // TODO [TBD] reachable enabled
             for (BTPAddress key : links.keySet()) {
                 Link link = links.get(key);
                 for (BTPAddress reachable : link.getReachable()) {

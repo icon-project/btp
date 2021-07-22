@@ -10,9 +10,9 @@ dependencies {
     implementation project(':lib')
 
     //for test package
-    implementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
-    implementation("org.junit.jupiter:junit-jupiter-params:5.6.0")
-    runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    implementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    implementation("org.junit.jupiter:junit-jupiter-params:5.7.2")
+    runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     implementation("foundation.icon:javaee-score-client:$scoreClientVersion")
@@ -33,7 +33,7 @@ task optimizedJarMockBMC(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 task optimizedJarMockBMV(type: OptimizedJar) {
@@ -43,7 +43,7 @@ task optimizedJarMockBMV(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 task optimizedJarMockBSH(type: OptimizedJar) {
@@ -53,7 +53,7 @@ task optimizedJarMockBSH(type: OptimizedJar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
-    enableDebug = rootProject.hasProperty("debugJar")
+    enableDebug = debugJar
 }
 
 deployJar {
@@ -75,7 +75,12 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+    
     options {
         testLogging.showStandardStreams = true
         //for ScoreIntegrationTest.client
@@ -83,8 +88,8 @@ test {
         systemProperty 'nid', scoreTest.nid
 
         //for ScoreIntegrationTest.tester
-        systemProperty 'score-test.tester.keyStore', scoreTest.tester.keyStore
-        systemProperty 'score-test.tester.keySecret', scoreTest.tester.keySecret
+        systemProperty 'tester.keyStore', scoreTest.tester.keyStore
+        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
 
         //for MockBMCTest.mockBMCClient
         systemProperty 'bmc-mock.url', scoreTest.url

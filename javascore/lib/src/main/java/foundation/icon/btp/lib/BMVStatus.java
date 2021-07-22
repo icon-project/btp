@@ -24,6 +24,10 @@ public class BMVStatus {
     private long last_height;
 
     @Keep
+    public BMVStatus() {
+    }
+
+    @Keep
     public long getHeight() {
         return height;
     }

@@ -26,7 +26,6 @@ import java.util.Map;
 public interface RelayerManager {
     /**
      * (Payable) Registers the Relayer for the network.
-     * TODO regiser relayer with bond, desc
      *
      * @param _desc String (description of Relayer)
      */
@@ -36,7 +35,6 @@ public interface RelayerManager {
 
     /**
      * Unregisters the Relayer for the network.
-     * TODO [TBD] May fail if it's referred by the BMR.
      * <p>
      * _addr Address (the address of Relayer)
      */
@@ -72,7 +70,6 @@ public interface RelayerManager {
      * Claim reward of the Relayer
      * Called by relayer
      *
-     * TODO [TBD] Does it need to use 'Address' parameter instead of Context.getCaller()?
      */
     @External
     void claimRelayerReward();
