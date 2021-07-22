@@ -14,7 +14,7 @@ import (
 )
 
 type ReceiverOptions struct {
-	NoRelayChain bool `json:"no_relay_chain"`
+	RelayEndpoint chain.BtpAddress `json:"relay_endpoint"`
 }
 
 type Receiver struct {
@@ -45,8 +45,16 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 }
 
 func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
-	if r.opt.NoRelayChain {
-		// For testing without relay chain
+	if len(r.opt.RelayEndpoint) > 0 {
+		// Real use
+		bu := &chain.BlockUpdate{
+			Height:    int64(v.Height),
+			BlockHash: v.Hash[:],
+		}
+
+		return bu, nil
+	} else {
+		// For local testing without relay chain
 		var err error
 		bu := &chain.BlockUpdate{
 			Height:    int64(v.Height),
@@ -66,14 +74,6 @@ func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		}
 
 		bu.Header = update.ScaleEncodedBlockHeader
-		return bu, nil
-	} else {
-		// Real use
-		bu := &chain.BlockUpdate{
-			Height:    int64(v.Height),
-			BlockHash: v.Hash[:],
-		}
-
 		return bu, nil
 	}
 }
