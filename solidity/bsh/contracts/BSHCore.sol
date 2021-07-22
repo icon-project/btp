@@ -50,7 +50,7 @@ contract BSHCore is
     uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
-    uint256 private feeNumerator;
+    uint256 public feeNumerator;
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
 
