@@ -1074,9 +1074,12 @@ public class BMVTestScore extends TestBase {
             List<RlpType> blockProof = new ArrayList<RlpType>(2);
             BlockUpdate blockUpdate = new BlockUpdate(parentHash, updatingBlockNumber, stateRoot, round, currentSetId); // new block that not exist in MTA
             blockProof.add(RlpString.create(blockUpdate.getEncodedHeader())); // block header
-            blockProof.add(RlpString.create(mtaHeight));
-                List<RlpType> witness = new ArrayList<RlpType>(1);
-            blockProof.add(new RlpList(witness));
+
+                List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(mtaHeight));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
         relayMessage.add(new RlpList()); // stateProof
 
@@ -1118,10 +1121,12 @@ public class BMVTestScore extends TestBase {
             List<RlpType> blockProof = new ArrayList<RlpType>(2);
             blockProof.add(RlpString.create(updatedBlocks.get(3).getEncodedHeader())); // block 14
 
-            blockProof.add(RlpString.create(BigInteger.valueOf(15))); // less than mta height of BMV
-                List<RlpType> witness = new ArrayList<RlpType>(1);
-                witness.add(RlpString.create(updatedBlocks.get(5).getHash()));
-            blockProof.add(new RlpList(witness));
+                List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(BigInteger.valueOf(15)));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                    witness.add(RlpString.create(updatedBlocks.get(5).getHash()));
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
         relayMessage.add(new RlpList()); // empty stateProof
 
@@ -1166,10 +1171,12 @@ public class BMVTestScore extends TestBase {
             BlockUpdate blockUpdate = new BlockUpdate(parentHash, updatingBlockNumber, stateRoot, round, currentSetId); // fake block 15 updated to block proof
             blockProof.add(RlpString.create(blockUpdate.getEncodedHeader()));
 
-            blockProof.add(RlpString.create(BigInteger.valueOf(16))); //current MTA height of client
-                List<RlpType> witness = new ArrayList<RlpType>(1);
-                witness.add(RlpString.create(updatedBlocks.get(5).getHash()));
-            blockProof.add(new RlpList(witness));
+                List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(BigInteger.valueOf(16)));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                    witness.add(RlpString.create(updatedBlocks.get(5).getHash()));
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
         relayMessage.add(new RlpList()); // stateProof
 
@@ -1213,11 +1220,13 @@ public class BMVTestScore extends TestBase {
             BlockUpdate blockUpdate = new BlockUpdate(parentHash, updatingBlockNumber.longValue(), stateRoot, round, currentSetId); // fake block 15 updated to block proof
             blockProof.add(RlpString.create(blockUpdate.getEncodedHeader()));
 
-            blockProof.add(RlpString.create(BigInteger.valueOf(17))); // current MTA height of client
-                List<RlpType> witness = new ArrayList<RlpType>(2);
-                witness.add(RlpString.create(HexConverter.hexStringToByteArray("9af0b4af1fc9a9d75dbb7e2b72e6560ae2afef30f91625b562adb9659931cc9a"))); // fake witness
-                witness.add(RlpString.create(HexConverter.hexStringToByteArray("679adaf23ccf7fbc51b3c59588357f0c2ec3cacba0595274c8ec5c44354ab8bc")));
-            blockProof.add(new RlpList(witness));
+                List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(BigInteger.valueOf(17)));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                    witness.add(RlpString.create(HexConverter.hexStringToByteArray("9af0b4af1fc9a9d75dbb7e2b72e6560ae2afef30f91625b562adb9659931cc9a"))); // fake witness
+                    witness.add(RlpString.create(HexConverter.hexStringToByteArray("679adaf23ccf7fbc51b3c59588357f0c2ec3cacba0595274c8ec5c44354ab8bc")));
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
         relayMessage.add(new RlpList()); // stateProof
 
@@ -1260,9 +1269,11 @@ public class BMVTestScore extends TestBase {
             BlockUpdate blockUpdate = new BlockUpdate(parentHash, updatingBlockNumber.longValue(), stateRoot, round, currentSetId); // fake block updated to block proof
             blockProof.add(RlpString.create(blockUpdate.getEncodedHeader()));
 
-            blockProof.add(RlpString.create(BigInteger.valueOf(18))); // client MTA height greater than current mta height (17)
-                List<RlpType> witness = new ArrayList<RlpType>(1);
-            blockProof.add(new RlpList(witness));
+            List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(BigInteger.valueOf(18)));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
         relayMessage.add(new RlpList()); // stateProof
 
@@ -1637,10 +1648,12 @@ public class BMVTestScore extends TestBase {
             List<RlpType> blockProof = new ArrayList<RlpType>(2);
             blockProof.add(RlpString.create(updatedBlocks.get(9).getEncodedHeader())); // block 20
 
-            blockProof.add(RlpString.create(BigInteger.valueOf(21))); // current client mta height
-                List<RlpType> witness = new ArrayList<RlpType>(2);
-                witness.add(RlpString.create(updatedBlocks.get(8).getHash())); // block 19 hash
-            blockProof.add(new RlpList(witness));
+                List<RlpType> blockWitness = new ArrayList<RlpType>(2);
+                blockWitness.add(RlpString.create(BigInteger.valueOf(21)));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                    witness.add(RlpString.create(updatedBlocks.get(8).getHash())); // block 19 hash
+                blockWitness.add(new RlpList(witness));
+            blockProof.add(new RlpList(blockWitness));
         relayMessage.add(RlpString.create(RlpEncoder.encode(new RlpList(blockProof)))); // rlp encoded of blockProof
 
             List<RlpType> stateProofs = new ArrayList<RlpType>(2);

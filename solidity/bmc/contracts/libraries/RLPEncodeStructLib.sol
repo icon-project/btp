@@ -21,8 +21,8 @@ library RLPEncodeStruct {
     using RLPEncodeStruct for Types.Votes;
     using RLPEncodeStruct for Types.RelayMessage;
 
-    uint8 private constant LIST_SHORT_START = 0xc0;
-    uint8 private constant LIST_LONG_START = 0xf7;
+    uint8 internal constant LIST_SHORT_START = 0xc0;
+    uint8 internal constant LIST_LONG_START = 0xf7;
 
     function encodeBMCService(Types.BMCService memory _bs)
         internal
@@ -30,10 +30,7 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            abi.encodePacked(
-                _bs.serviceType.encodeString(),
-                _bs.payload.encodeBytes()
-            );
+            abi.encodePacked(_bs.serviceType.encodeString(), _bs.payload);
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -50,24 +47,6 @@ library RLPEncodeStruct {
         }
         _rlp = abi.encodePacked(
             _gfm.fa.encodeString(),
-            addLength(_rlp.length, false),
-            _rlp
-        );
-        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
-    }
-
-    function encodeEventMessage(Types.EventMessage memory _em)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _em.conn.from.encodeString(),
-                _em.conn.to.encodeString()
-            );
-        _rlp = abi.encodePacked(
-            _em.eventType.encodeString(),
             addLength(_rlp.length, false),
             _rlp
         );

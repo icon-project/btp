@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
@@ -43,6 +43,7 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     */
 
     function getOwners() external view returns (address[] memory);
+
     /**
         @notice update BSH Periphery address.
         @dev Caller must be an Owner of this contract

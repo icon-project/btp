@@ -18,19 +18,25 @@ public class AbiDecoder {
 
     public static String decodeString(ByteSliceInput input) {
         int msgLength = AbiDecoder.decodeUInt(input).intValue();
-        int totalLength = (msgLength/32 + 1)*32;
+        int paddingLength = 0;
+        if (msgLength%32 != 0) {
+            paddingLength = 32 - msgLength%32;
+        } 
 
         String result = new String(input.take(msgLength));
-        input.take(totalLength - msgLength); // remove padding
+        input.take(paddingLength); // remove padding
         return result;
     }
 
     public static byte[] decodeBytes(ByteSliceInput input) {
         int byteLength = AbiDecoder.decodeUInt(input).intValue();
-        int totalLength = (byteLength/32 + 1)*32;
+        int paddingLength = 0;
+        if (byteLength%32 != 0) {
+            paddingLength = 32 - byteLength%32;
+        } 
 
         byte[] result = input.take(byteLength);
-        input.take(totalLength - byteLength); // remove padding
+        input.take(paddingLength); // remove padding
         return result;
     }
 }

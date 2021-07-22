@@ -84,8 +84,6 @@ public class BMV implements IBMV {
     this.mtaDb.set(mta);
 
     this.eventDecoderDb.set(eventDecoderAddress);
-
-    Context.call(bmc, "addVerifier", net, Context.getAddress());
   }
 
   /**

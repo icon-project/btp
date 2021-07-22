@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../BSHPeriphery.sol";
@@ -7,7 +7,11 @@ import "../BSHCore.sol";
 contract MockBSHPeriphery is BSHPeriphery {
     using Strings for string;
 
-    function getFees(uint256 _sn) external view returns (Types.PendingTransferCoin memory) {
+    function getFees(uint256 _sn)
+        external
+        view
+        returns (Types.PendingTransferCoin memory)
+    {
         return requests[_sn];
     }
 

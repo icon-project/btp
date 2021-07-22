@@ -99,8 +99,6 @@ public class BMV implements IBMV {
     this.relayEventDecoderDb.set(relayEventDecoderAddress);
 
     this.paraChainIdDb.set(paraChainId);
-
-    Context.call(bmc, "addVerifier", net, Context.getAddress());
   }
 
   /**
@@ -247,7 +245,7 @@ public class BMV implements IBMV {
                 }
                 bmcMsgs.add(btpMessageEvmEvent.getMsg());
               }
-              nextSeq = seq.add(BigInteger.valueOf(1));
+              nextSeq = nextSeq.add(BigInteger.valueOf(1));
             }
           }
         }

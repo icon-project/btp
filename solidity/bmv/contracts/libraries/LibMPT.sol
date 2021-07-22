@@ -55,7 +55,7 @@ library LibMerklePatriciaTrie {
                 node.children = new MPT[](16);
                 for (uint256 i = 0; i < 16; i++) {
                     if (ls[i].toBytes().length == 0) continue;
-                    if (ls[i].toBytes()[0] >= 0xC0)
+                    if (ls[i].toRlpBytes()[0] >= 0xC0)
                         bNode = init("", ls[i].toBytes());
                     else bNode = init(ls[i].toBytes().bytesToBytes32(), "");
 

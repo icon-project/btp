@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "./Interfaces/IBSHPeriphery.sol";
@@ -29,6 +29,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     using ParseAddress for address;
     using ParseAddress for string;
     using Strings for string;
+    using Strings for uint256;
 
     /**   @notice Sends a receipt to user
         The `_from` sender
@@ -64,7 +65,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
 
     IBMCPeriphery private bmc;
     IBSHCore internal bshCore;
-    mapping(uint256 => Types.PendingTransferCoin) internal requests; // a list of transferring requests
+    mapping(uint256 => Types.PendingTransferCoin) public requests; // a list of transferring requests
     string public serviceName; //    BSH Service Name
 
     uint256 private constant RC_OK = 0;
@@ -83,7 +84,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         string memory _serviceName
     ) public initializer {
         bmc = IBMCPeriphery(_bmc);
-        bmc.requestAddService(_serviceName, address(this));
         bshCore = IBSHCore(_bshCore);
         serviceName = _serviceName;
     }
@@ -92,7 +92,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
      @notice Check whether BSHPeriphery has any pending transferring requests
      @return true or false
     */
-    function hasPendingRequest() external override view returns (bool) {
+    function hasPendingRequest() external view override returns (bool) {
         return numOfPendingRequests != 0;
     }
 
@@ -114,12 +114,15 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
             new Types.AssetTransferDetail[](_coinNames.length);
         for (uint256 i = 0; i < _coinNames.length; i++) {
             _assets[i] = Types.Asset(_coinNames[i], _values[i]);
-            _assetDetails[0] = Types.AssetTransferDetail(
+            _assetDetails[i] = Types.AssetTransferDetail(
                 _coinNames[i],
                 _values[i],
                 _fees[i]
             );
         }
+
+        serialNo++;
+
         //  Because `stack is too deep`, must create `_strFrom` to waive this error
         //  `_strFrom` is a string type of an address `_from`
         string memory _strFrom = _from.toString();
@@ -127,10 +130,16 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
             _toNetwork,
             serviceName,
             serialNo,
-            Types.ServiceMessage(
-                Types.ServiceType.REQUEST_COIN_TRANSFER,
-                Types.TransferCoin(_strFrom, _toAddress, _assets).encodeTransferCoinMsg()
-            ).encodeServiceMessage()
+            Types
+                .ServiceMessage(
+                Types
+                    .ServiceType
+                    .REQUEST_COIN_TRANSFER,
+                Types
+                    .TransferCoin(_strFrom, _toAddress, _assets)
+                    .encodeTransferCoinMsg()
+            )
+                .encodeServiceMessage()
         );
         //  Push pending tx into Record list
         requests[serialNo] = Types.PendingTransferCoin(
@@ -142,7 +151,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         );
         numOfPendingRequests++;
         emit TransferStart(_from, _to, serialNo, _assetDetails);
-        serialNo++;
     }
 
     /**
@@ -239,7 +247,12 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
-        handleResponseService(_sn, _code, _msg);
+        string memory _emitMsg =
+            string("errCode: ")
+                .concat(_code.toString())
+                .concat(", errMsg: ")
+                .concat(_msg);
+        handleResponseService(_sn, RC_ERR, _emitMsg);
     }
 
     function handleResponseService(
@@ -305,10 +318,12 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
             _to,
             serviceName,
             _sn,
-            Types.ServiceMessage(
+            Types
+                .ServiceMessage(
                 _serviceType,
                 Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+            )
+                .encodeServiceMessage()
         );
     }
 

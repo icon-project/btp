@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "../Libraries/ParseAddressLib.sol";
@@ -41,17 +41,18 @@ contract EncodeMessage {
                 .encodeBMCMessage();
     }
 
-    function encodeBMCService(
-        string calldata _fa,
-        string[] memory _svcs
-    ) external view returns (bytes memory) {
-        return Types.BMCService(
-            "FeeGathering",
-            Types.GatherFeeMessage(
-                _fa,
-                _svcs
-            ).encodeGatherFeeMessage()
-        ).encodeBMCService();
+    function encodeBMCService(string calldata _fa, string[] memory _svcs)
+        external
+        view
+        returns (bytes memory)
+    {
+        return
+            Types
+                .BMCService(
+                "FeeGathering",
+                Types.GatherFeeMessage(_fa, _svcs).encodeGatherFeeMessage()
+            )
+                .encodeBMCService();
     }
 
     function encodeResponseBMCMessage(
@@ -69,7 +70,11 @@ contract EncodeMessage {
                 _to,
                 _svc,
                 _sn,
-                this.encodeResponseMsg(Types.ServiceType.REPONSE_HANDLE_SERVICE, _code, _msg)
+                this.encodeResponseMsg(
+                    Types.ServiceType.REPONSE_HANDLE_SERVICE,
+                    _code,
+                    _msg
+                )
             )
                 .encodeBMCMessage();
     }
@@ -87,7 +92,8 @@ contract EncodeMessage {
         uint256 _code,
         string calldata _msg
     ) external view returns (bytes memory) {
-        return Types
+        return
+            Types
                 .ServiceMessage(
                 _serviceType,
                 Types.Response(_code, _msg).encodeResponse()
@@ -138,7 +144,8 @@ contract EncodeMessage {
         string memory _to,
         Types.Asset[] memory _asset
     ) private pure returns (bytes memory) {
-        return Types
+        return
+            Types
                 .ServiceMessage(
                 Types
                     .ServiceType

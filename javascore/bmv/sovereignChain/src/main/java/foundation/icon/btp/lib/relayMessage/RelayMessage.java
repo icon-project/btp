@@ -31,7 +31,7 @@ public class RelayMessage {
         }
 
         if (r.hasNext()) {
-            byte[] blockProofEncoded = r.readByteArray();
+            byte[] blockProofEncoded = r.readNullable(byte[].class);
             this.blockProof = (blockProofEncoded != null && blockProofEncoded.length > 0) ? BlockProof.fromBytes(blockProofEncoded) : null;
         } else {
             this.blockProof = null;

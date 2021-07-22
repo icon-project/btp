@@ -32,16 +32,17 @@ public class BlockProof {
         }
 
         long mtaHeight = 0;
-        if (rlpReader.hasNext()) {
-            mtaHeight = rlpReader.readLong();
-        }
-
         List<byte[]> witnesses = new ArrayList<byte[]>(5);
         if (rlpReader.hasNext()) {
             rlpReader.beginList();
-            while (rlpReader.hasNext()) {
-                byte[] witness = rlpReader.readByteArray();
-                witnesses.add(witness);
+            mtaHeight = rlpReader.readLong();
+            if (rlpReader.hasNext()) {
+                rlpReader.beginList();
+                while (rlpReader.hasNext()) {
+                    byte[] witness = rlpReader.readByteArray();
+                    witnesses.add(witness);
+                }
+                rlpReader.end();
             }
             rlpReader.end();
         }

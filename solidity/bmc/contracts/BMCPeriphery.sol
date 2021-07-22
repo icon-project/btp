@@ -61,36 +61,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         return bmcBtpAddress;
     }
 
-    function requestAddService(string memory _serviceName, address _addr)
-        external
-        override
-    {
-        require(_addr != address(0), "BMCRevertInvalidAddress");
-        require(
-            IBMCManagement(bmcManagement).getBshServiceByName(_serviceName) ==
-                address(0),
-            "BMCRevertAlreadyExistsBSH"
-        );
-        Types.Request[] memory pendingReqs =
-            IBMCManagement(bmcManagement).getPendingRequest();
-        for (uint256 i = 0; i < pendingReqs.length; i++) {
-            if (pendingReqs[i].serviceName.compareTo(_serviceName)) {
-                revert("BMCRevertRequestPending");
-            }
-        }
-        IBMCManagement(bmcManagement).updatePendingReq(
-            Types.Request(_serviceName, _addr)
-        );
-    }
-
-    function getPendingRequest()
-        external
-        view
-        returns (Types.Request[] memory)
-    {
-        return IBMCManagement(bmcManagement).getPendingRequest();
-    }
-
     /**
        @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
        @dev Caller must be a registered relayer.     
@@ -202,37 +172,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         internal
     {
         address _bshAddr;
-        if (_msg.svc.compareTo("_event")) {
-            Types.EventMessage memory _eventMsg =
-                _msg.message.decodeEventMessage();
-            Types.Link memory link =
-                IBMCManagement(bmcManagement).getLink(_eventMsg.conn.from);
-            if (_eventMsg.eventType.compareTo("Link")) {
-                bool check;
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++)
-                        if (_eventMsg.conn.to.compareTo(link.reachable[i])) {
-                            check = true;
-                            break;
-                        }
-                    if (!check)
-                        IBMCManagement(bmcManagement).updateLinkReachable(
-                            _eventMsg.conn.from,
-                            _eventMsg.conn.to
-                        );
-                }
-            } else if (_eventMsg.eventType.compareTo("Unlink")) {
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++) {
-                        if (_eventMsg.conn.to.compareTo(link.reachable[i]))
-                            IBMCManagement(bmcManagement).deleteLinkReachable(
-                                _eventMsg.conn.from,
-                                i
-                            );
-                    }
-                }
-            } else revert("BMCRevert: not exists event handler");
-        } else if (_msg.svc.compareTo("bmc")) {
+        if (_msg.svc.compareTo("bmc")) {
             Types.BMCService memory _sm;
             try this.tryDecodeBMCService(_msg.message) returns (
                 Types.BMCService memory res
@@ -240,7 +180,9 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 _sm = res;
             } catch {
                 _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+                return;
             }
+
             if (_sm.serviceType.compareTo("FeeGathering")) {
                 Types.GatherFeeMessage memory _gatherFee;
                 try this.tryDecodeGatherFeeMessage(_sm.payload) returns (
@@ -249,6 +191,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                     _gatherFee = res;
                 } catch {
                     _sendError(_prev, _msg, BMC_ERR, "BMCRevertParseFailure");
+                    return;
                 }
 
                 for (uint256 i = 0; i < _gatherFee.svcs.length; i++) {
@@ -266,7 +209,48 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                         }
                     }
                 }
-            }
+            } else if (_sm.serviceType.compareTo("Link")) {
+                string memory _to = _sm.payload.decodePropagateMessage();
+                Types.Link memory link =
+                    IBMCManagement(bmcManagement).getLink(_prev);
+                bool check;
+                if (link.isConnected) {
+                    for (uint256 i = 0; i < link.reachable.length; i++)
+                        if (_to.compareTo(link.reachable[i])) {
+                            check = true;
+                            break;
+                        }
+                    if (!check) {
+                        string[] memory _links = new string[](1);
+                        _links[0] = _to;
+                        IBMCManagement(bmcManagement).updateLinkReachable(
+                            _prev,
+                            _links
+                        );
+                    }
+                }
+            } else if (_sm.serviceType.compareTo("Unlink")) {
+                string memory _to = _sm.payload.decodePropagateMessage();
+                Types.Link memory link =
+                    IBMCManagement(bmcManagement).getLink(_prev);
+                if (link.isConnected) {
+                    for (uint256 i = 0; i < link.reachable.length; i++) {
+                        if (_to.compareTo(link.reachable[i]))
+                            IBMCManagement(bmcManagement).deleteLinkReachable(
+                                _prev,
+                                i
+                            );
+                    }
+                }
+            } else if (_sm.serviceType.compareTo("Init")) {
+                string[] memory _links = _sm.payload.decodeInitMessage();
+                IBMCManagement(bmcManagement).updateLinkReachable(
+                    _prev,
+                    _links
+                );
+            } else if (_sm.serviceType.compareTo("Sack")) {
+                // skip this case since it has been removed from internal services
+            } else revert("BMCRevert: not exists internal handler");
         } else {
             _bshAddr = IBMCManagement(bmcManagement).getBshServiceByName(
                 _msg.svc

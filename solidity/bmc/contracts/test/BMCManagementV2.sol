@@ -16,7 +16,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 contract BMCManagementV2 is IBMCManagement, Initializable {
     using ParseAddress for address;
     using ParseAddress for string;
-    using RLPEncodeStruct for Types.EventMessage;
+    using RLPEncodeStruct for Types.BMCService;
     using Strings for string;
     using Utils for uint256;
     using Utils for string[];
@@ -24,7 +24,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     mapping(address => bool) private _owners;
     uint256 private numOfOwner;
 
-    Types.Request[] private pendingReq;
     mapping(string => address) private bshServices;
     mapping(string => address) private bmvServices;
     mapping(address => Types.RelayStats) private relayStats;
@@ -113,37 +112,20 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     }
 
     /**
-       @notice Registers the smart contract for the service.
+       @notice Add the smart contract for the service.
        @dev Caller must be an operator of BTP network.
-       @dev Service being approved must be in the pending request list
        @param _svc     Name of the service
+       @param _addr    Service's contract address
      */
-    function approveService(string memory _svc, bool isAccepted)
+    function addService(string memory _svc, address _addr)
         external
         override
         hasPermission
     {
+        require(_addr != address(0), "BMCRevertInvalidAddress");
         require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
-
-        bool exist;
-        for (uint256 i = 0; i < pendingReq.length; i++) {
-            if (pendingReq[i].serviceName.compareTo(_svc)) {
-                exist = true;
-                if (isAccepted) {             
-                    bshServices[_svc] = pendingReq[i].bsh;
-                    listBSHNames.push(_svc);
-                }
-
-                // remove pending request
-                pendingReq[i] = pendingReq[pendingReq.length - 1];
-                pendingReq.pop();
-                break;
-            }
-        }
-
-        //  If service not existed in a pending request list,
-        //  then revert()
-        require(exist, "BMCRevertNotExistRequest");
+        bshServices[_svc] = _addr;
+        listBSHNames.push(_svc);
     }
 
     /**
@@ -455,17 +437,11 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
                 (_net, ) = listLinkNames[i].splitBTPAddress();
                 IBMCPeriphery(bmcPeriphery).sendMessage(
                     _net,
-                    "_EVENT",
+                    "bmc",
                     0,
                     Types
-                        .EventMessage(
-                        _eventType,
-                        Types.Connection(
-                            IBMCPeriphery(bmcPeriphery).getBmcBtpAddress(),
-                            _link
-                        )
-                    )
-                        .encodeEventMessage()
+                        .BMCService(_eventType, bytes(_link))
+                        .encodeBMCService()
                 );
             }
         }
@@ -582,9 +558,9 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     }
 
     /******************************* Use for BMC Service *************************************/
-    function getBshServiceByName(string memory _serviceName)
+    function getBshServiceByName(string memory)
         external
-        view
+        pure
         override
         returns (address)
     {
@@ -598,15 +574,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         returns (address)
     {
         return bmvServices[_net];
-    }
-
-    function getPendingRequest()
-        external
-        view
-        override
-        returns (Types.Request[] memory)
-    {
-        return pendingReq;
     }
 
     function getLink(string memory _to)
@@ -657,14 +624,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         }
     }
 
-    function updatePendingReq(Types.Request memory _req)
-        external
-        override
-        onlyBMCPeriphery
-    {
-        pendingReq.push(_req);
-    }
-
     function updateLinkRxSeq(string calldata _prev, uint256 _val)
         external
         override
@@ -681,14 +640,16 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         links[_prev].txSeq++;
     }
 
-    function updateLinkReachable(string memory _prev, string memory _to)
+    function updateLinkReachable(string memory _prev, string[] memory _to)
         external
         override
         onlyBMCPeriphery
     {
-        links[_prev].reachable.push(_to);
-        (string memory _net, ) = _to.splitBTPAddress();
-        getLinkFromReachableNet[_net] = Types.Tuple(_prev, _to);
+        for (uint256 i = 0; i < _to.length; i++) {
+            links[_prev].reachable.push(_to[i]);
+            (string memory _net, ) = _to[i].splitBTPAddress();
+            getLinkFromReachableNet[_net] = Types.Tuple(_prev, _to[i]);
+        }
     }
 
     function deleteLinkReachable(string memory _prev, uint256 _index)

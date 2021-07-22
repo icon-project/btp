@@ -26,7 +26,7 @@ contract('BMC tests', (accounts) => {
             bmv3 = await MockBMV.new();
             bmv4 = await MockBMV.new();
         });
-    
+
         /***************************************************************************************
                                     Set BMC Periphery Unit Tests
         ***************************************************************************************/
@@ -52,108 +52,41 @@ contract('BMC tests', (accounts) => {
         /***************************************************************************************
                                     Add/Remove Service Unit Tests
         ***************************************************************************************/
-        it('Request Add Service - Service not requested nor registered - Success', async () => {
+        it('Add Service - Service not requested nor registered - Success', async () => {
             let service = 'Coin/WrappedCoin';
             
-            await bmcPeriphery.requestAddService(service, accounts[5]);
+            await bmcManagement.addService(service, accounts[5]);
             
-            let output = await bmcManagement.getPendingRequest();
+            let output = await bmcManagement.getServices();
             assert(
-                output[0].serviceName === service, output[0].bsh === accounts[5],
+                output[0].svc === service, output[0].addr === accounts[5],
             );
         });
-    
-        it('Request Add Service - Same Service name is pending - Failure', async () => {
-            let service = 'Coin/WrappedCoin';
-        
-            await truffleAssert.reverts(
-                bmcPeriphery.requestAddService.call(service, accounts[6]),
-                'BMCRevertRequestPending'
-            );
-        });
-    
-        it('Request Add Service - Service registered - Failure', async () => {
+
+        it('Add Service - Service is registered - Failure', async () => {
             let service = 'Coin/WrappedCoin';
             
-            await bmcManagement.approveService(service, true);
             await truffleAssert.reverts(
-                bmcPeriphery.requestAddService.call(service, accounts[6]),
+                bmcManagement.addService.call(service, accounts[4]),
                 'BMCRevertAlreadyExistsBSH'
             );
         });
-    
-        it('Approve Service - Service existed - Failure', async () => {
+
+        it('Add Service - Without Permission - Failure', async () => {
             let service = 'Coin/WrappedCoin';
+            
             await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertAlreadyExistsBSH'
-            );
-        });
-    
-        it('Reject Service - Service existed - Failure', async () => {
-            let service = 'Coin/WrappedCoin';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, false),
-                'BMCRevertAlreadyExistsBSH'
-            );
-        });
-    
-    
-        it('Approve Service - Service request not existed - Failure', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertNotExistRequest'
-            );
-        });
-    
-        it('Reject Service - Service request not existed - Failure', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true),
-                'BMCRevertNotExistRequest'
-            );
-        });
-    
-        it('Approve Service - Without Permission - Failure', async () => {
-            let service = 'Token';
-            await bmcPeriphery.requestAddService(service, accounts[6]);
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, true, {from: accounts[1]}),
+                bmcManagement.addService.call(service, accounts[4], { from: accounts[6] }),
                 'BMCRevertUnauthorized'
             );
         });
-    
-        it('Reject Service - Without Permission - Failure', async () => {
-            let service = 'Token';
-            await truffleAssert.reverts(
-                bmcManagement.approveService.call(service, false, {from: accounts[1]}),
-                'BMCRevertUnauthorized'
-            );
-        });
-    
-        it('Approve Service - With Permission - Success', async () => {
-            let service = 'Token';
+
+        it('Add Service - Service contract address is invalid - Failure', async () => {
+            let service = 'Coin/WrappedCoin';
             
-            await bmcManagement.approveService(service, true);
-            let output = await bmcManagement.getServices();
-            assert(
-                output.length === 2,
-                output[1].svc === service,
-                output[1].addr === accounts[6]
-            );
-        });
-    
-        it('Reject Service - With Permission - Success', async () => {
-            let service = 'TokenA';
-    
-            await bmcPeriphery.requestAddService(service, accounts[6]);
-            await bmcManagement.approveService(service, false);
-            let output = await bmcManagement.getServices();
-            assert(
-                output.length === 2,
-                output[1].svc === service,
-                output[1].addr === accounts[6]
+            await truffleAssert.reverts(
+                bmcManagement.addService.call(service, '0x0000000000000000000000000000000000000000'),
+                'BMCRevertInvalidAddress'
             );
         });
     
@@ -174,8 +107,9 @@ contract('BMC tests', (accounts) => {
         });
     
         it('Remove Service - Service Existed and With Permission - Success', async () => {
-            let service1 = 'Token';
-            await bmcManagement.removeService(service1);
+            let service = 'Token';
+            await bmcManagement.addService(service, accounts[4]);
+            await bmcManagement.removeService(service);
             let output = await bmcManagement.getServices();
             assert(
                 output.length === 1,
@@ -692,7 +626,7 @@ contract('BMC tests', (accounts) => {
     describe('Handle relay message tests', () => {
         let bmcManagement, bmcPeriphery, bmv, bsh; 
         let network = '1234.iconee';
-        let link; 
+        let link = 'btp://1234.iconee/0x1234'; 
         let height = 0;
         let offset = 0;
         let lastHeight = 0;
@@ -707,11 +641,9 @@ contract('BMC tests', (accounts) => {
             await bmcManagement.setBMCPeriphery(bmcPeriphery.address);
             bmv = await MockBMV.new();
             bsh = await MockBSH.new();
-            await bmcPeriphery.requestAddService('Token', bsh.address);
-            await bmcManagement.approveService('Token', true);
+            await bmcManagement.addService('Token', bsh.address);
             await bmcManagement.addVerifier(network, bmv.address);
-            link = 'btp://1234.iconee/0x1234';
-            await bmcManagement.addLink(link); // txSeq += 1 due to link progagation
+            await bmcManagement.addLink(link);
             relays = [accounts[2], accounts[3], accounts[4], accounts[5]];
             await bmcManagement.addRelay(link, relays);
             await bmv.setStatus(height, offset, lastHeight);
@@ -783,67 +715,164 @@ contract('BMC tests', (accounts) => {
             assert.equal(bmcLink.rxSeq, 1, 'failed to update rxSeq');
             assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
         });
-    
-        it('should process LINK and UNLINK via btp messages', async() => {
-            const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
-            let eventMsg = [
-                'Link', 
-                [
-                    'btp://1234.iconee/0x1234',
-                    btpAddress,
-                ]
-            ];
-    
-            let btpMsg = rlp.encode([
-                'btp://1234.iconee/0x1234',
-                'btp://1234.pra/' + bmcPeriphery.address,
-                '_event',
+
+        it('should init link via BTP messages', async() => {
+            bmcManagement = await deployProxy(BMCManagement);
+            bmcPeriphery = await deployProxy(BMCPeriphery, ['1234.pra', bmcManagement.address]);
+            await bmcManagement.setBMCPeriphery(bmcPeriphery.address);
+            bmv = await MockBMV.new();
+            await bmcManagement.addVerifier(network, bmv.address);
+            
+            let tx = await bmcManagement.addLink(link);
+            let events = await bmcPeriphery.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+            assert.equal(events[0].event, 'Message');
+            
+            let eventData = events[0].returnValues;
+            assert.equal(eventData._next, link);
+            assert.equal(eventData._seq, 1);
+
+            const bmcBtpAddr = await bmcPeriphery.getBmcBtpAddress();
+
+            const encodedSendingBtpMsg = '0x' + rlp.encode([
+                bmcBtpAddr,
+                link,
+                'bmc',
                 '0x00',
-                rlp.encode(eventMsg)
+                rlp.encode([
+                    'Init',
+                    rlp.encode([
+                        []
+                    ])
+                ])
+            ]).toString('hex');
+            assert.equal(eventData._msg, encodedSendingBtpMsg);
+
+            const encodedReceivedBtpMsg = rlp.encode([
+                link,
+                bmcBtpAddr,
+                'bmc',
+                '0x00',
+                rlp.encode([
+                    'Init',
+                    rlp.encode([
+                        []
+                    ])
+                ])
+            ]);
+
+            let relayMsg = URLSafeBase64.encode(encodedReceivedBtpMsg);
+            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
+
+            await bmcManagement.addRelay(link, relays);
+            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[2]});
+
+            const linkInfo = await bmcManagement.getLink(link);
+            assert.isEmpty(linkInfo.reachable);
+        });
+
+        it('should process LINK and UNLINK via BTP messages', async() => {
+            const bmcBtpAddr = await bmcPeriphery.getBmcBtpAddress();
+
+            const encodedReceivedBtpMsg = rlp.encode([
+                link,
+                bmcBtpAddr,
+                'bmc',
+                '0x00',
+                rlp.encode([
+                    'Init',
+                    rlp.encode([
+                        []
+                    ])
+                ])
+            ]);
+
+            let relayMsg = URLSafeBase64.encode(encodedReceivedBtpMsg);
+            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
+
+            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+
+            const linkInfo = await bmcManagement.getLink(link);
+            assert.isEmpty(linkInfo.reachable);
+
+            const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
+    
+            relayMsg = rlp.encode([
+                link,
+                bmcBtpAddr,
+                'bmc',
+                '0x01',
+                rlp.encode([
+                    'Link', 
+                    rlp.encode([
+                        btpAddress,
+                    ])
+                ])
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
+            relayMsg = URLSafeBase64.encode(relayMsg);
             relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
     
-            let res = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
-            assert.isNotEmpty(res);
+            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[4]});
     
-            let bmcLink = await bmcManagement.getLink('btp://1234.iconee/0x1234');
+            let bmcLink = await bmcManagement.getLink(link);
             assert.equal(bmcLink.reachable[0], btpAddress, 'invalid reachable btp address');
-            assert.equal(bmcLink.rxSeq, 1, 'failed to update rxSeq');
+            assert.equal(bmcLink.rxSeq, 2, 'failed to update rxSeq');
             assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
     
-            eventMsg = [
-                'Unlink', 
-                [
+            relayMsg = rlp.encode([
+                link,
+                bmcBtpAddr,
+                'bmc',
+                '0x02',
+                rlp.encode([
+                    'Unlink', 
+                    rlp.encode([
+                        btpAddress,
+                    ])
+                ])
+            ]);
+    
+            relayMsg = URLSafeBase64.encode(relayMsg);
+            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
+    
+            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[5]});
+    
+            bmcLink = await bmcManagement.getLink(link);
+            assert.isEmpty(bmcLink.reachable, 'failed to remove link');
+            assert.equal(bmcLink.rxSeq, 3, 'failed to update rxSeq');
+            assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
+        });
+    
+        it('should revert if internal handler does not exist', async () => {
+            const btpAddress = 'btp://0x01.eth/' + web3.utils.randomHex(20);
+            let internalMsg = [
+                'Unknown', 
+                rlp.encode([
                     'btp://1234.iconee/0x1234',
                     btpAddress
-                ]
+                ])
             ];
     
             btpMsg = rlp.encode([
                 'btp://1234.iconee/0x1234',
                 'btp://1234.pra/' + bmcPeriphery.address,
-                '_event',
+                'bmc',
                 '0x01',
-                rlp.encode(eventMsg)
+                rlp.encode(internalMsg)
             ]);
     
-            relayMsg = URLSafeBase64.encode(btpMsg);
+            let relayMsg = URLSafeBase64.encode(btpMsg);
             relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
     
-            res = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[4]});
-            assert.isNotEmpty(res);
-    
-            bmcLink = await bmcManagement.getLink('btp://1234.iconee/0x1234');
-            assert.isUndefined(bmcLink.reachable[0], 'failed to unlink');   
-            assert.equal(bmcLink.rxSeq, 2, 'failed to update rxSeq');
-            assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
+            await truffleAssert.reverts(
+                bmcPeriphery.handleRelayMessage.call(link, relayMsg, {from: accounts[3]}),
+                'BMCRevert: not exists internal handler'
+            );
         });
-    
+
         it('should emit event if routes are failed to resolve', async() => {
             const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
-            let eventMsg = [
+            let internalMsg = [
                 0, // LINK,
                 [
                     'btp://1234.iconee/0x1234',
@@ -856,7 +885,7 @@ contract('BMC tests', (accounts) => {
                 'btp://1234.solana/' + bmcPeriphery.address,
                 '_event',
                 '0x02',
-                rlp.encode(eventMsg)
+                rlp.encode(internalMsg)
             ]);
     
             let relayMsg = URLSafeBase64.encode(btpMsg);
@@ -1065,7 +1094,7 @@ contract('BMC tests', (accounts) => {
                 'btp://1234.pra/' + bmcPeriphery.address,
                 'bmc',
                 '0x02',
-                'invalide rlp of service message'
+                'invalid rlp of service message'
             ]);
     
             let relayMsg = URLSafeBase64.encode(btpMsg);
@@ -1166,8 +1195,7 @@ contract('BMC tests', (accounts) => {
 
         it('should upgrade BMC Management', async() => {
             let bsh = await MockBSH.new();
-            await bmcPeriphery.requestAddService('Token', bsh.address);
-            await bmcManagement.approveService('Token', true);
+            await bmcManagement.addService('Token', bsh.address);
             let address = await bmcManagement.getBshServiceByName('Token');
             assert.equal(address, bsh.address);
 
@@ -1177,16 +1205,10 @@ contract('BMC tests', (accounts) => {
         });
 
         it('should upgrade BMC Periphery', async() => {
-            let bsh = await MockBSH.new();
-            await bmcPeriphery.requestAddService('Token', bsh.address);
-            let res = await bmcManagement.getPendingRequest();
-            assert.equal(res[0].serviceName, 'Token');
-            assert.equal(res[0].bsh, bsh.address);
-
             const upgradeBMCPeriphery = await upgradeProxy(bmcPeriphery.address, BMCPeripheryV2);
             await truffleAssert.reverts(
-                upgradeBMCPeriphery.requestAddService.call('RandomService', bsh.address),
-                'test upgradable for BMC Periphery'
+                upgradeBMCPeriphery.sendMessage.call('_to', '_svc', 0, '0x02'),
+                'Upgrade successfully'
             );    
         });
     });
