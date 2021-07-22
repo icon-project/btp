@@ -797,18 +797,34 @@ pub fn is_valid_btp_address(addr: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::MockedBlockchain;
+    use near_sdk::{testing_env, VMContext};
+    use std::convert::TryInto;
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .signer_account_id("bob_near".try_into().unwrap())
+            .is_view(is_view)
+            .build()
+    }
 
     #[test]
     fn test_that_is_valid_or_invalid_btp_address() {
+        let context = get_context(false);
+        testing_env!(context);
         let addr1 = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         assert!(is_valid_btp_address(addr1), "Invalid BTP address");
-        
+        let context = get_context(true);
+        testing_env!(context);
         let addr2 = "btp:near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         assert!(!is_valid_btp_address(addr2), "Valid address");
     }
 
     #[test]
     fn test_add_and_remove_owner() {
+        let context = get_context(true);
+        testing_env!(context);
         let owner = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
 
         let mut token_bsh = TokenBsh::default();

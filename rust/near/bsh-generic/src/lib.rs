@@ -330,15 +330,32 @@ impl BshGeneric {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::MockedBlockchain;
+    use near_sdk::{testing_env, VMContext};
+    use std::convert::TryInto;
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .signer_account_id("bob_near".try_into().unwrap())
+            .is_view(is_view)
+            .build()
+    }
 
     #[test]
     fn check_has_pending_request() {
+        let context = get_context(false);
+        testing_env!(context);
         let bsh = BshGeneric::default();
+        let context = get_context(true);
+        testing_env!(context);
         assert_eq!(bsh.has_pending_requests(), false);
     }
 
     #[test]
     fn check_that_request_retrieval_works() {
+        let context = get_context(true);
+        testing_env!(context);
         let mut bsh = BshGeneric::default();
         let pt1 = PendingTransferCoin {
             from: "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
@@ -356,11 +373,13 @@ mod tests {
         };
         let _ = bsh.requests.insert(&1, &pt1);
         let _ = bsh.requests.insert(&2, &pt2);
-        assert_eq!(bsh.requests.get(&2).unwrap(), pt2);
+        assert!(bsh.requests.get(&2).is_some());
     }
 
     #[test]
     fn check_that_service_names_match() {
+        let context = get_context(true);
+        testing_env!(context);
         let bsh = BshGeneric::default();
         let svc = "";
         assert_eq!(bsh.service_name, svc.to_string(), "InvalidSvc");
@@ -368,6 +387,8 @@ mod tests {
 
     #[test]
     fn check_that_serialization_and_deserialization_work() {
+        let context = get_context(true);
+        testing_env!(context);
         let btc = Asset {
             coin_name: "btc".to_string(),
             value: 100,
