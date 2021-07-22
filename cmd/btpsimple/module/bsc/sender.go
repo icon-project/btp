@@ -55,7 +55,7 @@ type sender struct {
 		ChainID  int64
 	}
 
-	bmc *binding.Bmc
+	bmc *binding.BMC
 
 	evtLogRawFilter struct {
 		addr      []byte
@@ -227,7 +227,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	if !ok {
 		return nil, fmt.Errorf("casting failure")
 	}
-	t, err := s.c.newTransactOpts(s.opt.ChainID)
+	t, err := s.c.newTransactOpts(s.w)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 }
 
 func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
-	var status binding.TypesLinkStats
+	var status binding.IBMCLinkStats
 	status, err := s.bmc.GetStatus(
 		&bind.CallOpts{From: HexToAddress(s.w.Address())}, s.src.String())
 
@@ -340,7 +340,7 @@ func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[st
 	}
 	s.c = NewClient(endpoint, l)
 
-	s.bmc, _ = binding.NewBmc(HexToAddress(s.dst.ContractAddress()), s.c.ethClient)
+	s.bmc, _ = binding.NewBMC(HexToAddress(s.dst.ContractAddress()), s.c.ethClient)
 
 	return s
 }
