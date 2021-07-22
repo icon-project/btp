@@ -61,7 +61,9 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         //noinspection ThrowableNotThrown
         AssertBTPException.assertBTPException(
                 new BTPException.BMV(relayMessage.getRevertCode(), relayMessage.getRevertMessage()),
-                () -> mockBMV.handleRelayMessage(bmc, prev, seq, relayMessage.toBase64String())
+                () -> ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+                        (txr)->{},
+                        bmc, prev, seq, relayMessage.toBase64String())
         );
     }
 
