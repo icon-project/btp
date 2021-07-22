@@ -302,7 +302,6 @@ impl TokenBsh {
     }
 
     /// Check validity of a coin name.
-    /// Call generic BSH contract to validate a requested coin name.
     pub fn is_valid_coin(&self, coin_name: &str) -> bool {
         self.coins
             .get(&coin_name.to_string())
@@ -800,15 +799,25 @@ mod tests {
     use super::*;
 
     #[test]
-fn test_add_owner() {
-    let owner = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
-    assert!(is_valid_btp_address(owner), "Invalid BTP address");
+    fn test_that_is_valid_or_invalid_btp_address() {
+        let addr1 = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
+        assert!(is_valid_btp_address(addr1), "Invalid BTP address");
+        
+        let addr2 = "btp:near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
+        assert!(!is_valid_btp_address(addr2), "Valid address");
+    }
 
-    let mut token_bsh = TokenBsh::default();
-    let init_owners = token_bsh.get_owners();
-    assert!(init_owners.is_empty());
-    token_bsh.add_owner(owner);
-    let new_owners = token_bsh.get_owners();
-    assert_eq!(new_owners.len(), 1);
-}
+    #[test]
+    fn test_add_and_remove_owner() {
+        let owner = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
+
+        let mut token_bsh = TokenBsh::default();
+        assert!(token_bsh.get_owners().is_empty());
+
+        token_bsh.add_owner(owner);
+        assert_eq!(token_bsh.get_owners().len(), 1);
+
+        token_bsh.remove_owner(owner);
+        assert!(token_bsh.get_owners().is_empty());
+    }
 }
