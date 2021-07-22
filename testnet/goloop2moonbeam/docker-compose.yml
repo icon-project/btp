@@ -1,0 +1,28 @@
+version: "3.4"
+services:
+    goloop:
+        build:
+            context: ./goloop
+        logging:
+                driver: none
+        environment:
+            - GOLOOP_NODE_DIR=/goloop/data/goloop
+            - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
+        volumes:
+            - ${PWD}/config:/goloop/config
+            - ${PWD}/data/goloop:/goloop/data
+        ports:
+            - 9080:9080
+    moonbase:
+        build:
+            context: ./moonbeam
+        logging:
+            driver: none
+        volumes:
+            - ${PWD}/data/moonbase_dev:/data/chains/moonbase_dev
+        ports:
+            - "9933:9933"
+            - "9944:9944"
+        command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
+        user: root
+    

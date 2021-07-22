@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+source server.sh
+ensure_config
+
+echo "Start deploying contract"
+
+source /goloop/venv/bin/activate
+exec "$@"

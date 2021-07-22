@@ -56,7 +56,7 @@ BUILD_TARGETS += btpsimple
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
 PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/pyscore
-PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop/pyscore
+PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop2goloop/pyscore
 
 $(PYSCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%,%,$@))
