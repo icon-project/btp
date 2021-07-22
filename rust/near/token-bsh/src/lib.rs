@@ -793,3 +793,22 @@ pub fn is_valid_btp_address(addr: &str) -> bool {
     let btp_addr = BTPAddress(addr.to_string());
     BTPAddress::is_valid(&btp_addr).expect("Failed to validate BTP address")
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+fn test_add_owner() {
+    let owner = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
+    assert!(is_valid_btp_address(owner), "Invalid BTP address");
+
+    let mut token_bsh = TokenBsh::default();
+    let init_owners = token_bsh.get_owners();
+    assert!(init_owners.is_empty());
+    token_bsh.add_owner(owner);
+    let new_owners = token_bsh.get_owners();
+    assert_eq!(new_owners.len(), 1);
+}
+}
