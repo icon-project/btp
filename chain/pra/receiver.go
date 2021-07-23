@@ -247,15 +247,17 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 		// only get ReceiptProof that has right Events
 		if len(rp.Events) > 0 {
-			key, proofs, err := r.getProofs(v)
+			key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 			if err != nil {
 				return nil, err
 			}
 
-			if rp.Proof, err = codec.RLP.MarshalToBytes(&StateProof{
-				Key:   key,
-				Value: proofs,
-			}); err != nil {
+			readProof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
+			if err != nil {
+				return nil, err
+			}
+
+			if rp.Proof, err = codec.RLP.MarshalToBytes(NewStateProof(key, &readProof)); err != nil {
 				return nil, err
 			}
 
@@ -263,29 +265,6 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 		}
 	}
 	return rps, nil
-}
-
-func (r *Receiver) getProofs(v *BlockNotification) (substrate.SubstrateStorageKey, [][]byte, error) {
-	key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	proof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	proofs := [][]byte{}
-	for _, p := range proof.Proof {
-		if bp, err := types.HexDecodeString(p); err != nil {
-			return nil, nil, err
-		} else {
-			proofs = append(proofs, bp)
-		}
-	}
-
-	return key, proofs, nil
 }
 
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
