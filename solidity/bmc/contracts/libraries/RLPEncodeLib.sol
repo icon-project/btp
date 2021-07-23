@@ -17,6 +17,14 @@ library RLPEncode {
     int48 constant MAX_INT48 = type(int48).max;
     int56 constant MAX_INT56 = type(int56).max;
 
+    uint8 internal constant MAX_UINT8 = type(uint8).max;
+    uint16 internal constant MAX_UINT16 = type(uint16).max;
+    uint24 internal constant MAX_UINT24 = type(uint24).max;
+    uint32 internal constant MAX_UINT32 = type(uint32).max;
+    uint40 internal constant MAX_UINT40 = type(uint40).max;
+    uint48 internal constant MAX_UINT48 = type(uint48).max;
+    uint56 internal constant MAX_UINT56 = type(uint56).max;
+
     /*
      * Internal functions
      */
@@ -92,7 +100,12 @@ library RLPEncode {
      * @return The RLP encoded uint in bytes.
      */
     function encodeUint(uint256 self) internal pure returns (bytes memory) {
-        return encodeBytes(toBinary(self));
+        uint nBytes = bitLength(self)/8 + 1;
+        bytes memory uintBytes = encodeUintByLength(self);
+        if (nBytes - uintBytes.length > 0) {
+            uintBytes = abi.encodePacked(bytes1(0), uintBytes);
+        }
+        return encodeBytes(uintBytes);
     }
 
     /**
@@ -330,5 +343,37 @@ library RLPEncode {
         }
 
         return tempBytes;
+    }
+
+    function encodeUintByLength(uint256 length)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        if (length < MAX_UINT8) {
+            return abi.encodePacked(uint8(length));
+        } else if (length >= MAX_UINT8 && length < MAX_UINT16) {
+            return abi.encodePacked(uint16(length));
+        } else if (length >= MAX_UINT16 && length < MAX_UINT24) {
+            return abi.encodePacked(uint24(length));
+        } else if (length >= MAX_UINT24 && length < MAX_UINT32) {
+            return abi.encodePacked(uint32(length));
+        } else if (length >= MAX_UINT32 && length < MAX_UINT40) {
+            return abi.encodePacked(uint40(length));
+        } else if (length >= MAX_UINT40 && length < MAX_UINT48) {
+            return abi.encodePacked(uint48(length));
+        } else if (length >= MAX_UINT48 && length < MAX_UINT56) {
+            return abi.encodePacked(uint56(length));
+        }
+        return abi.encodePacked(uint64(length));
+    }
+
+    function bitLength(uint256 n) internal pure returns (uint256) {
+        uint256 count;
+        while (n != 0) {
+            count += 1;
+            n >>= 1;
+        }
+        return count;
     }
 }
