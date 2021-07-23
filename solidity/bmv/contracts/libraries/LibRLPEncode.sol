@@ -12,6 +12,14 @@ library LibRLPEncode {
     uint8 public constant LIST_SHORT_START = 0xc0;
     uint8 public constant LIST_LONG_START = 0xf7;
 
+    uint8 internal constant MAX_UINT8 = type(uint8).max;
+    uint16 internal constant MAX_UINT16 = type(uint16).max;
+    uint24 internal constant MAX_UINT24 = type(uint24).max;
+    uint32 internal constant MAX_UINT32 = type(uint32).max;
+    uint40 internal constant MAX_UINT40 = type(uint40).max;
+    uint48 internal constant MAX_UINT48 = type(uint48).max;
+    uint56 internal constant MAX_UINT56 = type(uint56).max;
+
     /*
      * Internal functions
      */
@@ -55,7 +63,12 @@ library LibRLPEncode {
      * @return The RLP encoded uint in bytes.
      */
     function encodeUint(uint256 self) internal pure returns (bytes memory) {
-        return encodeBytes(toBinary(self));
+        uint nBytes = bitLength(self)/8 + 1;
+        bytes memory uintBytes = encodeUintByLength(self);
+        if (nBytes - uintBytes.length > 0) {
+            uintBytes = abi.encodePacked(bytes1(0), uintBytes);
+        }
+        return encodeBytes(uintBytes);
     }
 
     /**
@@ -292,28 +305,30 @@ library LibRLPEncode {
         pure
         returns (bytes memory)
     {
-        if (length <= 255) {
-            //  return 0x00 - 0xFF
+        if (length < MAX_UINT8) {
             return abi.encodePacked(uint8(length));
-        } else if (length > 255 && length <= 65535) {
-            //  return 0x0100 - 0xFFFF
+        } else if (length >= MAX_UINT8 && length < MAX_UINT16) {
             return abi.encodePacked(uint16(length));
-        } else if (length > 65535 && length <= 16777215) {
-            //  return 0x010000 - 0xFFFFFF
+        } else if (length >= MAX_UINT16 && length < MAX_UINT24) {
             return abi.encodePacked(uint24(length));
-        } else if (length > 16777215 && length <= 4294967295) {
-            //  return 0x01000000 - 0xFFFFFFFF
+        } else if (length >= MAX_UINT24 && length < MAX_UINT32) {
             return abi.encodePacked(uint32(length));
-        } else if (length > 4294967295 && length <= 1099511627775) {
-            //  return 0x0100000000 - 0xFFFFFFFFFF
+        } else if (length >= MAX_UINT32 && length < MAX_UINT40) {
             return abi.encodePacked(uint40(length));
-        } else if (length > 1099511627775 && length <= 281474976710655) {
-            //  return 0x010000000000 - 0xFFFFFFFFFFFF
+        } else if (length >= MAX_UINT40 && length < MAX_UINT48) {
             return abi.encodePacked(uint48(length));
-        } else if (length > 281474976710655 && length <= 72057594037927935) {
-            //  return 0x01000000000000 - 0xFFFFFFFFFFFFFF
+        } else if (length >= MAX_UINT48 && length < MAX_UINT56) {
             return abi.encodePacked(uint56(length));
         }
         return abi.encodePacked(uint64(length));
+    }
+
+    function bitLength(uint256 n) internal pure returns (uint256) {
+        uint256 count;
+        while (n != 0) {
+            count += 1;
+            n >>= 1;
+        }
+        return count;
     }
 }

@@ -396,7 +396,7 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         if (length > 55 && !isLongList) {
-            bytes memory payLoadSize = encodeUintByLength(length);
+            bytes memory payLoadSize = RLPEncode.encodeUintByLength(length);
             return
                 abi.encodePacked(
                     addLength(payLoadSize.length, true),
@@ -409,7 +409,7 @@ library RLPEncodeStruct {
     }
 
     function emptyListHeadStart() internal pure returns (bytes memory) {
-        bytes memory payLoadSize = encodeUintByLength(0);
+        bytes memory payLoadSize = RLPEncode.encodeUintByLength(0);
         return
             abi.encodePacked(
                 abi.encodePacked(uint8(LIST_LONG_START + payLoadSize.length)),
@@ -419,37 +419,5 @@ library RLPEncodeStruct {
 
     function emptyListShortStart() internal pure returns (bytes memory) {
         return abi.encodePacked(LIST_SHORT_START);
-    }
-
-    //  return length in bytes format
-    //  i.e. 81 = 0x51, 512 = 0x0200
-    function encodeUintByLength(uint256 length)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (length <= 255) {
-            //  return 0x00 - 0xFF
-            return abi.encodePacked(uint8(length));
-        } else if (length > 255 && length <= 65535) {
-            //  return 0x0100 - 0xFFFF
-            return abi.encodePacked(uint16(length));
-        } else if (length > 65535 && length <= 16777215) {
-            //  return 0x010000 - 0xFFFFFF
-            return abi.encodePacked(uint24(length));
-        } else if (length > 16777215 && length <= 4294967295) {
-            //  return 0x01000000 - 0xFFFFFFFF
-            return abi.encodePacked(uint32(length));
-        } else if (length > 4294967295 && length <= 1099511627775) {
-            //  return 0x0100000000 - 0xFFFFFFFFFF
-            return abi.encodePacked(uint40(length));
-        } else if (length > 1099511627775 && length <= 281474976710655) {
-            //  return 0x010000000000 - 0xFFFFFFFFFFFF
-            return abi.encodePacked(uint48(length));
-        } else if (length > 281474976710655 && length <= 72057594037927935) {
-            //  return 0x01000000000000 - 0xFFFFFFFFFFFFFF
-            return abi.encodePacked(uint56(length));
-        }
-        return abi.encodePacked(uint64(length));
     }
 }
