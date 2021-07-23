@@ -19,6 +19,14 @@
     pip install virtualenv setuptools wheel
     ```
 
+### SOLIDITY
+
+* Node.js v14.0.0, Yarn v1.22.0, Truffle v5.3.0
+
+  **Mac OSX**
+    ```
+    npm install --global yarn truffle@5.3.0
+    ```
 ## Environment
 
 ### Source checkout

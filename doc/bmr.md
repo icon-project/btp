@@ -20,13 +20,13 @@
 
 If you already installed docker and docker-compose and want to take a quick view.   
 Just run:
-```
+```bash
 make run-docker
 ```
 
 In docker environment, We have issolated a simple case of relaying between 2 relayers.
 After starting docker successfully. Now you can make a test by simply run this command:
-```
+```bash
 make run-test-scenario
 ```
 
@@ -42,12 +42,12 @@ make run-test-scenario
 * To get BMCStatusLink, to getStatus get offset and check relays list contains address of relay keystore
   1. dst chain is goloop/gochain: please run multiple instructions as below
     ```bash
-      goloop rpc --uri http://goloop:9080/api/v3/icon \
+      $ goloop rpc --uri http://goloop:9080/api/v3/icon \
           call --to $JAVA_SCORE_BMC_ADDRESS \
           --method getStatus \
           --param _link=$BTPSIMPLE_SRC_ADDRESS
       # Example
-      goloop rpc --uri http://goloop:9080/api/v3/icon \
+      $ goloop rpc --uri http://goloop:9080/api/v3/icon \
         call --to cx8eb24849a7ceb16b8fa537f5a8b378c6af4a0247 \
         --method getStatus \
         --param _link=btp://0x501.pra/0x5b5B619E6A040EBCB620155E0aAAe89AfA45D090
@@ -162,7 +162,7 @@ make run-test-scenario
   ```bash
     # Check btpsimple available
     ls bin
-    btpsimple
+    # btpsimple result show here
     
     # Set btpsimple in path
     export PATH="$PATH:${PWD}/bin"
@@ -180,8 +180,8 @@ make run-test-scenario
     ./entrypoint.sh
   ```
 * To run a btpsimple
-  ```
-    bin/btpsimple start --config path/to/config/dst.config.json
+  ```bash
+  bin/btpsimple start --config path/to/config/dst.config.json
   ```
 ## Management
 * [btpsimple command line](btpsimple_cli.md)
