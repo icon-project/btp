@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -ex
 
 
 if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then
@@ -11,7 +11,7 @@ if [ "$BTPSIMPLE_CONFIG" != "" ] && [ ! -f "$BTPSIMPLE_CONFIG" ]; then
     CMD="btpsimple save $BTPSIMPLE_CONFIG"
     if [ "$BTPSIMPLE_KEY_SECRET" != "" ] && [ ! -f "$BTPSIMPLE_KEY_SECRET" ]; then
         mkdir -p $(dirname $BTPSIMPLE_KEY_SECRET)
-        echo -n $(date|md5sum|head -c16) > $BTPSIMPLE_KEY_SECRET
+        printf $(date|md5sum|head -c16) > $BTPSIMPLE_KEY_SECRET
     fi
     if [ "$BTPSIMPLE_KEY_STORE" != "" ] && [ ! -f "$BTPSIMPLE_KEY_STORE" ]; then
         UNSET="$UNSET BTPSIMPLE_KEY_STORE"

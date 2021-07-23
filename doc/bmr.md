@@ -160,9 +160,8 @@ make run-test-scenario
 
 * To create a configuration file
   ```bash
-    # Check btpsimple available
-    ls bin
-    # btpsimple result show here
+    # Make sure btpsimple executable exist
+    make btpsimple
     
     # Set btpsimple in path
     export PATH="$PATH:${PWD}/bin"
@@ -177,6 +176,7 @@ make run-test-scenario
     BTPSIMPLE_OFFSET=3562 \
     BTPSIMPLE_KEY_STORE=path/to/config/dst.ks.json \
     BTPSIMPLE_KEY_SECRET=path/to/config/dst.secret \
+    BTPSIMPLE_LOG_WRITER_FILENAME=path/to/config/log/dst.log \
     ./entrypoint.sh
   ```
 * To run a btpsimple
