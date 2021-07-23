@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+set -e
 
 
 if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then
