@@ -9,7 +9,8 @@
 ## Integrated blockchain
 * [ICON](icon.md)
 * [ICON Enterprise Edition](iconee.md)
-* [Moonriver](moonriver.md)
+* [Polkadot Parachain With Frontier Support](frontier.md)
+  * Moonriver
 
 ## General
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
@@ -165,8 +166,6 @@ make run-test-scenario
     
     # Set btpsimple in path
     export PATH="$PATH:${PWD}/bin"
-    # Make entrypoint executable
-    chmod +x ./entrypoint.sh
 
     BTPSIMPLE_CONFIG=path/to/config/dst.config.json \
     BTPSIMPLE_SRC_ADDRESS=btp://0x3.icon/cx8eb24849a7ceb16b8fa537f5a8b378c6af4a0247 \
@@ -186,3 +185,6 @@ make run-test-scenario
 ## Management
 * [btpsimple command line](btpsimple_cli.md)
 {"mode":"full","isActive":false}
+
+## Testing
+
