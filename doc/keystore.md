@@ -36,7 +36,7 @@
     Address: # CLI will generate $YOUR_ACCOUNT_ADDRESS 
 
     # coinType requires by BTP project
-    cat keystore.json | jq '. += {"coinType":"evm"}'
+    cat <<< $(jq '. += {"coinType":"evm"}' keystore.json) > keystore.json
     ```
 
 * import existing privite key
