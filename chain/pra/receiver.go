@@ -6,19 +6,27 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/kusama"
 	"github.com/icon-project/btp/chain/pra/moonriver"
+	"github.com/icon-project/btp/chain/pra/relaychain"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
 
 type ReceiverOptions struct {
-	RelayEndpoint chain.BtpAddress `json:"relay_endpoint"`
+	RelayEndpoint  chain.BtpAddress `json:"relay_endpoint"`
+	ParaChainId    uint             `json:"prachain_id"`
+	IconEndpoint   string           `json:"icon_endpoint"`
+	IconBmvAddress string           `json:"icon_bmv_address"`
 }
 
 type Receiver struct {
 	c                           *Client
+	rC                          substrate.SubstrateClient
+	iC                          *icon.Client
 	src                         chain.BtpAddress
 	dst                         chain.BtpAddress
 	l                           log.Logger
@@ -41,41 +49,145 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
+	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
+		r.rC, err = substrate.NewSubstrateClient(string(r.opt.RelayEndpoint))
+		if err != nil {
+			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
+		}
+
+		r.iC = icon.NewClient(r.opt.IconEndpoint, l)
+		if err != nil {
+			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
+		}
+	}
 	return r
 }
 
-func (r *Receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
+func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
+	var err error
+	bu := &chain.BlockUpdate{
+		Height:    int64(v.Height),
+		BlockHash: v.Hash[:],
+	}
+
+	var update BlockUpdate
+	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
+		return nil, err
+	}
+
 	if len(r.opt.RelayEndpoint) > 0 {
-		// Real use
-		bu := &chain.BlockUpdate{
-			Height:    int64(v.Height),
-			BlockHash: v.Hash[:],
-		}
-
-		return bu, nil
-	} else {
-		// For local testing without relay chain
-		var err error
-		bu := &chain.BlockUpdate{
-			Height:    int64(v.Height),
-			BlockHash: v.Hash[:],
-		}
-
-		var update BlockUpdate
-		if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
-			return nil, err
-		}
-
-		update.FinalityProof = nil
-
-		bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+		update.FinalityProof, err = r.newFinalityProof(v)
 		if err != nil {
 			return nil, err
 		}
-
-		bu.Header = update.ScaleEncodedBlockHeader
-		return bu, nil
+	} else {
+		// For local testing without relay chain
+		update.FinalityProof = nil
 	}
+
+	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
+	if err != nil {
+		return nil, err
+	}
+
+	bu.Header = update.ScaleEncodedBlockHeader
+	return bu, nil
+}
+
+func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
+	var err error
+	vd, err := r.c.subClient.GetValidationData(v.Hash)
+	if err != nil {
+		return nil, err
+	}
+
+	bus, rps, err := r.pullBlockUpdatesAndStateProofs(vd)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &RelayMessage{
+		BlockUpdates:  bus,
+		ReceiptProofs: rps,
+	}
+
+	rmb, err := codec.RLP.MarshalToBytes(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return rmb, err
+}
+
+// func (r *Receiver) getRelayMtaLastHeight() int64 {
+// 	p := &icon.CallParam{
+// 		ToAddress: icon.Address(r.opt.IconBmvAddress),
+// 		DataType:  "call",
+// 		Data: icon.CallData{
+// 			Method: "relayMtaHeight",
+// 		},
+// 	}
+
+// 	var height *icon.HexInt
+// 	err := r.iC.Call(p, height)
+// 	if err != nil {
+// 		r.l.Panicf("getRelayMtaLastHeight: failed")
+// 	}
+
+// 	value, err := height.Value()
+// 	if err != nil {
+// 		r.l.Panicf("getRelayMtaLastHeight: failed")
+// 	}
+
+// 	return value
+// }
+
+func (r *Receiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData) ([][]byte, [][]byte, error) {
+	bus := make([][]byte, 0)
+	sps := make([][]byte, 0)
+
+	foundEvent := false
+	from := uint64(vd.RelayParentNumber + 1)
+	for !foundEvent {
+		bh, err := r.rC.GetBlockHash(from)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		foundEvent = true
+	}
+
+	return bus, sps, nil
+}
+
+func (r *Receiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, []relaychain.EventParasInclusionCandidateIncluded, error) {
+	meta, err := r.rC.GetMetadata(blockHash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, err := r.rC.CreateStorageKey(meta, "System", "Events", nil, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sdr, err := r.rC.GetStorageRaw(key, blockHash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Build relay adapter here
+	records := &kusama.KusamaEventRecord{}
+	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+		return nil, nil, err
+	}
+
+	return records.Grandpa_NewAuthorities, records.ParasInclusion_CandidateIncluded, nil
 }
 
 func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog, error) {
@@ -187,7 +299,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		var err error
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
-		if bu, err = r.newBlockUpdate(v); err != nil {
+		if bu, err = r.newParaBlockUpdate(v); err != nil {
 			return err
 		}
 

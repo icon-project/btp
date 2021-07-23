@@ -86,3 +86,25 @@ func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof,
 
 	return fp, err
 }
+
+func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error) {
+	meta, err := c.GetMetadata(blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := types.CreateStorageKey(meta, "ParachainSystem", "ValidationData", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	pvd := &PersistedValidationData{}
+	err = types.DecodeFromBytes(*storageRaw, pvd)
+
+	return pvd, err
+}

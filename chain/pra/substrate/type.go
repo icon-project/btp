@@ -54,6 +54,13 @@ type FinalityProof struct {
 	UnknownHeaders []types.Header
 }
 
+type PersistedValidationData struct {
+	ParentHead              types.Bytes
+	RelayParentNumber       types.U32
+	RelayParentStorageRoots types.Hash
+	MaxPovSize              types.U32
+}
+
 type SubstrateClient interface {
 	Call(result interface{}, method string, args ...interface{}) error
 	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
@@ -66,4 +73,5 @@ type SubstrateClient interface {
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
 	GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error)
+	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
 }

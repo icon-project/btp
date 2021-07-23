@@ -2,6 +2,7 @@ package kusama
 
 import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/icon-project/btp/chain/pra/relaychain"
 )
 
 type EventSocietyMemberSuspended = types.EventSocietyMemberSuspended
@@ -95,6 +96,7 @@ type EventMultisigNewMultisig = types.EventMultisigNewMultisig
 // type EventXcmPalletSent = types.EventXcmPalletSent
 
 type KusamaEventRecord struct {
+	relaychain.RelayChainEventRecord
 	Society_MemberSuspended []EventSocietyMemberSuspended
 	Society_Challenged      []EventSocietyChallenged
 	Society_Vote            []EventSocietyVote
@@ -142,9 +144,6 @@ type KusamaEventRecord struct {
 	// 	Gilt_BidRetracted                               []EventGiltBidRetracted
 	// 	Gilt_GiltIssued                                 []EventGiltGiltIssued
 	// 	Gilt_GiltThawed                                 []EventGiltGiltThawed
-	// 	ParasInclusion_CandidateBacked                  []EventParasInclusionCandidateBacked
-	// 	ParasInclusion_CandidateIncluded                []EventParasInclusionCandidateIncluded
-	// 	ParasInclusion_CandidateTimedOut                []EventParasInclusionCandidateTimedOut
 	// 	Paras_CurrentCodeUpdated                        []EventParasCurrentCodeUpdated
 	// 	Paras_CurrentHeadUpdated                        []EventParasCurrentHeadUpdated
 	// 	Paras_CodeUpgradeScheduled                      []EventParasCodeUpgradeScheduled

@@ -256,3 +256,26 @@ func (_m *MockSubstrateClient) GetStorageRaw(key types.StorageKey, blockHash typ
 
 	return r0, r1
 }
+
+// GetValidationData provides a mock function with given fields: blockHash
+func (_m *MockSubstrateClient) GetValidationData(blockHash types.Hash) (*PersistedValidationData, error) {
+	ret := _m.Called(blockHash)
+
+	var r0 *PersistedValidationData
+	if rf, ok := ret.Get(0).(func(types.Hash) *PersistedValidationData); ok {
+		r0 = rf(blockHash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*PersistedValidationData)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
+		r1 = rf(blockHash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
