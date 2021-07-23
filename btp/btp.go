@@ -229,6 +229,15 @@ func (b *BTP) relayLoop() {
 	}()
 }
 
+func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
+	hasWait := rm.HasWait()
+	skippable := b.skippable(rm)
+	relayable := b.relayble(rm)
+
+	b.log.Debugf("canRelay rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
+	return !(hasWait || (!skippable && !relayable))
+}
+
 // relay relays messages are in the buffered rms
 func (b *BTP) relay() {
 	b.rmsMutex.Lock()
@@ -239,13 +248,7 @@ func (b *BTP) relay() {
 	}
 
 	for _, rm := range b.rms {
-		hasWait := rm.HasWait()
-		skippable := b.skippable(rm)
-		relayable := b.relayble(rm)
-
-		b.log.Debugf("Relay rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
-
-		if hasWait || (!skippable && !relayable) {
+		if !b.canRelay(rm) {
 			break
 		} else {
 			b.logRelaying("before segment", rm, nil, -1)
