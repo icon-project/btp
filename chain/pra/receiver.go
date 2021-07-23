@@ -106,8 +106,15 @@ func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
 		return nil, err
 	}
 
+	// TODO fetch relay mta height from icon client
+	bp, err := codec.RLP.MarshalToBytes(nil)
+	if err != nil {
+		return nil, err
+	}
+
 	msg := &RelayMessage{
 		BlockUpdates:  bus,
+		BlockProof:    bp,
 		ReceiptProofs: rps,
 	}
 
