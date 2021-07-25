@@ -343,19 +343,15 @@ mod tests {
     }
 
     #[test]
-    fn check_has_pending_request() {
-        let context = get_context(false);
-        testing_env!(context);
+    fn test_has_pending_request() {
+        testing_env!(get_context(true));
         let bsh = BshGeneric::default();
-        let context = get_context(true);
-        testing_env!(context);
         assert_eq!(bsh.has_pending_requests(), false);
     }
 
     #[test]
-    fn check_that_request_retrieval_works() {
-        let context = get_context(true);
-        testing_env!(context);
+    fn test_that_request_retrieval_works() {
+        testing_env!(get_context(false));
         let mut bsh = BshGeneric::default();
         let pt1 = PendingTransferCoin {
             from: "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
@@ -377,18 +373,16 @@ mod tests {
     }
 
     #[test]
-    fn check_that_service_names_match() {
-        let context = get_context(true);
-        testing_env!(context);
+    fn test_that_service_names_match() {
+        testing_env!(get_context(true));
         let bsh = BshGeneric::default();
         let svc = "";
         assert_eq!(bsh.service_name, svc.to_string(), "InvalidSvc");
     }
 
     #[test]
-    fn check_that_serialization_and_deserialization_work() {
-        let context = get_context(true);
-        testing_env!(context);
+    fn test_that_serialization_and_deserialization_work() {
+        testing_env!(get_context(true));
         let btc = Asset {
             coin_name: "btc".to_string(),
             value: 100,

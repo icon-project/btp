@@ -282,7 +282,7 @@ impl TokenBsh {
             "TokenExists"
         );
         let name_bytes = env::keccak256(name.as_bytes());
-        let id = u64::try_from_slice(name_bytes.as_slice()).expect("Error in conversion");
+        let id = u64::deserialize(&mut name_bytes.as_slice()).expect("Error in conversion");
         let _ = self.coins.insert(&name.to_string(), &id);
         self.coin_names.push(name.to_string());
     }
@@ -790,7 +790,7 @@ impl TokenBsh {
 /// Helper for checking validity of BTP addresses
 pub fn is_valid_btp_address(addr: &str) -> bool {
     let btp_addr = BTPAddress(addr.to_string());
-    BTPAddress::is_valid(&btp_addr).expect("Failed to validate BTP address")
+    btp_addr.is_valid().expect("Failed to validate BTP address")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -798,9 +798,8 @@ pub fn is_valid_btp_address(addr: &str) -> bool {
 mod tests {
     use super::*;
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::MockedBlockchain;
-    use near_sdk::{testing_env, VMContext};
-    use std::convert::TryInto;
+    use near_sdk::{testing_env, MockedBlockchain, VMContext};
+    use std::convert::{TryFrom, TryInto};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
@@ -810,30 +809,51 @@ mod tests {
     }
 
     #[test]
-    fn test_that_is_valid_or_invalid_btp_address() {
-        let context = get_context(false);
-        testing_env!(context);
-        let addr1 = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
-        assert!(is_valid_btp_address(addr1), "Invalid BTP address");
-        let context = get_context(true);
-        testing_env!(context);
-        let addr2 = "btp:near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
-        assert!(!is_valid_btp_address(addr2), "Valid address");
+    fn test_that_is_valid_btp_address() {
+        testing_env!(get_context(false));
+        assert!(is_valid_btp_address(
+            "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b"
+        ));
     }
 
     #[test]
-    fn test_add_and_remove_owner() {
-        let context = get_context(true);
-        testing_env!(context);
-        let owner = "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
-
+    fn test_get_owners() {
+        testing_env!(get_context(false));
         let mut token_bsh = TokenBsh::default();
-        assert!(token_bsh.get_owners().is_empty());
-
-        token_bsh.add_owner(owner);
+        assert!(token_bsh.list_of_owners.is_empty());
+        token_bsh
+            .list_of_owners
+            .push("btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         assert_eq!(token_bsh.get_owners().len(), 1);
+    }
 
-        token_bsh.remove_owner(owner);
-        assert!(token_bsh.get_owners().is_empty());
+    #[test]
+    fn test_register() {
+        testing_env!(get_context(false));
+        let mut token_bsh = TokenBsh::default();
+        assert!(token_bsh.coin_names.is_empty());
+        assert!(token_bsh.coins.is_empty());
+
+        let coin_name = "kobby";
+        token_bsh.coin_names.push(coin_name.to_string());
+        assert_eq!(&token_bsh.coin_names[0], "kobby");
+
+        let coin_name_bytes = env::keccak256(coin_name.as_bytes());
+        let id = u64::deserialize(&mut coin_name_bytes.as_slice()).expect("Err");
+        let _ = token_bsh.coins.insert(&coin_name.to_string(), &id);
+    }
+
+    #[test]
+    fn test_seserialize_and_deserialize_token_bsh() {
+        testing_env!(get_context(false));
+        let token_bsh = TokenBsh::default();
+        let coded_bsh = token_bsh
+            .try_to_vec()
+            .expect("Failed to serialize bsh event");
+        let decoded_bsh = TokenBsh::deserialize(&mut coded_bsh.as_slice()).expect("Err");
+        assert_eq!(
+            token_bsh.fee_numerator, decoded_bsh.fee_numerator,
+            "Data mismatch"
+        );
     }
 }
