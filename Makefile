@@ -55,7 +55,11 @@ BUILD_TARGETS += btpsimple
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
-PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/pyscore
+CONTRACT_DIST_DIR=$(BUILD_ROOT)/build/contracts
+PYSCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/pyscore
+JAVASCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/javascore
+SOLIDITY_DIST_DIR=$(CONTRACT_DIST_DIR)/solidity
+
 PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop2goloop/pyscore
 
 $(PYSCORE_DIST_DIR)/%:
@@ -81,11 +85,11 @@ dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
     zip -r -v $(PYSCORE_DIST_DIR)/irc2_token.zip * -x *__pycache__* -x *tests*
 
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
+dist-java: 
+	sh ./scripts/build_javascore.sh 
 
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*
-
-SOLIDITY_DIST_DIR = $(BUILD_ROOT)/build/solidity
 
 $(SOLIDITY_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(SOLIDITY_DIST_DIR)/%,%,$@))
@@ -126,7 +130,7 @@ btpsimple-image: btpsimple-linux dist-py
 	BIN_DIR=$(abspath $(LINUX_BIN_DIR)) \
 	BIN_VERSION=$(GL_VERSION) \
 	BUILD_TAGS="$(GOBUILD_TAGS)" \
-	DIST_DIR="$(PYSCORE_DIST_DIR)" \
+	DIST_DIR="$(CONTRACT_DIST_DIR)" \
 	$(BUILD_ROOT)/docker/btpsimple/build.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
 
 .PHONY: test
