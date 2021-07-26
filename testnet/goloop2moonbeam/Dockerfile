@@ -15,6 +15,7 @@ COPY --from=goloop /goloop/bin /goloop/bin
 ENV PATH $PATH:/goloop/bin
 RUN goloop version
 
+ADD helper /btpsimple/helper
 ADD scripts /btpsimple/scripts
 RUN chmod u+x /btpsimple/scripts/*.sh
 ENV PATH $PATH:/btpsimple/scripts

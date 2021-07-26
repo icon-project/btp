@@ -49,3 +49,5 @@ services:
             - ${PWD}/config:/btpsimple/config
         environment: 
             - GOLOOPCHAIN=gochain
+            - RELAY_ENDPOINT=wss://kusama-rpc.polkadot.io
+            - PARA_ENDPOINT=ws://moonbase:9944

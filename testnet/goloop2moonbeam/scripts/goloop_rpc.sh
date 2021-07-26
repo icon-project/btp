@@ -10,7 +10,7 @@ rpcch() {
   export GOLOOP_RPC_KEY_STORE=$CONFIG_DIR/$GOLOOPCHAIN.keystore.json
   export GOLOOP_RPC_KEY_SECRET=$CONFIG_DIR/$GOLOOPCHAIN.keysecret
   export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat nid.icon)}
-  export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-1}
+  export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-13610920001}
 }
 
 ensure_txresult() {

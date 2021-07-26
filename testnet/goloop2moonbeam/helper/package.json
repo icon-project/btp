@@ -1,0 +1,16 @@
+{
+  "name": "helper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@polkadot/api": "^4.17.1",
+    "rlp": "^2.2.6",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5",
+    "urlsafe-base64": "^1.0.0"
+  },
+  "scripts": {
+    "getMetaData": "yarn ts-node getMetaData.ts",
+    "getBMVInitializeParams": "yarn ts-node getBMVInitializeParams.ts"
+  }
+}
