@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+GOCHAIN_CONFIG_DIR=$(dirname ${GOCHAIN_CONFIG})
+if [ "${GOCHAIN_PROVISION_CONFIG}" != "" ] && [ "${GOCHAIN_PROVISION_CONFIG}" != "${GOCHAIN_CONFIG_DIR}" ]; then
+  echo "Provisioning config ${GOCHAIN_PROVISION_CONFIG} to ${GOCHAIN_CONFIG_DIR}"
+  mkdir -p ${GOCHAIN_CONFIG_DIR}
+  cp -u -r ${GOCHAIN_PROVISION_CONFIG}/* ${GOCHAIN_CONFIG_DIR}/
+fi
+
+exec "$@"

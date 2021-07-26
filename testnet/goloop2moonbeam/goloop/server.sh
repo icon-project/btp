@@ -3,10 +3,10 @@
 source keystore.sh
 
 ensure_config() {
-  local CONFIG=${1:-${GOLOOP_CONFIG:-/goloop/config/server.json}}
+  local CONFIG=${1:-${GOLOOP_CONFIG:-/goloop/config/goloop.server.json}}
   if [ ! -f "${CONFIG}" ]; then
-    export GOLOOP_KEY_SECRET=$(ensure_key_secret ${GOLOOP_KEY_SECRET:-/goloop/config/keysecret})
-    export GOLOOP_KEY_STORE=$(ensure_key_store ${GOLOOP_KEY_STORE:-/goloop/config/keystore.json} ${GOLOOP_KEY_SECRET})
+    export GOLOOP_KEY_SECRET=$(ensure_key_secret ${GOLOOP_KEY_SECRET:-/goloop/config/goloop.keysecret})
+    export GOLOOP_KEY_STORE=$(ensure_key_store ${GOLOOP_KEY_STORE:-/goloop/config/goloop.keystore.json} ${GOLOOP_KEY_SECRET})
     if [ "$GOLOOP_CONFIG" != "" ]; then
       OLD_GOLOOP_CONFIG=$GOLOOP_CONFIG
       unset GOLOOP_CONFIG

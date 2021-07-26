@@ -5,30 +5,48 @@ services:
     #         context: ./goloop
     #     logging:
     #             driver: none
-    #     environment:
-    #         - GOLOOP_NODE_DIR=/goloop/data/goloop
-    #         - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
     #     volumes:
     #         - ${PWD}/config:/goloop/config
-    #         - ${PWD}/data/goloop:/goloop/data
+    #         - ${PWD}/data/gochain:/goloop/data
     #     ports:
     #         - 9080:9080
-
-    # moonbase:
-    #     build:
-    #         context: ./moonbeam
-    #     logging:
-    #         driver: none
-    #     volumes:
-    #         - ${PWD}/data/moonbase_dev:/data/chains/moonbase_dev
-    #     ports:
-    #         - "9933:9933"
-    #         - "9944:9944"
-    #     command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
-    #     user: root
-
+    gochain:
+        build:
+            context: ./gochain
+        logging:
+                driver: none
+        volumes:
+            - ${PWD}/config:/gochain/config
+            - ${PWD}/data/gochain:/gochain/data
+        ports:
+            - 9080:9080
+    moonbase:
+        image: purestake/moonbeam:v0.9.6
+        logging:
+            driver: none
+        volumes:
+            - ${PWD}/data/moonbase_dev:/data/chains/moonbase_dev
+        ports:
+            - "9933:9933"
+            - "9944:9944"
+        command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
+        user: root
     btp:
         build:
             context: .
-        logging:
-            driver: none
+        depends_on: 
+            - moonbase
+            - gochain
+        entrypoint: 
+            - "/btpsimple/scripts/wait_for_it.sh"
+            - "gochain:9080"
+            - --
+            - "/btpsimple/scripts/wait_for_it.sh"
+            - "moonbase:9933"
+            - --
+            - "/entrypoint.sh"
+        volumes: 
+            - ./scripts/deploy_javascore.sh:/btpsimple/scripts/deploy_javascore.sh
+            - ${PWD}/config:/btpsimple/config
+        environment: 
+            - GOLOOPCHAIN=gochain
