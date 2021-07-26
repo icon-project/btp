@@ -55,7 +55,8 @@ prepare_javascore_bmv() {
 }
 
 deploy_javascore_bmv() {
-    prepare_javascore_bmv    
+    prepare_javascore_bmv
+
     cd $CONFIG_DIR
     tmp=$(cat BMVInitializeData.json)
     relayMtaOffset=$(echo "$tmp" | jq -r .relayMtaOffset)
@@ -64,7 +65,7 @@ deploy_javascore_bmv() {
     paraLastBlockHash=$(echo "$tmp" | jq -r .paraLastBlockHash)
     encodedValidators=$(echo "$tmp" | jq -r .encodedValidators)
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
-    paraChainId=$(echo "$tmp" | jq -r .paraChainId)
+    # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \
         --content_type application/java \
@@ -81,11 +82,8 @@ deploy_javascore_bmv() {
         --param relayEventDecoderAddress=$(cat kusamaDecoder.icon) \
         --param paraEventDecoderAddress=$(cat moonriverDecoder.icon) \
         --param relayCurrentSetId=$relayCurrentSetId \
-        --param paraChainId=$paraChainId \
+        --param paraChainId=0x0 \
         | jq -r . > tx.bmv.icon
 
     extract_scoreAddress tx.bmv.icon bmv.icon
 }
-
-deploy_javascore_bmc
-deploy_javascore_bmv
