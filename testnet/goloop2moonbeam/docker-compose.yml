@@ -12,14 +12,13 @@ services:
             - 9080:9080
         environment: 
             - GOCHAIN_CONFIG=/gochain/config/gochain.server.json
-            - GOCHAIN_ADDRESS=0.0.0.0:8080
-            - GOCHAIN_DATA=/gochain/data/gochain
+            - GOCHAIN_DATA=/gochain/data/iconee
             - GOCHAIN_LOGFILE=/gochain/data/gochain.log
             - GOCHAIN_CLEAN_DATA=false
             - GOCHAIN_PROVISION_CONFIG=/gochain/provision/config
             - JAVAEE_BIN=/goloop/execman/bin/execman
             - PYEE_VERIFY_PACKAGE=true
-    moonbase:
+    moonbeam:
         image: purestake/moonbeam:v0.9.6
         logging:
             driver: none
@@ -34,20 +33,22 @@ services:
         build:
             context: .
         depends_on: 
-            - moonbase
             - gochain
+            - moonbeam
         entrypoint: 
             - "/btpsimple/scripts/wait_for_it.sh"
             - "gochain:9080"
             - --
             - "/btpsimple/scripts/wait_for_it.sh"
-            - "moonbase:9933"
+            - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
         volumes: 
             - ./scripts/deploy_javascore.sh:/btpsimple/scripts/deploy_javascore.sh
+            - ./scripts/deploy_solidity.sh:/btpsimple/scripts/deploy_solidity.sh
             - ${PWD}/config:/btpsimple/config
         environment: 
             - GOLOOPCHAIN=gochain
+            - CONFIG_DIR=/btpsimple/config
             - RELAY_ENDPOINT=wss://kusama-rpc.polkadot.io
-            - PARA_ENDPOINT=ws://moonbase:9944
+            - PARA_ENDPOINT=ws://moonbeam:9944

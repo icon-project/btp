@@ -1,5 +1,5 @@
 FROM node:16-alpine3.12 as nodejs
-FROM goloop-icon:0.9.7 as goloop
+FROM iconloop/goloop-icon:v0.9.7 as goloop
 FROM btpsimple:latest
 
 # setup truffle
@@ -8,7 +8,7 @@ COPY --from=nodejs /usr/local/bin/yarn /usr/local/bin/yarn
 COPY --from=nodejs /opt/yarn-v1.22.5 /opt/yarn-v1.22.5
 
 RUN apk add --virtual .build-deps libstdc++ git bash jq curl
-RUN yarn global add --quite truffle@5.3.0
+RUN yarn global add truffle@5.3.0
 
 # setup goloop tool
 COPY --from=goloop /goloop/bin /goloop/bin

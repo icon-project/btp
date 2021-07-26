@@ -123,7 +123,7 @@ clean-dist-sol:
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
 
-btpsimple-image: btpsimple-linux dist-py
+btpsimple-image: btpsimple-linux dist-py dist-java dist-sol
 	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
 	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
 	@ \

@@ -9,7 +9,7 @@ rpcch() {
   export GOLOOP_RPC_URI=http://$GOLOOPCHAIN:9080/api/v3/icon
   export GOLOOP_RPC_KEY_STORE=$CONFIG_DIR/$GOLOOPCHAIN.keystore.json
   export GOLOOP_RPC_KEY_SECRET=$CONFIG_DIR/$GOLOOPCHAIN.keysecret
-  export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat nid.icon)}
+  export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat $CONFIG_DIR/nid.icon)}
   export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-13610920001}
 }
 

@@ -17,7 +17,8 @@
     "solhint": "^3.3.4",
     "solhint-plugin-prettier": "^0.0.5",
     "truffle-assertions": "^0.9.2",
-    "urlsafe-base64": "^1.0.0"
+    "urlsafe-base64": "^1.0.0",
+    "fs": "^0.0.1-security"
   },
   "scripts": {
     "linter": "./node_modules/.bin/solhint -f table ./contracts/**/*.sol -f table ./contracts/*.sol",
@@ -25,8 +26,7 @@
     "contract:compile": "truffle compile --all",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "rm -rf .openzeppelin && truffle test test/unit/*.js",
-    "test:integration" : "rm -rf .openzeppelin && truffle test test/integration/*.js"
-
+    "test:integration": "rm -rf .openzeppelin && truffle test test/integration/*.js"
   },
   "husky": {
     "hooks": {

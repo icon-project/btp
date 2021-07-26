@@ -8,5 +8,9 @@ if [ "${PROVISION_CONFIG}" != "" ] && [ "${PROVISION_CONFIG}" != "${GOCHAIN_CONF
   cp -u -r ${PROVISION_CONFIG}/* ${GOCHAIN_CONFIG_DIR}/
 fi
 
+if [ "${GOCHAIN_DATA}" != "" ]; then
+  mkdir -p ${GOCHAIN_DATA}
+fi
+
 source /goloop/venv/bin/activate
 exec "$@"

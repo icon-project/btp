@@ -1,8 +1,12 @@
 #!/bin/sh
 HELPER_DIR=${HELPER_DIR:-/btpsimple/helper}
+JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
+
 source deploy_util.sh
 
 deploy_javascore_bmc() {
+    echo "deploying icon bmc"
+
     cd $CONFIG_DIR
     echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
 
@@ -46,7 +50,7 @@ prepare_javascore_bmv() {
     export PARA_OFFSET=$(cat para.offset)
     export RELAY_ENDPOINT=${RELAY_ENDPOINT:-'wss://kusama-rpc.polkadot.io'}
     export RELAY_OFFSET=${RELAY_OFFSET:-8511058}
-    export PARA_ENDPOINT=${PARA_ENDPOINT:-'ws://moonbase:9944'}
+    export PARA_ENDPOINT=${PARA_ENDPOINT:-'ws://moonbeam:9944'}
 
     yarn getBMVInitializeParams
     cp -f para.offset $CONFIG_DIR/
@@ -55,6 +59,8 @@ prepare_javascore_bmv() {
 }
 
 deploy_javascore_bmv() {
+    echo "deploying icon bmv"
+
     prepare_javascore_bmv
 
     cd $CONFIG_DIR
@@ -66,6 +72,7 @@ deploy_javascore_bmv() {
     encodedValidators=$(echo "$tmp" | jq -r .encodedValidators)
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
     # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
+    
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \
         --content_type application/java \

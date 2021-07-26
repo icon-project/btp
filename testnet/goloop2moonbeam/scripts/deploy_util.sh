@@ -1,5 +1,4 @@
-CONFIG_DIR=${CONFIG_DIR:-/btpsimple/config}
-JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
+export CONFIG_DIR=${CONFIG_DIR:-/btpsimple/config}
 
 source goloop_rpc.sh
 rpcch

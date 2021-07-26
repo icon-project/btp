@@ -1,6 +1,7 @@
 const BMV = artifacts.require("BMV");
 const SUB_BMV = artifacts.require("DataValidator");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
+const fs = require('fs')
 
 module.exports = async function (deployer, network) {
   if (network !== "development") {
@@ -19,5 +20,13 @@ module.exports = async function (deployer, network) {
       ],
       { deployer }
     );
+
+
+    let filename = process.env.CONFIG_DIR + "/bmv.moonbeam"
+    fs.writeFileSync(filename, BMV.address, function (err, data) {
+      if (err) {
+        return console.log(err);
+      }
+    });
   }
 };

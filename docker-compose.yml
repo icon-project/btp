@@ -2,7 +2,7 @@ version: "3.4"
 services:
   goloop:
     build:
-      context: ./testnet/goloop
+      context: ./testnet/goloop2goloop
     environment:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
