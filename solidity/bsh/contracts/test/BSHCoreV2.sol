@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IBSHPeriphery.sol";
-import "./interfaces/IBSHCore.sol";
-import "./libraries/String.sol";
-import "./libraries/Types.sol";
+import "../interfaces/IBSHPeriphery.sol";
+import "../interfaces/IBSHCore.sol";
+import "../libraries/String.sol";
+import "../libraries/Types.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -17,7 +17,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeab
    Native Coin : The native coin of this chain
    Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-contract BSHCore is
+contract BSHCoreV2 is
     Initializable,
     IBSHCore,
     ERC1155Upgradeable,
@@ -41,7 +41,7 @@ contract BSHCore is
     mapping(address => bool) private owners;
     address[] private listOfOwners;
 
-    IBSHPeriphery internal bshPeriphery;
+    IBSHPeriphery private bshPeriphery;
     mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
     mapping(address => mapping(string => Types.Balance)) internal balances;
     mapping(string => uint256) private coins; //  a list of all supported coins
@@ -50,9 +50,12 @@ contract BSHCore is
     uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
-    uint256 public feeNumerator;
+    uint256 private feeNumerator;
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
+
+    //  This is just an example to show how to add more state variable
+    mapping(address => mapping(string => uint256)) private stakes;
 
     function initialize(
         string calldata _uri,
@@ -77,10 +80,9 @@ contract BSHCore is
        @param _owner    Address of a new Onwer.
    */
     function addOwner(address _owner) external override onlyOwner {
-        require(owners[_owner] == false, "ExistedOwner");
         owners[_owner] = true;
         listOfOwners.push(_owner);
-        emit SetOwnership(msg.sender, _owner);
+        emit SetOwnership(_msgSender(), _owner);
     }
 
     /**
@@ -91,10 +93,9 @@ contract BSHCore is
    */
     function removeOwner(address _owner) external override onlyOwner {
         require(listOfOwners.length > 1, "Unable to remove last Owner");
-        require(owners[_owner] == true, "Removing Owner not found");
         delete owners[_owner];
         _remove(_owner);
-        emit RemoveOwnership(msg.sender, _owner);
+        emit RemoveOwnership(_msgSender(), _owner);
     }
 
     function _remove(address _addr) internal {
@@ -124,6 +125,73 @@ contract BSHCore is
         return listOfOwners;
     }
 
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function addStake(string calldata _coinName, uint256 _value)
+        external
+        payable
+    {
+        if (_coinName.compareTo(coinsName[0])) {
+            require(msg.value == _value, "InvalidAmount");
+        } else {
+            this.safeTransferFrom(
+                msg.sender,
+                address(this),
+                coins[_coinName],
+                _value,
+                ""
+            );
+        }
+        stakes[msg.sender][_coinName] = stakes[msg.sender][_coinName].add(
+            _value
+        );
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function mintMock(
+        address _acc,
+        uint256 _id,
+        uint256 _value
+    ) external {
+        _mint(_acc, _id, _value, "");
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function burnMock(
+        address _acc,
+        uint256 _id,
+        uint256 _value
+    ) external {
+        _burn(_acc, _id, _value);
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function setAggregationFee(string calldata _coinName, uint256 _value)
+        external
+    {
+        aggregationFee[_coinName] += _value;
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function clearAggregationFee() external {
+        for (uint256 i = 0; i < coinsName.length; i++) {
+            delete aggregationFee[coinsName[i]];
+        }
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function clearBSHPerifSetting() external {
+        bshPeriphery = IBSHPeriphery(address(0));
+    }
+
+    //  @notice This is just an example to show how to add more function in upgrading a contract
+    function setRefundableBalance(
+        address _acc,
+        string calldata _coinName,
+        uint256 _value
+    ) external {
+        balances[_acc][_coinName].refundableBalance += _value;
+    }
+
     /**
         @notice update BSH Periphery address.
         @dev Caller must be an Owner of this contract
@@ -147,7 +215,7 @@ contract BSHCore is
 
     /**
         @notice update base uri.
-        @dev Caller must be an Owner of this contract
+        @dev Caller must be an operator of BTP network
         the uri must be initilized in construction.
         @param _newURI    new uri
     */
@@ -157,13 +225,14 @@ contract BSHCore is
 
     /**
         @notice set fee ratio.
-        @dev Caller must be an Owner of this contract
+        @dev Caller must be an operator of BTP network
         The transfer fee is calculated by feeNumerator/FEE_DEMONINATOR. 
         The feeNumetator should be less than FEE_DEMONINATOR
         _feeNumerator is set to `10` in construction by default, which means the default fee ratio is 0.1%.
         @param _feeNumerator    the fee numerator
     */
     function setFeeRatio(uint256 _feeNumerator) external override onlyOwner {
+        //  Assuming, adding require() to check input _feeNumerator when upgrading a contract
         require(_feeNumerator <= FEE_DENOMINATOR, "InvalidSetting");
         feeNumerator = _feeNumerator;
     }
@@ -403,7 +472,8 @@ contract BSHCore is
        @notice Allow users to transfer multiple coins/wrapped coins to another chain
        @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
        It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
-       In case of transferring a native coin, it also checks `msg.value`
+       In case of transferring a native coin, it also checks `msg.value` with `_values[i]`
+       It MUST revert if `msg.value` is not equal to `_values[i]`
        The number of requested coins MUST be as the same as the number of requested values
        The requested coins and values MUST be matched respectively
        @param _coinNames    A list of requested transferring coins/wrapped coins
@@ -411,7 +481,7 @@ contract BSHCore is
        @param _to          Target BTP address.
     */
     function transferBatch(
-        string[] calldata _coinNames,
+        string[] memory _coinNames,
         uint256[] memory _values,
         string calldata _to
     ) external payable override {
@@ -548,14 +618,6 @@ contract BSHCore is
         uint256 _fee,
         uint256 _rspCode
     ) external override onlyBSHPeriphery {
-        //  Fee Gathering and Transfer Coin Request use the same method
-        //  and both have the same response
-        //  In case of Fee Gathering's response, `_requester` is this contract's address
-        //  Thus, check that first
-        //  -- If `_requester` is this contract's address, then check whethere response's code is RC_ERR
-        //  In case of RC_ERR, adding back charged fees to `aggregationFee` state variable
-        //  In case of RC_OK, ignore and return
-        //  -- Otherwise, handle service's response as normal
         if (_requester == address(this)) {
             if (_rspCode == RC_ERR) {
                 aggregationFee[_coinName] = aggregationFee[_coinName].add(

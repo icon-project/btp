@@ -3,11 +3,11 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/IBMV.sol";
-import "../libraries/LibString.sol";
+import "../libraries/String.sol";
 
 contract MockBMC {
-    using LibString for string;
-    using LibString for address;
+    using String for string;
+    using String for address;
 
     string public btpAddr;
     IBMV public bmv;

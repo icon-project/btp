@@ -3,16 +3,16 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "../DataValidator.sol";
-import "../libraries/LibString.sol";
-import "../libraries/LibMsgDecoder.sol";
-import "../libraries/LibVerifier.sol";
+import "../libraries/String.sol";
+import "../libraries/MessageDecoder.sol";
+import "../libraries/Verifier.sol";
 
 contract MockDataValidator is DataValidator {
-    using LibString for string;
-    using LibMsgDecoder for bytes;
-    using LibMsgDecoder for string;
-    using LibMsgDecoder for LibTypes.EventLog;
-    using LibVerifier for LibTypes.ReceiptProof;
+    using String for string;
+    using MessageDecoder for bytes;
+    using MessageDecoder for string;
+    using MessageDecoder for Types.EventLog;
+    using Verifier for Types.ReceiptProof;
 
     function validateReceipt(
         string memory, /* _bmc */
@@ -22,10 +22,10 @@ contract MockDataValidator is DataValidator {
         bytes32 _receiptHash
     ) external override returns (bytes[] memory) {
         uint256 nextSeq = _seq + 1;
-        LibTypes.Receipt memory receipt;
-        LibTypes.MessageEvent memory messageEvent;
+        Types.Receipt memory receipt;
+        Types.MessageEvent memory messageEvent;
 
-        LibTypes.ReceiptProof[] memory receiptProofs =
+        Types.ReceiptProof[] memory receiptProofs =
             _serializedMsg.decodeReceiptProofs();
 
         (, string memory contractAddr) = _prev.splitBTPAddress();

@@ -5,34 +5,34 @@ pragma experimental ABIEncoderV2;
 import "../interfaces/IBMV.sol";
 import "../interfaces/IDataValidator.sol";
 
-import "../libraries/LibBase64.sol";
-import "../libraries/LibMTA.sol";
-import "../libraries/LibString.sol";
-import "../libraries/LibTypes.sol";
-import "../libraries/LibMsgDecoder.sol";
-import "../libraries/LibVerifier.sol";
+import "../libraries/Base64.sol";
+import "../libraries/MerkleTreeAccumulator.sol";
+import "../libraries/String.sol";
+import "../libraries/Types.sol";
+import "../libraries/MessageDecoder.sol";
+import "../libraries/Verifier.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract BMVV2 is IBMV, Initializable {
-    using LibMerkleTreeAccumulator for LibMerkleTreeAccumulator.MTA;
-    using LibMerkleTreeAccumulator for bytes;
-    using LibString for string;
-    using LibString for address;
-    using LibBase64 for bytes;
-    using LibBase64 for string;
-    using LibMsgDecoder for bytes;
-    using LibMsgDecoder for LibTypes.Validators;
-    using LibVerifier for LibTypes.BlockUpdate;
-    using LibVerifier for LibTypes.BlockProof;
+    using MerkleTreeAccumulator for MerkleTreeAccumulator.MTA;
+    using MerkleTreeAccumulator for bytes;
+    using String for string;
+    using String for address;
+    using Base64 for bytes;
+    using Base64 for string;
+    using MessageDecoder for bytes;
+    using MessageDecoder for Types.Validators;
+    using Verifier for Types.BlockUpdate;
+    using Verifier for Types.BlockProof;
 
     address private bmcAddr;
     address private subBmvAddr;
     string private netAddr;
     uint256 private lastBlockHeight;
     bytes32 private lastBlockHash;
-    LibTypes.Validators private validators;
-    LibMerkleTreeAccumulator.MTA private mta;
+    Types.Validators private validators;
+    MerkleTreeAccumulator.MTA private mta;
 
     function initialize(
         address _bmcAddr,
@@ -104,7 +104,7 @@ contract BMVV2 is IBMV, Initializable {
         return (mta.height, mta.offset, lastBlockHeight);
     }
 
-    function getLastReceiptHash(LibTypes.RelayMessage memory relayMsg)
+    function getLastReceiptHash(Types.RelayMessage memory relayMsg)
         internal
         returns (bytes32 receiptHash, uint256 lastHeight)
     {

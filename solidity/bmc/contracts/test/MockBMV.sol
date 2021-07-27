@@ -3,7 +3,7 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "../interfaces/IBMV.sol";
-import "../libraries/DecodeBase64Lib.sol";
+import "../libraries/DecodeBase64.sol";
 
 contract MockBMV is IBMV {
     using DecodeBase64 for string;

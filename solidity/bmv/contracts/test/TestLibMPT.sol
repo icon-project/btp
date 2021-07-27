@@ -2,12 +2,12 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../libraries/LibMPT.sol";
+import "../libraries/MerklePatriciaTrie.sol";
 
 contract TestLibMPT {
-    using LibMerklePatriciaTrie for LibMerklePatriciaTrie.MPT;
-    using LibMerklePatriciaTrie for bytes32;
-    using LibMerklePatriciaTrie for bytes;
+    using MerklePatriciaTrie for MerklePatriciaTrie.MPT;
+    using MerklePatriciaTrie for bytes32;
+    using MerklePatriciaTrie for bytes;
 
     function bytesToNibbles(bytes memory data, bytes memory nibbles)
         public

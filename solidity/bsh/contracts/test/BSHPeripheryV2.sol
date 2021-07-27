@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IBSHPeriphery.sol";
-import "./interfaces/IBSHCore.sol";
-import "./interfaces/IBMCPeriphery.sol";
-import "./libraries/Types.sol";
-import "./libraries/RLPEncodeStruct.sol";
-import "./libraries/RLPDecodeStruct.sol";
-import "./libraries/ParseAddress.sol";
-import "./libraries/String.sol";
+import "../interfaces/IBSHPeriphery.sol";
+import "../interfaces/IBSHCore.sol";
+import "../interfaces/IBMCPeriphery.sol";
+import "../libraries/Types.sol";
+import "../libraries/RLPEncodeStruct.sol";
+import "../libraries/RLPDecodeStruct.sol";
+import "../libraries/ParseAddress.sol";
+import "../libraries/String.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 /**
-   @title BSHPeriphery contract
-   @dev This contract is used to handle communications among BMCService and BSHCore contract
-   @dev OwnerUpgradeable has been removed. This contract does not have its own Owners
-        Instead, BSHCore manages ownership roles.
-        Thus, BSHPeriphery should call bshCore.isOwner() and pass an address for verification
-        in case of implementing restrictions, if needed, in the future. 
+   @title Interface of BSH Coin transfer service
+   @dev This contract use to handle coin transfer service
+   Note: The coin of following interface can be:
+   Native Coin : The native coin of this chain
+   Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-contract BSHPeriphery is Initializable, IBSHPeriphery {
+contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
@@ -29,7 +28,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     using ParseAddress for address;
     using ParseAddress for string;
     using String for string;
-    using String for uint256;
 
     /**   @notice Sends a receipt to user
         The `_from` sender
@@ -65,7 +63,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
 
     IBMCPeriphery private bmc;
     IBSHCore internal bshCore;
-    mapping(uint256 => Types.PendingTransferCoin) public requests; // a list of transferring requests
+    mapping(uint256 => Types.PendingTransferCoin) internal requests; // a list of transferring requests
     string public serviceName; //    BSH Service Name
 
     uint256 private constant RC_OK = 0;
@@ -86,6 +84,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         bmc = IBMCPeriphery(_bmc);
         bshCore = IBSHCore(_bshCore);
         serviceName = _serviceName;
+        serialNo = 0;
     }
 
     /**
@@ -94,6 +93,32 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     */
     function hasPendingRequest() external view override returns (bool) {
         return numOfPendingRequests != 0;
+    }
+
+    //  @notice This is just an example of how to add more function in upgrading a contract
+    function getServiceName() external view returns (string memory) {
+        return serviceName;
+    }
+
+    //  @notice This is just an example of how to add more function in upgrading a contract
+    function getPendingRequest(uint256 _sn)
+        external
+        view
+        returns (Types.PendingTransferCoin memory)
+    {
+        return requests[_sn];
+    }
+
+    //  @notice This is just an example of how to add more function in upgrading a contract
+    function getAggregationFeeOf(string calldata _coinName)
+        external
+        view
+        returns (uint256 _fee)
+    {
+        Types.Asset[] memory _fees = bshCore.getAccumulatedFees();
+        for (uint256 i = 0; i < _fees.length; i++) {
+            if (_coinName.compareTo(_fees[i].coinName)) return _fees[i].value;
+        }
     }
 
     function sendServiceMessage(
@@ -122,7 +147,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         }
 
         serialNo++;
-
+        
         //  Because `stack is too deep`, must create `_strFrom` to waive this error
         //  `_strFrom` is a string type of an address `_from`
         string memory _strFrom = _from.toString();
@@ -247,12 +272,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
-        string memory _emitMsg =
-            string("errCode: ")
-                .concat(_code.toString())
-                .concat(", errMsg: ")
-                .concat(_msg);
-        handleResponseService(_sn, RC_ERR, _emitMsg);
+        handleResponseService(_sn, _code, _msg);
     }
 
     function handleResponseService(
@@ -341,8 +361,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         //  If adress of Fee Aggregator (_fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        //  @dev this part simply check whether `_fa` is splittable (`prefix` + `_net` + `dstAddr`)
-        //  checking validity of `_net` and `dstAddr` does not belong to BSHPeriphery's scope
         _fa.splitBTPAddress();
         bshCore.transferFees(_fa);
     }

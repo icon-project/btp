@@ -6,17 +6,17 @@ import "./interfaces/IBSH.sol";
 import "./interfaces/IBMCPeriphery.sol";
 import "./interfaces/IBMCManagement.sol";
 import "./interfaces/IBMV.sol";
-import "./libraries/ParseAddressLib.sol";
-import "./libraries/RLPDecodeStructLib.sol";
-import "./libraries/RLPEncodeStructLib.sol";
-import "./libraries/StringsLib.sol";
-import "./libraries/TypesLib.sol";
+import "./libraries/ParseAddress.sol";
+import "./libraries/RLPDecodeStruct.sol";
+import "./libraries/RLPEncodeStruct.sol";
+import "./libraries/String.sol";
+import "./libraries/Types.sol";
 import "./libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract BMCPeriphery is IBMCPeriphery, Initializable {
-    using Strings for string;
+    using String for string;
     using ParseAddress for address;
     using RLPDecodeStruct for bytes;
     using RLPEncodeStruct for Types.BMCMessage;

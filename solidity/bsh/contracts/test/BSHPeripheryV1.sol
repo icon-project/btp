@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IBSHPeriphery.sol";
-import "./interfaces/IBSHCore.sol";
-import "./interfaces/IBMCPeriphery.sol";
-import "./libraries/Types.sol";
-import "./libraries/RLPEncodeStruct.sol";
-import "./libraries/RLPDecodeStruct.sol";
-import "./libraries/ParseAddress.sol";
-import "./libraries/String.sol";
+import "../interfaces/IBSHPeriphery.sol";
+import "../interfaces/IBSHCore.sol";
+import "../interfaces/IBMCPeriphery.sol";
+import "../libraries/Types.sol";
+import "../libraries/RLPEncodeStruct.sol";
+import "../libraries/RLPDecodeStruct.sol";
+import "../libraries/ParseAddress.sol";
+import "../libraries/String.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -20,7 +20,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
         Thus, BSHPeriphery should call bshCore.isOwner() and pass an address for verification
         in case of implementing restrictions, if needed, in the future. 
 */
-contract BSHPeriphery is Initializable, IBSHPeriphery {
+contract BSHPeripheryV1 is Initializable, IBSHPeriphery {
     using RLPEncodeStruct for Types.TransferCoin;
     using RLPEncodeStruct for Types.ServiceMessage;
     using RLPEncodeStruct for Types.Response;
@@ -29,7 +29,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     using ParseAddress for address;
     using ParseAddress for string;
     using String for string;
-    using String for uint256;
 
     /**   @notice Sends a receipt to user
         The `_from` sender
@@ -65,7 +64,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
 
     IBMCPeriphery private bmc;
     IBSHCore internal bshCore;
-    mapping(uint256 => Types.PendingTransferCoin) public requests; // a list of transferring requests
+    mapping(uint256 => Types.PendingTransferCoin) internal requests; // a list of transferring requests
     string public serviceName; //    BSH Service Name
 
     uint256 private constant RC_OK = 0;
@@ -247,12 +246,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
-        string memory _emitMsg =
-            string("errCode: ")
-                .concat(_code.toString())
-                .concat(", errMsg: ")
-                .concat(_msg);
-        handleResponseService(_sn, RC_ERR, _emitMsg);
+        handleResponseService(_sn, _code, _msg);
     }
 
     function handleResponseService(
@@ -341,8 +335,6 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         //  If adress of Fee Aggregator (_fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        //  @dev this part simply check whether `_fa` is splittable (`prefix` + `_net` + `dstAddr`)
-        //  checking validity of `_net` and `dstAddr` does not belong to BSHPeriphery's scope
         _fa.splitBTPAddress();
         bshCore.transferFees(_fa);
     }
