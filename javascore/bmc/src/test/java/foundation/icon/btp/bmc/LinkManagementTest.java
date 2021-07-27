@@ -27,6 +27,10 @@ import foundation.icon.score.test.AssertRevertedException;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.*;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -141,28 +145,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
         }
     }
 
-    static boolean isExistsRelay(String link, Address address) {
-        return ScoreIntegrationTest.indexOf(
-                iconSpecific.getRelays(link), address) >= 0;
-    }
-
-    static void addRelay(String link, Address address) {
-        iconSpecific.addRelay(link, address);
-        assertTrue(isExistsRelay(link, address));
-    }
-
-    static void removeRelay(String link, Address address) {
-        iconSpecific.removeRelay(link, address);
-        assertFalse(isExistsRelay(link, address));
-    }
-
-    static void clearRelay(String link, Address address) {
-        if (isExistsLink(link) && isExistsRelay(link, address)) {
-            System.out.println("clear relay link:" + link + ", address:" + address);
-            removeRelay(link, address);
-        }
-    }
-
     @BeforeAll
     static void beforeAll() {
         System.out.println("beforeAll start");
@@ -194,8 +176,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
     @Override
     public void clearIfExists(TestInfo testInfo) {
-        //when removeLink, clear all of relays of link, so not required clear relay
-//        clearRelay(link, address);
         clearRoute(dst);
         clearLink(link);
         clearLink(secondLink);
@@ -394,44 +374,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void addRelayShouldSuccess() {
-        addRelay(link, address);
+        BMRManagementTest.addRelay(link, address);
     }
 
-    @Test
-    void addRelayShouldRevertAlreadyExists() {
-        addRelay(link, address);
-
-        AssertBMCException.assertAlreadyExistsBMR(() -> addRelay(link, address));
-    }
-
-    @Test
-    void addRelayShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(() -> addRelay(secondLink, address));
-    }
-
-    @Test
-    void removeRelayShouldSuccess() {
-        addRelay(link, address);
-
-        removeRelay(link, address);
-    }
-
-    @Test
-    void removeRelayShouldRevertNotExists() {
-        AssertBMCException.assertNotExistsBMR(() -> removeRelay(link, address));
-    }
-
-    @Test
-    void removeRelayShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(() -> removeRelay(secondLink, address));
-    }
-
-    @Test
-    void getRelaysShouldRevertNotExistsLink() {
-        //noinspection ThrowableNotThrown
-        AssertRevertedException.assertUserRevertFromJsonrpcError(
-                BMCException.notExistsLink(),
-                () -> iconSpecific.getRelays(secondLink),
-                null);
-    }
 }

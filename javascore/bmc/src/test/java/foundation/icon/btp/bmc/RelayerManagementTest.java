@@ -183,7 +183,7 @@ public class RelayerManagementTest implements BMCIntegrationTest {
             relayerManager.setNextRewardDistribution(0);
 
             //wait NextRewardDistribution
-            ScoreIntegrationTest.waitHeight(relayerTerm);
+            ScoreIntegrationTest.waitByNumOfBlock(relayerTerm);
             System.out.println("beforeDistributeRelayerTests end on "+testInfo.getDisplayName());
         }
     }

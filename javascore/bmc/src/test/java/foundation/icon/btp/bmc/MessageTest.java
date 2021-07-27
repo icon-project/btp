@@ -51,7 +51,7 @@ public class MessageTest implements BMCIntegrationTest {
         System.out.println("beforeAll start");
         BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
         LinkManagementTest.addLink(link);
-        LinkManagementTest.addRelay(link, relay);
+        BMRManagementTest.addRelay(link, relay);
 
         BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
         System.out.println("beforeAll end");
@@ -62,7 +62,7 @@ public class MessageTest implements BMCIntegrationTest {
         System.out.println("afterAll start");
         BSHManagementTest.clearService(svc);
 
-        LinkManagementTest.clearRelay(link, relay);
+        BMRManagementTest.clearRelay(link, relay);
         LinkManagementTest.clearLink(link);
         BMVManagementTest.clearVerifier(net);
         System.out.println("afterAll end");

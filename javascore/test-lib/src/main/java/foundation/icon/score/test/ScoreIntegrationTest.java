@@ -124,10 +124,17 @@ public interface ScoreIntegrationTest {
             null
     );
 
-    static void waitHeight(long numOfBlock) {
+    static void waitByNumOfBlock(long numOfBlock) {
+        waitByHeight(client._lastBlockHeight().add(BigInteger.valueOf(numOfBlock)));
+    }
+
+    static void waitByHeight(long waitHeight) {
+        waitByHeight(BigInteger.valueOf(waitHeight));
+    }
+
+    static void waitByHeight(BigInteger waitHeight) {
         BigInteger height = client._lastBlockHeight();
-        BigInteger waitHeight = height.add(BigInteger.valueOf(numOfBlock));
-        while (waitHeight.compareTo(height) >= 0) {
+        while (height.compareTo(waitHeight) < 0) {
             System.out.println("height: "+height+", waitHeight: "+waitHeight);
             try {
                 Thread.sleep(1000);
