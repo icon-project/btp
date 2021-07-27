@@ -32,6 +32,7 @@ cd $SOURCE_CODE_DIR/iconloop/nativecoin && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/javaee-tokens && gradle optimizedJar
 
 ### packing
+cp -rf $SOURCE_CODE_DIR/bmv/helper ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/parachain/build/libs/parachain-BMV-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/eventDecoder/build/libs/KusamaEventDecoder-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/eventDecoder/build/libs/MoonriverEventDecoder-optimized.jar ${JAVASCORE_DIST_DIR}/

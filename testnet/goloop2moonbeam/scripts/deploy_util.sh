@@ -1,21 +1,9 @@
-export CONFIG_DIR=${CONFIG_DIR:-/btpsimple/config}
-HELPER_DIR=${HELPER_DIR:-/btpsimple/helper}
-
-source goloop_rpc.sh
-rpcch
-
 latest_block_goloop() {
     goloop rpc lastblock
 }
 
-latest_blocknumber_moonbase() {
-    curl -s -X POST 'http://moonbase:9933' --header 'Content-Type: application/json' \
-    --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
-}
-
-latest_blocknumber_kusama() {
-    # Doesn't work
-    curl -s -X POST 'https://kusama-rpc.polkadot.io' --header 'Content-Type: application/json' \
+moonbeam_blocknumber() {
+    curl -s -X POST 'http://moonbeam:9933' --header 'Content-Type: application/json' \
     --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
 }
 
@@ -31,7 +19,7 @@ wait_file_created() {
             exit 1
         fi
         sleep 1
-        ((timeout--))
+        timeout=$(expr $timeout - 1)
 
         echo "waiting for the output file: $FILE_NAME"
     done

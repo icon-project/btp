@@ -1,6 +1,4 @@
 #!/bin/sh
-JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
-
 source deploy_util.sh
 
 deploy_javascore_bmc() {
@@ -17,7 +15,7 @@ deploy_javascore_bmc() {
     echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
 
-deploy_kusamaDecoder(){
+_deploy_kusamaDecoder(){
     echo "deploying javascrore kusamaDecoder"
     
     cd $CONFIG_DIR
@@ -27,7 +25,7 @@ deploy_kusamaDecoder(){
     extract_scoreAddress tx.kusamaDecoder.icon kusamaDecoder.icon
 }
 
-deploy_moonriverDecoder(){
+_deploy_moonriverDecoder(){
     echo "deploying javascrore moonriverDecoder"
 
     cd $CONFIG_DIR
@@ -37,30 +35,28 @@ deploy_moonriverDecoder(){
     extract_scoreAddress tx.moonriverDecoder.icon moonriverDecoder.icon
 }
 
-prepare_javascore_bmv() {
-    deploy_kusamaDecoder
-    deploy_moonriverDecoder
+_prepare_javascore_bmv() {
+    _deploy_kusamaDecoder
+    _deploy_moonriverDecoder
     
-    echo "getting BMVInitializeParams"
-    cd $HELPER_DIR
-    yarn
-
-    latest_blocknumber_moonbase > para.offset
-    export PARA_OFFSET=$(cat para.offset)
-    export RELAY_ENDPOINT=${RELAY_ENDPOINT:-'wss://kusama-rpc.polkadot.io'}
+    export PARA_OFFSET=$(moonbeam_blocknumber)
     export RELAY_OFFSET=${RELAY_OFFSET:-8511058}
+    export RELAY_ENDPOINT=${RELAY_ENDPOINT:-'wss://kusama-rpc.polkadot.io'}
     export PARA_ENDPOINT=${PARA_ENDPOINT:-'ws://moonbeam:9944'}
 
+    echo "getting BMVInitializeParams at PARA_OFFSET:$PARA_OFFSET RELAY_OFFSET:$RELAY_OFFSET"
+    cd $JAVASCORE_HELPER_DIR
+    yarn
     yarn getBMVInitializeParams
-    cp -f para.offset $CONFIG_DIR/
+    wait_file_created $JAVASCORE_HELPER_DIR BMVInitializeData.json
+    echo $PARA_OFFSET > $CONFIG_DIR/para.offset
     cp -f BMVInitializeData.json $CONFIG_DIR/
     rm -rf ./node_modules
 }
 
 deploy_javascore_bmv() {
     echo "deploying javascrore bmv"
-
-    prepare_javascore_bmv
+    _prepare_javascore_bmv
 
     cd $CONFIG_DIR
     tmp=$(cat BMVInitializeData.json)
@@ -72,6 +68,7 @@ deploy_javascore_bmv() {
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
     # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
     
+    echo "$paraMtaOffset" > para.offset
     echo "parachain height:$paraMtaOffset block_hash:$paraLastBlockHash"
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \

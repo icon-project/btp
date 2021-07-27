@@ -14,8 +14,12 @@ ENV PATH $PATH:/btpsimple/bin
 
 # copy extras
 COPY dist/contracts/pyscore/*.zip /btpsimple/contracts/pyscore/
-COPY dist/contracts/javascore/*.jar /btpsimple/contracts/javascore/
+COPY dist/contracts/javascore /btpsimple/contracts/javascore
 COPY dist/contracts/solidity /btpsimple/contracts/solidity
+
+ENV JAVASCORE_DIST_DIR=/btpsimple/contracts/javascore
+ENV SOLIDITY_DIST_DIR=/btpsimple/contracts/solidity
+ENV PYSCORE_DIST_DIR=/btpsimple/contracts/pyscore
 
 WORKDIR /btpsimple
 

@@ -1,10 +1,4 @@
 #!/bin/sh
-SOLIDITY_DIST_DIR=${SOLIDITY_DIST_DIR:-/btpsimple/contracts/solidity}
-
-MOONBEAM_CHAIN_ID=1281 # https://github.com/PureStake/moonbeam#chain-ids
-export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
-
-
 source deploy_util.sh
 
 deploy_solidity_bmc() {
@@ -64,9 +58,9 @@ moonbeam_bmc_addVerifier() {
     export ICON_NET=$(cat $CONFIG_DIR/net.btp.icon)
     export BMV_MOONBEAM=$(cat $CONFIG_DIR/bmv.moonbeam)
 
-    cp $HELPER_DIR/moonbeam_bmc_add_relayer.js $SOLIDITY_DIST_DIR/bmc/
+    cp $SCRIPT_DIR/mb_bmc_add_relayer.js $SOLIDITY_DIST_DIR/bmc/
     cd $SOLIDITY_DIST_DIR/bmc
-    truffle exec moonbeam_bmc_add_relayer.js --network moonbeamlocal
+    truffle exec mb_bmc_add_relayer.js --network moonbeamlocal
 }
 
 moonbeam_bmc_addLink() {
