@@ -62,9 +62,6 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
-
-	s.l.Tracef("RLPEncodedRelayMessage: %x\n", b)
-	s.l.Tracef("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
@@ -77,6 +74,11 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 			Params: rmp,
 		},
 	}
+
+	s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
+	s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
+	s.l.Tracef("newTransactionParam TransactionParam: %+v", p)
+
 	return p, nil
 }
 

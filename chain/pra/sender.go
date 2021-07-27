@@ -24,6 +24,10 @@ const (
 	DefaultRetryContractCallInterval = 3 * time.Second
 )
 
+type praSenderOptions struct {
+	GasLimit uint64 `json:"gas_limit"`
+}
+
 var (
 	DefaultRetryContractCall = 10 // reduce testing time
 )
@@ -37,20 +41,8 @@ type Sender struct {
 	w   Wallet
 	src chain.BtpAddress
 	dst chain.BtpAddress
+	opt praSenderOptions
 	log log.Logger
-
-	opt struct {
-		StepLimit int64
-	}
-
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
-	}
-	isFoundOffsetBySeq bool
-	cb                 chain.ReceiveCallback
 }
 
 func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessageParam, error) {
@@ -59,17 +51,20 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		return nil, err
 	}
 
-	rmp := &RelayMessageParam{
-		Prev: prev,
-		Msg:  base64.URLEncoding.EncodeToString(b),
+	txOpts := s.c.newTransactOpts(s.w)
+	if s.opt.GasLimit > 0 {
+		txOpts.GasLimit = s.opt.GasLimit
 	}
 
-	// if len(rm.ReceiptProofs) > 0 {
-	// 	s.log.Debugf("sending rp _msg: %v", rmp.Msg)
-	// }
+	rmp := &RelayMessageParam{
+		TransactOpts: txOpts,
+		Prev:         prev,
+		Msg:          base64.URLEncoding.EncodeToString(b),
+	}
 
-	s.log.Tracef("RLPEncodedRelayMessage: %x\n", b)
-	s.log.Tracef("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
+	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
+	s.log.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
+	s.log.Tracef("newTransactionParam TransactionParam: %+v", rmp)
 
 	return rmp, nil
 }
@@ -259,8 +254,7 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	tries := 0
 CALL_CONTRACT:
 	tries++
-	txOpts := s.c.newTransactOpts(s.w)
-	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
+	tx, err := s.c.bmc.HandleRelayMessage(p.TransactOpts, p.Prev, p.Msg)
 	if err != nil {
 		if tries < DefaultRetryContractCall {
 			s.log.Debugf("Relay: retry with Relay err:%+v", err)
@@ -271,7 +265,7 @@ CALL_CONTRACT:
 	}
 
 	return &TransactionHashParam{
-		From:  txOpts.From,
+		From:  p.TransactOpts.From,
 		Tx:    tx,
 		Param: p,
 	}, nil
