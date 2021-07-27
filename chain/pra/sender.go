@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -22,8 +23,10 @@ const (
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
-	defaultGasLimit                  = 6721975
+	defaultGasLimit                  = 6721975 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
+
+var TransactionPanicfError = regexp.MustCompile(`Pool(TemporarilyBanned)`)
 
 type praSenderOptions struct {
 	GasLimit uint64 `json:"gas_limit"`
@@ -67,7 +70,6 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 
 	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
 	s.log.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
-	s.log.Tracef("newTransactionParam TransactionParam: %+v", rmp)
 
 	return rmp, nil
 }
@@ -255,10 +257,15 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	}
 
 	tries := 0
+	s.log.Tracef("Relay: TransactionOptions: %+v", p.TransactOpts)
 CALL_CONTRACT:
 	tries++
 	tx, err := s.c.bmc.HandleRelayMessage(p.TransactOpts, p.Prev, p.Msg)
 	if err != nil {
+		if TransactionPanicfError.MatchString(err.Error()) {
+			return nil, err
+		}
+
 		if tries < DefaultRetryContractCall {
 			s.log.Debugf("Relay: retry with Relay err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)

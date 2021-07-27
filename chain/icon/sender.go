@@ -77,8 +77,6 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 
 	s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
 	s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
-	s.l.Tracef("newTransactionParam TransactionParam: %+v", p)
-
 	return p, nil
 }
 
@@ -434,6 +432,7 @@ SignLoop:
 		}
 	SendLoop:
 		for {
+			s.l.Tracef("Relay: TransactionParam %+v\n", p)
 			txh, err := s.c.SendTransaction(p)
 			if txh != nil {
 				thp.Hash = *txh
