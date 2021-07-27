@@ -1,4 +1,5 @@
 export CONFIG_DIR=${CONFIG_DIR:-/btpsimple/config}
+HELPER_DIR=${HELPER_DIR:-/btpsimple/helper}
 
 source goloop_rpc.sh
 rpcch

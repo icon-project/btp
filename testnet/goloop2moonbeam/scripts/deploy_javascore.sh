@@ -1,5 +1,4 @@
 #!/bin/sh
-HELPER_DIR=${HELPER_DIR:-/btpsimple/helper}
 JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
 
 source deploy_util.sh
