@@ -22,6 +22,7 @@ const (
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
+	defaultGasLimit                  = 6721975
 )
 
 type praSenderOptions struct {
@@ -54,6 +55,8 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 	txOpts := s.c.newTransactOpts(s.w)
 	if s.opt.GasLimit > 0 {
 		txOpts.GasLimit = s.opt.GasLimit
+	} else {
+		txOpts.GasLimit = defaultGasLimit
 	}
 
 	rmp := &RelayMessageParam{
