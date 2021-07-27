@@ -5,7 +5,7 @@ JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
 source deploy_util.sh
 
 deploy_javascore_bmc() {
-    echo "deploying icon bmc"
+    echo "deploying javascrore bmc"
 
     cd $CONFIG_DIR
     echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
@@ -19,7 +19,7 @@ deploy_javascore_bmc() {
 }
 
 deploy_kusamaDecoder(){
-    echo "deploying kusamaDecoder"
+    echo "deploying javascrore kusamaDecoder"
     
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/KusamaEventDecoder-optimized.jar \
@@ -29,7 +29,7 @@ deploy_kusamaDecoder(){
 }
 
 deploy_moonriverDecoder(){
-    echo "deploying moonriverDecoder"
+    echo "deploying javascrore moonriverDecoder"
 
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/MoonriverEventDecoder-optimized.jar \
@@ -59,7 +59,7 @@ prepare_javascore_bmv() {
 }
 
 deploy_javascore_bmv() {
-    echo "deploying icon bmv"
+    echo "deploying javascrore bmv"
 
     prepare_javascore_bmv
 
@@ -73,6 +73,7 @@ deploy_javascore_bmv() {
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
     # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
     
+    echo "parachain height:$paraMtaOffset block_hash:$paraLastBlockHash"
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \
         --content_type application/java \
