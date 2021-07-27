@@ -81,19 +81,16 @@ public class Link {
             int rotateCnt;
             long baseHeight;
             if (hasMsg) {
-//                long guessHeight = rxHeight + Util.ceilDiv((currentHeight - rxHeightSrc), scale()) - 1;
-                long guessHeight = rxHeight + (long)StrictMath.ceil((double) (currentHeight - rxHeightSrc) / scale()) - 1;
+                long guessHeight = rxHeight + (long)StrictMath.ceil((double) (msgHeight - rxHeightSrc) / scale()) - 1;
                 if (guessHeight > currentHeight) {
                     guessHeight = currentHeight;
                 }
 
-//                rotateCnt = (int)Util.ceilDiv(guessHeight - rotateHeight, rotateTerm);
                 rotateCnt = (int)StrictMath.ceil((double)(guessHeight - rotateHeight)/(double)rotateTerm);
                 if (rotateCnt < 0) {
                     rotateCnt = 0;
                 }
                 baseHeight = rotateHeight + ((rotateCnt - 1) * rotateTerm);
-//                int skipCnt = (int)Util.ceilDiv((currentHeight - guessHeight), delayLimit) - 1;
                 int skipCnt = (int)StrictMath.ceil((double)(currentHeight - guessHeight)/(double)delayLimit) - 1;
                 if (skipCnt > 0) {
                     rotateCnt += skipCnt;
@@ -102,7 +99,6 @@ public class Link {
                 rxHeight = currentHeight;
                 rxHeightSrc = msgHeight;
             } else {
-//                rotateCnt = (int)Util.ceilDiv((currentHeight - rotateHeight), rotateTerm);
                 rotateCnt = (int)StrictMath.ceil((double)(currentHeight - rotateHeight)/(double)rotateTerm);
                 baseHeight = rotateHeight + ((rotateCnt - 1) * rotateTerm);
             }
