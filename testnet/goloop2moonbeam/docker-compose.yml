@@ -36,17 +36,15 @@ services:
             - gochain
             - moonbeam
         entrypoint: 
-            - "/btpsimple/scripts/wait_for_it.sh"
+            - "/wait_for_it.sh"
             - "gochain:9080"
             - --
-            - "/btpsimple/scripts/wait_for_it.sh"
+            - "/wait_for_it.sh"
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
         volumes: 
-            - ./scripts/deploy_javascore.sh:/btpsimple/scripts/deploy_javascore.sh
-            - ./scripts/deploy_solidity.sh:/btpsimple/scripts/deploy_solidity.sh
-            - ./scripts/deploy_util.sh:/btpsimple/scripts/deploy_util.sh
+            - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
         environment: 
             - GOLOOPCHAIN=gochain

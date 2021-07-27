@@ -12,5 +12,10 @@ rpcch
 source deploy_javascore.sh
 source deploy_solidity.sh
 
-deploy_javascore_bmc
-deploy_javascore_bmv
+# deploy_javascore_bmc
+# deploy_javascore_bmv
+
+deploy_solidity_bmc
+deploy_solidity_bsh
+deploy_solidity_bmv
+moonbeam_bmc_addVerifier

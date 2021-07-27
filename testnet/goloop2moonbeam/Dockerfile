@@ -20,8 +20,9 @@ ADD scripts /btpsimple/scripts
 RUN chmod u+x /btpsimple/scripts/*.sh
 ENV PATH $PATH:/btpsimple/scripts
 
+ADD wait_for_it.sh /wait_for_it.sh
 ADD entrypoint.sh /entrypoint.sh
-RUN chmod u+x /entrypoint.sh
+RUN chmod u+x /entrypoint.sh && chmod u+x /wait_for_it.sh
 
 WORKDIR /btpsimple/config
 ENTRYPOINT [ "/entrypoint.sh" ]

@@ -1,6 +1,6 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
-const privKeys = (process.env.PRIVATE_KEYS) ? process.env.PRIVATE_KEYS.split(',') : 
+const privKeys = (process.env.PRIVATE_KEYS) ? process.env.PRIVATE_KEYS.split(',') :
   [
     '0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133', // Alith
     '0x8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b49c6fa7cdbeee8b', // Baltathar
@@ -28,7 +28,9 @@ module.exports = {
         privateKeys: privKeys,
         providerOrUrl: "http://localhost:9933",
       }),
-      network_id: 1281
+      network_id: 1281,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks: 200
     },
     moonbase: {
       provider: () => new HDWalletProvider({
@@ -47,9 +49,9 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-       version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-       settings: {          // See the solidity docs for advice about optimization and evmVersion
+      settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: true,
           runs: 10
