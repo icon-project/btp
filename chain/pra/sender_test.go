@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
@@ -65,7 +66,11 @@ func TestSenderNewTransactionParam(t *testing.T) {
 		ReceiptProofs: [][]byte{{1, 2, 3, 4}},
 	}
 
-	sender := &Sender{log: log.New()}
+	ethClient := &mocks.EthClient{}
+	ethClient.On("ChainID", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil).Once()
+	ethClient.On("SuggestGasPrice", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil).Once()
+
+	sender := &Sender{log: log.New(), w: testWallet(), c: &Client{ethClient: ethClient}}
 	p, err := sender.newTransactionParam(prev, rm1)
 	require.Nil(t, err)
 	require.NotNil(t, p)
@@ -83,7 +88,12 @@ func TestSenderNewTransactionParam(t *testing.T) {
 func TestSenderSegment(t *testing.T) {
 	f := txSizeLimit
 	txSizeLimit := int(f)
-	sender := &Sender{log: log.New()}
+
+	ethClient := &mocks.EthClient{}
+	ethClient.On("ChainID", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+	ethClient.On("SuggestGasPrice", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+
+	sender := &Sender{log: log.New(), w: testWallet(), c: &Client{ethClient: ethClient}}
 
 	t.Run("should get error ErrInvalidBlockUpdateProofSize", func(t *testing.T) {
 		segments, err := sender.Segment(&chain.RelayMessage{
@@ -311,7 +321,11 @@ func TestSenderParseTransactionError(t *testing.T) {
 }
 
 func TestSenderUpdateSegment(t *testing.T) {
-	sender := &Sender{log: log.New()}
+	ethClient := &mocks.EthClient{}
+	ethClient.On("ChainID", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+	ethClient.On("SuggestGasPrice", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+
+	sender := &Sender{log: log.New(), w: testWallet(), c: &Client{ethClient: ethClient}}
 	t.Run("should crash if TransactionParam not a *RelayMessageParam", func(t *testing.T) {
 		segment := &chain.Segment{}
 		require.Panics(t, func() { sender.UpdateSegment(&chain.BlockProof{}, segment) })
@@ -389,8 +403,13 @@ func TestSenderUpdateSegment(t *testing.T) {
 
 func TestSenderRelay(t *testing.T) {
 	DefaultRetryContractCall = 0 // reduce test time
+
+	ethClient := &mocks.EthClient{}
+	ethClient.On("ChainID", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+	ethClient.On("SuggestGasPrice", mock.AnythingOfType("*context.emptyCtx")).Return(&big.Int{}, nil)
+
 	bmcMock := &mocks.BMCContract{}
-	sender := &Sender{log: log.New(), c: &Client{bmc: bmcMock}, w: testWallet()}
+	sender := &Sender{log: log.New(), c: &Client{ethClient: ethClient, bmc: bmcMock}, w: testWallet()}
 
 	t.Run("should return error if TransactionParam not a *RelayMessageParam", func(t *testing.T) {
 		_, err := sender.Relay(&chain.Segment{})
@@ -408,13 +427,18 @@ func TestSenderRelay(t *testing.T) {
 	})
 
 	t.Run("should return TransactionHashParam", func(t *testing.T) {
+		ew := sender.w.(*wallet.EvmWallet)
+		opts, err := bind.NewKeyedTransactorWithChainID(ew.Skey, &big.Int{})
+		require.NoError(t, err)
+
 		p := &RelayMessageParam{
-			Prev: "string",
-			Msg:  "string",
+			TransactOpts: opts,
+			Prev:         "string",
+			Msg:          "string",
 		}
 		tx := &EvmTransaction{}
 
-		bmcMock.On("HandleRelayMessage", mock.AnythingOfType("*bind.TransactOpts"), mock.Anything, mock.Anything).Return(tx, nil).Once()
+		bmcMock.On("HandleRelayMessage", p.TransactOpts, mock.Anything, mock.Anything).Return(tx, nil).Once()
 		r, err := sender.Relay(&chain.Segment{
 			TransactionParam: p,
 		})
