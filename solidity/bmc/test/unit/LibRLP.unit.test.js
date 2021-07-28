@@ -1,5 +1,6 @@
 const { assert } = require('chai');
 const testLibRLP = artifacts.require('TestLibRLP');
+const truffleAssert = require('truffle-assertions');
 
 contract('RLP library unit tests', () => {
     let libRLP;
@@ -36,7 +37,18 @@ contract('RLP library unit tests', () => {
 
             res = await libRLP.encodeUint(549945499454999);
             assert.equal(res, '0x8701f42c2a240e17');
+
+            res = await libRLP.encodeUint(web3.utils.toBN('34028236692093846346337460743176821155'));
+            assert.equal(res, '0x90199999999999999999999999999999a3');
         });
+
+        it('should revert if unsigned integer is out of bounds', async () => {
+            await truffleAssert.reverts(
+                libRLP.encodeUint.call(web3.utils.toBN('999999999999999999999999999999999999999999999999999999999999')),
+                'outOfBounds: [0, 2^128]'
+            );
+        });
+
 
         it('should encode signed integer', async () => {
             let res = await libRLP.encodeInt(3278);
@@ -50,6 +62,24 @@ contract('RLP library unit tests', () => {
 
             res = await libRLP.encodeInt(-888889);
             assert.equal(res, '0x83f26fc7');
+
+            res = await libRLP.encodeInt(web3.utils.toBN('1329227995784915872903807060280344571'));
+            assert.equal(res, '0x9000fffffffffffffffffffffffffffffb');
+
+            res = await libRLP.encodeInt(web3.utils.toBN('-1329227995784915872903807060280344571'));
+            assert.equal(res, '0x90ff000000000000000000000000000005');
+        });
+
+        it('should revert if signed integer is out of bounds', async () => {
+            await truffleAssert.reverts(
+                libRLP.encodeInt.call(web3.utils.toBN('999999999999999999999999999999999999999999999999999999999999')),
+                'outOfBounds: [-2^128-1, 2^128]'
+            );
+
+            await truffleAssert.reverts(
+                libRLP.encodeInt.call(web3.utils.toBN('-999999999999999999999999999999999999999999999999999999999999')),
+                'outOfBounds: [-2^128-1, 2^128]'
+            );
         });
 
         it('should encode boolean', async () => {
@@ -106,6 +136,9 @@ contract('RLP library unit tests', () => {
 
             res = await libRLP.decodeUint('0x8701f42c2a240e17');
             assert.equal(res, 549945499454999);
+
+            res = await libRLP.decodeUint('0x90199999999999999999999999999999a3');
+            assert.equal(res.toString(), web3.utils.toBN('34028236692093846346337460743176821155'));
         });
 
         it('should decode rlp bytes to signed integer', async () => {
@@ -120,6 +153,12 @@ contract('RLP library unit tests', () => {
 
             res = await libRLP.decodeInt('0x83f26fc7');
             assert.equal(res, -888889);
+
+            res = await libRLP.decodeInt('0x9000fffffffffffffffffffffffffffffb');
+            assert.equal(res.toString(), web3.utils.toBN('1329227995784915872903807060280344571'));
+
+            res = await libRLP.decodeInt('0x90ff000000000000000000000000000005');
+            assert.equal(res.toString(), web3.utils.toBN('-1329227995784915872903807060280344571'));
         });
 
         it('should decode rlp bytes to boolean', async () => {
