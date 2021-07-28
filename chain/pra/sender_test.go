@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
@@ -427,18 +426,13 @@ func TestSenderRelay(t *testing.T) {
 	})
 
 	t.Run("should return TransactionHashParam", func(t *testing.T) {
-		ew := sender.w.(*wallet.EvmWallet)
-		opts, err := bind.NewKeyedTransactorWithChainID(ew.Skey, &big.Int{})
-		require.NoError(t, err)
-
 		p := &RelayMessageParam{
-			TransactOpts: opts,
-			Prev:         "string",
-			Msg:          "string",
+			Prev: "string",
+			Msg:  "string",
 		}
 		tx := &EvmTransaction{}
 
-		bmcMock.On("HandleRelayMessage", p.TransactOpts, mock.Anything, mock.Anything).Return(tx, nil).Once()
+		bmcMock.On("HandleRelayMessage", mock.AnythingOfType("*bind.TransactOpts"), mock.Anything, mock.Anything).Return(tx, nil).Once()
 		r, err := sender.Relay(&chain.Segment{
 			TransactionParam: p,
 		})

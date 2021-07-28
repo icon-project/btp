@@ -2,7 +2,6 @@ package pra
 
 import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/substrate"
 )
@@ -28,9 +27,8 @@ type Wallet interface {
 }
 
 type RelayMessageParam struct {
-	TransactOpts *bind.TransactOpts
-	Prev         string `json:"_prev"`
-	Msg          string `json:"_msg"`
+	Prev string `json:"_prev"`
+	Msg  string `json:"_msg"`
 }
 
 type StateProof struct {

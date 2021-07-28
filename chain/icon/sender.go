@@ -35,14 +35,15 @@ import (
 )
 
 const (
-	txMaxDataSize                 = 524288 //512 * 1024 // 512kB
-	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
-	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
-	DefaultGetRelayResultInterval = time.Second
-	DefaultRelayReSendInterval    = time.Second
+	txMaxDataSize                   = 524288 //512 * 1024 // 512kB
+	txOverheadScale                 = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
+	txSizeLimit                     = txMaxDataSize / (1 + txOverheadScale)
+	MaxDefaultGetRelayResultRetries = 60
+	DefaultGetRelayResultInterval   = time.Second
+	DefaultRelayReSendInterval      = time.Second
 )
 
-var RetryGetRelayResultRetryError = regexp.MustCompile(`connection reset by peer|EOF`)
+var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
 
 type SenderOptions struct {
 	StepLimit int64 `json:"stepLimit"`
@@ -464,11 +465,14 @@ SignLoop:
 
 func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	if txh, ok := p.(*TransactionHashParam); ok {
+		tries := 0
 		for {
+			tries++
 			txr, err := s.c.GetTransactionResult(txh)
-			if err != nil {
-				if RetryGetRelayResultRetryError.MatchString(err.Error()) {
+			if err != nil && tries < MaxDefaultGetRelayResultRetries {
+				if RetryHTTPError.MatchString(err.Error()) {
 					<-time.After(DefaultGetRelayResultInterval)
+					s.l.Debugf("GetResult: retry %d with GetResult err:%+v", tries, err)
 					continue
 				}
 
@@ -476,6 +480,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 					switch je.Code {
 					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
 						<-time.After(DefaultGetRelayResultInterval)
+						s.l.Debugf("GetResult: retry %d with GetResult err:%+v", tries, err)
 						continue
 					}
 				}

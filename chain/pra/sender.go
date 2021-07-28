@@ -26,7 +26,7 @@ const (
 	defaultGasLimit                  = 6721975 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
-var TransactionPanicfError = regexp.MustCompile(`Pool(TemporarilyBanned)`)
+var RetrableRelayReSendReExp = regexp.MustCompile(``)
 
 type praSenderOptions struct {
 	GasLimit uint64 `json:"gas_limit"`
@@ -55,17 +55,9 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		return nil, err
 	}
 
-	txOpts := s.c.newTransactOpts(s.w)
-	if s.opt.GasLimit > 0 {
-		txOpts.GasLimit = s.opt.GasLimit
-	} else {
-		txOpts.GasLimit = defaultGasLimit
-	}
-
 	rmp := &RelayMessageParam{
-		TransactOpts: txOpts,
-		Prev:         prev,
-		Msg:          base64.URLEncoding.EncodeToString(b),
+		Prev: prev,
+		Msg:  base64.URLEncoding.EncodeToString(b),
 	}
 
 	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
@@ -256,17 +248,21 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 		return nil, fmt.Errorf("casting failure")
 	}
 
+	txOpts := s.c.newTransactOpts(s.w)
+	if s.opt.GasLimit > 0 {
+		txOpts.GasLimit = s.opt.GasLimit
+	} else {
+		txOpts.GasLimit = defaultGasLimit
+	}
+
+	s.log.Tracef("Relay: TransactionOptions: %+v", txOpts)
+
 	tries := 0
-	s.log.Tracef("Relay: TransactionOptions: %+v", p.TransactOpts)
 CALL_CONTRACT:
 	tries++
-	tx, err := s.c.bmc.HandleRelayMessage(p.TransactOpts, p.Prev, p.Msg)
+	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
 	if err != nil {
-		if TransactionPanicfError.MatchString(err.Error()) {
-			return nil, err
-		}
-
-		if tries < DefaultRetryContractCall {
+		if RetrableRelayReSendReExp.MatchString(err.Error()) && tries < DefaultRetryContractCall {
 			s.log.Debugf("Relay: retry with Relay err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
@@ -275,7 +271,7 @@ CALL_CONTRACT:
 	}
 
 	return &TransactionHashParam{
-		From:  p.TransactOpts.From,
+		From:  txOpts.From,
 		Tx:    tx,
 		Param: p,
 	}, nil
