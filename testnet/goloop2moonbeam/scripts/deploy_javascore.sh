@@ -91,3 +91,134 @@ deploy_javascore_bmv() {
 
     extract_scoreAddress tx.bmv.icon bmv.icon
 }
+
+deploy_javascore_IRC31Token() {
+    echo "deploy_javascore_IRC31Token"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc31-0.1.0-debug.jar \
+    --content_type application/java | jq -r . > tx.irc31token.icon
+
+    extract_scoreAddress tx.irc31token.icon irc31token.icon
+}
+
+deploy_javascore_NativeCoinBSH() {
+    echo "deploy_javascore_NativeCoinBSH"
+
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoin-0.1.0-debug.jar \
+        --content_type application/java \
+        --param _bmc=$(cat bmc.icon) \
+        --param _irc31=$(cat irc31token.icon) \
+        --param _name=ICX | jq -r . > tx.nativeCoinBsh.icon
+
+    extract_scoreAddress tx.nativeCoinBsh.icon nativeCoinBsh.icon
+}
+
+deploy_javascore_FeeAggregation() {
+    echo "deploy_javascore_FeeAggregation"
+
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/fee-aggregation-system-1.0-optimized.jar \
+        --content_type application/java | jq -r . > tx.feeAggregation.icon
+
+    extract_scoreAddress tx.feeAggregation.icon feeAggregation.icon
+}
+
+goloop_bmc_addVerifier() {
+    echo "goloop_bmc_addVerifier"
+    cd $CONFIG_DIR
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method addVerifier \
+        --param _net=$(cat net.btp.moonbeam) \
+        --param _addr=$(cat bmv.icon) | jq -r . > tx.verifier.icon
+
+    ensure_txresult tx.verifier.icon
+}
+
+goloop_bmc_addLink() {
+    echo "goloop_bmc_addLink"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method addLink \
+        --param _link=$(cat btp.moonbeam) | jq -r . > tx.link.icon
+    ensure_txresult tx.link.icon
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method setLinkRotateTerm \
+        --param _link=$(cat btp.moonbeam) \
+        --param _block_interval=0x1770 \
+        --param _max_agg=0x08 \
+        | jq -r . > tx.setLinkRotateTerm.icon
+    ensure_txresult tx.setLinkRotateTerm.icon
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+    --method setLinkDelayLimit \
+    --param _link=$(cat btp.moonbeam) \
+    --param _value=4 \
+    | jq -r . > tx.setLinkDelayLimit.icon
+    ensure_txresult tx.setLinkDelayLimit.icon
+
+    echo "finished goloop_bmc_addLink"
+}
+
+goloop_bmc_addService() {
+    echo "goloop_bmc_addService"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method addService \
+        --param _addr=$(cat nativeCoinBsh.icon) \
+        --param _svc=CoinTransfer \
+        | jq -r . > tx.addService.icon
+    ensure_txresult tx.addService.icon
+}
+
+goloop_bmc_addRelay() {
+    echo "goloop_bmc_addRelay"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method addRelay \
+        --param _link=$(cat btp.dst) \
+        --param _addr=$(jq -r .address gochain.keystore.json) \
+        | jq -r . > tx.registerRelay.icon
+    ensure_txresult tx.registerRelay.icon
+}
+
+goloop_bmc_setFeeAggregator() {
+    echo "goloop_bmc_setFeeAggregator"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method setFeeAggregator \
+        --param _addr=$(cat feeAggregation.icon) \
+        | jq -r . > tx.addFeeAggregation.icon
+    ensure_txresult tx.addFeeAggregation.icon
+}
+
+goloop_bsh_config_native_coin() {
+    echo "goloop_bsh_config_native_coin"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
+        --method register \
+        --param _name=DEV \
+        | jq -r . > tx.registerCoin.icon
+    ensure_txresult tx.registerCoin.icon
+
+    goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
+        --method setFeeRatio \
+        --param _feeNumerator=100 \
+        | jq -r . > tx.setFeeRatio.icon
+    ensure_txresult tx.setFeeRatio.icon
+
+    goloop rpc sendtx call --to $(cat irc31token.icon) \
+        --method addOwner \
+        --param _addr=$(cat nativeCoinBsh.icon) \
+        | jq -r . > tx.addOwnerIrc31.icon
+    ensure_txresult tx.addOwnerIrc31.icon
+}

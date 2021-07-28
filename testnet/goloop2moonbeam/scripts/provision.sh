@@ -14,11 +14,19 @@ source deploy_solidity.sh
 
 # deploy_javascore_bmc
 # deploy_javascore_bmv
+deploy_javascore_IRC31Token
+deploy_javascore_NativeCoinBSH
+deploy_javascore_FeeAggregation
+goloop_bmc_addVerifier
+goloop_bmc_addLink
+goloop_bmc_addRelay
+goloop_bmc_setFeeAggregator
+goloop_bsh_config_native_coin
 
-deploy_solidity_bmc
-deploy_solidity_bsh
-deploy_solidity_bmv
-moonbeam_bmc_addVerifier
-moonbeam_bmc_addLink
-moonbeam_bmc_addService
-moonbeam_bsh_registerCoin
+# deploy_solidity_bmc
+# deploy_solidity_bsh
+# deploy_solidity_bmv
+# moonbeam_bmc_addVerifier
+# moonbeam_bmc_addLink
+# moonbeam_bmc_addService
+# moonbeam_bsh_registerCoin
