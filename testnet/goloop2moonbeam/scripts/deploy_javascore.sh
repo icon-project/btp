@@ -1,4 +1,5 @@
 #!/bin/sh
+ICON_RECEIVER_FEE_ADDRESS=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
 source deploy_util.sh
 
 deploy_javascore_bmc() {
@@ -49,7 +50,7 @@ _prepare_javascore_bmv() {
     yarn
     yarn getBMVInitializeParams
     wait_file_created $JAVASCORE_HELPER_DIR BMVInitializeData.json
-    echo $PARA_OFFSET > $CONFIG_DIR/para.offset
+    echo $PARA_OFFSET > $CONFIG_DIR/moonbeam.offset
     cp -f BMVInitializeData.json $CONFIG_DIR/
     rm -rf ./node_modules
 }
@@ -67,8 +68,7 @@ deploy_javascore_bmv() {
     encodedValidators=$(echo "$tmp" | jq -r .encodedValidators)
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
     # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
-    
-    echo "$paraMtaOffset" > moonbeam.offset
+
     echo "parachain height:$paraMtaOffset block_hash:$paraLastBlockHash"
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \
@@ -122,6 +122,7 @@ deploy_javascore_FeeAggregation() {
     cd $CONFIG_DIR
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/fee-aggregation-system-1.0-optimized.jar \
+        --param _cps_address=$ICON_RECEIVER_FEE_ADDRESS \
         --content_type application/java | jq -r . > tx.feeAggregation.icon
 
     extract_scoreAddress tx.feeAggregation.icon feeAggregation.icon
@@ -147,6 +148,7 @@ goloop_bmc_addLink() {
         --param _link=$(cat btp.moonbeam) | jq -r . > tx.link.icon
     ensure_txresult tx.link.icon
 
+    echo "goloop_bmc_setLinkRotateTerm"
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method setLinkRotateTerm \
         --param _link=$(cat btp.moonbeam) \
@@ -155,6 +157,7 @@ goloop_bmc_addLink() {
         | jq -r . > tx.setLinkRotateTerm.icon
     ensure_txresult tx.setLinkRotateTerm.icon
 
+    echo "goloop_bmc_setLinkDelayLimit"
     goloop rpc sendtx call --to $(cat bmc.icon) \
     --method setLinkDelayLimit \
     --param _link=$(cat btp.moonbeam) \
@@ -183,7 +186,7 @@ goloop_bmc_addRelay() {
 
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method addRelay \
-        --param _link=$(cat btp.dst) \
+        --param _link=$(cat btp.moonbeam) \
         --param _addr=$(jq -r .address gochain.keystore.json) \
         | jq -r . > tx.registerRelay.icon
     ensure_txresult tx.registerRelay.icon
@@ -210,12 +213,14 @@ goloop_bsh_config_native_coin() {
         | jq -r . > tx.registerCoin.icon
     ensure_txresult tx.registerCoin.icon
 
+    echo "goloop_bsh_setFeeRatio"
     goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
         --method setFeeRatio \
         --param _feeNumerator=100 \
         | jq -r . > tx.setFeeRatio.icon
     ensure_txresult tx.setFeeRatio.icon
 
+    echo "goloop_bsh_addOwner"
     goloop rpc sendtx call --to $(cat irc31token.icon) \
         --method addOwner \
         --param _addr=$(cat nativeCoinBsh.icon) \

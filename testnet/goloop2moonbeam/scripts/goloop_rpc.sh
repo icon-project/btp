@@ -36,14 +36,14 @@ ensure_txresult() {
 
   if [ "$RET" != "0" ]; then
     echo $RESULT
-    return $RET
+    exit $RET
   else
     STATUS=$(echo $RESULT | jq -r .status)
     if [ "$STATUS" == "0x1" ]; then
       return 0
     else
       echo $RESULT
-      return 1
+      exit 1
     fi
   fi
 }

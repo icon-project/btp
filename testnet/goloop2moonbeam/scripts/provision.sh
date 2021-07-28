@@ -12,8 +12,8 @@ rpcch
 source deploy_javascore.sh
 source deploy_solidity.sh
 
-# deploy_javascore_bmc
-# deploy_javascore_bmv
+deploy_javascore_bmc
+deploy_javascore_bmv
 deploy_javascore_IRC31Token
 deploy_javascore_NativeCoinBSH
 deploy_javascore_FeeAggregation
