@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -22,7 +23,14 @@ const (
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
+	defaultGasLimit                  = 6721975 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
+
+var RetrableRelayReSendReExp = regexp.MustCompile(``)
+
+type praSenderOptions struct {
+	GasLimit uint64 `json:"gas_limit"`
+}
 
 var (
 	DefaultRetryContractCall = 10 // reduce testing time
@@ -37,20 +45,8 @@ type Sender struct {
 	w   Wallet
 	src chain.BtpAddress
 	dst chain.BtpAddress
+	opt praSenderOptions
 	log log.Logger
-
-	opt struct {
-		StepLimit int64
-	}
-
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
-	}
-	isFoundOffsetBySeq bool
-	cb                 chain.ReceiveCallback
 }
 
 func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessageParam, error) {
@@ -64,12 +60,8 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		Msg:  base64.URLEncoding.EncodeToString(b),
 	}
 
-	// if len(rm.ReceiptProofs) > 0 {
-	// 	s.log.Debugf("sending rp _msg: %v", rmp.Msg)
-	// }
-
-	s.log.Tracef("RLPEncodedRelayMessage: %x\n", b)
-	s.log.Tracef("Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
+	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
+	s.log.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
 
 	return rmp, nil
 }
@@ -256,14 +248,22 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 		return nil, fmt.Errorf("casting failure")
 	}
 
+	txOpts := s.c.newTransactOpts(s.w)
+	if s.opt.GasLimit > 0 {
+		txOpts.GasLimit = s.opt.GasLimit
+	} else {
+		txOpts.GasLimit = defaultGasLimit
+	}
+
+	s.log.Tracef("Relay: TransactionOptions: %+v", txOpts)
+
 	tries := 0
 CALL_CONTRACT:
 	tries++
-	txOpts := s.c.newTransactOpts(s.w)
 	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
 	if err != nil {
-		if tries < DefaultRetryContractCall {
-			s.log.Debugf("Relay: retry with Relay err:%+v", err)
+		if RetrableRelayReSendReExp.MatchString(err.Error()) && tries < DefaultRetryContractCall {
+			s.log.Tracef("Relay: retry with Relay err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}
@@ -314,7 +314,7 @@ CALL_CONTRACT:
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
 		if tries < DefaultRetryContractCall {
-			s.log.Debugf("GetStatus: retry with GetStatus err:%+v", err)
+			s.log.Tracef("GetStatus: retry with GetStatus err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}

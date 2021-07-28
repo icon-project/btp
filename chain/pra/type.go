@@ -2,7 +2,6 @@ package pra
 
 import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	stypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/substrate"
 )
@@ -40,6 +39,7 @@ type StateProof struct {
 func NewStateProof(key substrate.SubstrateStorageKey, rp *substrate.SubstrateReadProof) *StateProof {
 	proofs := [][]byte{}
 	for _, p := range rp.Proof {
+		// TODO move this function to substrate package
 		if bp, err := types.HexDecodeString(p); err != nil {
 			return nil
 		} else {
@@ -79,11 +79,6 @@ func (rm RelayMessage) Size() int {
 		size += len(receiptProof)
 	}
 	return size
-}
-
-type SignedHeader struct {
-	stypes.Header
-	stypes.Justification
 }
 
 type BlockNotification struct {

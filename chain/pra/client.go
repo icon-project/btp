@@ -15,16 +15,16 @@ import (
 )
 
 const (
-	BlockRetryInterval       = time.Second * 1
-	DefaultGasLimit          = 6721975
-	DefaultGasPrice    int64 = 1000000000
-	DefaultReadTimeout       = 10 * time.Second
+	BlockRetryInterval = time.Second * 1
+	DefaultReadTimeout = 10 * time.Second
 )
 
 type EthClient interface {
 	TransactionReceipt(ctx context.Context, hash EvmHash) (*EvmReceipt, error)
 	TransactionByHash(ctx context.Context, hash EvmHash) (*EvmTransaction, bool, error)
 	CallContract(ctx context.Context, callMsg EvmCallMsg, block *big.Int) ([]byte, error)
+	SuggestGasPrice(ctx context.Context) (*big.Int, error)
+	ChainID(ctx context.Context) (*big.Int, error)
 }
 
 type BMCContract interface {
@@ -77,10 +77,11 @@ func (c *Client) SubstrateClient() substrate.SubstrateClient {
 
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
-	txopts := bind.NewKeyedTransactor(ew.Skey)
-	txopts.GasLimit = DefaultGasLimit
-	txopts.GasPrice = big.NewInt(DefaultGasPrice)
-	txopts.Context = context.Background()
+	context := context.Background()
+	chainID, _ := c.ethClient.ChainID(context)
+	txopts, _ := bind.NewKeyedTransactorWithChainID(ew.Skey, chainID)
+	txopts.GasPrice, _ = c.ethClient.SuggestGasPrice(context)
+	txopts.Context = context
 
 	return txopts
 }
