@@ -263,7 +263,7 @@ CALL_CONTRACT:
 	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
 	if err != nil {
 		if RetrableRelayReSendReExp.MatchString(err.Error()) && tries < DefaultRetryContractCall {
-			s.log.Debugf("Relay: retry with Relay err:%+v", err)
+			s.log.Tracef("Relay: retry with Relay err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}
@@ -314,7 +314,7 @@ CALL_CONTRACT:
 	bs, err := s.c.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
 		if tries < DefaultRetryContractCall {
-			s.log.Debugf("GetStatus: retry with GetStatus err:%+v", err)
+			s.log.Tracef("GetStatus: retry with GetStatus err:%+v", err)
 			<-time.After(DefaultRetryContractCallInterval)
 			goto CALL_CONTRACT
 		}
