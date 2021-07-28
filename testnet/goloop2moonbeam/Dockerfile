@@ -24,5 +24,7 @@ ADD wait_for_it.sh /wait_for_it.sh
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod u+x /entrypoint.sh && chmod u+x /wait_for_it.sh
 
+ADD moonbeam /btpsimple/moonbeam
 WORKDIR /btpsimple/config
+ENV CONFIG_DIR /btpsimple/config
 ENTRYPOINT [ "/entrypoint.sh" ]

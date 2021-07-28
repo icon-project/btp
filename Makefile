@@ -55,12 +55,11 @@ BUILD_TARGETS += btpsimple
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
-CONTRACT_DIST_DIR=$(BUILD_ROOT)/build/contracts
-PYSCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/pyscore
-JAVASCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/javascore
-SOLIDITY_DIST_DIR=$(CONTRACT_DIST_DIR)/solidity
-
-PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop2goloop/pyscore
+export CONTRACT_DIST_DIR=$(BUILD_ROOT)/build/contracts
+export PYSCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/pyscore
+export JAVASCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/javascore
+export SOLIDITY_DIST_DIR=$(CONTRACT_DIST_DIR)/solidity
+export PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop2goloop/pyscore
 
 $(PYSCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%,%,$@))
@@ -86,39 +85,16 @@ dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
 
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 dist-java: 
-	sh ./scripts/build_javascore.sh 
+	sh ./scripts/dist_javascore.sh 
+dist-sol:
+	sh ./scripts/dist_solidity.sh
 
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*
-
-$(SOLIDITY_DIST_DIR)/%:
-	$(eval MODULE := $(patsubst $(SOLIDITY_DIST_DIR)/%,%,$@))
-	mkdir -p $@/contracts ; \
-	mkdir -p $@/migrations ; \
-	cp -r solidity/$(MODULE)/contracts/* $@/contracts ; \
-	cp -r solidity/$(MODULE)/migrations/* $@/migrations ; \
-	cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
-	rm -rf $@/contracts/Mock ; \
-
-dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
-	cd $(SOLIDITY_DIST_DIR)/bmc ; \
-	yarn --production ; \
-	truffle compile
-
-dist-sol-bsh: $(SOLIDITY_DIST_DIR)/bsh
-	cd $(SOLIDITY_DIST_DIR)/bsh ; \
-	yarn --production ; \
-	truffle compile
-
-dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
-	cd $(SOLIDITY_DIST_DIR)/bmv ; \
-	yarn --production ; \
-	truffle compile
-
-dist-sol: dist-sol-bmc dist-sol-bsh dist-sol-bmv
-
 clean-dist-sol:
 	rm -rf $(SOLIDITY_DIST_DIR)
+clean-dist-java:
+	rm -rf $(JAVASCORE_DIST_DIR)
 
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple

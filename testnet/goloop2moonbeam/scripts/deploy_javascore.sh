@@ -68,7 +68,7 @@ deploy_javascore_bmv() {
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
     # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
     
-    echo "$paraMtaOffset" > para.offset
+    echo "$paraMtaOffset" > moonbeam.offset
     echo "parachain height:$paraMtaOffset block_hash:$paraLastBlockHash"
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/parachain-BMV-optimized.jar \

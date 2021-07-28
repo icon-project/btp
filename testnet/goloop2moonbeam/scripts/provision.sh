@@ -19,3 +19,6 @@ deploy_solidity_bmc
 deploy_solidity_bsh
 deploy_solidity_bmv
 moonbeam_bmc_addVerifier
+moonbeam_bmc_addLink
+moonbeam_bmc_addService
+moonbeam_bsh_registerCoin
