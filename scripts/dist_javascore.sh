@@ -34,17 +34,22 @@ cd $SOURCE_CODE_DIR && tar -xzf iconloop.tar && mv javascore iconloop
 ### compiling
 cd $SOURCE_CODE_DIR/bmv/eventDecoder && gradle buildKusamaDecoder && gradle buildMoonriverDecoder
 cd $SOURCE_CODE_DIR/bmv/parachain && gradle optimizedJar
+cd $SOURCE_CODE_DIR/fee_aggregation && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/bmc && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/nativecoin && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/javaee-tokens && gradle optimizedJar
+
+
 
 ### packing
 cp -rf $SOURCE_CODE_DIR/bmv/helper ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/parachain/build/libs/parachain-BMV-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/eventDecoder/build/libs/KusamaEventDecoder-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmv/eventDecoder/build/libs/MoonriverEventDecoder-optimized.jar ${JAVASCORE_DIST_DIR}/
+cp $SOURCE_CODE_DIR/fee_aggregation/build/libs/fee-aggregation-system-1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/iconloop/bmc/build/libs/bmc-0.1.0-debug.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/iconloop/nativecoin/build/libs/nativecoin-0.1.0-debug.jar ${JAVASCORE_DIST_DIR}/
+cp $SOURCE_CODE_DIR/iconloop/javaee-tokens/build/libs/irc31-0.1.0-debug.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/iconloop/javaee-tokens/build/libs/irc31-0.1.0-debug.jar ${JAVASCORE_DIST_DIR}/
 
 ### cleaning
