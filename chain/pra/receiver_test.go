@@ -49,7 +49,6 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				subClient:         subClient,
 				stopMonitorSignal: make(chan bool),
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
@@ -89,7 +88,6 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				stopMonitorSignal: make(chan bool),
 				bmc:               bmcContract,
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
@@ -137,7 +135,6 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				stopMonitorSignal: make(chan bool),
 				bmc:               bmc,
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
