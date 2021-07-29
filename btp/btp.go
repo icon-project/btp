@@ -76,14 +76,14 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 	case "icon":
 		sender = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, l)
 	case "pra":
-		sender = pra.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, nil, l)
+		sender = pra.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, l)
 	default:
 		return nil, errors.New("Chain not supported yet")
 	}
 
 	switch cfg.Src.Address.BlockChain() {
 	case "icon":
-		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, nil, l)
+		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
 	case "pra":
 		receiver = pra.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
 	default:
