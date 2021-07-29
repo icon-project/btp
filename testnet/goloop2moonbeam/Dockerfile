@@ -27,4 +27,8 @@ RUN chmod u+x /entrypoint.sh && chmod u+x /wait_for_it.sh
 ADD moonbeam /btpsimple/moonbeam
 WORKDIR /btpsimple/config
 ENV CONFIG_DIR /btpsimple/config
+
 ENTRYPOINT [ "/entrypoint.sh" ]
+
+# Overwrite this by docker-compose
+CMD btpsimple start --config config.json 

@@ -29,7 +29,7 @@ services:
             - "9944:9944"
         command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
         user: root
-    btp:
+    btp_icon:
         build:
             context: .
         depends_on: 
@@ -43,11 +43,57 @@ services:
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
+        command: "btpsimple start --config ./icon.config.json"
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
+            - ${PWD}/data/btpsimple_icon:/btpsimple/data
         environment: 
             - GOLOOPCHAIN=gochain
             - RELAY_ENDPOINT=wss://kusama-rpc.polkadot.io
             - PARA_ENDPOINT=ws://moonbeam:9944
             - MOONBEAM_RPC_URL=http://moonbeam:9933
+            - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
+            - BTPSIMPLE_CONFIG=/btpsimple/config/icon.config.json
+            - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
+            - BTPSIMPLE_SRC_ENDPOINT=http://gochain:9080/api/v3/icon
+            - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
+            - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:9933
+            - BTPSIMPLE_OFFSET=/btpsimple/config/icon.offset
+            - BTPSIMPLE_KEY_STORE=/btpsimple/config/gochain.keystore.json
+            - BTPSIMPLE_KEY_SECRET=/btpsimple/config/gochain.keysecret
+            - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btpsimple_icon.log
+    # btp_moonbeam:
+    #     build:
+    #         context: .
+    #     depends_on: 
+    #         - gochain
+    #         - moonbeam
+    #     entrypoint: 
+    #         - "/wait_for_it.sh"
+    #         - "gochain:9080"
+    #         - --
+    #         - "/wait_for_it.sh"
+    #         - "moonbeam:9933"
+    #         - --
+    #         - "/entrypoint.sh"
+    #     command: "btpsimple start --config ./moonbeam.config.json"
+    #     volumes: 
+    #         - ./scripts:/btpsimple/scripts
+    #         - ${PWD}/config:/btpsimple/config
+    #         - ${PWD}/data/btpsimple_moonbeam:/btpsimple/data
+    #     environment: 
+    #         - GOLOOPCHAIN=gochain
+    #         - RELAY_ENDPOINT=wss://kusama-rpc.polkadot.io
+    #         - PARA_ENDPOINT=ws://moonbeam:9944
+    #         - MOONBEAM_RPC_URL=http://moonbeam:9933
+    #         - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_moonbeam
+    #         - BTPSIMPLE_CONFIG=/btpsimple/config/moonbeam.config.json
+    #         - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam
+    #         - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
+    #         - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
+    #         - BTPSIMPLE_DST_ENDPOINT=http://gochain:9080/api/v3/icon
+    #         - BTPSIMPLE_OFFSET=/btpsimple/config/moonbeam.offset
+    #         - BTPSIMPLE_KEY_STORE=/btpsimple/config/moonbeam.keystore.json
+    #         - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
+    #         - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_moonbeam/btpsimple_moonbeam.log
