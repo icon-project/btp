@@ -43,7 +43,6 @@ services:
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
-        command: "btpsimple start --config /btpsimple/config/config.icon.json"
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
@@ -78,7 +77,6 @@ services:
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
-        command: "btpsimple start --config ./config.moonbeam.json"
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config

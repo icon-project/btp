@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 wait_config_ready() {
     timeout=10
@@ -53,4 +52,4 @@ if [ "$BTPSIMPLE_CONFIG" != "" ] && [ ! -f "$BTPSIMPLE_CONFIG" ]; then
 fi
 
 wait_config_ready
-exec "$@"
+btpsimple start --config $BTPSIMPLE_CONFIG

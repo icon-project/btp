@@ -9,7 +9,7 @@ export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
 PROVISION_STATUS_DONE=$CONFIG_DIR/provisioning.done
 PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provisioning.processing
 
-setup_contracts() {  
+provision() {  
     echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
     echo "provisioning..."
 
@@ -47,16 +47,17 @@ setup_contracts() {
     ## finalizing
     echo "finished provisioning at: $(date)" > $PROVISION_STATUS_DONE
     rm $PROVISION_STATUS_PROCESSING
+    sleep 1
 }
 
 if [ ! -f "$PROVISION_STATUS_DONE" ]; then
     if [ ! -f "$PROVISION_STATUS_PROCESSING" ]; then
-        setup_contracts
+        provision
     else
         while [ ! -f $PROVISION_STATUS_DONE ];
         do
-            sleep 3
-            echo "waiting for provisioning is finished"
+            echo "waiting for an other BTP to finish provisioning settings..."
+            sleep 10
         done
     fi
 fi

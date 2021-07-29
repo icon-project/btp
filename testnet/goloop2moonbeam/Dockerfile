@@ -29,6 +29,3 @@ WORKDIR /btpsimple/config
 ENV CONFIG_DIR /btpsimple/config
 
 ENTRYPOINT [ "/entrypoint.sh" ]
-
-# Overwrite this by docker-compose
-CMD btpsimple start --config config.json 
