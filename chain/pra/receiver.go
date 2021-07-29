@@ -13,14 +13,14 @@ import (
 )
 
 type receiverOptions struct {
-	RelayEndpoint chain.BtpAddress `json:"relay_endpoint"`
-	IconEndpoint  string           `json:"icon_endpoint"`
-	PraBmvAddress string           `json:"icon_bmv_address"`
+	RelayEndpoint string `json:"relay_endpoint"`
+	IconEndpoint  string `json:"icon_endpoint"`
+	PraBmvAddress string `json:"icon_bmv_address"`
 }
 
 type Receiver struct {
 	c                           *Client
-	relayReceiver               *relayReceiver
+	relayReceiver               relayReceiver
 	src                         chain.BtpAddress
 	dst                         chain.BtpAddress
 	l                           log.Logger
@@ -44,13 +44,10 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
 	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
-		r.relayReceiver = &relayReceiver{}
-		// r.rC, err = substrate.NewSubstrateClient(string(r.opt.RelayEndpoint))
+		r.relayReceiver = NewRelayReceiver(r.opt.RelayEndpoint, r.opt.IconEndpoint, r.opt.PraBmvAddress, l)
 		if err != nil {
 			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
 		}
-
-		// r.praBmvClient = &praBmvClient{*icon.NewClient(r.opt.IconEndpoint, l), r.opt.PraBmvAddress, l}
 	}
 	return r
 }

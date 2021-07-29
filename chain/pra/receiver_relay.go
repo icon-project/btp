@@ -23,7 +23,7 @@ func NewRelayReceiver(relayEndpoint string, iconEndpoint string, bmvAddress stri
 	rC.pC = NewPraBmvClient(iconEndpoint, log, bmvAddress, config)
 
 	rC.pC.prepareDatabase()
-	rC.syncBlock()
+	go rC.syncBlock()
 	return rC
 }
 
