@@ -8,6 +8,7 @@ Note: tested on macos.
 - docker version 20.10.5+
 - docker-compose version 1.29.0+
 - make
+- zip
 - go version 1.16.3
 ```
 
@@ -39,7 +40,7 @@ make btpsimple-image
 ### Run docker-compose
 
 ```
-cd ~/work/btp/goloop2moonbeam
+cd ~/work/btp/testnet/goloop2moonbeam
 make build
 make run
 ```
