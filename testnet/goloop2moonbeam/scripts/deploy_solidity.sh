@@ -15,7 +15,7 @@ deploy_solidity_bmc() {
     truffle migrate --network moonbeamlocal
 
     wait_file_created $CONFIG_DIR bmc.moonbeam
-    echo "btp://$(cat net.btp.moonbeam)/$(cat bmc.moonbeam)" > btp.moonbeam
+    echo "btp://$(cat $CONFIG_DIR/net.btp.moonbeam)/$(cat $CONFIG_DIR/bmc.moonbeam)" > $CONFIG_DIR/btp.moonbeam
 }
 
 deploy_solidity_bsh() {
