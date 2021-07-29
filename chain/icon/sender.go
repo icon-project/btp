@@ -38,15 +38,16 @@ const (
 	txMaxDataSize                   = 524288 //512 * 1024 // 512kB
 	txOverheadScale                 = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                     = txMaxDataSize / (1 + txOverheadScale)
-	MaxDefaultGetRelayResultRetries = 60
 	DefaultGetRelayResultInterval   = time.Second
-	DefaultRelayReSendInterval      = time.Second
+	DefaultRelayReSendInterval      = time.Second * 3
+	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultRelayReSendInterval)) // Pending or stale transaction timeout is 5 minute
+	MaxBlockUpdatesPerSegment       = 10
 )
 
 var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
 
 type SenderOptions struct {
-	StepLimit int64 `json:"stepLimit"`
+	StepLimit int64 `json:"step_limit"`
 }
 
 type sender struct {
@@ -267,8 +268,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		}
 		size += buSize
 		osl := s.isOverSizeLimit(size)
-		if osl {
-			s.l.Tracef("Segment: over size limit: %t", osl)
+		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
+		if osl || obl {
+			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{
 				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -386,6 +388,10 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 func (s *sender) isOverSizeLimit(size int) bool {
 	return txSizeLimit < float64(size)
+}
+
+func (s *sender) isOverBlocksLimit(blockupdates int) bool {
+	return blockupdates >= MaxBlockUpdatesPerSegment
 }
 
 // UpdateSegment updates segment
