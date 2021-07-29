@@ -42,11 +42,11 @@ setup_contracts() {
     # -------------------------------
 
     ## finalizing
-    echo "$(date)" > $CONFIG_DIR/contracts.configured
+    echo "$(date)" > $CONFIG_DIR/provisioning.done
 }
 
-if [ ! -f "$CONFIG_DIR/contracts.configured" ]; then
-    if [ ! -f "$CONFIG_DIR/contracts.provisioning" ]; then
+if [ ! -f "$CONFIG_DIR/provisioning.done" ]; then
+    if [ ! -f "$CONFIG_DIR/provisioning.starting" ]; then
         setup_contracts
     else
         while [ ! -f $CONFIG_DIR/contracts.configured ];
