@@ -1,6 +1,20 @@
 #!/bin/sh
 set -e
 
+wait_config_ready() {
+    timeout=10
+    while [ ! -f $BTPSIMPLE_CONFIG ];
+    do
+        if [ "$timeout" == 0 ]; then
+            echo "ERROR: Timeout while waiting for the file $BTPSIMPLE_CONFIG."
+            exit 1
+        fi
+        sleep 1
+        timeout=$(expr $timeout - 1)
+        echo "waiting for the config file: $BTPSIMPLE_CONFIG"
+    done
+}
+
 cp -u /btpsimple/moonbeam/* /btpsimple/config/
 source provision.sh
 
@@ -37,4 +51,6 @@ if [ "$BTPSIMPLE_CONFIG" != "" ] && [ ! -f "$BTPSIMPLE_CONFIG" ]; then
     fi
     sh -c "unset $UNSET ; $CMD"
 fi
+
+wait_config_ready
 exec "$@"

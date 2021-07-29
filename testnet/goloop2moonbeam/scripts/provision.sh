@@ -6,8 +6,11 @@ export JAVASCORE_HELPER_DIR=${JAVASCORE_HELPER_DIR:-$JAVASCORE_DIST_DIR/helper}
 export MOONBEAM_CHAIN_ID=1281 # https://github.com/PureStake/moonbeam#chain-ids
 export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
 
+PROVISION_STATUS_DONE=$CONFIG_DIR/provisioning.done
+PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provisioning.processing
+
 setup_contracts() {  
-    echo "$(date)" > $CONFIG_DIR/contracts.configured
+    echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
     echo "provisioning..."
 
     source goloop_rpc.sh
@@ -42,14 +45,15 @@ setup_contracts() {
     # -------------------------------
 
     ## finalizing
-    echo "$(date)" > $CONFIG_DIR/provisioning.done
+    echo "finished provisioning at: $(date)" > $PROVISION_STATUS_DONE
+    rm $PROVISION_STATUS_PROCESSING
 }
 
-if [ ! -f "$CONFIG_DIR/provisioning.done" ]; then
-    if [ ! -f "$CONFIG_DIR/provisioning.starting" ]; then
+if [ ! -f "$PROVISION_STATUS_DONE" ]; then
+    if [ ! -f "$PROVISION_STATUS_PROCESSING" ]; then
         setup_contracts
     else
-        while [ ! -f $CONFIG_DIR/contracts.configured ];
+        while [ ! -f $PROVISION_STATUS_DONE ];
         do
             sleep 3
             echo "waiting for provisioning is finished"
