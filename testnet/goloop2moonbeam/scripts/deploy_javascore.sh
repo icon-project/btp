@@ -3,12 +3,12 @@ ICON_RECEIVER_FEE_ADDRESS=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
 source deploy_util.sh
 
 deploy_javascore_bmc() {
-    echo "deploying javascrore bmc"
+    echo "deploying javascore bmc"
 
     cd $CONFIG_DIR
     echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
 
-    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/bmc-0.1.0-debug.jar \
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/bmc-0.1.0-optimized.jar \
     --content_type application/java \
     --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
 
@@ -17,7 +17,7 @@ deploy_javascore_bmc() {
 }
 
 _deploy_kusamaDecoder(){
-    echo "deploying javascrore kusamaDecoder"
+    echo "deploying javascore kusamaDecoder"
     
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/KusamaEventDecoder-optimized.jar \
@@ -27,7 +27,7 @@ _deploy_kusamaDecoder(){
 }
 
 _deploy_moonriverDecoder(){
-    echo "deploying javascrore moonriverDecoder"
+    echo "deploying javascore moonriverDecoder"
 
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/MoonriverEventDecoder-optimized.jar \
@@ -47,6 +47,11 @@ _prepare_javascore_bmv() {
 
     echo "getting BMVInitializeParams at PARA_OFFSET:$PARA_OFFSET RELAY_OFFSET:$RELAY_OFFSET"
     cd $JAVASCORE_HELPER_DIR
+    # sed -i 's/"RELAY_ENDPOINT"/process.env.RELAY_ENDPOINT/' getBMVInitializeParams.ts
+    # sed -i 's/"RELAY_OFFSET"/process.env.RELAY_OFFSET/' getBMVInitializeParams.ts
+    # sed -i 's/"PARA_ENDPOINT"/process.env.PARA_ENDPOINT/' getBMVInitializeParams.ts
+    # sed -i 's/"PARA_OFFSET"/process.env.PARA_OFFSET/' getBMVInitializeParams.ts
+
     yarn
     yarn getBMVInitializeParams
     wait_file_created $JAVASCORE_HELPER_DIR BMVInitializeData.json
@@ -56,7 +61,7 @@ _prepare_javascore_bmv() {
 }
 
 deploy_javascore_bmv() {
-    echo "deploying javascrore bmv"
+    echo "deploying javascore bmv"
     _prepare_javascore_bmv
 
     cd $CONFIG_DIR
@@ -96,7 +101,7 @@ deploy_javascore_IRC31Token() {
     echo "deploy_javascore_IRC31Token"
     cd $CONFIG_DIR
 
-    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc31-0.1.0-debug.jar \
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc31-0.1.0-optimized.jar \
     --content_type application/java | jq -r . > tx.irc31token.icon
 
     extract_scoreAddress tx.irc31token.icon irc31token.icon
@@ -107,7 +112,7 @@ deploy_javascore_NativeCoinBSH() {
 
     cd $CONFIG_DIR
 
-    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoin-0.1.0-debug.jar \
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoin-0.1.0-optimized.jar \
         --content_type application/java \
         --param _bmc=$(cat bmc.icon) \
         --param _irc31=$(cat irc31token.icon) \
