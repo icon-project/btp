@@ -1,6 +1,7 @@
 version: "3.4"
 services:
     gochain:
+        container_name: gochain
         build:
             context: ./gochain
         logging:
@@ -19,6 +20,7 @@ services:
             - JAVAEE_BIN=/goloop/execman/bin/execman
             - PYEE_VERIFY_PACKAGE=true
     moonbeam:
+        container_name: moonbeam
         image: purestake/moonbeam:v0.9.6
         logging:
             driver: none
@@ -30,6 +32,7 @@ services:
         command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
         user: root
     btp_icon:
+        container_name: btp_icon
         build:
             context: .
         depends_on: 
@@ -63,6 +66,7 @@ services:
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btp.icon.log
     btp_moonbeam:
+        container_name: btp_moonbeam
         build:
             context: .
         depends_on: 
