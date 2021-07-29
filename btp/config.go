@@ -32,5 +32,5 @@ type Config struct {
 	Src               BaseConfig       `json:"src"`
 	Dst               BaseConfig       `json:"dst"`
 
-	// Offset int64 `json:"offset"` get directly from BMCStatusLink.Verifier.Offset
+	Offset int64 `json:"offset"`
 }
