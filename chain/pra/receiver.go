@@ -14,7 +14,6 @@ import (
 
 type receiverOptions struct {
 	RelayEndpoint chain.BtpAddress `json:"relay_endpoint"`
-	ParaChainId   uint             `json:"prachain_id"`
 	IconEndpoint  string           `json:"icon_endpoint"`
 	PraBmvAddress string           `json:"icon_bmv_address"`
 }

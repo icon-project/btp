@@ -64,11 +64,11 @@ func (rc *relayReceiver) syncBlock() {
 }
 
 // newBlockProof creates a new BlockProof
-func (rc *relayReceiver) newBlockProof(height int64, header []byte) (*chain.BlockProof, error) {
-	mtaHeight := rc.pC.getRelayMtaHeight()
-	mtaOffset := rc.pC.getRelayMtaOffset()
+func (r *relayReceiver) newBlockProof(height int64, header []byte) (*chain.BlockProof, error) {
+	mtaHeight := r.pC.getRelayMtaHeight()
+	mtaOffset := r.pC.getRelayMtaOffset()
 
-	at, w, err := rc.pC.store.WitnessForAt(height, mtaHeight, mtaOffset)
+	at, w, err := r.pC.store.WitnessForAt(height, mtaHeight, mtaOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -81,21 +81,47 @@ func (rc *relayReceiver) newBlockProof(height int64, header []byte) (*chain.Bloc
 		},
 	}
 
-	rc.log.Debugf("newBlockProof height:%d, at:%d, w:%x", height, at, bp.BlockWitness.Witness)
+	r.log.Debugf("newBlockProof height:%d, at:%d, w:%x", height, at, bp.BlockWitness.Witness)
 	return bp, nil
 }
 
-func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData) ([][]byte, [][]byte, error) {
+func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifications *substrate.GrandpaJustification) ([]byte, error) {
+	var err error
+	var update RelayBlockUpdate
+	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(header); err != nil {
+		return nil, err
+	}
+
+	bu, err := codec.RLP.MarshalToBytes(&update)
+	if err != nil {
+		return nil, err
+	}
+
+	return bu, nil
+}
+
+func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData, from uint64) ([][]byte, [][]byte, error) {
 	bus := make([][]byte, 0)
 	sps := make([][]byte, 0)
 
 	foundEvent := false
-	from := uint64(vd.RelayParentNumber + 1)
 	for !foundEvent {
 		bh, err := r.c.GetBlockHash(from)
 		if err != nil {
 			return nil, nil, err
 		}
+
+		bheader, err := r.c.GetHeader(bh)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bu, err := r.newBlockUpdate(*bheader, nil)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bus = append(bus, bu)
 
 		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
 		if err != nil {
@@ -106,6 +132,50 @@ func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedVa
 	}
 
 	return bus, sps, nil
+}
+
+func (r *relayReceiver) pullBlockProofAndStateProofs(vd *substrate.PersistedValidationData, from uint64) ([]byte, [][]byte, error) {
+	bp := []byte{}
+	sps := make([][]byte, 0)
+
+	foundEvent := false
+	for !foundEvent {
+		bh, err := r.c.GetBlockHash(from)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bheader, err := r.c.GetHeader(bh)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		encodeHeader, err := substrate.NewEncodedSubstrateHeader(*bheader)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		blockProof, err := r.newBlockProof(int64(bheader.Number), encodeHeader)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		bp, err = codec.RLP.MarshalToBytes(blockProof)
+		if err != nil {
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+
+		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		foundEvent = true
+	}
+
+	return bp, sps, nil
 }
 
 func (r *relayReceiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, []relaychain.EventParasInclusionCandidateIncluded, error) {
@@ -134,15 +204,33 @@ func (r *relayReceiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData) ([]byte, error) {
-	bus, rps, err := r.pullBlockUpdatesAndStateProofs(vd)
-	if err != nil {
-		return nil, err
+	var from uint64
+	mtaHeight := r.pC.getRelayMtaHeight()
+
+	behindMtaHeight := false
+	if mtaHeight <= int64(vd.RelayParentNumber) {
+		from = uint64(mtaHeight)
+	} else {
+		behindMtaHeight = true
+		from = uint64(vd.RelayParentNumber) + 1
 	}
 
-	// TODO fetch relay mta height from icon client
-	bp, err := codec.RLP.MarshalToBytes(nil)
-	if err != nil {
-		return nil, err
+	bus := make([][]byte, 0)
+	bp := []byte{}
+	rps := make([][]byte, 0)
+
+	if behindMtaHeight {
+		var err error
+		bp, rps, err = r.pullBlockProofAndStateProofs(vd, from)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		bus, rps, err = r.pullBlockUpdatesAndStateProofs(vd, from)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	msg := &RelayMessage{

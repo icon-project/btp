@@ -107,6 +107,7 @@ func (c *praBmvClient) prepareDatabase() error {
 
 	offset := c.getRelayMtaOffset()
 
+	// A lot of int64 variable should be uint64
 	if offset < 0 {
 		offset = 0
 	}
