@@ -81,7 +81,7 @@ deploy_javascore_bmv() {
         --param relayMtaOffset=$relayMtaOffset \
         --param paraMtaOffset=$paraMtaOffset \
         --param bmc=$(cat bmc.icon) \
-        --param net=$(cat net.btp.icon) \
+        --param net=$(cat net.btp.moonbeam) \
         --param mtaRootSize=0x8 \
         --param mtaCacheSize=0x8 \
         --param mtaIsAllowNewerWitness=0x1 \

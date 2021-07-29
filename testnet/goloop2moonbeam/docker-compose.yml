@@ -43,7 +43,7 @@ services:
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
-        command: "btpsimple start --config /btpsimple/config/config.btp.icon.json"
+        command: "btpsimple start --config /btpsimple/config/config.icon.json"
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
@@ -54,7 +54,7 @@ services:
             - PARA_ENDPOINT=ws://moonbeam:9944
             - MOONBEAM_RPC_URL=http://moonbeam:9933
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
-            - BTPSIMPLE_CONFIG=/btpsimple/config/config.btp.icon.json
+            - BTPSIMPLE_CONFIG=/btpsimple/config/config.icon.json
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
             - BTPSIMPLE_SRC_ENDPOINT=http://gochain:9080/api/v3/icon
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
@@ -76,7 +76,7 @@ services:
     #         - "moonbeam:9933"
     #         - --
     #         - "/entrypoint.sh"
-    #     command: "btpsimple start --config ./config.moonbeam.icon.json"
+    #     command: "btpsimple start --config ./config.moonbeam.json"
     #     volumes: 
     #         - ./scripts:/btpsimple/scripts
     #         - ${PWD}/config:/btpsimple/config
@@ -87,7 +87,7 @@ services:
     #         - PARA_ENDPOINT=ws://moonbeam:9944
     #         - MOONBEAM_RPC_URL=http://moonbeam:9933
     #         - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_moonbeam
-    #         - BTPSIMPLE_CONFIG=/btpsimple/config/config.moonbeam.icon.json
+    #         - BTPSIMPLE_CONFIG=/btpsimple/config/config.moonbeam.json
     #         - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam
     #         - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
     #         - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
