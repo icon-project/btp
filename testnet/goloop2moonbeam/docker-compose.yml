@@ -43,7 +43,7 @@ services:
             - "moonbeam:9933"
             - --
             - "/entrypoint.sh"
-        command: "btpsimple start --config ./icon.config.json"
+        command: "btpsimple start --config /btpsimple/config/icon.config.json"
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
@@ -59,7 +59,7 @@ services:
             - BTPSIMPLE_SRC_ENDPOINT=http://gochain:9080/api/v3/icon
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
             - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:9933
-            - BTPSIMPLE_OFFSET=/btpsimple/config/icon.offset
+            - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
             - BTPSIMPLE_KEY_STORE=/btpsimple/config/gochain.keystore.json
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/gochain.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btpsimple_icon.log
@@ -67,8 +67,7 @@ services:
     #     build:
     #         context: .
     #     depends_on: 
-    #         - gochain
-    #         - moonbeam
+    #         - btp_icon
     #     entrypoint: 
     #         - "/wait_for_it.sh"
     #         - "gochain:9080"
@@ -93,7 +92,7 @@ services:
     #         - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
     #         - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
     #         - BTPSIMPLE_DST_ENDPOINT=http://gochain:9080/api/v3/icon
-    #         - BTPSIMPLE_OFFSET=/btpsimple/config/moonbeam.offset
+    #         - BTPSIMPLE_OFFSET=/btpsimple/config/offset.moonbeam
     #         - BTPSIMPLE_KEY_STORE=/btpsimple/config/moonbeam.keystore.json
     #         - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
     #         - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_moonbeam/btpsimple_moonbeam.log

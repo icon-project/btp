@@ -55,7 +55,7 @@ _prepare_javascore_bmv() {
     yarn
     yarn getBMVInitializeParams
     wait_file_created $JAVASCORE_HELPER_DIR BMVInitializeData.json
-    echo $PARA_OFFSET > $CONFIG_DIR/moonbeam.offset
+    echo $PARA_OFFSET > $CONFIG_DIR/offset.moonbeam
     cp -f BMVInitializeData.json $CONFIG_DIR/
     rm -rf ./node_modules
 }

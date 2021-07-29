@@ -62,7 +62,7 @@ deploy_solidity_bmv() {
     BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
     truffle migrate --network moonbeamlocal
 
-    echo $LAST_HEIGHT > $CONFIG_DIR/icon.offset
+    echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
     wait_file_created $CONFIG_DIR bmv.moonbeam
 }
 
