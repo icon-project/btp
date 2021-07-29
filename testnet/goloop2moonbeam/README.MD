@@ -1,7 +1,7 @@
 # Docker integration of BTP betwwen ICON and MOONBEAM
 
-This document guide you how to run an docker environemnt to illustrate of running BTP between ICON and MOONBEAM.   
-P/S: I just only tested on macos.
+This document guides you how to run an docker environemnt to illustrate of running BTP between ICON and MOONBEAM.   
+Note: tested on macos.
 
 ## Prerequisites:  
 ```
@@ -44,6 +44,5 @@ make build
 make run
 ```
 
-Now just wait for the provisioning progress is done. The whole cofiguration files will appeared in the folder `~/work/btp/goloop2moonbeam/config`)
-
-To clean the old test data run this command `make clean`.
+Now just wait for the provisioning progress is done. The whole cofiguration files will appeared in the folder `~/work/btp/goloop2moonbeam/config`.
+Note: To clean the old test data run this command `make clean`.
