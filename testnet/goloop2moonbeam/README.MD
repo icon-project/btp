@@ -16,39 +16,27 @@ P/S: I just only tested on macos.
 
 ### Build image goloop/gochain-icon:0.9.7
 
-Clone goloop source code:
 ```
 cd ~/work
 git clone https://github.com/icon-project/goloop.git
-```
-Check out version 0.9.7
-```
 cd ~/work/goloop
 git fetch --tags
 git checkout v0.9.7 -b v0.9.7
-```
-Build image:
-```
 GL_TAG=0.9.7 make gochain-icon-image
 ```
 
 ### Build image btpsimple:latest
 
-Clone btp source code:
 ```
 cd ~/work
 git clone git@github.com:icon-project/btp.git
 cd ~/work/btp
 git fetch
 git checkout goloop2moonbeam
-```
-
-Build image:
-```
 make btpsimple-image
 ```
 
-### Running docker-compose
+### Run docker-compose
 
 ```
 cd ~/work/btp/goloop2moonbeam
