@@ -41,31 +41,29 @@ pub use bsh_types::{self as other_bsh_types};
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, metadata, near_bindgen, setup_alloc};
+use near_sdk::{env, near_bindgen, setup_alloc};
 
 /// Re-export types for specific BSH contracts
 pub use bsh_types::*;
 
 setup_alloc!();
-metadata! {
-    /// BSH Generic contract is used to handle communications
-    /// among BMC Service and a BSH core contract.
-    /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
-    #[near_bindgen]
-    #[derive(BorshDeserialize, BorshSerialize)]
-    pub struct BshGeneric {
-        bmc_contract: String,
-        bsh_contract: String,
-        /// A list of transferring requests
-        /// Use `HashMap` because `LookupMap` doesn't implement
-        /// Clone, Debug, and Default traits
-        pub requests: UnorderedMap<u64, PendingTransferCoin>,
-        /// BSH Service name
-        pub service_name: String,
-        /// A counter of sequence number of service message
-        serial_no: u64,
-        num_of_pending_requests: u64,
-    }
+/// BSH Generic contract is used to handle communications
+/// among BMC Service and a BSH core contract.
+/// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct BshGeneric {
+    bmc_contract: String,
+    bsh_contract: String,
+    /// A list of transferring requests
+    /// Use `HashMap` because `LookupMap` doesn't implement
+    /// Clone, Debug, and Default traits
+    pub requests: UnorderedMap<u64, PendingTransferCoin>,
+    /// BSH Service name
+    pub service_name: String,
+    /// A counter of sequence number of service message
+    serial_no: u64,
+    num_of_pending_requests: u64,
 }
 
 impl Default for BshGeneric {
@@ -177,12 +175,14 @@ impl BshGeneric {
         sn: u64,
         msg: &[u8],
     ) -> Result<(), &str> {
-        assert_eq!(self.service_name, svc.to_string(), "Invalid Svc");
+        if self.service_name != svc.to_string() {
+            return Err("Invalid SVC");
+        }
         let sm = ServiceMessage::try_from_slice(msg).expect("Failed to deserialize msg");
 
         if sm.service_type == ServiceType::RequestCoinRegister {
             let tc = TransferCoin::try_from_slice(sm.data.as_slice())
-                .expect("Failed to deserialize sm data");
+                .expect("Failed to deserialize SM data");
             //  check receiving address whether it is a valid address
             //  or revert if not a valid one
             let btp_addr = BTPAddress(tc.to.clone());
@@ -196,16 +196,16 @@ impl BshGeneric {
                         Self::RC_OK,
                     );
                 } else {
-                    return Err("InvalidData");
+                    return Err("Invalid data");
                 }
             } else {
-                return Err("InvalidBtpAddress");
+                return Err("Invalid BTP address");
             }
             self.send_response_message(
                 ServiceType::ResponseHandleService,
                 from,
                 sn,
-                "InvalidAddress",
+                "Invalid address",
                 Self::RC_ERR,
             );
         } else if sm.service_type == ServiceType::ResponseHandleService {
@@ -213,7 +213,9 @@ impl BshGeneric {
             let req = self.requests.get(&sn).expect("Failed to retrieve request");
             let res = req.from.as_bytes();
 
-            assert_ne!(res.len(), 0, "InvalidSN");
+            if res.len() == 0 {
+                return Err("Invalid SN");
+            }
             let response = Response::try_from_slice(sm.data.as_slice())
                 .expect("Failed to deserialize service message");
             self.handle_response_service(sn, response.code, response.message.as_str())
@@ -241,10 +243,14 @@ impl BshGeneric {
         code: u64,
         msg: &str,
     ) -> Result<(), &str> {
-        assert_eq!(svc.to_string(), self.service_name, "InvalidSvc");
+        if svc.to_string() != self.service_name {
+            return Err("Invalid SVC");
+        }
         let req = self.requests.get(&sn).expect("Failed to retrieve request");
         let res = req.from.as_bytes();
-        assert_ne!(res.len(), 0, "InvalidSN");
+        if res.len() == 0 {
+            return Err("Invalid SN");
+        }
         self.handle_response_service(sn, code, msg)
             .expect("Error in handling response service");
         Ok(())
@@ -277,11 +283,9 @@ impl BshGeneric {
     /// Handle a list of minting/transferring coins/tokens
     #[payable]
     pub fn handle_request_service(&mut self, _to: &str, assets: Vec<Asset>) -> Result<(), &str> {
-        assert_eq!(
-            env::current_account_id(),
-            env::signer_account_id(),
-            "Unauthorized"
-        );
+        if env::current_account_id() != env::signer_account_id() {
+            return Err("Unauthorized");
+        }
         for _i in 0..assets.len() {
             // BSH core: assert(bsh_core.is_valid_coin(assets[i].coin_name), "UnregisteredCoin");
         }
@@ -305,7 +309,9 @@ impl BshGeneric {
     /// fa: fee aggregator
     #[payable]
     pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) -> Result<(), &str> {
-        assert_eq!(self.service_name, svc.to_string(), "InvalidSvc");
+        if self.service_name != svc.to_string() {
+            return Err("Invalid SVC");
+        }
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
         let btp_addr = BTPAddress(fa.to_string());
@@ -337,7 +343,7 @@ mod tests {
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
-            .signer_account_id("bob_near".try_into().unwrap())
+            .signer_account_id("bob_near".try_into().expect("Failed to convert"))
             .is_view(is_view)
             .build()
     }
@@ -387,8 +393,8 @@ mod tests {
             coin_name: "btc".to_string(),
             value: 100,
         };
-        let encoded_btc = btc.try_to_vec().unwrap();
-        let decoded_btc = Asset::try_from_slice(&encoded_btc).unwrap();
+        let encoded_btc = btc.try_to_vec().expect("Failed to convert to vec");
+        let decoded_btc = Asset::try_from_slice(&encoded_btc).expect("Failed to slice the vec");
         assert_eq!(btc, decoded_btc, "Data mismatch!");
     }
 }
