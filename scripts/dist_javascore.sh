@@ -15,13 +15,13 @@ install_javasdk() {
 }
 
 current_java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}'   )
-if [[ "$current_java_version" != "$JAVA_VERSION" ]]; then
+if [ "$current_java_version" != "$JAVA_VERSION" ]; then
     echo $current_java_version
     install_javasdk
 fi
 
 current_gradle_version=$(gradle -v 2>&1 | awk '/Gradle/ {print $2}')
-if [[ "$current_gradle_version" != "$GRADLE_VERSION" ]]; then
+if [ "$current_gradle_version" != "$GRADLE_VERSION" ]; then
     echo "required gradle version $GRADLE_VERSION current $current_gradle_version"
     exit 0
 fi
