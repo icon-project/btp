@@ -194,13 +194,12 @@ func (r *relayReceiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded
 		return nil, nil, err
 	}
 
-	// Build relay adapter here
-	records := &kusama.KusamaEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, nil, err
+	if r.c.GetSpecName() == substrate.Kusama {
+		records := kusama.NewKusamaRecord(sdr, meta)
+		return records.Grandpa_NewAuthorities, records.ParasInclusion_CandidateIncluded, nil
 	}
 
-	return records.Grandpa_NewAuthorities, records.ParasInclusion_CandidateIncluded, nil
+	return nil, nil, err
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData) ([]byte, error) {

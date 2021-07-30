@@ -1,6 +1,8 @@
 package pra
 
 import (
+	"path"
+
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
@@ -88,7 +90,7 @@ func (c *praBmvClient) getRelayMtaOffset() int64 {
 }
 
 func (c *praBmvClient) prepareDatabase() error {
-	c.log.Debugln("open database")
+	c.log.Debugln("open database", path.Join(c.storeConfig.absPath, c.storeConfig.relayChainUniqueName))
 	database, err := db.Open(c.storeConfig.absPath, string(c.storeConfig.backendType), c.storeConfig.relayChainUniqueName)
 	if err != nil {
 		return errors.Wrap(err, "fail to open database")

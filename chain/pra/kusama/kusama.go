@@ -3,6 +3,8 @@ package kusama
 import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain/pra/relaychain"
+	"github.com/icon-project/btp/chain/pra/substrate"
+	"github.com/icon-project/btp/common/log"
 )
 
 type EventSocietyMemberSuspended = types.EventSocietyMemberSuspended
@@ -94,6 +96,16 @@ type EventMultisigNewMultisig = types.EventMultisigNewMultisig
 // type EventCrowdloanAddedToNewRaise = types.EventCrowdloanAddedToNewRaise
 // type EventXcmPalletAttempted = types.EventXcmPalletAttempted
 // type EventXcmPalletSent = types.EventXcmPalletSent
+
+func NewKusamaRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.SubstrateMetaData) *KusamaEventRecord {
+	records := &KusamaEventRecord{}
+	if err := substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+		log.Debugf("NewKusamaRecord decode fails: %v", err)
+		return nil
+	}
+
+	return records
+}
 
 type KusamaEventRecord struct {
 	relaychain.RelayChainEventRecord
