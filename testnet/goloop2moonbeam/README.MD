@@ -1,7 +1,7 @@
 # Docker integration of BTP betwwen ICON and MOONBEAM
 
 This document will walk you through setting up a Docker environment to demonstrate how to run BTP between ICON and MOONBEAM.  
-Note: tested on macos.
+Note: tested on macos 11.4 and ubuntu 18.04+
 
 ## Prerequisites:  
 ```
