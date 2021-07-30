@@ -43,7 +43,6 @@ cd $SOURCE_CODE_DIR/fee_aggregation && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/lib && gradle build
 cd $SOURCE_CODE_DIR/iconloop/bmc && gradle optimizedJar
 cd $SOURCE_CODE_DIR/iconloop/nativecoin && gradle optimizedJar
-cd $SOURCE_CODE_DIR/iconloop/javaee-tokens && gradle optimizedJar
 
 ### packing
 cp -rf $SOURCE_CODE_DIR/bmv/helper ${JAVASCORE_DIST_DIR}/
