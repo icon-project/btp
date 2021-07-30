@@ -6,13 +6,18 @@ edition = "2018"
 
 [workspace]
 members = [
-    "bsh-generic"
+    "bmc",
+    "bmv",
+    "bsh/bsh-generic",
+    "bsh/token-bsh",
+    "libraries",
 ]
 
 [dev-dependencies]
 bmc = { path = "./bmc" }
-bsh-generic = { path = "./bsh-generic" }
-token-bsh = { path = "./token-bsh" }
+bsh-generic = { path = "./bsh/bsh-generic" }
+libraries = { path = "./libraries" }
+token-bsh = { path = "./bsh/token-bsh" }
 near-sdk = "3.1.0"
 lazy_static = "1.4.0"
 

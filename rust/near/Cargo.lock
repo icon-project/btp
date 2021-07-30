@@ -587,6 +587,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bmv"
+version = "0.1.0"
+dependencies = [
+ "btp-common",
+ "near-sdk",
+]
+
+[[package]]
 name = "borsh"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +670,7 @@ name = "bsh-generic"
 version = "0.1.0"
 dependencies = [
  "btp-common",
+ "libraries",
  "near-sdk",
 ]
 
@@ -2053,6 +2062,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "libraries"
+version = "0.1.0"
+dependencies = [
+ "btp-common",
+ "near-sdk",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "6.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2252,6 +2269,7 @@ dependencies = [
  "bmc",
  "bsh-generic",
  "lazy_static",
+ "libraries",
  "near-chain-configs",
  "near-logger-utils",
  "near-network",
@@ -4380,6 +4398,7 @@ version = "0.1.0"
 dependencies = [
  "bsh-generic",
  "btp-common",
+ "libraries",
  "near-sdk",
 ]
 

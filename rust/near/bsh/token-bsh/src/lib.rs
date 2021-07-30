@@ -24,7 +24,6 @@
     unused_variables,
     while_true,
     clippy::unicode_not_nfc,
-    clippy::wrong_pub_self_convention,
     clippy::unwrap_used,
     trivial_casts,
     trivial_numeric_casts,
@@ -34,9 +33,10 @@
     unused_results
 )]
 
-use bsh_generic::other_bsh_types::*;
+//use bsh_generic::other_bsh_types::*;
 use bsh_generic::BshGeneric;
 use btp_common::BTPAddress;
+use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, metadata, near_bindgen, setup_alloc, AccountId};
@@ -151,7 +151,7 @@ impl TokenBsh {
         if !self
             .owners
             .get(&env::current_account_id())
-            .expect("Error in account info")
+            .expect("Error in retrieving account info")
         {
             return Err("Unauthorized");
         }

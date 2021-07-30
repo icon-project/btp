@@ -24,7 +24,6 @@
     unused_variables,
     while_true,
     clippy::unicode_not_nfc,
-    clippy::wrong_pub_self_convention,
     clippy::unwrap_used,
     trivial_casts,
     trivial_numeric_casts,
@@ -34,17 +33,11 @@
     unused_results
 )]
 
-pub mod bsh_types;
-pub use bsh_types::*;
-pub use bsh_types::{self as other_bsh_types};
-
+use libraries::bsh_types::*;
 use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, near_bindgen, setup_alloc};
-
-/// Re-export types for specific BSH contracts
-pub use bsh_types::*;
 
 setup_alloc!();
 /// BSH Generic contract is used to handle communications
