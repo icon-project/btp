@@ -31,5 +31,8 @@
     unused_results
 )]
 
+pub mod bmc_types;
 pub mod bsh_types;
+
+pub use bmc_types::*;
 pub use bsh_types::*;
