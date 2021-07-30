@@ -16,6 +16,7 @@ type receiverOptions struct {
 	RelayEndpoint string `json:"relay_endpoint"`
 	IconEndpoint  string `json:"icon_endpoint"`
 	PraBmvAddress string `json:"icon_bmv_address"`
+	RelayOffSet   int64  `json:"relay_offset"`
 }
 
 type Receiver struct {
@@ -44,7 +45,7 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
 	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
-		r.relayReceiver = NewRelayReceiver(r.opt.RelayEndpoint, r.opt.IconEndpoint, r.opt.PraBmvAddress, l)
+		r.relayReceiver = NewRelayReceiver(r.opt, l)
 		if err != nil {
 			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
 		}

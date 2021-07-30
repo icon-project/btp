@@ -61,6 +61,26 @@ type PersistedValidationData struct {
 	MaxPovSize              types.U32
 }
 
+type SignedMessage struct {
+	TargetHash   types.Hash
+	TargetNumber types.U32
+}
+
+type SignedMessageEnum struct {
+	IsPrevote        bool
+	AsPrevote        SignedMessage
+	IsPrecommit      bool
+	AsPrecommit      SignedMessage
+	IsPrimaryPropose bool
+	AsPrimaryPropose SignedMessage
+}
+
+type VoteMessage struct {
+	Message SignedMessageEnum
+	Round   types.U64
+	SetId   types.U64
+}
+
 type SubstrateClient interface {
 	Call(result interface{}, method string, args ...interface{}) error
 	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)

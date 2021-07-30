@@ -79,12 +79,20 @@ func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData
 	return types.EventRecordsRaw(event).DecodeEventRecords(meta, records)
 }
 
+// func (sme *SignedMessageEnum) Encode() ([]byte, error) {
+
+// }
+
 func NewSubstrateHashFromHexString(s string) SubstrateHash {
 	hash, err := types.NewHashFromHexString(s)
 	if err != nil {
 		panic(err)
 	}
 	return hash
+}
+
+func NewEncodedVoteMessage(vm VoteMessage) ([]byte, error) {
+	return types.EncodeToBytes(vm)
 }
 
 func NewEncodedSubstrateHeader(header SubstrateHeader) ([]byte, error) {

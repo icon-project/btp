@@ -107,6 +107,11 @@ type ReceiptProof struct {
 	EventProofs []*chain.EventProof
 }
 
+type Votes struct {
+	VoteMessage []byte
+	Signatures  [][]byte
+}
+
 type RelayBlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	Votes                   []byte

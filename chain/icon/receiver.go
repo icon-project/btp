@@ -61,7 +61,7 @@ func (r *receiver) getBlockHeader(height HexInt) (*BlockHeader, error) {
 	p := &BlockHeightParam{Height: height}
 	b, err := r.c.GetBlockHeaderByHeight(p)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, MapError(err)
 	}
 	var bh BlockHeader
 	_, err = codec.RLP.UnmarshalFromBytes(b, &bh)
@@ -86,7 +86,7 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 	update.BlockHeader = bh.serialized
 	vb, vbErr := r.c.GetVotesByHeight(&BlockHeightParam{Height: v.Height})
 	if vbErr != nil {
-		return nil, mapError(vbErr)
+		return nil, MapError(vbErr)
 	}
 	update.Votes = vb
 
@@ -94,7 +94,7 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		dp := &DataHashParam{Hash: NewHexBytes(bh.NextValidatorsHash)}
 		nvb, err := r.c.GetDataByHash(dp)
 		if err != nil {
-			return nil, mapError(err)
+			return nil, MapError(err)
 		}
 		update.Validators = nvb
 	}
@@ -122,7 +122,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			p := &ProofEventsParam{BlockHash: v.Hash, Index: index, Events: v.Events[0][i]}
 			proofs, err := r.c.GetProofForEvents(p)
 			if err != nil {
-				return nil, mapError(err)
+				return nil, MapError(err)
 			}
 			if !r.isFoundOffsetBySeq {
 			EpLoop:

@@ -469,7 +469,7 @@ SignLoop:
 						}
 					}
 				}
-				return nil, mapError(err)
+				return nil, MapError(err)
 			}
 			return thp, nil
 		}
@@ -518,7 +518,7 @@ func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 		},
 	}
 	bs := &BMCStatus{}
-	err := mapError(s.c.Call(p, bs))
+	err := MapError(s.c.Call(p, bs))
 	if err != nil {
 		return nil, err
 	}
@@ -605,7 +605,7 @@ func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[str
 	return s
 }
 
-func mapError(err error) error {
+func MapError(err error) error {
 	if err != nil {
 		switch re := err.(type) {
 		case *jsonrpc.Error:
@@ -642,7 +642,7 @@ func mapError(err error) error {
 }
 
 func mapErrorWithTransactionResult(txr *TransactionResult, err error) error {
-	err = mapError(err)
+	err = MapError(err)
 	if err == nil && txr != nil && txr.Status != ResultStatusSuccess {
 		fc, _ := txr.Failure.CodeValue.Value()
 		if fc < ResultStatusFailureCodeRevert || fc > ResultStatusFailureCodeEnd {

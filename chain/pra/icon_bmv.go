@@ -53,14 +53,14 @@ func (c *praBmvClient) getRelayMtaHeight() int64 {
 	}
 
 	var height icon.HexInt
-	err := c.Call(p, &height)
+	err := icon.MapError(c.Call(p, &height))
 	if err != nil {
-		c.log.Panicf("getRelayMtaHeight: failed")
+		c.log.Debugf("getRelayMtaHeight: failed")
 	}
 
 	value, err := height.Value()
 	if err != nil {
-		c.log.Panicf("getRelayMtaHeight: failed")
+		c.log.Debugf("getRelayMtaHeight: failed")
 	}
 
 	return value
@@ -76,20 +76,20 @@ func (c *praBmvClient) getRelayMtaOffset() int64 {
 	}
 
 	var height icon.HexInt
-	err := c.Call(p, &height)
+	err := icon.MapError(c.Call(p, &height))
 	if err != nil {
-		c.log.Panicf("getRelayMtaOffset: failed")
+		c.log.Debugf("getRelayMtaOffset: failed")
 	}
 
 	value, err := height.Value()
 	if err != nil {
-		c.log.Panicf("getRelayMtaOffset: failed")
+		c.log.Debugf("getRelayMtaOffset: failed")
 	}
 
 	return value
 }
 
-func (c *praBmvClient) prepareDatabase() error {
+func (c *praBmvClient) prepareDatabase(offset int64) error {
 	c.log.Debugln("open database", path.Join(c.storeConfig.absPath, c.storeConfig.relayChainUniqueName))
 	database, err := db.Open(c.storeConfig.absPath, string(c.storeConfig.backendType), c.storeConfig.relayChainUniqueName)
 	if err != nil {
@@ -106,8 +106,6 @@ func (c *praBmvClient) prepareDatabase() error {
 		return err
 	}
 	k := []byte("Accumulator")
-
-	offset := c.getRelayMtaOffset()
 
 	// A lot of int64 variable should be uint64
 	if offset < 0 {

@@ -16,49 +16,33 @@ type relayReceiver struct {
 	log log.Logger
 }
 
-func NewRelayReceiver(relayEndpoint string, iconEndpoint string, bmvAddress string, log log.Logger) relayReceiver {
+func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	rC := relayReceiver{log: log}
-	rC.c, _ = substrate.NewSubstrateClient(relayEndpoint)
-	config := NewRelayStoreConfig("/Users/trmaphi/sources/btp/.config", "westend")
-	rC.pC = NewPraBmvClient(iconEndpoint, log, bmvAddress, config)
+	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
+	rC.pC = NewPraBmvClient(
+		opt.IconEndpoint, log, opt.PraBmvAddress,
+		NewRelayStoreConfig("/Users/trmaphi/sources/btp/.config", "westend"),
+	)
 
-	rC.pC.prepareDatabase()
-	go rC.syncBlock()
+	rC.pC.prepareDatabase(opt.RelayOffSet)
 	return rC
 }
 
-func (rc *relayReceiver) syncBlock() {
-	mtaHeight := rc.pC.getRelayMtaHeight()
-	errCh := make(chan error)
-
-	go func() {
-		err := rc.c.SubcribeFinalizedHeadAt(uint64(mtaHeight), func(sh *substrate.SubstrateHash) {
-			next := rc.pC.store.Height() + 1
-			if next < mtaHeight {
-				rc.log.Fatalf("found missing block next:%d bu:%d", next, mtaHeight)
-				return
-			}
-			if next == mtaHeight {
-				rc.pC.store.AddHash(sh[:])
-				if err := rc.pC.store.Flush(); err != nil {
-					//TODO MTA Flush error handling
-					rc.log.Fatalf("fail to MTA Flush err:%+v", err)
-				}
-			}
-		})
-
-		select {
-		case errCh <- err:
-		default:
+func (r *relayReceiver) syncBlock(mtaHeight int64) {
+	next := r.pC.store.Height() + 1
+	if next < mtaHeight {
+		r.log.Fatalf("found missing block next:%d bu:%d", next, mtaHeight)
+		return
+	}
+	if next == mtaHeight {
+		sh, err := r.c.GetBlockHash(uint64(mtaHeight))
+		if err != nil {
+			r.log.Fatalf("Fail to sync block %d", mtaHeight)
 		}
-	}()
 
-	for {
-		select {
-		case err := <-errCh:
-			if err != nil {
-				rc.log.Panicf("fail to subscribe mta block")
-			}
+		r.pC.store.AddHash(sh[:])
+		if err := r.pC.store.Flush(); err != nil {
+			r.log.Fatalf("fail to MTA Flush err:%+v", err)
 		}
 	}
 }
@@ -85,10 +69,32 @@ func (r *relayReceiver) newBlockProof(height int64, header []byte) (*chain.Block
 	return bp, nil
 }
 
+func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification) ([]byte, error) {
+	v := Votes{
+		VoteMessage: make([]byte, 0),
+		Signatures:  make([][]byte, 0),
+	}
+
+	// for _, precommit := range justifications.Commit.Precommits {
+
+	// }
+
+	b, err := codec.RLP.MarshalToBytes(&v)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifications *substrate.GrandpaJustification) ([]byte, error) {
 	var err error
 	var update RelayBlockUpdate
 	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(header); err != nil {
+		return nil, err
+	}
+
+	if update.Votes, err = r.newVotes(justifications); err != nil {
 		return nil, err
 	}
 
@@ -205,6 +211,7 @@ func (r *relayReceiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData) ([]byte, error) {
 	var from uint64
 	mtaHeight := r.pC.getRelayMtaHeight()
+	r.syncBlock(mtaHeight)
 
 	behindMtaHeight := false
 	if mtaHeight <= int64(vd.RelayParentNumber) {
