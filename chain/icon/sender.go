@@ -314,7 +314,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
 			if rm.BlockProof == nil {
-				s.l.Debugf("Segment: ignore past StateProof at %d", rp.Height)
+				s.l.Tracef("Segment: ignore past StateProof at %d", rp.Height)
 				return segments, nil
 			}
 
@@ -478,7 +478,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 			if err != nil && tries < MaxDefaultGetRelayResultRetries {
 				if RetryHTTPError.MatchString(err.Error()) {
 					<-time.After(DefaultGetRelayResultInterval)
-					s.l.Debugf("GetResult: retry %d with GetResult err:%+v", tries, err)
+					s.l.Tracef("GetResult: retry %d with GetResult err:%+v", tries, err)
 					continue
 				}
 
@@ -486,7 +486,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 					switch je.Code {
 					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
 						<-time.After(DefaultGetRelayResultInterval)
-						s.l.Debugf("GetResult: retry %d with GetResult err:%+v", tries, err)
+						s.l.Tracef("GetResult: retry %d with GetResult err:%+v", tries, err)
 						continue
 					}
 				}
