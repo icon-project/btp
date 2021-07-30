@@ -1,4 +1,6 @@
 # /bin/sh
+set -e
+
 JAVA_VERSION=11.0.11
 GRADLE_VERSION=6.7.1
 
