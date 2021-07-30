@@ -6,7 +6,8 @@ edition = "2018"
 
 [workspace]
 members = [
-    "bmc",
+    "bmc/bmc-generic",
+    "bmc/bmc-mgt",
     "bmv",
     "bsh/bsh-generic",
     "bsh/token-bsh",
@@ -14,7 +15,8 @@ members = [
 ]
 
 [dev-dependencies]
-bmc = { path = "./bmc" }
+bmc-generic = { path = "./bmc/bmc-generic" }
+bmc-mgt = { path = "./bmc/bmc-mgt" }
 bsh-generic = { path = "./bsh/bsh-generic" }
 libraries = { path = "./libraries" }
 token-bsh = { path = "./bsh/token-bsh" }
