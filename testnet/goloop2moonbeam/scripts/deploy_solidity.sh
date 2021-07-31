@@ -8,11 +8,14 @@ deploy_solidity_bmc() {
     cd $SOLIDITY_DIST_DIR/bmc
     sed -i 's/"http:\/\/localhost:9933"/process.env.MOONBEAM_RPC_URL/' truffle-config.js
     rm -rf .openzeppelin build node_modules
-    yarn
+    yarn && yarn add fs@0.0.1-security
+
     truffle compile --all
+    cat ./build/contracts/BMCManagement.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_management.json
 
     BMC_PRA_NET=$(cat $CONFIG_DIR/net.btp.moonbeam) \
     truffle migrate --network moonbeamlocal
+    truffle exec $SCRIPT_DIR/mb_extract_bmc.js --network moonbeamlocal
 
     wait_file_created $CONFIG_DIR bmc.moonbeam
     echo "btp://$(cat $CONFIG_DIR/net.btp.moonbeam)/$(cat $CONFIG_DIR/bmc.moonbeam)" > $CONFIG_DIR/btp.moonbeam
@@ -24,9 +27,9 @@ deploy_solidity_bsh() {
     cd $SOLIDITY_DIST_DIR/bsh
     sed -i 's/"http:\/\/localhost:9933"/process.env.MOONBEAM_RPC_URL/' truffle-config.js
     rm -rf .openzeppelin build node_modules
-    yarn
+    yarn && yarn add fs@0.0.1-security
     truffle compile --all
-
+    cat ./build/contracts/BSHCore.json  | jq -r .abi > $CONFIG_DIR/abi.bsh_core.json
 
     BSH_COIN_URL=https://moonbeam.network \
     BSH_COIN_NAME=DEV \
@@ -35,6 +38,7 @@ deploy_solidity_bsh() {
     BSH_SERVICE=CoinTransfer \
     truffle migrate --network moonbeamlocal
 
+    truffle exec $SCRIPT_DIR/mb_extract_bsh.js --network moonbeamlocal
     wait_file_created $CONFIG_DIR bsh.moonbeam
 }
 
@@ -44,14 +48,14 @@ deploy_solidity_bmv() {
     cd $SOLIDITY_DIST_DIR/bmv
     sed -i 's/"http:\/\/localhost:9933"/process.env.MOONBEAM_RPC_URL/' truffle-config.js
     rm -rf .openzeppelin build node_modules
-    yarn
+    yarn && yarn add fs@0.0.1-security
     truffle compile --all
 
     LAST_BOCK=$(latest_block_goloop)
     LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
     LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
     echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
-    
+    echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
 
     BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
     BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
@@ -62,7 +66,7 @@ deploy_solidity_bmv() {
     BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
     truffle migrate --network moonbeamlocal
 
-    echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
+    truffle exec $SCRIPT_DIR/mb_extract_bmv.js --network moonbeamlocal
     wait_file_created $CONFIG_DIR bmv.moonbeam
 }
 
