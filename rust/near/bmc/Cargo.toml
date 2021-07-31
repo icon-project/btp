@@ -5,6 +5,11 @@ authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
+serde = {version = "1.0", features = ["derive"]}
 near-sdk = "3.1.0"
 btp-common = {path="../../btp-common"}
 lazy_static = "1.4.0"
+
+[[test]]
+name = "test_service_management"
+path = "tests/test_service_management.rs"

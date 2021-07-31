@@ -3,17 +3,19 @@ name = "near-btp"
 version = "0.1.0"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
-rust = "1.51"
 
 [workspace]
 members = [
     "bmc"
 ]
+[features]
+integration-tests = []
 
 [dev-dependencies]
 bmc = { path = "./bmc" }
 near-sdk = "2.0.0"
 lazy_static = "1.4.0"
+kitten = "^0.1.3"
 
 [dev-dependencies.near-chain-configs]
 default-features = false
