@@ -6,7 +6,10 @@ pub enum BMCError {
     RequestNotExist,
     ServiceExist,
     ServiceNotExist,
-    NotExistsPermission
+    NotExistsPermission,
+    LastOwner,
+    OwnerExist,
+    NotExistsOwner,
 }
 
 impl fmt::Display for BMCError {
@@ -19,6 +22,9 @@ impl fmt::Display for BMCError {
             BMCError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),
             BMCError::ServiceNotExist => write!(f, "{}{}", label, "NotExistBSH"),
             BMCError::NotExistsPermission => write!(f, "{}{}", label, "NotExistsPermission"),
+            BMCError::LastOwner => write!(f, "{}{}", label, "LastOwner"),
+            BMCError::OwnerExist => write!(f, "{}{}", label, "AlreadyExistsOwner"),
+            BMCError::NotExistsOwner => write!(f, "{}{}", label, "NotExistsOwner"),
         }
     }
 }

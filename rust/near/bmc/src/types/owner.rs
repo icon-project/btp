@@ -10,6 +10,10 @@ impl Owners {
         Self(HashMap::new())
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn add(&mut self, address: &AccountId) {
         self.0.insert(address.to_string(), true);
     }

@@ -45,7 +45,7 @@ pub fn owner(_attr: TokenStream, item: TokenStream) -> TokenStream {
         0,
         syn::parse(
             quote! {
-                self.check_permission();
+                self.has_permission();
             }
             .into(),
         )

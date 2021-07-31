@@ -7,18 +7,23 @@ impl BTPMessageCenter {
 
     #[owner]
     pub fn add_owner(&mut self, address: AccountId) {
+        assert!(
+            !self.owners.contains(&address),
+            "{}",
+            BMCError::OwnerExist
+        );
         self.owners.add(&address);
     }
 
-    pub fn remove_owner() {}
-
-    #[private]
-    pub fn get_owners(&self) -> String {
-        to_value(self.owners.to_vec()).unwrap().to_string()
+    #[owner]
+    pub fn remove_owner(&mut self, address: AccountId) {
+        assert!(self.owners.contains(&address), "{}", BMCError::NotExistsOwner);
+        assert!(self.owners.len() > 1, "{}", BMCError::LastOwner);
+        self.owners.remove(&address)
     }
 
     #[private]
-    pub fn check_permission(&self) {
+    pub fn has_permission(&self) {
         assert!(self.owners.contains(&env::signer_account_id()), "{}", BMCError::NotExistsPermission);
     }
 }

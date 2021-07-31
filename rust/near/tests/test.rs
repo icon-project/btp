@@ -1,5 +1,6 @@
 #[cfg(feature = "integration_tests")]
 #[cfg(test)]
+
 mod test {
     use near_logger_utils::init_integration_logger;
     use near_primitives::transaction::SignedTransaction;

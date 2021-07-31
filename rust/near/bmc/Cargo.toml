@@ -13,3 +13,7 @@ lazy_static = "1.4.0"
 [[test]]
 name = "test_service_management"
 path = "tests/test_service_management.rs"
+
+[[test]]
+name = "test_ownership_management"
+path = "tests/test_ownership_management.rs"
