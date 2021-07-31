@@ -1,11 +1,14 @@
 use serde::Serialize;
 
-
-
-#[derive(serde::Serialize)]
-pub struct BTPAddress(pub String);
+#[derive(Serialize)]
+pub struct BTPAddress(String);
 
 impl BTPAddress {
+
+    pub fn new(string: String) -> Self {
+        Self(string)
+    }
+    
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }
