@@ -10,7 +10,7 @@ run:
 	docker-compose up --remove-orphans
 
 run_transfer_icx:
-	docker-compose exec btp_icon sh transfer_ICX.sh
+	docker-compose exec btp_icon sh /btpsimple/scripts/transfer_ICX.sh
 
 run_transfer_dev:
-	docker-compose exec btp_icon sh transfer_DEV.sh
+	docker-compose exec btp_icon sh /btpsimple/scripts/transfer_DEV.sh

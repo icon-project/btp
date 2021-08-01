@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-if [ ! -f "$CONFIG_DIR/$PROVISION_STATUS_DONE" ]; then
+if [ ! -f "$PROVISION_STATUS_DONE" ]; then
     echo "provisioning not done yet"
     exit 1
 fi

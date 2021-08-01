@@ -5,9 +5,8 @@ export JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
 export JAVASCORE_HELPER_DIR=${JAVASCORE_HELPER_DIR:-$JAVASCORE_DIST_DIR/helper}
 export MOONBEAM_CHAIN_ID=1281 # https://github.com/PureStake/moonbeam#chain-ids
 export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
-
-PROVISION_STATUS_DONE=$CONFIG_DIR/provisioning.done
-PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provisioning.processing
+export PROVISION_STATUS_DONE=$CONFIG_DIR/provision.done
+export PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provision.processing
 
 provision() {  
     echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
