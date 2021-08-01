@@ -478,7 +478,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 			if err != nil && tries < MaxDefaultGetRelayResultRetries {
 				if RetryHTTPError.MatchString(err.Error()) {
 					<-time.After(DefaultGetRelayResultInterval)
-					s.l.Tracef("GetResult: retry %d with GetResult err:%+v", tries, err)
+					s.l.Tracef("GetResult: retry %d with GetResult %s err:%+v", tries, txr.TxHash, err)
 					continue
 				}
 
@@ -486,7 +486,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 					switch je.Code {
 					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
 						<-time.After(DefaultGetRelayResultInterval)
-						s.l.Tracef("GetResult: retry %d with GetResult err:%+v", tries, err)
+						s.l.Tracef("GetResult: retry %d with GetResult %s err:%+v", tries, txr.TxHash, err)
 						continue
 					}
 				}
