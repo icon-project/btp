@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
@@ -39,7 +38,7 @@ import (
 const (
 	DefaultDBDir  = "db"
 	DefaultDBType = db.GoLevelDBBackend
-	//Base64 in:out = 6:8
+	// DefaultBufferScaleOfBlockProof Base64 in:out = 6:8
 	DefaultBufferScaleOfBlockProof  = 0.5
 	DefaultBufferNumberOfBlockProof = 100
 	DefaultBufferInterval           = 5 * time.Second
@@ -593,12 +592,12 @@ func (s *SimpleChain) Serve() error {
 	}
 }
 
-func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, error) {
+func NewChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, error) {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
 		w:   w,
-		l: l.WithFields(log.Fields{log.FieldKeyChain:
+		l:   l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
@@ -606,8 +605,7 @@ func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) (*SimpleChain, e
 	}
 	s._rm()
 
-	s.r = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, s.l)
-	s.s = icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Dst.Options, s.l)
+	s.s, s.r = newSenderAndReceiver(cfg, w, l)
 
 	if err := s.prepareDatabase(cfg.Offset); err != nil {
 		return nil, err
