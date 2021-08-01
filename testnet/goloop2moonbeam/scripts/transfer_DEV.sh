@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+source util.sh
 if [ ! -f "$PROVISION_STATUS_DONE" ]; then
     echo "provisioning not done yet"
     exit 1

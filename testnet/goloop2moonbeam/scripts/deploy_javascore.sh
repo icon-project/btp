@@ -1,6 +1,5 @@
 #!/bin/sh
 ICON_RECEIVER_FEE_ADDRESS=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
-source deploy_util.sh
 
 deploy_javascore_bmc() {
     echo "deploying javascore bmc"

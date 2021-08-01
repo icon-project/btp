@@ -1,20 +1,10 @@
-export CONFIG_DIR=${CONFIG_DIR:-/btpsimple/config}
-export SCRIPT_DIR=${SCRIPT_DIR:-/btpsimple/scripts}
-export SOLIDITY_DIST_DIR=${SOLIDITY_DIST_DIR:-/btpsimple/contracts/solidity}
-export JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-/btpsimple/contracts/javascore}
-export JAVASCORE_HELPER_DIR=${JAVASCORE_HELPER_DIR:-$JAVASCORE_DIST_DIR/helper}
-export MOONBEAM_CHAIN_ID=1281 # https://github.com/PureStake/moonbeam#chain-ids
-export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
-export PROVISION_STATUS_DONE=$CONFIG_DIR/provision.done
-export PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provision.processing
+
 
 provision() {  
     echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
     echo "provisioning..."
 
-    source goloop_rpc.sh
-    rpcch
-
+    source util.sh
     source deploy_javascore.sh
     source deploy_solidity.sh
 

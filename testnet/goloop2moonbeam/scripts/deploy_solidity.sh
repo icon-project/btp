@@ -1,5 +1,4 @@
 #!/bin/sh
-source deploy_util.sh
 
 deploy_solidity_bmc() {
     echo "deploying solidity bmc"
