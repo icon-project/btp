@@ -8,7 +8,7 @@ MOONBEAM_PREFUND_PK=39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e722
 source goloop_rpc.sh
 rpcch
 
-create_alice_account_in_Gochain() {
+create_Alice_account_in_Gochain() {
     echo "1. create Alice account in ICON"
 
     cd ${CONFIG_DIR}
@@ -17,7 +17,7 @@ create_alice_account_in_Gochain() {
     echo "btp://$(cat net.btp.icon)/$(cat alice.ks.json | jq -r .address)" > alice.btp.address
 }
 
-deposit_ICX_for_alice() {
+deposit_ICX_for_Alice() {
     echo "2. deposit $DEPOSIT_AMOUNT ICX to Alice"
 
     cd ${CONFIG_DIR}
@@ -29,20 +29,20 @@ deposit_ICX_for_alice() {
     echo "Alice's balance: $(goloop rpc balance $(cat alice.address) | xargs printf "%d\n") ICX"
 }
 
-create_bob_account_in_Moonbeam() {
+create_Bob_account_in_Moonbeam() {
     echo "3. Create bob's account in Moonbeam"
-    cd ${CONFIG_DIR}
 
+    cd ${CONFIG_DIR}
     eth address:random > bob.account
     cat bob.account | jq -r .address > bob.address
     cat bob.account | jq -r .privateKey > bob.private
     echo "btp://$(cat net.btp.moonbeam)/$(cat bob.address)" > $CONFIG_DIR/bob.btp.address
 }
 
-transfer_ICX_from_alice_to_bob() {
+transfer_ICX_from_Alice_to_Bob() {
     echo "4. Transfer $TRANSFER_AMOUNT ICX from Alice to Bob"
-    cd ${CONFIG_DIR}
 
+    cd ${CONFIG_DIR}
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
         --param _to=$(cat bob.btp.address) --value $TRANSFER_AMOUNT \
@@ -51,7 +51,7 @@ transfer_ICX_from_alice_to_bob() {
     ensure_txresult tx.Alice2Bob.transfer
 }
 
-check_bob_balance() {
+check_Bob_balance() {
     sleep 10
 
     cd $CONFIG_DIR
