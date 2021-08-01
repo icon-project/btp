@@ -11,9 +11,6 @@ DEPOSIT_AMOUNT=2000000000
 TRANSFER_AMOUNT=1000000
 MOONBEAM_PREFUND_PK=39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68
 
-source goloop_rpc.sh
-rpcch
-
 create_Alice_account_in_Gochain() {
     echo "1. create Alice account in ICON"
 
@@ -57,7 +54,8 @@ transfer_ICX_from_Alice_to_Bob() {
     ensure_txresult tx.Alice2Bob.transfer
 }
 
-check_Bob_balance() {
+check_Bob_balance_in_Moonbeam() {
+    echo "5. Checking Bob's balance"
     sleep 10
 
     cd $CONFIG_DIR
@@ -66,8 +64,8 @@ check_Bob_balance() {
 }
 
 echo "This script demonstrates how to transfer a NativeCoin from ICON to MOONBEAM."
-create_alice_account_in_Gochain
-deposit_ICX_for_alice
-create_bob_account_in_Moonbeam
-transfer_ICX_from_alice_to_bob
-check_bob_balance
+create_Alice_account_in_Gochain
+deposit_ICX_for_Alice
+create_Bob_account_in_Moonbeam
+transfer_ICX_from_Alice_to_Bob
+check_Bob_balance_in_Moonbeam
