@@ -85,9 +85,9 @@ dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
 
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 dist-java: 
-	sh ./scripts/dist_javascore.sh 
+	bash ./scripts/dist_javascore.sh
 dist-sol:
-	sh ./scripts/dist_solidity.sh
+	bash ./scripts/dist_solidity.sh
 
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*

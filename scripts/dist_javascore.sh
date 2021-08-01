@@ -6,7 +6,9 @@ GRADLE_VERSION=6.7.1
 
 install_javasdk() {
     echo "Installing... JAVASDK"
-    curl -s "https://get.sdkman.io" | bash
+    if [ ! -d "$HOME/.sdkman" ]; then
+        curl -s "https://get.sdkman.io" | bash
+    fi
     source $HOME/.sdkman/bin/sdkman-init.sh
     sdk install java 11.0.11.hs-adpt
     sdk default java 11.0.11.hs-adpt
@@ -37,6 +39,7 @@ cp -r javascore/*.tar $SOURCE_CODE_DIR/
 cd $SOURCE_CODE_DIR && tar -xzf iconloop.tar && tar -xzf bmv.tar && mv javascore iconloop
 
 ### compiling
+gradle --stop
 cd $SOURCE_CODE_DIR/bmv/eventDecoder && gradle buildKusamaDecoder && gradle buildMoonriverDecoder
 cd $SOURCE_CODE_DIR/bmv/parachain && gradle optimizedJar
 cd $SOURCE_CODE_DIR/fee_aggregation && gradle optimizedJar
