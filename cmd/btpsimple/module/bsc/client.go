@@ -24,10 +24,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/systemcontracts"
+	"github.com/icon-project/btp/common/wallet"
 	"math/big"
 	"strconv"
 	"strings"
@@ -41,6 +41,8 @@ const (
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
 	DefaultTimeout                             = 10 * time.Second        //
 	ChainID                                    = 56
+	DefaultGasLimit                            = 21000
+	DefaultGasPrice                            = 5000000000
 )
 
 var (
@@ -57,6 +59,7 @@ type Client struct {
 	subscription          *rpc.ClientSubscription
 	ethClient             *ethclient.Client
 	rpcClient             *rpc.Client
+	chainID               *big.Int
 	tendermintLightClient *systemcontracts.Tendermintlightclient
 }
 
@@ -82,18 +85,18 @@ func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit u
 	})
 }
 
-func (c *Client) newTransactOpts(chainID int64) (*bind.TransactOpts, error) {
-	privateKey, err := crypto.HexToECDSA("")
-	txo, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainID))
+func (c *Client) newTransactOpts(w Wallet) (*bind.TransactOpts, error) {
+	txo, err := bind.NewKeyedTransactorWithChainID(w.(*wallet.EvmWallet).Skey, c.chainID)
 	if err != nil {
 		return nil, err
 	}
+	txo.GasPrice, _ = c.ethClient.SuggestGasPrice(context.Background())
+	txo.GasLimit = uint64(DefaultGasLimit)
 	return txo, nil
 }
 
 func (c *Client) SignTransaction(signerKey *ecdsa.PrivateKey, tx *types.Transaction) error {
-	//signer := types.EIP155Signer{}
-	signer := types.LatestSignerForChainID(big.NewInt(ChainID))
+	signer := types.LatestSignerForChainID(c.chainID)
 	tx, err := types.SignTx(tx, signer, signerKey)
 	if err != nil {
 		c.log.Errorf("could not sign tx: %v", err)
@@ -180,6 +183,12 @@ func (c *Client) GetBlockReceipts(block *types.Block) ([]*types.Receipt, error) 
 	return receipts, nil
 }
 
+func (c *Client) GetChainID() (*big.Int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	return c.ethClient.ChainID(ctx)
+}
+
 func (c *Client) GetLatestConsensusState() (ConsensusStates, error) {
 	callOpts := &bind.CallOpts{
 		Pending: true,
@@ -242,14 +251,19 @@ func (c *Client) CloseAllMonitor() {
 func NewClient(uri string, log log.Logger) *Client {
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump} }
 	rpcClient, err := rpc.Dial(uri)
+	if err != nil {
+		log.Fatal("Error creating client", err)
+	}
 	c := &Client{
 		rpcClient: rpcClient,
 		ethClient: ethclient.NewClient(rpcClient),
 		log:       log,
 	}
+	c.chainID, _ = c.GetChainID()
+	log.Tracef("Client Connected Chain ID: ", c.chainID)
 	c.tendermintLightClient, err = systemcontracts.NewTendermintlightclient(tendermintLightClientContractAddr, c.ethClient)
 	if err != nil {
-		c.log.Fatal(err)
+		c.log.Error("Error creating tendermintLightclient system contract", err)
 	}
 	opts := BinanceOptions{}
 	opts.SetBool(IconOptionsDebug, true)

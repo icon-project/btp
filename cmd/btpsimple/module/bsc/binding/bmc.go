@@ -26,12 +26,12 @@ var (
 	_ = event.NewSubscription
 )
 
-// IBMCLinkStats is an auto generated low-level Go binding around an user-defined struct.
-type IBMCLinkStats struct {
+// TypesLinkStats is an auto generated low-level Go binding around an user-defined struct.
+type TypesLinkStats struct {
 	RxSeq            *big.Int
 	TxSeq            *big.Int
-	Verifier         IBMCVerifierStatus
-	Relays           []IBMCRelayStats
+	Verifier         TypesVerifierStats
+	Relays           []TypesRelayStats
 	RelayIdx         *big.Int
 	RotateHeight     *big.Int
 	RotateTerm       *big.Int
@@ -44,22 +44,23 @@ type IBMCLinkStats struct {
 	CurrentHeight    *big.Int
 }
 
-// IBMCRelayStats is an auto generated low-level Go binding around an user-defined struct.
-type IBMCRelayStats struct {
+// TypesRelayStats is an auto generated low-level Go binding around an user-defined struct.
+type TypesRelayStats struct {
 	Addr       common.Address
 	BlockCount *big.Int
 	MsgCount   *big.Int
 }
 
-// IBMCVerifierStatus is an auto generated low-level Go binding around an user-defined struct.
-type IBMCVerifierStatus struct {
+// TypesVerifierStats is an auto generated low-level Go binding around an user-defined struct.
+type TypesVerifierStats struct {
 	HeightMTA  *big.Int
 	OffsetMTA  *big.Int
 	LastHeight *big.Int
+	Extra      []byte
 }
 
 // BMCABI is the input ABI used to generate the binding from.
-const BMCABI = "[{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_network\",\"type\":\"string\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_net\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_link\",\"type\":\"string\"},{\"internalType\":\"address[]\",\"name\":\"_addr\",\"type\":\"address[]\"}],\"name\":\"addRelay\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"_desc\",\"type\":\"string\"}],\"name\":\"addRelayer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_link\",\"type\":\"string\"}],\"name\":\"addLink\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_link\",\"type\":\"string\"}],\"name\":\"getStatus\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"rxSeq\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"txSeq\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"heightMTA\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"offsetMTA\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastHeight\",\"type\":\"uint256\"}],\"internalType\":\"structIBMC.VerifierStatus\",\"name\":\"verifier\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"blockCount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"msgCount\",\"type\":\"uint256\"}],\"internalType\":\"structIBMC.RelayStats[]\",\"name\":\"relays\",\"type\":\"tuple[]\"},{\"internalType\":\"uint256\",\"name\":\"relayIdx\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rotateHeight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rotateTerm\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"delayLimit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxAggregation\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rxHeightSrc\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rxHeight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blockIntervalSrc\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blockIntervalDst\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"currentHeight\",\"type\":\"uint256\"}],\"internalType\":\"structIBMC.LinkStats\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"constant\":true},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_prev\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_msg\",\"type\":\"string\"}],\"name\":\"handleRelayMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const BMCABI = "[{\"inputs\":[],\"name\":\"getBmcBtpAddress\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_link\",\"type\":\"string\"}],\"name\":\"getStatus\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"rxSeq\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"txSeq\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"heightMTA\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"offsetMTA\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastHeight\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"extra\",\"type\":\"bytes\"}],\"internalType\":\"structTypes.VerifierStats\",\"name\":\"verifier\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"blockCount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"msgCount\",\"type\":\"uint256\"}],\"internalType\":\"structTypes.RelayStats[]\",\"name\":\"relays\",\"type\":\"tuple[]\"},{\"internalType\":\"uint256\",\"name\":\"relayIdx\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rotateHeight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rotateTerm\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"delayLimit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxAggregation\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rxHeightSrc\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rxHeight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blockIntervalSrc\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blockIntervalDst\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"currentHeight\",\"type\":\"uint256\"}],\"internalType\":\"structTypes.LinkStats\",\"name\":\"_linkStats\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_prev\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_msg\",\"type\":\"string\"}],\"name\":\"handleRelayMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_to\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_svc\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"_sn\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_msg\",\"type\":\"bytes\"}],\"name\":\"sendMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // BMC is an auto generated Go binding around an Ethereum contract.
 type BMC struct {
@@ -203,18 +204,49 @@ func (_BMC *BMCTransactorRaw) Transact(opts *bind.TransactOpts, method string, p
 	return _BMC.Contract.contract.Transact(opts, method, params...)
 }
 
+// GetBmcBtpAddress is a free data retrieval call binding the contract method 0x2a4011e9.
+//
+// Solidity: function getBmcBtpAddress() view returns(string)
+func (_BMC *BMCCaller) GetBmcBtpAddress(opts *bind.CallOpts) (string, error) {
+	var out []interface{}
+	err := _BMC.contract.Call(opts, &out, "getBmcBtpAddress")
+
+	if err != nil {
+		return *new(string), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+
+	return out0, err
+
+}
+
+// GetBmcBtpAddress is a free data retrieval call binding the contract method 0x2a4011e9.
+//
+// Solidity: function getBmcBtpAddress() view returns(string)
+func (_BMC *BMCSession) GetBmcBtpAddress() (string, error) {
+	return _BMC.Contract.GetBmcBtpAddress(&_BMC.CallOpts)
+}
+
+// GetBmcBtpAddress is a free data retrieval call binding the contract method 0x2a4011e9.
+//
+// Solidity: function getBmcBtpAddress() view returns(string)
+func (_BMC *BMCCallerSession) GetBmcBtpAddress() (string, error) {
+	return _BMC.Contract.GetBmcBtpAddress(&_BMC.CallOpts)
+}
+
 // GetStatus is a free data retrieval call binding the contract method 0x22b05ed2.
 //
-// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))
-func (_BMC *BMCCaller) GetStatus(opts *bind.CallOpts, _link string) (IBMCLinkStats, error) {
+// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256,bytes),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) _linkStats)
+func (_BMC *BMCCaller) GetStatus(opts *bind.CallOpts, _link string) (TypesLinkStats, error) {
 	var out []interface{}
 	err := _BMC.contract.Call(opts, &out, "getStatus", _link)
 
 	if err != nil {
-		return *new(IBMCLinkStats), err
+		return *new(TypesLinkStats), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IBMCLinkStats)).(*IBMCLinkStats)
+	out0 := *abi.ConvertType(out[0], new(TypesLinkStats)).(*TypesLinkStats)
 
 	return out0, err
 
@@ -222,100 +254,16 @@ func (_BMC *BMCCaller) GetStatus(opts *bind.CallOpts, _link string) (IBMCLinkSta
 
 // GetStatus is a free data retrieval call binding the contract method 0x22b05ed2.
 //
-// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))
-func (_BMC *BMCSession) GetStatus(_link string) (IBMCLinkStats, error) {
+// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256,bytes),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) _linkStats)
+func (_BMC *BMCSession) GetStatus(_link string) (TypesLinkStats, error) {
 	return _BMC.Contract.GetStatus(&_BMC.CallOpts, _link)
 }
 
 // GetStatus is a free data retrieval call binding the contract method 0x22b05ed2.
 //
-// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))
-func (_BMC *BMCCallerSession) GetStatus(_link string) (IBMCLinkStats, error) {
+// Solidity: function getStatus(string _link) view returns((uint256,uint256,(uint256,uint256,uint256,bytes),(address,uint256,uint256)[],uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) _linkStats)
+func (_BMC *BMCCallerSession) GetStatus(_link string) (TypesLinkStats, error) {
 	return _BMC.Contract.GetStatus(&_BMC.CallOpts, _link)
-}
-
-// AddLink is a paid mutator transaction binding the contract method 0x22a618fa.
-//
-// Solidity: function addLink(string _link) returns()
-func (_BMC *BMCTransactor) AddLink(opts *bind.TransactOpts, _link string) (*types.Transaction, error) {
-	return _BMC.contract.Transact(opts, "addLink", _link)
-}
-
-// AddLink is a paid mutator transaction binding the contract method 0x22a618fa.
-//
-// Solidity: function addLink(string _link) returns()
-func (_BMC *BMCSession) AddLink(_link string) (*types.Transaction, error) {
-	return _BMC.Contract.AddLink(&_BMC.TransactOpts, _link)
-}
-
-// AddLink is a paid mutator transaction binding the contract method 0x22a618fa.
-//
-// Solidity: function addLink(string _link) returns()
-func (_BMC *BMCTransactorSession) AddLink(_link string) (*types.Transaction, error) {
-	return _BMC.Contract.AddLink(&_BMC.TransactOpts, _link)
-}
-
-// AddRelay is a paid mutator transaction binding the contract method 0x0748ea7a.
-//
-// Solidity: function addRelay(string _link, address[] _addr) returns()
-func (_BMC *BMCTransactor) AddRelay(opts *bind.TransactOpts, _link string, _addr []common.Address) (*types.Transaction, error) {
-	return _BMC.contract.Transact(opts, "addRelay", _link, _addr)
-}
-
-// AddRelay is a paid mutator transaction binding the contract method 0x0748ea7a.
-//
-// Solidity: function addRelay(string _link, address[] _addr) returns()
-func (_BMC *BMCSession) AddRelay(_link string, _addr []common.Address) (*types.Transaction, error) {
-	return _BMC.Contract.AddRelay(&_BMC.TransactOpts, _link, _addr)
-}
-
-// AddRelay is a paid mutator transaction binding the contract method 0x0748ea7a.
-//
-// Solidity: function addRelay(string _link, address[] _addr) returns()
-func (_BMC *BMCTransactorSession) AddRelay(_link string, _addr []common.Address) (*types.Transaction, error) {
-	return _BMC.Contract.AddRelay(&_BMC.TransactOpts, _link, _addr)
-}
-
-// AddRelayer is a paid mutator transaction binding the contract method 0x513a4c82.
-//
-// Solidity: function addRelayer(address _addr, string _desc) returns()
-func (_BMC *BMCTransactor) AddRelayer(opts *bind.TransactOpts, _addr common.Address, _desc string) (*types.Transaction, error) {
-	return _BMC.contract.Transact(opts, "addRelayer", _addr, _desc)
-}
-
-// AddRelayer is a paid mutator transaction binding the contract method 0x513a4c82.
-//
-// Solidity: function addRelayer(address _addr, string _desc) returns()
-func (_BMC *BMCSession) AddRelayer(_addr common.Address, _desc string) (*types.Transaction, error) {
-	return _BMC.Contract.AddRelayer(&_BMC.TransactOpts, _addr, _desc)
-}
-
-// AddRelayer is a paid mutator transaction binding the contract method 0x513a4c82.
-//
-// Solidity: function addRelayer(address _addr, string _desc) returns()
-func (_BMC *BMCTransactorSession) AddRelayer(_addr common.Address, _desc string) (*types.Transaction, error) {
-	return _BMC.Contract.AddRelayer(&_BMC.TransactOpts, _addr, _desc)
-}
-
-// AddVerifier is a paid mutator transaction binding the contract method 0x76b503c3.
-//
-// Solidity: function addVerifier(string _net, address _addr) returns()
-func (_BMC *BMCTransactor) AddVerifier(opts *bind.TransactOpts, _net string, _addr common.Address) (*types.Transaction, error) {
-	return _BMC.contract.Transact(opts, "addVerifier", _net, _addr)
-}
-
-// AddVerifier is a paid mutator transaction binding the contract method 0x76b503c3.
-//
-// Solidity: function addVerifier(string _net, address _addr) returns()
-func (_BMC *BMCSession) AddVerifier(_net string, _addr common.Address) (*types.Transaction, error) {
-	return _BMC.Contract.AddVerifier(&_BMC.TransactOpts, _net, _addr)
-}
-
-// AddVerifier is a paid mutator transaction binding the contract method 0x76b503c3.
-//
-// Solidity: function addVerifier(string _net, address _addr) returns()
-func (_BMC *BMCTransactorSession) AddVerifier(_net string, _addr common.Address) (*types.Transaction, error) {
-	return _BMC.Contract.AddVerifier(&_BMC.TransactOpts, _net, _addr)
 }
 
 // HandleRelayMessage is a paid mutator transaction binding the contract method 0x6f4779cc.
@@ -337,4 +285,25 @@ func (_BMC *BMCSession) HandleRelayMessage(_prev string, _msg string) (*types.Tr
 // Solidity: function handleRelayMessage(string _prev, string _msg) returns()
 func (_BMC *BMCTransactorSession) HandleRelayMessage(_prev string, _msg string) (*types.Transaction, error) {
 	return _BMC.Contract.HandleRelayMessage(&_BMC.TransactOpts, _prev, _msg)
+}
+
+// SendMessage is a paid mutator transaction binding the contract method 0xbf6c1d9a.
+//
+// Solidity: function sendMessage(string _to, string _svc, uint256 _sn, bytes _msg) returns()
+func (_BMC *BMCTransactor) SendMessage(opts *bind.TransactOpts, _to string, _svc string, _sn *big.Int, _msg []byte) (*types.Transaction, error) {
+	return _BMC.contract.Transact(opts, "sendMessage", _to, _svc, _sn, _msg)
+}
+
+// SendMessage is a paid mutator transaction binding the contract method 0xbf6c1d9a.
+//
+// Solidity: function sendMessage(string _to, string _svc, uint256 _sn, bytes _msg) returns()
+func (_BMC *BMCSession) SendMessage(_to string, _svc string, _sn *big.Int, _msg []byte) (*types.Transaction, error) {
+	return _BMC.Contract.SendMessage(&_BMC.TransactOpts, _to, _svc, _sn, _msg)
+}
+
+// SendMessage is a paid mutator transaction binding the contract method 0xbf6c1d9a.
+//
+// Solidity: function sendMessage(string _to, string _svc, uint256 _sn, bytes _msg) returns()
+func (_BMC *BMCTransactorSession) SendMessage(_to string, _svc string, _sn *big.Int, _msg []byte) (*types.Transaction, error) {
+	return _BMC.Contract.SendMessage(&_BMC.TransactOpts, _to, _svc, _sn, _msg)
 }

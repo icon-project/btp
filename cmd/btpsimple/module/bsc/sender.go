@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"math/big"
@@ -50,9 +49,6 @@ type sender struct {
 	w   Wallet
 	l   log.Logger
 	opt struct {
-		GasPrice int64
-		GasLimit int64
-		ChainID  int64
 	}
 
 	bmc *binding.BMC
@@ -265,9 +261,8 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 }
 
 func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
-	var status binding.IBMCLinkStats
-	status, err := s.bmc.GetStatus(
-		&bind.CallOpts{From: HexToAddress(s.w.Address())}, s.src.String())
+	var status binding.TypesLinkStats
+	status, err := s.bmc.GetStatus(nil, s.src.String())
 
 	if err != nil {
 		s.l.Errorf("Error retrieving relay status from BMC")
