@@ -245,7 +245,7 @@ func main() {
 			}
 
 			var sr *chain.SimpleChain
-			if sr, err = chain.NewSimpleChain(&cfg.Config, w, l); err != nil {
+			if sr, err = chain.NewChain(&cfg.Config, w, l); err != nil {
 				return err
 			}
 			return sr.Serve()
