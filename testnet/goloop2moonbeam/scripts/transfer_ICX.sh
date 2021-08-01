@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-DEPOSIT_AMOUNT=1000000000000000000000000
+DEPOSIT_AMOUNT=2000000000
 TRANSFER_AMOUNT=1000000
 
 source goloop_rpc.sh
@@ -34,16 +34,18 @@ create_bob_account_in_Moonbeam() {
     echo "3. create_bob_account_in_Moonbeam"
     cd ${CONFIG_DIR}
 
-    web3 -f json account create > web3.bob_account
-    cat  web3.bob_account | awk '/Private key:/ {print $3}' > bob.private.key
-    cat  web3.bob_account | awk '/Public address:/ {print $3}' > bob.address
+    eth address:random > bob.account
+    cat  bob.account | jq -r .address > bob.address
+    cat  bob.account | jq -r .privateKey > bob.private
     echo "btp://$(cat net.btp.moonbeam)/$(cat bob.address)" > $CONFIG_DIR/bob.btp.address
 }
 
 transfer_ICX_from_alice_to_bob() {
     echo "4. transfer_ICX_from_alice_to_bob"
-
     cd ${CONFIG_DIR}
+    echo "$(goloop rpc balance $(cat alice.address))"
+
+
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
         --param _to=$(cat bob.btp.address) --value $TRANSFER_AMOUNT \
@@ -52,8 +54,17 @@ transfer_ICX_from_alice_to_bob() {
     ensure_txresult tx.Alice2Bob.transfer
 }
 
+check_bob_balance() {
+    sleep 10
+
+    cd $CONFIG_DIR
+    eth abi:add bshcore abi.bsh_core.json
+    eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(cat bob.address)', 'ICX')"
+}
+
 echo "This script demonstrates how to transfer a NativeCoin from ICON to MOONBEAM."
 create_alice_account_in_Gochain
 deposit_ICX_for_alice
 create_bob_account_in_Moonbeam
 transfer_ICX_from_alice_to_bob
+check_bob_balance

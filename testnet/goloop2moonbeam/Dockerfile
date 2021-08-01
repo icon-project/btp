@@ -16,9 +16,9 @@ COPY --from=goloop /goloop/bin /goloop/bin
 ENV PATH $PATH:/goloop/bin
 RUN goloop version
 
-# install web3 cli
-RUN curl -fsSLO --compressed "https://github.com/gochain/web3/releases/download/v0.2.66/web3_alpine"
-RUN mv web3_alpine /usr/bin/web3 && chmod u+x /usr/bin/web3 && web3 -v
+# install eth cli
+RUN npm install -g eth-cli
+RUN eth -v
 
 ADD scripts /btpsimple/scripts
 RUN chmod u+x /btpsimple/scripts/*.sh
