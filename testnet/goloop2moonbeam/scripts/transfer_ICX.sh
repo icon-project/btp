@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+if [ ! -f "$CONFIG_DIR/$PROVISION_STATUS_DONE" ]; then
+    echo "provisioning not done yet"
+    exit 1
+fi
+
 DEPOSIT_AMOUNT=2000000000
 TRANSFER_AMOUNT=1000000
 MOONBEAM_PREFUND_PK=39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68
