@@ -9,7 +9,7 @@ import (
 )
 
 /* Adapted from ICONDAO branch
-* TODO: figure how to implement simple plugin system in golang.
+* TODO: figure out how to implement simple plugin system in golang.
 
 Using importer, target blockchain package can be programmatically imported, this will eliminate the need for switch
 statement and package imports for each blockchain. It's a minor improvement at this point, considering we don't have
