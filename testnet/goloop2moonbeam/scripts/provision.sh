@@ -1,10 +1,10 @@
-
+source util.sh
 
 provision() {  
     echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
     echo "provisioning..."
 
-    source util.sh
+
     source deploy_javascore.sh
     source deploy_solidity.sh
 
