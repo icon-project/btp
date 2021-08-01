@@ -24,12 +24,14 @@ deposit_ICX_for_Alice() {
     echo "2. deposit $DEPOSIT_AMOUNT ICX to Alice"
 
     cd ${CONFIG_DIR}
+    ALICE_ADDRESS=$(cat alice.ks.json | jq -r .address)
+
     goloop rpc sendtx transfer \
-        --to $(cat alice.ks.json | jq -r .address) \
+        --to $ALICE_ADDRESS \
         --value $DEPOSIT_AMOUNT | jq -r . > tx.deposit.alice
     ensure_txresult tx.deposit.alice
 
-    echo "Alice's balance: $(goloop rpc balance $(cat alice.address) | xargs printf "%d\n") ICX"
+    echo "Alice's balance: $(goloop rpc balance $ALICE_ADDRESS | xargs printf "%d\n") ICX"
 }
 
 create_Bob_account_in_Moonbeam() {
