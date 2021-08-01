@@ -38,4 +38,6 @@ transfer_DEV_from_bob_to_alice() {
      echo "4. transfer_DEV_from_bob_to_alice"
 }
 
+
+echo "This script demonstrates how to transfer a NativeCoin from MOONBEAM to ICON."
 # WIP

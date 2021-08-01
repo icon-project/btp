@@ -48,3 +48,16 @@ make run
 Now all that remains is to wait for the provisioning process to be completed.    
 The folder `~/work/btp/testnet/goloop2moonbeam/config` will contain all of the configuration files.   
 Note: If you want a fresh test, run `make clean` to remove the old test data.
+
+### Run test scenarios:
+
+Keep the docker-compose running and open an other terminal.  
+Run this command to transfer the native coin ICX from ICON to MOONBEAN.
+```
+make run_transfer_icx
+```
+
+Run this command to transfer the native coin DEV from MOONBEAN to ICON:
+```
+make run_transfer_icx
+```
