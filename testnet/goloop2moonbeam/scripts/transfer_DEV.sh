@@ -10,7 +10,7 @@ MOONBEAM_GAS_LIMIT=6721975
 deposit_DEV_for_bob() {
     echo "$1. Deposit DEV for Bob"
     read -p 'Enter amount of DEV to be deposited: ' DEPOSIT_AMOUNT 
-    if ! [ -n "$DEPOSIT_AMOUNT" ] && [ "$DEPOSIT_AMOUNT" -eq "$DEPOSIT_AMOUNT" ] 2>/dev/null; then
+    if ! echo "$DEPOSIT_AMOUNT" | grep -qE '^[0-9]+$' ; then
         echo "DEPOSIT_AMOUNT must be a numbers" 
         exit 1
     fi
@@ -31,8 +31,8 @@ deposit_DEV_for_bob() {
 transfer_DEV_from_bob_to_alice() {
     echo "$1. Transfer DEV from Bob to Alice"
     read -p 'Enter amount of DEV to be transfered: ' TRANSFER_AMOUNT 
-    if ! [ -n "$TRANSFER_AMOUNT" ] && [ "$TRANSFER_AMOUNT" -eq "$TRANSFER_AMOUNT" ] 2>/dev/null; then
-        echo "DEPOSIT_AMOUNT must be a numbers" 
+    if ! echo "$TRANSFER_AMOUNT" | grep -qE '^[0-9]+$' ; then
+        echo "TRANSFER_AMOUNT must be a numbers" 
         exit 1
     fi
 
