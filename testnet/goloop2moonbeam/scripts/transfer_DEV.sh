@@ -10,7 +10,7 @@ MOONBEAM_GAS_LIMIT=6721975
 
 
 deposit_DEV_for_bob() {
-    echo "$1. deposit DEV for Bob"
+    echo "$1. Deposit DEV for Bob"
 
     cd ${CONFIG_DIR}
     eth transaction:send \
@@ -25,7 +25,7 @@ deposit_DEV_for_bob() {
 }
 
 transfer_DEV_from_bob_to_alice() {
-    echo "$1. transfer DEV from Bob to Alice"
+    echo "$1. Transfer DEV from Bob to Alice"
 
     cd ${CONFIG_DIR}
     encoded_data=$(eth method:encode abi.bsh_core.json "transferNativeCoin('$(cat alice.btp.address)')")

@@ -6,7 +6,7 @@ DEPOSIT_ICX_AMOUNT=1000000000000000000000000
 TRANSFER_ICX_AMOUNT=1000000
 
 deposit_ICX_for_Alice() {
-    echo "$1. deposit $DEPOSIT_ICX_AMOUNT ICX to Alice"
+    echo "$1. Deposit $DEPOSIT_ICX_AMOUNT ICX to Alice"
 
     cd ${CONFIG_DIR}
     goloop rpc sendtx transfer \
