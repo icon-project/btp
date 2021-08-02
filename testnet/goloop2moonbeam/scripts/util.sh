@@ -98,3 +98,4 @@ extract_scoreAddress() {
     echo $SCORE | tee ${ADDR}
   fi
 }
+

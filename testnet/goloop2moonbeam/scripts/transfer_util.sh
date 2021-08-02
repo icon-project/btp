@@ -48,5 +48,6 @@ get_alice_address() {
 }
 
 get_alice_balance() {
-    echo "Alice's balance: $(goloop rpc balance $(get_alice_address)) ICX"
+    balance=$(goloop rpc balance $(get_alice_address) | jq -r)
+    echo "Alice's balance: $balance ICX"
 }
