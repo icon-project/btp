@@ -13,7 +13,7 @@ deposit_ICX_for_Alice() {
         --to $(get_alice_address) \
         --value $DEPOSIT_ICX_AMOUNT | jq -r . > tx.deposit.alice
     ensure_txresult tx.deposit.alice
-    get_alice_balance
+    
 }
 
 transfer_ICX_from_Alice_to_Bob() {
@@ -29,7 +29,7 @@ transfer_ICX_from_Alice_to_Bob() {
 }
 
 check_bob_balance_in_Moonbeam() {
-    echo "$1. Checking Bob's balance"
+    echo "$1. Checking Bob's balance after 10 seconds..."
     sleep 10
 
     cd $CONFIG_DIR
