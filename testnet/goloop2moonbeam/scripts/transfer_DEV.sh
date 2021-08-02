@@ -12,7 +12,7 @@ deposit_DEV_for_bob() {
     read -p 'Enter amount of DEV to be deposited: ' DEPOSIT_AMOUNT 
     if ! [ -n "$DEPOSIT_AMOUNT" ] && [ "$DEPOSIT_AMOUNT" -eq "$DEPOSIT_AMOUNT" ] 2>/dev/null; then
         echo "DEPOSIT_AMOUNT must be a numbers" 
-        exit 0 
+        exit 1
     fi
 
 
@@ -33,7 +33,7 @@ transfer_DEV_from_bob_to_alice() {
     read -p 'Enter amount of DEV to be transfered: ' TRANSFER_AMOUNT 
     if ! [ -n "$TRANSFER_AMOUNT" ] && [ "$TRANSFER_AMOUNT" -eq "$TRANSFER_AMOUNT" ] 2>/dev/null; then
         echo "DEPOSIT_AMOUNT must be a numbers" 
-        exit 0 
+        exit 1
     fi
 
     cd ${CONFIG_DIR}

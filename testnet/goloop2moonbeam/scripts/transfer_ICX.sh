@@ -7,7 +7,7 @@ deposit_ICX_for_Alice() {
     read -p 'Enter amount of ICX to be deposited: ' DEPOSIT_AMOUNT 
     if ! [ -n "$DEPOSIT_AMOUNT" ] && [ "$DEPOSIT_AMOUNT" -eq "$DEPOSIT_AMOUNT" ] 2>/dev/null; then
         echo "DEPOSIT_AMOUNT must be a numbers" 
-        exit 0 
+        exit 1
     fi
 
     cd ${CONFIG_DIR}
@@ -23,13 +23,13 @@ transfer_ICX_from_Alice_to_Bob() {
     read -p 'Enter amount of ICX to be transfered: ' TRANSFER_AMOUNT 
     if ! [ -n "$TRANSFER_AMOUNT" ] && [ "$TRANSFER_AMOUNT" -eq "$TRANSFER_AMOUNT" ] 2>/dev/null; then
         echo "TRANSFER_AMOUNT must be a numbers" 
-        exit 0 
+        exit 1
     fi
 
     cd ${CONFIG_DIR}
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
-        --param _to=$(cat bob.btp.address) --value $TRANSFER_ICX_AMOUNT \
+        --param _to=$(cat bob.btp.address) --value $TRANSFER_AMOUNT \
         --key_store alice.ks.json --key_secret alice.secret \
         | jq -r . > tx.Alice2Bob.transfer
     ensure_txresult tx.Alice2Bob.transfer
