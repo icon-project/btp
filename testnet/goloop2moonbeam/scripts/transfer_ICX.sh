@@ -5,7 +5,7 @@ source transfer_util.sh
 deposit_ICX_for_Alice() {
     echo "$1. Deposit ICX to Alice"
     read -p 'Enter amount of ICX to be deposited: ' DEPOSIT_AMOUNT 
-    if ! [ "$DEPOSIT_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]; then 
+    if ! [ -n "$DEPOSIT_AMOUNT" ] && [ "$DEPOSIT_AMOUNT" -eq "$DEPOSIT_AMOUNT" ] 2>/dev/null; then
         echo "DEPOSIT_AMOUNT must be a numbers" 
         exit 0 
     fi
@@ -21,7 +21,7 @@ deposit_ICX_for_Alice() {
 transfer_ICX_from_Alice_to_Bob() {
     echo "$1. Transfer ICX from Alice to Bob"
     read -p 'Enter amount of ICX to be transfered: ' TRANSFER_AMOUNT 
-    if ! [ "$TRANSFER_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]; then 
+    if ! [ -n "$TRANSFER_AMOUNT" ] && [ "$TRANSFER_AMOUNT" -eq "$TRANSFER_AMOUNT" ] 2>/dev/null; then
         echo "TRANSFER_AMOUNT must be a numbers" 
         exit 0 
     fi
