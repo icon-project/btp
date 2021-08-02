@@ -23,11 +23,11 @@ import score.ObjectWriter;
 
 import java.math.BigInteger;
 
-public class RelayerManagerProperties {
-    public static final RelayerManagerProperties DEFAULT;
+public class RelayersProperties {
+    public static final RelayersProperties DEFAULT;
 
     static {
-        DEFAULT = new RelayerManagerProperties();
+        DEFAULT = new RelayersProperties();
         DEFAULT.setRelayerMinBond(BigInteger.ONE);
         DEFAULT.setRelayerTerm(43200);
         DEFAULT.setNextRewardDistribution(0);
@@ -115,12 +115,12 @@ public class RelayerManagerProperties {
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, RelayerManagerProperties obj) {
+    public static void writeObject(ObjectWriter writer, RelayersProperties obj) {
         obj.writeObject(writer);
     }
 
-    public static RelayerManagerProperties readObject(ObjectReader reader) {
-        RelayerManagerProperties obj = new RelayerManagerProperties();
+    public static RelayersProperties readObject(ObjectReader reader) {
+        RelayersProperties obj = new RelayersProperties();
         reader.beginList();
         obj.setRelayerMinBond(reader.readNullable(BigInteger.class));
         obj.setRelayerTerm(reader.readLong());
@@ -145,14 +145,14 @@ public class RelayerManagerProperties {
         writer.end();
     }
 
-    public static RelayerManagerProperties fromBytes(byte[] bytes) {
+    public static RelayersProperties fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return RelayerManagerProperties.readObject(reader);
+        return RelayersProperties.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        RelayerManagerProperties.writeObject(writer, this);
+        RelayersProperties.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

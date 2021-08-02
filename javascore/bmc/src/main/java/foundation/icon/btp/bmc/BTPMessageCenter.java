@@ -18,7 +18,6 @@ package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.*;
 import foundation.icon.score.util.*;
-import foundation.icon.btp.lib.*;
 import foundation.icon.score.util.ArrayUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
@@ -33,7 +32,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager, RelayerManager {
+public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager {
     private static final Logger logger = Logger.getLogger(BTPMessageCenter.class);
     public static final int BLOCK_INTERVAL_MSEC = 2000;
     public static final String INTERNAL_SERVICE = "bmc";
@@ -45,7 +44,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     //
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
-    private final RelayerManager relayerManager = new RelayerManagerImpl("relayers");
     private final ArrayDB<ServiceCandidate> serviceCandidates = Context.newArrayDB("serviceCandidates", ServiceCandidate.class);
     private final BranchDB<String, BranchDB<Address, ArrayDB<String>>> fragments = Context.newBranchDB("fragments", String.class);
 
@@ -54,6 +52,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private final Services services = new Services("services");
     private final Routes routes = new Routes("routes");
     private final Links links = new Links("links");
+    private final Relayers relayers = new Relayers("relayers");
+    public static final int DEFAULT_REWARD_PERCENT_SCALE_FACTOR = 4;
 
     public BTPMessageCenter(String _net) {
         this.btpAddr = new BTPAddress(BTPAddress.PROTOCOL_BTP, _net, Context.getAddress().toString());
@@ -972,28 +972,127 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     @Payable
     @External
     public void registerRelayer(String _desc) {
-        relayerManager.registerRelayer(_desc);
+        Address addr = Context.getCaller();
+        if (relayers.containsKey(addr)) {
+            throw BMCException.unknown("already registered relayer");
+        }
+        BigInteger bond = Context.getValue();
+        BigInteger relayerMinBond = getRelayerMinBond();
+        if (bond == null || bond.compareTo(relayerMinBond) < 0) {
+            throw BMCException.unknown("require bond at least " + relayerMinBond + " icx");
+        }
+
+        Relayer relayer = new Relayer();
+        relayer.setAddr(addr);
+        relayer.setDesc(_desc);
+        relayer.setSince(Context.getBlockHeight());
+        relayer.setSinceExtra(Context.getTransactionIndex());
+        relayer.setBond(bond);
+        relayer.setReward(BigInteger.ZERO);
+        logger.println("registerRelayer", relayer);
+        relayers.put(addr, relayer);
+
+        RelayersProperties properties = relayers.getProperties();
+        properties.setBond(properties.getBond().add(bond));
+        relayers.setProperties(properties);
+    }
+
+    private void removeRelayerAndRefund(Address _addr, Address _refund) {
+        if (!relayers.containsKey(_addr)) {
+            throw BMCException.unknown("not found registered relayer");
+        }
+        Relayer relayer = relayers.remove(_addr);
+
+        RelayersProperties properties = relayers.getProperties();
+        BigInteger bond = relayer.getBond();
+        Context.transfer(_refund, bond);
+        properties.setBond(properties.getBond().subtract(bond));
+
+        BigInteger reward = relayer.getReward();
+        if (reward.compareTo(BigInteger.ZERO) > 0) {
+            Context.transfer(_refund, reward);
+            properties.setDistributed(properties.getDistributed().subtract(reward));
+        }
+        relayers.setProperties(properties);
     }
 
     @External
     public void unregisterRelayer() {
-        relayerManager.unregisterRelayer();
+        Address _addr = Context.getCaller();
+        removeRelayerAndRefund(_addr, _addr);
     }
 
     @External
     public void removeRelayer(Address _addr, Address _refund) {
         requireOwnerAccess();
-        relayerManager.removeRelayer(_addr, _refund);
+        removeRelayerAndRefund(_addr, _refund);
     }
 
     @External(readonly = true)
     public Map<String, Relayer> getRelayers() {
-        return relayerManager.getRelayers();
+        return relayers.toMapWithKeyToString();
     }
 
     @External
     public void distributeRelayerReward() {
-        relayerManager.distributeRelayerReward();
+        logger.println("distributeRelayerReward");
+        long currentHeight = Context.getBlockHeight();
+        RelayersProperties properties = relayers.getProperties();
+        long nextRewardDistribution = properties.getNextRewardDistribution();
+        if (nextRewardDistribution <= currentHeight) {
+            long delayOfDistribution = currentHeight - nextRewardDistribution;
+            long relayerTerm = properties.getRelayerTerm();
+            nextRewardDistribution += relayerTerm;
+            if (nextRewardDistribution <= currentHeight) {
+                int omitted = 0;
+                while(nextRewardDistribution < currentHeight) {
+                    nextRewardDistribution += relayerTerm;
+                    omitted++;
+                }
+                logger.println("WARN","rewardDistribution was omitted", omitted, "term:", relayerTerm);
+            }
+            long since = nextRewardDistribution - (relayerTerm * 2);
+            properties.setNextRewardDistribution(nextRewardDistribution);
+
+            BigInteger balance = Context.getBalance(Context.getAddress());
+            BigInteger distributed = properties.getDistributed();
+            BigInteger bond = properties.getBond();
+            BigInteger current = balance.subtract(bond);
+            BigInteger carryover = properties.getCarryover();
+            logger.println("distributeRelayerReward", "since:", since, "delay:",delayOfDistribution,
+                    "balance:", balance, "distributed:", distributed, "bond:", bond, "carryover:", carryover);
+            if (current.compareTo(distributed) > 0) {
+                BigInteger budget = current.subtract(distributed);
+                logger.println("distributeRelayerReward","budget:", budget, "transferred:", budget.subtract(carryover));
+                carryover = budget;
+                Relayer[] filteredRelayers = relayers.getValuesBySinceAndSortAsc(since);
+                BigInteger sumOfBond = BigInteger.ZERO;
+                int lenOfRelayers = StrictMath.min(properties.getRelayerRewardRank(), filteredRelayers.length);
+                for (int i = 0; i < lenOfRelayers; i++) {
+                    sumOfBond = sumOfBond.add(filteredRelayers[i].getBond());
+                }
+                logger.println("distributeRelayerReward","sumOfBond:", sumOfBond, "lenOfRelayers:", lenOfRelayers);
+                BigInteger sumOfReward = BigInteger.ZERO;
+                for (int i = 0; i < lenOfRelayers; i++) {
+                    Relayer relayer = filteredRelayers[i];
+                    double percentage = BigIntegerUtil.floorDivide(relayer.getBond(), sumOfBond, DEFAULT_REWARD_PERCENT_SCALE_FACTOR);
+                    BigInteger reward = BigIntegerUtil.multiply(budget, percentage);
+                    relayer.setReward(relayer.getReward().add(reward));
+                    logger.println("distributeRelayerReward", "relayer:",relayer.getAddr(), "percentage:",percentage, "reward:", reward);
+                    relayers.put(relayer.getAddr(), relayer);
+                    carryover = carryover.subtract(reward);
+                    sumOfReward = sumOfReward.add(reward);
+                }
+
+                logger.println("distributeRelayerReward","sumOfReward:", sumOfReward, "carryover:", carryover, "nextRewardDistribution:", nextRewardDistribution);
+                properties.setDistributed(distributed.add(sumOfReward));
+                properties.setCarryover(carryover);
+            } else {
+                //reward is zero or negative
+                logger.println("WARN","transferred reward is zero or negative");
+            }
+            relayers.setProperties(properties);
+        }
     }
 
     //FIXME fallback is required?
@@ -1004,51 +1103,85 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void claimRelayerReward() {
-        relayerManager.claimRelayerReward();
+        Address addr = Context.getCaller();
+        if (!relayers.containsKey(addr)) {
+            throw BMCException.unknown("not found registered relayer");
+        }
+        Relayer relayer = relayers.get(addr);
+        BigInteger reward = relayer.getReward();
+        if (reward.compareTo(BigInteger.ZERO) < 1) {
+            throw BMCException.unknown("reward is not remained");
+        }
+        Context.transfer(addr, reward);
+        relayer.setReward(BigInteger.ZERO);
+        relayers.put(addr, relayer);
+        RelayersProperties properties = relayers.getProperties();
+        properties.setDistributed(properties.getDistributed().subtract(reward));
+        relayers.setProperties(properties);
     }
 
     @External(readonly = true)
     public BigInteger getRelayerMinBond() {
-        return relayerManager.getRelayerMinBond();
+        RelayersProperties properties = relayers.getProperties();
+        return properties.getRelayerMinBond();
     }
 
     @External
     public void setRelayerMinBond(BigInteger _value) {
         requireOwnerAccess();
-        relayerManager.setRelayerMinBond(_value);
+        if (_value.compareTo(BigInteger.ZERO) < 0) {
+            throw BMCException.unknown("minBond must be positive");
+        }
+        RelayersProperties properties = relayers.getProperties();
+        properties.setRelayerMinBond(_value);
+        relayers.setProperties(properties);
     }
 
     @External(readonly = true)
     public long getRelayerTerm() {
-        return relayerManager.getRelayerTerm();
+        RelayersProperties properties = relayers.getProperties();
+        return properties.getRelayerTerm();
     }
 
     @External
     public void setRelayerTerm(long _value) {
         requireOwnerAccess();
-        relayerManager.setRelayerTerm(_value);
-    }
-
-    @External
-    public void setNextRewardDistribution(long _height) {
-        requireOwnerAccess();
-        relayerManager.setNextRewardDistribution(_height);
+        if (_value < 1) {
+            throw BMCException.unknown("term must be positive");
+        }
+        RelayersProperties properties = relayers.getProperties();
+        properties.setRelayerTerm(_value);
+        relayers.setProperties(properties);
     }
 
     @External(readonly = true)
     public int getRelayerRewardRank() {
-        return relayerManager.getRelayerRewardRank();
-    }
-
-    @External(readonly = true)
-    public RelayerManagerProperties getRelayerManagerProperties() {
-        return relayerManager.getRelayerManagerProperties();
+        RelayersProperties properties = relayers.getProperties();
+        return properties.getRelayerRewardRank();
     }
 
     @External
     public void setRelayerRewardRank(int _value) {
         requireOwnerAccess();
-        relayerManager.setRelayerRewardRank(_value);
+        if (_value < 1) {
+            throw BMCException.unknown("rewardRank must be positive");
+        }
+        RelayersProperties properties = relayers.getProperties();
+        properties.setRelayerRewardRank(_value);
+        relayers.setProperties(properties);
+    }
+
+    @External
+    public void setNextRewardDistribution(long _height) {
+        requireOwnerAccess();
+        RelayersProperties properties = relayers.getProperties();
+        properties.setNextRewardDistribution(StrictMath.max(_height, Context.getBlockHeight()));
+        relayers.setProperties(properties);
+    }
+
+    @External(readonly = true)
+    public RelayersProperties getRelayersProperties() {
+        return relayers.getProperties();
     }
 
 }

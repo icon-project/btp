@@ -40,24 +40,24 @@ public class RelayerManagementTest implements BMCIntegrationTest {
     }
 
     static boolean isExistsRelayer(Address address, BigInteger bond, String desc) {
-        return ScoreIntegrationTest.contains(relayerManager.getRelayers(),
+        return ScoreIntegrationTest.contains(iconSpecific.getRelayers(),
                 address.toString(), relayerPredicate(address, bond, desc));
     }
 
     static boolean isExistsRelayer(Address address) {
-        return relayerManager.getRelayers().containsKey(address.toString());
+        return iconSpecific.getRelayers().containsKey(address.toString());
     }
 
     static void registerRelayer(BigInteger bond, String desc) {
         ScoreIntegrationTest.balanceCheck(address, bond.negate(),
-                () -> ((RelayerManagerScoreClient)relayerManagerWithTester).registerRelayer(bond, desc));
+                () -> ((ICONSpecificScoreClient)iconSpecificWithTester).registerRelayer(bond, desc));
         assertTrue(isExistsRelayer(address, bond, desc));
     }
 
     static void unregisterRelayer() {
-        Relayer relayer = relayerManagerWithTester.getRelayers().get(address.toString());
+        Relayer relayer = iconSpecificWithTester.getRelayers().get(address.toString());
         ScoreIntegrationTest.balanceCheck(address, relayer != null ? relayer.getBond().add(relayer.getReward()) : BigInteger.ZERO,
-                relayerManagerWithTester::unregisterRelayer);
+                iconSpecificWithTester::unregisterRelayer);
         assertFalse(isExistsRelayer(address));
     }
 
@@ -128,32 +128,32 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
     @Test
     void claimRelayerRewardShouldRevertNotExists() {
-        AssertBMCException.assertUnknown(relayerManager::claimRelayerReward);
+        AssertBMCException.assertUnknown(iconSpecific::claimRelayerReward);
     }
 
     static int relayerTerm = 2;
     static int relayerRewardRank = 3;
     static Integer[] sortedBonds = new Integer[]{4,3,3,2,1};
-    private final List<RelayerManagerScoreClient> relayerManagerScoreClients = new ArrayList<>();
+    private final List<ICONSpecificScoreClient> iconSpecificScoreClients = new ArrayList<>();
     private BigInteger sumOfReward = BigInteger.ZERO;
     private BigInteger sumOfBond = BigInteger.ZERO;
 
-    RelayerManagerScoreClient newRelayerManagerScoreClientWithTransfer(BigInteger value) {
-        RelayerManagerScoreClient relayerManagerScoreClient = new RelayerManagerScoreClient(
+    ICONSpecificScoreClient newICONSpecificScoreClientWithTransfer(BigInteger value) {
+        ICONSpecificScoreClient iconSpecificScoreClient = new ICONSpecificScoreClient(
                 bmcClient.endpoint(), bmcClient._nid(), ScoreIntegrationTest.generateWallet(), bmcClient._address());
-        Address address = Address.of(relayerManagerScoreClient._wallet());
+        Address address = Address.of(iconSpecificScoreClient._wallet());
 
         System.out.println("transfer to relayer address: "+ address+", value: "+value);
         bmcClient._transfer(address, value, null);
-        return relayerManagerScoreClient;
+        return iconSpecificScoreClient;
     }
 
-    Relayer registerRelayer(RelayerManagerScoreClient relayerManagerScoreClient, BigInteger bond, String desc) {
-        Address address = Address.of(relayerManagerScoreClient._wallet());
+    Relayer registerRelayer(ICONSpecificScoreClient iconSpecificScoreClient, BigInteger bond, String desc) {
+        Address address = Address.of(iconSpecificScoreClient._wallet());
         System.out.println("register relayer address: "+ address+", bond: "+bond+", desc:"+desc);
         ScoreIntegrationTest.balanceCheck(bmcClient._address(), bond,
-                () -> relayerManagerScoreClient.registerRelayer(bond, desc));
-        Relayer relayer = relayerManager.getRelayers().get(address.toString());
+                () -> iconSpecificScoreClient.registerRelayer(bond, desc));
+        Relayer relayer = iconSpecific.getRelayers().get(address.toString());
         assertTrue(relayer != null && relayerPredicate(address, bond, desc).test(relayer));
         System.out.println("registered relayer "+relayer);
         return relayer;
@@ -162,25 +162,25 @@ public class RelayerManagementTest implements BMCIntegrationTest {
     void beforeDistributeRelayerTests(TestInfo testInfo) {
         if (isDistributeRelayerTests(testInfo)) {
             System.out.println("beforeDistributeRelayerTests start on "+testInfo.getDisplayName());
-            assertEquals(0, relayerManager.getRelayers().size(), "required relayers is empty");
+            assertEquals(0, iconSpecific.getRelayers().size(), "required relayers is empty");
 
-            relayerManager.setRelayerTerm(relayerTerm);
-            relayerManager.setRelayerRewardRank(relayerRewardRank);
+            iconSpecific.setRelayerTerm(relayerTerm);
+            iconSpecific.setRelayerRewardRank(relayerRewardRank);
 
             for (int i = 0; i < sortedBonds.length; i++) {
                 BigInteger bond = BigInteger.valueOf(sortedBonds[i]);
-                RelayerManagerScoreClient relayerManagerScoreClient = newRelayerManagerScoreClientWithTransfer(bond);
-                relayerManagerScoreClients.add(relayerManagerScoreClient);
-                registerRelayer(relayerManagerScoreClient, bond, "Relayer "+i);
+                ICONSpecificScoreClient iconSpecificScoreClient = newICONSpecificScoreClientWithTransfer(bond);
+                iconSpecificScoreClients.add(iconSpecificScoreClient);
+                registerRelayer(iconSpecificScoreClient, bond, "Relayer "+i);
 
                 if (i < relayerRewardRank) {
                     sumOfReward = sumOfReward.add(bond);
                 }
                 sumOfBond = sumOfBond.add(bond);
-                assertEquals(sumOfBond, relayerManager.getRelayerManagerProperties().getBond());
+                assertEquals(sumOfBond, iconSpecific.getRelayersProperties().getBond());
             }
 
-            relayerManager.setNextRewardDistribution(0);
+            iconSpecific.setNextRewardDistribution(0);
 
             //wait NextRewardDistribution
             ScoreIntegrationTest.waitByNumOfBlock(relayerTerm);
@@ -192,18 +192,18 @@ public class RelayerManagementTest implements BMCIntegrationTest {
         if (isDistributeRelayerTests(testInfo)) {
             System.out.println("afterDistributeRelayerTests start on "+testInfo.getDisplayName());
             Address refund = Address.of(bmcClient._wallet());
-            for (Map.Entry<String, Relayer> entry : relayerManager.getRelayers().entrySet()) {
+            for (Map.Entry<String, Relayer> entry : iconSpecific.getRelayers().entrySet()) {
                 Relayer relayer = entry.getValue();
                 System.out.println("clear relayer "+ relayer);
                 ScoreIntegrationTest.balanceCheck(refund, relayer.getBond().add(relayer.getReward()),
-                        () -> relayerManager.removeRelayer(relayer.getAddr(), refund));
+                        () -> iconSpecific.removeRelayer(relayer.getAddr(), refund));
                 assertFalse(isExistsRelayer((Address) relayer.getAddr()));
             }
-            relayerManager.setRelayerTerm(RelayerManagerProperties.DEFAULT.getRelayerTerm());
-            relayerManager.setRelayerRewardRank(RelayerManagerProperties.DEFAULT.getRelayerRewardRank());
-            relayerManager.setNextRewardDistribution(0);
+            iconSpecific.setRelayerTerm(RelayersProperties.DEFAULT.getRelayerTerm());
+            iconSpecific.setRelayerRewardRank(RelayersProperties.DEFAULT.getRelayerRewardRank());
+            iconSpecific.setNextRewardDistribution(0);
 
-            relayerManagerScoreClients.clear();
+            iconSpecificScoreClients.clear();
             System.out.println("afterDistributeRelayerTests end on "+testInfo.getDisplayName());
         }
     }
@@ -215,9 +215,9 @@ public class RelayerManagementTest implements BMCIntegrationTest {
     @Test
     void distributeRelayerRewardShouldDistributedAndHasCarryOver() {
         BigInteger notInTermBond = BigInteger.valueOf(sortedBonds[0]);
-        RelayerManagerScoreClient notInTermClient = newRelayerManagerScoreClientWithTransfer(notInTermBond);
+        ICONSpecificScoreClient notInTermClient = newICONSpecificScoreClientWithTransfer(notInTermBond);
 
-        BigInteger carryOver = relayerManager.getRelayerManagerProperties().getCarryover();
+        BigInteger carryOver = iconSpecific.getRelayersProperties().getCarryover();
         boolean carryOverExists = !carryOver.equals(BigInteger.ZERO);
         carryOver = carryOverExists ? carryOver : BigInteger.ONE;
         BigInteger reward = carryOverExists ? sumOfReward : sumOfReward.add(carryOver);
@@ -229,31 +229,31 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
         registerRelayer(notInTermClient, notInTermBond, "notInTerm");
 
-        System.out.println("distributeRelayerReward properties:"+ relayerManager.getRelayerManagerProperties());
-        relayerManager.distributeRelayerReward();
-        RelayerManagerProperties properties = relayerManager.getRelayerManagerProperties();
+        System.out.println("distributeRelayerReward properties:"+ iconSpecific.getRelayersProperties());
+        iconSpecific.distributeRelayerReward();
+        RelayersProperties properties = iconSpecific.getRelayersProperties();
         BigInteger distributed = properties.getDistributed();
         assertEquals(sumOfReward, distributed);
         assertEquals(carryOver, properties.getCarryover());
 
-        Map<String, Relayer> relayers = relayerManager.getRelayers();
+        Map<String, Relayer> relayers = iconSpecific.getRelayers();
         for (int i = 0; i < sortedBonds.length; i++) {
-            RelayerManagerScoreClient relayerManagerScoreClient = relayerManagerScoreClients.get(i);
-            Relayer relayer = relayers.get(Address.of(relayerManagerScoreClient._wallet()).toString());
+            ICONSpecificScoreClient iconSpecificScoreClient = iconSpecificScoreClients.get(i);
+            Relayer relayer = relayers.get(Address.of(iconSpecificScoreClient._wallet()).toString());
             if (i <  relayerRewardRank) {
                 assertEquals(BigInteger.valueOf(sortedBonds[i]), relayer.getReward());
 
                 System.out.println("claimRelayerRewardShouldSuccess relayerInRank "+relayer);
                 ScoreIntegrationTest.balanceCheck((Address) relayer.getAddr(), relayer.getReward(),
-                        relayerManagerScoreClient::claimRelayerReward);
+                        iconSpecificScoreClient::claimRelayerReward);
 
                 distributed = distributed.subtract(relayer.getReward());
-                assertEquals(distributed, relayerManager.getRelayerManagerProperties().getDistributed());
+                assertEquals(distributed, iconSpecific.getRelayersProperties().getDistributed());
             } else {
                 assertEquals(BigInteger.ZERO, relayer.getReward());
 
                 System.out.println("claimRelayerRewardShouldRevertRewardIsZero relayerNotInRank "+relayer);
-                AssertBMCException.assertUnknown(relayerManagerScoreClient::claimRelayerReward);
+                AssertBMCException.assertUnknown(iconSpecificScoreClient::claimRelayerReward);
             }
         }
 
@@ -262,7 +262,7 @@ public class RelayerManagementTest implements BMCIntegrationTest {
         System.out.println("claimRelayerRewardShouldRevertRewardIsZero notInTermRelayer "+notInTermRelayer);
         AssertBMCException.assertUnknown(notInTermClient::claimRelayerReward);
 
-        assertEquals(BigInteger.ZERO, relayerManager.getRelayerManagerProperties().getDistributed());
+        assertEquals(BigInteger.ZERO, iconSpecific.getRelayersProperties().getDistributed());
     }
 
     @Test
@@ -279,10 +279,10 @@ public class RelayerManagementTest implements BMCIntegrationTest {
             relayers[i] = relayer;
         }
         Relayer[] sorted = Arrays.copyOf(relayers, relayers.length);
-        RelayerManagerImpl.sortAsc(sorted);
+        Relayers.sortAsc(sorted);
         System.out.println("sorted: "+Arrays.toString(sorted));
         Relayer[] expected = Arrays.copyOf(relayers, relayers.length);
-        Arrays.sort(expected, RelayerManagerImpl::compare);
+        Arrays.sort(expected, Relayers::compare);
         System.out.println("expected: "+Arrays.toString(expected));
         assertArrayEquals(expected, sorted);
     }
