@@ -28,7 +28,7 @@ get_bob_private_key() {
 
 get_bob_balance() {
     bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address))
-    echo "Bob's balance: $bob_balance DEV" 
+    echo "Bob's balance: $bob_balance (DEV)" 
 }
 
 create_alice_account_in_Gochain() {
@@ -49,5 +49,5 @@ get_alice_address() {
 
 get_alice_balance() {
     balance=$(goloop rpc balance $(get_alice_address) | jq -r)
-    echo "Alice's balance: $balance ICX"
+    echo "Alice's balance: $balance (ICX)"
 }

@@ -46,15 +46,15 @@ check_alice_balance_in_Goloop() {
     cd $CONFIG_DIR
     coin_id=$(goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) \
-        --method coinId --param _coinName=DEV | jq -r .)
+        --method coinId --param _coinName=DEV | jq -r )
 
     balance=$(goloop rpc sendtx call \
         --to $(cat irc31token.icon) \
         --method balanceOf \
         --param _owner=$(get_alice_address) \
-        --param _id=$coin_id)
+        --param _id=$coin_id | jq -r )
     
-    echo "Alice balance: $balance DEV"
+    echo "Alice balance: $balance (DEV)"
 }
 
 echo "This script demonstrates how to transfer a NativeCoin from MOONBEAM to ICON."
