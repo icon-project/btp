@@ -30,6 +30,8 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 
 func (r *relayReceiver) syncBlock(mtaHeight int64) {
 	next := r.pC.store.Height() + 1
+	r.log.Debugf("syncBlock: with remote MTA %d, store  MTA %d", mtaHeight, next-1)
+
 	if next < mtaHeight {
 		r.log.Fatalf("found missing block next:%d bu:%d", next, mtaHeight)
 		return
@@ -75,9 +77,20 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		Signatures:  make([][]byte, 0),
 	}
 
-	// for _, precommit := range justifications.Commit.Precommits {
+	setId, err := r.c.GetGrandpaCurrentSetId(justifications.Commit.TargetHash)
+	if err != nil {
+		return nil, err
+	}
 
-	// }
+	vm := substrate.NewVoteMessage(justifications, *setId)
+	v.VoteMessage, err = substrate.NewEncodedVoteMessage(vm)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, precommit := range justifications.Commit.Precommits {
+		v.Signatures = append(v.Signatures, precommit.Signature[:])
+	}
 
 	b, err := codec.RLP.MarshalToBytes(&v)
 	if err != nil {
@@ -94,8 +107,10 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 		return nil, err
 	}
 
-	if update.Votes, err = r.newVotes(justifications); err != nil {
-		return nil, err
+	if justifications != nil {
+		if update.Votes, err = r.newVotes(justifications); err != nil {
+			return nil, err
+		}
 	}
 
 	bu, err := codec.RLP.MarshalToBytes(&update)
@@ -106,11 +121,35 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 	return bu, nil
 }
 
+func (r *relayReceiver) newStateProof(blockHash *substrate.SubstrateHash) ([]byte, error) {
+	sp := make([]byte, 0)
+	key, err := r.c.GetSystemEventStorageKey(*blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	readProof, err := r.c.GetReadProof(key, *blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if sp, err = codec.RLP.MarshalToBytes(NewStateProof(key, &readProof)); err != nil {
+		return nil, err
+	}
+
+	return sp, nil
+}
+
 func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData, from uint64) ([][]byte, [][]byte, error) {
 	bus := make([][]byte, 0)
 	sps := make([][]byte, 0)
 
 	foundEvent := false
+	fp, err := r.c.GetFinalitiyProof(vd.RelayParentNumber)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	for !foundEvent {
 		bh, err := r.c.GetBlockHash(from)
 		if err != nil {
@@ -129,12 +168,14 @@ func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedVa
 
 		bus = append(bus, bu)
 
-		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
-		if err != nil {
-			return nil, nil, err
+		if bh == fp.Justification.EncodedJustification.Commit.TargetHash {
+			sp, err := r.newStateProof(&fp.Justification.EncodedJustification.Commit.TargetHash)
+			if err != nil {
+				return nil, nil, err
+			}
+			sps = append(sps, sp)
+			foundEvent = true
 		}
-
-		foundEvent = true
 	}
 
 	return bus, sps, nil
@@ -173,39 +214,41 @@ func (r *relayReceiver) pullBlockProofAndStateProofs(vd *substrate.PersistedVali
 			}
 		}
 
-		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
+		eventParasInclusionCandidateIncluded, err := r.getParasInclusionCandidateIncluded(bh)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		foundEvent = true
+		if len(eventParasInclusionCandidateIncluded) > 0 {
+			foundEvent = true
+		}
 	}
 
 	return bp, sps, nil
 }
 
-func (r *relayReceiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, []relaychain.EventParasInclusionCandidateIncluded, error) {
+func (r *relayReceiver) getParasInclusionCandidateIncluded(blockHash substrate.SubstrateHash) ([]relaychain.EventParasInclusionCandidateIncluded, error) {
 	meta, err := r.c.GetMetadata(blockHash)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	key, err := r.c.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	sdr, err := r.c.GetStorageRaw(key, blockHash)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if r.c.GetSpecName() == substrate.Kusama {
 		records := kusama.NewKusamaRecord(sdr, meta)
-		return records.Grandpa_NewAuthorities, records.ParasInclusion_CandidateIncluded, nil
+		return records.ParasInclusion_CandidateIncluded, nil
 	}
 
-	return nil, nil, err
+	return nil, err
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData) ([]byte, error) {
@@ -215,8 +258,10 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	behindMtaHeight := false
 	if mtaHeight <= int64(vd.RelayParentNumber) {
+		r.log.Debugf("over mta height %d, verifier.height %d", vd.RelayParentNumber, mtaHeight)
 		from = uint64(mtaHeight)
 	} else {
+		r.log.Debugf("behind mta height %d, verifier.height %d", vd.RelayParentNumber, mtaHeight)
 		behindMtaHeight = true
 		from = uint64(vd.RelayParentNumber) + 1
 	}

@@ -79,9 +79,21 @@ func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData
 	return types.EventRecordsRaw(event).DecodeEventRecords(meta, records)
 }
 
-// func (sme *SignedMessageEnum) Encode() ([]byte, error) {
+func (sme *SignedMessageEnum) Encode(encoder scale.Encoder) error {
+	if err := encoder.EncodeOption(sme.IsPrevote, sme.AsPrevote); err != nil {
+		return err
+	}
 
-// }
+	if err := encoder.EncodeOption(sme.IsPrecommit, sme.AsPrecommit); err != nil {
+		return err
+	}
+
+	if err := encoder.EncodeOption(sme.IsPrimaryPropose, sme.AsPrimaryPropose); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func NewSubstrateHashFromHexString(s string) SubstrateHash {
 	hash, err := types.NewHashFromHexString(s)
@@ -89,6 +101,20 @@ func NewSubstrateHashFromHexString(s string) SubstrateHash {
 		panic(err)
 	}
 	return hash
+}
+
+func NewVoteMessage(justification *GrandpaJustification, setId types.U64) VoteMessage {
+	return VoteMessage{
+		Message: SignedMessageEnum{
+			IsPrecommit: true,
+			AsPrecommit: SignedMessage{
+				TargetHash:   justification.Commit.TargetHash,
+				TargetNumber: justification.Commit.TargetNumber,
+			},
+		},
+		Round: justification.Round,
+		SetId: setId,
+	}
 }
 
 func NewEncodedVoteMessage(vm VoteMessage) ([]byte, error) {
