@@ -119,6 +119,22 @@ public class BTPMessageVerifier {
     }
 
 
+
+    /**
+     * get status of BMV
+     */
+    @External(readonly=true)
+    public BMVStatus getStatus() {
+        MerkleTreeAccumulator mta = this.mta.get();
+        BMVStatus status = new BMVStatus();
+        long lastHeight = mta.getHeight();
+        status.setHeight(lastHeight);
+        status.setLast_height(this.lastHeight.get().longValue());
+        status.setOffset(mta.getOffset());
+        return status;
+    }
+
+
     private void canBMCAccess(BTPAddress currBMCAddress, BTPAddress prevAddress) {
         if (!(Context.getCaller().equals(this.bmcScoreAddress.get()) || Context.getCaller().equals(Context.getOwner()))) {
             Context.revert(BMVErrorCodes.INVALID_BMC_SENDER, "Invalid message sender from BMC");

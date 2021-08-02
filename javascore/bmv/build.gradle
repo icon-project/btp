@@ -49,6 +49,10 @@ deployJar {
             uri = 'http://localhost:9082/api/v3'
             nid = 3
         }
+        BTPTestnet {
+            uri = 'https://btp.net.solidwallet.io/api/v3'
+            nid = 	0x42
+        }
     }
     keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
     password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''

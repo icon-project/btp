@@ -135,6 +135,7 @@ public class ServiceHandler {
      * @param value amount of tokens to transfer
      * @param data  serialized data
      */
+
     @External
     public void tokenFallback(Address from, BigInteger value, @Optional byte[] data) {
         if (value.compareTo(BigInteger.ZERO) == 0) {
@@ -184,7 +185,7 @@ public class ServiceHandler {
         Context.println("################# BMC.SendMessage initiated");
         Context.call(bmcDb.get(), "sendMessage", _to.getNet(), _svc, serialNo.get(), msg);
         //TODO: emit event
-        //TransferStart(sender, tokenName, sn, assets);
+        TransferStart(sender, tokenName, sn, assets);
     }
 
     /**
@@ -427,9 +428,9 @@ public class ServiceHandler {
         return newSnNo;
     }
 
-   /* @EventLog(indexed = 2)
-    public void TransferStart(Address from, String tokenName, BigInteger sn, Asset[] assets) {
-    }*/
+    @EventLog(indexed = 2)
+    public void TransferStart(Address from, String tokenName, BigInteger sn, List<Asset> assets) {
+    }
 
     @EventLog(indexed = 1)
     protected void TransferEnd(BigInteger sn, int code, byte[] msg) {

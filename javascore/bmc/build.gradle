@@ -34,6 +34,10 @@ deployJar {
             uri = 'https://sejong.net.solidwallet.io/api/v3'
             nid = 	0x53
         }
+        BTPTestnet {
+            uri = 'https://btp.net.solidwallet.io/api/v3'
+            nid = 	0x42
+        }
         local {
             uri = 'http://localhost:9082/api/v3'
             nid = 0x3
