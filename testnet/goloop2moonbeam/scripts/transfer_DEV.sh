@@ -10,7 +10,7 @@ MOONBEAM_GAS_LIMIT=6721975
 deposit_DEV_for_bob() {
     echo "$1. Deposit DEV for Bob"
     read -p 'Enter amount of DEV to be deposited: ' DEPOSIT_AMOUNT 
-    if ! [[ "$DEPOSIT_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then 
+    if ! [ "$DEPOSIT_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]; then 
         echo "DEPOSIT_AMOUNT must be a numbers" 
         exit 0 
     fi
