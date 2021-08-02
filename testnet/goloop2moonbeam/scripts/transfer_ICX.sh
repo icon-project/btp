@@ -33,7 +33,7 @@ deposit_ICX_for_Alice() {
         --value $DEPOSIT_ICX_AMOUNT | jq -r . > tx.deposit.alice
     ensure_txresult tx.deposit.alice
 
-    echo "Alice's balance: $(goloop rpc balance $ALICE_ADDRESS | xargs printf "%d\n") ICX"
+    echo "Alice's balance: $(goloop rpc balance $ALICE_ADDRESS) ICX"
 }
 
 create_Bob_account_in_Moonbeam() {

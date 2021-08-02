@@ -34,7 +34,7 @@ deploy_solidity_bsh() {
     BSH_COIN_NAME=DEV \
     BSH_COIN_FEE=100 \
     BMC_PERIPHERY_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
-    BSH_SERVICE=CoinTransfer \
+    BSH_SERVICE=nativecoin \
     truffle migrate --network moonbeamlocal
 
     truffle exec $SCRIPT_DIR/mb_extract_bsh.js --network moonbeamlocal

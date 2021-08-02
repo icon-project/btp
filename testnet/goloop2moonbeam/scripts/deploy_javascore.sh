@@ -179,7 +179,7 @@ goloop_bmc_addService() {
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method addService \
         --param _addr=$(cat nativeCoinBsh.icon) \
-        --param _svc=CoinTransfer \
+        --param _svc=nativecoin \
         | jq -r . > tx.addService.icon
     ensure_txresult tx.addService.icon
 }
