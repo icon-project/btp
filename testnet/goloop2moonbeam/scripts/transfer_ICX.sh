@@ -2,22 +2,29 @@
 set -e
 source transfer_util.sh
 
-DEPOSIT_ICX_AMOUNT=1000000000000000000000000
-TRANSFER_ICX_AMOUNT=1000000
-
 deposit_ICX_for_Alice() {
-    echo "$1. Deposit $DEPOSIT_ICX_AMOUNT ICX to Alice"
+    echo "$1. Deposit ICX to Alice"
+    read -p 'Enter amount of ICX to be deposited: ' DEPOSIT_AMOUNT 
+    if ! [[ "$DEPOSIT_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then 
+        echo "DEPOSIT_AMOUNT must be a numbers" 
+        exit 0 
+    fi
 
     cd ${CONFIG_DIR}
     goloop rpc sendtx transfer \
         --to $(get_alice_address) \
-        --value $DEPOSIT_ICX_AMOUNT | jq -r . > tx.deposit.alice
+        --value $DEPOSIT_AMOUNT | jq -r . > tx.deposit.alice
     ensure_txresult tx.deposit.alice
     
 }
 
 transfer_ICX_from_Alice_to_Bob() {
-    echo "$1. Transfer $TRANSFER_ICX_AMOUNT ICX from Alice to Bob"
+    echo "$1. Transfer ICX from Alice to Bob"
+    read -p 'Enter amount of ICX to be transfered: ' TRANSFER_AMOUNT 
+    if ! [[ "$TRANSFER_AMOUNT" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then 
+        echo "TRANSFER_AMOUNT must be a numbers" 
+        exit 0 
+    fi
 
     cd ${CONFIG_DIR}
     goloop rpc sendtx call \
