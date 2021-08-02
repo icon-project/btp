@@ -1,0 +1,18 @@
+[package]
+name = "btp-common"
+version = "0.1.0"
+authors = ["Icon Foundation<foo@icon.foundation>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+btp-macro = { path = "./macros" }
+serde = {version = "1.0", features = ["derive"]}
+serde_json = {version = "1.0"}
+
+
+[[test]]
+name = "test_btp_address"
+path = "tests/test_btp_address.rs"
