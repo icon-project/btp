@@ -1,4 +1,3 @@
-use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 
@@ -19,11 +18,11 @@ pub struct Link {
     relay_index: u64,
     rotate_height: u64,
     rotate_term: u64,
-    delay_limit: u64,
+    pub delay_limit: u64,
     max_aggregation: u64,
     rx_height_src: u64,
     rx_height: u64,
-    block_interval_src: u64,
+    pub block_interval_src: u64,
     block_interval_dst: u64,
     current_height: u64,
 }
@@ -86,10 +85,10 @@ impl Links {
     pub fn contains(&self, link: &str) -> bool {
         return self.0.get(&link.to_string()).is_some();
     }
-
+    
     pub fn set(
         &mut self,
-        link_param: &BTPAddress,
+        link_param: &str,
         block_interval: Option<u64>,
         max_aggregation: Option<u64>,
         delay_limit: Option<u64>,
@@ -106,10 +105,9 @@ impl Links {
                 link.delay_limit = delay_limit;
             }
             if let Some(relays) = relays {
+                link.relays.clear();
                 for relay in relays.iter() {
-                    if !link.relays.contains(relay) {
-                        link.relays.add(relay);
-                    }
+                    link.relays.add(relay);
                 }
             }
             self.0.insert(&link_param.to_string(), &link);
@@ -122,6 +120,7 @@ mod tests {
     use super::*;
     use near_sdk::MockedBlockchain;
     use near_sdk::{testing_env, VMContext};
+    use btp_common::{BTPAddress};
 
     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
         VMContext {
@@ -170,7 +169,7 @@ mod tests {
         links.add(&link.to_string());
         links
             .set(
-                &link,
+                &link.to_string(),
                 None,
                 None,
                 None,

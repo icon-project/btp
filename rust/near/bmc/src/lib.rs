@@ -4,62 +4,57 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
+use near_sdk::serde_json::{from_str, json, to_value, Value};
 use near_sdk::AccountId;
-use near_sdk::{env, log, near_bindgen, setup_alloc, PanicOnDefault, serde_json};
+use near_sdk::{env, log, near_bindgen, serde_json, setup_alloc, PanicOnDefault, json_types::{Base64VecU8}};
 use std::collections::HashMap;
-use serde_json::{json, Value, to_value, from_str};
-mod service;
+mod link;
+mod message;
 mod owner;
+mod relay;
+mod service;
 mod types;
 
-use btp_common::{BTPAddress, BMCError, owner};
-use types::{Owners, BSH, Links, Routes};
+use btp_common::{
+    errors::{BMCError, BTPError},
+    messages::BMCMessage,
+    owner, BTPAddress,
+    emit
+};
+use types::{Event, Events, Link, Links, Owners, Routes, BSH};
 
 setup_alloc!();
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BTPMessageCenter {
-    pub message: Message,
     pub links: Links,
     pub routes: Routes,
     pub bsh: BSH,
     pub owners: Owners,
-}
-
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Message {
-    payload: Vec<u8>,
+    pub events: Events,
 }
 
 impl Default for BTPMessageCenter {
     fn default() -> Self {
-        let message: Message = Default::default();
         let links = Links::new();
         let routes = Routes::new();
         let bsh = BSH::new();
+        let events = Events::new();
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
         Self {
-            message,
             links,
             routes,
             bsh,
             owners,
+            events,
         }
     }
 }
 
 #[near_bindgen]
 impl BTPMessageCenter {
-    // Link Management
-    pub fn get_status(&self) {}
-
-    pub fn add_link(&self) {}
-    pub fn remove_link(&self) {}
-    pub fn set_link(&self) {}
-    pub fn get_links(&self) {}
-
     // Route Management
     pub fn add_route(&self) {}
     pub fn remove_route(&self) {}
@@ -74,10 +69,6 @@ impl BTPMessageCenter {
     pub fn handle_relay_message() {}
     pub fn send_message() {}
 
-    // Relay Management
-    pub fn add_relay() {}
-    pub fn remove_relay() {}
-    pub fn get_relays() {}
     // pub fn get_message(&self) -> String {
     //     return String::from_utf8(self.message.payload.clone()).unwrap_or_default();
     // }

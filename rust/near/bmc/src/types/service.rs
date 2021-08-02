@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use serde::Serialize;
+use near_sdk::serde::Serialize;
 use std::{collections::HashMap, hash::Hash};
 use std::collections::HashSet;
 

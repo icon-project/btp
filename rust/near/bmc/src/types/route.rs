@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use serde::Serialize;
+use near_sdk::serde::Serialize;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Routes(UnorderedMap<String, String>);
