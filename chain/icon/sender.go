@@ -40,7 +40,7 @@ const (
 	txSizeLimit                     = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval   = time.Second
 	DefaultRelayReSendInterval      = time.Second * 3
-	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultRelayReSendInterval)) // Pending or stale transaction timeout is 5 minute
+	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultGetRelayResultInterval)) // Pending or stale transaction timeout is 5 minute
 	MaxBlockUpdatesPerSegment       = 10
 )
 
