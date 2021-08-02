@@ -23,6 +23,7 @@ provision() {
     # config contracts
     goloop_bmc_addVerifier
     goloop_bmc_addLink
+    goloop_bmc_addService
     goloop_bmc_addRelay
     goloop_bmc_setFeeAggregator
     goloop_bsh_config_native_coin
