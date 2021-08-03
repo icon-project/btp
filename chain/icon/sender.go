@@ -42,6 +42,7 @@ const (
 	DefaultRelayReSendInterval      = time.Second * 3
 	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultGetRelayResultInterval)) // Pending or stale transaction timeout is 5 minute
 	MaxBlockUpdatesPerSegment       = 10
+	DefaultStepLimit                = 2500000000 // estimated step limit for 10 blockupdates per segment
 )
 
 var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
@@ -64,12 +65,18 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
+
+	sl := NewHexInt(s.opt.StepLimit)
+	if s.opt.StepLimit == 0 {
+		sl = NewHexInt(DefaultStepLimit)
+	}
+
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
 		ToAddress:   Address(s.dst.ContractAddress()),
 		NetworkID:   HexInt(s.dst.NetworkID()),
-		StepLimit:   NewHexInt(s.opt.StepLimit),
+		StepLimit:   sl,
 		DataType:    "call",
 		Data: CallData{
 			Method: BMCRelayMethod,
