@@ -1,15 +1,32 @@
 # BSC Private Network Setup
 
-This directory contains instructions and genesis private Binance Smart Chain testnet equivalent.
+This directory contains docker image and predefined genesis required to run private Binance Smart Chain network. The
+genesis file is based on BSC official testnet PoA genesis. 
 
-## Preparation
+It's configured for one sealer account to allow running single node.
 
-1. Create genesis
-````shell
-./bsc/build/bin/geth init --datadir node1 devnet/genesis.json
-```` 
-2. Start signer node
-````shell
-./bsc/build/bin/geth --datadir node1 --syncmode 'full' --port 30312 --rpc --rpcaddr 'localhost' --rpccorsdomain "*" --rpcport 8545 --ws --wsport 8546 --rpcapi 'personal,eth,net,web3,txpool,miner' --networkid 97 --gasprice '1' --unlock '0x48948297C3236ec3eA6c95f4eEc22fDb18255E55' --password pass.txt --mine --allow-insecure-unlock
-```` 
+## Build docker image
 
+```
+docker build --tag bsc-node docker --build-arg KEYSTORE_PASS=<SECRET>
+```
+
+Note: The docker folder contains test accounts which are copied during the docker build in the provisioning step.
+
+See [this page](https://geth.ethereum.org/docs/interface/managing-your-accounts) for information on how to create Ethereum accounts.
+
+## Start BSC docker node
+
+```
+docker run -d -p 8545:8545 -p 8546:8546 bsc-node
+```
+
+## Building from source (optional)
+
+For ICON BTP purpose, we need to build from [PR](https://github.com/binance-chain/bsc/pull/118) branch 
+containing SHA3-256 FIPS 202 hash precompile.
+
+For detail build instructions please read [BSC readme](https://github.com/binance-chain/bsc) or
+alternatively running the following script will build from the target branch using a docker image.
+
+```./build.sh```
