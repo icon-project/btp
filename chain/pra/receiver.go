@@ -9,14 +9,17 @@ import (
 	"github.com/icon-project/btp/chain/pra/moonriver"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
+	"github.com/icon-project/btp/common/config"
 	"github.com/icon-project/btp/common/log"
 )
 
 type receiverOptions struct {
-	RelayEndpoint string `json:"relay_endpoint"`
-	IconEndpoint  string `json:"icon_endpoint"`
-	PraBmvAddress string `json:"icon_bmv_address"`
-	RelayOffSet   int64  `json:"relay_offset"`
+	config.FileConfig
+	RelayEndpoint   string           `json:"relayEndpoint"`
+	RelayBtpAddress chain.BtpAddress `json:"relayBtpAddress"`
+	IconEndpoint    string           `json:"iconEndpoint"`
+	PraBmvAddress   string           `json:"iconBmvAddress"`
+	RelayOffSet     int64            `json:"relayOffset"`
 }
 
 type Receiver struct {

@@ -21,7 +21,7 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
 	rC.pC = NewPraBmvClient(
 		opt.IconEndpoint, log, opt.PraBmvAddress,
-		NewRelayStoreConfig("/Users/trmaphi/sources/btp/.config", "westend"),
+		NewRelayStoreConfig(opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress()),
 	)
 
 	rC.pC.prepareDatabase(opt.RelayOffSet)
