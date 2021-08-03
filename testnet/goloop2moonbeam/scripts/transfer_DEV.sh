@@ -40,12 +40,13 @@ transfer_DEV_from_bob_to_alice() {
     encoded_data=$(eth method:encode abi.bsh_core.json "transferNativeCoin('$(cat alice.btp.address)')")
     eth transaction:send \
                 --network $MOONBEAM_RPC_URL \
-                --pk $MOONBEAM_PREFUND_PK \
+                --pk $(get_bob_private_key) \
                 --gas $MOONBEAM_GAS_LIMIT \
                 --to $(cat bsh_core.moonbeam) \
                 --data $encoded_data \
                 --value $TRANSFER_AMOUNT | jq -r > tx.transfer_dev
     eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.transfer_dev) | jq -r .receipt
+    get_bob_balance
 }
 
 check_alice_balance_in_Goloop() {
