@@ -86,3 +86,7 @@ func NewSubstrateHashFromHexString(s string) SubstrateHash {
 	}
 	return hash
 }
+
+func NewEncodedSubstrateHeader(header SubstrateHeader) ([]byte, error) {
+	return types.EncodeToBytes(header)
+}

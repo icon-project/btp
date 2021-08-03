@@ -3,6 +3,7 @@ package substrate
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,11 +26,23 @@ func TestClient(t *testing.T) {
 		c.GetValidationData(NewSubstrateHashFromHexString("0xfd7a2619ce12f375cd2c170090ea5f206ab69068affba91c75eda76925e13284"))
 	})
 
-	t.Run("should return decode FinalityProof", func(t *testing.T) {
+	t.Run("should return decode FinalityProof on kusama", func(t *testing.T) {
 		t.Skip("Manual run only")
-		c, err := NewSubstrateClient("https://kusama-rpc.polkadot.io")
+		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
 		require.NoError(t, err)
 
-		c.GetFinalitiyProof(8007753)
+		fp, err := c.GetFinalitiyProof(8007753)
+		assert.NoError(t, err)
+		assert.NotNil(t, fp)
+	})
+
+	t.Run("should return decode FinalityProof on moonbase relay chain", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		require.NoError(t, err)
+
+		fp, err := c.GetFinalitiyProof(913571)
+		assert.NoError(t, err)
+		assert.NotNil(t, fp)
 	})
 }

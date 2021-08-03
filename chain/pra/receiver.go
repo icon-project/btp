@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/frontier"
@@ -71,7 +70,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 	}
 
 	var update BlockUpdate
-	if update.ScaleEncodedBlockHeader, err = types.EncodeToBytes(v.Header); err != nil {
+	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(*v.Header); err != nil {
 		return nil, err
 	}
 

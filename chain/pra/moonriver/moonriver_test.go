@@ -12,6 +12,7 @@ import (
 )
 
 func TestMoonriverEventRecord(t *testing.T) {
+	t.Skip("Manual only")
 	api, err := gsrpc.NewSubstrateAPI("wss://wss.testnet.moonbeam.network")
 	require.NoError(t, err)
 

@@ -144,6 +144,29 @@ func (_m *MockSubstrateClient) GetFinalizedHead() (types.Hash, error) {
 	return r0, r1
 }
 
+// GetGrandpaCurrentSetId provides a mock function with given fields: blockHash
+func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (*types.U64, error) {
+	ret := _m.Called(blockHash)
+
+	var r0 *types.U64
+	if rf, ok := ret.Get(0).(func(types.Hash) *types.U64); ok {
+		r0 = rf(blockHash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.U64)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
+		r1 = rf(blockHash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetHeader provides a mock function with given fields: hash
 func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error) {
 	ret := _m.Called(hash)
@@ -234,6 +257,20 @@ func (_m *MockSubstrateClient) GetReadProof(key types.StorageKey, blockHash type
 	return r0, r1
 }
 
+// GetSpecName provides a mock function with given fields:
+func (_m *MockSubstrateClient) GetSpecName() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetStorageRaw provides a mock function with given fields: key, blockHash
 func (_m *MockSubstrateClient) GetStorageRaw(key types.StorageKey, blockHash types.Hash) (*types.StorageDataRaw, error) {
 	ret := _m.Called(key, blockHash)
@@ -250,6 +287,29 @@ func (_m *MockSubstrateClient) GetStorageRaw(key types.StorageKey, blockHash typ
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.StorageKey, types.Hash) error); ok {
 		r1 = rf(key, blockHash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSystemEventStorageKey provides a mock function with given fields: blockhash
+func (_m *MockSubstrateClient) GetSystemEventStorageKey(blockhash types.Hash) (types.StorageKey, error) {
+	ret := _m.Called(blockhash)
+
+	var r0 types.StorageKey
+	if rf, ok := ret.Get(0).(func(types.Hash) types.StorageKey); ok {
+		r0 = rf(blockhash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.StorageKey)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
+		r1 = rf(blockhash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -278,4 +338,18 @@ func (_m *MockSubstrateClient) GetValidationData(blockHash types.Hash) (*Persist
 	}
 
 	return r0, r1
+}
+
+// SubcribeFinalizedHeadAt provides a mock function with given fields: height, cb
+func (_m *MockSubstrateClient) SubcribeFinalizedHeadAt(height uint64, cb func(*types.Hash)) error {
+	ret := _m.Called(height, cb)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, func(*types.Hash)) error); ok {
+		r0 = rf(height, cb)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
