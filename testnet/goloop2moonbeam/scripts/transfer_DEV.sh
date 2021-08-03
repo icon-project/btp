@@ -57,6 +57,7 @@ check_alice_balance_in_Goloop() {
     coin_id=$(goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) \
         --method coinId --param _coinName=DEV | jq -r )
+    echo "Alice coin_id: $coin_id"
 
     balance=$(goloop rpc sendtx call \
         --to $(cat irc31token.icon) \
