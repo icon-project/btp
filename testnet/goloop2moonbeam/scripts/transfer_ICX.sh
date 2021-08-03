@@ -2,34 +2,27 @@
 set -e
 source transfer_util.sh
 
-deposit_ICX_for_Alice() {
-    echo "$1. Deposit ICX to Alice"
-    read -p 'Enter amount of ICX to be deposited: ' DEPOSIT_AMOUNT 
-    if ! echo "$DEPOSIT_AMOUNT" | grep -qE '^[0-9]+$' ; then
-        echo "DEPOSIT_AMOUNT must be a numbers" 
-        exit 1
-    fi
+ICX_DEPOSIT_AMOUNT=1000000000000000000000000
+ICX_TRANSER_AMOUNT=1000000
 
+
+deposit_ICX_for_Alice() {
+    echo "$1. Deposit $ICX_DEPOSIT_AMOUNT ICX to Alice"
     cd ${CONFIG_DIR}
     goloop rpc sendtx transfer \
         --to $(get_alice_address) \
-        --value $DEPOSIT_AMOUNT | jq -r . > tx.deposit.alice
+        --value $ICX_DEPOSIT_AMOUNT | jq -r . > tx.deposit.alice
     ensure_txresult tx.deposit.alice
-    
+    get_alice_balance
 }
 
 transfer_ICX_from_Alice_to_Bob() {
-    echo "$1. Transfer ICX from Alice to Bob"
-    read -p 'Enter amount of ICX to be transfered: ' TRANSFER_AMOUNT 
-    if ! echo "$TRANSFER_AMOUNT" | grep -qE '^[0-9]+$' ; then
-        echo "TRANSFER_AMOUNT must be a numbers" 
-        exit 1
-    fi
+    echo "$1. Transfer $ICX_TRANSER_AMOUNT ICX from Alice to Bob"
 
     cd ${CONFIG_DIR}
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
-        --param _to=$(get_bob_address) --value $TRANSFER_AMOUNT \
+        --param _to=$(get_bob_address) --value $ICX_TRANSER_AMOUNT \
         --key_store alice.ks.json --key_secret alice.secret \
         | jq -r . > tx.Alice2Bob.transfer
     ensure_txresult tx.Alice2Bob.transfer

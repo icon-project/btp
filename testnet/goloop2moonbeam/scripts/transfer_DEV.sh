@@ -5,16 +5,11 @@ source transfer_util.sh
 
 MOONBEAM_PREFUND_PK=39539ab1876910bbf3a223d84a29e28f1cb4e2e456503e7e91ed39b2e7223d68
 MOONBEAM_GAS_LIMIT=6721975
-
+DEV_DEPOSIT_AMOUNT=1000000000000000000
+DEV_TRANSER_AMOUNT=74706176
 
 deposit_DEV_for_bob() {
-    echo "$1. Deposit DEV for Bob"
-    read -p 'Enter amount of DEV to be deposited: ' DEPOSIT_AMOUNT 
-    if ! echo "$DEPOSIT_AMOUNT" | grep -qE '^[0-9]+$' ; then
-        echo "DEPOSIT_AMOUNT must be a numbers" 
-        exit 1
-    fi
-
+    echo "$1. Deposit $DEV_DEPOSIT_AMOUNT DEV for Bob"
 
     cd ${CONFIG_DIR}
     eth transaction:send \
@@ -22,19 +17,14 @@ deposit_DEV_for_bob() {
                 --pk $MOONBEAM_PREFUND_PK \
                 --gas $MOONBEAM_GAS_LIMIT \
                 --to $(get_bob_address) \
-                --value $DEPOSIT_AMOUNT | jq -r > tx.deposit_dev
+                --value $DEV_DEPOSIT_AMOUNT | jq -r > tx.deposit_dev
 
     eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.deposit_dev) | jq -r .receipt
     get_bob_balance
 }
 
 transfer_DEV_from_bob_to_alice() {
-    echo "$1. Transfer DEV from Bob to Alice"
-    read -p 'Enter amount of DEV to be transfered: ' TRANSFER_AMOUNT 
-    if ! echo "$TRANSFER_AMOUNT" | grep -qE '^[0-9]+$' ; then
-        echo "TRANSFER_AMOUNT must be a numbers" 
-        exit 1
-    fi
+    echo "$1. Transfer $DEV_TRANSER_AMOUNT DEV from Bob to Alice"
 
     cd ${CONFIG_DIR}
     encoded_data=$(eth method:encode abi.bsh_core.json "transferNativeCoin('$(cat alice.btp.address)')")
@@ -44,7 +34,7 @@ transfer_DEV_from_bob_to_alice() {
                 --gas $MOONBEAM_GAS_LIMIT \
                 --to $(cat bsh_core.moonbeam) \
                 --data $encoded_data \
-                --value $TRANSFER_AMOUNT | jq -r > tx.transfer_dev
+                --value $DEV_TRANSER_AMOUNT | jq -r > tx.transfer_dev
     eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.transfer_dev) | jq -r .receipt
     get_bob_balance
 }
