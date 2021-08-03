@@ -29,7 +29,7 @@ transfer_ICX_from_Alice_to_Bob() {
     cd ${CONFIG_DIR}
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
-        --param _to=$(cat bob.btp.address) --value $TRANSFER_AMOUNT \
+        --param _to=$(get_bob_address) --value $TRANSFER_AMOUNT \
         --key_store alice.ks.json --key_secret alice.secret \
         | jq -r . > tx.Alice2Bob.transfer
     ensure_txresult tx.Alice2Bob.transfer
@@ -41,7 +41,7 @@ check_bob_balance_in_Moonbeam() {
 
     cd $CONFIG_DIR
     eth abi:add bshcore abi.bsh_core.json
-    eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(cat bob.address)', 'ICX')"
+    eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(get_bob_address)', 'ICX')"
 }
 
 echo "This script demonstrates how to transfer a NativeCoin from ICON to MOONBEAM."
