@@ -13,9 +13,9 @@ create_bob_account_in_Moonbeam() {
 
     if [ ! -f bob.account ]; then
         eth address:random > bob.account
-        echo "btp://$(cat net.btp.moonbeam)/$(cat $(get_bob_address))" > $CONFIG_DIR/bob.btp.address
+        echo "btp://$(cat net.btp.moonbeam)/$(cat $(get_bob_address))" > bob.btp.address
     fi
-    echo "Bob's address: $(cat bob.address)"
+    echo "Bob's btp address: $(cat bob.btp.address)"
 }
 
 get_bob_address() {
@@ -40,7 +40,7 @@ create_alice_account_in_Gochain() {
         goloop ks gen -o alice.ks.json  -p $(cat alice.secret)
         echo "btp://$(cat net.btp.icon)/$(cat alice.ks.json | jq -r .address)" > alice.btp.address
     fi
-    echo "Alice's address: $(cat alice.ks.json | jq -r .address))"
+    echo "Alice's btp address: $(cat alice.btp.address)"
 }
 
 get_alice_address() {
