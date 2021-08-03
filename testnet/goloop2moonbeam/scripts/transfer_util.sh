@@ -27,8 +27,8 @@ get_bob_private_key() {
 }
 
 get_bob_balance() {
-    bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address))
-    echo "Bob's balance: $bob_balance (DEV)" 
+    bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address) | eth convert -f eth -t wei)
+    echo "Bob's balance: $bob_balance wei (DEV)" 
 }
 
 create_alice_account_in_Gochain() {
