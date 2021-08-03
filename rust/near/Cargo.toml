@@ -13,6 +13,8 @@ members = [
     "bsh/token-bsh",
     "libraries",
 ]
+[features]
+integration-tests = []
 
 [dev-dependencies]
 bmc-generic = { path = "./bmc/bmc-generic" }
@@ -22,6 +24,7 @@ libraries = { path = "./libraries" }
 token-bsh = { path = "./bsh/token-bsh" }
 near-sdk = "3.1.0"
 lazy_static = "1.4.0"
+kitten = "^0.1.3"
 
 [dev-dependencies.near-chain-configs]
 default-features = false

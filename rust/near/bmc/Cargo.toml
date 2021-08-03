@@ -1,0 +1,31 @@
+[package]
+name = "bmv"
+version = "0.1.0"
+authors = ["Icon Foundation<foo@icon.foundation>"]
+edition = "2018"
+
+[dependencies]
+serde = {version = "1.0", features = ["derive"]}
+near-sdk = "3.1.0"
+btp-common = {path="../../btp-common"}
+lazy_static = "1.4.0"
+rlp = { version = "0.5", default-features = false }
+
+[dev-dependencies]
+hex-literal = "0.2"
+
+[[test]]
+name = "test_service_management"
+path = "tests/test_service_management.rs"
+
+[[test]]
+name = "test_ownership_management"
+path = "tests/test_ownership_management.rs"
+
+[[test]]
+name = "test_relay_management"
+path = "tests/test_relay_management.rs"
+
+[[test]]
+name = "test_link_management"
+path = "tests/test_link_management.rs"
