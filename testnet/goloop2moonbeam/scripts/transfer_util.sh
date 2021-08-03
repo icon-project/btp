@@ -11,9 +11,9 @@ create_bob_account_in_Moonbeam() {
     echo "$1. create Bob's account in Moonbeam"
     cd ${CONFIG_DIR}
 
-    if [ ! -f bob.account ]; then
+    if [ ! -f bob.btp.address ]; then
         eth address:random > bob.account
-        echo "btp://$(cat net.btp.moonbeam)/$(cat $(get_bob_address))" > bob.btp.address
+        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address))" > bob.btp.address
     fi
     echo "Bob's btp address: $(cat bob.btp.address)"
 }
