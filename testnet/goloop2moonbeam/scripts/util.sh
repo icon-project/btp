@@ -18,8 +18,11 @@ export GOLOOP_RPC_KEY_SECRET=$CONFIG_DIR/$GOLOOPCHAIN.keysecret
 export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat $CONFIG_DIR/nid.icon)}
 export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-5000000000}
 export GOLOOP_CHAINSCORE=cx0000000000000000000000000000000000000000
-
 GOLOOPCHAIN=${GOLOOPCHAIN:-'goloop'}
+
+# disable line lenght to support big number operators
+export BC_LINE_LENGTH=0 
+
 
 latest_block_goloop() {
     goloop rpc lastblock
@@ -97,5 +100,17 @@ extract_scoreAddress() {
     SCORE=$(echo $RESULT | jq -r .scoreAddress)
     echo $SCORE | tee ${ADDR}
   fi
+}
+
+uppercase() {
+  input=$1
+  printf '%s\n' "$input" | awk '{ print toupper($0) }'
+}
+
+hex2int() {
+  input=$1
+  input=$(echo $input | sed 's/^0x//g')
+  input=$(uppercase $input)
+  echo "ibase=16; $input" | bc
 }
 

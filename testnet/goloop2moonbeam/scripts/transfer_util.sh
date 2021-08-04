@@ -7,13 +7,26 @@ if [ ! -f "$PROVISION_STATUS_DONE" ]; then
     exit 1
 fi
 
+PRECISION=18
+COIN_UNIT=$((10 ** $PRECISION))
+
+coin2wei() {
+    amount=$1
+    printf '%s * %s\n' $COIN_UNIT $amount | bc
+}
+
+wei2coin() {
+    amount=$1
+    printf 'scale=%s; %s / %s\n' $PRECISION $amount $COIN_UNIT | bc
+}
+
 create_bob_account_in_Moonbeam() {
     echo "$1. create Bob's account in Moonbeam"
     cd ${CONFIG_DIR}
 
     if [ ! -f bob.btp.address ]; then
         eth address:random > bob.account
-        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address)" > bob.btp.address
+        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address))" > bob.btp.address
     fi
     echo "Bob's btp address: $(cat bob.btp.address)"
 }
@@ -27,12 +40,12 @@ get_bob_private_key() {
 }
 
 get_bob_balance() {
-    bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address) | eth convert -f eth -t wei)
-    echo "Bob's balance: $bob_balance wei (DEV)" 
+    bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address))
+    echo "Bob's balance: $bob_balance (DEV)" 
 }
 
 create_alice_account_in_Gochain() {
-    echo "$1. create Alice account in ICON"
+    echo "$1. Creating Alice account in ICON"
 
     cd ${CONFIG_DIR}
     if [ ! -f alice.secret ]; then
@@ -49,5 +62,7 @@ get_alice_address() {
 
 get_alice_balance() {
     balance=$(goloop rpc balance $(get_alice_address) | jq -r)
+    balance=$(hex2int $balance)
+    balance=$(wei2coin $balance)
     echo "Alice's balance: $balance (ICX)"
 }
