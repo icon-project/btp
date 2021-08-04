@@ -22,7 +22,7 @@ transfer_ICX_from_Alice_to_Bob() {
     cd ${CONFIG_DIR}
     goloop rpc sendtx call \
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
-        --param _to=$(get_bob_address) --value $ICX_TRANSER_AMOUNT \
+        --param _to=$(cat bob.btp.address) --value $ICX_TRANSER_AMOUNT \
         --key_store alice.ks.json --key_secret alice.secret \
         | jq -r . > tx.Alice2Bob.transfer
     ensure_txresult tx.Alice2Bob.transfer

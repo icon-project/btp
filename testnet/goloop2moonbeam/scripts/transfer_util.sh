@@ -13,7 +13,7 @@ create_bob_account_in_Moonbeam() {
 
     if [ ! -f bob.btp.address ]; then
         eth address:random > bob.account
-        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address))" > bob.btp.address
+        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address)" > bob.btp.address
     fi
     echo "Bob's btp address: $(cat bob.btp.address)"
 }
