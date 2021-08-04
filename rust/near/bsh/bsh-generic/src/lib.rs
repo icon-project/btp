@@ -33,8 +33,8 @@
     unused_results
 )]
 
-use libraries::bsh_types::*;
 use btp_common::BTPAddress;
+use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, near_bindgen, setup_alloc};
@@ -168,7 +168,7 @@ impl BshGeneric {
         sn: u64,
         msg: &[u8],
     ) -> Result<(), &str> {
-        if self.service_name != svc.to_string() {
+        if self.service_name != *svc {
             return Err("Invalid SVC");
         }
         let sm = ServiceMessage::try_from_slice(msg).expect("Failed to deserialize msg");
@@ -206,7 +206,7 @@ impl BshGeneric {
             let req = self.requests.get(&sn).expect("Failed to retrieve request");
             let res = req.from.as_bytes();
 
-            if res.len() == 0 {
+            if res.is_empty() {
                 return Err("Invalid SN");
             }
             let response = Response::try_from_slice(sm.data.as_slice())
@@ -236,12 +236,12 @@ impl BshGeneric {
         code: u64,
         msg: &str,
     ) -> Result<(), &str> {
-        if svc.to_string() != self.service_name {
+        if *svc != self.service_name {
             return Err("Invalid SVC");
         }
         let req = self.requests.get(&sn).expect("Failed to retrieve request");
         let res = req.from.as_bytes();
-        if res.len() == 0 {
+        if res.is_empty() {
             return Err("Invalid SN");
         }
         self.handle_response_service(sn, code, msg)
@@ -302,7 +302,7 @@ impl BshGeneric {
     /// fa: fee aggregator
     #[payable]
     pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) -> Result<(), &str> {
-        if self.service_name != svc.to_string() {
+        if self.service_name != *svc {
             return Err("Invalid SVC");
         }
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
@@ -345,7 +345,7 @@ mod tests {
     fn test_has_pending_request() {
         testing_env!(get_context(true));
         let bsh = BshGeneric::default();
-        assert_eq!(bsh.has_pending_requests(), false);
+        assert!(bsh.has_pending_requests());
     }
 
     #[test]

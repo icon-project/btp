@@ -8,7 +8,31 @@ use near_sdk::BorshStorageKey;
 )]
 #[serde(crate = "near_sdk::serde")]
 pub enum BmcStorageKey {
-    Bmc,
+    BmcGeneric,
+    BmcMgt,
+}
+
+#[derive(
+    BorshDeserialize, BorshSerialize, BorshStorageKey, Clone, Debug, Deserialize, Serialize,
+)]
+#[serde(crate = "near_sdk::serde")]
+pub enum BmcEvents {
+    Message {
+        // an address of the next BMC (it could be a destination BMC)
+        next: String,
+        // a sequence number of BMC (not a sequence number of BSH)
+        seq: u128,
+        msg: Vec<u8>,
+    },
+    // emit errors in BTP messages processing
+    ErrorOnBtpError {
+        svc: String,
+        sn: u128,
+        code: u128,
+        err_msg: String,
+        svc_err_code: u32,
+        svc_err_msg: String,
+    },
 }
 
 #[derive(
@@ -119,7 +143,7 @@ pub struct BmcMessage {
     /// service name of BSH
     pub svc: String,
     /// sequence number of BMC
-    pub sn: i64,
+    pub sn: u64,
     /// serialized service message from BSH
     pub message: Vec<u8>,
 }
