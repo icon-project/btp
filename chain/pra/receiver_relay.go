@@ -122,6 +122,7 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 }
 
 func (r *relayReceiver) newStateProof(blockHash *substrate.SubstrateHash) ([]byte, error) {
+	r.log.Debugf("newStateProof: at %s", blockHash.Hex())
 	sp := make([]byte, 0)
 	key, err := r.c.GetSystemEventStorageKey(*blockHash)
 	if err != nil {
@@ -140,81 +141,58 @@ func (r *relayReceiver) newStateProof(blockHash *substrate.SubstrateHash) ([]byt
 	return sp, nil
 }
 
-func (r *relayReceiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData, from uint64) ([][]byte, [][]byte, error) {
+func (r *relayReceiver) pullBlockUpdatesAndStateProofs(from uint64) ([][]byte, [][]byte, error) {
 	bus := make([][]byte, 0)
 	sps := make([][]byte, 0)
 
-	foundEvent := false
-	fp, err := r.c.GetFinalitiyProof(vd.RelayParentNumber)
+	fp, err := r.c.GetFinalitiyProof(substrate.NewBlockNumber(from))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	for !foundEvent {
-		bh, err := r.c.GetBlockHash(from)
+	lastBlockNumber := fp.Justification.EncodedJustification.Commit.TargetNumber
+	sp, err := r.newStateProof(&fp.Justification.EncodedJustification.Commit.TargetHash)
+	if err != nil {
+		return nil, nil, err
+	}
+	sps = append(sps, sp)
+
+	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+	for i := substrate.NewBlockNumber(from); i < substrate.NewBlockNumber(uint64(lastBlockNumber)); i++ {
+		missingBlockNumbers = append(missingBlockNumbers, i)
+	}
+
+	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(missingBlockNumbers)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r.log.Debugf("blockUpdates: from: %d to: %d", fp.UnknownHeaders[0].Number, fp.UnknownHeaders[len(fp.UnknownHeaders)-1].Number)
+	fp.UnknownHeaders = append(fp.UnknownHeaders, missingBlockHeaders...)
+	for _, header := range fp.UnknownHeaders {
+		bu, err := r.newBlockUpdate(header, nil)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		bheader, err := r.c.GetHeader(bh)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		bu, err := r.newBlockUpdate(*bheader, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-
 		bus = append(bus, bu)
-
-		if bh == fp.Justification.EncodedJustification.Commit.TargetHash {
-			sp, err := r.newStateProof(&fp.Justification.EncodedJustification.Commit.TargetHash)
-			if err != nil {
-				return nil, nil, err
-			}
-			sps = append(sps, sp)
-			foundEvent = true
-		}
 	}
 
 	return bus, sps, nil
 }
 
-func (r *relayReceiver) pullBlockProofAndStateProofs(vd *substrate.PersistedValidationData, from uint64) ([]byte, [][]byte, error) {
+func (r *relayReceiver) pullBlockProofAndStateProofs(from uint64) ([]byte, [][]byte, error) {
 	bp := []byte{}
 	sps := make([][]byte, 0)
 
 	foundEvent := false
+	blockNumber := from
 	for !foundEvent {
-		bh, err := r.c.GetBlockHash(from)
+		blockHash, err := r.c.GetBlockHash(blockNumber)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		bheader, err := r.c.GetHeader(bh)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		encodeHeader, err := substrate.NewEncodedSubstrateHeader(*bheader)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		blockProof, err := r.newBlockProof(int64(bheader.Number), encodeHeader)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		bp, err = codec.RLP.MarshalToBytes(blockProof)
-		if err != nil {
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-
-		eventParasInclusionCandidateIncluded, err := r.getParasInclusionCandidateIncluded(bh)
+		eventParasInclusionCandidateIncluded, err := r.getParasInclusionCandidateIncluded(blockHash)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -222,6 +200,8 @@ func (r *relayReceiver) pullBlockProofAndStateProofs(vd *substrate.PersistedVali
 		if len(eventParasInclusionCandidateIncluded) > 0 {
 			foundEvent = true
 		}
+
+		blockNumber++
 	}
 
 	return bp, sps, nil
@@ -256,13 +236,13 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	mtaHeight := r.pC.getRelayMtaHeight()
 	r.syncBlock(mtaHeight)
 
-	behindMtaHeight := false
+	behindMtaHeight := true
 	if mtaHeight <= int64(vd.RelayParentNumber) {
 		r.log.Debugf("over mta height %d, verifier.height %d", vd.RelayParentNumber, mtaHeight)
+		behindMtaHeight = false
 		from = uint64(mtaHeight)
 	} else {
 		r.log.Debugf("behind mta height %d, verifier.height %d", vd.RelayParentNumber, mtaHeight)
-		behindMtaHeight = true
 		from = uint64(vd.RelayParentNumber) + 1
 	}
 
@@ -272,13 +252,13 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	if behindMtaHeight {
 		var err error
-		bp, rps, err = r.pullBlockProofAndStateProofs(vd, from)
+		bus, rps, err = r.pullBlockUpdatesAndStateProofs(from)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var err error
-		bus, rps, err = r.pullBlockUpdatesAndStateProofs(vd, from)
+		bp, rps, err = r.pullBlockProofAndStateProofs(from)
 		if err != nil {
 			return nil, err
 		}

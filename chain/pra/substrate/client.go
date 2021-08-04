@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/rpc"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -98,6 +99,30 @@ func (c *SubstrateAPI) GetSpecName() string {
 	return c.specName
 }
 
+func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error) {
+	headers := make([]SubstrateHeader, 0)
+
+	wp := workerpool.New(30)
+	rspChan := make(chan *SubstrateHeader, len(blockNumbers))
+
+	for _, blockNumber := range blockNumbers {
+		blockNumber := blockNumber
+		wp.Submit(func() {
+			blockHash, _ := c.GetBlockHash(uint64(blockNumber))
+			header, _ := c.GetHeader(blockHash)
+			rspChan <- header
+		})
+	}
+
+	wp.StopWait()
+	close(rspChan)
+	for header := range rspChan {
+		headers = append(headers, *header)
+	}
+
+	return headers, nil
+}
+
 func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (SubstrateReadProof, error) {
 	var res SubstrateReadProof
 	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
@@ -140,9 +165,9 @@ func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (*types.U
 	return setId, err
 }
 
-func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
+func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error) {
 	var finalityProofHexstring string
-	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", blockNumber)
+	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
 	if err != nil {
 		return nil, err
 	}

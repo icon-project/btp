@@ -98,12 +98,35 @@ func (_m *MockSubstrateClient) GetBlockHashLatest() (types.Hash, error) {
 	return r0, r1
 }
 
+// GetBlockHeaderByBlockNumbers provides a mock function with given fields: blockNumbers
+func (_m *MockSubstrateClient) GetBlockHeaderByBlockNumbers(blockNumbers []types.BlockNumber) ([]types.Header, error) {
+	ret := _m.Called(blockNumbers)
+
+	var r0 []types.Header
+	if rf, ok := ret.Get(0).(func([]types.BlockNumber) []types.Header); ok {
+		r0 = rf(blockNumbers)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.Header)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]types.BlockNumber) error); ok {
+		r1 = rf(blockNumbers)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetFinalitiyProof provides a mock function with given fields: blockNumber
-func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
+func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error) {
 	ret := _m.Called(blockNumber)
 
 	var r0 *FinalityProof
-	if rf, ok := ret.Get(0).(func(types.U32) *FinalityProof); ok {
+	if rf, ok := ret.Get(0).(func(types.BlockNumber) *FinalityProof); ok {
 		r0 = rf(blockNumber)
 	} else {
 		if ret.Get(0) != nil {
@@ -112,7 +135,7 @@ func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.U32) (*Finali
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(types.U32) error); ok {
+	if rf, ok := ret.Get(1).(func(types.BlockNumber) error); ok {
 		r1 = rf(blockNumber)
 	} else {
 		r1 = ret.Error(1)

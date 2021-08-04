@@ -45,4 +45,14 @@ func TestClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, fp)
 	})
+
+	t.Run("should return multiple block headers", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		require.NoError(t, err)
+
+		bh, err := c.GetBlockHeaderByBlockNumbers([]SubstrateBlockNumber{913571, 913572, 913573, 913574, 913575, 913576, 913577})
+		assert.NoError(t, err)
+		assert.NotNil(t, bh)
+	})
 }

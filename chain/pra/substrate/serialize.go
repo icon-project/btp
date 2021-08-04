@@ -117,6 +117,10 @@ func NewVoteMessage(justification *GrandpaJustification, setId types.U64) VoteMe
 	}
 }
 
+func NewBlockNumber(blocknumber uint64) SubstrateBlockNumber {
+	return types.BlockNumber(blocknumber)
+}
+
 func NewEncodedVoteMessage(vm VoteMessage) ([]byte, error) {
 	return types.EncodeToBytes(vm)
 }

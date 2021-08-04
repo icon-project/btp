@@ -93,9 +93,10 @@ type SubstrateClient interface {
 	GetSpecName() string
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
-	GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error)
+	GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error)
 	GetGrandpaCurrentSetId(blockHash SubstrateHash) (*types.U64, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error
 	GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error)
+	GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error)
 }

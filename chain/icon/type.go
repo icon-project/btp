@@ -63,6 +63,7 @@ const (
 
 const (
 	BMCRelayMethod     = "handleRelayMessage"
+	BMCFragmentMethod  = "handleFragment"
 	BMCGetStatusMethod = "getStatus"
 )
 
@@ -161,6 +162,12 @@ type DeployParamsBMV struct {
 type BMCRelayMethodParams struct {
 	Prev     string `json:"_prev"`
 	Messages string `json:"_msg"`
+}
+
+type BMCFragmentMethodParams struct {
+	Prev     string `json:"_prev"`
+	Messages string `json:"_msg"`
+	Index    int64  `json:"_idx"`
 }
 
 type BMCLinkMethodParams struct {
