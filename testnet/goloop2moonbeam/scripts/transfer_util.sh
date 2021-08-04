@@ -21,12 +21,14 @@ wei2coin() {
 }
 
 create_bob_account_in_Moonbeam() {
-    echo "$1. create Bob's account in Moonbeam"
     cd ${CONFIG_DIR}
-
     if [ ! -f bob.btp.address ]; then
+        echo "$1. Creating Bob's account in Moonbeam"
+
         eth address:random > bob.account
-        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address))" > bob.btp.address
+        echo "btp://$(cat net.btp.moonbeam)/$(get_bob_address)" > bob.btp.address
+    else
+        echo "$1. Skip creating Bob account. Already existed"
     fi
     echo "Bob's btp address: $(cat bob.btp.address)"
 }
@@ -45,13 +47,15 @@ get_bob_balance() {
 }
 
 create_alice_account_in_Gochain() {
-    echo "$1. Creating Alice account in ICON"
-
     cd ${CONFIG_DIR}
     if [ ! -f alice.secret ]; then
+        echo "$1. Creating Alice account in ICON"
+
         echo -n $(date|md5sum|head -c16) > alice.secret
         goloop ks gen -o alice.ks.json  -p $(cat alice.secret)
         echo "btp://$(cat net.btp.icon)/$(cat alice.ks.json | jq -r .address)" > alice.btp.address
+    else
+        echo "$1. Skip creating Alice account. Already existed"
     fi
     echo "Alice's btp address: $(cat alice.btp.address)"
 }

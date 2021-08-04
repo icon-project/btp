@@ -12,5 +12,5 @@ run:
 transfer_icx:
 	docker-compose exec btp_icon sh /btpsimple/scripts/transfer_icx.sh
 
-ransfer_dev:
+transfer_dev:
 	docker-compose exec btp_icon sh /btpsimple/scripts/transfer_dev.sh
