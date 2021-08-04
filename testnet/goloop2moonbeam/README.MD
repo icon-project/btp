@@ -54,10 +54,10 @@ Note: If you want a fresh test, run `make clean` to remove the old test data.
 Keep the docker-compose running and open an other terminal.  
 Run this command to transfer the native coin ICX from ICON to MOONBEAN.
 ```
-make run_transfer_icx
+make transfer_icx
 ```
 
 Run this command to transfer the native coin DEV from MOONBEAN to ICON:
 ```
-make run_transfer_icx
+make transfer_icx
 ```
