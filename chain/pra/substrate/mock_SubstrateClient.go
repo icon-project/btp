@@ -168,16 +168,14 @@ func (_m *MockSubstrateClient) GetFinalizedHead() (types.Hash, error) {
 }
 
 // GetGrandpaCurrentSetId provides a mock function with given fields: blockHash
-func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (*types.U64, error) {
+func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (types.U64, error) {
 	ret := _m.Called(blockHash)
 
-	var r0 *types.U64
-	if rf, ok := ret.Get(0).(func(types.Hash) *types.U64); ok {
+	var r0 types.U64
+	if rf, ok := ret.Get(0).(func(types.Hash) types.U64); ok {
 		r0 = rf(blockHash)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.U64)
-		}
+		r0 = ret.Get(0).(types.U64)
 	}
 
 	var r1 error

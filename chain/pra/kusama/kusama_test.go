@@ -21,7 +21,11 @@ func TestKusamaEventRecord(t *testing.T) {
 	}
 
 	// TODO add all event on chain
-	tests := []test{}
+	tests := []test{
+		{blockNumber: 8637954, moduleEventNames: []string{
+			"ParasInclusion_CandidateIncluded",
+		}},
+	}
 
 	meta, err := api.RPC.State.GetMetadataLatest()
 	require.NoError(t, err)

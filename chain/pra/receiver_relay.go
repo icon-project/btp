@@ -5,19 +5,21 @@ import (
 	"github.com/icon-project/btp/chain/pra/kusama"
 	"github.com/icon-project/btp/chain/pra/relaychain"
 	"github.com/icon-project/btp/chain/pra/substrate"
+	"github.com/icon-project/btp/chain/pra/westend"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
 )
 
 type relayReceiver struct {
-	c   substrate.SubstrateClient
-	pC  praBmvClient
-	log log.Logger
+	c           substrate.SubstrateClient
+	pC          praBmvClient
+	paraChainId substrate.SubstrateParachainId
+	log         log.Logger
 }
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
-	rC := relayReceiver{log: log}
+	rC := relayReceiver{log: log, paraChainId: 1000}
 	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
 	rC.pC = NewPraBmvClient(
 		opt.IconEndpoint, log, opt.PraBmvAddress,
@@ -30,7 +32,7 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 
 func (r *relayReceiver) syncBlock(mtaHeight int64) {
 	next := r.pC.store.Height() + 1
-	r.log.Debugf("syncBlock: with remote MTA %d, store  MTA %d", mtaHeight, next-1)
+	r.log.Debugf("syncBlock: with remote MTA %d, store MTA %d", mtaHeight, next-1)
 
 	if next < mtaHeight {
 		r.log.Fatalf("found missing block next:%d bu:%d", next, mtaHeight)
@@ -82,7 +84,7 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		return nil, err
 	}
 
-	vm := substrate.NewVoteMessage(justifications, *setId)
+	vm := substrate.NewVoteMessage(justifications, setId)
 	v.VoteMessage, err = substrate.NewEncodedVoteMessage(vm)
 	if err != nil {
 		return nil, err
@@ -108,6 +110,7 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 	}
 
 	if justifications != nil {
+		r.log.Debugf("newBlockUpdate: BlockUpdate with justification %d", header.Number)
 		if update.Votes, err = r.newVotes(justifications); err != nil {
 			return nil, err
 		}
@@ -142,6 +145,7 @@ func (r *relayReceiver) newStateProof(blockHash *substrate.SubstrateHash) ([]byt
 }
 
 func (r *relayReceiver) pullBlockUpdatesAndStateProofs(from uint64) ([][]byte, [][]byte, error) {
+	r.log.Debugf("pullBlockUpdatesAndStateProofs: from %d", from)
 	bus := make([][]byte, 0)
 	sps := make([][]byte, 0)
 
@@ -151,6 +155,8 @@ func (r *relayReceiver) pullBlockUpdatesAndStateProofs(from uint64) ([][]byte, [
 	}
 
 	lastBlockNumber := fp.Justification.EncodedJustification.Commit.TargetNumber
+	r.log.Debugf("pullBlockUpdatesAndStateProofs: found justification at %d", lastBlockNumber)
+
 	sp, err := r.newStateProof(&fp.Justification.EncodedJustification.Commit.TargetHash)
 	if err != nil {
 		return nil, nil, err
@@ -167,7 +173,7 @@ func (r *relayReceiver) pullBlockUpdatesAndStateProofs(from uint64) ([][]byte, [
 		return nil, nil, err
 	}
 
-	r.log.Debugf("blockUpdates: from: %d to: %d", fp.UnknownHeaders[0].Number, fp.UnknownHeaders[len(fp.UnknownHeaders)-1].Number)
+	r.log.Debugf("pullBlockUpdatesAndStateProofs: blockUpdates: from: %d to: %d", fp.UnknownHeaders[0].Number, fp.UnknownHeaders[len(fp.UnknownHeaders)-1].Number)
 	fp.UnknownHeaders = append(fp.UnknownHeaders, missingBlockHeaders...)
 	for _, header := range fp.UnknownHeaders {
 		bu, err := r.newBlockUpdate(header, nil)
@@ -177,10 +183,23 @@ func (r *relayReceiver) pullBlockUpdatesAndStateProofs(from uint64) ([][]byte, [
 		bus = append(bus, bu)
 	}
 
+	header, err := r.c.GetHeader(fp.Justification.EncodedJustification.Commit.TargetHash)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bu, err := r.newBlockUpdate(*header, &fp.Justification.EncodedJustification)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bus = append(bus, bu)
 	return bus, sps, nil
 }
 
 func (r *relayReceiver) pullBlockProofAndStateProofs(from uint64) ([]byte, [][]byte, error) {
+	r.log.Debugf("pullBlockProofAndStateProofs: from %d", from)
+
 	bp := []byte{}
 	sps := make([][]byte, 0)
 
@@ -198,7 +217,32 @@ func (r *relayReceiver) pullBlockProofAndStateProofs(from uint64) ([]byte, [][]b
 		}
 
 		if len(eventParasInclusionCandidateIncluded) > 0 {
-			foundEvent = true
+			for _, event := range eventParasInclusionCandidateIncluded {
+				if event.CandidateReceipt.Descriptor.ParaId == r.paraChainId {
+					header, err := r.c.GetHeader(blockHash)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					bheader, err := substrate.NewEncodedSubstrateHeader(*header)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					blockProof, err := r.newBlockProof(int64(header.Number), bheader)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					bp, err = codec.RLP.MarshalToBytes(blockProof)
+					if err != nil {
+						return nil, nil, err
+					}
+
+					foundEvent = true
+					break
+				}
+			}
 		}
 
 		blockNumber++
@@ -225,6 +269,11 @@ func (r *relayReceiver) getParasInclusionCandidateIncluded(blockHash substrate.S
 
 	if r.c.GetSpecName() == substrate.Kusama {
 		records := kusama.NewKusamaRecord(sdr, meta)
+		return records.ParasInclusion_CandidateIncluded, nil
+	}
+
+	if r.c.GetSpecName() == substrate.Westend {
+		records := westend.NewWestendEventRecord(sdr, meta)
 		return records.ParasInclusion_CandidateIncluded, nil
 	}
 

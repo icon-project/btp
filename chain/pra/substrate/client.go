@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	Westend   = "Westend"
-	Kusama    = "Kusama"
-	Moonriver = "Moonriver"
-	Moonbase  = "Moonbase"
+	Westend   = "westend"
+	Kusama    = "kusama"
+	Moonriver = "moonriver"
+	Moonbase  = "moonbase"
 )
 
 type SubstrateAPI struct {
@@ -147,20 +147,20 @@ func (c *SubstrateAPI) GetSystemEventStorageKey(blockhash SubstrateHash) (Substr
 	return SubstrateStorageKey(key), nil
 }
 
-func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (*types.U64, error) {
+func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error) {
 	meta := c.GetMetadataLatest()
 	key, err := types.CreateStorageKey(meta, "Grandpa", "CurrentSetId", nil, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	storageRaw, err := c.GetStorageRaw(key, blockHash)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	var setId *types.U64
-	err = types.DecodeFromBytes(*storageRaw, setId)
+	var setId types.U64
+	err = types.DecodeFromBytes(*storageRaw, &setId)
 
 	return setId, err
 }
