@@ -93,11 +93,15 @@ impl BmcGeneric {
         todo!()
     }
 
-    fn handle_message(_prev: &str, _msg: BmcMessage) {
+    fn handle_message_internal(_prev: &str, _msg: BmcMessage) {
         todo!()
     }
 
-    fn send_error(_prev: &str, _msg: BmcMessage, _err_code: u32, _err_msg: &str) {
+    fn send_message_internal(_to: &str, _serialized_msg: &[u8]) {
+        todo!()
+    }
+
+    fn send_error_internal(_prev: &str, _msg: BmcMessage, _err_code: u32, _err_msg: &str) {
         todo!()
     }
 

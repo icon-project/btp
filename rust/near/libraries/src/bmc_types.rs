@@ -9,7 +9,7 @@ use near_sdk::BorshStorageKey;
 #[serde(crate = "near_sdk::serde")]
 pub enum BmcStorageKey {
     BmcGeneric,
-    BmcMgt,
+    BmcManagement,
 }
 
 #[derive(
