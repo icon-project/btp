@@ -85,11 +85,13 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 	}
 
 	vm := substrate.NewVoteMessage(justifications, setId)
+	r.log.Tracef("newVotes: VoteMessage %+v", vm)
 	v.VoteMessage, err = substrate.NewEncodedVoteMessage(vm)
 	if err != nil {
 		return nil, err
 	}
 
+	r.log.Tracef("newVotes: ScaleEncodedVoteMessage %x", v.VoteMessage)
 	for _, precommit := range justifications.Commit.Precommits {
 		v.Signatures = append(v.Signatures, precommit.Signature[:])
 	}
@@ -99,6 +101,7 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		return nil, err
 	}
 
+	r.log.Tracef("newVotes: Votes %x", b)
 	return b, nil
 }
 
@@ -121,6 +124,7 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 		return nil, err
 	}
 
+	r.log.Tracef("newBlockUpdate: RLPEncodedBlockUpdate %x", bu)
 	return bu, nil
 }
 

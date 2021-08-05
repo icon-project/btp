@@ -19,10 +19,11 @@ const (
 )
 
 type SubstrateAPI struct {
+	client.Client
 	RPC      *rpc.RPC
 	metadata *SubstrateMetaData
 	metaLock sync.RWMutex // Lock metadata for updates, allows concurrent reads
-	client.Client
+	// parachainId               SubstrateParachainId
 	specName                  string
 	keepSubscribeFinalizeHead chan bool
 	blockInterval             time.Duration
