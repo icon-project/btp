@@ -24,6 +24,7 @@ fi
 
 current_gradle_version=$(gradle -v 2>&1 | awk '/Gradle/ {print $2}')
 if [ "$current_gradle_version" != "$GRADLE_VERSION" ]; then
+    install_javasdk
     echo "required gradle version $GRADLE_VERSION current $current_gradle_version"
     exit 0
 fi
