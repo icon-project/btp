@@ -257,6 +257,22 @@ func (_m *MockSubstrateClient) GetMetadata(blockHash types.Hash) (*types.Metadat
 	return r0, r1
 }
 
+// GetMetadataLatest provides a mock function with given fields:
+func (_m *MockSubstrateClient) GetMetadataLatest() *types.Metadata {
+	ret := _m.Called()
+
+	var r0 *types.Metadata
+	if rf, ok := ret.Get(0).(func() *types.Metadata); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Metadata)
+		}
+	}
+
+	return r0
+}
+
 // GetReadProof provides a mock function with given fields: key, blockHash
 func (_m *MockSubstrateClient) GetReadProof(key types.StorageKey, blockHash types.Hash) (SubstrateReadProof, error) {
 	ret := _m.Called(key, blockHash)
