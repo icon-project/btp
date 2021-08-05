@@ -16,17 +16,15 @@ install_javasdk() {
     sdk default gradle 6.7.1
 }
 
-current_java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}'   )
+current_java_version=$(java --version | awk '/openjdk/ {print $2}')
 if [ "$current_java_version" != "$JAVA_VERSION" ]; then
     echo $current_java_version
     install_javasdk
 fi
 
-current_gradle_version=$(gradle -v 2>&1 | awk '/Gradle/ {print $2}')
+current_gradle_version=$(gradle -v | awk '/Gradle/ {print $2}')
 if [ "$current_gradle_version" != "$GRADLE_VERSION" ]; then
     install_javasdk
-    echo "required gradle version $GRADLE_VERSION current $current_gradle_version"
-    exit 0
 fi
 
 CONTRACTS_DIST_DIR=${CONTRACTS_DIST_DIR:-$PWD/build/contracts}
