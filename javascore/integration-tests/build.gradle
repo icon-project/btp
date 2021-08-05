@@ -6,7 +6,6 @@ version '1.0-SNAPSHOT'
 allprojects {
     apply plugin: 'java'
     repositories {
-        mavenLocal()
         mavenCentral()
     }
     compileJava {
@@ -17,10 +16,10 @@ allprojects {
 dependencies {
     implementation project(':bmv')
     implementation project(':bsh')
-    implementation 'foundation.icon:javaee-api:0.8.7-SNAPSHOT'
-    implementation 'foundation.icon:icon-sdk:2.0.0-SNAPSHOT'
-    implementation 'foundation.icon:javaee-rt:0.8.7-SNAPSHOT'
-    implementation 'foundation.icon:javaee-tooling:0.8.7-SNAPSHOT'
+    implementation 'foundation.icon:javaee-api:0.9.0'
+    implementation 'foundation.icon:javaee-rt:0.9.0'
+    implementation 'foundation.icon:javaee-tooling:0.9.0'
+    implementation 'foundation.icon:icon-sdk:2.0.0'
     implementation 'org.msgpack:msgpack-core:0.8.17'
     implementation 'com.github.sink772:javaee-scorex:0.5.2'
     implementation 'org.web3j:rlp:5.0.0'
