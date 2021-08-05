@@ -183,6 +183,7 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(mtaHeight uint64
 
 		if len(eventParasInclusionCandidateIncluded) > 0 {
 			for _, event := range eventParasInclusionCandidateIncluded {
+				// parachain include must match id and parahead
 				if event.CandidateReceipt.Descriptor.ParaId == r.paraChainId &&
 					event.CandidateReceipt.Descriptor.ParaHead == paraHead {
 
