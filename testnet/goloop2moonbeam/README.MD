@@ -14,6 +14,13 @@ This document will walk you through setting up a Docker environment to demonstra
 
 ## Setup steps:  
 
+For easy setup, we recommend to use a fresh ubuntu 21.04. Hence, run those commands to installe prerequire tools
+```
+apt update
+apt install git make zip golang-go docker.io docker-compose --fix-missing -y
+sudo groupadd docker
+sudo usermod -aG docker $USER
+```
 
 ### Build image goloop/gochain-icon:0.9.7
 
