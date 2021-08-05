@@ -51,7 +51,12 @@ async function main() {
 
   const wallet = IconService.IconWallet.loadKeystore((await readFile(iconKeyStoreFilePath)).toString(), iconKeyStorePassword, false);
 
-  const paraApi = await ApiPromise.create({ provider: paraWsProvider });
+  const paraApi = await ApiPromise.create({
+    provider: paraWsProvider,
+    types: {
+      RoundIndex: "u32",
+    },
+  });
 
   // get relay genesis hash
   console.log(" Relay genesis hash: ", relayApi.genesisHash.toHex());
