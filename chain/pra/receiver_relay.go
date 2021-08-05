@@ -124,15 +124,15 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 	return bu, nil
 }
 
-func (r *relayReceiver) newStateProof(blockHash *substrate.SubstrateHash) ([]byte, error) {
+func (r *relayReceiver) newStateProof(blockHash substrate.SubstrateHash) ([]byte, error) {
 	r.log.Debugf("newStateProof: at %s", blockHash.Hex())
 	sp := make([]byte, 0)
-	key, err := r.c.GetSystemEventStorageKey(*blockHash)
+	key, err := r.c.GetSystemEventStorageKey(blockHash)
 	if err != nil {
 		return nil, err
 	}
 
-	readProof, err := r.c.GetReadProof(key, *blockHash)
+	readProof, err := r.c.GetReadProof(key, blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -228,19 +228,47 @@ func (r *relayReceiver) getParasInclusionCandidateIncluded(blockHash substrate.S
 	return nil, err
 }
 
+func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, error) {
+	meta := r.c.GetMetadataLatest()
+	key, err := r.c.CreateStorageKey(meta, "System", "Events", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	sdr, err := r.c.GetStorageRaw(key, blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.c.GetSpecName() == substrate.Kusama {
+		records := kusama.NewKusamaRecord(sdr, meta)
+		return records.Grandpa_NewAuthorities, nil
+	}
+
+	if r.c.GetSpecName() == substrate.Westend {
+		records := westend.NewWestendEventRecord(sdr, meta)
+		return records.Grandpa_NewAuthorities, nil
+	}
+
+	return nil, err
+}
+
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash) ([]byte, error) {
 	mtaHeight := r.pC.getRelayMtaHeight()
-	paraIncludedHeader, blockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
+	// check out which block para chain get included
+	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
 	bus := make([][]byte, 0)
 	bp := []byte{}
 	rps := make([][]byte, 0)
 
-	paraIncludedStateProof, err := r.newStateProof(blockHash)
+	// create stateproof for para chain get included
+	paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
 	if err != nil {
 		return nil, err
 	}
 
 	if mtaHeight < uint64(paraIncludedHeader.Number) {
+		// get the latest block contains justification
 		fp, err := r.c.GetFinalitiyProof(substrate.NewBlockNumber(mtaHeight))
 		if err != nil {
 			return nil, err
@@ -249,6 +277,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		lastBlockNumber := fp.Justification.EncodedJustification.Commit.TargetNumber
 		r.log.Debugf("newParaFinalityProof: found justification at %d", lastBlockNumber)
 
+		// pull all headers with unknowheader in finality proofs
 		blockHeaders, err := r.pullBlockHeaders(*fp)
 		if err != nil {
 			return nil, err
@@ -258,6 +287,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 			var bu []byte
 
 			if i == len(blockHeaders)-1 {
+				// add justification in last blocks
 				bu, err = r.newBlockUpdate(blockHeader, &fp.Justification.EncodedJustification)
 				if err != nil {
 					return nil, err
@@ -272,7 +302,24 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 			bus = append(bus, bu)
 		}
 
-		// TODO add stateproof if it contains new_authorities
+		// check if last block contains Grandpa_NewAuthorities event
+		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(fp.Justification.EncodedJustification.Commit.TargetHash)
+		if err != nil {
+			return nil, nil
+		}
+
+		if len(eventGrandpaNewAuthorities) > 0 {
+			// No need to create new state proof if same block
+			if *praIncludeBlockHash != fp.Justification.EncodedJustification.Commit.TargetHash {
+				newAuthoritiesStateProof, err := r.newStateProof(fp.Justification.EncodedJustification.Commit.TargetHash)
+				if err != nil {
+					return nil, err
+				}
+
+				rps = append(rps, newAuthoritiesStateProof)
+			}
+		}
+
 	} else {
 		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
 		if err != nil {
@@ -283,9 +330,9 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	rps = append(rps, paraIncludedStateProof)
+		rps = append(rps, paraIncludedStateProof)
+	}
 
 	msg := &RelayMessage{
 		BlockUpdates:  bus,
