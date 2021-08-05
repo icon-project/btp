@@ -19,7 +19,7 @@ type relayReceiver struct {
 }
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
-	rC := relayReceiver{log: log, paraChainId: 1000}
+	rC := relayReceiver{log: log, paraChainId: 2023}
 	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
 	rC.pC = NewPraBmvClient(
 		opt.IconEndpoint, log, opt.PraBmvAddress,
@@ -260,7 +260,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	// Performance guess for checking with MTA height
 	if uint64(vd.RelayParentNumber+10) <= mtaHeight {
-		r.log.Warnf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(vd.RelayParentNumber+10), mtaHeight)
+		r.log.Panicf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(vd.RelayParentNumber+10), mtaHeight)
 		rmb, err := codec.RLP.MarshalToBytes(nil)
 		if err != nil {
 			return nil, err
