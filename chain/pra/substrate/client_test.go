@@ -26,6 +26,16 @@ func TestClient(t *testing.T) {
 		c.GetValidationData(NewSubstrateHashFromHexString("0xfd7a2619ce12f375cd2c170090ea5f206ab69068affba91c75eda76925e13284"))
 	})
 
+	t.Run("should return decode FinalityProof on polkadot", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://rpc.polkadot.io")
+		require.NoError(t, err)
+
+		fp, err := c.GetFinalitiyProof(6247439)
+		assert.NoError(t, err)
+		assert.NotNil(t, fp)
+	})
+
 	t.Run("should return decode FinalityProof on kusama", func(t *testing.T) {
 		t.Skip("Manual run only")
 		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
@@ -36,19 +46,31 @@ func TestClient(t *testing.T) {
 		assert.NotNil(t, fp)
 	})
 
-	t.Run("should return decode FinalityProof on moonbase relay chain", func(t *testing.T) {
+	t.Run("should return decode FinalityProof on westend", func(t *testing.T) {
 		t.Skip("Manual run only")
-		c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		c, err := NewSubstrateClient("wss://westend-rpc.polkadot.io")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(913571)
+		fp, err := c.GetFinalitiyProof(6788687)
+		assert.NoError(t, err)
+		assert.NotNil(t, fp)
+	})
+
+	t.Run("should return decode FinalityProof on moonbase relay chain", func(t *testing.T) {
+		t.Skip("Manual run only")
+		// c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		c, err := NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network/")
+		require.NoError(t, err)
+
+		fp, err := c.GetFinalitiyProof(1016190)
 		assert.NoError(t, err)
 		assert.NotNil(t, fp)
 	})
 
 	t.Run("should return multiple block headers", func(t *testing.T) {
 		t.Skip("Manual run only")
-		c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		// c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		c, err := NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network/")
 		require.NoError(t, err)
 
 		bh, err := c.GetBlockHeaderByBlockNumbers([]SubstrateBlockNumber{913571, 913572, 913573, 913574, 913575, 913576, 913577})
