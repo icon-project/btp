@@ -40,7 +40,7 @@ pub use bmc_management::BmcManagement;
 pub use bmc_types::*;
 
 /// Interface for BMC
-pub trait Ibmc {
+pub trait BMC {
     /*** BMC Generic ***/
 
     /// Get BMC BTP address

@@ -1,7 +1,7 @@
 //! BMC Management Contract
 
 use crate::bmc_types::*;
-use crate::Ibmc;
+use crate::BMC;
 //use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
@@ -37,7 +37,7 @@ impl Default for BmcManagement {
     }
 }
 
-impl Ibmc for BmcManagement {
+impl BMC for BmcManagement {
     /*** BMC Generic ***/
 
     /// Get BMC BTP address

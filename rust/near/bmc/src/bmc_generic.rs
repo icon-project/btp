@@ -4,7 +4,7 @@ use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 //use near_sdk::collections::UnorderedMap;
 use crate::bmc_types::*;
-use crate::Ibmc;
+use crate::BMC;
 use near_sdk::{env, near_bindgen, setup_alloc};
 
 setup_alloc!();
@@ -26,7 +26,7 @@ impl Default for BmcGeneric {
     }
 }
 
-impl Ibmc for BmcGeneric {
+impl BMC for BmcGeneric {
     /*** BMC Generic ***/
 
     /// Get BMC BTP address
