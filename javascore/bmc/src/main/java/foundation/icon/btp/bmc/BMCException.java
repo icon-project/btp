@@ -67,6 +67,9 @@ public class BMCException extends BTPException.BMC {
     public static BMCException unreachable() {
         return new BMCException(Code.Unreachable);
     }
+    public static BMCException drop() {
+        return new BMCException(Code.Drop);
+    }
 
     //BTPException.BMC => 10 ~ 24
     public enum Code implements BTPException.Coded{
@@ -81,7 +84,8 @@ public class BMCException extends BTPException.BMC {
         NotExistsLink(8),
         AlreadyExistsBMR(9),
         NotExistsBMR(10),
-        Unreachable(11);
+        Unreachable(11),
+        Drop(12);
 
         final int code;
         Code(int code){ this.code = code; }

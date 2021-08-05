@@ -173,6 +173,14 @@ public interface ScoreIntegrationTest {
         };
     }
 
+    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
+            Address address, EventLogsSupplier<T> supplier) {
+        return (txr) -> {
+            List<T> eventLogs = supplier.apply(txr, address, null);
+            assertEquals(0, eventLogs.size());
+        };
+    }
+
     static <T> Consumer<TransactionResult> eventLogsChecker(
             Address address, EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
         return (txr) -> {
