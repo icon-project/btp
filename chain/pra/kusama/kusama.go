@@ -399,6 +399,9 @@ type KusamaEventRecord struct {
 	Crowdloan_Edited                                []EventCrowdloanEdited
 	Crowdloan_MemoUpdated                           []EventCrowdloanMemoUpdated
 	Crowdloan_AddedToNewRaise                       []EventCrowdloanAddedToNewRaise
+	ImOnline_HeartbeatReceived                      []types.EventImOnlineHeartbeatReceived
+	ImOnline_AllGood                                []types.EventImOnlineAllGood
+	ImOnline_SomeOffline                            []types.EventImOnlineSomeOffline
 	// XcmPallet_Attempted     []EventXcmPalletAttempted
 	// XcmPallet_Sent          []EventXcmPalletSent
 	System_CodeUpdated      []types.EventSystemCodeUpdated

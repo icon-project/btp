@@ -107,6 +107,11 @@ type ReceiptProof struct {
 	EventProofs []*chain.EventProof
 }
 
+type ValidatorSignature struct {
+	Signature []byte
+	Id        []byte
+}
+
 type Votes struct {
 	VoteMessage []byte
 	Signatures  [][]byte

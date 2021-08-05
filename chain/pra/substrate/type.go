@@ -12,6 +12,7 @@ type SubstrateStorageDataRaw = types.StorageDataRaw
 type SubstrateBlockNumber = types.BlockNumber
 type SubstrateEventRecordsRaw types.EventRecordsRaw
 type SubstrateParachainId = types.U32
+
 type HexString = string
 type SubstrateReadProof struct {
 	At    SubstrateHash `json:"at"`
