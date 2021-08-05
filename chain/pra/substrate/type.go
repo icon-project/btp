@@ -85,6 +85,7 @@ type VoteMessage struct {
 type SubstrateClient interface {
 	Call(result interface{}, method string, args ...interface{}) error
 	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
+	GetMetadataLatest() *SubstrateMetaData
 	GetFinalizedHead() (SubstrateHash, error)
 	GetHeader(hash SubstrateHash) (*SubstrateHeader, error)
 	GetHeaderLatest() (*SubstrateHeader, error)

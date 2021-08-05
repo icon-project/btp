@@ -43,7 +43,7 @@ func NewPraBmvClient(url string, log log.Logger, address string, config relaySto
 	return pC
 }
 
-func (c *praBmvClient) getRelayMtaHeight() int64 {
+func (c *praBmvClient) getRelayMtaHeight() uint64 {
 	p := &icon.CallParam{
 		ToAddress: icon.Address(c.address),
 		DataType:  "call",
@@ -63,10 +63,10 @@ func (c *praBmvClient) getRelayMtaHeight() int64 {
 		c.log.Debugf("getRelayMtaHeight: failed")
 	}
 
-	return value
+	return uint64(value)
 }
 
-func (c *praBmvClient) getRelayMtaOffset() int64 {
+func (c *praBmvClient) getRelayMtaOffset() uint64 {
 	p := &icon.CallParam{
 		ToAddress: icon.Address(c.address),
 		DataType:  "call",
@@ -86,7 +86,7 @@ func (c *praBmvClient) getRelayMtaOffset() int64 {
 		c.log.Debugf("getRelayMtaOffset: failed")
 	}
 
-	return value
+	return uint64(value)
 }
 
 func (c *praBmvClient) prepareDatabase(offset int64) error {

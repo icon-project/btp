@@ -75,7 +75,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 			return nil, err
 		}
 
-		update.FinalityProof, err = r.relayReceiver.newParaFinalityProof(vd)
+		update.FinalityProof, err = r.relayReceiver.newParaFinalityProof(vd, v.Hash)
 		if err != nil {
 			return nil, err
 		}
