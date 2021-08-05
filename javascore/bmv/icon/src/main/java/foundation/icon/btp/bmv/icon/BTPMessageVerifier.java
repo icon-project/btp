@@ -115,7 +115,7 @@ public class BTPMessageVerifier implements BMV {
                         continue;
                     }
                     MessageEvent msgEvent = eventLog.toMessageEvent();
-                    if (msgEvent != null) {
+                    if (msgEvent != null && msgEvent.getNext().equals(_bmc)) {
                         int compare = msgEvent.getSeq().compareTo(next_seq);
                         if (compare > 0) {
                             throw BMVException.invalidSequenceHigher(
@@ -123,7 +123,7 @@ public class BTPMessageVerifier implements BMV {
                         } else if (compare < 0) {
                             throw BMVException.invalidSequence(
                                     "invalid sequence "+msgEvent.getSeq() + " expected:"+next_seq);
-                        } else if (msgEvent.getNext().equals(_bmc)) {
+                        } else {
                             msgs.add(msgEvent.getMsg());
                             next_seq = next_seq.add(BigInteger.ONE);
                         }
