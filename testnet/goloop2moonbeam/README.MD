@@ -59,5 +59,5 @@ make transfer_icx
 
 Run this command to transfer the native coin DEV from MOONBEAN to ICON:
 ```
-make transfer_icx
+make transfer_dev
 ```
