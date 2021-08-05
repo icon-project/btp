@@ -63,6 +63,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		BlockHash: v.Hash[:],
 	}
 
+	r.l.Debugf("newParaBlockUpdate: %d", v.Height)
 	var update BlockUpdate
 	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(*v.Header); err != nil {
 		return nil, err
@@ -142,6 +143,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					Sequence: bmcMsg.Seq.Int64(),
 				})
 
+				r.l.Debugf("newReceiptProofs: newEvent %d", rp.Events[len(rp.Events)-1].Sequence)
 				if bmcMsg.Seq.Int64() == int64(r.rxSeq) {
 					r.isFoundMessageEventByOffset = true
 				}
@@ -150,6 +152,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 		// only get ReceiptProof that has right Events
 		if len(rp.Events) > 0 {
+			r.l.Debugf("newReceiptProofs: build StateProof %d", v.Height)
 			key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 			if err != nil {
 				return nil, err
