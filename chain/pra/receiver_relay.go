@@ -256,8 +256,33 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash) ([]byte, error) {
 	mtaHeight := r.pC.getRelayMtaHeight()
+	r.log.Debugf("newParaFinalityProof: mtaHeight %d", mtaHeight)
+
+	// Performance guess for checking with MTA height
+	if uint64(vd.RelayParentNumber+10) <= mtaHeight {
+		r.log.Warnf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(vd.RelayParentNumber+10), mtaHeight)
+		rmb, err := codec.RLP.MarshalToBytes(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return rmb, err
+	}
+
 	// check out which block para chain get included
 	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
+
+	// Acccurate checking with MTA height
+	if uint64(paraIncludedHeader.Number) <= mtaHeight {
+		r.log.Panicf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(paraIncludedHeader.Number), mtaHeight)
+		rmb, err := codec.RLP.MarshalToBytes(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return rmb, err
+	}
+
 	bus := make([][]byte, 0)
 	bp := []byte{}
 	rps := make([][]byte, 0)
