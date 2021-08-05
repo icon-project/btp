@@ -1,211 +1,167 @@
-//! This crate is a Rust port of Google's high-performance hash
-//! map, adapted to make it a drop-in replacement for Rust's standard `HashMap`
-//! and `HashSet` types.
+//! BMC
 
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, UnorderedSet};
-use near_sdk::serde_json::{from_str, json, to_value, Value};
-use near_sdk::AccountId;
-use near_sdk::{env, log, near_bindgen, serde_json, setup_alloc, PanicOnDefault, json_types::{Base64VecU8}};
-use std::collections::HashMap;
-mod link;
-mod message;
-mod owner;
-mod relay;
-mod service;
-mod types;
+#![forbid(
+    arithmetic_overflow,
+    mutable_transmutes,
+    no_mangle_const_items,
+    unknown_crate_types
+)]
+#![warn(
+    bad_style,
+    deprecated,
+    improper_ctypes,
+    non_shorthand_field_patterns,
+    overflowing_literals,
+    stable_features,
+    unconditional_recursion,
+    unknown_lints,
+    unused,
+    unused_allocation,
+    unused_attributes,
+    unused_comparisons,
+    unused_features,
+    unused_parens,
+    unused_variables,
+    while_true,
+    clippy::unicode_not_nfc,
+    clippy::unwrap_used,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results
+)]
+pub mod bmc_generic;
+pub mod bmc_management;
+pub mod bmc_types;
+pub use bmc_generic::BmcGeneric;
+pub use bmc_management::BmcManagement;
+pub use bmc_types::*;
 
-use btp_common::{
-    errors::{BMCError, BTPError},
-    messages::BMCMessage,
-    owner, BTPAddress,
-    emit
-};
-use types::{Event, Events, Link, Links, Owners, Routes, BSH};
+/// Interface for BMC
+pub trait Ibmc {
+    /*** BMC Generic ***/
 
-setup_alloc!();
+    /// Get BMC BTP address
+    fn get_bmc_btp_address(&self) -> String;
+    /// Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
+    /// Caller must be a registered relayer.
+    fn handle_relay_message(&mut self, prev: &str, msg: &str);
+    fn decode_msg_and_validate_relay(&mut self, prev: &str, msg: &str) -> Vec<Vec<u8>>;
+    fn decode_btp_message(&mut self, rlp: &[u8]) -> Result<BmcMessage, String>;
+    fn handle_message_internal(&mut self, prev: &str, msg: &BmcMessage);
+    fn send_message_internal(&mut self, to: &str, serialized_msg: &[u8]);
+    fn send_error_internal(&mut self, prev: &str, msg: BmcMessage, err_code: u32, err_msg: &str);
+    /// Send the message to a specific network
+    /// Caller must be a registered BSH
+    fn send_message(&mut self, to: &str, svc: &str, sn: u64, msg: &[u8]);
+    /// Get status of BMC
+    fn get_status(&self, link: &str) -> LinkStats;
 
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct BTPMessageCenter {
-    pub links: Links,
-    pub routes: Routes,
-    pub bsh: BSH,
-    pub owners: Owners,
-    pub events: Events,
-}
+    /*** BMC Management ***/
 
-impl Default for BTPMessageCenter {
-    fn default() -> Self {
-        let links = Links::new();
-        let routes = Routes::new();
-        let bsh = BSH::new();
-        let events = Events::new();
-        let mut owners = Owners::new();
-        owners.add(&env::current_account_id());
-        Self {
-            links,
-            routes,
-            bsh,
-            owners,
-            events,
-        }
-    }
-}
-
-#[near_bindgen]
-impl BTPMessageCenter {
-    // Route Management
-    pub fn add_route(&self) {}
-    pub fn remove_route(&self) {}
-    pub fn get_routes(&self) {}
-
-    // Verifier Management
-    pub fn add_verifier() {}
-    pub fn remove_verifier() {}
-    pub fn get_verifiers() {}
-
-    // Messaging
-    pub fn handle_relay_message() {}
-    pub fn send_message() {}
-
-    // pub fn get_message(&self) -> String {
-    //     return String::from_utf8(self.message.payload.clone()).unwrap_or_default();
-    // }
-
-    // pub fn send_message(&mut self, message: String) {
-    //     self.message.payload = message.as_bytes().to_vec()
-    // }
-
-    // pub fn add_link(&mut self, link: &BTPAddress) {
-    //     assert!(
-    //         self.owners.is_owner(env::signer_account_id()),
-    //         "BMCRevertUnauthorized"
-    //     );
-
-    //     self.links
-    //         .add_link(link)
-    //         .expect_err("BMCRevertUnauthorized");
-    // }
-    // pub fn add_routes(&mut self, dst: &BTPAddress, link: &BTPAddress) {
-    //     self.routes
-    //         .add_route(dst, link)
-    //         .expect_err("Not able to add route");
-    // }
-
-    // pub fn remove_route(&mut self, dst: &BTPAddress) {
-    //     assert!(
-    //         self.owners.is_owner(env::signer_account_id()),
-    //         "BMCRevertUnauthorized"
-    //     );
-    //     self.routes.remove_route(dst).expect_err("Failed to remove");
-    // }
-
-    // pub fn add_owner(&mut self, address: &AccountId) {
-    //     assert!(
-    //         self.owners.is_owner(env::signer_account_id()),
-    //         "BMCRevertUnauthorized"
-    //     );
-
-    //     self.owners
-    //         .add_owner(address)
-    //         .expect_err("failed to add owner");
-    // }
-
-    // pub fn add_relays(&mut self, link: &BTPAddress, address: &Vec<AccountId>) -> bool {
-    //     self.links
-    //         .set(&link, None, None, None, Some(address.to_vec()))
-    //         .is_ok()
-    // }
-
-    // pub fn add_relay(&mut self, link: &BTPAddress, address: &AccountId) -> bool {
-    //     match self.links.get(&link) {
-    //         Ok(mut link_property) => {
-    //             let _ = link_property.relays.add(address.to_string()).is_ok();
-    //             return self
-    //                 .links
-    //                 .set(&link, None, None, None, Some(link_property.relays.to_vec()))
-    //                 .is_ok();
-    //         }
-    //         Err(error) => {
-    //             log!(error);
-    //         }
-    //     }
-    //     false
-    // }
-
-    // pub fn remove_relay(&self,link:&BTPAddress, address: &Vec<AccountId>) -> bool {
-
-    // }
-
-    // pub fn get_relays(&self, link: &BTPAddress) -> Vec<String> {
-    //     match self.links.get(&link) {
-    //         Ok(link_property) => {
-    //             return link_property.relays.to_vec();
-    //         }
-
-    //         Err(err) => {
-    //             vec![]
-    //         }
-    //     }
-
-    // let link = self.links.0.get(key: &K);
-
-    // if !link.relays.0.is_empty(){
-    //    for v in link.relays.0.iter(){
-
-    //    return v;
-    //    }
-    // }
-    // }
-
-    // pub fn approve_service(&mut self, service: String, is_accepted: bool) -> bool {
-    //     match self.bsh.requests.get(&service) {
-    //         Ok(address) => {
-    //             if is_accepted {
-    //                 match self.bsh.services.add(&service, &address) {
-    //                     Ok(true) => {
-    //                         return self.bsh.requests.remove(&service).is_ok();
-    //                     }
-    //                     _ => {
-    //                         return self.bsh.requests.remove(&service).is_ok();
-    //                     }
-    //                 };
-    //             }
-
-    //             return false;
-    //         }
-    //         Err(error) => {
-
-    //             log!(error);
-    //             return false;
-    //         }
-    //     }
-
-    // for i in 0..pendingrq.len() {
-    //     if pendingrq[i] == service.clone() {
-    //         if is_accepted {
-    //             match self.bsh.services.add(service.clone(), pendingrq[i].clone()) {
-    //                 Ok(true) => println!("service Added"),
-    //                 Ok(false) => println!("service not added"),
-    //                 Err(err) => println!("{}", err),
-    //             }
-    //         }
-
-    //         self.bsh.requests.remove(pendingrq[i].clone());
-    //     }
-
-    //     log!("BMCRevertNotExistRequest");
-    // }
-    // }
-
-    // pub fn remove_service(&mut self, service: String) {
-    // }
-
-    // pub fn get_services(&self) {
-    //     // match self.bsh.services.get() {
-    //     //     Ok(value) => println!("{:?}", value),
-    //     //     Err(err) => println!("{}", err),
-    //     // }
-    // }
+    /// Update BMC generic
+    /// Caller must be an owner of BTP network
+    fn set_bmc_generic(&mut self, addr: &str);
+    /// Add another owner
+    /// Caller must be an owner of BTP network
+    fn add_owner(&mut self, owner: &str);
+    /// Remove an existing owner
+    /// Caller must be an owner of BTP network
+    fn remove_owner(&mut self, owner: &str);
+    /// Check whether one specific address has owner role
+    /// Caller can be ANY
+    fn is_owner(&self) -> bool;
+    /// Register the smart contract for the service
+    /// Caller must be an operator of BTP network
+    fn add_service(&mut self, svc: &str, addr: &str);
+    /// De-register the smart contract for the service
+    /// Caller must be an operator of BTP network
+    fn remove_service(&mut self, svc: &str);
+    /// Register BMV for the network
+    /// Caller must be an operator of BTP network
+    fn add_verifier(&mut self, net: &str, addr: &str);
+    /// De-register BMV for the network
+    /// Caller must be an operator of BTP network
+    fn remove_verifier(&mut self, net: &str);
+    /// Initialize status information for the link
+    /// Caller must be an operator of BTP network
+    fn add_link(&mut self, link: &str);
+    /// Set the link and status information
+    /// Caller must be an operator of BTP network
+    fn set_link(&mut self, link: &str, block_interval: u128, max_agg: u128, delay_limit: u128);
+    /// Remove the link and status information
+    /// Caller must be an operator of BTP network
+    fn remove_link(&mut self, link: &str);
+    /// Add route to the BMC
+    /// Caller must be an operator of BTP network
+    fn add_route(&mut self, dst: &str, link: &str);
+    /// Remove route to the BMC
+    /// Caller must be an operator of BTP network
+    fn remove_route(&mut self, dst: &str);
+    /// Register Relay for the network
+    /// Caller must be an operator of BTP network
+    fn add_relay(&mut self, link: &str, addrs: &[&str]);
+    /// Unregister Relay for the network
+    /// Caller must be an operator of BTP network
+    fn remove_relay(&mut self, link: &str, addrs: &[&str]);
+    /// Get registered services
+    /// Returns an array of services
+    fn get_services(&self) -> Vec<Service>;
+    /// Get registered verifiers
+    /// Returns an array of verifiers
+    fn get_verifiers(&self) -> Vec<Verifier>;
+    /// Get registered links
+    /// Returns an array of links (BTP addresses of the BMCs)
+    fn get_links(&self) -> Vec<String>;
+    /// Get routing information
+    /// Returns an array of routes
+    fn get_routes(&self) -> Vec<Route>;
+    /// Get registered relays
+    /// Returns a list of relays
+    fn get_relays(&self, link: &str) -> Vec<String>;
+    /// Get BSH services by name. Only called by BMC generic
+    /// Returns BSH service address
+    fn get_bsh_service_by_name(&self, service_name: &str) -> String;
+    /// Get BMV services by net. Only called by BMC generic
+    /// Returns BMV service address
+    fn get_bmv_service_by_net(&self, net: &str) -> String;
+    /// Get link info. Only called by BMC generic
+    /// Returns link info
+    fn get_link(&self, to: &str) -> Link;
+    /// Get rotation sequence by link. Only called by BMC generic
+    /// Returns rotation sequence
+    fn get_link_rx_seq(&self, prev: &str) -> u128;
+    /// Get transaction sequence by link. Only called by BMC generic
+    /// Returns transaction sequence
+    fn get_link_tx_seq(&self, prev: &str) -> u128;
+    /// Get relays by link. Only called by BMC generic
+    /// Returns a list of relays' addresses
+    fn get_link_relays(&self, prev: &str) -> Vec<String>;
+    /// Get relays status by link. Only called by BMC generic
+    /// Returns relay status of all relays
+    fn get_relay_status_by_link(&self, prev: &str) -> Vec<RelayStats>;
+    /// Update rotation sequence by link. Only called by BMC generic
+    fn update_link_rx_seq(&mut self, prev: &str, val: u128);
+    /// Increase transaction sequence by 1
+    fn update_link_tx_seq(&mut self, prev: &str);
+    /// Add a reachable BTP address to link. Only called by BMC generic
+    fn update_link_reachable(&mut self, prev: &str, to: &str);
+    /// Remove a reachable BTP address. Only called by BMC generic
+    fn delete_link_reachable(&mut self, prev: &str, index: u128);
+    /// Update relay status. Only called by BMC generic
+    fn update_relay_stats(&mut self, relay: &str, block_count_val: u128, msg_count_val: u128);
+    /// Resolve next BMC. Only called by BMC generic
+    /// Returns BTP address of next BMC and destined BMC
+    fn resolve_route(&mut self, dst_net: &str) -> (String, String);
+    /// Rotate relay for relay address. Only called by BMC generic
+    /// Returns relay address
+    fn rotate_relay(
+        &mut self,
+        link: &str,
+        current_height: u128,
+        relay_msg_height: u128,
+        has_msg: bool,
+    ) -> String;
 }

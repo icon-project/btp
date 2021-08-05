@@ -33,8 +33,8 @@
     unused_results
 )]
 
+use bsh_types::*;
 use btp_common::BTPAddress;
-use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, near_bindgen, setup_alloc};
@@ -105,7 +105,7 @@ impl BshGeneric {
         values: Vec<u128>,
         fees: Vec<u128>,
     ) -> Result<(), &str> {
-        let btp_addr = BTPAddress(to.to_string());
+        let btp_addr = BTPAddress::new(to.to_string());
         let _network_addr = btp_addr
             .network_address()
             .expect("Failed to retrieve network address")
@@ -178,7 +178,7 @@ impl BshGeneric {
                 .expect("Failed to deserialize SM data");
             //  check receiving address whether it is a valid address
             //  or revert if not a valid one
-            let btp_addr = BTPAddress(tc.to.clone());
+            let btp_addr = BTPAddress::new(tc.to.clone());
             if btp_addr.is_valid().is_ok() {
                 if self.handle_request_service(&tc.to, tc.assets).is_ok() {
                     self.send_response_message(
@@ -307,7 +307,7 @@ impl BshGeneric {
         }
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        let btp_addr = BTPAddress(fa.to_string());
+        let btp_addr = BTPAddress::new(fa.to_string());
         if btp_addr.is_valid().is_ok() {
             // BSH core: bsh_core.transfer_fees(fa);
         }

@@ -1,43 +1,11 @@
 //! BMC Management Contract
 
-#![forbid(
-    arithmetic_overflow,
-    mutable_transmutes,
-    no_mangle_const_items,
-    unknown_crate_types
-)]
-#![warn(
-    bad_style,
-    deprecated,
-    improper_ctypes,
-    non_shorthand_field_patterns,
-    overflowing_literals,
-    stable_features,
-    unconditional_recursion,
-    unknown_lints,
-    unused,
-    unused_allocation,
-    unused_attributes,
-    unused_comparisons,
-    unused_features,
-    unused_parens,
-    unused_variables,
-    while_true,
-    clippy::unicode_not_nfc,
-    clippy::unwrap_used,
-    trivial_casts,
-    trivial_numeric_casts,
-    unused_extern_crates,
-    unused_import_braces,
-    unused_qualifications,
-    unused_results
-)]
-
-use btp_common::BTPAddress;
-use libraries::bmc_types::*;
+use crate::bmc_types::*;
+use crate::Ibmc;
+//use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, near_bindgen, setup_alloc};
+use near_sdk::{near_bindgen, setup_alloc};
 
 setup_alloc!();
 /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
@@ -69,206 +37,256 @@ impl Default for BmcManagement {
     }
 }
 
-#[near_bindgen]
-impl BmcManagement {
-    pub const BLOCK_INTERVAL_MSEC: u32 = 1000;
+impl Ibmc for BmcManagement {
+    /*** BMC Generic ***/
+
+    /// Get BMC BTP address
+    fn get_bmc_btp_address(&self) -> String {
+        unimplemented!()
+    }
+
+    /// Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
+    /// Caller must be a registered relayer.
+    fn handle_relay_message(&mut self, _prev: &str, _msg: &str) {
+        unimplemented!()
+    }
+
+    fn decode_msg_and_validate_relay(&mut self, _prev: &str, _msg: &str) -> Vec<Vec<u8>> {
+        unimplemented!()
+    }
+
+    fn decode_btp_message(&mut self, _rlp: &[u8]) -> Result<BmcMessage, String> {
+        unimplemented!()
+    }
+
+    fn handle_message_internal(&mut self, _prev: &str, _msg: &BmcMessage) {
+        unimplemented!()
+    }
+
+    fn send_message_internal(&mut self, _to: &str, _serialized_msg: &[u8]) {
+        unimplemented!()
+    }
+
+    fn send_error_internal(
+        &mut self,
+        _prev: &str,
+        _msg: BmcMessage,
+        _err_code: u32,
+        _err_msg: &str,
+    ) {
+        unimplemented!()
+    }
+
+    /// Send the message to a specific network
+    /// Caller must be a registered BSH
+    fn send_message(&mut self, _to: &str, _svc: &str, _sn: u64, _msg: &[u8]) {
+        unimplemented!()
+    }
+
+    /// Get status of BMC
+    fn get_status(&self, _link: &str) -> LinkStats {
+        unimplemented!()
+    }
+
+    /*** BMC Management ***/
 
     /// Update BMC generic
     /// Caller must be an owner of BTP network
-    pub fn set_bmc_generic(_addr: &str) {
+    fn set_bmc_generic(&mut self, _addr: &str) {
         todo!()
     }
 
     /// Add another owner
     /// Caller must be an owner of BTP network
-    pub fn add_owner(_owner: &str) {
+    fn add_owner(&mut self, _owner: &str) {
         todo!()
     }
 
     /// Remove an existing owner
     /// Caller must be an owner of BTP network
-    pub fn remove_owner(_owner: &str) {
+    fn remove_owner(&mut self, _owner: &str) {
         todo!()
     }
 
     /// Check whether one specific address has owner role
     /// Caller can be ANY
-    pub fn is_owner() -> bool {
+    fn is_owner(&self) -> bool {
         todo!()
     }
 
     /// Register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn add_service(_svc: &str, _addr: &str) {
+    fn add_service(&mut self, _svc: &str, _addr: &str) {
         todo!()
     }
 
     /// De-register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn remove_service(_svc: &str) {
+    fn remove_service(&mut self, _svc: &str) {
         todo!()
     }
 
     /// Register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn add_verifier(_net: &str, _addr: &str) {
+    fn add_verifier(&mut self, _net: &str, _addr: &str) {
         todo!()
     }
 
     /// De-register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn remove_verifier(_net: &str) {
+    fn remove_verifier(&mut self, _net: &str) {
         todo!()
     }
 
     /// Initialize status information for the link
     /// Caller must be an operator of BTP network
-    pub fn add_link(_link: &str) {
+    fn add_link(&mut self, _link: &str) {
         todo!()
     }
 
     /// Set the link and status information
     /// Caller must be an operator of BTP network
-    pub fn set_link(_link: &str, _block_interval: u128, _max_agg: u128, _delay_limit: u128) {
+    fn set_link(&mut self, _link: &str, _block_interval: u128, _max_agg: u128, _delay_limit: u128) {
         todo!()
     }
 
     /// Remove the link and status information
     /// Caller must be an operator of BTP network
-    pub fn remove_link(_link: &str) {
+    fn remove_link(&mut self, _link: &str) {
         todo!()
     }
 
     /// Add route to the BMC
     /// Caller must be an operator of BTP network
-    pub fn add_route(_dst: &str, _link: &str) {
+    fn add_route(&mut self, _dst: &str, _link: &str) {
         todo!()
     }
 
     /// Remove route to the BMC
     /// Caller must be an operator of BTP network
-    pub fn remove_route(_dst: &str) {
+    fn remove_route(&mut self, _dst: &str) {
         todo!()
     }
 
     /// Register Relay for the network
     /// Caller must be an operator of BTP network
-    pub fn add_relay(_link: &str, _addrs: &[&str]) {
+    fn add_relay(&mut self, _link: &str, _addrs: &[&str]) {
         todo!()
     }
 
     /// Unregister Relay for the network
     /// Caller must be an operator of BTP network
-    pub fn remove_relay(_link: &str, _addrs: &[&str]) {
+    fn remove_relay(&mut self, _link: &str, _addrs: &[&str]) {
         todo!()
     }
 
     /// Get registered services
     /// Returns an array of services
-    pub fn get_services() -> Vec<Service> {
+    fn get_services(&self) -> Vec<Service> {
         todo!()
     }
 
     /// Get registered verifiers
     /// Returns an array of verifiers
-    pub fn get_verifiers() -> Vec<Verifier> {
+    fn get_verifiers(&self) -> Vec<Verifier> {
         todo!()
     }
 
     /// Get registered links
     /// Returns an array of links (BTP addresses of the BMCs)
-    pub fn get_links() -> Vec<String> {
+    fn get_links(&self) -> Vec<String> {
         todo!()
     }
 
     /// Get routing information
     /// Returns an array of routes
-    pub fn get_routes() -> Vec<Route> {
+    fn get_routes(&self) -> Vec<Route> {
         todo!()
     }
 
     /// Get registered relays
     /// Returns a list of relays
-    pub fn get_relays(_link: &str) -> Vec<String> {
+    fn get_relays(&self, _link: &str) -> Vec<String> {
         todo!()
     }
 
     /// Get BSH services by name. Only called by BMC generic
     /// Returns BSH service address
-    pub fn get_bsh_service_by_name(_service_name: &str) -> String {
+    fn get_bsh_service_by_name(&self, _service_name: &str) -> String {
         todo!()
     }
 
     /// Get BMV services by net. Only called by BMC generic
     /// Returns BMV service address
-    pub fn get_bmv_service_by_net(_net: &str) -> String {
+    fn get_bmv_service_by_net(&self, _net: &str) -> String {
         todo!()
     }
 
     /// Get link info. Only called by BMC generic
     /// Returns link info
-    pub fn get_link(_to: &str) -> Link {
+    fn get_link(&self, _to: &str) -> Link {
         todo!()
     }
 
     /// Get rotation sequence by link. Only called by BMC generic
     /// Returns rotation sequence
-    pub fn get_link_rx_seq(_prev: &str) -> u128 {
+    fn get_link_rx_seq(&self, _prev: &str) -> u128 {
         todo!()
     }
 
     /// Get transaction sequence by link. Only called by BMC generic
     /// Returns transaction sequence
-    pub fn get_link_tx_seq(_prev: &str) -> u128 {
+    fn get_link_tx_seq(&self, _prev: &str) -> u128 {
         todo!()
     }
 
     /// Get relays by link. Only called by BMC generic
     /// Returns a list of relays' addresses
-    pub fn get_link_relays(_prev: &str) -> Vec<String> {
+    fn get_link_relays(&self, _prev: &str) -> Vec<String> {
         todo!()
     }
 
     /// Get relays status by link. Only called by BMC generic
     /// Returns relay status of all relays
-    pub fn get_relay_status_by_link(_prev: &str) -> Vec<RelayStats> {
+    fn get_relay_status_by_link(&self, _prev: &str) -> Vec<RelayStats> {
         todo!()
     }
 
     /// Update rotation sequence by link. Only called by BMC generic
-    pub fn update_link_rx_seq(_prev: &str, _val: u128) {
+    fn update_link_rx_seq(&mut self, _prev: &str, _val: u128) {
         todo!()
     }
 
     /// Increase transaction sequence by 1
-    pub fn update_link_tx_seq(_prev: &str) {
+    fn update_link_tx_seq(&mut self, _prev: &str) {
         todo!()
     }
 
     /// Add a reachable BTP address to link. Only called by BMC generic
-    pub fn update_link_reachable(_prev: &str, _to: &str) {
+    fn update_link_reachable(&mut self, _prev: &str, _to: &str) {
         todo!()
     }
 
     /// Remove a reachable BTP address. Only called by BMC generic
-    pub fn delete_link_reachable(_prev: &str, _index: u128) {
+    fn delete_link_reachable(&mut self, _prev: &str, _index: u128) {
         todo!()
     }
 
     /// Update relay status. Only called by BMC generic
-    pub fn update_relay_stats(_relay: &str, _block_count_val: u128, _msg_count_val: u128) {
+    fn update_relay_stats(&mut self, _relay: &str, _block_count_val: u128, _msg_count_val: u128) {
         todo!()
     }
 
     /// Resolve next BMC. Only called by BMC generic
     /// Returns BTP address of next BMC and destined BMC
-    pub fn resolve_route(_dst_net: &str) -> (String, String) {
+    fn resolve_route(&mut self, _dst_net: &str) -> (String, String) {
         todo!()
     }
 
     /// Rotate relay for relay address. Only called by BMC generic
     /// Returns relay address
-    pub fn rotate_relay(
+    fn rotate_relay(
+        &mut self,
         _link: &str,
         _current_height: u128,
         _relay_msg_height: u128,
@@ -276,4 +294,9 @@ impl BmcManagement {
     ) -> String {
         todo!()
     }
+}
+
+#[near_bindgen]
+impl BmcManagement {
+    pub const BLOCK_INTERVAL_MSEC: u32 = 1000;
 }

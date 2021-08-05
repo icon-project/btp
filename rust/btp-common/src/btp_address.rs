@@ -4,24 +4,23 @@ use serde::Serialize;
 pub struct BTPAddress(String);
 
 impl BTPAddress {
-
     pub fn new(string: String) -> Self {
         Self(string)
     }
-    
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }
 
-
     pub fn blockchain(&self) -> Result<String, String> {
         match self.network() {
-            Ok((_, blockchain)) => return {
-                if blockchain.to_string().is_empty(){
-                    return Ok("empty".to_string())
+            Ok((_, blockchain)) => {
+                return {
+                    if blockchain.to_string().is_empty() {
+                        return Ok("empty".to_string());
+                    }
+                    Ok(blockchain.to_string())
                 }
-                Ok(blockchain.to_string())
-            },
+            }
             Err(error) => return Err(error),
         }
     }
@@ -72,7 +71,7 @@ impl BTPAddress {
         match self.protocol() {
             Ok((_, network)) => {
                 let s: Vec<&str> = network.split("/").collect();
-                if s.len() > 3 && !s[3].is_empty(){
+                if s.len() > 3 && !s[3].is_empty() {
                     return Ok(s[3].to_string());
                 }
                 return Err(format!("empty contract address"));
@@ -94,5 +93,4 @@ impl BTPAddress {
             _ => Ok(true),
         };
     }
-
 }

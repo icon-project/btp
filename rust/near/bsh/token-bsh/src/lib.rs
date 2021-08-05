@@ -35,11 +35,13 @@
 
 //use bsh_generic::other_bsh_types::*;
 use bsh_generic::BshGeneric;
+use bsh_types::*;
 use btp_common::BTPAddress;
-use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, metadata, near_bindgen, setup_alloc, AccountId};
+
+type BatchedBalance = (Vec<u128>, Vec<u128>, Vec<u128>);
 
 setup_alloc!();
 metadata! {
@@ -260,7 +262,7 @@ impl TokenBsh {
         {
             return Err("Unauthorized");
         }
-        if addr.to_string() == env::predecessor_account_id() {
+        if *addr == env::predecessor_account_id() {
             return Err("Invalid setting");
         }
 
@@ -380,16 +382,16 @@ impl TokenBsh {
         &self,
         owner: &str,
         coin_names: &[&str],
-    ) -> Result<(Vec<u128>, Vec<u128>, Vec<u128>), &str> {
+    ) -> Result<BatchedBalance, &str> {
         if !is_valid_btp_address(owner) {
             return Err("Invalid BTP address");
         }
         let mut usable_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
         let mut locked_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
         let mut refundable_balances: Vec<u128> = Vec::with_capacity(coin_names.len());
-        for i in 0..coin_names.len() {
+        for coin in coin_names {
             let (usable_bal, locked_bal, refundable_bal) = self
-                .get_balance_of(owner, coin_names[i])
+                .get_balance_of(owner, coin)
                 .expect("Failed to get balances");
             usable_balances.push(usable_bal);
             locked_balances.push(locked_bal);
@@ -443,7 +445,7 @@ impl TokenBsh {
             .expect("Failed to safely multiply")
             .checked_div(Self::FEE_DENOMINATOR)
             .expect("Failed to safely divide");
-        if charge_amt <= 0 {
+        if charge_amt == 0 {
             return Err("Invalid amount");
         }
         self.send_service_message(
@@ -523,7 +525,7 @@ impl TokenBsh {
             .expect("Failed to safely multiply")
             .checked_div(Self::FEE_DENOMINATOR)
             .expect("Failed to safely divide");
-        if charge_amt <= 0 {
+        if charge_amt == 0 {
             return Err("Invalid amount");
         }
         self.safe_transfer_from(
@@ -590,7 +592,7 @@ impl TokenBsh {
                     .expect("Failed to safely divide"),
             );
             if coin_names[i] == self.coin_names[i] {
-                if charge_amts[i] <= 0 && values[i] != env::attached_deposit() {
+                if charge_amts[i] == 0 && values[i] != env::attached_deposit() {
                     return Err("Invalid amount");
                 }
             } else {
@@ -601,7 +603,7 @@ impl TokenBsh {
                 if id == 0 {
                     return Err("Unregistered coin");
                 }
-                if charge_amts[i] <= 0 {
+                if charge_amts[i] == 0 {
                     return Err("Invalid amount");
                 }
                 self.safe_transfer_from(
@@ -905,7 +907,7 @@ impl TokenBsh {
 
 /// Helper for checking validity of BTP addresses
 pub fn is_valid_btp_address(addr: &str) -> bool {
-    let btp_addr = BTPAddress(addr.to_string());
+    let btp_addr = BTPAddress::new(addr.to_string());
     btp_addr.is_valid().expect("Failed to validate BTP address")
 }
 
