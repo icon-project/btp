@@ -32,7 +32,7 @@ CONTRACTS_DIST_DIR=${CONTRACTS_DIST_DIR:-$PWD/build/contracts}
 JAVASCORE_DIST_DIR=${JAVASCORE_DIST_DIR:-$CONTRACTS_DIST_DIR/javascore}
 SOURCE_CODE_DIR=$JAVASCORE_DIST_DIR/sources
 
-rm -rf $JAVASCORE_DIST_DIR && mkdir -p $SOURCE_CODE_DIR
+rm -rf $JAVASCORE_DIST_DIR && mkdir -p "$SOURCE_CODE_DIR"
 cp -r javascore/fee_aggregation $SOURCE_CODE_DIR/
 cp -r javascore/*.tar $SOURCE_CODE_DIR/
 
