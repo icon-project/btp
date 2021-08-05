@@ -16,9 +16,7 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMCScoreClient;
-import foundation.icon.btp.lib.BMCStatus;
-import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.lib.*;
 import foundation.icon.btp.mock.MockBSH;
 import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.btp.mock.MockRelayMessage;
@@ -53,6 +51,7 @@ public class MessageTest implements BMCIntegrationTest {
         LinkManagementTest.addLink(link);
         BMRManagementTest.addRelay(link, relay);
 
+        BSHManagementTest.clearService(svc);
         BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
         System.out.println("beforeAll end");
     }
@@ -329,7 +328,7 @@ public class MessageTest implements BMCIntegrationTest {
 
         BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
         ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
-                BMCIntegrationTest.messageEventLogChecker((el) -> {
+                BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
                     assertEquals(link, el.getNext());
                     assertEquals(seq, el.getSeq());
                     BTPMessage btpMessage = el.getMsg();
@@ -341,5 +340,15 @@ public class MessageTest implements BMCIntegrationTest {
                 }),
                 ((BMCScoreClient) bmc)._address(),
                 net, svc, sn, payload);
+    }
+
+    @Test
+    void sendMessageShouldRevertUnreachable() {
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+
+        AssertBMCException.assertUnreachable(() -> MockBSHIntegrationTest.mockBSH.intercallSendMessage(
+                ((BMCScoreClient) bmc)._address(),
+                Faker.btpNetwork(), svc, sn, payload));
     }
 }

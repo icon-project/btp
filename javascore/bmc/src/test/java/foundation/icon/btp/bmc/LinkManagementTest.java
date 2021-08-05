@@ -23,14 +23,12 @@ import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.test.AssertRevertedException;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -92,8 +90,9 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     static void addLink(String link) {
+        List<String> links = Arrays.asList(bmc.getLinks());
         Consumer<TransactionResult> transactionResultChecker = (txr) -> {
-            initMessageChecker(null)
+            initMessageChecker(links)
                     .accept(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)));
         };
         ((BMCScoreClient) bmc).addLink(transactionResultChecker, link);
@@ -370,11 +369,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
     @Test
     void removeRouteShouldRevertNotExists() {
         AssertBMCException.assertUnknown(() -> removeRoute(dst));
-    }
-
-    @Test
-    void addRelayShouldSuccess() {
-        BMRManagementTest.addRelay(link, address);
     }
 
 }

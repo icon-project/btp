@@ -347,9 +347,10 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         long msgCount = serializedMsgs.length;
 
         // rotate and check valid relay
+        long currentHeight = Context.getBlockHeight();
         BMVStatus status = verifier.getStatus();
         Relays relays = link.getRelays();
-        Relay relay = link.rotate(Context.getBlockHeight(), status.getLast_height(), msgCount > 0);
+        Relay relay = link.rotate(currentHeight, status.getLast_height(), msgCount > 0);
         if (relay == null) {
             //rotateRelay is disabled.
             relay = relays.get(Context.getOrigin());
@@ -392,30 +393,36 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
         //sack
         link = getLink(prev);
-        if (link.getSackTerm() > 0 && link.getSackNext() <= Context.getBlockHeight()) {
+        long sackTerm = link.getSackTerm();
+        long sackNext = link.getSackNext();
+        if (sackTerm > 0 && sackNext <= currentHeight) {
             sendSack(prev, status.getHeight(), link.getRxSeq());
-            link.setSackNext(link.getSackNext() + link.getSackTerm());
+            while(sackNext <= currentHeight) {
+                sackNext += sackTerm;
+            }
+            link.setSackNext(sackNext);
             putLink(link);
         }
 
-        //gatherFee
+        //feeGathering
         BMCProperties properties = getProperties();
         Address feeAggregator = properties.getFeeAggregator();
-        long gatherFeeTerm = properties.getFeeGatheringTerm();
-        long gatherFeeNext = properties.getFeeGatheringNext();
+        long feeGatheringTerm = properties.getFeeGatheringTerm();
+        long feeGatheringNext = properties.getFeeGatheringNext();
         if (services.size() > 0 && feeAggregator != null &&
-                gatherFeeTerm > 0 &&
-                gatherFeeNext <= Context.getBlockHeight()) {
+                feeGatheringTerm > 0 &&
+                feeGatheringNext <= currentHeight) {
             String[] svcs = ArrayUtil.toStringArray(services.keySet());
             sendFeeGathering(feeAggregator, svcs);
-            gatherFeeNext = gatherFeeNext + gatherFeeTerm;
-            properties.setFeeGatheringNext(gatherFeeNext);
+            while(feeGatheringNext <= currentHeight) {
+                feeGatheringNext += feeGatheringTerm;
+            }
+            properties.setFeeGatheringNext(feeGatheringNext);
             setProperties(properties);
         }
 
         distributeRelayerReward();
     }
-
 
     private void handleMessage(BTPAddress prev, BTPMessage msg) {
         if (msg.getSvc().equals(INTERNAL_SERVICE)) {
@@ -744,7 +751,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 }
                 msg.append(_msg);
                 logger.println("handleFragment", "handleRelayMessage","fragments:",last+1, "len:"+msg.length());
-                handleRelayMessage(_prev, msg.toString());;
+                handleRelayMessage(_prev, msg.toString());
             } else {
                 fragments.set(INDEX_NEXT, Integer.toString(_idx - 1));
                 int INDEX_MSG = last - _idx + INDEX_OFFSET;

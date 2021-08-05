@@ -77,35 +77,40 @@ public class BMRManagementTest implements BMCIntegrationTest {
     }
 
     @Test
+    void addRelayShouldSuccess() {
+        addRelay(link, address);
+    }
+
+    @Test
     void addRelayShouldRevertAlreadyExists() {
-        BMRManagementTest.addRelay(link, address);
+        addRelay(link, address);
 
         AssertBMCException.assertAlreadyExistsBMR(() ->
-                BMRManagementTest.addRelay(link, address));
+                addRelay(link, address));
     }
 
     @Test
     void addRelayShouldRevertNotExistsLink() {
         AssertBMCException.assertNotExistsLink(() ->
-                BMRManagementTest.addRelay(BTPIntegrationTest.Faker.btpLink().toString(), address));
+                addRelay(BTPIntegrationTest.Faker.btpLink().toString(), address));
     }
 
     @Test
     void removeRelayShouldSuccess() {
-        BMRManagementTest.addRelay(link, address);
+        addRelay(link, address);
 
-        BMRManagementTest.removeRelay(link, address);
+        removeRelay(link, address);
     }
 
     @Test
     void removeRelayShouldRevertNotExists() {
         AssertBMCException.assertNotExistsBMR(() ->
-                BMRManagementTest.removeRelay(link, address));
+                removeRelay(link, address));
     }
 
     @Test
     void removeRelayShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(() -> BMRManagementTest.removeRelay(
+        AssertBMCException.assertNotExistsLink(() -> removeRelay(
                 BTPIntegrationTest.Faker.btpLink().toString(), address));
     }
 

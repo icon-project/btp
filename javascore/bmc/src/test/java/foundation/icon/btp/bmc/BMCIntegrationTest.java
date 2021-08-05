@@ -24,6 +24,7 @@ import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
+import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
 
@@ -51,16 +52,10 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     ICONSpecific iconSpecificWithTester = new ICONSpecificScoreClient(bmcClientWithTester);
     OwnerManager ownerManagerWithTester = new OwnerManagerScoreClient(bmcClientWithTester);
 
-    static Consumer<TransactionResult> messageEventLogChecker(
-            Consumer<MessageEventLog> consumer) {
-        return (txr) -> {
-            List<MessageEventLog> eventLogs =
-                    MessageEventLog.eventLogs(txr, bmcClient._address(), null);
-            assertEquals(1, eventLogs.size());
-            if (consumer != null) {
-                consumer.accept(eventLogs.get(0));
-            }
-        };
+    static <T> Consumer<TransactionResult> eventLogChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return ScoreIntegrationTest.eventLogChecker(
+                bmcClient._address(), supplier, consumer);
     }
 
     static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<MessageEventLog> filter) {
