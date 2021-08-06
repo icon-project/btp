@@ -17,6 +17,7 @@
 package icon
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -52,6 +53,22 @@ type Client struct {
 	conns map[string]*websocket.Conn
 	l     log.Logger
 	mtx   sync.Mutex
+}
+
+func countBytesOfCompactJSON(jsonData interface{}) int {
+	data, err := json.Marshal(jsonData)
+	if err != nil {
+		return txMaxDataSize
+	}
+
+	if len(data) == 0 {
+		return txMaxDataSize
+	}
+	b := bytes.NewBuffer(nil)
+	if err := json.Compact(b, data); err != nil {
+		return txMaxDataSize
+	}
+	return b.Len()
 }
 
 var txSerializeExcludes = map[string]bool{"signature": true}

@@ -167,7 +167,7 @@ type BMCRelayMethodParams struct {
 type BMCFragmentMethodParams struct {
 	Prev     string `json:"_prev"`
 	Messages string `json:"_msg"`
-	Index    int64  `json:"_idx"`
+	Index    int    `json:"_idx"`
 }
 
 type BMCLinkMethodParams struct {

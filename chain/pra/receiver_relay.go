@@ -162,7 +162,7 @@ func (r *relayReceiver) pullBlockHeaders(fp substrate.FinalityProof) ([]substrat
 	from := fp.UnknownHeaders[len(fp.UnknownHeaders)-1].Number
 	to := fp.Justification.EncodedJustification.Commit.TargetNumber
 
-	r.log.Debugf("pullBlockHeaders: missing from: %d to: %d", from, to)
+	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
 	for i := from; i <= substrate.NewBlockNumber(uint64(to)); i++ {
 		missingBlockNumbers = append(missingBlockNumbers, i)
@@ -176,7 +176,7 @@ func (r *relayReceiver) pullBlockHeaders(fp substrate.FinalityProof) ([]substrat
 	bus = append(bus, fp.UnknownHeaders...)
 	bus = append(bus, missingBlockHeaders...)
 
-	r.log.Debugf("pullBlockHeaders: blockUpdates %d~%d", bus[0].Number, bus[len(bus)-1].Number)
+	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", bus[0].Number, bus[len(bus)-1].Number)
 	return bus, nil
 }
 
@@ -292,10 +292,10 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	rps := make([][]byte, 0)
 
 	// create stateproof for para chain get included
-	paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
-	if err != nil {
-		return nil, err
-	}
+	// paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	if mtaHeight < uint64(paraIncludedHeader.Number) && !r.didPullBlockUpdatesLastJustifications(paraIncludedHeader.Number) {
 		// get the latest block contains justification
@@ -329,14 +329,14 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				}
 			}
 
-			if i != 0 {
-				r.pC.store.AddHash(blockHeader.ParentHash[:])
-			}
+			// if i != 0 {
+			// 	r.pC.store.AddHash(blockHeader.ParentHash[:])
+			// }
 
 			bus = append(bus, bu)
 		}
 
-		r.pC.store.AddHash(fp.Justification.EncodedJustification.Commit.TargetHash[:])
+		// r.pC.store.AddHash(fp.Justification.EncodedJustification.Commit.TargetHash[:])
 
 		// check if last block contains Grandpa_NewAuthorities event
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(fp.Justification.EncodedJustification.Commit.TargetHash)
@@ -352,12 +352,16 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 
+				// if uint64(paraIncludedHeader.Number) < uint64(lastBlockNumber) {
+				// 	rps = append(rps, paraIncludedStateProof)
+				// }
+
 				rps = append(rps, newAuthoritiesStateProof)
 			}
 		}
 
 		r.lastJustificationCollected = (*substrate.SubstrateBlockNumber)(&lastBlockNumber)
-	} else {
+		// } else {
 		// mtaSynced := false
 		// for !mtaSynced {
 		// newMtaHeight := r.pC.getRelayMtaHeight()
@@ -373,18 +377,18 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		// time.Sleep(time.Second * 3)
 		// }
 
-		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
+		// encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
 
-		if err != nil {
-			return nil, err
-		}
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
-		if err != nil {
-			return nil, err
-		}
+		// bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		rps = append(rps, paraIncludedStateProof)
+		// rps = append(rps, paraIncludedStateProof)
 	}
 
 	msg := &RelayMessage{

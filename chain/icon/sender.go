@@ -20,11 +20,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/gammazero/workerpool"
 	"github.com/gorilla/websocket"
 
 	"github.com/icon-project/btp/chain"
@@ -86,6 +88,32 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 
 	s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
 	s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
+	return p, nil
+}
+
+// TODO refactor with newTransactionParam
+func (s *sender) newFragmentationsTransactionParam(prev string, msg string, idx int) (*TransactionParam, error) {
+	sl := NewHexInt(s.opt.StepLimit)
+	if s.opt.StepLimit == 0 {
+		sl = NewHexInt(DefaultStepLimit)
+	}
+
+	p := &TransactionParam{
+		Version:     NewHexInt(JsonrpcApiVersion),
+		FromAddress: Address(s.w.Address()),
+		ToAddress:   Address(s.dst.ContractAddress()),
+		NetworkID:   HexInt(s.dst.NetworkID()),
+		StepLimit:   sl,
+		DataType:    "call",
+		Data: CallData{
+			Method: BMCFragmentMethod,
+			Params: BMCFragmentMethodParams{
+				Prev:     prev,
+				Messages: msg,
+				Index:    idx,
+			},
+		},
+	}
 	return p, nil
 }
 
@@ -270,9 +298,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			continue
 		}
 		buSize := len(bu.Proof)
-		if s.isOverSizeLimit(buSize) {
-			return nil, ErrInvalidBlockUpdateProofSize
-		}
+		// if s.isOverSizeLimit(buSize) {
+		// 	return nil, ErrInvalidBlockUpdateProofSize
+		// }
 		size += buSize
 		osl := s.isOverSizeLimit(size)
 		// for relay to work
@@ -434,11 +462,7 @@ func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 	return nil
 }
 
-func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
-	p, ok := segment.TransactionParam.(*TransactionParam)
-	if !ok {
-		return nil, fmt.Errorf("casting failure")
-	}
+func (s *sender) signAndSendTransaction(p *TransactionParam) (chain.GetResultParam, error) {
 	thp := &TransactionHashParam{}
 SignLoop:
 	for {
@@ -474,6 +498,80 @@ SignLoop:
 			}
 			return thp, nil
 		}
+	}
+}
+
+func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultParam, error) {
+	wp := workerpool.New(len(tps))
+	resultChan := make(chan chain.GetResultParam)
+
+	for i, tp := range tps {
+		wp.Submit(func() {
+			grp, _ := s.signAndSendTransaction(tp)
+			if i == len(tps)-1 {
+				resultChan <- grp
+			}
+		})
+	}
+
+	wp.StopWait()
+	close(resultChan)
+
+	return <-resultChan, nil
+}
+
+func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
+	p, ok := segment.TransactionParam.(*TransactionParam)
+	if !ok {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	dataSize := countBytesOfCompactJSON(p.Data)
+
+	if dataSize > txMaxDataSize {
+		callData, ok1 := p.Data.(CallData)
+		if !ok1 {
+			return nil, fmt.Errorf("casting failure")
+		}
+
+		bmcRelayMessageParams, ok2 := callData.Params.(BMCRelayMethodParams)
+		if !ok2 {
+			return nil, fmt.Errorf("casting failure")
+		}
+
+		prev := bmcRelayMessageParams.Prev
+		msg := bmcRelayMessageParams.Messages
+		tps := make([]*TransactionParam, 0)
+		nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
+		fragmentStringSize := len(msg) / nuFragments
+
+		for i := 0; i < len(msg); i += fragmentStringSize {
+			end := i + fragmentStringSize
+
+			if end > len(msg) {
+				end = len(msg)
+			}
+
+			var index int
+			if i == 0 {
+				index = -1
+			} else if end >= len(msg) {
+				index = 0
+			} else {
+				index = i / fragmentStringSize
+			}
+
+			tp, err := s.newFragmentationsTransactionParam(prev, msg[i:end], index)
+			if err != nil {
+				return nil, err
+			}
+
+			tps = append(tps, tp)
+		}
+
+		return s.sendFragmentations(tps)
+	} else {
+		return s.signAndSendTransaction(p)
 	}
 }
 
