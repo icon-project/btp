@@ -21,7 +21,7 @@ pragma solidity >=0.5.0 <=0.8.0;
 import "./Context.sol";
 import "./IBEP20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../../../icondao/Libraries/Owner.sol";
+import "../Libraries/Owner.sol";
 
 contract BEP20Token is Context, IBEP20, Owner {
     using SafeMath for uint256;

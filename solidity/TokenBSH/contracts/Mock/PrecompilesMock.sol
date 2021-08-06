@@ -18,7 +18,7 @@
 
 pragma solidity >=0.5.0 <=0.8.0;
 
-import "../../../icondao/Libraries/Precompiles.sol";
+import "../Libraries/Precompiles.sol";
 
 contract PrecompilesMock {
     using Precompiles for Precompiles.RecoverPubKey;

@@ -23,11 +23,11 @@ import "../Interfaces/IBSHProxy.sol";
 import "../Interfaces/IBSHImpl.sol";
 import "../Interfaces/IBMCPeriphery.sol";
 
-import "../../../icondao/Libraries/TypesLib.sol";
-import "../../../icondao/Libraries/RLPEncodeStructLib.sol";
-import "../../../icondao/Libraries/RLPDecodeStructLib.sol";
-import "../../../icondao/Libraries/StringsLib.sol";
-import "../../../icondao/Libraries/ParseAddressLib.sol";
+import "../Libraries/TypesLib.sol";
+import "../Libraries/RLPEncodeStructLib.sol";
+import "../Libraries/RLPDecodeStructLib.sol";
+import "../Libraries/StringsLib.sol";
+import "../Libraries/ParseAddressLib.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
@@ -70,12 +70,12 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
 
     event debug(address addr, string name, uint256 val);
 
-    modifier onlyBMC {
+    modifier onlyBMC() {
         require(msg.sender == address(bmc), "Unauthorized");
         _;
     }
 
-    modifier onlyBSHProxy {
+    modifier onlyBSHProxy() {
         require(msg.sender == address(bshProxy), "Unauthorized");
         _;
     }
@@ -89,7 +89,7 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
         string memory _serviceName
     ) public initializer {
         bmc = IBMCPeriphery(_bmc);
-        bmc.requestAddService(_serviceName, address(this));
+        //bmc.requestAddService(_serviceName, address(this));
         bshProxy = IBSHProxy(_bshProxy);
         serviceName = _serviceName;
         serialNo = 0;
@@ -208,9 +208,10 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
             _sn,
             Types
                 .ServiceMessage(
-                _serviceType,
-                Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+                    _serviceType,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
         );
         emit HandleBTPMessageEvent(_sn, _code, _msg);
     }
@@ -259,10 +260,11 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
             _assets
         );
         bytes memory serviceMessage = Types
-        .ServiceMessage(
-            Types.ServiceType.REQUEST_TOKEN_TRANSFER,
-            _ta.encodeTransferAsset()
-        ).encodeServiceMessage();
+            .ServiceMessage(
+                Types.ServiceType.REQUEST_TOKEN_TRANSFER,
+                _ta.encodeTransferAsset()
+            )
+            .encodeServiceMessage();
 
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 
