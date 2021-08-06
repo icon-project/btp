@@ -470,7 +470,7 @@ SignLoop:
 		}
 	SendLoop:
 		for {
-			s.l.Tracef("signAndSendTransaction: TransactionParam %+v\n", p)
+			// s.l.Tracef("signAndSendTransaction: TransactionParam %+v\n", p)
 			txh, err := s.c.SendTransaction(p)
 			if txh != nil {
 				thp.Hash = *txh
