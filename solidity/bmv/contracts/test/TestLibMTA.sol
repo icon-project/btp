@@ -2,13 +2,13 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "../libraries/LibMTA.sol";
+import "../libraries/MerkleTreeAccumulator.sol";
 
 contract TestLibMTA {
-    using LibMerkleTreeAccumulator for LibMerkleTreeAccumulator.MTA;
-    using LibMerkleTreeAccumulator for bytes;
+    using MerkleTreeAccumulator for MerkleTreeAccumulator.MTA;
+    using MerkleTreeAccumulator for bytes;
 
-    LibMerkleTreeAccumulator.MTA public mta;
+    MerkleTreeAccumulator.MTA public mta;
 
     constructor() {}
 
@@ -19,7 +19,7 @@ contract TestLibMTA {
     function getMTA()
         public
         view
-        returns (LibMerkleTreeAccumulator.MTA memory)
+        returns (MerkleTreeAccumulator.MTA memory)
     {
         return mta;
     }

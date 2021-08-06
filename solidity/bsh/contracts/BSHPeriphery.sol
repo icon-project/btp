@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "./Interfaces/IBSHPeriphery.sol";
-import "./Interfaces/IBSHCore.sol";
-import "./Interfaces/IBMCPeriphery.sol";
-import "./Libraries/TypesLib.sol";
-import "./Libraries/RLPEncodeStructLib.sol";
-import "./Libraries/RLPDecodeStructLib.sol";
-import "./Libraries/ParseAddressLib.sol";
-import "./Libraries/StringsLib.sol";
+import "./interfaces/IBSHPeriphery.sol";
+import "./interfaces/IBSHCore.sol";
+import "./interfaces/IBMCPeriphery.sol";
+import "./libraries/Types.sol";
+import "./libraries/RLPEncodeStruct.sol";
+import "./libraries/RLPDecodeStruct.sol";
+import "./libraries/ParseAddress.sol";
+import "./libraries/String.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -28,8 +28,8 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     using SafeMathUpgradeable for uint256;
     using ParseAddress for address;
     using ParseAddress for string;
-    using Strings for string;
-    using Strings for uint256;
+    using String for string;
+    using String for uint256;
 
     /**   @notice Sends a receipt to user
         The `_from` sender
@@ -239,7 +239,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
      @param _msg     A response message
     */
     function handleBTPError(
-        string calldata _src,
+        string calldata /* _src */,
         string calldata _svc,
         uint256 _sn,
         uint256 _code,

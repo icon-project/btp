@@ -4,12 +4,12 @@ import * as fs from 'fs';
 import * as RLP from 'rlp';
 import * as URLSafeBase64 from 'urlsafe-base64';
 
-function convertLEtoBE (input) {
+function convertLEtoBE(input) {
     let result = "";
     for (let i = Math.floor(input.length / 2) - 1; i >= 0; i--) {
-        result += input[i*2];
-        if (input[i*2 + 1]) {
-            result += input[i*2 + 1];
+        result += input[i * 2];
+        if (input[i * 2 + 1]) {
+            result += input[i * 2 + 1];
         } else {
             result += "0";
         }
@@ -18,7 +18,7 @@ function convertLEtoBE (input) {
     return "0x" + result.replace(/^0+/, '');
 }
 
-async function main () {
+async function main() {
     // const wssEndpoint = "wss://rpc.polkadot.io"; // polkadot relay chain
     // const wssEndpoint = "wss://kusama-rpc.polkadot.io"; // kusama relay chain
     // const wssEndpoint = "wss://wss-relay.testnet.moonbeam.network"; // moonbase alpha relay chain
@@ -27,20 +27,20 @@ async function main () {
     // const wssEndpoint = "wss://wss.testnet.moonbeam.network"; // moonbase alpha parachain
     // const wssEndpoint = "wss://icon-btp.ecl.vn:34008/"; // lecle moonbase parachain
 
-    const relayWssEndpoint = "RELAY_ENDPOINT"; // wss endpoint of relay chain
-    const paraWssEndpoint = "PARA_ENDPOINT"; // wss endpoint of para chain
+    const relayWssEndpoint = process.env.RELAY_ENDPOINT // wss endpoint of relay chain
+    const relayChainOffset = process.env.RELAY_OFFSET // offset of relay chain
 
-    const relayChainOffset = "RELAY_OFFSET"; // offset of relay chain
-    const paraChainOffset = "PARA_OFFSET"; // offset of para chain
+    const paraWssEndpoint = process.env.PARA_ENDPOINT // wss endpoint of para chain
+    const paraChainOffset = process.env.PARA_OFFSET // offset of para chain
 
     const relayWsProvider = new WsProvider(relayWssEndpoint);
     const paraWsProvider = new WsProvider(paraWssEndpoint);
-    const relayApi = await ApiPromise.create({ 
+    const relayApi = await ApiPromise.create({
         provider: relayWsProvider,
         types: {
             GrandpaAuthorities: {
-              version: "u8",
-              authorityList: "AuthorityList",
+                version: "u8",
+                authorityList: "AuthorityList",
             }
         }
     });

@@ -4,19 +4,19 @@ pragma experimental ABIEncoderV2;
 
 import "./interfaces/IDataValidator.sol";
 
-import "./libraries/LibTypes.sol";
-import "./libraries/LibString.sol";
-import "./libraries/LibMsgDecoder.sol";
-import "./libraries/LibVerifier.sol";
+import "./libraries/Types.sol";
+import "./libraries/String.sol";
+import "./libraries/MessageDecoder.sol";
+import "./libraries/Verifier.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract DataValidator is IDataValidator, Initializable {
-    using LibString for string;
-    using LibMsgDecoder for bytes;
-    using LibMsgDecoder for string;
-    using LibMsgDecoder for LibTypes.EventLog;
-    using LibVerifier for LibTypes.ReceiptProof;
+    using String for string;
+    using MessageDecoder for bytes;
+    using MessageDecoder for string;
+    using MessageDecoder for Types.EventLog;
+    using Verifier for Types.ReceiptProof;
 
     bytes[] internal msgs;
 
@@ -30,10 +30,10 @@ contract DataValidator is IDataValidator, Initializable {
         bytes32 _receiptHash
     ) external virtual override returns (bytes[] memory) {
         uint256 nextSeq = _seq + 1;
-        LibTypes.Receipt memory receipt;
-        LibTypes.MessageEvent memory messageEvent;
+        Types.Receipt memory receipt;
+        Types.MessageEvent memory messageEvent;
 
-        LibTypes.ReceiptProof[] memory receiptProofs =
+        Types.ReceiptProof[] memory receiptProofs =
             _serializedMsg.decodeReceiptProofs();
 
         (, string memory contractAddr) = _prev.splitBTPAddress();

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 
-import "./StringsLib.sol";
+import "./String.sol";
 
 library Utils {
-    using Strings for string;
+    using String for string;
 
     /**
     @notice this function return a ceiling value of division

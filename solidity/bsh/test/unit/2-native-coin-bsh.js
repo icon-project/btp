@@ -1,5 +1,6 @@
 const BSHPerif = artifacts.require("BSHPeriphery");
 const MockBSHCore = artifacts.require("MockBSHCore");
+const CheckParseAddress = artifacts.require("CheckParseAddress");
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
@@ -420,3 +421,106 @@ contract('BSHPeriphery Unit Tests', (accounts) => {
         );
     });
 });
+
+contract('ParseAddress Library Unit Test', (accounts) => {
+    let cpa;
+
+    before(async () => {
+        cpa = await CheckParseAddress.new();
+    });
+
+    describe('Convert String to Adress', () => {
+        it('Should revert when string address has invalid length', async() => {
+            const strAddr = accounts[0] + '1';
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(strAddr),
+                "Invalid address format"
+            );
+        });
+
+        it('Should revert when string address has invalid prefix', async() => {
+            const strAddr = accounts[0];
+            const new1 = '1' + strAddr.slice(1, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new1),
+                "Invalid address format"
+            );
+
+            const new2 = 'o' + strAddr.slice(1, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new2),
+                "Invalid address format"
+            );
+
+            const new3 = 'h' + strAddr.slice(1, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new3),
+                "Invalid address format"
+            );
+
+            const new4 = 'c' + strAddr.slice(1, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new4),
+                "Invalid address format"
+            );
+
+            const new5 = '0a' + strAddr.slice(2, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new5),
+                "Invalid address format"
+            );
+        });
+
+        it('Should revert when string address has no prefix', async() => {
+            const strAddr = accounts[0];
+            const new1 = strAddr.slice(2, strAddr.length - 1);
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(new1),
+                "Invalid address format"
+            );
+        });
+
+        //  This unit test verifies the case that a string address
+        //  has length of 42 and has a prefix '0x'
+        //  but the address is generated randomly without checksum
+        it('Should revert when string address is an arbitrary string that looks like a valid address', async() => {
+            const strAddr = '0xa0ff1ad998affec330ffca12389edab4312a2b81'
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(strAddr),
+                "Invalid checksum"
+            );
+        });
+
+        it('Should revert when string address is an arbitrary string', async() => {
+            const strAddr = '0xddawjoh2j3h1kjhffklashhsdklj1h2i3h121h23';
+            await truffleAssert.reverts(
+                cpa.convertStringToAddress(strAddr),
+                "Invalid address"
+            );
+        });
+
+        it('Should return an address when string address is valid', async() => {
+            let strAddr = '0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac';
+            let res = await cpa.convertStringToAddress(strAddr);
+            assert(
+                web3.utils.isAddress(res)
+            );
+
+            strAddr = web3.utils.toChecksumAddress('0xc1912fee45d61c87cc5ea59dae31190fffff232d');
+            res = await cpa.convertStringToAddress(strAddr);
+            assert(
+                web3.utils.isAddress(res)
+            );
+        })
+    });
+
+    describe('Convert Address to String', () => {
+        it('Should convert address to string with a valid checksum', async () => {
+            const account = web3.eth.accounts.create();
+            const res = await cpa.convertAddressToString(account.address.toLowerCase());
+
+            assert.equal(res, account.address);
+            assert.isTrue(web3.utils.checkAddressChecksum(res));
+        });
+    });
+})

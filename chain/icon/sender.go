@@ -48,7 +48,7 @@ const (
 var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
 
 type SenderOptions struct {
-	StepLimit int64 `json:"stepLimit"`
+	StepLimit int64 `json:"step_limit"`
 }
 
 type sender struct {

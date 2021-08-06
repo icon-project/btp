@@ -5,10 +5,10 @@ pragma experimental ABIEncoderV2;
 import "../interfaces/IBMCManagement.sol";
 import "../interfaces/IBMCPeriphery.sol";
 import "../interfaces/IBMV.sol";
-import "../libraries/ParseAddressLib.sol";
-import "../libraries/RLPEncodeStructLib.sol";
-import "../libraries/StringsLib.sol";
-import "../libraries/TypesLib.sol";
+import "../libraries/ParseAddress.sol";
+import "../libraries/RLPEncodeStruct.sol";
+import "../libraries/String.sol";
+import "../libraries/Types.sol";
 import "../libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -17,7 +17,7 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     using ParseAddress for address;
     using ParseAddress for string;
     using RLPEncodeStruct for Types.BMCService;
-    using Strings for string;
+    using String for string;
     using Utils for uint256;
     using Utils for string[];
 

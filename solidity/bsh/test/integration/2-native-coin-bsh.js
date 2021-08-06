@@ -36,7 +36,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         await bmc.addLink(_bmcICON);
     });
 
-    it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
+    it(`Scenario 1: Contract's owner to register a new coin`, async () => {
         let _name = "ICON";
         await bsh_core.register(_name);
         output = await bsh_core.coinNames();
@@ -45,7 +45,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
     
-    it('Scenario 2: Should revert when an arbitrary client tries to register a new coin', async () => {   
+    it('Scenario 2: Non-ownership role client registers a new coin', async () => {   
         let _name = "TRON";
         await truffleAssert.reverts(
             bsh_core.register.call(_name, {from: accounts[1]}),
@@ -53,7 +53,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 3: Should revert when contract owner registers an existed coin', async () => {
+    it('Scenario 3: Contract’s owner registers an existed coin', async () => {
         let _name = "ICON";
         await truffleAssert.reverts(
             bsh_core.register.call(_name),
@@ -61,20 +61,20 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 4: Should allow contract owner to update BSHPeriphery contract', async () => {
+    it('Scenario 4: Contract’s owner to update BSHPeriphery contract', async () => {
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
     });
 
-    it('Scenario 5: Should revert when arbitrary client updates BSHPeriphery contract', async () => {
+    it('Scenario 5: Non-ownership role client updates BSHPeriphery contract', async () => {
         await truffleAssert.reverts(
             bsh_core.updateBSHPeriphery.call(accounts[2], {from: accounts[1]}),
             "Unauthorized"
         );
     });
 
-    it('Scenario 6: Should revert when contract owner updates BSHPeriphery while this contract has pending requests', async () => {
+    it('Scenario 6: Contract’s owner updates BSHPeriphery while this contract has pending requests', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
-        await bsh_core.transfer(_to, {from: accounts[0], value: 100000000});
+        await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: 100000000});
         await truffleAssert.reverts(
             bsh_core.updateBSHPeriphery.call(accounts[2]),
             "HasPendingRequest"
@@ -84,12 +84,12 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         await bmc.receiveResponse(_net, service, 1, _msg);
     });
 
-    it('Scenario 7: Should allow contract owner to update a new URI', async () => {
+    it('Scenario 7: Contract’s owner updates a new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri);
     });
 
-    it('Scenario 8: Should revert when arbitrary client update a new URI', async () => {
+    it('Scenario 8: Non-ownership role client updates a new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_core.updateUri.call(new_uri, {from: accounts[1]}),
@@ -97,12 +97,12 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 9: Should allow contract owner to update fee ratio', async () => {
+    it('Scenario 9: Contract’s owner updates a new fee ratio', async () => {
         let new_fee = 20;
         await bsh_core.setFeeRatio(new_fee);
     });
 
-    it('Scenario 10: Should revert when arbitrary client updates fee ratio', async () => {
+    it('Scenario 10: None-ownership role client updates a new fee ratio', async () => {
         let new_fee = 20;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee, {from: accounts[1]}),
@@ -110,7 +110,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 11: Should revert when Fee Numerator is higher than Fee Denominator', async () => {
+    it('Scenario 11: Fee_numerator is set higher than fee_denominator', async () => {
         let new_fee = 20000;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee),
@@ -118,7 +118,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 12: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
+    it('Scenario 12: Query a valid supporting coin', async () => {
         let _name1 = "wBTC";    let _name2 = "Ethereum";
         await bsh_core.register(_name1);
         await bsh_core.register(_name2);
@@ -131,7 +131,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 13: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 13: Query an invalid supporting coin', async () => {
         let _query = "EOS";
         let result = await bsh_core.coinId(_query);
         assert(
@@ -139,7 +139,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 14: Should revert when a non-Owner tries to add a new Owner', async () => {
+    it('Scenario 14: Non-Owner tries to add a new Owner', async () => {
         let oldList = await bsh_core.getOwners();
         try {
             await bsh_core.addOwner(accounts[1], {from: accounts[2]});
@@ -153,7 +153,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 15: Should allow a current Owner to add a new Owner', async () => {
+    it('Scenario 15: Current Owner adds a new Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await bsh_core.addOwner(accounts[1]);
         let newList = await bsh_core.getOwners();
@@ -163,7 +163,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
     
-    it('Scenario 16: Should allow old owner to register a new coin - After adding new Owner', async () => {
+    it('Scenario 16: After adding a new Owner, old owner registers a new coin', async () => {
         let _name3 = "TRON";
         await bsh_core.register(_name3);
         output = await bsh_core.coinNames();
@@ -174,7 +174,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 17: Should allow new owner to register a new coin', async () => {   
+    it('Scenario 17: New Owner registers a new coin', async () => {   
         let _name3 = "BINANCE";
         await bsh_core.register(_name3, {from: accounts[1]});
         output = await bsh_core.coinNames();
@@ -185,37 +185,37 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     }); 
 
-    it('Scenario 18: Should allow new owner to update BSHPeriphery contract', async () => {
+    it('Scenario 18: New owner updates BSHPeriphery contract', async () => {
         let newBSHPerif = await BSHPeriphery.new();
         await bsh_core.updateBSHPeriphery(newBSHPerif.address, {from: accounts[1]});
     });
 
-    it('Scenario 19: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
+    it('Scenario 19: Old owner updates BSHPeriphery contract', async () => {
         let newBSHPerif = await BSHPeriphery.new();
         await bsh_core.updateBSHPeriphery(newBSHPerif.address, {from: accounts[0]});
     });
 
-    it('Scenario 20: Should allow new owner to update the new URI', async () => {
+    it('Scenario 20: New owner updates the new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[1]});
     });
 
-    it('Scenario 21: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+    it('Scenario 21: Old owner updates the new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[0]});
     });
 
-    it('Scenario 22: Should allow new owner to update new fee ratio', async () => {
+    it('Scenario 22: New owner updates a new fee ratio', async () => {
         let new_fee = 30;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[1]});
     });
 
-    it('Scenario 23: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
+    it('Scenario 23: Old owner to a new fee ratio', async () => {
         let new_fee = 30;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[0]});
     });
 
-    it('Scenario 24: Should revert when non-Owner tries to remove an Owner', async () => {
+    it('Scenario 24: Non-Owner tries to remove an Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner.call(accounts[0], {from: accounts[2]}),
@@ -228,7 +228,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 25: Should allow one current Owner to remove another Owner', async () => {
+    it('Scenario 25: Current Owner removes another Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await bsh_core.removeOwner(accounts[0], {from: accounts[1]});
         let newList = await bsh_core.getOwners();
@@ -238,7 +238,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 26: Should revert when the last Owner removes him/herself', async () => {
+    it('Scenario 26: The last Owner removes him/herself', async () => {
         let oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner.call(accounts[1], {from: accounts[1]}),
@@ -251,7 +251,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 27: Should revert when removed Owner tries to register a new coin', async () => {
+    it('Scenario 27: Removed Owner tries to register a new coin', async () => {
         let _name3 = "KYBER";
         await truffleAssert.reverts(
             bsh_core.register.call(_name3),
@@ -265,14 +265,14 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 28: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
+    it('Scenario 28: Removed Owner tries to update BSHPeriphery contract', async () => {
         await truffleAssert.reverts(
             bsh_core.updateBSHPeriphery.call(accounts[3], {from: accounts[0]}),
             'Unauthorized'
         );
     });
 
-    it('Scenario 29: Should revert when removed Owner tries to update the new URI', async () => {
+    it('Scenario 29: Removed Owner tries to update the new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_core.updateUri.call(new_uri, {from: accounts[0]}),
@@ -280,7 +280,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         );
     });
 
-    it('Scenario 30: Should revert when removed Owner tries to update new fee ratio', async () => {
+    it('Scenario 30: Removed Owner tries to update new fee ratio', async () => {
         let new_fee = 30;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee, {from: accounts[0]}),
@@ -313,10 +313,10 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         await bmc.addLink(_bmcICON);
     });
 
-    it('Scenario 1: Should revert when transferring native coins to an invalid BTP Address format', async () => {
+    it('Scenario 1: Transferring native coins to an invalid BTP Address format', async () => {
         let invalid_destination = '1234.iconee/0x12345678';
         await truffleAssert.reverts(
-            bsh_core.transfer.call(invalid_destination, {from: accounts[0], value: 5000}),
+            bsh_core.transferNativeCoin.call(invalid_destination, {from: accounts[0], value: 5000}),
             "revert"
         ); 
         bsh_coin_balance = await bsh_core.getBalanceOf(bsh_core.address, _native);
@@ -327,31 +327,31 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 2: Should revert when transferring zero coin' , async () => {
+    it('Scenario 2: Transferring zero coin' , async () => {
         await truffleAssert.reverts(
-            bsh_core.transfer.call(_to, {from: accounts[0], value: 0}),
+            bsh_core.transferNativeCoin.call(_to, {from: accounts[0], value: 0}),
             "InvalidAmount"
         ); 
     });
 
-    it('Scenario 3: Should revert when charging fee is zero' , async () => {
+    it('Scenario 3: Charging fee is zero' , async () => {
         await truffleAssert.reverts(
-            bsh_core.transfer.call(_to, {from: accounts[0], value: 10}),
+            bsh_core.transferNativeCoin.call(_to, {from: accounts[0], value: 10}),
             "InvalidAmount"
         ); 
     });
 
-    it('Scenario 4: Should revert when transferring to an invalid network/not supported network' , async () => {
+    it('Scenario 4: Transferring to an invalid network/not supported network' , async () => {
         let invalid_destination = 'btp://1234.eos/0x12345678';
         await truffleAssert.reverts(
-            bsh_core.transfer.call(invalid_destination, {from: accounts[1], value: 5000}),
+            bsh_core.transferNativeCoin.call(invalid_destination, {from: accounts[1], value: 5000}),
             "BMCRevertNotExistsBMV"
         ); 
     });
 
-    it('Scenario 5: Should succeed when Account client transferring a valid native coin to a side chain', async () => {
+    it('Scenario 5: Account client transfers a valid native coin to a side chain', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
-        let tx = await bsh_core.transfer(_to, {from: accounts[0], value: _amt});
+        let tx = await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: _amt});
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let chargedFee = Math.floor(_amt/ 1000);
@@ -397,13 +397,20 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 6: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
+    it('Scenario 6: BSHPeriphery receives a successful response of a recent request', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 1, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 1, _msg);
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let fees = await bsh_core.getAccumulatedFees();
-        // TODO: catch emit event TransferEnd throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, accounts[0]);
+        assert.equal(event._sn, 1);
+        assert.equal(event._code, 0);
+        assert.equal(event._response, ''); 
  
         assert(
             fees[0].coinName === _native && 
@@ -413,23 +420,46 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 5: Should succeed when Account client transferring a valid native coin to a side chain', async () => {
+    it('Scenario 5: Account client transfers a valid native coin to a side chain', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
-        let output = await bsh_core.transfer(_to, {from: accounts[0], value: _amt});
+        let tx = await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: _amt});
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let chargedFee = Math.floor(_amt / 1000);
-        //  TODO: 
-        //  - catch emit event Message throwing from BMC contract
-        //  - catch emit event TransferStart throwing from BSHPeriphery contract
 
-        // truffleAssert.eventEmitted(output, 'TransferStart', (ev) => {
-        //     return ev._from === accounts[0] && ev._to === _to && ev._sn === 1 &&
-        //         ev._assetDetails.length === 1 &&
-        //         ev._assetDetails[0].coinName === 'PARA' && 
-        //         ev._assetDetails[0].value === _amt - chargedFee &&
-        //         ev._assetDetails[0].fee === chargedFee
-        // });
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, accounts[0]);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 2);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, 'PARA'); 
+        assert.equal(event._assetDetails[0].value, _amt - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 2);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), accounts[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _amt - chargedFee);
 
         assert(
             web3.utils.BN(bsh_coin_balance._usableBalance).toNumber() === 2 * _amt &&
@@ -438,14 +468,21 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 7: Should succeed to refund when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 7: BSHPeriphery receives an error response of a recent request', async () => {
         let account_balanceBefore = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 2, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 2, _msg);
         let account_balanceAfter = await bsh_core.getBalanceOf(accounts[0], _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+        
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, accounts[0]);
+        assert.equal(event._sn, 2);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, ''); 
 
         assert(
             web3.utils.BN(account_balanceBefore._lockedBalance).toNumber() === _amt && 
@@ -456,16 +493,48 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 8: Should succeed when Non-refundable contract transferring a valid native coin to a side chain', async () => {
+    it('Scenario 8: Non-refundable contract transfers a valid native coin to a side chain', async () => {
         await nonrefundable.deposit({from: accounts[2], value: deposit});
         let contract_balanceBefore = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        await nonrefundable.transfer(bsh_core.address, _to, _amt);
+        let tx = await nonrefundable.transfer(bsh_core.address, _to, _amt);
         let contract_balanceAfter = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        //  TODO: 
-        //  - emit event Message throwing from BMC contract
-        //  - emit event TransferStart throwing from BSHPeriphery contract
+        let chargedFee = Math.floor(_amt / 1000);
+        
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, nonrefundable.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 3);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, 'PARA'); 
+        assert.equal(event._assetDetails[0].value, _amt - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 3);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), nonrefundable.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _amt - chargedFee);
         
         assert(
             web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
@@ -477,14 +546,22 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it(`Scenario 9: Should issue refundable balance when BSHPeriphery receives an error response of a recent request and fails to refund coins back to Non-refundable contract`, async () => {
+    it(`Scenario 9: BSHPeriphery receives an error response of a recent request and fails to refund coins back to Non-refundable contract`, async () => {
         let contract_balanceBefore = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 3, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 3, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(nonrefundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        // TODO: catch emit event TransferEnd throwing from BSHService contract    
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, nonrefundable.address);
+        assert.equal(event._sn, 3);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');  
+
         assert(
             web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _amt && 
             web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
@@ -496,16 +573,48 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 10: Should succeed when Refundable contract transferring a valid native coin to a side chain', async () => {
+    it('Scenario 10: Refundable contract transfers a valid native coin to a side chain', async () => {
         await refundable.deposit({from: accounts[2], value: deposit});
         let contract_balanceBefore = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        await refundable.transfer(bsh_core.address, _to, _amt);
+        let tx = await refundable.transfer(bsh_core.address, _to, _amt);
         let contract_balanceAfter = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        //  TODO: 
-        //  - emit event Message throwing from BMC contract
-        //  - emit event TransferStart throwing from BSHService contract
+        let chargedFee = Math.floor(_amt / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, refundable.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 4);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, 'PARA'); 
+        assert.equal(event._assetDetails[0].value, _amt - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 4);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), refundable.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _amt - chargedFee);
 
         assert(
             web3.utils.BN(contract_balanceBefore._usableBalance).toNumber() === 
@@ -517,14 +626,21 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         );
     });
 
-    it('Scenario 11: Should succeed to refund when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 11: BSHPeriphery receives an error response of a recent request', async () => {
         let contract_balanceBefore = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _native);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 4, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 4, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(refundable.address, _native);
         let bsh_coin_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _native);
-        // TODO: catch emit event TransferEnd throwing from BSHService contract
+        
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, refundable.address);
+        assert.equal(event._sn, 4);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');  
 
         assert(
             web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _amt && 
@@ -566,7 +682,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         id = await bsh_core.coinId(_name);
     });
 
-    it('Scenario 1: Should revert when User has not yet set approval for token being transferred out by Operator', async () => {
+    it('Scenario 1: User has not yet set approval for token being transferred out by Operator', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _value = 5000;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
@@ -583,7 +699,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it(`Scenario 2: Should revert when User has set approval, but user's balance has insufficient amount`, async () => {
+    it(`Scenario 2: User has set approval, but user's balance has insufficient amount`, async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _value = 9999999999999999n;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
@@ -601,7 +717,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 3: Should revert when User requests to transfer an invalid Token', async () => {
+    it('Scenario 3: User requests to transfer an invalid Token', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _value = 9999999999999999n;
         let _token = 'EOS';
@@ -612,7 +728,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         ); 
     });
 
-    it('Scenario 4: Should revert when User transfers Tokens to an invalid BTP Address format', async () => {
+    it('Scenario 4: User transfers Tokens to an invalid BTP Address format', async () => {
         let _to = '1234.iconee/0x12345678';
         let contract_balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         await holder.setApprove(bsh_core.address);
@@ -631,7 +747,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 5: Should revert when User requests to transfer zero Token', async () => {
+    it('Scenario 5: User requests to transfer zero Token', async () => {
         let _to = '1234.iconee/0x12345678';
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         await holder.setApprove(bsh_core.address);
@@ -648,7 +764,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 6: Should revert when charging fee is zero', async () => {
+    it('Scenario 6: Charging fee is zero', async () => {
         let _to = '1234.iconee/0x12345678';
         let _name = 'ICON';
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
@@ -666,7 +782,7 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 7: Should revert when User requests to transfer to an invalid network/Not Supported Network', async () => {
+    it('Scenario 7: User requests to transfer to an invalid network/Not Supported Network', async () => {
         let _to = 'btp://1234.eos/0x12345678';
         let _name = 'ICON';
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
@@ -686,17 +802,49 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 8: Should succeed when User sends a valid transferring request', async () => {
+    it('Scenario 8: User sends a valid transferring request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _value = 1000;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         await holder.setApprove(bsh_core.address);
-        await holder.callTransfer(_name, _value, _to);
+        let tx = await holder.callTransfer(_name, _value, _to);
         let balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
         let bsh_core_balance = await bsh_core.getBalanceOf(bsh_core.address, _name);
-        //  TODO: 
-        //  - emit event Message throwing from BMC contract
-        //  - emit event TransferStart throwing from BSHService contract
+        let chargedFee = Math.floor(_value / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, holder.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 1);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, _name); 
+        assert.equal(event._assetDetails[0].value, _value - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 1);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), holder.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _name);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value - chargedFee);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
@@ -707,15 +855,23 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 9: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
+    it('Scenario 9: BSHPeriphery receives a successful response of a recent request', async () => {
         let _value = 1000;
         let contract_balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 1, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 1, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
         let fees = await bsh_core.getAccumulatedFees();
         let bsh_core_balance = await bsh_core.getBalanceOf(bsh_core.address, _name);
-        // TODO: catch emit event TransferEnd throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, holder.address);
+        assert.equal(event._sn, 1);
+        assert.equal(event._code, 0);
+        assert.equal(event._response, ''); 
+
         assert(
             web3.utils.BN(contract_balanceBefore._lockedBalance).toNumber() === _value && 
             web3.utils.BN(contract_balanceAfter._lockedBalance).toNumber() === 0 &&
@@ -727,18 +883,51 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 8: Should succeed when User sends a valid transferring request', async () => {
+    it('Scenario 8: User sends a valid transferring request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _value = 100000000000000;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         let bsh_core_balance_before = await bsh_core.getBalanceOf(bsh_core.address, _name);
         await holder.setApprove(bsh_core.address);
-        await holder.callTransfer(_name, _value, _to);
+        let tx = await holder.callTransfer(_name, _value, _to);
         let balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
         let bsh_core_balance_after = await bsh_core.getBalanceOf(bsh_core.address, _name);
-        //  TODO: 
-        //  - emit event Message throwing from BMC contract
-        //  - emit event TransferStart throwing from BSHService contract
+        let chargedFee = Math.floor(_value / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, holder.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 2);
+        assert.equal(event._assetDetails.length, 1);
+        assert.equal(event._assetDetails[0].coinName, _name); 
+        assert.equal(event._assetDetails[0].value, _value - chargedFee);
+        assert.equal(event._assetDetails[0].fee, chargedFee);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 2);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), holder.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _name);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value - chargedFee);
+
         assert(
             web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalance).toNumber() - _value &&
@@ -749,13 +938,21 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         );
     });
 
-    it('Scenario 10: Should issue a refund when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 10: BSHPeriphery receives an error response of a recent request', async () => {
         let _value = 100000000000000;
         let balanceBefore = await bsh_core.getBalanceOf(holder.address, _name);
         let _msg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 2, _msg);
+        let tx = await bmc.receiveResponse(_net, service, 2, _msg);
         let balanceAfter = await bsh_core.getBalanceOf(holder.address, _name);
-        // TODO: catch emit event TransferEnd throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, holder.address);
+        assert.equal(event._sn, 2);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, ''); 
+
         assert(
             web3.utils.BN(balanceBefore._lockedBalance).toNumber() === _value && 
             web3.utils.BN(balanceAfter._lockedBalance).toNumber() === 0 &&
@@ -787,11 +984,11 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
-        await bsh_core.transfer(_to, {from: accounts[0], value: 100000000});
+        await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: 100000000});
         btpAddr = await bmc.bmcAddress();
     });
 
-    it('Scenario 1: Should emit an error message when receiving address is invalid', async () => {
+    it('Scenario 1: Receiving address is invalid', async () => {
         let _from = '0x12345678';
         let _value = 1000;
         let _address = '0x1234567890123456789';
@@ -803,7 +1000,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         );
     });
 
-    it('Scenario 2: Should emit an error message when BSHCore has insufficient funds to transfer', async () => { 
+    it('Scenario 2: BSHCore has insufficient funds to transfer', async () => { 
         let _from = '0x12345678';
         let _value = 1000000000;
         let balanceBefore = await bmc.getBalance(accounts[1]);
@@ -817,7 +1014,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         );
     });
 
-    it(`Scenario 3: Should emit an error message when BSHCore tries to transfer PARA coins to a non-payable contract, but it fails`, async () => {
+    it(`Scenario 3: BSHCore tries to transfer PARA coins to a non-payable contract, but it fails`, async () => {
         let _from = '0x12345678';
         let _value = 1000;
         let balanceBefore = await bmc.getBalance(notpayable.address);
@@ -831,7 +1028,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         );
     });
 
-    it('Scenario 4: Should be able to transfer coins to an account when BSHPeriphery receives a request of transferring coins', async () => { 
+    it('Scenario 4: BSHPeriphery receives a request of transferring coins', async () => { 
         let _from = '0x12345678';
         let _value = 12345;
         let balanceBefore = await bmc.getBalance(accounts[1]);
@@ -847,7 +1044,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         );
     });
 
-    it(`Scenario 5: Should be able to transfer coins to a payable contract receiver when BSHPeriphery receives a request of transferring coins`, async () => { 
+    it(`Scenario 5: BSHPeriphery receives a request of transferring coins`, async () => { 
         let _from = '0x12345678';
         let _value = 23456;
         let balanceBefore = await bmc.getBalance(refundable.address);
@@ -890,7 +1087,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         btpAddr = await bmc.bmcAddress();
     });
 
-    it('Scenario 1: Should emit an error message when receiving address is invalid', async () => {
+    it('Scenario 1: Receiving address is invalid', async () => {
         let _value = 1000;
         let _address = '0x1234567890123456789';
         let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'InvalidAddress');
@@ -901,7 +1098,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         );
     });
 
-    it(`Scenario 2: Should emit an error message when receiving contract does not implement ERC1155Holder/Receiver`, async () => {
+    it(`Scenario 2: Receiving contract does not implement ERC1155Holder / Receiver`, async () => {
         let _value = 1000;
         let balanceBefore = await bsh_core.balanceOf(notpayable.address, id);
         let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
@@ -914,7 +1111,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         );
     });
 
-    it('Scenario 3: Should emit an error message when BSHPerphery receives a request of invalid token', async () => {
+    it('Scenario 3: BSHPeriphery receives a request of invalid token', async () => {
         let _value = 3000;
         let _tokenName = 'Ethereum';
         let invalid_coin_id = await bsh_core.coinId(_tokenName);
@@ -929,7 +1126,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         );
     });
 
-    it('Scenario 4: Should mint tokens successfully when a receiver is a ERC1155Holder contract', async () => { 
+    it('Scenario 4: Receiver is a ERC1155Holder contract', async () => { 
         let _value = 2500;
         let balanceBefore = await bsh_core.balanceOf(holder.address, id);
         let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_OK, '');
@@ -943,7 +1140,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         );
     });
 
-    it('Scenario 5: Should mint tokens successfully when a receiver is an account client', async () => { 
+    it('Scenario 5: Receiver is an account client', async () => { 
         let _value = 5500;
         let balanceBefore = await bsh_core.balanceOf(accounts[1], id);
         let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_OK, '');
@@ -995,7 +1192,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         await bmc.receiveRequest(_bmcICON, "", service, _sn0, _msg1);
         let _msg2 = await encode_msg.encodeTransferMsgWithAddress(_from2, holder.address, _name2, _value2);
         await bmc.receiveRequest(_bmcICON, "", service, _sn1, _msg2);
-        await bsh_core.transfer(_to1, {from: accounts[0], value: _txAmt});
+        await bsh_core.transferNativeCoin(_to1, {from: accounts[0], value: _txAmt});
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
         await bmc.receiveResponse(_net1, service, _sn0, _responseMsg);
         await holder.setApprove(bsh_core.address);
@@ -1005,7 +1202,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         await bmc.receiveResponse(_net1, service, _sn2, _responseMsg);
     });
 
-    it('Scenario 1: Should be able to query Aggregation Fee', async () => {
+    it(`Scenario 1: Query 'Aggregation Fee'`, async () => {
         let aggregationFee = await bsh_core.getAccumulatedFees();
         assert(
             aggregationFee.length === 5 &&
@@ -1017,7 +1214,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         );
     });
 
-    it('Scenario 2: Should revert when receiving a FeeGathering request not from BMCService', async () => {
+    it('Scenario 2: Receiving a FeeGathering request not from BMCService', async () => {
         let _sn3 = 3
         let FA1Before = await bsh_perif.getAggregationFeeOf(_native);     //  state Aggregation Fee of each type of Coins
         let FA2Before = await bsh_perif.getAggregationFeeOf(_name1);
@@ -1044,7 +1241,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
     //  After: 
     //      + all states of Aggregation Fee are push into pendingAggregation Fee list
     //      + state Aggregation Fee of each type of Coins are reset
-    it('Scenario 3: Should handle GatherFee request from BMCService contract', async () => {
+    it('Scenario 3: Handle GatherFee request from BMCService contract', async () => {
         let _sn3 = 4;
         let FA1Before = await bsh_perif.getAggregationFeeOf(_native);     //  state Aggregation Fee of each type of Coins
         let FA2Before = await bsh_perif.getAggregationFeeOf(_name1);
@@ -1062,7 +1259,22 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         let _eventMsg = await encode_msg.encodeTransferFeesBMCMessage(
             btpAddr, _bmcICON, _to1, service, _sn3, bsh_core.address, list
         );
-        //  TODO: catch event TransferStart throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: output.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, bsh_core.address);
+        assert.equal(event._to, _to1);
+        assert.equal(event._sn, _sn3);
+        assert.equal(event._assetDetails.length, 3);
+        assert.equal(event._assetDetails[0].coinName, _native); 
+        assert.equal(event._assetDetails[0].value, fees.amounts[0]);
+        assert.equal(event._assetDetails[0].fee, 0);
+        assert.equal(event._assetDetails[1].coinName, _name1); 
+        assert.equal(event._assetDetails[1].value, fees.amounts[1]);
+        assert.equal(event._assetDetails[1].fee, 0);
+        assert.equal(event._assetDetails[2].coinName, _name2); 
+        assert.equal(event._assetDetails[2].value, fees.amounts[2]);
+        assert.equal(event._assetDetails[2].fee, 0);
 
         assert(
             web3.utils.BN(FA1Before).toNumber() === Math.floor(_txAmt / 1000) && 
@@ -1078,13 +1290,21 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         );
     });
 
-    it('Scenario 4: Should reset a pending state when receiving a successful response', async () => {
+    it('Scenario 4: Receiving a successful response', async () => {
         let _sn3 = 4;
         let feesBefore = await bsh_perif.getFees(_sn3);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net1, service, _sn3, _responseMsg);
+        let tx = await bmc.receiveResponse(_net1, service, _sn3, _responseMsg);
         let feesAfter = await bsh_perif.getFees(_sn3);
-        //  TODO: catch event TransferEnd throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, bsh_core.address);
+        assert.equal(event._sn, _sn3);
+        assert.equal(event._code, 0);
+        assert.equal(event._response, ''); 
+
         assert(
             feesBefore.amounts.length === 3 &&
             feesBefore.coinNames[0] === _native && Number(feesBefore.amounts[0]) === Math.floor(_txAmt / 1000) &&
@@ -1094,7 +1314,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         );
     });
 
-    it('Scenario 5: Should restore aggregationFA state when receiving an error response', async () => {
+    it('Scenario 5: Receiving an error response', async () => {
         let _sn4 = 5;   let _sn5 = 6;   let _sn6 = 7;
         let _amt1 = 2000000;                    let _amt2 = 6000000;
         await holder.callTransfer(_name1, _amt1, _to1);
@@ -1109,11 +1329,19 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         let FA2Before = await bsh_perif.getAggregationFeeOf(_name2);
         let feesBefore = await bsh_perif.getFees(_sn6);
         let _errMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net1, service, _sn6, _errMsg);
+        let tx =  await bmc.receiveResponse(_net1, service, _sn6, _errMsg);
         let FA1After = await bsh_perif.getAggregationFeeOf(_name1);
         let FA2After = await bsh_perif.getAggregationFeeOf(_name2);
         let feesAfter = await bsh_perif.getFees(_sn6);
-        // TODO: catch event TransferEnd throwing from BSHService contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, bsh_core.address);
+        assert.equal(event._sn, _sn6);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');
+
         assert(
             feesBefore.amounts.length === 2 &&
             feesBefore.coinNames[0] === _name1 && Number(feesBefore.amounts[0]) === Math.floor(_amt1 / 1000) &&
@@ -1155,10 +1383,10 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         await bsh_core.register(_name2);
         await bsh_core.register(_name3);
         await bsh_core.register(_name4);
-        await bsh_core.transfer(_to, {from: accounts[0], value: 10000000});
+        await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: 10000000});
     });
 
-    it('Scenario 1: Should emit an error message when receiving address is invalid', async () => {
+    it('Scenario 1: Receiving address is invalid', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let _address = '0x1234567890123456789';
         let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'InvalidAddress');
@@ -1171,7 +1399,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 2: Should emit an error message when BSHPerphery receives a request of invalid token', async () => {
+    it('Scenario 2: BSHPerphery receives a request of invalid token', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let _invalid_token = 'EOS';
         let balance1Before = await bsh_core.getBalanceOf(holder.address, _name1);
@@ -1201,7 +1429,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 3: Should emit an error response when one of requests is failed in TransferBatch', async () => {
+    it('Scenario 3: One of requests is failed in TransferBatch', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 20000000;
         let balance1Before = await bsh_core.getBalanceOf(accounts[1], _name1);
         let balance2Before = await bsh_core.getBalanceOf(accounts[1], _name2);
@@ -1229,7 +1457,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 4: Should emit an error response when one of requests is failed in TransferBatch', async () => {
+    it('Scenario 4: One of requests is failed in TransferBatch', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let balance1Before = await bsh_core.getBalanceOf(refundable.address, _native);
         let balance2Before = await bsh_core.getBalanceOf(refundable.address, _name1);
@@ -1258,7 +1486,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 5: Should emit an error response when one of requests is failed in TransferBatch', async () => {
+    it('Scenario 5: One of requests is failed in TransferBatch', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let balance1Before = await bsh_core.getBalanceOf(holder.address, _name1);
         let balance2Before = await bsh_core.getBalanceOf(holder.address, _name2);
@@ -1287,7 +1515,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 6: Should succeed in TransferBatch', async () => {
+    it('Scenario 6: Receiving a successful TransferBatch request', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let balance1Before = await bsh_core.getBalanceOf(holder.address, _name1);
         let balance2Before = await bsh_core.getBalanceOf(holder.address, _name2);
@@ -1313,7 +1541,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         )
     });
 
-    it('Scenario 7: Should succeed in TransferBatch', async () => {
+    it('Scenario 7: Receiving a successful TransferBatch request', async () => {
         let _value1 = 1000;     let _value2 = 10000;    let _value3 = 40000;
         let balance1Before = await bsh_core.getBalanceOf(accounts[1], _native);
         let balance2Before = await bsh_core.getBalanceOf(accounts[1], _name2);
@@ -1366,7 +1594,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         await bsh_core.register(_coin1);
         await bsh_core.register(_coin2);
         await bsh_core.register(_coin3);
-        await bsh_core.transfer('btp://1234.iconee/0x12345678', {from: accounts[0], value: initAmt});
+        await bsh_core.transferNativeCoin('btp://1234.iconee/0x12345678', {from: accounts[0], value: initAmt});
         await holder.deposit({from: accounts[1], value: 100000000});
         let _msg1 = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _coin1, _value);
         await bmc.receiveRequest(_bmcICON, "", service, 0, _msg1);
@@ -1383,17 +1611,19 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         await bmc.receiveRequest(_bmcICON, "", service, 2, _msg3);
     });
 
-    it('Scenario 1: Should revert when User has not yet set approval for token being transferred out by Operator', async () => {
+    it('Scenario 1: User has not yet set approval for token being transferred out by Operator', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 3000];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 3000];
+        let _native_amt = 1000;
+        let _query = [_native, _coin1, _coin2];
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1417,18 +1647,20 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it(`Scenario 2: Should revert when User has set approval, but user's balance has insufficient amount`, async () => {
+    it(`Scenario 2: User has set approval, but user's balance has insufficient amount`, async () => {
         let _to = 'btp://1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 9999999999999999n];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 9999999999999999n];
+        let _native_amt = 1000;
+        let _query = [_native, _coin1, _coin2];
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1452,19 +1684,21 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 3: Should revert when User requests to transfer an invalid Token', async () => {
+    it('Scenario 3: User requests to transfer an invalid Token', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let invalid_token = 'EOS';
-        let _coins = [_native, _coin1, invalid_token];
-        let _values = [1000, 2000, 3000];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, invalid_token];
+        let _values = [2000, 3000];
+        let _native_amt = 1000;
+        let _query = [_native, _coin1, invalid_token];
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1489,18 +1723,20 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 4: Should revert when User transfers Tokens to an invalid BTP Address format', async () => {
+    it('Scenario 4: User transfers Tokens to an invalid BTP Address format', async () => {
         let _to = '1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 3000];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 3000];
+        let _query = [_native, _coin1, _coin2];
+        let _native_amt = 1000;
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1524,18 +1760,20 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 5: Should revert when User requests to transfer zero Token', async () => {
+    it('Scenario 5: User requests to transfer zero Token', async () => {
         let _to = '1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 0];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 0];
+        let _query = [_native, _coin1, _coin2];
+        let _native_amt = 1000;
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1559,18 +1797,20 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 6: Should revert when charging fee is zero', async () => {
+    it('Scenario 6: Charging fee is zero', async () => {
         let _to = '1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 100];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 100];
+        let _query = [_native, _coin1, _coin2];
+        let _native_amt = 1000;
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1594,18 +1834,20 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 7: Should revert when User requests to transfer to an invalid network/Not Supported Network', async () => {
+    it('Scenario 7: User requests to transfer to an invalid network/Not Supported Network', async () => {
         let _to = 'btp://1234.eos/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
-        let _values = [1000, 2000, 3000];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _coins = [_coin1, _coin2];
+        let _values = [2000, 3000];
+        let _query = [_native, _coin1, _coin2];
+        let _native_amt = 1000;
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, _native_amt),
             "VM Exception while processing transaction: revert"
         ); 
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
         
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1629,7 +1871,7 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 8: Should revert when an account client sends an invalid request of transferBatch', async () => {
+    it('Scenario 8: Account client sends an invalid request of transferBatch', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _coins = [_native, _native, _native];
         let _values = [1000, 1000, 1000];
@@ -1656,14 +1898,14 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 9: Should revert when a contract client sends an invalid request of transferBatch', async () => {
+    it('Scenario 9: Contract client sends an invalid request of transferBatch', async () => {
         let _to = 'btp://1234.eos/0x12345678';
         let _coins = [_native, _coin1, _coin2];
         let _values = [1000, 2000];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         await holder.setApprove(bsh_core.address);
         await truffleAssert.reverts(
-            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to),
+            holder.callTransferBatch.call(bsh_core.address, _coins, _values, _to, 0),
             "VM Exception while processing transaction: revert"
         ); 
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
@@ -1691,16 +1933,64 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 10: Should succeed when a contract client sends a valid transferBatch request', async () => {
+    it('Scenario 10: Contract client sends a valid transferBatch request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
+        let _coins = [_coin1, _coin2];
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
-        let _values = [_value1, _value2, _value3];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _values = [_value2, _value3];
+        let _query = [_native, _coin1, _coin2];
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
-        await holder.callTransferBatch(bsh_core.address, _coins, _values, _to);
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let tx = await holder.callTransferBatch(bsh_core.address, _coins, _values, _to, _value1);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
+        let chargedFee1 = Math.floor(_value1 / 1000);
+        let chargedFee2 = Math.floor(_value2 / 1000);
+        let chargedFee3 = Math.floor(_value3 / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, holder.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 2);
+        assert.equal(event._assetDetails.length, 3);
+        assert.equal(event._assetDetails[0].coinName, _coin1); 
+        assert.equal(event._assetDetails[0].value, _value2 - chargedFee2);
+        assert.equal(event._assetDetails[0].fee, chargedFee2);
+        assert.equal(event._assetDetails[1].coinName, _coin2); 
+        assert.equal(event._assetDetails[1].value, _value3 - chargedFee3);
+        assert.equal(event._assetDetails[1].fee, chargedFee3);
+        assert.equal(event._assetDetails[2].coinName, _native); 
+        assert.equal(event._assetDetails[2].value, _value1 - chargedFee1);
+        assert.equal(event._assetDetails[2].fee, chargedFee1);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 2);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), holder.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _coin1);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value2 - chargedFee2);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][1][0])), _coin2);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][1][1])), _value3 - chargedFee3);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][2][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][2][1])), _value1 - chargedFee1);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1724,16 +2014,23 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 11: Should update locked balance when BSHPeriphery receives a successful response of a recent request', async () => {
+    it('Scenario 11: BSHPeriphery receives a successful response of a recent request', async () => {
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _coins = [_native, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
-        await bmc.receiveResponse(_net, service, 2, _responseMsg);
+        let tx = await bmc.receiveResponse(_net, service, 2, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let fees = await bsh_core.getAccumulatedFees();
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
-        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest'});
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, holder.address);
+        assert.equal(event._sn, 2);
+        assert.equal(event._code, 0);
+        assert.equal(event._response, '');
  
         assert(
             web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
@@ -1761,16 +2058,64 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 12: Should succeed when an account client sends a valid transferBatch request', async () => {
+    it('Scenario 12: Account client sends a valid transferBatch request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _coins = [_coin3, _coin1, _coin2];
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _values = [_value1, _value2, _value3];
         let balanceBefore = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         await bsh_core.setApprovalForAll(bsh_core.address, true, {from: accounts[1]});
-        await bsh_core.transferBatch(_coins, _values, _to, {from: accounts[1]});
+        let tx = await bsh_core.transferBatch(_coins, _values, _to, {from: accounts[1]});
         let balanceAfter = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let chargedFee1 = Math.floor(_value1 / 1000);
+        let chargedFee2 = Math.floor(_value2 / 1000);
+        let chargedFee3 = Math.floor(_value3 / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, accounts[1]);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 3);
+        assert.equal(event._assetDetails.length, 3);
+        assert.equal(event._assetDetails[0].coinName, _coin3); 
+        assert.equal(event._assetDetails[0].value, _value1 - chargedFee1);
+        assert.equal(event._assetDetails[0].fee, chargedFee1);
+        assert.equal(event._assetDetails[1].coinName, _coin1); 
+        assert.equal(event._assetDetails[1].value, _value2 - chargedFee2);
+        assert.equal(event._assetDetails[1].fee, chargedFee2);
+        assert.equal(event._assetDetails[2].coinName, _coin2); 
+        assert.equal(event._assetDetails[2].value, _value3 - chargedFee3);
+        assert.equal(event._assetDetails[2].fee, chargedFee3);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 3);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), accounts[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _coin3);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value1 - chargedFee1);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][1][0])), _coin1);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][1][1])), _value2 - chargedFee2);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][2][0])), _coin2);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][2][1])), _value3 - chargedFee3);
+
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
                 web3.utils.BN(balanceBefore._usableBalances[0]).toNumber() - _value1 &&
@@ -1793,15 +2138,22 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 13: Should refund tokens back to account client when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 13: BSHPeriphery receives an error response of a recent request', async () => {
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _coins = [_coin3, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 3, _responseMsg);
+        let tx = await bmc.receiveResponse(_net, service, 3, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(accounts[1], _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
-        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+        
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest'});
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, accounts[1]);
+        assert.equal(event._sn, 3);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');
  
         assert(
             web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
@@ -1825,16 +2177,63 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 14: Should succeed when a contract client sends a valid transferBatch request', async () => {
+    it('Scenario 14: Contract client sends a valid transferBatch request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
         let _coins = [_coin3, _coin1, _coin2];
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _values = [_value1, _value2, _value3];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         await holder.setApprove(bsh_core.address);
-        await holder.callTransferBatch(bsh_core.address, _coins, _values, _to);
+        let tx = await holder.callTransferBatch(bsh_core.address, _coins, _values, _to, 0);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let chargedFee1 = Math.floor(_value1 / 1000);
+        let chargedFee2 = Math.floor(_value2 / 1000);
+        let chargedFee3 = Math.floor(_value3 / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, holder.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 4);
+        assert.equal(event._assetDetails.length, 3);
+        assert.equal(event._assetDetails[0].coinName, _coin3); 
+        assert.equal(event._assetDetails[0].value, _value1 - chargedFee1);
+        assert.equal(event._assetDetails[0].fee, chargedFee1);
+        assert.equal(event._assetDetails[1].coinName, _coin1); 
+        assert.equal(event._assetDetails[1].value, _value2 - chargedFee2);
+        assert.equal(event._assetDetails[1].fee, chargedFee2);
+        assert.equal(event._assetDetails[2].coinName, _coin2); 
+        assert.equal(event._assetDetails[2].value, _value3 - chargedFee3);
+        assert.equal(event._assetDetails[2].fee, chargedFee3);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 4);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), holder.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _coin3);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value1 - chargedFee1);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][1][0])), _coin1);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][1][1])), _value2 - chargedFee2);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][2][0])), _coin2);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][2][1])), _value3 - chargedFee3);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1858,15 +2257,22 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 15: Should refund tokens back to contract when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 15: BSHPeriphery receives an error response of a recent request', async () => {
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _coins = [_coin3, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 4, _responseMsg);
+        let tx = await bmc.receiveResponse(_net, service, 4, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
-        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
+        
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest'});
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, holder.address);
+        assert.equal(event._sn, 4);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');
  
         assert(
             web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
@@ -1889,17 +2295,65 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
             web3.utils.BN(bsh_core_balance._usableBalances[2]).toNumber() === Math.floor(_value3 / 1000)
         );
     });
-    //  This test is replicated from Scenario 8
-    it('Scenario 16: Should succeed when a contract client sends a valid transferBatch request', async () => {
+    //  This test is replicated from Scenario 10
+    it('Scenario 16: Contract client sends a valid transferBatch request', async () => {
         let _to = 'btp://1234.iconee/0x12345678';
-        let _coins = [_native, _coin1, _coin2];
+        let _coins = [_coin1, _coin2];
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
-        let _values = [_value1, _value2, _value3];
-        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
+        let _values = [_value2, _value3];
+        let _query = [_native, _coin1, _coin2];
+        let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _query);
         await holder.setApprove(bsh_core.address);
-        await holder.callTransferBatch(bsh_core.address, _coins, _values, _to);
-        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
-        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
+        let tx = await holder.callTransferBatch(bsh_core.address, _coins, _values, _to, _value1);
+        let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _query);
+        let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _query);
+        let chargedFee1 = Math.floor(_value1 / 1000);
+        let chargedFee2 = Math.floor(_value2 / 1000);
+        let chargedFee3 = Math.floor(_value3 / 1000);
+
+        const transferEvents = await bsh_perif.getPastEvents('TransferStart', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        let event = transferEvents[0].returnValues;
+        assert.equal(event._from, holder.address);
+        assert.equal(event._to, _to);
+        assert.equal(event._sn, 5);
+        assert.equal(event._assetDetails.length, 3);
+        assert.equal(event._assetDetails[0].coinName, _coin1); 
+        assert.equal(event._assetDetails[0].value, _value2 - chargedFee2);
+        assert.equal(event._assetDetails[0].fee, chargedFee2);
+        assert.equal(event._assetDetails[1].coinName, _coin2); 
+        assert.equal(event._assetDetails[1].value, _value3 - chargedFee3);
+        assert.equal(event._assetDetails[1].fee, chargedFee3);
+        assert.equal(event._assetDetails[2].coinName, _native); 
+        assert.equal(event._assetDetails[2].value, _value1 - chargedFee1);
+        assert.equal(event._assetDetails[2].fee, chargedFee1);
+
+        const linkStatus = await bmc.getStatus(_bmcICON);
+        const bmcBtpAddress = await bmc.getBmcBtpAddress();
+
+        const messageEvents = await bmc.getPastEvents('Message', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
+        event = messageEvents[0].returnValues;
+        assert.equal(event._next, _bmcICON);
+        assert.equal(event._seq, linkStatus.txSeq);
+        
+        const bmcMsg = rlp.decode(event._msg);
+
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[0])), bmcBtpAddress);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[1])), _bmcICON);
+        assert.equal(web3.utils.hexToUtf8(toHex(bmcMsg[2])), service);
+        assert.equal(web3.utils.hexToNumber(toHex(bmcMsg[3])), 5);
+
+        const ServiceMsg = rlp.decode(bmcMsg[4]);
+        assert.equal(web3.utils.hexToUtf8(toHex(ServiceMsg[0])), 0);
+
+        const coinTransferMsg = rlp.decode(ServiceMsg[1]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[0])), holder.address);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[1])), _to.split('/').slice(-1)[0]);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][0][0])), _coin1);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][0][1])), _value2 - chargedFee2);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][1][0])), _coin2);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][1][1])), _value3 - chargedFee3);
+        assert.equal(web3.utils.hexToUtf8(toHex(coinTransferMsg[2][2][0])), _native);
+        assert.equal(web3.utils.hexToNumber(toHex(coinTransferMsg[2][2][1])), _value1 - chargedFee1);
 
         assert(
             web3.utils.BN(balanceAfter._usableBalances[0]).toNumber() === 
@@ -1923,16 +2377,23 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         );
     });
 
-    it('Scenario 17: Should issue one refundable balance to contract when BSHPeriphery receives an error response of a recent request', async () => {
+    it('Scenario 17: BSHPeriphery receives an error response of a recent request', async () => {
         let _value1 = 1000;     let _value2 = 2000;     let _value3 = 1000;
         let _coins = [_native, _coin1, _coin2];
         let balanceBefore = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_ERR, "");
-        await bmc.receiveResponse(_net, service, 5, _responseMsg);
+        let tx = await bmc.receiveResponse(_net, service, 5, _responseMsg);
         let balanceAfter = await bsh_core.getBalanceOfBatch(holder.address, _coins);
         let bsh_core_balance = await bsh_core.getBalanceOfBatch(bsh_core.address, _coins);
-        // TODO: catch emit event TransferEnd throwing from BSHPeriphery contract
- 
+               
+        const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest'});
+        let event = transferEvents[0].returnValues;
+
+        assert.equal(event._from, holder.address);
+        assert.equal(event._sn, 5);
+        assert.equal(event._code, 1);
+        assert.equal(event._response, '');
+        
         assert(
             web3.utils.BN(balanceBefore._lockedBalances[0]).toNumber() === _value1 && 
             web3.utils.BN(balanceBefore._lockedBalances[1]).toNumber() === _value2 &&

@@ -2,7 +2,7 @@ version: "3.4"
 services:
   goloop:
     build:
-      context: ./testnet/goloop
+      context: ./testnet/goloop2goloop
     environment:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
@@ -10,7 +10,6 @@ services:
       - ${PWD}/build/config:/goloop/config
       - ${PWD}/build/data:/goloop/data
       - ${PWD}/build/data/log:/goloop/data/log
-      - ${PWD}/testnet/goloop/scenario_test.sh:/goloop/bin/scenario_test.sh
     ports:
       - 9080:9080
     logging:

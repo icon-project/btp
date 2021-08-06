@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
-import "./Interfaces/IBSHPeriphery.sol";
-import "./Interfaces/IBSHCore.sol";
-import "./Libraries/StringsLib.sol";
-import "./Libraries/TypesLib.sol";
+import "./interfaces/IBSHPeriphery.sol";
+import "./interfaces/IBSHCore.sol";
+import "./libraries/String.sol";
+import "./libraries/Types.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -24,7 +24,7 @@ contract BSHCore is
     ERC1155HolderUpgradeable
 {
     using SafeMathUpgradeable for uint256;
-    using Strings for string;
+    using String for string;
     event SetOwnership(address indexed promoter, address indexed newOwner);
     event RemoveOwnership(address indexed remover, address indexed formerOwner);
 
@@ -50,7 +50,7 @@ contract BSHCore is
     uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
 
     uint256 private constant FEE_DENOMINATOR = 10**4;
-    uint256 private feeNumerator;
+    uint256 public feeNumerator;
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
 
@@ -311,7 +311,7 @@ contract BSHCore is
        @dev MUST specify msg.value
        @param _to  An address that a user expects to receive an amount of tokens.
     */
-    function transfer(string calldata _to) external payable override {
+    function transferNativeCoin(string calldata _to) external payable override {
         //  Aggregation Fee will be charged on BSH Contract
         //  A Fee Ratio is set when BSH contract is created
         //  If charging fee amount is zero, revert()
@@ -403,8 +403,7 @@ contract BSHCore is
        @notice Allow users to transfer multiple coins/wrapped coins to another chain
        @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
        It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
-       In case of transferring a native coin, it also checks `msg.value` with `_values[i]`
-       It MUST revert if `msg.value` is not equal to `_values[i]`
+       In case of transferring a native coin, it also checks `msg.value`
        The number of requested coins MUST be as the same as the number of requested values
        The requested coins and values MUST be matched respectively
        @param _coinNames    A list of requested transferring coins/wrapped coins
@@ -412,36 +411,25 @@ contract BSHCore is
        @param _to          Target BTP address.
     */
     function transferBatch(
-        string[] memory _coinNames,
+        string[] calldata _coinNames,
         uint256[] memory _values,
         string calldata _to
     ) external payable override {
         require(_coinNames.length == _values.length, "InvalidRequest");
-        uint256 size = _coinNames.length;
+        uint256 size = msg.value != 0 ? _coinNames.length.add(1) : _coinNames.length;
+        uint256[] memory _ids = new uint256[](_coinNames.length);
+        string[] memory _coins = new string[](size);
         uint256[] memory _amounts = new uint256[](size);
         uint256[] memory _chargeAmts = new uint256[](size);
-        bool isRequested;               //  checking whether native coin has been requested
-        for (uint256 i = 0; i < size; i++) {
+
+        for (uint256 i = 0; i < _coinNames.length; i++) {
+            _ids[i] = coins[_coinNames[i]];
+            //  Does not need to check if _coinNames[i] == native_coin
+            //  If _coinNames[i] is a native_coin, coins[_coinNames[i]] = 0
+            require(_ids[i] != 0, "UnregisterCoin");
+            _coins[i] = _coinNames[i];
             _chargeAmts[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
-            if (_coinNames[i].compareTo(coinsName[0])) {
-                require(!isRequested, "AlreadyRequested");
-                require(
-                    _chargeAmts[i] > 0 && _values[i] == msg.value,
-                    "InvalidAmount"
-                );
-                isRequested = true;
-            } else {
-                uint256 _id = coins[_coinNames[i]];
-                require(_id != 0, "UnregisterCoin");
-                require(_chargeAmts[i] > 0, "InvalidAmount");
-                this.safeTransferFrom(
-                    msg.sender,
-                    address(this),
-                    _id,
-                    _values[i],
-                    ""
-                );
-            }
+            require(_chargeAmts[i] > 0, "InvalidAmount");
             _amounts[i] = _values[i].sub(_chargeAmts[i]);
             //  Lock this requested _value as a record of a pending transferring transaction
             //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
@@ -449,11 +437,28 @@ contract BSHCore is
             //  _amounts[i] = _values[i].sub(_chargeAmts[i]);
             lockBalance(msg.sender, _coinNames[i], _values[i]);
         }
+
+        this.safeBatchTransferFrom(
+            msg.sender,
+            address(this),
+            _ids,
+            _values,
+            ""
+        );
+
+        if (msg.value != 0) {
+            _coins[size - 1] = coinsName[0];   // push native_coin at the end of request
+            _chargeAmts[size - 1] = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
+            require(_chargeAmts[size - 1] > 0, "InvalidAmount");
+            _amounts[size - 1] = msg.value.sub(_chargeAmts[size - 1]);
+            lockBalance(msg.sender, coinsName[0], msg.value);
+        }
+
         //  @dev Note that: `_amounts` is true amounts to receive at a destination after deducting charged fees
         bshPeriphery.sendServiceMessage(
             msg.sender,
             _to,
-            _coinNames,
+            _coins,
             _amounts,
             _chargeAmts
         );
