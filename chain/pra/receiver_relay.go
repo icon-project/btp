@@ -12,10 +12,11 @@ import (
 )
 
 type relayReceiver struct {
-	c           substrate.SubstrateClient
-	pC          praBmvClient
-	paraChainId substrate.SubstrateParachainId
-	log         log.Logger
+	c                          substrate.SubstrateClient
+	pC                         praBmvClient
+	paraChainId                substrate.SubstrateParachainId
+	lastJustificationCollected *substrate.SubstrateBlockNumber
+	log                        log.Logger
 }
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
@@ -176,6 +177,8 @@ func (r *relayReceiver) pullBlockHeaders(fp substrate.FinalityProof) ([]substrat
 
 	bus = append(bus, fp.UnknownHeaders...)
 	bus = append(bus, missingBlockHeaders...)
+
+	r.log.Debugf("pullBlockHeaders: blockUpdates %d~%d", bus[0].Number, bus[len(bus)-1].Number)
 	return bus, nil
 }
 
@@ -184,7 +187,6 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(mtaHeight uint64
 	blockNumber := from
 	for !foundEvent {
 		blockHash, err := r.c.GetBlockHash(blockNumber)
-		r.syncBlock(int64(mtaHeight), blockHash)
 		if err != nil {
 			return nil, nil
 		}
@@ -243,6 +245,7 @@ func (r *relayReceiver) getParasInclusionCandidateIncluded(blockHash substrate.S
 }
 
 func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, error) {
+	r.log.Debugf("getGrandpaNewAuthorities: %s", blockHash.Hex())
 	meta := r.c.GetMetadataLatest()
 	key, err := r.c.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
@@ -267,6 +270,14 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 	return nil, err
 }
 
+func (r *relayReceiver) didPullBlockUpdatesLastJustifications(paraIncludedHeaderNumber substrate.SubstrateBlockNumber) bool {
+	if r.lastJustificationCollected == nil {
+		return false
+	}
+
+	return paraIncludedHeaderNumber <= *r.lastJustificationCollected
+}
+
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash) ([]byte, error) {
 	mtaHeight := r.pC.getRelayMtaHeight()
 	r.log.Debugf("newParaFinalityProof: mtaHeight %d", mtaHeight)
@@ -274,12 +285,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	// Performance guess for checking with MTA height
 	if uint64(vd.RelayParentNumber+10) <= mtaHeight {
 		r.log.Panicf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(vd.RelayParentNumber+10), mtaHeight)
-		rmb, err := codec.RLP.MarshalToBytes(nil)
-		if err != nil {
-			return nil, err
-		}
-
-		return rmb, err
 	}
 
 	// check out which block para chain get included
@@ -288,12 +293,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	// Acccurate checking with MTA height
 	if uint64(paraIncludedHeader.Number) <= mtaHeight {
 		r.log.Panicf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(paraIncludedHeader.Number), mtaHeight)
-		rmb, err := codec.RLP.MarshalToBytes(nil)
-		if err != nil {
-			return nil, err
-		}
-
-		return rmb, err
 	}
 
 	bus := make([][]byte, 0)
@@ -306,7 +305,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		return nil, err
 	}
 
-	if mtaHeight < uint64(paraIncludedHeader.Number) {
+	if mtaHeight < uint64(paraIncludedHeader.Number) && !r.didPullBlockUpdatesLastJustifications(paraIncludedHeader.Number) {
 		// get the latest block contains justification
 		fp, err := r.c.GetFinalitiyProof(substrate.NewBlockNumber(mtaHeight))
 		if err != nil {
@@ -337,7 +336,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 			}
-
 			bus = append(bus, bu)
 		}
 
@@ -359,8 +357,10 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 			}
 		}
 
+		r.lastJustificationCollected = (*substrate.SubstrateBlockNumber)(&lastBlockNumber)
 	} else {
 		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
+
 		if err != nil {
 			return nil, err
 		}

@@ -80,16 +80,23 @@ func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData
 }
 
 func (sme *SignedMessageEnum) Encode(encoder scale.Encoder) error {
-	if err := encoder.EncodeOption(sme.IsPrevote, sme.AsPrevote); err != nil {
-		return err
+	var err1, err2 error
+	if sme.IsPrevote {
+		err1 = encoder.PushByte(0)
+		err2 = encoder.Encode(sme.AsPrevote)
+	} else if sme.IsPrecommit {
+		err1 = encoder.PushByte(1)
+		err2 = encoder.Encode(sme.AsPrecommit)
+	} else if sme.IsPrimaryPropose {
+		err1 = encoder.PushByte(2)
+		err2 = encoder.Encode(sme.AsPrimaryPropose)
 	}
 
-	if err := encoder.EncodeOption(sme.IsPrecommit, sme.AsPrecommit); err != nil {
-		return err
+	if err1 != nil {
+		return err1
 	}
-
-	if err := encoder.EncodeOption(sme.IsPrimaryPropose, sme.AsPrimaryPropose); err != nil {
-		return err
+	if err2 != nil {
+		return err2
 	}
 
 	return nil
