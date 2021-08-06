@@ -50,6 +50,17 @@ type Justification struct {
 	EncodedJustification GrandpaJustification
 }
 
+type WestendJustification struct {
+	ConsensusEngineId    [2]types.U8
+	EncodedJustification GrandpaJustification
+}
+
+type WestendFinalityProof struct {
+	Block          types.Hash
+	Justification  WestendJustification
+	UnknownHeaders []types.Header
+}
+
 type FinalityProof struct {
 	Block          types.Hash
 	Justification  Justification
@@ -96,7 +107,7 @@ type SubstrateClient interface {
 	GetSpecName() string
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
-	GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error)
+	GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error)
 	GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error

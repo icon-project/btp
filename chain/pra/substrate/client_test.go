@@ -31,9 +31,10 @@ func TestClient(t *testing.T) {
 		c, err := NewSubstrateClient("wss://rpc.polkadot.io")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(6247439)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(6247439)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
 	})
 
 	t.Run("should return decode FinalityProof on kusama", func(t *testing.T) {
@@ -41,9 +42,10 @@ func TestClient(t *testing.T) {
 		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(8007753)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(8007753)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
 	})
 
 	t.Run("should return decode FinalityProof on westend", func(t *testing.T) {
@@ -51,9 +53,10 @@ func TestClient(t *testing.T) {
 		c, err := NewSubstrateClient("wss://westend-rpc.polkadot.io")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(6788687)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(6788687)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
 	})
 
 	t.Run("should return decode FinalityProof on moonbase relay chain", func(t *testing.T) {
@@ -62,9 +65,10 @@ func TestClient(t *testing.T) {
 		c, err := NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network/")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(1016190)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(1016190)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
 	})
 
 	t.Run("should return multiple block headers", func(t *testing.T) {

@@ -21,11 +21,11 @@ func TestRelayReceiver(t *testing.T) {
 			log: log.New(),
 		}
 
-		fp, err := r.c.GetFinalitiyProof(8007753)
+		gj, _, err := r.c.GetJustificationsAndUnknownHeaders(8007753)
 		require.NoError(t, err)
-		require.NotNil(t, fp)
+		require.NotNil(t, gj)
 
-		v, err := r.newVotes(&fp.Justification.EncodedJustification)
+		v, err := r.newVotes(gj)
 		assert.NoError(t, err)
 		assert.NotNil(t, v)
 	})

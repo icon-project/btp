@@ -121,29 +121,6 @@ func (_m *MockSubstrateClient) GetBlockHeaderByBlockNumbers(blockNumbers []types
 	return r0, r1
 }
 
-// GetFinalitiyProof provides a mock function with given fields: blockNumber
-func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error) {
-	ret := _m.Called(blockNumber)
-
-	var r0 *FinalityProof
-	if rf, ok := ret.Get(0).(func(types.BlockNumber) *FinalityProof); ok {
-		r0 = rf(blockNumber)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FinalityProof)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(types.BlockNumber) error); ok {
-		r1 = rf(blockNumber)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetFinalizedHead provides a mock function with given fields:
 func (_m *MockSubstrateClient) GetFinalizedHead() (types.Hash, error) {
 	ret := _m.Called()
@@ -232,6 +209,38 @@ func (_m *MockSubstrateClient) GetHeaderLatest() (*types.Header, error) {
 	}
 
 	return r0, r1
+}
+
+// GetJustificationsAndUnknownHeaders provides a mock function with given fields: blockNumber
+func (_m *MockSubstrateClient) GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []types.Header, error) {
+	ret := _m.Called(blockNumber)
+
+	var r0 *GrandpaJustification
+	if rf, ok := ret.Get(0).(func(types.BlockNumber) *GrandpaJustification); ok {
+		r0 = rf(blockNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*GrandpaJustification)
+		}
+	}
+
+	var r1 []types.Header
+	if rf, ok := ret.Get(1).(func(types.BlockNumber) []types.Header); ok {
+		r1 = rf(blockNumber)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]types.Header)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(types.BlockNumber) error); ok {
+		r2 = rf(blockNumber)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // GetMetadata provides a mock function with given fields: blockHash

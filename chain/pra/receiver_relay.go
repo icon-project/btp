@@ -1,6 +1,8 @@
 package pra
 
 import (
+	"fmt"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/kusama"
 	"github.com/icon-project/btp/chain/pra/relaychain"
@@ -156,11 +158,11 @@ func (r *relayReceiver) newStateProof(blockHash substrate.SubstrateHash) ([]byte
 	return sp, nil
 }
 
-func (r *relayReceiver) pullBlockHeaders(fp substrate.FinalityProof) ([]substrate.SubstrateHeader, error) {
+func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader) ([]substrate.SubstrateHeader, error) {
 	bus := make([]substrate.SubstrateHeader, 0)
 
-	from := fp.UnknownHeaders[len(fp.UnknownHeaders)-1].Number
-	to := fp.Justification.EncodedJustification.Commit.TargetNumber
+	from := hds[len(hds)-1].Number
+	to := gj.Commit.TargetNumber
 
 	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
@@ -173,7 +175,7 @@ func (r *relayReceiver) pullBlockHeaders(fp substrate.FinalityProof) ([]substrat
 		return nil, err
 	}
 
-	bus = append(bus, fp.UnknownHeaders...)
+	bus = append(bus, hds...)
 	bus = append(bus, missingBlockHeaders...)
 
 	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", bus[0].Number, bus[len(bus)-1].Number)
@@ -255,17 +257,19 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 		return nil, err
 	}
 
-	if r.c.GetSpecName() == substrate.Kusama {
+	spec := r.c.GetSpecName()
+
+	if spec == substrate.Kusama {
 		records := kusama.NewKusamaRecord(sdr, meta)
 		return records.Grandpa_NewAuthorities, nil
 	}
 
-	if r.c.GetSpecName() == substrate.Westend {
+	if spec == substrate.Westend {
 		records := westend.NewWestendEventRecord(sdr, meta)
 		return records.Grandpa_NewAuthorities, nil
 	}
 
-	return nil, err
+	return nil, fmt.Errorf("Not supported relay spec %s", spec)
 }
 
 func (r *relayReceiver) didPullBlockUpdatesLastJustifications(paraIncludedHeaderNumber substrate.SubstrateBlockNumber) bool {
@@ -305,16 +309,16 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	if mtaHeight < uint64(paraIncludedHeader.Number) && !r.didPullBlockUpdatesLastJustifications(paraIncludedHeader.Number) {
 		// get the latest block contains justification
-		fp, err := r.c.GetFinalitiyProof(substrate.NewBlockNumber(mtaHeight))
+		gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(substrate.NewBlockNumber(mtaHeight))
 		if err != nil {
 			return nil, err
 		}
 
-		lastBlockNumber := fp.Justification.EncodedJustification.Commit.TargetNumber
+		lastBlockNumber := gj.Commit.TargetNumber
 		r.log.Debugf("newParaFinalityProof: found justification at %d", lastBlockNumber)
 
 		// pull all headers with unknowheader in finality proofs
-		blockHeaders, err := r.pullBlockHeaders(*fp)
+		blockHeaders, err := r.pullBlockHeaders(gj, hds)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +328,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 			if i == len(blockHeaders)-1 {
 				// add justification in last blocks
-				bu, err = r.newBlockUpdate(blockHeader, &fp.Justification.EncodedJustification)
+				bu, err = r.newBlockUpdate(blockHeader, gj)
 				if err != nil {
 					return nil, err
 				}
@@ -345,15 +349,15 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		// r.pC.store.AddHash(fp.Justification.EncodedJustification.Commit.TargetHash[:])
 
 		// check if last block contains Grandpa_NewAuthorities event
-		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(fp.Justification.EncodedJustification.Commit.TargetHash)
+		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
 		if err != nil {
 			return nil, nil
 		}
 
 		if len(eventGrandpaNewAuthorities) > 0 {
 			// No need to create new state proof if same block
-			if *praIncludeBlockHash != fp.Justification.EncodedJustification.Commit.TargetHash {
-				newAuthoritiesStateProof, err := r.newStateProof(fp.Justification.EncodedJustification.Commit.TargetHash)
+			if *praIncludeBlockHash != gj.Commit.TargetHash {
+				newAuthoritiesStateProof, err := r.newStateProof(gj.Commit.TargetHash)
 				if err != nil {
 					return nil, err
 				}

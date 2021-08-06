@@ -1,6 +1,7 @@
 package substrate
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 const (
 	Westend   = "westend"
 	Kusama    = "kusama"
+	Polkadot  = "polkadot"
 	Moonriver = "moonriver"
 	Moonbase  = "moonbase"
 )
@@ -180,6 +182,36 @@ func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.BlockNumber) (*Finali
 	}
 
 	return fp, err
+}
+
+func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error) {
+	var finalityProofHexstring string
+	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	spec := c.GetSpecName()
+
+	if spec == Kusama || spec == Polkadot {
+		fp := &FinalityProof{}
+		err = types.DecodeFromHexString(finalityProofHexstring, fp)
+
+		if fp != nil {
+			return &fp.Justification.EncodedJustification, fp.UnknownHeaders, err
+		}
+	}
+
+	if spec == Westend {
+		fp := &WestendFinalityProof{}
+		err = types.DecodeFromHexString(finalityProofHexstring, fp)
+
+		if fp != nil {
+			return &fp.Justification.EncodedJustification, fp.UnknownHeaders, err
+		}
+	}
+
+	return nil, nil, fmt.Errorf("Not supported chain spec %s", spec)
 }
 
 func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error) {
