@@ -520,6 +520,50 @@ func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultPar
 	return grp, err
 }
 
+func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetResultParam, error) {
+	callData, ok1 := p.Data.(CallData)
+	if !ok1 {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	bmcRelayMessageParams, ok2 := callData.Params.(BMCRelayMethodParams)
+	if !ok2 {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	prev := bmcRelayMessageParams.Prev
+	msg := bmcRelayMessageParams.Messages
+	tps := make([]*TransactionParam, 0)
+	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
+	fragmentStringSize := len(msg) / nuFragments
+
+	s.l.Debugf("relayByFragments: fragments: %d size: %d", nuFragments, fragmentStringSize)
+	for i := 0; i < len(msg); i += fragmentStringSize {
+		end := i + fragmentStringSize
+
+		if end > len(msg) {
+			end = len(msg)
+		}
+
+		var index int
+		if i == 0 {
+			index = -1
+		} else if end >= len(msg) {
+			index = 0
+		} else {
+			index = i / fragmentStringSize
+		}
+
+		tp, err := s.newFragmentationsTransactionParam(prev, msg[i:end], index)
+		if err != nil {
+			return nil, err
+		}
+
+		tps = append(tps, tp)
+	}
+	return s.sendFragmentations(tps)
+}
+
 func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	p, ok := segment.TransactionParam.(*TransactionParam)
 	if !ok {
@@ -527,50 +571,8 @@ func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	}
 
 	dataSize := countBytesOfCompactJSON(p.Data)
-
 	if dataSize > txMaxDataSize {
-		callData, ok1 := p.Data.(CallData)
-		if !ok1 {
-			return nil, fmt.Errorf("casting failure")
-		}
-
-		bmcRelayMessageParams, ok2 := callData.Params.(BMCRelayMethodParams)
-		if !ok2 {
-			return nil, fmt.Errorf("casting failure")
-		}
-
-		prev := bmcRelayMessageParams.Prev
-		msg := bmcRelayMessageParams.Messages
-		tps := make([]*TransactionParam, 0)
-		nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
-		fragmentStringSize := len(msg) / nuFragments
-
-		for i := 0; i < len(msg); i += fragmentStringSize {
-			end := i + fragmentStringSize
-
-			if end > len(msg) {
-				end = len(msg)
-			}
-
-			var index int
-			if i == 0 {
-				index = -1
-			} else if end >= len(msg) {
-				index = 0
-			} else {
-				index = i / fragmentStringSize
-			}
-
-			tp, err := s.newFragmentationsTransactionParam(prev, msg[i:end], index)
-			if err != nil {
-				return nil, err
-			}
-
-			tps = append(tps, tp)
-		}
-
-		s.l.Debugf("Relay: start Fragmentation n:%d size: %d", nuFragments, fragmentStringSize)
-		return s.sendFragmentations(tps)
+		return s.relayByFragments(p, dataSize)
 	} else {
 		return s.signAndSendTransaction(p)
 	}
