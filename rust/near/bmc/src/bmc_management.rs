@@ -1,7 +1,7 @@
 //! BMC Management Contract
 
 use crate::bmc_types::*;
-use crate::BMC;
+use crate::Bmc;
 //use btp_common::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
@@ -37,7 +37,7 @@ impl Default for BmcManagement {
     }
 }
 
-impl BMC for BmcManagement {
+impl Bmc for BmcManagement {
     /*** BMC Generic ***/
 
     /// Get BMC BTP address
@@ -51,7 +51,11 @@ impl BMC for BmcManagement {
         unimplemented!()
     }
 
-    fn decode_msg_and_validate_relay(&mut self, _prev: &str, _msg: &str) -> Vec<Vec<u8>> {
+    fn decode_msg_and_validate_relay(
+        &mut self,
+        _prev: &str,
+        _msg: &str,
+    ) -> Result<Vec<Vec<u8>>, &str> {
         unimplemented!()
     }
 
@@ -59,32 +63,32 @@ impl BMC for BmcManagement {
         unimplemented!()
     }
 
-    fn handle_message_internal(&mut self, _prev: &str, _msg: &BmcMessage) {
+    fn handle_message_internal(&mut self, _prev: &str, _msg: &BmcMessage) -> Result<(), &str> {
         unimplemented!()
     }
 
-    fn send_message_internal(&mut self, _to: &str, _serialized_msg: &[u8]) {
+    fn send_message_internal(&mut self, _to: &str, _serialized_msg: &[u8]) -> Result<(), &str> {
         unimplemented!()
     }
 
     fn send_error_internal(
         &mut self,
         _prev: &str,
-        _msg: BmcMessage,
+        _msg: &BmcMessage,
         _err_code: u32,
         _err_msg: &str,
-    ) {
+    ) -> Result<(), &str> {
         unimplemented!()
     }
 
     /// Send the message to a specific network
     /// Caller must be a registered BSH
-    fn send_message(&mut self, _to: &str, _svc: &str, _sn: u64, _msg: &[u8]) {
+    fn send_message(&mut self, _to: &str, _svc: &str, _sn: i64, _msg: &[u8]) -> Result<(), &str> {
         unimplemented!()
     }
 
     /// Get status of BMC
-    fn get_status(&self, _link: &str) -> LinkStats {
+    fn get_status(&self, _link: &str) -> Result<LinkStats, &str> {
         unimplemented!()
     }
 
@@ -263,7 +267,7 @@ impl BMC for BmcManagement {
     }
 
     /// Add a reachable BTP address to link. Only called by BMC generic
-    fn update_link_reachable(&mut self, _prev: &str, _to: &str) {
+    fn update_link_reachable(&mut self, _prev: &str, _to: &[&str]) {
         todo!()
     }
 
@@ -279,7 +283,7 @@ impl BMC for BmcManagement {
 
     /// Resolve next BMC. Only called by BMC generic
     /// Returns BTP address of next BMC and destined BMC
-    fn resolve_route(&mut self, _dst_net: &str) -> (String, String) {
+    fn resolve_route(&mut self, _dst_net: &str) -> Result<(String, String), &str> {
         todo!()
     }
 

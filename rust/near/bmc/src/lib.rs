@@ -35,12 +35,14 @@
 pub mod bmc_generic;
 pub mod bmc_management;
 pub mod bmc_types;
+pub mod utils;
 pub use bmc_generic::BmcGeneric;
 pub use bmc_management::BmcManagement;
 pub use bmc_types::*;
+pub use utils::Utils;
 
 /// Interface for BMC
-pub trait BMC {
+pub trait Bmc {
     /*** BMC Generic ***/
 
     /// Get BMC BTP address
@@ -48,16 +50,26 @@ pub trait BMC {
     /// Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
     /// Caller must be a registered relayer.
     fn handle_relay_message(&mut self, prev: &str, msg: &str);
-    fn decode_msg_and_validate_relay(&mut self, prev: &str, msg: &str) -> Vec<Vec<u8>>;
+    fn decode_msg_and_validate_relay(
+        &mut self,
+        prev: &str,
+        msg: &str,
+    ) -> Result<Vec<Vec<u8>>, &str>;
     fn decode_btp_message(&mut self, rlp: &[u8]) -> Result<BmcMessage, String>;
-    fn handle_message_internal(&mut self, prev: &str, msg: &BmcMessage);
-    fn send_message_internal(&mut self, to: &str, serialized_msg: &[u8]);
-    fn send_error_internal(&mut self, prev: &str, msg: BmcMessage, err_code: u32, err_msg: &str);
+    fn handle_message_internal(&mut self, prev: &str, msg: &BmcMessage) -> Result<(), &str>;
+    fn send_message_internal(&mut self, to: &str, serialized_msg: &[u8]) -> Result<(), &str>;
+    fn send_error_internal(
+        &mut self,
+        prev: &str,
+        msg: &BmcMessage,
+        err_code: u32,
+        err_msg: &str,
+    ) -> Result<(), &str>;
     /// Send the message to a specific network
     /// Caller must be a registered BSH
-    fn send_message(&mut self, to: &str, svc: &str, sn: u64, msg: &[u8]);
+    fn send_message(&mut self, to: &str, svc: &str, sn: i64, msg: &[u8]) -> Result<(), &str>;
     /// Get status of BMC
-    fn get_status(&self, link: &str) -> LinkStats;
+    fn get_status(&self, link: &str) -> Result<LinkStats, &str>;
 
     /*** BMC Management ***/
 
@@ -147,14 +159,14 @@ pub trait BMC {
     /// Increase transaction sequence by 1
     fn update_link_tx_seq(&mut self, prev: &str);
     /// Add a reachable BTP address to link. Only called by BMC generic
-    fn update_link_reachable(&mut self, prev: &str, to: &str);
+    fn update_link_reachable(&mut self, prev: &str, to: &[&str]);
     /// Remove a reachable BTP address. Only called by BMC generic
     fn delete_link_reachable(&mut self, prev: &str, index: u128);
     /// Update relay status. Only called by BMC generic
     fn update_relay_stats(&mut self, relay: &str, block_count_val: u128, msg_count_val: u128);
     /// Resolve next BMC. Only called by BMC generic
     /// Returns BTP address of next BMC and destined BMC
-    fn resolve_route(&mut self, dst_net: &str) -> (String, String);
+    fn resolve_route(&mut self, dst_net: &str) -> Result<(String, String), &str>;
     /// Rotate relay for relay address. Only called by BMC generic
     /// Returns relay address
     fn rotate_relay(

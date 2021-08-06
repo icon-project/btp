@@ -27,10 +27,10 @@ pub enum BmcEvents {
     // emit errors in BTP messages processing
     ErrorOnBtpError {
         svc: String,
-        sn: u128,
-        code: u128,
+        sn: i64,
+        code: u64,
         err_msg: String,
-        svc_err_code: u32,
+        svc_err_code: u64,
         svc_err_msg: String,
     },
 }
@@ -143,7 +143,7 @@ pub struct BmcMessage {
     /// service name of BSH
     pub svc: String,
     /// sequence number of BMC
-    pub sn: u64,
+    pub sn: i64,
     /// serialized service message from BSH
     pub message: Vec<u8>,
 }

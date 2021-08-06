@@ -6,4 +6,7 @@ edition = "2018"
 
 [dependencies]
 btp-common = { path = "../../btp-common" }
+bmv = { path = "../bmv" }
+bsh-generic = { path = "../bsh/bsh-generic" }
+bsh-types = { path = "../bsh/bsh-types" }
 near-sdk = "3.1.0"
