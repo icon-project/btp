@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gammazero/workerpool"
 	"github.com/gorilla/websocket"
 
 	"github.com/icon-project/btp/chain"
@@ -110,7 +109,7 @@ func (s *sender) newFragmentationsTransactionParam(prev string, msg string, idx 
 			Params: BMCFragmentMethodParams{
 				Prev:     prev,
 				Messages: msg,
-				Index:    idx,
+				Index:    NewHexInt(int64(idx)),
 			},
 		},
 	}
@@ -503,25 +502,22 @@ SignLoop:
 
 func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultParam, error) {
 	s.l.Tracef("sendFragmentations: start")
-	wp := workerpool.New(len(tps))
-	resultChan := make(chan chain.GetResultParam)
+	var grp chain.GetResultParam
+	var err error
 
-	for i, tp := range tps {
-		wp.Submit(func() {
-			grp, err := s.signAndSendTransaction(tp)
+	for i := 0; i < len(tps); i++ {
+		if i == (len(tps) - 1) {
+			grp, err = s.signAndSendTransaction(tps[i])
+		} else {
+			_, err = s.signAndSendTransaction(tps[i])
 			if err != nil {
-				s.l.Panicf("sendFragmentations: fails %v", err)
+				s.l.Panicf("sendFragmentations: fails")
 			}
-			if i == len(tps)-1 {
-				resultChan <- grp
-			}
-		})
+		}
 	}
 
-	wp.StopWait()
-	close(resultChan)
 	s.l.Tracef("sendFragmentations: end")
-	return <-resultChan, nil
+	return grp, err
 }
 
 func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
