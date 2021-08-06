@@ -31,20 +31,18 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	return rC
 }
 
-func (r *relayReceiver) syncBlock(mtaHeight int64, hash substrate.SubstrateHash) {
-	next := r.pC.store.Height() + 1
-	if next < mtaHeight {
-		r.log.Fatalf("found missing block next:%d bu:%d", next, mtaHeight)
-		return
-	}
-	if next == mtaHeight {
-		r.log.Debugf("syncBlock: with remote MTA %d, store MTA %d", mtaHeight, next-1)
-		r.pC.store.AddHash(hash[:])
-		if err := r.pC.store.Flush(); err != nil {
-			r.log.Fatalf("fail to MTA Flush err:%+v", err)
-		}
-	}
-}
+// func (r *relayReceiver) syncBlocks(newMtaHeight int64) {
+// 	next := r.pC.store.Height() + 1
+// 	r.log.Debugf("syncBlocks: with remote MTA %d, store MTA %d", newMtaHeight, next-1)
+// 	for i := next; i <= newMtaHeight; i++ {
+// 		r.log.Tracef("syncBlocks: sync %d", i)
+// 		hash, err := r.c.GetBlockHash(uint64(i))
+// 		if err != nil {
+// 			r.log.Panic("syncBlocks: fail to sync err:%+v", err)
+// 		}
+// 		r.pC.store.AddHash(hash[:])
+// 	}
+// }
 
 // newBlockProof creates a new BlockProof
 func (r *relayReceiver) newBlockProof(height int64, header []byte) ([]byte, error) {
@@ -91,7 +89,7 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		return nil, err
 	}
 
-	r.log.Tracef("newVotes: ScaleEncodedVoteMessage %x", v.VoteMessage)
+	// r.log.Tracef("newVotes: ScaleEncodedVoteMessage %x", v.VoteMessage)
 	for _, precommit := range justifications.Commit.Precommits {
 		vs := ValidatorSignature{
 			Signature: precommit.Signature[:],
@@ -134,7 +132,7 @@ func (r *relayReceiver) newBlockUpdate(header substrate.SubstrateHeader, justifi
 		return nil, err
 	}
 
-	r.log.Tracef("newBlockUpdate: at %d RLPEncodedBlockUpdate %x", header.Number, bu)
+	// r.log.Tracef("newBlockUpdate: at %d RLPEncodedBlockUpdate %x", header.Number, bu)
 	return bu, nil
 }
 
@@ -281,12 +279,6 @@ func (r *relayReceiver) didPullBlockUpdatesLastJustifications(paraIncludedHeader
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash) ([]byte, error) {
 	mtaHeight := r.pC.getRelayMtaHeight()
 	r.log.Debugf("newParaFinalityProof: mtaHeight %d", mtaHeight)
-
-	// Performance guess for checking with MTA height
-	if uint64(vd.RelayParentNumber+10) <= mtaHeight {
-		r.log.Panicf("newParaFinalityProof: skip relayblock %d, mtaHeight: %d", uint64(vd.RelayParentNumber+10), mtaHeight)
-	}
-
 	// check out which block para chain get included
 	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
 
@@ -336,8 +328,15 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 			}
+
+			if i != 0 {
+				r.pC.store.AddHash(blockHeader.ParentHash[:])
+			}
+
 			bus = append(bus, bu)
 		}
+
+		r.pC.store.AddHash(fp.Justification.EncodedJustification.Commit.TargetHash[:])
 
 		// check if last block contains Grandpa_NewAuthorities event
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(fp.Justification.EncodedJustification.Commit.TargetHash)
@@ -359,6 +358,21 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 		r.lastJustificationCollected = (*substrate.SubstrateBlockNumber)(&lastBlockNumber)
 	} else {
+		// mtaSynced := false
+		// for !mtaSynced {
+		// newMtaHeight := r.pC.getRelayMtaHeight()
+		// localMtaHeight := r.pC.store.Height()
+
+		// if newMtaHeight > uint64(localMtaHeight) {
+		// r.syncBlocks(int64(*r.lastJustificationCollected))
+		// mtaSynced = true
+		// break
+		// }
+
+		// r.log.Debugf("newParaFinalityProof: wait for mtaSync local %d, remote %d, paraInclude %d", localMtaHeight, newMtaHeight, paraIncludedHeader.Number)
+		// time.Sleep(time.Second * 3)
+		// }
+
 		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
 
 		if err != nil {

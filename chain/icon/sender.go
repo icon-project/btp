@@ -275,7 +275,8 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		}
 		size += buSize
 		osl := s.isOverSizeLimit(size)
-		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
+		// for relay to work
+		obl := s.isOverBlocksLimit(1)
 		if osl || obl {
 			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{

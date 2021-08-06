@@ -176,11 +176,7 @@ func (b *BTP) OnBlockOfSrc(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 	b.log.Tracef("OnBlockOfSrc bu.Height:%d", bu.Height)
 	b.updateMTA(bu)
 	b.addRelayMessage(bu, rps)
-	if b.store.Height() >= b.bmcLinkStatus.Verifier.Height {
-		b.relaySignal <- true
-	} else {
-		b.log.Debugf("OnBlockOfSrc syncing Merkle Tree Accumulator at %d", bu.Height)
-	}
+	b.relaySignal <- true
 }
 
 // OnBlockOfDst callback when got a new update from the BMC destination
