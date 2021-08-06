@@ -207,7 +207,8 @@ public class ServiceHandler {
         reader.beginList();
         int actionType = reader.readInt();
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            TransferAsset _ta = TransferAsset.readObject(reader);
+            ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, reader.readByteArray());
+            TransferAsset _ta = TransferAsset.readObject(readerTa);
             Address dataTo = null;
             try {
                 dataTo = Address.fromString(_ta.getTo());
@@ -244,7 +245,8 @@ public class ServiceHandler {
                 ObjectReader pmsgReader = Context.newByteArrayObjectReader(RLPn, pmsg);
                 pmsgReader.beginList();
                 pmsgReader.skip();
-                TransferAsset pendingMsg = TransferAsset.readObject(pmsgReader);
+                ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, pmsgReader.readByteArray());
+                TransferAsset pendingMsg = TransferAsset.readObject(readerTa);
                 Address pmsgFrom = Address.fromString(pendingMsg.getFrom());
                 for (int i = 0; i < pendingMsg.getAssets().size(); i++) {
                     Asset _asset = pendingMsg.getAssets().get(i);
@@ -385,8 +387,11 @@ public class ServiceHandler {
         if (type == REQUEST_TOKEN_TRANSFER) {
             writer.beginList(2);
             writer.write(REQUEST_TOKEN_TRANSFER);//ActionType
+            //TODO: error chanhe the ta to write as bytes to make it compatible with bsh decode in solidity:: check if this works
+            ByteArrayObjectWriter writerTa = Context.newByteArrayObjectWriter(RLPn);
             TransferAsset _ta = new TransferAsset((String) args[0], (String) args[1], (List<Asset>) args[2]);
-            TransferAsset.writeObject(writer, _ta);
+            TransferAsset.writeObject(writerTa, _ta);
+            writer.write(writerTa.toByteArray());
             writer.end();
         } else if (type == RESPONSE_HANDLE_SERVICE) {
             writer.beginList(2);

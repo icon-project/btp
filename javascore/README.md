@@ -69,6 +69,13 @@ BMC:
 
 ``` gradle bmc:deployToLocal -PkeystoreName=../keys/keystore_god.json -PkeystorePass=gochain ```
 
+Deploying BMC.zip (replace with proper parameters):
+
+``` goloop rpc --uri http://btp.net.solidwallet.io/api/v3 sendtx deploy bmc.zip \
+    --key_store keystore --key_password Admin@123 \
+    --nid 0x42 --step_limit 13610920001 \
+    --content_type application/zip \
+    --param _net="0x07.icon" ```
 BMV:
 
 ``` gradle bmv:deployToLocal -DBMC_ADDRESS=<BMC_SCORE_ADDRESS> -PkeystoreName=../keys/keystore_god.json -PkeystorePass=gochain ```

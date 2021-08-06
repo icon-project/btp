@@ -72,9 +72,9 @@ public class BMVLocalTest extends TestBase {
     private static String prevBMCBTPAdd;
 
     static void setup(){
-        BMC_SCORE_ADDRESS = "cx24d7ce07576f2ea09bd14f1732c6a2d6b633e69b";
-        BMV_SCORE_ADDRESS = "cxaa688be4b28460f3693542da9f92d7d66e9b0740";
-        BMV_DEPLOY_TRANSACTION_ID = "0x8846e6ef244c88ebb1b986af561ddde5ca8f8ce2ea08c82c4d1a9e564b3db597";
+        BMC_SCORE_ADDRESS = "cx6c4386279d4acb9e5a240d86ff24f09e5f7ab277";
+        BMV_SCORE_ADDRESS = "cxefba0b6067fff248599aab8c68a740740036a07b";
+        BMV_DEPLOY_TRANSACTION_ID = "0x0c68ba68eaf2f9b4a1395914adb15c4a18d49aef69c2a7160afca0b06162db6c";
         keystore_file = "../keys/keystore_god.json";
         keystore_file_pwd = "gochain";
 
@@ -82,6 +82,7 @@ public class BMVLocalTest extends TestBase {
 
     @BeforeAll
     static void init() throws Exception {
+        setup();
         Env.Node node = Env.nodes[0];
         Env.Channel channel = node.channels[0];
         Env.Chain chain = channel.chain;

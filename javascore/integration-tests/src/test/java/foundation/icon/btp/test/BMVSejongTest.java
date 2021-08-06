@@ -81,10 +81,11 @@ public class BMVSejongTest extends TestBase {
 
         // init wallets
         wallets = new KeyWallet[3];
-        wallets[0] = KeyWallet.load("Admin@123", new File("keystore"));
+        wallets[0] = KeyWallet.load("", new File("../keys/keystore_sejong"));
         encodedValidators = "";//new String(Base64.getUrlEncoder().encode(writer.toByteArray()));
 
         ownerWallet = wallets[0];
+        System.out.println("Owner address => " +ownerWallet.getAddress());
         caller = wallets[1];
 
         currentBMCAdd = "cx5a07eb7cd72f3da51856d4cb8c0b14caeb5991c9";

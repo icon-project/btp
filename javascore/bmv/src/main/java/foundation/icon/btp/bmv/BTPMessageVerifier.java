@@ -46,24 +46,19 @@ public class BTPMessageVerifier {
     private final VarDB<String> network = Context.newVarDB("network", String.class);
     private final VarDB<BigInteger> lastHeight = Context.newVarDB("lastHeight", BigInteger.class);
     private final VarDB<MerkleTreeAccumulator> mta = Context.newVarDB("mta", MerkleTreeAccumulator.class);
-    private final VarDB<ValidatorList> validatorList = Context.newVarDB("validators", ValidatorList.class);
     private final VarDB<Boolean> mtaUpdated = Context.newVarDB("mtaUpdated", Boolean.class);
 
     public BTPMessageVerifier(
             String bmc,
             String network,
-            String validators,
             int offset,
             int rootSize,
             int cacheSize,
-            boolean isAllowNewerWitness,
-            byte[] lastBlockHash) {
+            boolean isAllowNewerWitness) {
         this.network.set(network);
         this.bmcScoreAddress.set(Address.fromString(bmc));
-        byte[] serializedValidator = Base64.getUrlDecoder().decode(validators.getBytes());
-        this.validatorList.set(ValidatorList.fromBytes(serializedValidator));
         this.lastHeight.set(BigInteger.valueOf(offset));
-        this.mta.set(new MerkleTreeAccumulator(0, offset, rootSize, cacheSize, isAllowNewerWitness, lastBlockHash, null, null));
+        this.mta.set(new MerkleTreeAccumulator(0, offset, rootSize, cacheSize, isAllowNewerWitness, null, null));
     }
 
     @External
@@ -119,11 +114,10 @@ public class BTPMessageVerifier {
     }
 
 
-
     /**
      * get status of BMV
      */
-    @External(readonly=true)
+    @External(readonly = true)
     public BMVStatus getStatus() {
         MerkleTreeAccumulator mta = this.mta.get();
         BMVStatus status = new BMVStatus();
@@ -156,8 +150,8 @@ public class BTPMessageVerifier {
         for (BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
             int nextHeight = (int) (mta.getHeight() + 1);
             if (BigInteger.valueOf(nextHeight).compareTo(blockUpdate.getBlockHeader().getNumber()) == 0) {
-                if (blockUpdate.verify(this.validatorList.get())) {
-                    this.validatorList.set(ValidatorList.fromAddressBytes(blockUpdate.getNextValidators()));
+                if (!blockUpdate.getBlockHeader().verifyValidatorSignature(BlockHeader.toBytes(blockUpdate.getBlockHeader()))) {
+                    Context.revert(BMVErrorCodes.INVALID_COINBASE_SIGNATURE, "Invalid Validator signature");
                 }
                 mta.add(blockUpdate.getBlockHeader().getHash());
                 this.mtaUpdated.set(true);

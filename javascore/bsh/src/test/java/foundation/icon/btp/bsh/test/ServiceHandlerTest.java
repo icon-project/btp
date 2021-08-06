@@ -350,8 +350,10 @@ class ServiceHandlerTest extends TestBase {
         writer.write(REQUEST_TOKEN_TRANSFER);//ActionType
         List<Asset> assets = new ArrayList<Asset>();
         assets.add(new Asset(tokenName, transferAmount, BigInteger.ZERO));
+        ByteArrayObjectWriter writerTa = Context.newByteArrayObjectWriter(RLPn);
         TransferAsset _ta = new TransferAsset(from, to, assets);
-        TransferAsset.writeObject(writer, _ta);
+        TransferAsset.writeObject(writerTa, _ta);
+        writer.write(writerTa.toByteArray());
         writer.end();
         return writer.toByteArray();
     }

@@ -12,4 +12,5 @@ public class BMVErrorCodes {
     public static final int FAILED_TO_DECODE = 108;
     public static final int INVALID_BLOCK_PROOF_NO_WITNESS = 109;
     public static final int INVALID_BLOCK_WITNESS = 110;
+    public static final int INVALID_COINBASE_SIGNATURE = 111;
 }

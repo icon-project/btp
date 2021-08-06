@@ -4,7 +4,6 @@ import com.iconloop.testsvc.Account;
 import com.iconloop.testsvc.Score;
 import com.iconloop.testsvc.ServiceManager;
 import com.iconloop.testsvc.TestBase;
-import foundation.icon.btp.bmv.lib.HexConverter;
 import foundation.icon.btp.bmv.lib.mpt.MPTException;
 import foundation.icon.btp.bmv.types.*;
 import foundation.icon.icx.KeyWallet;
@@ -27,12 +26,15 @@ public class BMVTest extends TestBase {
 
     final static String RLPn = "RLPn";
     private static final ServiceManager sm = getServiceManager();
-    private static final int offset = 55;
+
     private static final int rootSize = 3;
     private static final int cacheSize = 10;
-    private static final byte[] lastBlockHash = HexConverter.hexStringToByteArray("c93b8edba9a9d845138f2ae0fc38d66958251e13fd18d1549d3e7104585fa10b");
-    private static final boolean isAllowNewerWitness = true;
     private static final String sol_bmc = "8cd1d5d16caf488efc057e4fc3add7c11b01d9b0";
+    private static final int offset = 55;
+    /* private static final String sol_bmc = "8cd1d5d16caf488efc057e4fc3add7c11b01d9b0";
+     private static final int offset = 113;*/
+    private static final boolean isAllowNewerWitness = true;
+
     private static Score bmv;
     private static KeyWallet[] accounts;
     private static List<byte[]> validators_pub_keys;
@@ -49,25 +51,14 @@ public class BMVTest extends TestBase {
 
     @BeforeAll
     public static void setup() throws Exception {
-        validators_pub_keys = new ArrayList<byte[]>(5);
-        validators_priv_keys = new ArrayList<byte[]>(5);
         accounts = new KeyWallet[5];
-        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
-        writer.beginList(accounts.length);
         owners = new Account[3];
         for (int i = 0; i < owners.length; i++) {
             owners[i] = sm.createAccount(100);
         }
         for (int i = 0; i < accounts.length; i++) {
             accounts[i] = KeyWallet.create();
-            validators_pub_keys.add(accounts[i].getPublicKey().toByteArray());
-            validators_priv_keys.add(accounts[i].getPrivateKey().toByteArray());
-            writer.write(accounts[i].getAddress().getBody());
-
         }
-        writer.end();
-        String encodedValidators = new String(Base64.getUrlEncoder().encode(writer.toByteArray()));
-        System.out.println(encodedValidators);
         currentBMCAdd = owners[0].getAddress().toString();
         currentBMCNet = "0x1.iconee";
         prevBMCAdd = sol_bmc;
@@ -76,11 +67,74 @@ public class BMVTest extends TestBase {
         currentBMCBTPAdd = "btp://" + currentBMCNet + "/" + currentBMCAdd;
         prevBMCBTPAdd = "btp://" + prevBMCnet + "/" + prevBMCAdd;
 
-        // bmv = spy(new BTPMessageVerifier(bmc,bmcBTPAddress.getNet(),encodedValidators,offset,rootSize,cacheSize,isAllowNewerWitness,lastBlockHash));
-        bmv = sm.deploy(owners[0], BTPMessageVerifier.class, currentBMCAdd, prevBMCnet, encodedValidators, offset, rootSize, cacheSize, isAllowNewerWitness, lastBlockHash);
+        // bmv = spy(new BTPMessageVerifier(bmc,bmcBTPAddress.getNet(),encodedValidators,offset,rootSize,cacheSize,isAllowNewerWitness));
+        bmv = sm.deploy(owners[0], BTPMessageVerifier.class, currentBMCAdd, prevBMCnet, offset, rootSize, cacheSize, isAllowNewerWitness);
 
     }
 
+    /*
+        @Test
+        @Order(1)
+        public void test_handleRelayMessage() throws MPTException {
+
+            //header bytes sample value from verify.js poc:108 "headerEncoded" var
+            byte[] headerBytes = Hex.decode("f9025aa0bf25430263c61d1d64f68bcd3695d0973b7c2499cec457d11354098e844d9ceca01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479448948297c3236ec3ea6c95f4eec22fdb18255e55a08cce51d9e20deb11ed161cc68dbcb126eed23523bba3b831c5fc6e57aa13f207a07cd40799a188776553982c23ead78405e8d3afd53337fe67e8b3147c759e488da0984f36aad5db6cd51b4857a9ebb8dbcb9b7bf7e483d6ff852d96ca6092a81620b90100000000020000000002000040000000000000000000000000000000000000000000011000000000000020000020000000000080000000000000000000002000004000000000000000000000080000000021000000001000020004000000008000000800200000000400000000000000000000000000000000000000100000000010100000000000000000000000000000000004000000000000000200000000001200000000000000048000000000100000000000000000000000000000000000002000028000200000000000000000000000000000000000001040000000000002100000000000000000000000000100000400100000000000000000008000000272840186aacc830853fc84610c16a8b861d883010006846765746888676f312e31352e36856c696e757800000011c0aa9e6faed5519244ded947a4b70c80915f5a49cd0338b2731514a054a67becfcb23e04a8266400bd06717db5971c7eca4ca076917a1ab46d9f25059a2d14c9f4273900a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
+            BlockHeader header = BlockHeader.fromBytes(headerBytes);
+            BlockUpdate bu = new BlockUpdate(header, null, new byte[0][0]);
+            List<BlockUpdate> buList = new ArrayList<BlockUpdate>();
+            buList.add(bu);
+
+            //witness got from poc verify.js:47 "witness" of transactionProof
+            byte[] witness = Hex.decode("f8912880887fffffffffffffff9400000000000000000000000000000000000010008724057de9042f00a4f340fa0100000000000000000000000048948297c3236ec3ea6c95f4eec22fdb18255e5581e5a0abe917502a075c44ad2ddef608112267bb303d61140f69d2dc8ddf3e862b3e9ea0722249d2348e7a82d0a1e1d8697163b23baa4929813faa0920d669550aff88d9");
+            BlockWitness bw = BlockWitness.fromBytes(witness);
+            BlockProof blockProof = new BlockProof(header, bw);
+
+            //receipts root hash = d5fb9fafd6b0c3d46d6c9e08d9947a70e95400dd0bf21467ea3d3f17ce77651b
+            // from  keccak(rlp.encode(resp.receiptProof[0]))
+            // rp= mptproofs = needed to prove the Receipt in MPT = rlp.encode(encodedProof).toString('hex') where encodedeProof = rlp.encode(resp.receiptProof)
+
+            byte[] rp = Hex.decode("f90683b853f851a024659e8223cdf8e2147925381730d012b41f4c62d443964757e3ee8f3d9e347a80808080808080a049679fa867c754666b328950663558758d93dfafd36b830cdac96013379a01df8080808080808080b9062bf9062830b90624f906210183084052b9010000000002000000000200000000000000000000000000000000000000000000000001000000000000002000000000000000008000000000000000000000200000400000000000000000000008000000000000000000100002000400000000800000000000000000040000000000000000000000000000000000000010000000001000000000000000000000000000000000000000000000000000020000000000120000000000000004800000000010000000000000000000000000000000000000200002000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000010000000000000000000800000f90516f89b9448b163bdfea4f745d2be987ebc24ab81ec917c98f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30da00000000000000000000000003cc15e6fe06ca92c5e062463472852b68af526f4a00000000000000000000000000000000000000000000000000000000000000064f89b9448b163bdfea4f745d2be987ebc24ab81ec917c98f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30da00000000000000000000000003cc15e6fe06ca92c5e062463472852b68af526f4a00000000000000000000000000000000000000000000000000000000000000000f901da9417c44bc2a35829a84bfb53f6d9247273227a744ae1a037be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1bb901a00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000001c6274703a2f2f6273632f3078313233343536373831323334353637380000000000000000000000000000000000000000000000000000000000000000000000def8dcb8436274703a2f2f6274703a2f2f6273632f3078313763343462633261333538323961383462666235336636643932343732373332323761373434610000000000000000009c6274703a2f2f6273632f30783132333435363738313233343536373888546f6b656e42534800b86ef86c00b869f867b3307837306537383964326635643436396561333065303532356462666464353531356436656164333064000000000000000000aa687862366235373931626530623565663637303633623363313062383430666238313531346462326664c7c68345544863010000f901fc94503c16557325c0fcdf5fab9e31b7ec29f9690066f842a050d22373bb84ed1f9eeb581c913e6d45d918c05f8b1d90f0be168f06a4e6994aa000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30db901a00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000346274703a2f2f6273632f6878623662353739316265306235656636373036336233633130623834306662383135313464623266640000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000063000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000034554480000000000000000000000000000000000000000000000000000000000");
+
+            // Mocking relay message from actual data
+            //relay message
+            ByteArrayObjectWriter relayMsgWriter = Context.newByteArrayObjectWriter(RLPn);
+            relayMsgWriter.beginList(3);
+            //blockUpdates
+            relayMsgWriter.beginList(2);
+
+            ByteArrayObjectWriter blockUpdateWriter = Context.newByteArrayObjectWriter(RLPn);
+            BlockUpdate.writeObject(blockUpdateWriter, bu, headerBytes);
+            relayMsgWriter.write(blockUpdateWriter.toByteArray());
+
+
+            relayMsgWriter.end();
+            //blockProof
+            ByteArrayObjectWriter blockProofWrtr = Context.newByteArrayObjectWriter(RLPn);
+            blockProofWrtr.beginList(2);
+            blockProofWrtr.write(headerBytes); //block header
+            blockProofWrtr.write(witness); // block witness
+            blockProofWrtr.end();
+            relayMsgWriter.write(blockProofWrtr.toByteArray());
+            //receiptProof
+            relayMsgWriter.beginList(1);
+            ByteArrayObjectWriter receiptProofWtr = Context.newByteArrayObjectWriter(RLPn);
+            receiptProofWtr.beginList(4);
+            receiptProofWtr.write(0);
+            receiptProofWtr.write(rp); // receipt proof
+            receiptProofWtr.writeNull();
+            receiptProofWtr.writeNull();
+            receiptProofWtr.end();
+            relayMsgWriter.write(receiptProofWtr.toByteArray());
+            relayMsgWriter.end();
+            relayMsgWriter.end();
+            byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
+
+
+            bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg);
+
+            byte[] btpMsg = Hex.decode("f864b83d6274703a2f2f6273632f3078386364316435643136636166343838656663303537653466633361646437633131623031643962300000000000000000008362736388546f6b656e4253480096d50293d200905472616e7366657220537563636573730000000000000000000000000000000000000000000000000000");
+            BTPMessage.fromBytes(btpMsg);
+        }*/
     @Test
     @Order(1)
     public void test_handleRelayMessage() throws MPTException {
@@ -159,6 +213,7 @@ public class BMVTest extends TestBase {
      * If message sender is different from BMC address in BMV:
      * then: exception "Invalid message sender from BMC"
      */
+
     @Test
     @Order(2)
     public void scenario2() {
@@ -179,6 +234,7 @@ public class BMVTest extends TestBase {
      * If network address in BMV (0x1.bsc) is different from previous BMC (0x1.icon):
      * then: exception "Invalid previous BMC"
      */
+
     @Test
     @Order(3)
     public void scenario3() {
@@ -201,6 +257,7 @@ public class BMVTest extends TestBase {
      * If current BMC contract address is different from BMC address in BMV :
      * then: exception "Invalid current BMC"
      */
+
     @Test
     @Order(4)
     public void scenario4() {
@@ -222,6 +279,7 @@ public class BMVTest extends TestBase {
      * Then: throw "Failed to decode relay message"
      */
 
+
     @Test
     @Order(5)
     public void scenario5() {
@@ -230,6 +288,7 @@ public class BMVTest extends TestBase {
                 bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, invalidMsg));
         assertTrue(thrown.getMessage().contains("Failed to decode relay message"));
     }
+
 
     /**
      * Check if BlockUpdate and BlockProof does not exist in relay message
@@ -272,10 +331,12 @@ public class BMVTest extends TestBase {
         assertTrue(thrown.getMessage().contains("Invalid relay message"));
     }
 
+
     /**
      * If H = current block update height < to MTA.height + 1 (lower)
      * throw: Invalid block update due to lower height
      */
+
     @Test
     @Order(7)
     public void scenario7() {
@@ -323,10 +384,12 @@ public class BMVTest extends TestBase {
         assertTrue(thrown.getMessage().contains("Invalid block update due to lower height")); //expected 58, but got 55
     }
 
+
     /**
      * If H = current block update height > to MTA.height + 1 (higher )
      * throw: Invalid block update due to higher  height
      */
+
     @Test
     @Order(8)
     public void scenario8() {
@@ -379,10 +442,13 @@ public class BMVTest extends TestBase {
      * ################ Checking Block Proof , witness section when BlockUpdates when valida/invalid
      *
      */
+
+
     /**
      * If block witness does not exist(in case of blockupdate null & block proof present : block update validation takes precedence)
      * throw: Invalid block proof with non-exist block witness
      */
+
     @Test
     @Order(9)
     public void scenario9() {
@@ -428,6 +494,7 @@ public class BMVTest extends TestBase {
      * If block witness is not empty but If block height of block proof height > MTA.height
      * throw: Invalid block proof with higher height than MTA
      */
+
     @Test
     @Order(10)
     public void scenario10() {
@@ -477,6 +544,7 @@ public class BMVTest extends TestBase {
      * when block witness is not empty but If block height of block proof is !(height > MTA.height)
      * throw: Invalid block witness
      */
+
     @Test
     @Order(11)
     public void scenario11() {
@@ -532,6 +600,7 @@ public class BMVTest extends TestBase {
      * Throws: Invalid receipt proofs with wrong sequence
      */
 
+
     @Test
     @Order(12)
     public void scenario12() {
@@ -581,9 +650,11 @@ public class BMVTest extends TestBase {
         assertTrue(thrown.getMessage().contains("Invalid receipt proofs with wrong sequence"));
     }
 
+
     /**
      * Adding next block 59 with right proof successfully
      */
+
     @Test
     @Order(13)
     public void scenario13() {

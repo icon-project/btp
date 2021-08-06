@@ -34,7 +34,6 @@ public class MTATest {
                 rootSize,
                 cacheSize,
                 isAllowNewerWitness,
-                lastBlockHash,
                 roots,
                 caches
         ));

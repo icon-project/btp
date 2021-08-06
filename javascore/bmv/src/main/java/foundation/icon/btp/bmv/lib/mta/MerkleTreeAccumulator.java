@@ -37,7 +37,6 @@ public class MerkleTreeAccumulator {
     private long height;
     private int rootsSize;
     private int cacheSize;
-    private byte[] lastBlockHash;
 
     private List<byte[]> roots;
     private List<byte[]> caches;
@@ -49,7 +48,6 @@ public class MerkleTreeAccumulator {
                                  int rootSize,
                                  int cacheSize,
                                  boolean isAllowNewerWitness,
-                                 byte[] lastBlockHash,
                                  List<byte[]> roots,
                                  List<byte[]> caches) {
         this.height = height;
@@ -60,7 +58,6 @@ public class MerkleTreeAccumulator {
         this.cacheSize = cacheSize;
         this.caches = caches;
         this.allowNewerWitness = isAllowNewerWitness;
-        this.lastBlockHash = lastBlockHash;
         if (roots != null && roots.size() > 0) {
             this.roots = roots;
         } else {
@@ -255,10 +252,6 @@ public class MerkleTreeAccumulator {
         return cacheSize;
     }
 
-    public byte[] getLastBlockHash() {
-        return lastBlockHash;
-    }
-
     public List<byte[]> getRoots() {
         return roots;
     }
@@ -293,7 +286,6 @@ public class MerkleTreeAccumulator {
         w.write(obj.getRootsSize());
         w.write(obj.getCacheSize());
         w.write(obj.isAllowNewerWitness());
-        w.write(obj.getLastBlockHash());
 
         w.beginList(obj.getRootsSize());
         for (byte[] root : obj.getRoots()) {
@@ -318,7 +310,6 @@ public class MerkleTreeAccumulator {
         int rootSize = r.readInt();
         int cacheSize = r.readInt();
         boolean isAllowNewerWitness = r.readBoolean();
-        byte[] lastBlockHash = r.readByteArray();
 
         List<byte[]> roots = new scorex.util.ArrayList<>();
         if (r.hasNext()) {
@@ -349,7 +340,6 @@ public class MerkleTreeAccumulator {
                 rootSize,
                 cacheSize,
                 isAllowNewerWitness,
-                lastBlockHash,
                 roots,
                 caches
         );
