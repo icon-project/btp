@@ -253,11 +253,12 @@ public interface ICONSpecific {
     void setNextRewardDistribution(long _height);
 
     /**
-     * //FIXME instead of getter pattern
-     * @return
+     * Get height of next distribution
+     *
+     * @return Integer height of next distribution
      */
     @External(readonly = true)
-    RelayersProperties getRelayersProperties();
+    long getNextRewardDistribution();
 
     /**
      * Drop the next message that to be relayed from a specific network

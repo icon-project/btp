@@ -117,10 +117,11 @@ public interface ScoreIntegrationTest {
         return stream.collect(Collectors.toList());
     }
 
+    Wallet defaultWallet = getOrGenerateWallet("", System.getProperties());
     DefaultScoreClient client = new DefaultScoreClient(
             DefaultScoreClient.url(System.getProperties()),
             DefaultScoreClient.nid(System.getProperties()),
-            null,
+            defaultWallet,
             null
     );
 

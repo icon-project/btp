@@ -1260,17 +1260,18 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         relayers.setProperties(properties);
     }
 
+    @External(readonly = true)
+    public long getNextRewardDistribution() {
+        RelayersProperties properties = relayers.getProperties();
+        return properties.getNextRewardDistribution();
+    }
+
     @External
     public void setNextRewardDistribution(long _height) {
         requireOwnerAccess();
         RelayersProperties properties = relayers.getProperties();
         properties.setNextRewardDistribution(StrictMath.max(_height, Context.getBlockHeight()));
         relayers.setProperties(properties);
-    }
-
-    @External(readonly = true)
-    public RelayersProperties getRelayersProperties() {
-        return relayers.getProperties();
     }
 
 }
