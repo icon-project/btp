@@ -42,7 +42,7 @@ const (
 	DefaultGetRelayResultInterval   = time.Second
 	DefaultRelayReSendInterval      = time.Second * 3
 	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultGetRelayResultInterval)) // Pending or stale transaction timeout is 5 minute
-	MaxBlockUpdatesPerSegment       = 10
+	MaxBlockUpdatesPerSegment       = 1
 	DefaultStepLimit                = 2500000000 // estimated step limit for 10 blockupdates per segment
 )
 
@@ -300,12 +300,12 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		size += buSize
 		osl := s.isOverSizeLimit(size)
 		// for relay to work
-		obl := s.isOverBlocksLimit(1)
+		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
 		if osl || obl {
 			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{
 				Height:              bu.Height,
-				NumberOfBlockUpdate: 1,
+				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
 
 			subMsg := &RelayMessage{

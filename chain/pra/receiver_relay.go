@@ -284,6 +284,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	mtaHeight := r.pC.getRelayMtaHeight()
 	paraMtaHeight := r.pC.getParaMtaHeight()
 
+	// This doesn't need para finality proof, but para blockproof
 	if paraMtaHeight == paraHeight {
 		return []byte{0xf8, 0}, nil
 	}
