@@ -86,8 +86,8 @@ func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, 
 		},
 	}
 
-	s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
-	s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
+	// s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
+	// s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
 	return p, nil
 }
 
@@ -298,9 +298,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			continue
 		}
 		buSize := len(bu.Proof)
-		// if s.isOverSizeLimit(buSize) {
-		// 	return nil, ErrInvalidBlockUpdateProofSize
-		// }
 		size += buSize
 		osl := s.isOverSizeLimit(size)
 		// for relay to work
@@ -308,11 +305,18 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		if osl || obl {
 			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{
-				Height:              msg.height,
-				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+				Height:              bu.Height,
+				NumberOfBlockUpdate: 1,
 			}
 
-			rmb, err := codec.RLP.MarshalToBytes(msg)
+			subMsg := &RelayMessage{
+				BlockUpdates:  make([][]byte, 0),
+				ReceiptProofs: make([][]byte, 0),
+			}
+
+			subMsg.BlockUpdates = append(subMsg.BlockUpdates, bu.Proof)
+
+			rmb, err := codec.RLP.MarshalToBytes(subMsg)
 			if err != nil {
 				return nil, err
 			}
@@ -321,14 +325,10 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				return nil, err
 			}
 
+			size -= buSize
 			segments = append(segments, segment)
-			msg = &RelayMessage{
-				BlockUpdates:  make([][]byte, 0),
-				ReceiptProofs: make([][]byte, 0),
-			}
-			size = buSize
 		}
-		s.l.Tracef("Segment: at %d BlockUpdates[%d]: %x", bu.Height, i, bu.Proof)
+		s.l.Tracef("Segment: at %d BlockUpdates[%d]", bu.Height, i)
 		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -471,7 +471,7 @@ SignLoop:
 		}
 	SendLoop:
 		for {
-			s.l.Tracef("Relay: TransactionParam %+v\n", p)
+			s.l.Tracef("signAndSendTransaction: TransactionParam %+v\n", p)
 			txh, err := s.c.SendTransaction(p)
 			if txh != nil {
 				thp.Hash = *txh
@@ -502,12 +502,16 @@ SignLoop:
 }
 
 func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultParam, error) {
+	s.l.Tracef("sendFragmentations: start")
 	wp := workerpool.New(len(tps))
 	resultChan := make(chan chain.GetResultParam)
 
 	for i, tp := range tps {
 		wp.Submit(func() {
-			grp, _ := s.signAndSendTransaction(tp)
+			grp, err := s.signAndSendTransaction(tp)
+			if err != nil {
+				s.l.Panicf("sendFragmentations: fails %v", err)
+			}
 			if i == len(tps)-1 {
 				resultChan <- grp
 			}
@@ -516,7 +520,7 @@ func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultPar
 
 	wp.StopWait()
 	close(resultChan)
-
+	s.l.Tracef("sendFragmentations: end")
 	return <-resultChan, nil
 }
 
@@ -569,6 +573,7 @@ func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 			tps = append(tps, tp)
 		}
 
+		s.l.Debugf("Relay: start Fragmentation n:%d size: %d", nuFragments, fragmentStringSize)
 		return s.sendFragmentations(tps)
 	} else {
 		return s.signAndSendTransaction(p)

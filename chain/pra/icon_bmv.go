@@ -66,6 +66,29 @@ func (c *praBmvClient) getRelayMtaHeight() uint64 {
 	return uint64(value)
 }
 
+func (c *praBmvClient) getParaMtaHeight() uint64 {
+	p := &icon.CallParam{
+		ToAddress: icon.Address(c.address),
+		DataType:  "call",
+		Data: icon.CallData{
+			Method: "paraMtaHeight",
+		},
+	}
+
+	var height icon.HexInt
+	err := icon.MapError(c.Call(p, &height))
+	if err != nil {
+		c.log.Debugf("getParaMtaHeight: failed")
+	}
+
+	value, err := height.Value()
+	if err != nil {
+		c.log.Debugf("getParaMtaHeight: failed")
+	}
+
+	return uint64(value)
+}
+
 func (c *praBmvClient) getRelayMtaOffset() uint64 {
 	p := &icon.CallParam{
 		ToAddress: icon.Address(c.address),

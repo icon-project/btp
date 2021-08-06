@@ -109,7 +109,7 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		return nil, err
 	}
 
-	r.log.Tracef("newVotes: Votes %x", b)
+	r.log.Debugf("newVotes: at %s", justifications.Commit.TargetHash.Hex())
 	return b, nil
 }
 
@@ -276,8 +276,14 @@ func (r *relayReceiver) didPullBlockUpdatesLastJustifications(paraIncludedHeader
 	return paraIncludedHeaderNumber <= *r.lastJustificationCollected
 }
 
-func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash) ([]byte, error) {
+func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash, paraHeight uint64) ([]byte, error) {
 	mtaHeight := r.pC.getRelayMtaHeight()
+	paraMtaHeight := r.pC.getParaMtaHeight()
+
+	if paraMtaHeight == paraHeight {
+		return []byte{0xf8, 0}, nil
+	}
+
 	r.log.Debugf("newParaFinalityProof: mtaHeight %d", mtaHeight)
 	// check out which block para chain get included
 	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
