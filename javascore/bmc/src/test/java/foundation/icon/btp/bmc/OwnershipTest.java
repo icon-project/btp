@@ -211,12 +211,17 @@ public class OwnershipTest implements BMCIntegrationTest {
     }
 
     @Test
-    void addDropShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.addDrop(btpAddress, bigInteger));
+    void dropMessageShouldRevertUnauthorized() {
+        assertUnauthorized(() -> iconSpecificWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger));
     }
 
     @Test
-    void removeDropShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.addDrop(btpAddress, bigInteger));
+    void scheduleDropMessageShouldRevertUnauthorized() {
+        assertUnauthorized(() -> iconSpecificWithTester.scheduleDropMessage(btpAddress, bigInteger));
+    }
+
+    @Test
+    void cancelDropMessageShouldRevertUnauthorized() {
+        assertUnauthorized(() -> iconSpecificWithTester.scheduleDropMessage(btpAddress, bigInteger));
     }
 }

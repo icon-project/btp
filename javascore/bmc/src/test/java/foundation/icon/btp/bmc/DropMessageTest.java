@@ -35,7 +35,7 @@ public class DropMessageTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
     static BigInteger seq = BigInteger.ONE;
-
+    
     @BeforeAll
     static void beforeAll() {
         System.out.println("beforeAll start");
@@ -57,63 +57,63 @@ public class DropMessageTest implements BMCIntegrationTest {
         clearDrop(link, seq);
     }
 
-    static boolean isExistsDrop(String link, BigInteger seq) {
+    static boolean isExistsScheduledDropMessage(String link, BigInteger seq) {
         return ScoreIntegrationTest.indexOf(
-                iconSpecific.getDrops(link), seq) >= 0;
+                iconSpecific.getScheduledDropMessages(link), seq) >= 0;
     }
 
-    static void addDrop(String link, BigInteger seq) {
-        iconSpecific.addDrop(link, seq);
-        assertTrue(isExistsDrop(link, seq));
+    static void scheduleDropMessage(String link, BigInteger seq) {
+        iconSpecific.scheduleDropMessage(link, seq);
+        assertTrue(isExistsScheduledDropMessage(link, seq));
     }
 
-    static void removeDrop(String link, BigInteger seq) {
-        iconSpecific.removeDrop(link, seq);
-        assertFalse(isExistsDrop(link, seq));
+    static void cancelDropMessage(String link, BigInteger seq) {
+        iconSpecific.cancelDropMessage(link, seq);
+        assertFalse(isExistsScheduledDropMessage(link, seq));
     }
 
     static void clearDrop(String link, BigInteger seq) {
-        if (LinkManagementTest.isExistsLink(link) && isExistsDrop(link, seq)) {
+        if (LinkManagementTest.isExistsLink(link) && isExistsScheduledDropMessage(link, seq)) {
             System.out.println("clear drop link:" + link + ", seq:" + seq);
-            removeDrop(link, seq);
+            cancelDropMessage(link, seq);
         }
     }
 
     @Test
-    void addDropShouldSuccess() {
-        addDrop(link, seq);
+    void scheduleDropMessageShouldSuccess() {
+        scheduleDropMessage(link, seq);
     }
 
     @Test
-    void addDropShouldRevertAlreadyExists() {
-        addDrop(link, seq);
+    void scheduleDropMessageShouldRevertAlreadyExists() {
+        scheduleDropMessage(link, seq);
 
         AssertBMCException.assertUnknown(() ->
-                addDrop(link, seq));
+                scheduleDropMessage(link, seq));
     }
 
     @Test
-    void addDropShouldRevertNotExistsLink() {
+    void scheduleDropMessageShouldRevertNotExistsLink() {
         AssertBMCException.assertNotExistsLink(() ->
-                addDrop(BTPIntegrationTest.Faker.btpLink().toString(), seq));
+                scheduleDropMessage(BTPIntegrationTest.Faker.btpLink().toString(), seq));
     }
 
     @Test
-    void removeDropShouldSuccess() {
-        addDrop(link, seq);
+    void cancelDropMessageShouldSuccess() {
+        scheduleDropMessage(link, seq);
 
-        removeDrop(link, seq);
+        cancelDropMessage(link, seq);
     }
 
     @Test
-    void removeDropShouldRevertNotExists() {
+    void cancelDropMessageShouldRevertNotExists() {
         AssertBMCException.assertUnknown(() ->
-                removeDrop(link, seq));
+                cancelDropMessage(link, seq));
     }
 
     @Test
-    void removeDropShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(() -> removeDrop(
+    void cancelDropMessageShouldRevertNotExistsLink() {
+        AssertBMCException.assertNotExistsLink(() -> cancelDropMessage(
                 BTPIntegrationTest.Faker.btpLink().toString(), seq));
     }
 
