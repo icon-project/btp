@@ -3,17 +3,16 @@
 use crate::bmc_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{near_bindgen, setup_alloc};
+use near_sdk::{env, near_bindgen, setup_alloc};
 
 setup_alloc!();
-/// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BmcManagement {
     owners: UnorderedMap<String, bool>,
     num_of_owners: u64,
     bsh_services: UnorderedMap<String, String>,
-    bmc_services: UnorderedMap<String, String>,
+    bmv_services: UnorderedMap<String, String>,
     relay_stats: UnorderedMap<String, RelayStats>,
     routes: UnorderedMap<String, String>,
     links: UnorderedMap<String, Link>,
@@ -31,11 +30,15 @@ pub struct BmcManagement {
 
 impl Default for BmcManagement {
     fn default() -> Self {
+        let mut owners: UnorderedMap<String, bool> =
+            UnorderedMap::new(BmcStorageKey::BmcManagement);
+        let _ = owners.insert(&env::current_account_id(), &true);
+        let num_of_owners: u64 = 1;
         Self {
-            owners: UnorderedMap::new(BmcStorageKey::BmcManagement),
-            num_of_owners: 0,
+            owners,
+            num_of_owners,
             bsh_services: UnorderedMap::new(BmcStorageKey::BmcManagement),
-            bmc_services: UnorderedMap::new(BmcStorageKey::BmcManagement),
+            bmv_services: UnorderedMap::new(BmcStorageKey::BmcManagement),
             relay_stats: UnorderedMap::new(BmcStorageKey::BmcManagement),
             routes: UnorderedMap::new(BmcStorageKey::BmcManagement),
             links: UnorderedMap::new(BmcStorageKey::BmcManagement),
@@ -59,55 +62,217 @@ impl BmcManagement {
 
     /// Update BMC generic
     /// Caller must be an owner of BTP network
-    pub fn set_bmc_generic(&mut self, _addr: &str) {
-        todo!()
+    pub fn set_bmc_generic(&mut self, addr: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if *addr == env::predecessor_account_id() {
+            return Err("BMCRevertInvalidAddress");
+        }
+        if *addr == self.bmc_generic {
+            return Err("BMCRevertAlreadyExistsBMCGeneric");
+        }
+        self.bmc_generic = addr.to_string();
+        Ok(())
     }
 
     /// Add another owner
     /// Caller must be an owner of BTP network
-    pub fn add_owner(&mut self, _owner: &str) {
-        todo!()
+    pub fn add_owner(&mut self, owner: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        let _ = self.owners.insert(&owner.to_string(), &true);
+        self.num_of_owners += 1;
+        Ok(())
     }
 
     /// Remove an existing owner
     /// Caller must be an owner of BTP network
-    pub fn remove_owner(&mut self, _owner: &str) {
-        todo!()
+    pub fn remove_owner(&mut self, owner: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if self.num_of_owners <= 1 {
+            return Err("BMCRevertLastOwner");
+        }
+        if !self
+            .owners
+            .get(&owner.to_string())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertNotExistsPermission");
+        }
+        let _ = self.owners.remove(&owner.to_string());
+        Ok(())
     }
 
     /// Check whether one specific address has owner role
     /// Caller can be ANY
-    pub fn is_owner(&self) -> bool {
-        todo!()
+    pub fn is_owner(&self, owner: &str) -> bool {
+        self.owners
+            .get(&owner.to_string())
+            .expect("Error in owner lookup")
     }
 
     /// Register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn add_service(&mut self, _svc: &str, _addr: &str) {
-        todo!()
+    pub fn add_service(&mut self, svc: &str, addr: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if *addr == env::predecessor_account_id() {
+            return Err("BMCRevertInvalidAddress");
+        }
+        if self
+            .bsh_services
+            .get(&svc.to_string())
+            .expect("Error in SVC lookup")
+            != env::predecessor_account_id()
+        {
+            return Err("BMCRevertAlreadyExistsBSH");
+        }
+        let _ = self
+            .bsh_services
+            .insert(&svc.to_string(), &addr.to_string());
+        self.list_of_bsh_names.push(svc.to_string());
+        Ok(())
     }
 
     /// De-register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn remove_service(&mut self, _svc: &str) {
-        todo!()
+    pub fn remove_service(&mut self, svc: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if self
+            .bsh_services
+            .get(&svc.to_string())
+            .expect("Error in SVC lookup")
+            == env::predecessor_account_id()
+        {
+            return Err("BMCRevertNotExistsBSH");
+        }
+        let _ = self.bsh_services.remove(&svc.to_string());
+        let index = self
+            .list_of_bsh_names
+            .iter()
+            .position(|x| *x == svc)
+            .expect("Error in lookup");
+        let _ = self.list_of_bsh_names.remove(index);
+        Ok(())
+    }
+
+    /// Get registered services
+    /// Returns an array of services
+    pub fn get_services(&self) -> Vec<Service> {
+        let mut services: Vec<Service> = Vec::with_capacity(self.list_of_bsh_names.len());
+        for bsh_name in &self.list_of_bsh_names {
+            let service = Service {
+                svc: bsh_name.clone(),
+                addr: self
+                    .bsh_services
+                    .get(bsh_name)
+                    .expect("Error in name lookup"),
+            };
+            services.push(service);
+        }
+        services
     }
 
     /// Register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn add_verifier(&mut self, _net: &str, _addr: &str) {
-        todo!()
+    pub fn add_verifier(&mut self, net: &str, addr: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if self
+            .bmv_services
+            .get(&net.to_string())
+            .expect("Error in BMV lookup")
+            != env::predecessor_account_id()
+        {
+            return Err("BMCRevertAlreadyExistsBMV");
+        }
+        let _ = self
+            .bmv_services
+            .insert(&net.to_string(), &addr.to_string());
+        self.list_of_bmv_names.push(net.to_string());
+        Ok(())
     }
 
     /// De-register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn remove_verifier(&mut self, _net: &str) {
-        todo!()
+    pub fn remove_verifier(&mut self, net: &str) -> Result<(), &str> {
+        if !self
+            .owners
+            .get(&env::current_account_id())
+            .expect("Error in owner lookup")
+        {
+            return Err("BMCRevertUnauthorized");
+        }
+        if self
+            .bmv_services
+            .get(&net.to_string())
+            .expect("Error in BMV lookup")
+            == env::predecessor_account_id()
+        {
+            return Err("BMCRevertNotExistsBMV");
+        }
+        let _ = self.bmv_services.remove(&net.to_string());
+        let index = self
+            .list_of_bmv_names
+            .iter()
+            .position(|x| *x == net)
+            .expect("Error in lookup");
+        let _ = self.list_of_bmv_names.remove(index);
+        Ok(())
+    }
+
+    /// Get registered verifiers
+    /// Returns an array of verifiers
+    pub fn get_verifiers(&self) -> Vec<Verifier> {
+        let mut verifiers: Vec<Verifier> = Vec::with_capacity(self.list_of_bmv_names.len());
+        for bmv_name in &self.list_of_bmv_names {
+            let verifier = Verifier {
+                net: bmv_name.clone(),
+                addr: self
+                    .bmv_services
+                    .get(bmv_name)
+                    .expect("Error in name lookup"),
+            };
+            verifiers.push(verifier);
+        }
+        verifiers
     }
 
     /// Initialize status information for the link
     /// Caller must be an operator of BTP network
-    pub fn add_link(&mut self, _link: &str) {
+    pub fn add_link(&mut self, _link: &str) -> Result<(), &str> {
         todo!()
     }
 
@@ -150,18 +315,6 @@ impl BmcManagement {
     /// Unregister Relay for the network
     /// Caller must be an operator of BTP network
     pub fn remove_relay(&mut self, _link: &str, _addrs: &[&str]) {
-        todo!()
-    }
-
-    /// Get registered services
-    /// Returns an array of services
-    pub fn get_services(&self) -> Vec<Service> {
-        todo!()
-    }
-
-    /// Get registered verifiers
-    /// Returns an array of verifiers
-    pub fn get_verifiers(&self) -> Vec<Verifier> {
         todo!()
     }
 
