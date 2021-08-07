@@ -22,7 +22,7 @@ type relayReceiver struct {
 }
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
-	rC := relayReceiver{log: log, paraChainId: 2023}
+	rC := relayReceiver{log: log, paraChainId: 1000}
 	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
 	rC.pC = NewPraBmvClient(
 		opt.IconEndpoint, log, opt.PraBmvAddress,
@@ -33,18 +33,38 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	return rC
 }
 
-// func (r *relayReceiver) syncBlocks(newMtaHeight int64) {
-// 	next := r.pC.store.Height() + 1
-// 	r.log.Debugf("syncBlocks: with remote MTA %d, store MTA %d", newMtaHeight, next-1)
-// 	for i := next; i <= newMtaHeight; i++ {
-// 		r.log.Tracef("syncBlocks: sync %d", i)
-// 		hash, err := r.c.GetBlockHash(uint64(i))
-// 		if err != nil {
-// 			r.log.Panic("syncBlocks: fail to sync err:%+v", err)
-// 		}
-// 		r.pC.store.AddHash(hash[:])
-// 	}
-// }
+func (r *relayReceiver) syncBlocks(blockHeader *substrate.SubstrateHeader, gc *substrate.GrandpaCommit) {
+	next := r.pC.store.Height() + 1
+
+	if gc != nil {
+		if next < int64(gc.TargetNumber) {
+			r.log.Fatalf("syncBlocks: found missing block next:%d bu:%d", next, gc.TargetNumber-1)
+			return
+		}
+		if next == int64(gc.TargetNumber) {
+			r.log.Debugf("syncBlocks: sync %d", gc.TargetNumber)
+			r.pC.store.AddHash(gc.TargetHash[:])
+			if err := r.pC.store.Flush(); err != nil {
+				r.log.Fatalf("fail to MTA Flush err:%+v", err)
+			}
+		}
+	} else if blockHeader != nil {
+		if next < int64(blockHeader.Number-1) {
+			r.log.Fatalf("syncBlocks: found missing block next:%d bu:%d", next, blockHeader.Number-1)
+			return
+		}
+
+		if next == int64(blockHeader.Number-1) {
+			r.log.Debugf("syncBlocks: sync %d", blockHeader.Number-1)
+			r.pC.store.AddHash(blockHeader.ParentHash[:])
+			if err := r.pC.store.Flush(); err != nil {
+				r.log.Fatalf("fail to MTA Flush err:%+v", err)
+			}
+		}
+	} else {
+		r.log.Fatalf("syncBlocks: don't have data to sync")
+	}
+}
 
 // newBlockProof creates a new BlockProof
 func (r *relayReceiver) newBlockProof(height int64, header []byte) ([]byte, error) {
@@ -166,7 +186,7 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 
 	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
-	for i := from; i <= substrate.NewBlockNumber(uint64(to)); i++ {
+	for i := from; i < substrate.NewBlockNumber(uint64(to)); i++ {
 		missingBlockNumbers = append(missingBlockNumbers, i)
 	}
 
@@ -182,7 +202,8 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 	return bus, nil
 }
 
-func (r *relayReceiver) findParasInclusionCandidateIncludedHead(mtaHeight uint64, from uint64, paraHead substrate.SubstrateHash) (*substrate.SubstrateHeader, *substrate.SubstrateHash) {
+func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, paraHead substrate.SubstrateHash) (*substrate.SubstrateHeader, *substrate.SubstrateHash) {
+	r.log.Debugf("findParasInclusionCandidateIncludedHead: from %d paraHead: %s", from, paraHead.Hex())
 	foundEvent := false
 	blockNumber := from
 	for !foundEvent {
@@ -206,6 +227,8 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(mtaHeight uint64
 					if err != nil {
 						return nil, nil
 					}
+
+					r.log.Debugf("findParasInclusionCandidateIncludedHead: found relayblock %d", header.Number)
 
 					foundEvent = true
 					return header, &blockHash
@@ -289,9 +312,9 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		return []byte{0xf8, 0}, nil
 	}
 
-	r.log.Debugf("newParaFinalityProof: mtaHeight %d", mtaHeight)
+	r.log.Debugf("newParaFinalityProof: relayMtaHeight %d", mtaHeight)
 	// check out which block para chain get included
-	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(mtaHeight, uint64(vd.RelayParentNumber+1), paraHead)
+	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead)
 
 	// Acccurate checking with MTA height
 	if uint64(paraIncludedHeader.Number) <= mtaHeight {
@@ -303,10 +326,10 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	rps := make([][]byte, 0)
 
 	// create stateproof for para chain get included
-	// paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
+	if err != nil {
+		return nil, err
+	}
 
 	if mtaHeight < uint64(paraIncludedHeader.Number) && !r.didPullBlockUpdatesLastJustifications(paraIncludedHeader.Number) {
 		// get the latest block contains justification
@@ -326,7 +349,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 		for i, blockHeader := range blockHeaders {
 			var bu []byte
-
 			if i == len(blockHeaders)-1 {
 				// add justification in last blocks
 				bu, err = r.newBlockUpdate(blockHeader, gj)
@@ -340,14 +362,14 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				}
 			}
 
-			// if i != 0 {
-			// 	r.pC.store.AddHash(blockHeader.ParentHash[:])
-			// }
+			if i != 0 {
+				r.syncBlocks(&blockHeader, nil)
+			}
 
 			bus = append(bus, bu)
 		}
 
-		// r.pC.store.AddHash(fp.Justification.EncodedJustification.Commit.TargetHash[:])
+		r.syncBlocks(nil, &gj.Commit)
 
 		// check if last block contains Grandpa_NewAuthorities event
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
@@ -363,15 +385,23 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 
-				// if uint64(paraIncludedHeader.Number) < uint64(lastBlockNumber) {
-				// 	rps = append(rps, paraIncludedStateProof)
-				// }
-
 				rps = append(rps, newAuthoritiesStateProof)
 			}
+		} else {
+			encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
+			if err != nil {
+				return nil, err
+			}
+
+			bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
+			if err != nil {
+				return nil, err
+			}
+			rps = append(rps, paraIncludedStateProof)
 		}
 
 		r.lastJustificationCollected = (*substrate.SubstrateBlockNumber)(&lastBlockNumber)
+
 		// } else {
 		// mtaSynced := false
 		// for !mtaSynced {

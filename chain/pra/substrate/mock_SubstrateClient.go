@@ -188,6 +188,29 @@ func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error)
 	return r0, r1
 }
 
+// GetHeaderByBlockNumber provides a mock function with given fields: blockNumber
+func (_m *MockSubstrateClient) GetHeaderByBlockNumber(blockNumber types.BlockNumber) (*types.Header, error) {
+	ret := _m.Called(blockNumber)
+
+	var r0 *types.Header
+	if rf, ok := ret.Get(0).(func(types.BlockNumber) *types.Header); ok {
+		r0 = rf(blockNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Header)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.BlockNumber) error); ok {
+		r1 = rf(blockNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetHeaderLatest provides a mock function with given fields:
 func (_m *MockSubstrateClient) GetHeaderLatest() (*types.Header, error) {
 	ret := _m.Called()

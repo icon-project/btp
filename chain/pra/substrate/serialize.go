@@ -79,7 +79,7 @@ func (event SubstrateEventRecordsRaw) DecodeEventRecords(meta *SubstrateMetaData
 	return types.EventRecordsRaw(event).DecodeEventRecords(meta, records)
 }
 
-func (sme *SignedMessageEnum) Encode(encoder scale.Encoder) error {
+func (sme SignedMessageEnum) Encode(encoder scale.Encoder) error {
 	var err1, err2 error
 	if sme.IsPrevote {
 		err1 = encoder.PushByte(0)

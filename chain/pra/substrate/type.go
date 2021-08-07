@@ -112,5 +112,6 @@ type SubstrateClient interface {
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error
 	GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error)
+	GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) (*SubstrateHeader, error)
 	GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error)
 }

@@ -102,6 +102,15 @@ func (c *SubstrateAPI) GetSpecName() string {
 	return c.specName
 }
 
+func (c *SubstrateAPI) GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) (*SubstrateHeader, error) {
+	blockHash, err := c.GetBlockHash(uint64(blockNumber))
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetHeader(blockHash)
+}
+
 func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error) {
 	headers := make([]SubstrateHeader, 0)
 
