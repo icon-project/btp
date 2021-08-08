@@ -135,8 +135,6 @@ func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog
 	default:
 		return nil, fmt.Errorf("not supported relay spec %s", spec)
 	}
-
-	return nil, nil
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
