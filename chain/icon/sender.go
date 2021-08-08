@@ -500,19 +500,16 @@ SignLoop:
 	}
 }
 
-func (s *sender) sendFragmentations(tps []*TransactionParam) (chain.GetResultParam, error) {
+func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.GetResultParam, error) {
 	s.l.Tracef("sendFragmentations: start")
 	var grp chain.GetResultParam
 	var err error
 
 	for i := 0; i < len(tps); i++ {
-		if i == (len(tps) - 1) {
-			grp, err = s.signAndSendTransaction(tps[i])
-		} else {
-			_, err = s.signAndSendTransaction(tps[i])
-			if err != nil {
-				s.l.Panicf("sendFragmentations: fails")
-			}
+		grp, err = s.signAndSendTransaction(tps[i])
+		s.l.Debugf("sendFragmentations: fragment %d hash %+v", idxs[i], grp)
+		if err != nil {
+			s.l.Panicf("sendFragmentations: fails result %+v error%+v", grp, err)
 		}
 	}
 
@@ -534,7 +531,8 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 	prev := bmcRelayMessageParams.Prev
 	msg := bmcRelayMessageParams.Messages
 	tps := make([]*TransactionParam, 0)
-	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
+	idxs := make([]int, 0)
+	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 2
 	fragmentStringSize := len(msg) / nuFragments
 
 	s.l.Debugf("relayByFragments: fragments: %d size: %d", nuFragments, fragmentStringSize)
@@ -547,7 +545,7 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 
 		var index int
 		if i == 0 {
-			index = -1
+			index = ^nuFragments + 2
 		} else if end >= len(msg) {
 			index = 0
 		} else {
@@ -560,8 +558,9 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 		}
 
 		tps = append(tps, tp)
+		idxs = append(idxs, index)
 	}
-	return s.sendFragmentations(tps)
+	return s.sendFragmentations(tps, idxs)
 }
 
 func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
