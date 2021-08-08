@@ -79,13 +79,15 @@ impl BmcGeneric {
                             .expect("Failed to send message");
                     }
                     if let Err(error) = bmc_mgt.resolve_route(&net) {
-                        self.send_error_internal(prev, &message, Self::BMC_ERR, error)
+                        self.send_error_internal(prev, &message, Self::BMC_ERR, &error)
                             .expect("Failed to send error");
                     }
                 }
             }
         }
-        bmc_mgt.update_link_rx_seq(prev, serialized_msgs.len() as u128);
+        bmc_mgt
+            .update_link_rx_seq(prev, serialized_msgs.len() as u128)
+            .expect("Failed to update link");
     }
 
     pub fn decode_msg_and_validate_relay(
@@ -114,8 +116,9 @@ impl BmcGeneric {
 
         // rotate and check valid relay
         let (height, last_height, _) = bmv.get_status();
-        let mut relay =
-            bmc_mgt.rotate_relay(prev, height, last_height, !serialized_msgs.is_empty());
+        let mut relay = bmc_mgt
+            .rotate_relay(prev, height, last_height, !serialized_msgs.is_empty())
+            .expect("Failed to rotate relay");
         let mut check = false;
         if relay == env::predecessor_account_id() {
             let relays = bmc_mgt.get_link_relays(prev);
@@ -184,8 +187,10 @@ impl BmcGeneric {
                         }
                     }
                     if !check {
-                        let links = vec![to];
-                        bmc_mgt.update_link_reachable(prev, links.as_slice());
+                        let links = vec![to.to_string()];
+                        bmc_mgt
+                            .update_link_reachable(prev, links)
+                            .expect("Failed to update link");
                     }
                 }
             } else if &sm.service_type == "Unlink" {
@@ -194,14 +199,19 @@ impl BmcGeneric {
                 if link.is_connected {
                     for i in 0..link.reachable.len() {
                         if to == link.reachable[i] {
-                            bmc_mgt.delete_link_reachable(prev, i as u128);
+                            bmc_mgt
+                                .delete_link_reachable(prev, i)
+                                .expect("Failed to delete link");
                         }
                     }
                 }
             } else if &sm.service_type == "Init" {
-                let links =
-                    vec![std::str::from_utf8(&sm.payload).expect("Failed to decode payload")];
-                bmc_mgt.update_link_reachable(prev, links.as_slice());
+                let links = vec![std::str::from_utf8(&sm.payload)
+                    .expect("Failed to decode payload")
+                    .to_string()];
+                bmc_mgt
+                    .update_link_reachable(prev, links)
+                    .expect("Failed to update link");
             } else {
                 return Err("BMCRevert: internal handler does not exist");
             }
@@ -255,7 +265,9 @@ impl BmcGeneric {
 
     fn send_message_internal(&mut self, to: &str, serialized_msg: &[u8]) -> Result<(), &str> {
         let mut bmc_mgt = BmcManagement::default();
-        bmc_mgt.update_link_tx_seq(to);
+        bmc_mgt
+            .update_link_tx_seq(to)
+            .expect("Failed to update link");
         let bmc_events = BmcEvents::Message {
             next: to.to_string(),
             seq: bmc_mgt.get_link_tx_seq(to),
