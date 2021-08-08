@@ -14,16 +14,15 @@ import (
 )
 
 type relayReceiver struct {
-	c           substrate.SubstrateClient
-	pC          praBmvClient
-	paraChainId substrate.SubstrateParachainId
-	mtaHeight   uint64
-	mtaOffset   uint64
-	log         log.Logger
+	c         substrate.SubstrateClient
+	pC        praBmvClient
+	mtaHeight uint64
+	mtaOffset uint64
+	log       log.Logger
 }
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
-	rC := relayReceiver{log: log, paraChainId: 1000}
+	rC := relayReceiver{log: log}
 	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
 	rC.pC = NewPraBmvClient(
 		opt.IconEndpoint, log, opt.PraBmvAddress,
@@ -34,7 +33,7 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	return rC
 }
 
-func (r *relayReceiver) syncBlocks(bn uint64) {
+func (r *relayReceiver) syncBlocks(bn uint64, blockHash substrate.SubstrateHash) {
 	next := r.pC.store.Height() + 1
 	if next < int64(bn) {
 		r.log.Fatalf("syncBlocks: found missing block next:%d bu:%d", next, bn)
@@ -42,8 +41,7 @@ func (r *relayReceiver) syncBlocks(bn uint64) {
 	}
 	if next == int64(bn) {
 		r.log.Debugf("syncBlocks: sync %d", bn)
-		hash, _ := r.c.GetBlockHash(bn)
-		r.pC.store.AddHash(hash[:])
+		r.pC.store.AddHash(blockHash[:])
 		if err := r.pC.store.Flush(); err != nil {
 			r.log.Fatalf("fail to MTA Flush err:%+v", err)
 		}
@@ -183,7 +181,7 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 	return bus, nil
 }
 
-func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, paraHead substrate.SubstrateHash) (*substrate.SubstrateHeader, *substrate.SubstrateHash) {
+func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, paraHead substrate.SubstrateHash, paraChainId substrate.SubstrateParachainId) (*substrate.SubstrateHeader, *substrate.SubstrateHash) {
 	r.log.Debugf("findParasInclusionCandidateIncludedHead: from %d paraHead: %s", from, paraHead.Hex())
 	foundEvent := false
 	blockNumber := from
@@ -201,7 +199,7 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 		if len(eventParasInclusionCandidateIncluded) > 0 {
 			for _, event := range eventParasInclusionCandidateIncluded {
 				// parachain include must match id and parahead
-				if event.CandidateReceipt.Descriptor.ParaId == r.paraChainId &&
+				if event.CandidateReceipt.Descriptor.ParaId == paraChainId &&
 					event.CandidateReceipt.Descriptor.ParaHead == paraHead {
 
 					header, err := r.c.GetHeader(blockHash)
@@ -276,7 +274,7 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 	return nil, fmt.Errorf("Not supported relay spec %s", spec)
 }
 
-func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraHead substrate.SubstrateHash, paraHeight uint64) ([]byte, error) {
+func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([]byte, error) {
 	r.mtaHeight = r.pC.getRelayMtaHeight()
 	r.mtaOffset = r.pC.getRelayMtaOffset()
 
@@ -289,7 +287,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	}
 
 	// check out which block para chain get included
-	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead)
+	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead, paraChainId)
 
 	if uint64(paraIncludedHeader.Number) <= r.mtaOffset {
 		r.log.Panicf("newParaFinalityProof: paraIncludedHeader %s <= relayMtaOffset", uint64(paraIncludedHeader.Number), r.mtaOffset)
@@ -336,14 +334,14 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				}
 			}
 
-			r.syncBlocks(uint64(blockHeader.Number))
-
+			r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
+			r.mtaHeight = uint64(blockHeader.Number - 1)
 			bus = append(bus, bu)
 		}
 
-		r.mtaHeight = uint64(lastBlockNumber)
+		r.syncBlocks(uint64(gj.Commit.TargetNumber), gj.Commit.TargetHash)
+		r.mtaHeight = uint64(gj.Commit.TargetNumber)
 
-		// check if last block contains Grandpa_NewAuthorities event
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
 		if err != nil {
 			return nil, nil

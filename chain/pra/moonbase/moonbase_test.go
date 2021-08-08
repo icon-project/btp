@@ -1,4 +1,4 @@
-package moonriver
+package moonbase
 
 import (
 	"fmt"
@@ -77,7 +77,7 @@ func TestMoonriverEventRecord(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotPanics(t, func() {
-			eventRecords := MoonriverEventRecord{}
+			eventRecords := MoonbaseEventRecord{}
 			err = types.EventRecordsRaw(*storageRaw).DecodeEventRecords(meta, &eventRecords)
 			assert.NoErrorf(t, err, "failed at %s", hash.Hex())
 

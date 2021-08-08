@@ -6,6 +6,7 @@ import (
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/moonbase"
 	"github.com/icon-project/btp/chain/pra/moonriver"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
@@ -29,6 +30,7 @@ type Receiver struct {
 	dst                         chain.BtpAddress
 	l                           log.Logger
 	opt                         receiverOptions
+	parachainId                 substrate.SubstrateParachainId
 	rxSeq                       uint64
 	isFoundMessageEventByOffset bool
 }
@@ -47,6 +49,9 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
+	paraId, err := r.c.subClient.GetParachainId()
+	r.parachainId = *paraId
+
 	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
 		r.relayReceiver = NewRelayReceiver(r.opt, l)
 		if err != nil {
@@ -76,7 +81,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 			return nil, err
 		}
 
-		update.FinalityProof, err = r.relayReceiver.newParaFinalityProof(vd, v.Hash, v.Height)
+		update.FinalityProof, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
 		if err != nil {
 			return nil, err
 		}
@@ -110,13 +115,23 @@ func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog
 		return nil, err
 	}
 
-	// Build parachain adapter here
-	records := &moonriver.MoonriverEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, err
+	spec := r.c.subClient.GetSpecName()
+	switch spec {
+	case substrate.Moonriver:
+		records := &moonriver.MoonriverEventRecord{}
+		if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+			return records.EVM_Log, nil
+		}
+	case substrate.Moonbase:
+		records := &moonbase.MoonbaseEventRecord{}
+		if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+			return records.EVM_Log, nil
+		}
+	default:
+		return nil, fmt.Errorf("Not supported relay spec %s", spec)
 	}
 
-	return records.EVM_Log, nil
+	return nil, nil
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {

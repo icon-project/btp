@@ -241,6 +241,29 @@ func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedVal
 	return pvd, err
 }
 
+func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
+	meta := c.GetMetadataLatest()
+	key, err := types.CreateStorageKey(meta, "ParachainInfo", "ParachainId", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	blockHash, err := c.GetBlockHashLatest()
+	if err != nil {
+		return nil, err
+	}
+
+	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	var pid SubstrateParachainId
+	err = types.DecodeFromBytes(*storageRaw, &pid)
+
+	return &pid, err
+}
+
 func (c *SubstrateAPI) SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error {
 	current := height
 

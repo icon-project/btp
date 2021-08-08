@@ -110,6 +110,7 @@ type SubstrateClient interface {
 	GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error)
 	GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
+	GetParachainId() (*SubstrateParachainId, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error
 	GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error)
 	GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) (*SubstrateHeader, error)
