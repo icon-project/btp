@@ -305,6 +305,29 @@ func (_m *MockSubstrateClient) GetMetadataLatest() *types.Metadata {
 	return r0
 }
 
+// GetParachainId provides a mock function with given fields:
+func (_m *MockSubstrateClient) GetParachainId() (*types.U32, error) {
+	ret := _m.Called()
+
+	var r0 *types.U32
+	if rf, ok := ret.Get(0).(func() *types.U32); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.U32)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetReadProof provides a mock function with given fields: key, blockHash
 func (_m *MockSubstrateClient) GetReadProof(key types.StorageKey, blockHash types.Hash) (SubstrateReadProof, error) {
 	ret := _m.Called(key, blockHash)

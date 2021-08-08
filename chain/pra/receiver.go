@@ -120,15 +120,20 @@ func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog
 	case substrate.Moonriver:
 		records := &moonriver.MoonriverEventRecord{}
 		if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+			return nil, err
+		} else {
 			return records.EVM_Log, nil
 		}
 	case substrate.Moonbase:
 		records := &moonbase.MoonbaseEventRecord{}
 		if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+			return nil, err
+		} else {
 			return records.EVM_Log, nil
 		}
+
 	default:
-		return nil, fmt.Errorf("Not supported relay spec %s", spec)
+		return nil, fmt.Errorf("not supported relay spec %s", spec)
 	}
 
 	return nil, nil

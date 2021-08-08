@@ -54,6 +54,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_243221.json", bi))
 
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Twice()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
@@ -92,6 +93,8 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_315553.json", bi))
+
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
@@ -139,6 +142,8 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonriverlocal_blockinfo_143004.json", bi))
+
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
