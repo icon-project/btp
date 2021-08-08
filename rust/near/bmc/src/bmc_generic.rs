@@ -135,7 +135,9 @@ impl BmcGeneric {
         } else if relay != env::current_account_id() {
             return Err("BMCRevertUnauthorized: invalid relay");
         }
-        bmc_mgt.update_relay_stats(&relay, height - prev_height, serialized_msgs.len() as u128);
+        bmc_mgt
+            .update_relay_stats(&relay, height - prev_height, serialized_msgs.len() as u128)
+            .expect("Failed to update relay stats");
 
         Ok(serialized_msgs)
     }
