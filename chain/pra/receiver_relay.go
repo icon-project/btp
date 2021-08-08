@@ -360,29 +360,18 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				rps = append(rps, newAuthoritiesStateProof)
 			}
 		}
-
-		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
-		if err != nil {
-			return nil, err
-		}
-
-		bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
-		if err != nil {
-			return nil, err
-		}
-		rps = append(rps, paraIncludedStateProof)
-	} else {
-		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
-		if err != nil {
-			return nil, err
-		}
-
-		bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
-		if err != nil {
-			return nil, err
-		}
-		rps = append(rps, paraIncludedStateProof)
 	}
+
+	encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
+	if err != nil {
+		return nil, err
+	}
+	rps = append(rps, paraIncludedStateProof)
 
 	msg := &RelayMessage{
 		BlockUpdates:  bus,
