@@ -122,9 +122,16 @@ type RelayBlockUpdate struct {
 	Votes                   []byte
 }
 
+type ParachainFinalityProof struct {
+	RelayBlockUpdates [][]byte
+	RelayBlockProof   []byte
+	RelayStateProofs  [][]byte
+}
+
 type BlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
+	NilEncodedBlockHeader   byte
 }
 
 type PrachainFinalityProof struct{}

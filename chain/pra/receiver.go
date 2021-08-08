@@ -85,6 +85,16 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		if err != nil {
 			return nil, err
 		}
+
+		var fp ParachainFinalityProof
+		_, err = codec.RLP.UnmarshalFromBytes(update.FinalityProof, fp)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(fp.RelayStateProofs) > 1 {
+			update.NilEncodedBlockHeader = 0x01
+		}
 	} else {
 		// For local testing without relay chain
 		update.FinalityProof = nil

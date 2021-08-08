@@ -42,7 +42,7 @@ const (
 	DefaultGetRelayResultInterval   = time.Second
 	DefaultRelayReSendInterval      = time.Second * 3
 	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultGetRelayResultInterval)) // Pending or stale transaction timeout is 5 minute
-	MaxBlockUpdatesPerSegment       = 1
+	MaxBlockUpdatesPerSegment       = 10
 	DefaultStepLimit                = 2500000000 // estimated step limit for 10 blockupdates per segment
 )
 
@@ -284,6 +284,18 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 	return segments, nil
 }
 
+// Can't import pra package because of cycle import
+type parachainBlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+}
+
+type parachainFinalityProof struct {
+	RelayBlockUpdates [][]byte
+	RelayBlockProof   []byte
+	RelayStateProofs  [][]byte
+}
+
 func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
 	segments := make([]*chain.Segment, 0)
 	var err error
@@ -296,11 +308,87 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		if bu.Height <= height {
 			continue
 		}
-		buSize := len(bu.Proof)
+
+		lastByte, realBu := bu.Proof[len(bu.Proof)-1], bu.Proof[:len(bu.Proof)-1]
+		buSize := len(realBu)
 		size += buSize
 		osl := s.isOverSizeLimit(size)
-		// for relay to work
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
+
+		if lastByte == 0x01 {
+			var paraBu parachainBlockUpdate
+			if _, err = codec.RLP.UnmarshalFromBytes(realBu, paraBu); err != nil {
+				return nil, err
+			}
+
+			var fp parachainFinalityProof
+			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, fp); err != nil {
+				return nil, err
+			}
+
+			for i := 0; i < 2; i++ {
+				segment := &chain.Segment{
+					Height:              bu.Height,
+					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+				}
+
+				subMsg := &RelayMessage{
+					BlockUpdates:  make([][]byte, 0),
+					ReceiptProofs: make([][]byte, 0),
+				}
+
+				var rawBu []byte
+				if i == 0 {
+					newFp := parachainFinalityProof{
+						RelayBlockUpdates: fp.RelayBlockUpdates,
+						RelayStateProofs:  fp.RelayStateProofs[:1],
+					}
+					encodeNewFp, err := codec.RLP.MarshalToBytes(newFp)
+					if err != nil {
+						return nil, err
+					}
+					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
+						ScaleEncodedBlockHeader: nil,
+						FinalityProof:           encodeNewFp,
+					})
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					newFp := parachainFinalityProof{
+						RelayBlockUpdates: make([][]byte, 0),
+						RelayBlockProof:   fp.RelayBlockProof,
+						RelayStateProofs:  fp.RelayStateProofs[len(fp.RelayStateProofs)-1:],
+					}
+					encodeNewFp, err := codec.RLP.MarshalToBytes(newFp)
+					if err != nil {
+						return nil, err
+					}
+					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
+						ScaleEncodedBlockHeader: paraBu.ScaleEncodedBlockHeader,
+						FinalityProof:           encodeNewFp,
+					})
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
+
+				rmb, err := codec.RLP.MarshalToBytes(subMsg)
+				if err != nil {
+					return nil, err
+				}
+
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+					return nil, err
+				}
+				segments = append(segments, segment)
+			}
+			size -= buSize
+			continue
+		}
+
 		if osl || obl {
 			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
 			segment := &chain.Segment{
@@ -313,7 +401,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				ReceiptProofs: make([][]byte, 0),
 			}
 
-			subMsg.BlockUpdates = append(subMsg.BlockUpdates, bu.Proof)
+			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realBu)
 
 			rmb, err := codec.RLP.MarshalToBytes(subMsg)
 			if err != nil {
@@ -326,9 +414,10 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 			size -= buSize
 			segments = append(segments, segment)
+			continue
 		}
 		s.l.Tracef("Segment: at %d BlockUpdates[%d]", bu.Height, i)
-		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
+		msg.BlockUpdates = append(msg.BlockUpdates, realBu)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
 	}
@@ -382,6 +471,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 
 			segments = append(segments, segment)
+			continue
 		} else {
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
 			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)

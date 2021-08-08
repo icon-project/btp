@@ -297,7 +297,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	bus := make([][]byte, 0)
 	bp := []byte{}
-	rps := make([][]byte, 0)
+	sps := make([][]byte, 0)
 
 	// create stateproof for para chain get included
 	paraIncludedStateProof, err := r.newStateProof(*praIncludeBlockHash)
@@ -357,7 +357,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 
-				rps = append(rps, newAuthoritiesStateProof)
+				sps = append(sps, newAuthoritiesStateProof)
 			}
 		}
 	}
@@ -371,12 +371,12 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	if err != nil {
 		return nil, err
 	}
-	rps = append(rps, paraIncludedStateProof)
+	sps = append(sps, paraIncludedStateProof)
 
-	msg := &RelayMessage{
-		BlockUpdates:  bus,
-		BlockProof:    bp,
-		ReceiptProofs: rps,
+	msg := &ParachainFinalityProof{
+		RelayBlockUpdates: bus,
+		RelayBlockProof:   bp,
+		RelayStateProofs:  sps,
 	}
 
 	rmb, err := codec.RLP.MarshalToBytes(msg)
