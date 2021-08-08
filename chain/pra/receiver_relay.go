@@ -271,15 +271,18 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 		return records.Grandpa_NewAuthorities, nil
 	}
 
-	return nil, fmt.Errorf("Not supported relay spec %s", spec)
+	return nil, fmt.Errorf("not supported relay spec %s", spec)
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([]byte, error) {
-	r.mtaHeight = r.pC.getRelayMtaHeight()
+	remoteMtaHeight := r.pC.getRelayMtaHeight()
+	if r.mtaHeight <= remoteMtaHeight {
+		r.mtaHeight = remoteMtaHeight
+	}
 	r.mtaOffset = r.pC.getRelayMtaOffset()
 
 	paraMtaHeight := r.pC.getParaMtaHeight()
-	r.log.Debugf("newParaFinalityProof: paraBlock %d relayMtaHeight %d", paraHeight, r.mtaHeight)
+	r.log.Debugf("newParaFinalityProof: paraBlock %d relayMtaHeight %d", paraHeight, remoteMtaHeight)
 
 	if paraHeight <= paraMtaHeight {
 		r.log.Debugf("newParaFinalityProof: no need FinalityProof at paraBlock %d paraMtaHeight %d,", paraHeight, paraMtaHeight)
@@ -288,7 +291,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	// check out which block para chain get included
 	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead, paraChainId)
-
 	if uint64(paraIncludedHeader.Number) <= r.mtaOffset {
 		r.log.Panicf("newParaFinalityProof: paraIncludedHeader %s <= relayMtaOffset", uint64(paraIncludedHeader.Number), r.mtaOffset)
 	}
@@ -357,19 +359,18 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 				rps = append(rps, newAuthoritiesStateProof)
 			}
-		} else {
-			encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
-			if err != nil {
-				return nil, err
-			}
-
-			bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
-			if err != nil {
-				return nil, err
-			}
-			rps = append(rps, paraIncludedStateProof)
 		}
 
+		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
+		if err != nil {
+			return nil, err
+		}
+
+		bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
+		if err != nil {
+			return nil, err
+		}
+		rps = append(rps, paraIncludedStateProof)
 	} else {
 		encodedHeader, err := substrate.NewEncodedSubstrateHeader(*paraIncludedHeader)
 		if err != nil {
