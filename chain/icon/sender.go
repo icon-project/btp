@@ -618,9 +618,10 @@ func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.
 		if err != nil {
 			s.l.Panicf("sendFragmentations: fails result %+v error%+v", grp, err)
 		}
+		// TODO use (finalizelatency * blockinterval / appropriateratio) * time.Second
+		time.Sleep(time.Duration(s.FinalizeLatency()) * time.Second)
 	}
 
-	time.Sleep(time.Duration(s.FinalizeLatency()))
 	s.l.Tracef("sendFragmentations: end")
 	return grp, err
 }
@@ -791,6 +792,8 @@ func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func())
 func (s *sender) StopMonitorLoop() {
 	s.c.CloseAllMonitor()
 }
+
+// the unit is block
 func (s *sender) FinalizeLatency() int {
 	//on-the-next
 	return 1

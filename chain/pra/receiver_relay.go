@@ -79,9 +79,19 @@ func (r *relayReceiver) newVotes(justifications *substrate.GrandpaJustification)
 		Signatures:  make([][]byte, 0),
 	}
 
-	setId, err := r.c.GetGrandpaCurrentSetId(justifications.Commit.TargetHash)
+	currentsetId, err := r.c.GetGrandpaCurrentSetId(justifications.Commit.TargetHash)
 	if err != nil {
 		return nil, err
+	}
+
+	eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(justifications.Commit.TargetHash)
+	if err != nil {
+		return nil, nil
+	}
+
+	var setId substrate.SetId = currentsetId
+	if len(eventGrandpaNewAuthorities) > 0 {
+		setId = setId - 1
 	}
 
 	vm := substrate.NewVoteMessage(justifications, setId)
@@ -285,7 +295,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	r.log.Debugf("newParaFinalityProof: paraBlock %d relayMtaHeight %d", paraHeight, remoteMtaHeight)
 
 	if paraHeight <= paraMtaHeight {
-		r.log.Debugf("newParaFinalityProof: no need FinalityProof at paraBlock %d paraMtaHeight %d,", paraHeight, paraMtaHeight)
+		r.log.Debugf("newParaFinalityProof: no need FinalityProof at paraBlock %d paraMtaHeight %d", paraHeight, paraMtaHeight)
 		return []byte{0xf8, 0}, nil
 	}
 

@@ -12,7 +12,7 @@ type SubstrateStorageDataRaw = types.StorageDataRaw
 type SubstrateBlockNumber = types.BlockNumber
 type SubstrateEventRecordsRaw types.EventRecordsRaw
 type SubstrateParachainId = types.U32
-
+type SetId = types.U64
 type HexString = string
 type SubstrateReadProof struct {
 	At    SubstrateHash `json:"at"`
@@ -108,7 +108,7 @@ type SubstrateClient interface {
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
 	GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error)
-	GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error)
+	GetGrandpaCurrentSetId(blockHash SubstrateHash) (SetId, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
 	GetParachainId() (*SubstrateParachainId, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error

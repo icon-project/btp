@@ -81,4 +81,17 @@ func TestClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, bh)
 	})
+
+	t.Run("should return set id", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
+		require.NoError(t, err)
+
+		blockHash, err := c.GetBlockHash(8654865)
+		require.NoError(t, err)
+
+		setId, err := c.GetGrandpaCurrentSetId(blockHash)
+		assert.NoError(t, err)
+		assert.NotNil(t, setId)
+	})
 }
