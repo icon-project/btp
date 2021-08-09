@@ -302,7 +302,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	// check out which block para chain get included
 	paraIncludedHeader, praIncludeBlockHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead, paraChainId)
 	if uint64(paraIncludedHeader.Number) <= r.mtaOffset {
-		r.log.Panicf("newParaFinalityProof: paraIncludedHeader %s <= relayMtaOffset", uint64(paraIncludedHeader.Number), r.mtaOffset)
+		r.log.Panicf("newParaFinalityProof: paraIncludedHeader %d <= relayMtaOffset %d", uint64(paraIncludedHeader.Number), r.mtaOffset)
 	}
 
 	bus := make([][]byte, 0)
