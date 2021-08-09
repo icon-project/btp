@@ -317,12 +317,12 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		if lastByte == 0x01 {
 			var paraBu parachainBlockUpdate
-			if _, err = codec.RLP.UnmarshalFromBytes(realBu, paraBu); err != nil {
+			if _, err = codec.RLP.UnmarshalFromBytes(realBu, &paraBu); err != nil {
 				return nil, err
 			}
 
 			var fp parachainFinalityProof
-			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, fp); err != nil {
+			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, &fp); err != nil {
 				return nil, err
 			}
 
