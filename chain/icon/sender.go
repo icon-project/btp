@@ -285,6 +285,12 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 }
 
 // Can't import pra package because of cycle import
+type parachainBlockUpdateExtra struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+	NilEncodedBlockHeader   byte
+}
+
 type parachainBlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
@@ -309,18 +315,27 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			continue
 		}
 
-		lastByte, realBu := bu.Proof[len(bu.Proof)-1], bu.Proof[:len(bu.Proof)-1]
+		var paraBuExtra parachainBlockUpdateExtra
+		if _, err = codec.RLP.UnmarshalFromBytes(bu.Proof, &paraBuExtra); err != nil {
+			return nil, err
+		}
+
+		paraBu := parachainBlockUpdate{
+			ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
+			FinalityProof:           paraBuExtra.FinalityProof,
+		}
+
+		realBu, err := codec.RLP.MarshalToBytes(paraBu)
+		if err != nil {
+			return nil, err
+		}
+
 		buSize := len(realBu)
 		size += buSize
 		osl := s.isOverSizeLimit(size)
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
 
-		if lastByte == 0x01 {
-			var paraBu parachainBlockUpdate
-			if _, err = codec.RLP.UnmarshalFromBytes(realBu, &paraBu); err != nil {
-				return nil, err
-			}
-
+		if paraBuExtra.NilEncodedBlockHeader == 0x01 {
 			var fp parachainFinalityProof
 			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, &fp); err != nil {
 				return nil, err

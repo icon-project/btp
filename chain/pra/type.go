@@ -53,12 +53,6 @@ func NewStateProof(key substrate.SubstrateStorageKey, rp *substrate.SubstrateRea
 	}
 }
 
-type DecodedRelayMessage struct {
-	BlockUpdates []BlockUpdate
-	BlockProof   *chain.BlockProof
-	StateProof   *[]StateProof
-}
-
 type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte
@@ -128,7 +122,12 @@ type ParachainFinalityProof struct {
 	RelayStateProofs  [][]byte
 }
 
-type BlockUpdate struct {
+type ParaChainBlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+}
+
+type ParaChainBlockUpdateExtra struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
 	NilEncodedBlockHeader   byte

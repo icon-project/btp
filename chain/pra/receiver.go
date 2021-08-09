@@ -70,7 +70,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 	}
 
 	r.l.Debugf("newParaBlockUpdate: %d", v.Height)
-	var update BlockUpdate
+	var update ParaChainBlockUpdateExtra
 	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(*v.Header); err != nil {
 		return nil, err
 	}
