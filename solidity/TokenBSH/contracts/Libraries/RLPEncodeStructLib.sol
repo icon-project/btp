@@ -5,7 +5,7 @@ import "./RLPEncodeLib.sol";
 import "./TypesLib.sol";
 
 library RLPEncodeStruct {
-   using RLPEncode for bytes;
+    using RLPEncode for bytes;
     using RLPEncode for string;
     using RLPEncode for uint256;
     using RLPEncode for address;
@@ -28,11 +28,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _em.conn.from.encodeString(),
-                _em.conn.to.encodeString()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _em.conn.from.encodeString(),
+            _em.conn.to.encodeString()
+        );
         _rlp = abi.encodePacked(
             _em.eventType.encodeString(),
             addLength(_rlp.length, false),
@@ -60,14 +59,13 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bm.src.encodeString(),
-                _bm.dst.encodeString(),
-                _bm.svc.encodeString(),
-                _bm.sn.encodeInt(),
-                _bm.message.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bm.src.encodeString(),
+            _bm.dst.encodeString(),
+            _bm.svc.encodeString(),
+            _bm.sn.encodeInt(),
+            _bm.message.encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -76,14 +74,14 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                uint256(_sm.serviceType).encodeUint(),
-                _sm.data.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            uint256(_sm.serviceType).encodeUint(),
+            _sm.data.encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
-/*
+
+    /*
     function encodeTransferCoinMsg(Types.TransferCoin memory _data)
         internal
         pure
@@ -113,15 +111,12 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _res.code.encodeUint(),
-                _res.message.encodeString()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _res.code.encodeUint(),
+            _res.message.encodeString()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
-
-    
 
     function encodeBlockHeader(Types.BlockHeader memory _bh)
         internal
@@ -133,16 +128,15 @@ library RLPEncodeStruct {
         //  In that case, encoding these two items gives the result as 0xF800
         //  Similarly, logsBloom might be also empty
         //  But, encoding this item gives the result as 0x80
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bh.version.encodeUint(),
-                _bh.height.encodeUint(),
-                _bh.timestamp.encodeUint(),
-                _bh.proposer.encodeBytes(),
-                _bh.prevHash.encodeBytes(),
-                _bh.voteHash.encodeBytes(),
-                _bh.nextValidators.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bh.version.encodeUint(),
+            _bh.height.encodeUint(),
+            _bh.timestamp.encodeUint(),
+            _bh.proposer.encodeBytes(),
+            _bh.prevHash.encodeBytes(),
+            _bh.voteHash.encodeBytes(),
+            _bh.nextValidators.encodeBytes()
+        );
         bytes memory temp1;
         if (_bh.patchTxHash.length != 0) {
             temp1 = _bh.patchTxHash.encodeBytes();
@@ -324,11 +318,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bp.bh.encodeBlockHeader().encodeBytes(),
-                _bp.bw.encodeBlockWitness().encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bp.bh.encodeBlockHeader().encodeBytes(),
+            _bp.bw.encodeBlockWitness().encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -488,8 +481,6 @@ library RLPEncodeStruct {
         return abi.encodePacked(_rlp1, _rlp2, _rlp3, _rlp4, _rlp5);
     }
 
-
-    
     //TODO: remove fee from encode/decode, as it wont not be used
     function encodeTransferAsset(Types.TransferAssets memory _data)
         internal
@@ -510,20 +501,22 @@ library RLPEncodeStruct {
             );
             length = numOfBytes(temp);
             listSize = addLength(length, false);
-            temp = concat2(listSize, temp); 
+            temp = concat2(listSize, temp);
             _rlp = concat2(_rlp, temp);
         }
         length = numOfBytes(_rlp);
         listSize = addLength(length, false);
-        _rlp = concat2(listSize, _rlp); 
+        _rlp = concat2(listSize, _rlp);
 
         //  Combine all of them
-        _rlp = concat3(_data.from.encodeString(), _data.to.encodeString(), _rlp);
+        _rlp = concat3(
+            _data.from.encodeString(),
+            _data.to.encodeString(),
+            _rlp
+        );
         //  Calculate the LIST_HEAD_START and attach
         length = numOfBytes(_rlp);
         listSize = addLength(length, false);
         return concat2(listSize, _rlp);
-    } 
- 
-
+    }
 }

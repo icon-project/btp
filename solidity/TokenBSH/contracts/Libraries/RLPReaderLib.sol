@@ -1,11 +1,16 @@
 pragma solidity >=0.5.0 <=0.8.0;
 
+import "./StringsLib.sol";
+
 /*
  *  Change supporting solidity compiler version
  *  The original code can be found via this link: https://github.com/hamdiallam/Solidity-RLP.git
  */
 
 library RLPReader {
+    using Strings for string;
+    using Strings for uint8;
+
     uint8 private constant STRING_SHORT_START = 0x80;
     uint8 private constant STRING_LONG_START = 0xb8;
     uint8 private constant LIST_SHORT_START = 0xc0;
@@ -73,7 +78,7 @@ library RLPReader {
         pure
         returns (Iterator memory)
     {
-        require(isList(self), "Must be a list");
+        require(isList(self), "iterator:Must be a list");
 
         uint256 ptr = self.memPtr + _payloadOffset(self.memPtr);
         return Iterator(self, ptr);
@@ -101,7 +106,7 @@ library RLPReader {
         pure
         returns (RLPItem[] memory)
     {
-        require(isList(item), "Must be a list");
+        require(isList(item), "toList:Must be a list");
 
         uint256 items = numItems(item);
         RLPItem[] memory result = new RLPItem[](items);
@@ -119,7 +124,10 @@ library RLPReader {
 
     // @return indicator whether encoded payload is a list. negate this function call for isData.
     function isList(RLPItem memory item) internal pure returns (bool) {
-        if (item.len == 0) return false;
+        if (item.len == 0) {
+            return false;
+            revert("item len equals 0");
+        }
 
         uint8 byte0;
         uint256 memPtr = item.memPtr;
@@ -127,7 +135,12 @@ library RLPReader {
             byte0 := byte(0, mload(memPtr))
         }
 
-        if (byte0 < LIST_SHORT_START) return false;
+        if (byte0 < LIST_SHORT_START) {
+            revert(
+                string("byte0 < LIST_SHORT_START").concat(byte0.toString8())
+            );
+            return false;
+        }
         return true;
     }
 
@@ -197,7 +210,7 @@ library RLPReader {
 
         return result;
     }
-    
+
     function toInt(RLPItem memory item) internal pure returns (int256) {
         if ((toBytes(item)[0] & 0x80) == 0x80) {
             return int256(toUint(item) - 2**(toBytes(item).length * 8));
@@ -205,7 +218,6 @@ library RLPReader {
 
         return int256(toUint(item));
     }
-
 
     // enforces 32 byte length
     function toUintStrict(RLPItem memory item) internal pure returns (uint256) {

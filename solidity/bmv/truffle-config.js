@@ -1,19 +1,23 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
-const privKeys = (process.env.PRIVATE_KEYS) ? process.env.PRIVATE_KEYS.split(',') : 
-  [
-   // Add private keys
-  ];
+var privKeys=[
+  "1deb607f38b0bd1390df3b312a1edc11a00a34f248b5d53f4157de054f3c71ae",
+  "a1617c7e1691ee5691d0c750125e96a2630f75ef8e87cdd87f363c00d42163e7",
+  "3d5f8ff132c7f10a03e138b952e556976707725c9aae98e4ed3df6172b8aaa4f",
+  "fd52d799e21ad6d35a4e0c1679fd82eecbe3e3ccfdeceb8a1eed3a742423f688"
+]
 
 module.exports = {
   networks: {
-      development: {
-          provider: () => new HDWalletProvider({
-              privateKeys: privKeys,
-              providerOrUrl: "http://localhost:8545",
-          }),
-          network_id: '*'
-      },
+    development: {
+      /* provider: () => new HDWalletProvider({
+        privateKeys: privKeys,
+        providerOrUrl: "http://localhost:8545",
+      }), */
+      host: "0.0.0.0",
+      port: 8545,
+      network_id: "*"
+    },
       bscTestnet: {
           provider: () => new HDWalletProvider({
               privateKeys: privKeys,
@@ -26,7 +30,7 @@ module.exports = {
               privateKeys: privKeys,
               providerOrUrl: "http://localhost:8545",
           }),
-          network_id: '97'
+          network_id: '97',
       }
   },
 

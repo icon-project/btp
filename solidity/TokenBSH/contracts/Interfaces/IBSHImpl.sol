@@ -4,7 +4,7 @@ pragma solidity >=0.5.0 <=0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./IBSH.sol";
-import "../../../icondao/Libraries/TypesLib.sol";
+import "../Libraries/TypesLib.sol";
 
 /**
    @title Interface of BSHPeriphery contract

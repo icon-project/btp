@@ -1,4 +1,5 @@
-pragma solidity >=0.5.0 <=0.8.0;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity >=0.5.0 <0.8.0;
 
 /**
  * Strings Library
@@ -11,7 +12,7 @@ pragma solidity >=0.5.0 <=0.8.0;
  * The original library was modified. If you want to know more about the original version
  * please check this link: https://github.com/willitscale/solidity-util.git
  */
-library Strings {
+library String {
     /**
      * splitBTPAddress
      *
@@ -54,27 +55,6 @@ library Strings {
     /**
      * Index Of
      *
-     * Locates and returns the position of a character within a string
-     *
-     * @param _base When being used for a data type this is the extended object
-     *              otherwise this is the string acting as the haystack to be
-     *              searched
-     * @param _value The needle to search for, at present this is currently
-     *               limited to one character
-     * @return int The position of the needle starting from 0 and returning -1
-     *             in the case of no matches found
-     */
-    function indexOf(string memory _base, string memory _value)
-        internal
-        pure
-        returns (int256)
-    {
-        return _indexOf(_base, _value, 0);
-    }
-
-    /**
-     * Index Of
-     *
      * Locates and returns the position of a character within a string starting
      * from a defined offset
      *
@@ -105,20 +85,6 @@ library Strings {
         }
 
         return -1;
-    }
-
-    /**
-     * Length
-     *
-     * Returns the length of the specified string
-     *
-     * @param _base When being used for a data type this is the extended object
-     *              otherwise this is the string to be measured
-     * @return uint The length of the passed string
-     */
-    function length(string memory _base) internal pure returns (uint256) {
-        bytes memory _baseBytes = bytes(_base);
-        return _baseBytes.length;
     }
 
     /*
@@ -200,4 +166,73 @@ library Strings {
         }
         return false;
     }
+
+    function addressToString(address _address, bool isIconContract)
+        internal
+        pure
+        returns (string memory)
+    {
+        bytes32 _bytes = bytes32(uint256(_address));
+        //solhint-disable-next-line
+        bytes memory HEX = "0123456789abcdef";
+        bytes memory _string = new bytes(42);
+        if (isIconContract) _string[0] = "c";
+        else _string[0] = "0";
+        _string[1] = "x";
+        for (uint256 i = 0; i < 20; i++) {
+            _string[2 + i * 2] = HEX[uint8(_bytes[i + 12] >> 4)];
+            _string[3 + i * 2] = HEX[uint8(_bytes[i + 12] & 0x0f)];
+        }
+        return string(_string);
+    }
+
+    function parseAddress(string memory _a) internal pure returns (address) {
+        bytes memory tmp = bytes(_a);
+        uint160 iaddr = 0;
+        uint160 b1;
+        uint160 b2;
+        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
+            iaddr *= 256;
+            b1 = uint160(uint8(tmp[i]));
+            b2 = uint160(uint8(tmp[i + 1]));
+            if ((b1 >= 97) && (b1 <= 102)) {
+                b1 -= 87;
+            } else if ((b1 >= 65) && (b1 <= 70)) {
+                b1 -= 55;
+            } else if ((b1 >= 48) && (b1 <= 57)) {
+                b1 -= 48;
+            }
+            if ((b2 >= 97) && (b2 <= 102)) {
+                b2 -= 87;
+            } else if ((b2 >= 65) && (b2 <= 70)) {
+                b2 -= 55;
+            } else if ((b2 >= 48) && (b2 <= 57)) {
+                b2 -= 48;
+            }
+            iaddr += (b1 * 16 + b2);
+        }
+        return address(iaddr);
+    }
+
+    
+    
+    function toString(uint256 _i) internal pure returns (string memory) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint256 k = len - 1;
+        while (_i != 0) {
+            bstr[k--] = byte(uint8(48 + (_i % 10)));
+            _i /= 10;
+        }
+        return string(bstr);
+    }
+
 }

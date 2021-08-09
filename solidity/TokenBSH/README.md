@@ -37,3 +37,12 @@ https://docs.binance.org/smart-chain/developer/fullnode.html
 ``` truffle test --network testnet test/bep20-token-bsh.js ```
 
 $ ganache-cli -l 12000000 --allowUnlimitedContractSize
+
+SET Env variable
+
+BSH_TOKEN_FEE=1
+BMC_PERIPHERY_ADDRESS=0x503c16557325C0FCDf5fAB9e31B7ec29F9690066
+BSH_SERVICE=TokenBSH
+
+run the mirgate with:
+BSH_TOKEN_FEE=1 BMC_PERIPHERY_ADDRESS=0x503c16557325C0FCDf5fAB9e31B7ec29F9690066  BSH_SERVICE=TokenBSH truffle migrate --compile-all --network bsc

@@ -21,6 +21,7 @@ contract BMV is IBMV, Initializable {
     using String for address;
     using Base64 for bytes;
     using Base64 for string;
+    using String for uint256;
     using MessageDecoder for bytes;
     using MessageDecoder for Types.Validators;
     using Verifier for Types.BlockUpdate;
@@ -33,7 +34,7 @@ contract BMV is IBMV, Initializable {
     bytes32 internal lastBlockHash;
     Types.Validators private validators;
     MerkleTreeAccumulator.MTA internal mta;
-
+    event Debug(uint256 index,string _msg);
     function initialize(
         address _bmcAddr,
         address _subBmvAddr,
@@ -110,13 +111,15 @@ contract BMV is IBMV, Initializable {
         return (mta.height, mta.offset, lastBlockHeight);
     }
 
+   
+
     function getLastReceiptHash(Types.RelayMessage memory relayMsg)
         internal
         returns (bytes32 receiptHash, uint256 lastHeight)
     {
         for (uint256 i = 0; i < relayMsg.blockUpdates.length; i++) {
             // verify height
-            require(
+           /*  require(
                 relayMsg.blockUpdates[i].blockHeader.height <= mta.height + 1,
                 "BMVRevertInvalidBlockUpdateHigher"
             );
@@ -139,7 +142,7 @@ contract BMV is IBMV, Initializable {
                         relayMsg.blockUpdates[i - 1].blockHeader.blockHash,
                     "BMVRevertInvalidBlockUpdate: Invalid block hash"
                 );
-            }
+            } */
 
             if (i == relayMsg.blockUpdates.length - 1) {
                 receiptHash = relayMsg.blockUpdates[i]
@@ -155,12 +158,12 @@ contract BMV is IBMV, Initializable {
                 relayMsg.blockUpdates[i].nextValidatorsHash ||
                 i == relayMsg.blockUpdates.length - 1
             ) {
-                if (relayMsg.blockUpdates[i].verifyValidators(validators)) {
+              /*   if (relayMsg.blockUpdates[i].verifyValidators(validators)) {
                     delete validators;
                     validators.decodeValidators(
                         relayMsg.blockUpdates[i].nextValidatorsRlp
                     );
-                }
+                } */
             }
 
             mta.add(relayMsg.blockUpdates[i].blockHeader.blockHash);
@@ -204,9 +207,12 @@ contract BMV is IBMV, Initializable {
         string memory _prev,
         uint256 _seq,
         string calldata _msg
-    ) external override returns (bytes[] memory) {
-        checkAccessible(_bmc, _prev);
-
+    ) external override returns (bytes[] memory) {   
+        string memory concat1 = _bmc.concat(_prev);
+        string memory concat2 = concat1.concat(_seq.toString());
+        string memory concat3 = concat2.concat(_msg);    
+        //checkAccessible(_bmc, _prev);
+        emit Debug(0,"inside bmv");
         bytes memory _serializedMsg = _msg.decode();
         Types.RelayMessage memory relayMsg =
             _serializedMsg.decodeRelayMessage();
@@ -218,7 +224,7 @@ contract BMV is IBMV, Initializable {
 
         (bytes32 _receiptHash, uint256 _lastHeight) =
             getLastReceiptHash(relayMsg);
-
+        emit Debug(0,"got last receipt hash");
         bytes[] memory msgs =
             IDataValidator(subBmvAddr).validateReceipt(
                 _bmc,
@@ -226,8 +232,7 @@ contract BMV is IBMV, Initializable {
                 _seq,
                 _serializedMsg,
                 _receiptHash
-            );
-
+            );           
         if (msgs.length > 0) lastBlockHeight = _lastHeight;
         return msgs;
     }

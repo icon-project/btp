@@ -21,17 +21,17 @@ pragma experimental ABIEncoderV2;
 
 import "../Interfaces/IBSHProxy.sol";
 import "../Interfaces/IBSHImpl.sol";
-import "../../../icondao/Interfaces/IBMC.sol";
-import "../../../icondao/Libraries/TypesLib.sol";
+import "../Interfaces/IBMC.sol";
+import "../Libraries/TypesLib.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "../../../icondao/Libraries/RLPEncodeStructLib.sol";
-import "../../../icondao/Libraries/RLPDecodeStructLib.sol";
-import "../../../icondao/Libraries/StringsLib.sol";
-import "../../../icondao/Libraries/ParseAddressLib.sol";
-import "../../../icondao/Libraries/Owner.sol";
+import "../Libraries/RLPEncodeStructLib.sol";
+import "../Libraries/RLPDecodeStructLib.sol";
+import "../Libraries/StringsLib.sol";
+import "../Libraries/ParseAddressLib.sol";
+import "../Libraries/Owner.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract BSHProxyUpdate is IBSHProxy, Initializable {
@@ -73,7 +73,7 @@ contract BSHProxyUpdate is IBSHProxy, Initializable {
     event SetOwnership(address indexed promoter, address indexed newOwner);
     event RemoveOwnership(address indexed remover, address indexed formerOwner);
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(owners[msg.sender] == true, "Unauthorized");
         _;
     }
@@ -239,9 +239,7 @@ contract BSHProxyUpdate is IBSHProxy, Initializable {
 
         balances[msg.sender][_tokenName].refundableBalance = balances[
             msg.sender
-        ][_tokenName]
-        .refundableBalance
-        .sub(_value);
+        ][_tokenName].refundableBalance.sub(_value);
         address token_addr = tokenAddr[_tokenName];
         ERC20(token_addr).approve(address(this), _value);
         ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
@@ -353,16 +351,11 @@ contract BSHProxyUpdate is IBSHProxy, Initializable {
             uint256 fee = _assets[i].fee;
             balances[_caller][_tokenName].lockedBalance = balances[_caller][
                 _tokenName
-            ]
-            .lockedBalance
-            .sub(value);
+            ].lockedBalance.sub(value);
             if (_code == RC_ERR) {
                 balances[_caller][_tokenName].refundableBalance = balances[
                     _caller
-                ][_tokenName]
-                .refundableBalance
-                .add(value)
-                .add(fee);
+                ][_tokenName].refundableBalance.add(value).add(fee);
             } else if (_code == RC_OK) {
                 feeCollector[_tokenName] = feeCollector[_tokenName].add(fee);
             }
@@ -395,7 +388,7 @@ contract BSHProxyUpdate is IBSHProxy, Initializable {
         return (_tokenaddr != address(0));
     }
 
-    modifier onlyBSHImpl {
+    modifier onlyBSHImpl() {
         require(msg.sender == address(bshImpl), "Unauthorized");
         _;
     }

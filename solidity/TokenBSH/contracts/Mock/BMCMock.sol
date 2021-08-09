@@ -62,14 +62,13 @@ contract BMCMock is BMC {
         address _to,
         string memory _net,
         string memory _svc,
-        uint256 _sn,
         string memory _tokenName,
         uint256 _value
     ) external {
         assetsMock.push(Types.Asset(_tokenName, _value, 0));
         bytes memory _ta = Types
-        .TransferAssets(_from, _to.toString(), assetsMock)
-        .encodeTransferAsset();
+            .TransferAssets(_from, _to.toString(), assetsMock)
+            .encodeTransferAsset();
         sendBTPMessage(
             _net,
             _svc,
@@ -98,11 +97,12 @@ contract BMCMock is BMC {
             0,
             Types
                 .ServiceMessage(
-                Types.ServiceType.REQUEST_TOKEN_TRANSFER,
-                Types
-                    .TransferAssets(_from, _to, tokensMock)
-                    .encodeTransferAsset()
-            ).encodeServiceMessage()
+                    Types.ServiceType.REQUEST_TOKEN_TRANSFER,
+                    Types
+                        .TransferAssets(_from, _to, tokensMock)
+                        .encodeTransferAsset()
+                )
+                .encodeServiceMessage()
         );
         delete tokensMock;
     }
@@ -120,9 +120,10 @@ contract BMCMock is BMC {
             _sn,
             Types
                 .ServiceMessage(
-                Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+                    Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
         );
     }
 
@@ -140,9 +141,10 @@ contract BMCMock is BMC {
             _sn,
             Types
                 .ServiceMessage(
-                _serviceType,
-                Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+                    _serviceType,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
         );
     }
 
@@ -157,15 +159,17 @@ contract BMCMock is BMC {
         return
             Types
                 .BMCMessage(
-                _from,
-                _to,
-                _svc,
-                _sn,
-                Types
-                    .ServiceMessage(
-                    Types.ServiceType.RESPONSE_HANDLE_SERVICE,
-                    Types.Response(_code, _msg).encodeResponse()
-                ).encodeServiceMessage()
-            ).encodeBMCMessage();
+                    _from,
+                    _to,
+                    _svc,
+                    _sn,
+                    Types
+                        .ServiceMessage(
+                            Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+                            Types.Response(_code, _msg).encodeResponse()
+                        )
+                        .encodeServiceMessage()
+                )
+                .encodeBMCMessage();
     }
 }

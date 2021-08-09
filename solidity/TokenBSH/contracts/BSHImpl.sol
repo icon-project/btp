@@ -23,11 +23,11 @@ import "./Interfaces/IBSHProxy.sol";
 import "./Interfaces/IBSHImpl.sol";
 import "./Interfaces/IBMCPeriphery.sol";
 
-import "../../icondao/Libraries/TypesLib.sol";
-import "../../icondao/Libraries/RLPEncodeStructLib.sol";
-import "../../icondao/Libraries/RLPDecodeStructLib.sol";
-import "../../icondao/Libraries/StringsLib.sol";
-import "../../icondao/Libraries/ParseAddressLib.sol";
+import "./Libraries/TypesLib.sol";
+import "./Libraries/RLPEncodeStructLib.sol";
+import "./Libraries/RLPDecodeStructLib.sol";
+import "./Libraries/StringsLib.sol";
+import "./Libraries/ParseAddressLib.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
@@ -42,7 +42,7 @@ contract BSHImpl is IBSHImpl, Initializable {
     using ParseAddress for address;
     using ParseAddress for string;
     using Strings for string;
-
+    using Strings for uint256;
     IBMCPeriphery private bmc;
     IBSHProxy private bshProxy;
     mapping(uint256 => Types.TransferAssets) public requests;
@@ -70,12 +70,12 @@ contract BSHImpl is IBSHImpl, Initializable {
 
     event debug(address addr, string name, uint256 val);
 
-    modifier onlyBMC {
+    modifier onlyBMC() {
         require(msg.sender == address(bmc), "Unauthorized");
         _;
     }
 
-    modifier onlyBSHProxy {
+    modifier onlyBSHProxy() {
         require(msg.sender == address(bshProxy), "Unauthorized");
         _;
     }
@@ -86,7 +86,7 @@ contract BSHImpl is IBSHImpl, Initializable {
         string memory _serviceName
     ) public initializer {
         bmc = IBMCPeriphery(_bmc);
-        bmc.requestAddService(_serviceName, address(this));
+        //bmc.requestAddService(_serviceName, address(this));
         bshProxy = IBSHProxy(_bshProxy);
         serviceName = _serviceName;
         serialNo = 0;
@@ -119,12 +119,19 @@ contract BSHImpl is IBSHImpl, Initializable {
         bytes calldata _msg
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "Invalid Service Name");
+        //todo: temp remove comment
         Types.ServiceMessage memory _sm = _msg.decodeServiceMessage();
+        //todo: temp remove this line, temp added
+        /*  (
+            Types.ServiceMessage memory _sm,
+            Types.TransferAssets memory _ta
+        ) = _msg.decodeTransferAssetTemp();
+ */
         if (_sm.serviceType == Types.ServiceType.REQUEST_TOKEN_TRANSFER) {
+            //todo: temp remove comment
             Types.TransferAssets memory _ta = _sm.data.decodeTransferAsset();
             string memory _statusMsg;
             uint256 _status;
-
             try this.handleRequest(_ta) {
                 _statusMsg = "Transfer Success";
                 _status = RC_OK;
@@ -164,7 +171,11 @@ contract BSHImpl is IBSHImpl, Initializable {
         external
     {
         require(msg.sender == address(this), "Unauthorized");
+        // string memory _toNetwork;
+        // string memory _toAddress;
         string memory _toAddress = transferAssets.to;
+        //TODO: check the to address format is it btp address or just account?
+        //(_toNetwork, _toAddress) = _to.splitBTPAddress();
         try this.checkParseAddress(_toAddress) {} catch {
             revert("Invalid Address");
         }
@@ -205,9 +216,10 @@ contract BSHImpl is IBSHImpl, Initializable {
             _sn,
             Types
                 .ServiceMessage(
-                _serviceType,
-                Types.Response(_code, _msg).encodeResponse()
-            ).encodeServiceMessage()
+                    _serviceType,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
         );
         emit HandleBTPMessageEvent(_sn, _code, _msg);
     }
@@ -256,10 +268,11 @@ contract BSHImpl is IBSHImpl, Initializable {
             _assets
         );
         bytes memory serviceMessage = Types
-        .ServiceMessage(
-            Types.ServiceType.REQUEST_TOKEN_TRANSFER,
-            _ta.encodeTransferAsset()
-        ).encodeServiceMessage();
+            .ServiceMessage(
+                Types.ServiceType.REQUEST_TOKEN_TRANSFER,
+                _ta.encodeTransferAsset()
+            )
+            .encodeServiceMessage();
 
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 

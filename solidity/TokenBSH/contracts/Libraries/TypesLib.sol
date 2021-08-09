@@ -108,7 +108,7 @@ library Types {
         Asset[] assets;
     }
 
-/*    struct Asset {
+    /*    struct Asset {
         string coinName;
         uint256 value;
     } */
@@ -237,16 +237,13 @@ library Types {
         string[] svcs; //  a list of services
     }
 
-
-    
-
     struct TransferAssets {
         string from;
         string to;
         Asset[] asset;
     }
 
-    struct Asset{
+    struct Asset {
         string name;
         uint256 value;
         uint256 fee;
@@ -256,7 +253,7 @@ library Types {
         REQUEST_TOKEN_REGISTER,
         RESPONSE_HANDLE_SERVICE,
         RESPONSE_UNKNOWN
-    } 
+    }
 
     struct TransferAssetsRecord {
         string from;
@@ -265,5 +262,4 @@ library Types {
         uint256 value;
         uint256 fee;
     }
-
 }

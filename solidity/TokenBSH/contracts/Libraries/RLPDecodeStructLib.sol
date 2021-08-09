@@ -3,15 +3,17 @@ pragma experimental ABIEncoderV2;
 
 import "./RLPReaderLib.sol";
 import "./Helper.sol";
+import "./StringsLib.sol";
 import "./TypesLib.sol";
 
 //import "./RLPEncode.sol";
 
 library RLPDecodeStruct {
-     using RLPReader for RLPReader.RLPItem;
+    using RLPReader for RLPReader.RLPItem;
     using RLPReader for RLPReader.Iterator;
     using RLPReader for bytes;
-
+    using Strings for string;
+    using Strings for uint256;
     using RLPDecodeStruct for bytes;
 
     uint8 private constant LIST_SHORT_START = 0xc0;
@@ -102,28 +104,6 @@ library RLPDecodeStruct {
             );
     }
 
-   /* function decodeTransferCoinMsg(bytes memory _rlp)
-        internal
-        pure
-        returns (Types.TransferCoin memory)
-    {
-        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        Types.Asset[] memory assets = new Types.Asset[](ls[2].toList().length);
-        RLPReader.RLPItem[] memory rlpAssets = ls[2].toList();
-        for (uint256 i = 0; i < ls[2].toList().length; i++) {
-            assets[i] = Types.Asset(
-                string(rlpAssets[i].toList()[0].toBytes()),
-                rlpAssets[i].toList()[1].toUint()
-            );
-        }
-        return
-            Types.TransferCoin(
-                string(ls[0].toBytes()),
-                string(ls[1].toBytes()),
-                assets
-            );
-    }
-*/
     function decodeResponse(bytes memory _rlp)
         internal
         pure
@@ -158,8 +138,10 @@ library RLPDecodeStruct {
                     isSPREmpty
                 );
         }
-        RLPReader.RLPItem[] memory subList =
-            ls[10].toBytes().toRlpItem().toList();
+        RLPReader.RLPItem[] memory subList = ls[10]
+            .toBytes()
+            .toRlpItem()
+            .toList();
         isSPREmpty = false;
         return
             Types.BlockHeader(
@@ -277,16 +259,19 @@ library RLPDecodeStruct {
         returns (Types.ReceiptProof memory)
     {
         RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        RLPReader.RLPItem[] memory receiptList =
-            ls[1].toBytes().toRlpItem().toList();
+        RLPReader.RLPItem[] memory receiptList = ls[1]
+            .toBytes()
+            .toRlpItem()
+            .toList();
 
         bytes[] memory txReceipts = new bytes[](receiptList.length);
         for (uint256 i = 0; i < receiptList.length; i++) {
             txReceipts[i] = receiptList[i].toBytes();
         }
 
-        Types.EventProof[] memory _ep =
-            new Types.EventProof[](ls[2].toList().length);
+        Types.EventProof[] memory _ep = new Types.EventProof[](
+            ls[2].toList().length
+        );
         for (uint256 i = 0; i < ls[2].toList().length; i++) {
             _ep[i] = Types.EventProof(
                 ls[2].toList()[i].toList()[0].toUint(),
@@ -380,6 +365,7 @@ library RLPDecodeStruct {
         }
         return Types.RelayMessage(_buArray, _bp, isBPEmpty, _rp, isRPEmpty);
     }
+
     function decodeAsset(bytes memory _rlp)
         internal
         pure
@@ -399,7 +385,9 @@ library RLPDecodeStruct {
         internal
         returns (Types.TransferAssets memory)
     {
-        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        RLPReader.RLPItem memory rlpItem = _rlp.toRlpItem();
+
+        RLPReader.RLPItem[] memory ls = rlpItem.toList();
         Types.Asset[] memory _ep = new Types.Asset[](ls[2].toList().length);
         uint256 len = ls[2].toList().length;
         Types.Asset memory _asset;
@@ -408,7 +396,7 @@ library RLPDecodeStruct {
             _asset = Types.Asset(
                 string(rlpTs[i].toList()[0].toBytes()),
                 rlpTs[i].toList()[1].toUint(),
-                rlpTs[i].toList()[2].toUint()
+                0
             );
             _ep[i] = _asset;
         }
@@ -418,5 +406,43 @@ library RLPDecodeStruct {
                 string(ls[1].toBytes()),
                 _ep
             );
+    }
+
+    function decodeTransferAssetTemp(bytes memory _rlp)
+        internal
+        returns (Types.ServiceMessage memory, Types.TransferAssets memory)
+    {
+        RLPReader.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+
+        Types.ServiceMessage memory serviceMsg = Types.ServiceMessage(
+            Types.ServiceType(ls[0].toUint()),
+            "0x0"
+        );
+
+        RLPReader.RLPItem[] memory _taList = ls[1].toList();
+
+        Types.Asset[] memory _ep = new Types.Asset[](
+            _taList[2].toList().length
+        );
+        uint256 len = _taList[2].toList().length;
+        Types.Asset memory _asset;
+        RLPReader.RLPItem[] memory rlpTs = _taList[2].toList();
+        for (uint256 i = 0; i < len; i++) {
+            _asset = Types.Asset(
+                string(rlpTs[i].toList()[0].toBytes()),
+                rlpTs[i].toList()[1].toUint(),
+                0
+            );
+            _ep[i] = _asset;
+        }
+
+        return (
+            serviceMsg,
+            Types.TransferAssets(
+                string(_taList[0].toBytes()),
+                string(_taList[1].toBytes()),
+                _ep
+            )
+        );
     }
 }
