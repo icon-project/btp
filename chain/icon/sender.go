@@ -304,7 +304,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		ReceiptProofs: make([][]byte, 0),
 	}
 	size := 0
-	for i, bu := range rm.BlockUpdates {
+	for _, bu := range rm.BlockUpdates {
 		if bu.Height <= height {
 			continue
 		}
@@ -327,16 +327,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 
 			for i := 0; i < 2; i++ {
-				segment := &chain.Segment{
-					Height:              bu.Height,
-					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-				}
-
-				subMsg := &RelayMessage{
-					BlockUpdates:  make([][]byte, 0),
-					ReceiptProofs: make([][]byte, 0),
-				}
-
 				var rawBu []byte
 				if i == 0 {
 					newFp := parachainFinalityProof{
@@ -373,6 +363,16 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					}
 				}
 
+				segment := &chain.Segment{
+					Height:              bu.Height,
+					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+				}
+
+				subMsg := &RelayMessage{
+					BlockUpdates:  make([][]byte, 0),
+					ReceiptProofs: make([][]byte, 0),
+				}
+
 				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
 
 				rmb, err := codec.RLP.MarshalToBytes(subMsg)
@@ -385,6 +385,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				}
 				segments = append(segments, segment)
 			}
+
 			size -= buSize
 			continue
 		}
@@ -416,7 +417,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			segments = append(segments, segment)
 			continue
 		}
-		s.l.Tracef("Segment: at %d BlockUpdates[%d]", bu.Height, i)
 		msg.BlockUpdates = append(msg.BlockUpdates, realBu)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
@@ -478,23 +478,25 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		}
 	}
 
-	segment := &chain.Segment{
-		Height:              msg.height,
-		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		EventSequence:       msg.eventSequence,
-		NumberOfEvent:       msg.numberOfEvent,
-	}
+	if len(msg.BlockUpdates) > 0 {
+		segment := &chain.Segment{
+			Height:              msg.height,
+			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			EventSequence:       msg.eventSequence,
+			NumberOfEvent:       msg.numberOfEvent,
+		}
 
-	rmb, err := codec.RLP.MarshalToBytes(msg)
-	if err != nil {
-		return nil, err
-	}
+		rmb, err := codec.RLP.MarshalToBytes(msg)
+		if err != nil {
+			return nil, err
+		}
 
-	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
-		return nil, err
-	}
+		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+			return nil, err
+		}
 
-	segments = append(segments, segment)
+		segments = append(segments, segment)
+	}
 
 	return segments, nil
 }
@@ -603,6 +605,7 @@ func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.
 		}
 	}
 
+	time.Sleep(time.Duration(s.FinalizeLatency()))
 	s.l.Tracef("sendFragmentations: end")
 	return grp, err
 }
@@ -639,7 +642,7 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 		} else if end >= len(msg) {
 			index = 0
 		} else {
-			index = i / fragmentStringSize
+			index = (nuFragments - 1 - (i / fragmentStringSize))
 		}
 
 		tp, err := s.newFragmentationsTransactionParam(prev, msg[i:end], index)
