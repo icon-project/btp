@@ -22,6 +22,8 @@ type Hash = types.Hash
 type AccountID = types.AccountID
 type Weight = types.Weight
 type ParaId = types.U32
+type DispatchResult = []byte
+type DispatchError = []byte
 
 // EventSystemRemarked is emitted on on-chain remark happened.
 type EventSystemRemarked struct {
@@ -165,8 +167,9 @@ type EventStakingChilled struct {
 }
 
 type EventCrowdloanCreated struct {
-	Phase  Phase
-	Topics []Hash
+	Phase   Phase
+	Created ParaId
+	Topics  []Hash
 }
 type EventCrowdloanContributed struct {
 	Phase     Phase
@@ -176,34 +179,73 @@ type EventCrowdloanContributed struct {
 	Topics    []Hash
 }
 type EventCrowdloanWithdrew struct {
-	Phase  Phase
-	Topics []Hash
+	Phase     Phase
+	AccountID AccountID
+	ParaId    ParaId
+	Balance   Balance
+	Topics    []Hash
 }
 type EventCrowdloanPartiallyRefunded struct {
 	Phase  Phase
+	ParaId ParaId
 	Topics []Hash
 }
 type EventCrowdloanAllRefunded struct {
 	Phase  Phase
+	ParaId ParaId
 	Topics []Hash
 }
 type EventCrowdloanDissolved struct {
 	Phase  Phase
+	ParaId ParaId
 	Topics []Hash
 }
-type EventCrowdloanHandleBidResult struct {
+
+type EventCrowdloanDeployDataFixed struct {
 	Phase  Phase
+	ParaId ParaId
 	Topics []Hash
+}
+
+type EventCrowdloanOnboarded struct {
+	Phase     Phase
+	FindIndex ParaId
+	ParaId    ParaId
+	Topics    []Hash
+}
+
+type EventCrowdloanHandleBidResult struct {
+	Phase          Phase
+	ParaId         ParaId
+	DispatchResult DispatchResult
+	Topics         []Hash
 }
 type EventCrowdloanEdited struct {
 	Phase  Phase
+	ParaId ParaId
 	Topics []Hash
 }
 type EventCrowdloanMemoUpdated struct {
-	Phase  Phase
-	Topics []Hash
+	Phase     Phase
+	Who       AccountID
+	FundIndex ParaId
+	Memo      Bytes
+	Topics    []Hash
 }
 type EventCrowdloanAddedToNewRaise struct {
+	Phase  Phase
+	ParaId ParaId
+	Topics []Hash
+}
+
+type EventUtilityBatchInterrupted struct {
+	Phase  Phase
+	Index  types.U32
+	Error  DispatchError
+	Topics []Hash
+}
+
+type EventUtilityBatchCompleted struct {
 	Phase  Phase
 	Topics []Hash
 }
@@ -499,6 +541,8 @@ type KusamaEventRecord struct {
 	Crowdloan_PartiallyRefunded        []EventCrowdloanPartiallyRefunded
 	Crowdloan_AllRefunded              []EventCrowdloanAllRefunded
 	Crowdloan_Dissolved                []EventCrowdloanDissolved
+	Crowdloan_DeployDataFixed          []EventCrowdloanDeployDataFixed
+	Crowdloan_Onboarded                []EventCrowdloanOnboarded
 	Crowdloan_HandleBidResult          []EventCrowdloanHandleBidResult
 	Crowdloan_Edited                   []EventCrowdloanEdited
 	Crowdloan_MemoUpdated              []EventCrowdloanMemoUpdated
@@ -523,7 +567,8 @@ type KusamaEventRecord struct {
 	Treasury_Rejected                  []EventTreasuryRejected
 	Treasury_Rollover                  []EventTreasuryRollover
 	Treasury_Spending                  []EventTreasurySpending
-	Balances_ReservedRepatriated       []EventBalancesReserveRepatriated
+	Utility_BatchInterrupted           []EventUtilityBatchInterrupted
+	Utility_BatchCompleted             []EventUtilityBatchCompleted
 	Staking_EraPayout                  []EventStakingEraPayout
 	Staking_Reward                     []EventStakingReward
 	Staking_Slash                      []EventStakingSlash
