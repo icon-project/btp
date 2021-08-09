@@ -20,7 +20,7 @@ public class ParaBlockUpdate {
         rlpReader.beginList();
 
         // decode Para block header
-        byte[] encodedHeader = rlpReader.readByteArray();
+        byte[] encodedHeader = rlpReader.readNullable(byte[].class);
         if (encodedHeader != null && encodedHeader.length > 0) {
             this.blockHeader = new BlockHeader(encodedHeader);
         } else {
