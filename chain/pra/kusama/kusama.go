@@ -21,6 +21,7 @@ type Bytes16 = types.Bytes16
 type Hash = types.Hash
 type AccountID = types.AccountID
 type Weight = types.Weight
+type ParaId = types.U32
 
 // EventSystemRemarked is emitted on on-chain remark happened.
 type EventSystemRemarked struct {
@@ -160,6 +161,50 @@ type EventStakingKicked struct {
 type EventStakingChilled struct {
 	Phase  Phase
 	Stash  AccountID
+	Topics []Hash
+}
+
+type EventCrowdloanCreated struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanContributed struct {
+	Phase     Phase
+	AccountId AccountID
+	ParaId    ParaId
+	Balance   Balance
+	Topics    []Hash
+}
+type EventCrowdloanWithdrew struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanPartiallyRefunded struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanAllRefunded struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanDissolved struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanHandleBidResult struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanEdited struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanMemoUpdated struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventCrowdloanAddedToNewRaise struct {
+	Phase  Phase
 	Topics []Hash
 }
 
@@ -448,16 +493,16 @@ type KusamaEventRecord struct {
 	// Auctions_ReserveConfiscated                     []EventAuctionsReserveConfiscated
 	// Auctions_BidAccepted                            []EventAuctionsBidAccepted
 	// Auctions_WinningOffset                          []EventAuctionsWinningOffset
-	// Crowdloan_Created                               []EventCrowdloanCreated
-	// Crowdloan_Contributed                           []EventCrowdloanContributed
-	// Crowdloan_Withdrew                              []EventCrowdloanWithdrew
-	// Crowdloan_PartiallyRefunded                     []EventCrowdloanPartiallyRefunded
-	// Crowdloan_AllRefunded                           []EventCrowdloanAllRefunded
-	// Crowdloan_Dissolved                             []EventCrowdloanDissolved
-	// Crowdloan_HandleBidResult                       []EventCrowdloanHandleBidResult
-	// Crowdloan_Edited                                []EventCrowdloanEdited
-	// Crowdloan_MemoUpdated                           []EventCrowdloanMemoUpdated
-	// Crowdloan_AddedToNewRaise                       []EventCrowdloanAddedToNewRaise
+	Crowdloan_Created                  []EventCrowdloanCreated
+	Crowdloan_Contributed              []EventCrowdloanContributed
+	Crowdloan_Withdrew                 []EventCrowdloanWithdrew
+	Crowdloan_PartiallyRefunded        []EventCrowdloanPartiallyRefunded
+	Crowdloan_AllRefunded              []EventCrowdloanAllRefunded
+	Crowdloan_Dissolved                []EventCrowdloanDissolved
+	Crowdloan_HandleBidResult          []EventCrowdloanHandleBidResult
+	Crowdloan_Edited                   []EventCrowdloanEdited
+	Crowdloan_MemoUpdated              []EventCrowdloanMemoUpdated
+	Crowdloan_AddedToNewRaise          []EventCrowdloanAddedToNewRaise
 	Identity_IdentitySet               []EventIdentitySet
 	Identity_IdentityCleared           []EventIdentityCleared
 	Identity_IdentityKilled            []EventIdentityKilled
