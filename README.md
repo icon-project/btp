@@ -7,6 +7,7 @@ We need to build a usable [BTP](doc/btp.md) Relay System which can deliver digit
 Target chains
 * ICON (goloop)
 * Polkadot parachain
+* Binance Smart Chain
 
 Terminologies
 
@@ -50,6 +51,7 @@ Terminologies
 * [Build Guide](doc/build.md)
 * [Tutorial](doc/tutorial.md)
 * [btpsimple command line](doc/btpsimple_cli.md)
+* [Binance Smart Chain Guide](doc/bsc-guide.md)
 
 ### Layout
 
