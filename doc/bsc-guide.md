@@ -47,7 +47,7 @@ navigate to btp directory
 make
 ```
 
-Build Binance Smart Chain docker
+### Build Binance Smart Chain docker
 
 We will need a custom BSC build to include SHA3-256 FIPS 202 hash, 
 please read instructions [here](https://github.com/icon-project/btp/tree/btp_web3labs/devnet)
