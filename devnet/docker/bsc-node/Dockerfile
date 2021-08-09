@@ -1,6 +1,6 @@
 FROM alpine:3.14.0
 
-ENV BSC_HOME=/home/bsc
+ENV BSC_HOME=/bsc
 ENV PATH $PATH:/${BSC_HOME}/bin
 
 # copy files for provisioning
@@ -16,7 +16,9 @@ ARG KEYSTORE_PASS
 RUN echo ${KEYSTORE_PASS} > .secret
 RUN ./provision.sh
 
-ENTRYPOINT ./entrypoint.sh
+COPY ./entrypoint ${BSC_HOME}
+
+ENTRYPOINT ${BSC_HOME}/entrypoint
 
 EXPOSE 8545
 EXPOSE 8656
