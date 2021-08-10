@@ -28,6 +28,20 @@ type DispatchError = []byte
 type ProposalIndex = types.U32
 type MemberCount = types.U32
 type Bool = types.Bool
+type ElectionCompute = types.ElectionCompute
+
+type Option struct {
+	hasValue bool
+}
+type OptionElectionCompute struct {
+	Option
+	ElectionCompute ElectionCompute
+}
+
+func (oe *OptionElectionCompute) Decode(decoder scale.Decoder) error {
+	return decoder.DecodeOption(&oe.hasValue, &oe.ElectionCompute)
+}
+
 type EventIndicesIndexAssigned struct {
 	Phase  Phase
 	Who    AccountID
@@ -322,6 +336,37 @@ type EventCrowdloanAddedToNewRaise struct {
 	Topics []Hash
 }
 
+type EventElectionProviderMultiPhaseSolutionStored struct {
+	Phase    Phase
+	Solution ElectionCompute
+	Topics   []Hash
+}
+type EventElectionProviderMultiPhaseElectionFinalized struct {
+	Phase  Phase
+	Some   OptionElectionCompute
+	Topics []Hash
+}
+type EventElectionProviderMultiPhaseRewarded struct {
+	Phase  Phase
+	Who    AccountID
+	Topics []Hash
+}
+type EventElectionProviderMultiPhaseSlashed struct {
+	Phase  Phase
+	Who    AccountID
+	Topics []Hash
+}
+type EventElectionProviderMultiPhaseSignedPhaseStarted struct {
+	Phase              Phase
+	SignedPhaseStarted U32
+	Topics             []Hash
+}
+type EventElectionProviderMultiPhaseUnsignedPhaseStarted struct {
+	Phase                Phase
+	UnsignedPhaseStarted U32
+	Topics               []Hash
+}
+
 type EventUtilityBatchInterrupted struct {
 	Phase  Phase
 	Index  types.U32
@@ -602,12 +647,12 @@ type KusamaEventRecord struct {
 	// Tips_TipClosed                                  []EventTipsTipClosed
 	// Tips_TipRetracted                               []EventTipsTipRetracted
 	// Tips_TipSlashed                                 []EventTipsTipSlashed
-	// ElectionProviderMultiPhase_SolutionStored       []EventElectionProviderMultiPhaseSolutionStored
-	// ElectionProviderMultiPhase_ElectionFinalized    []EventElectionProviderMultiPhaseElectionFinalized
-	// ElectionProviderMultiPhase_Rewarded             []EventElectionProviderMultiPhaseRewarded
-	// ElectionProviderMultiPhase_Slashed              []EventElectionProviderMultiPhaseSlashed
-	// ElectionProviderMultiPhase_SignedPhaseStarted   []EventElectionProviderMultiPhaseSignedPhaseStarted
-	// ElectionProviderMultiPhase_UnsignedPhaseStarted []EventElectionProviderMultiPhaseUnsignedPhaseStarted
+	ElectionProviderMultiPhase_SolutionStored       []EventElectionProviderMultiPhaseSolutionStored
+	ElectionProviderMultiPhase_ElectionFinalized    []EventElectionProviderMultiPhaseElectionFinalized
+	ElectionProviderMultiPhase_Rewarded             []EventElectionProviderMultiPhaseRewarded
+	ElectionProviderMultiPhase_Slashed              []EventElectionProviderMultiPhaseSlashed
+	ElectionProviderMultiPhase_SignedPhaseStarted   []EventElectionProviderMultiPhaseSignedPhaseStarted
+	ElectionProviderMultiPhase_UnsignedPhaseStarted []EventElectionProviderMultiPhaseUnsignedPhaseStarted
 	// Gilt_BidPlaced                                  []EventGiltBidPlaced
 	// Gilt_BidRetracted                               []EventGiltBidRetracted
 	// Gilt_GiltIssued                                 []EventGiltGiltIssued
