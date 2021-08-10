@@ -25,7 +25,7 @@ func TestRelayReceiver(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, gj)
 
-		v, err := r.newVotes(gj)
+		v, err := r.newVotes(gj, substrate.SetId(3000))
 		assert.NoError(t, err)
 		assert.NotNil(t, v)
 	})
