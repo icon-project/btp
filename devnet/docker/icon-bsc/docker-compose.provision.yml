@@ -1,7 +1,7 @@
 version: "3.9"  # optional since v1.27.0
 services:
-  btpsimple_src:
-    container_name: btp_src
+  btpsimple_icon_bsc:
+    container_name: btp_icon_bsc
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src
       - BTPSIMPLE_CONFIG=/btpsimple/config/src.config.json
