@@ -71,7 +71,7 @@ async function main() {
   console.log(" Para chain name: ", JSON.stringify(paraChainName));
 
   let accountIdSize = 32;
-  if (paraChainName.startsWith("moon")) {
+  if (paraChainName.startsWith("moon") || paraChainName.startsWith("Moon")) {
     accountIdSize = 20;
   }
 
