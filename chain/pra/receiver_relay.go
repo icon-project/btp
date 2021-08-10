@@ -162,7 +162,7 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 
 	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
-	for i := from; i < substrate.NewBlockNumber(uint64(to)); i++ {
+	for i := from; i <= substrate.NewBlockNumber(uint64(to)); i++ {
 		missingBlockNumbers = append(missingBlockNumbers, i)
 	}
 
@@ -174,7 +174,7 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 	bus = append(bus, hds...)
 	bus = append(bus, missingBlockHeaders...)
 
-	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", from, to-1)
+	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", from, to)
 	return bus, nil
 }
 
