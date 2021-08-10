@@ -29,7 +29,10 @@ type ProposalIndex = types.U32
 type MemberCount = types.U32
 type Bool = types.Bool
 type ElectionCompute = types.ElectionCompute
-
+type BountyIndex = types.U32
+type BalanceOf = Balance
+type BlockNumber = types.U32
+type ActiveIndex = types.U32
 type Option struct {
 	hasValue bool
 }
@@ -132,7 +135,12 @@ type EventTechComitteeCollectiveExecuted = types.EventTechnicalCommitteeExecuted
 type EventTechComitteeCollectiveMemberExecuted = types.EventTechnicalCommitteeMemberExecuted
 type EventTechComitteeCollectiveProposed = types.EventTechnicalCommitteeProposed
 type EventTechComitteeCollectiveVoted = types.EventTechnicalCommitteeVoted
-
+type EventRecoveryRecoveryCreated = types.EventRecoveryCreated
+type EventRecoveryRecoveryInitiated = types.EventRecoveryInitiated
+type EventRecoveryRecoveryVouched = types.EventRecoveryVouched
+type EventRecoveryRecoveryClosed = types.EventRecoveryClosed
+type EventRecoveryAccountRecovered = types.EventRecoveryAccountRecovered
+type EventRecoveryRecoveryRemoved = types.EventRecoveryRemoved
 type EventCouncilProposed struct {
 	Phase         Phase
 	Account       AccountID
@@ -264,78 +272,6 @@ type EventStakingChilled struct {
 	Topics []Hash
 }
 
-type EventCrowdloanCreated struct {
-	Phase   Phase
-	Created ParaId
-	Topics  []Hash
-}
-type EventCrowdloanContributed struct {
-	Phase     Phase
-	AccountId AccountID
-	ParaId    ParaId
-	Balance   Balance
-	Topics    []Hash
-}
-type EventCrowdloanWithdrew struct {
-	Phase     Phase
-	AccountID AccountID
-	ParaId    ParaId
-	Balance   Balance
-	Topics    []Hash
-}
-type EventCrowdloanPartiallyRefunded struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-type EventCrowdloanAllRefunded struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-type EventCrowdloanDissolved struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-
-type EventCrowdloanDeployDataFixed struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-
-type EventCrowdloanOnboarded struct {
-	Phase     Phase
-	FindIndex ParaId
-	ParaId    ParaId
-	Topics    []Hash
-}
-
-type EventCrowdloanHandleBidResult struct {
-	Phase          Phase
-	ParaId         ParaId
-	DispatchResult DispatchResult
-	Topics         []Hash
-}
-type EventCrowdloanEdited struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-type EventCrowdloanMemoUpdated struct {
-	Phase     Phase
-	Who       AccountID
-	FundIndex ParaId
-	Memo      Bytes
-	Topics    []Hash
-}
-type EventCrowdloanAddedToNewRaise struct {
-	Phase  Phase
-	ParaId ParaId
-	Topics []Hash
-}
-
 type EventElectionProviderMultiPhaseSolutionStored struct {
 	Phase    Phase
 	Solution ElectionCompute
@@ -383,6 +319,103 @@ type EventRegistrarReserved struct {
 	ParaId    ParaId
 	AccountId AccountID
 	Topics    []Hash
+}
+
+type EventBountiesBountyProposed struct {
+	Phase  Phase
+	Index  BountyIndex
+	Topics []Hash
+}
+type EventBountiesBountyRejected struct {
+	Phase  Phase
+	Index  BountyIndex
+	Bond   Balance
+	Topics []Hash
+}
+type EventBountiesBountyBecameActive struct {
+	Phase  Phase
+	Index  BountyIndex
+	Topics []Hash
+}
+type EventBountiesBountyAwarded struct {
+	Phase       Phase
+	Index       BountyIndex
+	Beneficiary AccountID
+	Topics      []Hash
+}
+type EventBountiesBountyClaimed struct {
+	Phase       Phase
+	Index       BountyIndex
+	Payout      Balance
+	Beneficiary AccountID
+	Topics      []Hash
+}
+type EventBountiesBountyCanceled struct {
+	Phase  Phase
+	Index  BountyIndex
+	Topics []Hash
+}
+type EventBountiesBountyExtended struct {
+	Phase  Phase
+	Index  BountyIndex
+	Topics []Hash
+}
+
+type EventTipsNewTip struct {
+	Phase   Phase
+	TipHash Hash
+	Topics  []Hash
+}
+type EventTipsTipClosing struct {
+	Phase   Phase
+	TipHash Hash
+	Topics  []Hash
+}
+type EventTipsTipClosed struct {
+	Phase   Phase
+	TipHash Hash
+	Who     AccountID
+	Payout  Balance
+	Topics  []Hash
+}
+type EventTipsTipRetracted struct {
+	Phase  Phase
+	TipHah Hash
+	Topics []Hash
+}
+type EventTipsTipSlashed struct {
+	Phase   Phase
+	TipHash Hash
+	Finder  AccountID
+	Deposit Balance
+	Topics  []Hash
+}
+
+type EventGiltBidPlaced struct {
+	Phase  Phase
+	Topics []Hash
+}
+type EventGiltBidRetracted struct {
+	Phase    Phase
+	Who      AccountID
+	Amount   BalanceOf
+	Duration U32
+	Topics   []Hash
+}
+type EventGiltGiltIssued struct {
+	Phase    Phase
+	Who      AccountID
+	Amount   BalanceOf
+	Duration U32
+	Topics   []Hash
+}
+type EventGiltGiltThawed struct {
+	Phase  Phase
+	Index  ActiveIndex
+	Expiry BlockNumber
+	Who    AccountID
+	Amount Balance
+	Topics []Hash
 }
 
 type EventUtilityBatchInterrupted struct {
@@ -602,149 +635,115 @@ func NewKusamaRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.Sub
 
 type KusamaEventRecord struct {
 	relaychain.RelayChainEventRecord
-	Indices_IndexAssigned                 []EventIndicesIndexAssigned
-	Indices_IndexFreed                    []EventIncidesIndexFreed
-	Indices_IndexFrozen                   []EventIncidesIndexFrozen
-	Balances_BalanceSet                   []EventBalancesBalanceSet
-	Balances_Deposit                      []EventBalancesDeposit
-	Balances_DustLost                     []EventBalancesDustLost
-	Balances_Endowed                      []EventBalancesEndowed
-	Balances_ReserveRepatriated           []EventBalancesReserveRepatriated
-	Balances_Reserved                     []EventBalancesReserved
-	Balances_Transfer                     []EventBalancesTransfer
-	Balances_Unreserved                   []EventBalancesUnreserved
-	Offences_Offence                      []EventOffencesOffence
-	Council_Proposed                      []EventCouncilProposed
-	Council_Voted                         []EventCouncilVoted
-	Council_Approved                      []EventCouncilApproved
-	Council_Disapproved                   []EventCouncilDisapproved
-	Council_Executed                      []EventCouncilExecuted
-	Council_MemberExecuted                []EventCouncilMemberExecuted
-	Council_Closed                        []EventCouncilClosed
-	TechComitteeCollective_Approved       []EventTechComitteeCollectiveApproved
-	TechComitteeCollective_Closed         []EventTechComitteeCollectiveClosed
-	TechComitteeCollective_Disapproved    []EventTechComitteeCollectiveDisapproved
-	TechComitteeCollective_Executed       []EventTechComitteeCollectiveExecuted
-	TechComitteeCollective_MemberExecuted []EventTechComitteeCollectiveMemberExecuted
-	TechComitteeCollective_Proposed       []EventTechComitteeCollectiveProposed
-	TechComitteeCollective_Voted          []EventTechComitteeCollectiveVoted
-	Society_MemberSuspended               []EventSocietyMemberSuspended
-	Society_Challenged                    []EventSocietyChallenged
-	Society_Vote                          []EventSocietyVote
-	Society_DefenderVote                  []EventSocietyDefenderVote
-	Society_NewMaxMembers                 []EventSocietyNewMaxMembers
-	Society_Unfounded                     []EventSocietyUnfounded
-	Society_Deposit                       []EventSocietyDeposit
-	// Recovery_RecoveryCreated    []EventRecoveryRecoveryCreated
-	// Recovery_RecoveryInitiated  []EventRecoveryRecoveryInitiated
-	// Recovery_RecoveryVouched    []EventRecoveryRecoveryVouched
-	// Recovery_RecoveryClosed     []EventRecoveryRecoveryClosed
-	// Recovery_AccountRecovered   []EventRecoveryAccountRecovered
-	// Recovery_RecoveryRemoved    []EventRecoveryRecoveryRemoved
-	Vesting_VestingUpdated     []EventVestingVestingUpdated
-	Vesting_VestingCompleted   []EventVestingVestingCompleted
-	Scheduler_Scheduled        []EventSchedulerScheduled
-	Scheduler_Canceled         []EventSchedulerCanceled
-	Scheduler_Dispatched       []EventSchedulerDispatched
-	Proxy_ProxyExecuted        []EventProxyProxyExecuted
-	Proxy_AnonymousCreated     []EventProxyAnonymousCreated
-	Proxy_Announced            []EventProxyAnnounced
-	Multisig_NewMultisig       []EventMultisigNewMultisig
-	Multisig_MultisigApproval  []EventMultisigMultisigApproval
-	Multisig_MultisigExecuted  []EventMultisigMultisigExecuted
-	Multisig_MultisigCancelled []EventMultisigMultisigCancelled
-	// Bounties_BountyProposed                         []EventBountiesBountyProposed
-	// Bounties_BountyRejected                         []EventBountiesBountyRejected
-	// Bounties_BountyBecameActive                     []EventBountiesBountyBecameActive
-	// Bounties_BountyAwarded                          []EventBountiesBountyAwarded
-	// Bounties_BountyClaimed                          []EventBountiesBountyClaimed
-	// Bounties_BountyCanceled                         []EventBountiesBountyCanceled
-	// Bounties_BountyExtended                         []EventBountiesBountyExtended
-	// Tips_NewTip                                     []EventTipsNewTip
-	// Tips_TipClosing                                 []EventTipsTipClosing
-	// Tips_TipClosed                                  []EventTipsTipClosed
-	// Tips_TipRetracted                               []EventTipsTipRetracted
-	// Tips_TipSlashed                                 []EventTipsTipSlashed
+	Indices_IndexAssigned                           []EventIndicesIndexAssigned
+	Indices_IndexFreed                              []EventIncidesIndexFreed
+	Indices_IndexFrozen                             []EventIncidesIndexFrozen
+	Balances_BalanceSet                             []EventBalancesBalanceSet
+	Balances_Deposit                                []EventBalancesDeposit
+	Balances_DustLost                               []EventBalancesDustLost
+	Balances_Endowed                                []EventBalancesEndowed
+	Balances_ReserveRepatriated                     []EventBalancesReserveRepatriated
+	Balances_Reserved                               []EventBalancesReserved
+	Balances_Transfer                               []EventBalancesTransfer
+	Balances_Unreserved                             []EventBalancesUnreserved
+	Offences_Offence                                []EventOffencesOffence
+	Council_Proposed                                []EventCouncilProposed
+	Council_Voted                                   []EventCouncilVoted
+	Council_Approved                                []EventCouncilApproved
+	Council_Disapproved                             []EventCouncilDisapproved
+	Council_Executed                                []EventCouncilExecuted
+	Council_MemberExecuted                          []EventCouncilMemberExecuted
+	Council_Closed                                  []EventCouncilClosed
+	TechComitteeCollective_Approved                 []EventTechComitteeCollectiveApproved
+	TechComitteeCollective_Closed                   []EventTechComitteeCollectiveClosed
+	TechComitteeCollective_Disapproved              []EventTechComitteeCollectiveDisapproved
+	TechComitteeCollective_Executed                 []EventTechComitteeCollectiveExecuted
+	TechComitteeCollective_MemberExecuted           []EventTechComitteeCollectiveMemberExecuted
+	TechComitteeCollective_Proposed                 []EventTechComitteeCollectiveProposed
+	TechComitteeCollective_Voted                    []EventTechComitteeCollectiveVoted
+	Society_MemberSuspended                         []EventSocietyMemberSuspended
+	Society_Challenged                              []EventSocietyChallenged
+	Society_Vote                                    []EventSocietyVote
+	Society_DefenderVote                            []EventSocietyDefenderVote
+	Society_NewMaxMembers                           []EventSocietyNewMaxMembers
+	Society_Unfounded                               []EventSocietyUnfounded
+	Society_Deposit                                 []EventSocietyDeposit
+	Recovery_RecoveryCreated                        []EventRecoveryRecoveryCreated
+	Recovery_RecoveryInitiated                      []EventRecoveryRecoveryInitiated
+	Recovery_RecoveryVouched                        []EventRecoveryRecoveryVouched
+	Recovery_RecoveryClosed                         []EventRecoveryRecoveryClosed
+	Recovery_AccountRecovered                       []EventRecoveryAccountRecovered
+	Recovery_RecoveryRemoved                        []EventRecoveryRecoveryRemoved
+	Vesting_VestingUpdated                          []EventVestingVestingUpdated
+	Vesting_VestingCompleted                        []EventVestingVestingCompleted
+	Scheduler_Scheduled                             []EventSchedulerScheduled
+	Scheduler_Canceled                              []EventSchedulerCanceled
+	Scheduler_Dispatched                            []EventSchedulerDispatched
+	Proxy_ProxyExecuted                             []EventProxyProxyExecuted
+	Proxy_AnonymousCreated                          []EventProxyAnonymousCreated
+	Proxy_Announced                                 []EventProxyAnnounced
+	Multisig_NewMultisig                            []EventMultisigNewMultisig
+	Multisig_MultisigApproval                       []EventMultisigMultisigApproval
+	Multisig_MultisigExecuted                       []EventMultisigMultisigExecuted
+	Multisig_MultisigCancelled                      []EventMultisigMultisigCancelled
+	Bounties_BountyProposed                         []EventBountiesBountyProposed
+	Bounties_BountyRejected                         []EventBountiesBountyRejected
+	Bounties_BountyBecameActive                     []EventBountiesBountyBecameActive
+	Bounties_BountyAwarded                          []EventBountiesBountyAwarded
+	Bounties_BountyClaimed                          []EventBountiesBountyClaimed
+	Bounties_BountyCanceled                         []EventBountiesBountyCanceled
+	Bounties_BountyExtended                         []EventBountiesBountyExtended
+	Tips_NewTip                                     []EventTipsNewTip
+	Tips_TipClosing                                 []EventTipsTipClosing
+	Tips_TipClosed                                  []EventTipsTipClosed
+	Tips_TipRetracted                               []EventTipsTipRetracted
+	Tips_TipSlashed                                 []EventTipsTipSlashed
 	ElectionProviderMultiPhase_SolutionStored       []EventElectionProviderMultiPhaseSolutionStored
 	ElectionProviderMultiPhase_ElectionFinalized    []EventElectionProviderMultiPhaseElectionFinalized
 	ElectionProviderMultiPhase_Rewarded             []EventElectionProviderMultiPhaseRewarded
 	ElectionProviderMultiPhase_Slashed              []EventElectionProviderMultiPhaseSlashed
 	ElectionProviderMultiPhase_SignedPhaseStarted   []EventElectionProviderMultiPhaseSignedPhaseStarted
 	ElectionProviderMultiPhase_UnsignedPhaseStarted []EventElectionProviderMultiPhaseUnsignedPhaseStarted
-	// Gilt_BidPlaced                                  []EventGiltBidPlaced
-	// Gilt_BidRetracted                               []EventGiltBidRetracted
-	// Gilt_GiltIssued                                 []EventGiltGiltIssued
-	// Gilt_GiltThawed                                 []EventGiltGiltThawed
-	// Paras_CurrentCodeUpdated                        []EventParasCurrentCodeUpdated
-	// Paras_CurrentHeadUpdated                        []EventParasCurrentHeadUpdated
-	// Paras_CodeUpgradeScheduled                      []EventParasCodeUpgradeScheduled
-	// Paras_NewHeadNoted                              []EventParasNewHeadNoted
-	// Paras_ActionQueued                              []EventParasActionQueued
-	// ParasUmp_InvalidFormat                          []EventParasUmpInvalidFormat
-	// ParasUmp_UnsupportedVersion                     []EventParasUmpUnsupportedVersion
-	// ParasUmp_ExecutedUpward                         []EventParasUmpExecutedUpward
-	// ParasUmp_WeightExhausted                        []EventParasUmpWeightExhausted
-	// ParasUmp_UpwardMessagesReceived                 []EventParasUmpUpwardMessagesReceived
-	// ParasHrmp_OpenChannelRequested                  []EventParasHrmpOpenChannelRequested
-	// ParasHrmp_OpenChannelAccepted                   []EventParasHrmpOpenChannelAccepted
-	// ParasHrmp_ChannelClosed                         []EventParasHrmpChannelClosed
-	Registrar_Registered   []EventRegistrarRegistered
-	Registrar_Deregistered []EventRegistrarDeregistered
-	Registrar_Reserved     []EventRegistrarReserved
-	// Slots_NewLeasePeriod                            []EventSlotsNewLeasePeriod
-	// Slots_Leased                                    []EventSlotsLeased
-	// Auctions_AuctionStarted                         []EventAuctionsAuctionStarted
-	// Auctions_AuctionClosed                          []EventAuctionsAuctionClosed
-	// Auctions_Reserved                               []EventAuctionsReserved
-	// Auctions_Unreserved                             []EventAuctionsUnreserved
-	// Auctions_ReserveConfiscated                     []EventAuctionsReserveConfiscated
-	// Auctions_BidAccepted                            []EventAuctionsBidAccepted
-	// Auctions_WinningOffset                          []EventAuctionsWinningOffset
-	Crowdloan_Created                  []EventCrowdloanCreated
-	Crowdloan_Contributed              []EventCrowdloanContributed
-	Crowdloan_Withdrew                 []EventCrowdloanWithdrew
-	Crowdloan_PartiallyRefunded        []EventCrowdloanPartiallyRefunded
-	Crowdloan_AllRefunded              []EventCrowdloanAllRefunded
-	Crowdloan_Dissolved                []EventCrowdloanDissolved
-	Crowdloan_DeployDataFixed          []EventCrowdloanDeployDataFixed
-	Crowdloan_Onboarded                []EventCrowdloanOnboarded
-	Crowdloan_HandleBidResult          []EventCrowdloanHandleBidResult
-	Crowdloan_Edited                   []EventCrowdloanEdited
-	Crowdloan_MemoUpdated              []EventCrowdloanMemoUpdated
-	Crowdloan_AddedToNewRaise          []EventCrowdloanAddedToNewRaise
-	Identity_IdentitySet               []EventIdentitySet
-	Identity_IdentityCleared           []EventIdentityCleared
-	Identity_IdentityKilled            []EventIdentityKilled
-	Identity_JudgementRequested        []EventIdentityJudgementRequested
-	Identity_JudgementUnrequested      []EventIdentityJudgementUnrequested
-	Identity_JudgementGiven            []EventIdentityJudgementGiven
-	Identity_RegistrarAdded            []EventIdentityRegistrarAdded
-	Identity_SubIdentityAdded          []EventIdentitySubIdentityAdded
-	Identity_SubIdentityRemoved        []EventIdentitySubIdentityRemoved
-	Identity_SubIdentityRevoked        []EventIdentitySubIdentityRevoked
-	ImOnline_HeartbeatReceived         []EventImOnlineHeartbeatReceived
-	ImOnline_AllGood                   []EventImOnlineAllGood
-	ImOnline_SomeOffline               []EventImOnlineSomeOffline
-	Treasury_Awarded                   []EventTreasuryAwarded
-	Treasury_Burnt                     []EventTreasuryBurnt
-	Treasury_Deposit                   []EventTreasuryDeposit
-	Treasury_Proposed                  []EventTreasuryProposed
-	Treasury_Rejected                  []EventTreasuryRejected
-	Treasury_Rollover                  []EventTreasuryRollover
-	Treasury_Spending                  []EventTreasurySpending
-	Utility_BatchInterrupted           []EventUtilityBatchInterrupted
-	Utility_BatchCompleted             []EventUtilityBatchCompleted
-	Staking_EraPayout                  []EventStakingEraPayout
-	Staking_Reward                     []EventStakingReward
-	Staking_Slash                      []EventStakingSlash
-	Staking_OldSlashingReportDiscarded []EventStakingOldSlashingReportDiscarded
-	Staking_StakingElection            []EventStakingStakingElection
-	Staking_Bonded                     []EventStakingBonded
-	Staking_Unbonded                   []EventStakingUnbonded
-	Staking_Withdrawn                  []EventStakingWithdrawn
-	Staking_Kicked                     []EventStakingKicked
-	Staking_Chilled                    []EventStakingChilled
-	XcmPallet_Attempted                []EventXcmPalletAttempted
+	Gilt_BidPlaced                                  []EventGiltBidPlaced
+	Gilt_BidRetracted                               []EventGiltBidRetracted
+	Gilt_GiltIssued                                 []EventGiltGiltIssued
+	Gilt_GiltThawed                                 []EventGiltGiltThawed
+	Registrar_Registered                            []EventRegistrarRegistered
+	Registrar_Deregistered                          []EventRegistrarDeregistered
+	Registrar_Reserved                              []EventRegistrarReserved
+	Identity_IdentitySet                            []EventIdentitySet
+	Identity_IdentityCleared                        []EventIdentityCleared
+	Identity_IdentityKilled                         []EventIdentityKilled
+	Identity_JudgementRequested                     []EventIdentityJudgementRequested
+	Identity_JudgementUnrequested                   []EventIdentityJudgementUnrequested
+	Identity_JudgementGiven                         []EventIdentityJudgementGiven
+	Identity_RegistrarAdded                         []EventIdentityRegistrarAdded
+	Identity_SubIdentityAdded                       []EventIdentitySubIdentityAdded
+	Identity_SubIdentityRemoved                     []EventIdentitySubIdentityRemoved
+	Identity_SubIdentityRevoked                     []EventIdentitySubIdentityRevoked
+	ImOnline_HeartbeatReceived                      []EventImOnlineHeartbeatReceived
+	ImOnline_AllGood                                []EventImOnlineAllGood
+	ImOnline_SomeOffline                            []EventImOnlineSomeOffline
+	Treasury_Awarded                                []EventTreasuryAwarded
+	Treasury_Burnt                                  []EventTreasuryBurnt
+	Treasury_Deposit                                []EventTreasuryDeposit
+	Treasury_Proposed                               []EventTreasuryProposed
+	Treasury_Rejected                               []EventTreasuryRejected
+	Treasury_Rollover                               []EventTreasuryRollover
+	Treasury_Spending                               []EventTreasurySpending
+	Utility_BatchInterrupted                        []EventUtilityBatchInterrupted
+	Utility_BatchCompleted                          []EventUtilityBatchCompleted
+	Staking_EraPayout                               []EventStakingEraPayout
+	Staking_Reward                                  []EventStakingReward
+	Staking_Slash                                   []EventStakingSlash
+	Staking_OldSlashingReportDiscarded              []EventStakingOldSlashingReportDiscarded
+	Staking_StakingElection                         []EventStakingStakingElection
+	Staking_Bonded                                  []EventStakingBonded
+	Staking_Unbonded                                []EventStakingUnbonded
+	Staking_Withdrawn                               []EventStakingWithdrawn
+	Staking_Kicked                                  []EventStakingKicked
+	Staking_Chilled                                 []EventStakingChilled
+	XcmPallet_Attempted                             []EventXcmPalletAttempted
 	// XcmPallet_Sent                                  []EventXcmPalletSent
 	System_CodeUpdated      []EventSystemCodeUpdated
 	System_ExtrinsicFailed  []EventSystemExtrinsicFailed
