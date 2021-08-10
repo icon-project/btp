@@ -278,7 +278,12 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	remoteMtaHeight := r.pC.getRelayMtaHeight()
 	remoteMtaOffet := r.pC.getRelayMtaOffset()
 	remoteSetId := r.pC.getSetId()
-	localMtaHeight := r.pC.store.Height()
+
+	// Sync
+	if r.mtaHeight < remoteMtaHeight {
+		r.mtaHeight = remoteMtaHeight
+		r.mtaOffset = remoteMtaOffet
+	}
 
 	r.log.Debugf("newParaFinalityProof: remoteMtaHeight %d remoteSetId %d", remoteMtaHeight, remoteSetId)
 
@@ -328,10 +333,12 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				return nil, err
 			}
 
+			r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
 			r.mtaHeight = uint64(blockHeader.Number - 1)
 			bus = append(bus, bu)
 		}
 
+		r.syncBlocks(uint64(gj.Commit.TargetNumber), gj.Commit.TargetHash)
 		r.mtaHeight = uint64(gj.Commit.TargetNumber) // Prevent next paraProof add relayblockUpdates
 
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
@@ -349,13 +356,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 				sps = append(sps, newAuthoritiesStateProof)
 			}
-		}
-	}
-
-	if localMtaHeight < int64(remoteMtaHeight) {
-		blockHashes, _ := r.c.GetHashesByRange(uint64(localMtaHeight+1), remoteMtaHeight)
-		for i := uint64(localMtaHeight + 1); i <= remoteMtaHeight; i++ {
-			r.syncBlocks(i, blockHashes[i-uint64(localMtaHeight+1)])
 		}
 	}
 
