@@ -49,8 +49,8 @@ func (r *relayReceiver) syncBlocks(bn uint64, blockHash substrate.SubstrateHash)
 }
 
 // newBlockProof creates a new BlockProof
-func (r *relayReceiver) newBlockProof(height int64, header []byte) ([]byte, error) {
-	at, w, err := r.pC.store.WitnessForAt(height, int64(r.mtaHeight), int64(r.mtaOffset))
+func (r *relayReceiver) newBlockProof(height int64, header []byte, remoteMtaHeight uint64, remoteMtaOffset uint64) ([]byte, error) {
+	at, w, err := r.pC.store.WitnessForAt(height, int64(remoteMtaHeight), int64(remoteMtaOffset))
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +366,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	var bp []byte
 
-	bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader)
+	bp, err = r.newBlockProof(int64(paraIncludedHeader.Number), encodedHeader, remoteMtaHeight, remoteMtaOffet)
 	if err != nil {
 		return nil, err
 	}
