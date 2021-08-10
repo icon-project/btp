@@ -367,6 +367,24 @@ type EventElectionProviderMultiPhaseUnsignedPhaseStarted struct {
 	Topics               []Hash
 }
 
+type EventRegistrarRegistered struct {
+	Phase     Phase
+	ParaId    ParaId
+	AccountId AccountID
+	Topics    []Hash
+}
+type EventRegistrarDeregistered struct {
+	Phase  Phase
+	ParaId ParaId
+	Topics []Hash
+}
+type EventRegistrarReserved struct {
+	Phase     Phase
+	ParaId    ParaId
+	AccountId AccountID
+	Topics    []Hash
+}
+
 type EventUtilityBatchInterrupted struct {
 	Phase  Phase
 	Index  types.U32
@@ -670,9 +688,9 @@ type KusamaEventRecord struct {
 	// ParasHrmp_OpenChannelRequested                  []EventParasHrmpOpenChannelRequested
 	// ParasHrmp_OpenChannelAccepted                   []EventParasHrmpOpenChannelAccepted
 	// ParasHrmp_ChannelClosed                         []EventParasHrmpChannelClosed
-	// Registrar_Registered                            []EventRegistrarRegistered
-	// Registrar_Deregistered                          []EventRegistrarDeregistered
-	// Registrar_Reserved                              []EventRegistrarReserved
+	Registrar_Registered   []EventRegistrarRegistered
+	Registrar_Deregistered []EventRegistrarDeregistered
+	Registrar_Reserved     []EventRegistrarReserved
 	// Slots_NewLeasePeriod                            []EventSlotsNewLeasePeriod
 	// Slots_Leased                                    []EventSlotsLeased
 	// Auctions_AuctionStarted                         []EventAuctionsAuctionStarted
