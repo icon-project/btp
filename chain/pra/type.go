@@ -132,5 +132,3 @@ type ParaChainBlockUpdateExtra struct {
 	FinalityProof           []byte
 	NilEncodedBlockHeader   byte
 }
-
-type PrachainFinalityProof struct{}

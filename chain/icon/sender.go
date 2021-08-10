@@ -309,7 +309,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		BlockUpdates:  make([][]byte, 0),
 		ReceiptProofs: make([][]byte, 0),
 	}
-	size := 0
 	for _, bu := range rm.BlockUpdates {
 		if bu.Height <= height {
 			continue
@@ -330,12 +329,10 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			return nil, err
 		}
 
-		buSize := len(realBu)
-		size += buSize
-		osl := s.isOverSizeLimit(size)
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
 
 		if paraBuExtra.NilEncodedBlockHeader == 0x01 {
+			s.l.Tracef("Segment: NilEncodedBlockHeader")
 			var fp parachainFinalityProof
 			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, &fp); err != nil {
 				return nil, err
@@ -401,12 +398,11 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				segments = append(segments, segment)
 			}
 
-			size -= buSize
 			continue
 		}
 
-		if osl || obl {
-			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
+		if obl {
+			s.l.Tracef("Segment: over block limit: %t", obl)
 			segment := &chain.Segment{
 				Height:              bu.Height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -428,7 +424,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				return nil, err
 			}
 
-			size -= buSize
 			segments = append(segments, segment)
 			continue
 		}
@@ -440,36 +435,16 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 	var bp []byte
 	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
 		return nil, err
-	} else {
-		if s.isOverLimit(len(bp)) {
-			return nil, ErrInvalidBlockProofSize
-		}
 	}
 
 	for i, rp := range rm.ReceiptProofs {
-		if s.isOverSizeLimit(len(rp.Proof)) {
-			return nil, ErrInvalidStateProofSize
-		}
-
 		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
 			if rm.BlockProof == nil {
 				s.l.Tracef("Segment: ignore past StateProof at %d", rp.Height)
 				return segments, nil
 			}
-
 			msg.BlockProof = bp
-			size += len(bp)
-			s.l.Tracef("Segment: at %d BlockProof: %x", rm.BlockProof.BlockWitness.Height, msg.BlockProof)
-			if s.isOverLimit(size) {
-				return nil, ErrInvalidBlockProofSize
-			}
-
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			size += len(rp.Proof)
-			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
-			if s.isOverSizeLimit(size) {
-				return nil, ErrInvalidStateProofSize
-			}
 
 			segment := &chain.Segment{
 				Height:              rm.BlockProof.BlockWitness.Height,
@@ -641,8 +616,12 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 	msg := bmcRelayMessageParams.Messages
 	tps := make([]*TransactionParam, 0)
 	idxs := make([]int, 0)
-	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 2
+	// + 1 is safeguard against transaction limit
+	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
 	fragmentStringSize := len(msg) / nuFragments
+	if (len(msg) % nuFragments) != 0 {
+		nuFragments += 1
+	}
 
 	s.l.Debugf("relayByFragments: fragments: %d size: %d", nuFragments, fragmentStringSize)
 	for i := 0; i < len(msg); i += fragmentStringSize {
