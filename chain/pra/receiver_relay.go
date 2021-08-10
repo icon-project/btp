@@ -281,20 +281,20 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	remoteRelayMtaHeight := r.pC.getRelayMtaHeight()
 	remoteMtaOffet := r.pC.getRelayMtaOffset()
 	remoteSetId := r.pC.getSetId()
-	localRelayMtaHeight := r.pC.store.Height()
+	// localRelayMtaHeight := r.pC.store.Height()
 
 	r.log.Debugf("newParaFinalityProof: remoteRelayMtaHeight %d remoteSetId %d", remoteRelayMtaHeight, remoteSetId)
 
 	// Sync
 	if r.mtaHeight < remoteRelayMtaHeight {
-		for i := uint64(localRelayMtaHeight + 1); i <= remoteRelayMtaHeight; i++ {
-			hash, err := r.c.GetBlockHash(i)
-			if err != nil {
-				return nil, nil
-			}
+		// for i := uint64(localRelayMtaHeight + 1); i <= remoteRelayMtaHeight; i++ {
+		// 	hash, err := r.c.GetBlockHash(i)
+		// 	if err != nil {
+		// 		return nil, nil
+		// 	}
 
-			r.syncBlocks(i, hash)
-		}
+		// 	r.syncBlocks(i, hash)
+		// }
 
 		r.mtaHeight = remoteRelayMtaHeight
 		r.mtaOffset = remoteMtaOffet
