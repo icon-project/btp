@@ -40,7 +40,7 @@ func (r *relayReceiver) syncBlocks(bn uint64, blockHash substrate.SubstrateHash)
 		return
 	}
 	if next == int64(bn) {
-		r.log.Debugf("syncBlocks: sync %d", bn)
+		r.log.Debugf("syncBlocks: syncing Merkle Tree Accumulator at %d", bn)
 		r.pC.store.AddHash(blockHash[:])
 		if err := r.pC.store.Flush(); err != nil {
 			r.log.Fatalf("fail to MTA Flush err:%+v", err)
@@ -281,6 +281,16 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	// Sync
 	if r.mtaHeight < remoteMtaHeight {
+		localHeight := r.pC.store.Height()
+		for i := uint64(localHeight + 1); i <= remoteMtaHeight; i++ {
+			hash, err := r.c.GetBlockHash(i)
+			if err != nil {
+				return nil, nil
+			}
+
+			r.syncBlocks(i, hash)
+		}
+
 		r.mtaHeight = remoteMtaHeight
 		r.mtaOffset = remoteMtaOffet
 	}
