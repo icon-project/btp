@@ -20,10 +20,33 @@ type Bytes = types.Bytes
 type Bytes16 = types.Bytes16
 type Hash = types.Hash
 type AccountID = types.AccountID
+type AccountIndex = types.AccountIndex
 type Weight = types.Weight
 type ParaId = types.U32
 type DispatchResult = []byte
 type DispatchError = []byte
+type ProposalIndex = types.U32
+type MemberCount = types.U32
+type Bool = types.Bool
+type EventIndicesIndexAssigned struct {
+	Phase  Phase
+	Who    AccountID
+	Index  AccountIndex
+	Topics []Hash
+}
+
+type EventIncidesIndexFreed struct {
+	Phase  Phase
+	Index  AccountIndex
+	Topics []Hash
+}
+
+type EventIncidesIndexFrozen struct {
+	Phase  Phase
+	Index  AccountIndex
+	Who    AccountID
+	Topics []Hash
+}
 
 // EventSystemRemarked is emitted on on-chain remark happened.
 type EventSystemRemarked struct {
@@ -33,6 +56,7 @@ type EventSystemRemarked struct {
 	Topics     []Hash
 }
 
+type EventOffencesOffence = types.EventOffencesOffence
 type EventSocietyMemberSuspended = types.EventSocietyMemberSuspended
 type EventSocietyChallenged = types.EventSocietyChallenged
 type EventSocietyVote = types.EventSocietyVote
@@ -87,6 +111,66 @@ type EventIdentityRegistrarAdded = types.EventIdentityRegistrarAdded
 type EventIdentitySubIdentityAdded = types.EventIdentitySubIdentityAdded
 type EventIdentitySubIdentityRemoved = types.EventIdentitySubIdentityRemoved
 type EventIdentitySubIdentityRevoked = types.EventIdentitySubIdentityRevoked
+type EventTechComitteeCollectiveApproved = types.EventTechnicalCommitteeApproved
+type EventTechComitteeCollectiveClosed = types.EventTechnicalCommitteeClosed
+type EventTechComitteeCollectiveDisapproved = types.EventTechnicalCommitteeDisapproved
+type EventTechComitteeCollectiveExecuted = types.EventTechnicalCommitteeExecuted
+type EventTechComitteeCollectiveMemberExecuted = types.EventTechnicalCommitteeMemberExecuted
+type EventTechComitteeCollectiveProposed = types.EventTechnicalCommitteeProposed
+type EventTechComitteeCollectiveVoted = types.EventTechnicalCommitteeVoted
+
+type EventCouncilProposed struct {
+	Phase         Phase
+	Account       AccountID
+	ProposalIndex ProposalIndex
+	ProposalHash  Hash
+	ThresHold     MemberCount
+	Topics        []Hash
+}
+
+type EventCouncilVoted struct {
+	Phase        Phase
+	Account      AccountID
+	ProposalHash Hash
+	Voted        Bool
+	Yes          MemberCount
+	No           MemberCount
+	Topics       []Hash
+}
+
+type EventCouncilApproved struct {
+	Phase        Phase
+	ProposalHash Hash
+	Topics       []Hash
+}
+
+type EventCouncilDisapproved struct {
+	Phase        Phase
+	ProposalHash Hash
+	Topics       []Hash
+}
+
+type EventCouncilExecuted struct {
+	Phase        Phase
+	ProposalHash Hash
+	Result       DispatchResult
+	Topics       []Hash
+}
+
+type EventCouncilMemberExecuted struct {
+	Phase        Phase
+	ProposalHash Hash
+	Result       DispatchResult
+	Topics       []Hash
+}
+
+type EventCouncilClosed struct {
+	Phase        Phase
+	ProposalHash Hash
+	Yes          MemberCount
+	No           MemberCount
+	Topics       []Hash
+}
 
 // EventStakingEraPayout is emitted when the era payout has been set;
 type EventStakingEraPayout struct {
@@ -455,21 +539,39 @@ func NewKusamaRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.Sub
 
 type KusamaEventRecord struct {
 	relaychain.RelayChainEventRecord
-	Balances_BalanceSet         []EventBalancesBalanceSet
-	Balances_Deposit            []EventBalancesDeposit
-	Balances_DustLost           []EventBalancesDustLost
-	Balances_Endowed            []EventBalancesEndowed
-	Balances_ReserveRepatriated []EventBalancesReserveRepatriated
-	Balances_Reserved           []EventBalancesReserved
-	Balances_Transfer           []EventBalancesTransfer
-	Balances_Unreserved         []EventBalancesUnreserved
-	Society_MemberSuspended     []EventSocietyMemberSuspended
-	Society_Challenged          []EventSocietyChallenged
-	Society_Vote                []EventSocietyVote
-	Society_DefenderVote        []EventSocietyDefenderVote
-	Society_NewMaxMembers       []EventSocietyNewMaxMembers
-	Society_Unfounded           []EventSocietyUnfounded
-	Society_Deposit             []EventSocietyDeposit
+	Indices_IndexAssigned                 []EventIndicesIndexAssigned
+	Indices_IndexFreed                    []EventIncidesIndexFreed
+	Indices_IndexFrozen                   []EventIncidesIndexFrozen
+	Balances_BalanceSet                   []EventBalancesBalanceSet
+	Balances_Deposit                      []EventBalancesDeposit
+	Balances_DustLost                     []EventBalancesDustLost
+	Balances_Endowed                      []EventBalancesEndowed
+	Balances_ReserveRepatriated           []EventBalancesReserveRepatriated
+	Balances_Reserved                     []EventBalancesReserved
+	Balances_Transfer                     []EventBalancesTransfer
+	Balances_Unreserved                   []EventBalancesUnreserved
+	Offences_Offence                      []EventOffencesOffence
+	Council_Proposed                      []EventCouncilProposed
+	Council_Voted                         []EventCouncilVoted
+	Council_Approved                      []EventCouncilApproved
+	Council_Disapproved                   []EventCouncilDisapproved
+	Council_Executed                      []EventCouncilExecuted
+	Council_MemberExecuted                []EventCouncilMemberExecuted
+	Council_Closed                        []EventCouncilClosed
+	TechComitteeCollective_Approved       []EventTechComitteeCollectiveApproved
+	TechComitteeCollective_Closed         []EventTechComitteeCollectiveClosed
+	TechComitteeCollective_Disapproved    []EventTechComitteeCollectiveDisapproved
+	TechComitteeCollective_Executed       []EventTechComitteeCollectiveExecuted
+	TechComitteeCollective_MemberExecuted []EventTechComitteeCollectiveMemberExecuted
+	TechComitteeCollective_Proposed       []EventTechComitteeCollectiveProposed
+	TechComitteeCollective_Voted          []EventTechComitteeCollectiveVoted
+	Society_MemberSuspended               []EventSocietyMemberSuspended
+	Society_Challenged                    []EventSocietyChallenged
+	Society_Vote                          []EventSocietyVote
+	Society_DefenderVote                  []EventSocietyDefenderVote
+	Society_NewMaxMembers                 []EventSocietyNewMaxMembers
+	Society_Unfounded                     []EventSocietyUnfounded
+	Society_Deposit                       []EventSocietyDeposit
 	// Recovery_RecoveryCreated    []EventRecoveryRecoveryCreated
 	// Recovery_RecoveryInitiated  []EventRecoveryRecoveryInitiated
 	// Recovery_RecoveryVouched    []EventRecoveryRecoveryVouched
