@@ -111,6 +111,25 @@ func (c *SubstrateAPI) GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) 
 	return c.GetHeader(blockHash)
 }
 
+func (c *SubstrateAPI) GetHashesByRange(from uint64, to uint64) ([]SubstrateHash, error) {
+	hashes := make([]SubstrateHash, 0)
+	wp := workerpool.New(30)
+	rspChan := make(chan SubstrateHash, to-from+1)
+
+	for i := from; i <= to; i++ {
+		bn := i
+		wp.Submit(func() {
+			blockHash, _ := c.GetBlockHash(bn)
+			rspChan <- blockHash
+		})
+	}
+
+	wp.StopWait()
+	close(rspChan)
+
+	return hashes, nil
+}
+
 func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error) {
 	headers := make([]SubstrateHeader, 0)
 

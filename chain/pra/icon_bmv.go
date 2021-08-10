@@ -2,12 +2,18 @@ package pra
 
 import (
 	"path"
+	"time"
 
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
+)
+
+const (
+	MaxDefaultRetries = 10
+	DefaultRetryDelay = time.Second
 )
 
 type relayStoreConfig struct {
@@ -52,41 +58,24 @@ func (c *praBmvClient) getRelayMtaHeight() uint64 {
 		},
 	}
 
-	var height icon.HexInt
-	err := icon.MapError(c.Call(p, &height))
-	if err != nil {
-		c.log.Debugf("getRelayMtaHeight: failed")
+	tries := 0
+	for {
+		tries++
+		var height icon.HexInt
+		err := icon.MapError(c.Call(p, &height))
+		if err != nil && tries < MaxDefaultRetries {
+			c.log.Debugf("getRelayMtaHeight: retry %d", tries)
+			<-time.After(DefaultRetryDelay)
+			continue
+		}
+
+		value, err := height.Value()
+		if err != nil {
+			c.log.Debugf("getRelayMtaHeight: failed")
+		}
+
+		return uint64(value)
 	}
-
-	value, err := height.Value()
-	if err != nil {
-		c.log.Debugf("getRelayMtaHeight: failed")
-	}
-
-	return uint64(value)
-}
-
-func (c *praBmvClient) getParaMtaHeight() uint64 {
-	p := &icon.CallParam{
-		ToAddress: icon.Address(c.address),
-		DataType:  "call",
-		Data: icon.CallData{
-			Method: "paraMtaHeight",
-		},
-	}
-
-	var height icon.HexInt
-	err := icon.MapError(c.Call(p, &height))
-	if err != nil {
-		c.log.Debugf("getParaMtaHeight: failed")
-	}
-
-	value, err := height.Value()
-	if err != nil {
-		c.log.Debugf("getParaMtaHeight: failed")
-	}
-
-	return uint64(value)
 }
 
 func (c *praBmvClient) getRelayMtaOffset() uint64 {
@@ -98,18 +87,82 @@ func (c *praBmvClient) getRelayMtaOffset() uint64 {
 		},
 	}
 
-	var height icon.HexInt
-	err := icon.MapError(c.Call(p, &height))
-	if err != nil {
-		c.log.Debugf("getRelayMtaOffset: failed")
+	tries := 0
+	for {
+		tries++
+		var height icon.HexInt
+		err := icon.MapError(c.Call(p, &height))
+		if err != nil && tries < MaxDefaultRetries {
+			c.log.Debugf("getRelayMtaOffset: failed retry %d", tries)
+			<-time.After(DefaultRetryDelay)
+			continue
+		}
+
+		value, err := height.Value()
+		if err != nil {
+			c.log.Debugf("getRelayMtaOffset: failed")
+		}
+
+		return uint64(value)
+	}
+}
+
+func (c *praBmvClient) getParaMtaHeight() uint64 {
+	p := &icon.CallParam{
+		ToAddress: icon.Address(c.address),
+		DataType:  "call",
+		Data: icon.CallData{
+			Method: "paraMtaHeight",
+		},
 	}
 
-	value, err := height.Value()
-	if err != nil {
-		c.log.Debugf("getRelayMtaOffset: failed")
+	tries := 0
+	for {
+		tries++
+		var height icon.HexInt
+		err := icon.MapError(c.Call(p, &height))
+		if err != nil && tries < MaxDefaultRetries {
+			c.log.Debugf("getParaMtaHeight: failed retry %d", tries)
+			<-time.After(DefaultRetryDelay)
+			continue
+		}
+
+		value, err := height.Value()
+		if err != nil {
+			c.log.Debugf("getParaMtaHeight: failed")
+		}
+
+		return uint64(value)
+	}
+}
+
+func (c *praBmvClient) getSetId() uint64 {
+	p := &icon.CallParam{
+		ToAddress: icon.Address(c.address),
+		DataType:  "call",
+		Data: icon.CallData{
+			Method: "setId",
+		},
 	}
 
-	return uint64(value)
+	tries := 0
+	for {
+		tries++
+		var setId icon.HexInt
+		err := icon.MapError(c.Call(p, &setId))
+		if err != nil && tries < MaxDefaultRetries {
+			c.log.Debugf("getSetId: failed retry %d", tries)
+			<-time.After(DefaultRetryDelay)
+			continue
+		}
+
+		value, err := setId.Value()
+		if err != nil {
+			c.log.Debugf("getSetId: failed")
+		}
+
+		return uint64(value)
+	}
 }
 
 func (c *praBmvClient) prepareDatabase(offset int64) error {
