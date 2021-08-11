@@ -323,13 +323,12 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		}
 
 		if len(paraBuExtra.FinalityProofs) > 1 {
-			s.l.Tracef("Segment: send muliple finalitiyProofs")
+			// If message contains previous blockupdates, split into 1 segments
 			if len(msg.BlockUpdates) > 0 {
+				s.l.Tracef("Segment: send previous blocks")
 				segment := &chain.Segment{
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-					EventSequence:       msg.eventSequence,
-					NumberOfEvent:       msg.numberOfEvent,
 				}
 
 				rmb, err := codec.RLP.MarshalToBytes(msg)
@@ -344,6 +343,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				segments = append(segments, segment)
 			}
 
+			s.l.Tracef("Segment: send muliple finalitiyProofs")
 			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
 
@@ -369,7 +369,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 				segment := &chain.Segment{
 					Height:              bu.Height,
-					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+					NumberOfBlockUpdate: 1,
 				}
 
 				subMsg := &RelayMessage{
@@ -390,7 +390,36 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				segments = append(segments, segment)
 			}
 
-			msg.BlockUpdates = make([][]byte, 0)
+			continue
+		}
+
+		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
+
+		// If the remaining blockupdates over limit
+		if obl {
+			s.l.Tracef("Segment: over block limit: %t", obl)
+			segment := &chain.Segment{
+				Height:              bu.Height,
+				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			}
+
+			subMsg := &RelayMessage{
+				BlockUpdates:  make([][]byte, 0),
+				ReceiptProofs: make([][]byte, 0),
+			}
+
+			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
+
+			rmb, err := codec.RLP.MarshalToBytes(subMsg)
+			if err != nil {
+				return nil, err
+			}
+
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				return nil, err
+			}
+
+			segments = append(segments, segment)
 			continue
 		}
 
