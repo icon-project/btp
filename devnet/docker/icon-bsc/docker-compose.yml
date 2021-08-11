@@ -1,0 +1,37 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  goloop:
+    build:
+      context: .
+      args:
+        BTPSIMPLE_VERSION: latest
+        GOLOOP_IMAGE: goloop:latest
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./work:/goloop/config
+      - ./work:/goloop/data
+    environment:
+      - GOLOOP_NODE_DIR=/goloop/data/goloop
+      - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
+
+  binance_smart_chain:
+    container_name: binance_smart_chain
+    image: bsc-node:latest
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+
+  btpsimple_icon_bsc:
+    container_name: btp_icon_bsc
+    image: btpsimple:latest
+    volumes:
+      - ./work:/btpsimple/config
+      - ./work:/btpsimple/data
+    command: btpsimple start --config /btpsimple/config/src.config.json
+    links:
+      - goloop
+
+
+
+

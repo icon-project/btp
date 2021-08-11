@@ -8,7 +8,7 @@ It's configured for one sealer account to allow running single node.
 ## Build docker image
 
 ```
-docker build --tag bsc-node docker --build-arg KEYSTORE_PASS=<SECRET>
+docker build --tag bsc-node ./devnet/docker/bsc-node --build-arg KEYSTORE_PASS=<SECRET>
 ```
 
 Note: The docker folder contains test accounts which are copied during the docker build in the provisioning step.
