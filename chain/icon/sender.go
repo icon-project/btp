@@ -324,6 +324,26 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		if len(paraBuExtra.FinalityProofs) > 1 {
 			s.l.Tracef("Segment: send muliple finalitiyProofs")
+			if len(msg.BlockUpdates) > 0 {
+				segment := &chain.Segment{
+					Height:              msg.height,
+					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+					EventSequence:       msg.eventSequence,
+					NumberOfEvent:       msg.numberOfEvent,
+				}
+
+				rmb, err := codec.RLP.MarshalToBytes(msg)
+				if err != nil {
+					return nil, err
+				}
+
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+					return nil, err
+				}
+
+				segments = append(segments, segment)
+			}
+
 			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
 
@@ -368,12 +388,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					return nil, err
 				}
 				segments = append(segments, segment)
-
-				msg = &RelayMessage{
-					BlockUpdates:  make([][]byte, 0),
-					ReceiptProofs: make([][]byte, 0),
-				}
 			}
+
+			msg.BlockUpdates = make([][]byte, 0)
 			continue
 		}
 
