@@ -324,7 +324,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
 
-		if len(paraBuExtra.FinalityProofs) > 0 {
+		if len(paraBuExtra.FinalityProofs) > 1 {
 			s.l.Tracef("Segment: Send muliple finalitiyProofs")
 			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
