@@ -414,17 +414,18 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				justBlockNumber := gj.Commit.TargetNumber
 				r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
 
-				firstBus, err := r.buildBlockUpdateWithoutVotes(remoteSetId, uint64(blockToFetchJustification))
+				firstNewBus, err := r.buildBlockUpdateWithoutVotes(remoteSetId, uint64(blockToFetchJustification))
 				if err != nil {
 					return nil, err
 				}
 
-				bus, err = r.buildBlockUpdates(remoteSetId, gj, hds)
+				newBus, err := r.buildBlockUpdates(remoteSetId, gj, hds)
 				if err != nil {
 					return nil, err
 				}
 
-				bus = append(firstBus, bus...)
+				bus = append(bus, firstNewBus...)
+				bus = append(bus, newBus...)
 			}
 
 			msg := &ParachainFinalityProof{
