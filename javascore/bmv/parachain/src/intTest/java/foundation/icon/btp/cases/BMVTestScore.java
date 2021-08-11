@@ -84,6 +84,13 @@ public class BMVTestScore extends TestBase {
     private static List<RelayBlockUpdate> relayUpdatedBlocks = new ArrayList<RelayBlockUpdate>(10);
     private static List<ParaBlockUpdate> paraUpdatedBlocks = new ArrayList<ParaBlockUpdate>(10);
 
+    private byte[] getConcatenationHash(byte[] item1, byte[] item2) {
+        byte[] concatenation = new byte[item1.length + item2.length];
+        System.arraycopy(item1, 0, concatenation, 0, item1.length);
+        System.arraycopy(item2, 0, concatenation, item1.length, item2.length);  
+        return Crypto.sha3_256(concatenation);
+    }
+
     @BeforeAll
     static void setup() throws Exception {
         ZERO_ADDRESS = new Address("hx0000000000000000000000000000000000000000");
@@ -1688,7 +1695,107 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 22: input para block update with invalid parent hash with para mta last block hash
+     * Scenario 22: ignore authorities list of relay chain that already updated
+     * Given:
+     *    stateProof with new authorities event of relay chain that already updated
+     * When:
+     *    current validators set ID: 124
+     * Then:
+     *    ignore that event
+     *    no change to validator setID: 124
+     */
+    @Test
+    @Order(28)
+    public void verifyingScenario22() throws Exception {
+        String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
+        String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
+        BigInteger seq = new BigInteger("111");
+        BigInteger round = new BigInteger("92");
+        byte[] relayParentHash = relayUpdatedBlocks.get(6).getHash();
+        byte[] block106Hash = relayUpdatedBlocks.get(5).getHash();
+        byte[] block105Hash = relayUpdatedBlocks.get(4).getHash();
+        byte[] block104Hash = relayUpdatedBlocks.get(3).getHash();
+        byte[] block103Hash = relayUpdatedBlocks.get(2).getHash();
+        byte[] block102Hash = relayUpdatedBlocks.get(1).getHash();
+        byte[] block101Hash = relayUpdatedBlocks.get(0).getHash();
+
+        byte[] witness1 = this.getConcatenationHash(block105Hash, block106Hash);
+        byte[] witness20 = this.getConcatenationHash(block101Hash, block102Hash);
+        byte[] witness21 = this.getConcatenationHash(block103Hash, block104Hash);
+        byte[] witness2 = this.getConcatenationHash(witness20, witness21);
+
+        List<byte[]> newValidatorPublicKeys = new ArrayList<byte[]>(4); // new list of validators
+        List<byte[]> newValidatorSecretKey = new ArrayList<byte[]>(4);
+        newValidatorPublicKeys.add(0, HexConverter.hexStringToByteArray("2f27b7a3f5e8a73ac8e905ff237de902723e969bcc424ddbc2b718d948fc82e8"));
+        newValidatorPublicKeys.add(1, HexConverter.hexStringToByteArray("0541be4a4cfda7c722a417cd38807fa5ba9500cf3a8f5440576bf8764f3281c6"));
+        newValidatorPublicKeys.add(2, HexConverter.hexStringToByteArray("20852d791571334b261838ab84ee38aac4845e81faac2c677e108a3553b65641"));
+        newValidatorPublicKeys.add(3, HexConverter.hexStringToByteArray("ef3a8a0271488f2fbdc787f3285aa42c4c073c2d73f9a3ee288a07471512a6e9"));
+
+        newValidatorSecretKey.add(0, HexConverter.hexStringToByteArray("23fae2b43f110c42a1d32b2c8678d7b7f71eb7873edd0feab952efbc99d1f9d02f27b7a3f5e8a73ac8e905ff237de902723e969bcc424ddbc2b718d948fc82e8"));
+        newValidatorSecretKey.add(1, HexConverter.hexStringToByteArray("2b502a205ab7ff2b56a0b225fb6b58c3d78a57a8e03c80938b32e7fbc2c564cc0541be4a4cfda7c722a417cd38807fa5ba9500cf3a8f5440576bf8764f3281c6"));
+        newValidatorSecretKey.add(2, HexConverter.hexStringToByteArray("27b9c71dfee22bacee68a3c73c4aac3a7c95b72dbe1876095fcc2d4f96ce5bac20852d791571334b261838ab84ee38aac4845e81faac2c677e108a3553b65641"));
+        newValidatorSecretKey.add(3, HexConverter.hexStringToByteArray("b68efa447ebc6ec9f31a5d24c42e4cba41ae7bcc3e7a3f64918648d9e2bf9244ef3a8a0271488f2fbdc787f3285aa42c4c073c2d73f9a3ee288a07471512a6e9"));
+
+        NewAuthoritiesProof newAuthoritiesProof = new NewAuthoritiesProof(newValidatorPublicKeys);
+
+        byte[] relayStateRoot = newAuthoritiesProof.getRoot();
+        BigInteger relayUpdatingBlockNumber = bmvScore.relayMtaHeight();
+
+        List<RlpType> relayChainData = new ArrayList<RlpType>(3);
+        relayChainData.add(new RlpList());  // empty block update
+
+            List<RlpType> relayBlockProof = new ArrayList<RlpType>(2);
+            RelayBlockUpdate relayBlockUpdate = new RelayBlockUpdate(relayParentHash, relayUpdatingBlockNumber.longValue(), relayStateRoot, round, currentSetId);
+            relayBlockProof.add(RlpString.create(relayBlockUpdate.getEncodedHeader()));
+            List<RlpType> relayBlockWitness = new ArrayList<RlpType>(2);
+                relayBlockWitness.add(RlpString.create(relayUpdatingBlockNumber));
+                    List<RlpType> witness = new ArrayList<RlpType>(1); // empty witness
+                    witness.add(RlpString.create(relayUpdatedBlocks.get(6).getHash()));
+                    witness.add(RlpString.create(witness1));
+                    witness.add(RlpString.create(witness2));
+                relayBlockWitness.add(new RlpList(witness));
+            relayBlockProof.add(new RlpList(relayBlockWitness));
+
+        relayChainData.add(RlpString.create(RlpEncoder.encode(new RlpList(relayBlockProof)))); // rlp encoded of blockProof
+
+            List<RlpType> relayStateProofs = new ArrayList<RlpType>(2);
+            relayStateProofs.add(RlpString.create(newAuthoritiesProof.getEventKey())); // storage key
+            relayStateProofs.add(new RlpList(newAuthoritiesProof.getProof())); // MPT proof of event storage
+        relayChainData.add(new RlpList(RlpString.create(RlpEncoder.encode(new RlpList(relayStateProofs)))));
+
+        List<RlpType> paraBlockUpdates = new ArrayList<RlpType>(1);
+        ParaBlockUpdate paraBlockUpdate = new ParaBlockUpdate(RlpEncoder.encode(new RlpList(relayChainData)));
+        paraBlockUpdates.add(RlpString.create(paraBlockUpdate.encode()));
+
+        List<RlpType> relayMessage = new ArrayList<RlpType>(3);
+        relayMessage.add(new RlpList(paraBlockUpdates));
+        relayMessage.add(RlpString.create("")); // block proof
+        relayMessage.add(new RlpList()); // empty stateProof
+
+        byte[] rlpEncodeRelayMessage = RlpEncoder.encode(new RlpList(relayMessage));
+        String encodedBase64RelayMessage = new String(Base64.getUrlEncoder().encode(rlpEncodeRelayMessage));
+
+        Bytes id = bmvScore.handleRelayMessage(ownerWallet, bmcBTPAddress, prev, seq, encodedBase64RelayMessage);
+        TransactionResult txResult = txHandler.getResult(id);
+        assertSuccess(txResult);
+
+        List<byte[]> storedValidators = bmvScore.validators();
+        assertEquals(storedValidators.size(), newValidatorPublicKeys.size());
+        assertTrue(bmvScore.setId().equals(BigInteger.valueOf(124)));
+        // check that validator list is not changed
+        assertArrayEquals(storedValidators.get(0), newValidatorPublicKeys.get(0));
+        assertArrayEquals(storedValidators.get(1), newValidatorPublicKeys.get(1));
+        assertArrayEquals(storedValidators.get(2), newValidatorPublicKeys.get(2));
+        assertArrayEquals(storedValidators.get(3), newValidatorPublicKeys.get(3));
+
+        validatorPublicKeys = newValidatorPublicKeys;
+        validatorSecretKey = newValidatorSecretKey;
+        assertEquals(bmvScore.setId(), currentSetId); // check that setId is not changed
+    }
+
+    /**
+     * 
+     * Scenario 23: input para block update with invalid parent hash with para mta last block hash
      * Given:
      *    msg:
      *      para block 11:
@@ -1702,8 +1809,8 @@ public class BMVTestScore extends TestBase {
      *    code: BMV_ERROR 25
      */
     @Test
-    @Order(28)
-    public void verifyingScenario22() throws Exception {
+    @Order(29)
+    public void verifyingScenario23() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1737,7 +1844,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 23: input para block update with invalid parent hash in blocks
+     * Scenario 24: input para block update with invalid parent hash in blocks
      * Given:
      *    update block 11, 12, 13
      *    block 12 parent hash: "e85929fd964218f6e876ab93087681ee6865d8ce86407329ea45ddedd90522dd"
@@ -1749,8 +1856,8 @@ public class BMVTestScore extends TestBase {
      *    code: BMV_ERROR 25
      */
     @Test
-    @Order(29)
-    public void verifyingScenario23() throws Exception {
+    @Order(30)
+    public void verifyingScenario24() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1783,7 +1890,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 24: input para block with height higher than current updated height
+     * Scenario 25: input para block with height higher than current updated height
      * Given:
      *    update para block 19, 20, 21
      * When:
@@ -1794,8 +1901,8 @@ public class BMVTestScore extends TestBase {
      *    code: INVALID_BLOCK_UPDATE_HEIGHT_HIGHER 33
      */
     @Test
-    @Order(30)
-    public void verifyingScenario24() throws Exception {
+    @Order(31)
+    public void verifyingScenario25() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1828,7 +1935,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 25: input para block with height lower than current updated height
+     * Scenario 26: input para block with height lower than current updated height
      * Given:
      *    para update block 7, 8, 9
      * When:
@@ -1839,8 +1946,8 @@ public class BMVTestScore extends TestBase {
      *    code: INVALID_BLOCK_UPDATE_HEIGHT_LOWER 34
      */
     @Test
-    @Order(31)
-    public void verifyingScenario25() throws Exception {
+    @Order(32)
+    public void verifyingScenario26() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1873,7 +1980,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 26: input para block without relay chain data to prove that block finalized
+     * Scenario 27: input para block without relay chain data to prove that block finalized
      * Given:
      *    para update block 11, 12, 13
      *    block update 13 does not have relay chain data
@@ -1885,8 +1992,8 @@ public class BMVTestScore extends TestBase {
      *    code: BMV_ERROR 25
      */
     @Test
-    @Order(32)
-    public void verifyingScenario26() throws Exception {
+    @Order(33)
+    public void verifyingScenario27() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1919,7 +2026,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 27: can not find parachain block data in relay chain data
+     * Scenario 28: can not find parachain block data in relay chain data
      * Given:
      *    para update block 11, 12, 13
      *    block update 13 contain relay chain data
@@ -1932,8 +2039,8 @@ public class BMVTestScore extends TestBase {
      *    code: BMV_ERROR 25
      */
     @Test
-    @Order(33)
-    public void verifyingScenario27() throws Exception {
+    @Order(34)
+    public void verifyingScenario28() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -1993,7 +2100,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 28: block hash of parachain not match with data included to relay chain
+     * Scenario 29: block hash of parachain not match with data included to relay chain
      * Given:
      *    para update block 11, 12, 13
      *    block update 13 contain relay chain data
@@ -2007,8 +2114,8 @@ public class BMVTestScore extends TestBase {
      *    code: BMV_ERROR 25
      */
     @Test
-    @Order(34)
-    public void verifyingScenario28() throws Exception {
+    @Order(35)
+    public void verifyingScenario29() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2068,7 +2175,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 29: update relay and para chain block successfully
+     * Scenario 30: update relay and para chain block successfully
      * Given:
      *    para update block 11, 12, 13, 14, 15, 16, 17
      *    block update 17 contains relay chain data
@@ -2082,8 +2189,8 @@ public class BMVTestScore extends TestBase {
      *    update para MTA
      */
     @Test
-    @Order(35)
-    public void verifyingScenario29() throws Exception {
+    @Order(36)
+    public void verifyingScenario30() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2188,7 +2295,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 30: update para blockProof of block that not exist in MTA
+     * Scenario 31: update para blockProof of block that not exist in MTA
      * Given:
      *    para blockProof of block 18;
      * When:
@@ -2199,8 +2306,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_BLOCK_PROOF_HEIGHT_HIGHER, 35
      */
     @Test
-    @Order(36)
-    public void verifyingScenario30() throws Exception {
+    @Order(37)
+    public void verifyingScenario31() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2233,7 +2340,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 31: update para blockProof with invalid old witness
+     * Scenario 32: update para blockProof with invalid old witness
      * Given:
      *    para blockProof of block 14;
      *    para mta height of client: 15;
@@ -2246,8 +2353,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_BLOCK_WITNESS_OLD, 36
      */
     @Test
-    @Order(37)
-    public void verifyingScenario31() throws Exception {
+    @Order(38)
+    public void verifyingScenario32() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2276,7 +2383,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 32: update para blockProof with invalid block header when client MTA height less than BMV MTA height
+     * Scenario 33: update para blockProof with invalid block header when client MTA height less than BMV MTA height
      * Given:
      *    para blockProof of block 15 with incorrect data;
      *    para mta height of client: 16;
@@ -2289,8 +2396,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_BLOCK_WITNESS, 31
      */
     @Test
-    @Order(38)
-    public void verifyingScenario32() throws Exception {
+    @Order(39)
+    public void verifyingScenario33() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2322,7 +2429,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 33: update para blockProof with invalid block witness
+     * Scenario 34: update para blockProof with invalid block witness
      * Given:
      *    para blockProof of block 15 that has invalid witness
      *    para mta height of client: 17;
@@ -2334,8 +2441,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_BLOCK_WITNESS, 31
      */
     @Test
-    @Order(39)
-    public void verifyingScenario33() throws Exception {
+    @Order(40)
+    public void verifyingScenario34() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2363,7 +2470,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 34: update para blockProof with invalid block witness when client MTA height greater than bmv MTA height
+     * Scenario 35: update para blockProof with invalid block witness when client MTA height greater than bmv MTA height
      * Given:
      *    para blockProof of block 17 that has invalid witness
      *    para mta height of client: 18;
@@ -2375,8 +2482,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_BLOCK_WITNESS, 31
      */
     @Test
-    @Order(40)
-    public void verifyingScenario34() throws Exception {
+    @Order(41)
+    public void verifyingScenario35() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2408,7 +2515,7 @@ public class BMVTestScore extends TestBase {
 
     /**
      * 
-     * Scenario 35: invalid para state proof
+     * Scenario 36: invalid para state proof
      * Given:
      *    invalid para state proof, hash of proof missmatch with stateRoot in header
      *    state proof hash: "",
@@ -2421,8 +2528,8 @@ public class BMVTestScore extends TestBase {
      *       code: INVALID_MPT
      */
     @Test
-    @Order(41)
-    public void verifyingScenario35() throws Exception {
+    @Order(42)
+    public void verifyingScenario36() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
         BigInteger seq = new BigInteger("111");
@@ -2507,7 +2614,7 @@ public class BMVTestScore extends TestBase {
      *      code: INVALID_SEQUENCE_HIGHER, 32
      */
     @Test
-    @Order(42)
+    @Order(43)
     public void respondScenario1() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
@@ -2589,7 +2696,7 @@ public class BMVTestScore extends TestBase {
      *      code: INVALID_SEQUENCE, 28
      */
     @Test
-    @Order(43)
+    @Order(44)
     public void respondScenario2() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
@@ -2673,7 +2780,7 @@ public class BMVTestScore extends TestBase {
      *    return btp message to BMC
      */
     @Test
-    @Order(44)
+    @Order(45)
     public void respondScenario3() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;
@@ -2762,7 +2869,7 @@ public class BMVTestScore extends TestBase {
      *    ignore that event log
      */
     @Test
-    @Order(44)
+    @Order(46)
     public void respondScenario4() throws Exception {
         String notHandlePrevBmcAddress = "ea1c4c2767b6ef9618f6338e700d2570b23f1231"; // bmc address of src chain that not match with prev input of BMC
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
@@ -2855,7 +2962,7 @@ public class BMVTestScore extends TestBase {
      *    return btp message to BMC
      */
     @Test
-    @Order(45)
+    @Order(47)
     public void respondScenario5() throws Exception {
         String prevBmcAddress = "08425D9Df219f93d5763c3e85204cb5B4cE33aAa";
         String prev = "btp://" + destinationNet + "/" + prevBmcAddress;

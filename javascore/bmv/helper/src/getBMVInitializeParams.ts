@@ -48,7 +48,12 @@ async function main () {
         }
     });
 
-    const paraApi = await ApiPromise.create({ provider: paraWsProvider });
+    const paraApi = await ApiPromise.create({
+        provider: paraWsProvider,
+        types: {
+          RoundIndex: "u32",
+        },
+      });
 
     // get relay genesis hash
     console.log("relay genesis hash: ", relayApi.genesisHash.toHex());

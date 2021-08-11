@@ -499,7 +499,7 @@
             {
               "name": "Version",
               "type": "RuntimeVersion",
-              "value": "0x246d6f6f6e7269766572246d6f6f6e7269766572030000009f0000000000000034d2bc9897eed08f1503000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f02000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d02000000ea93e3f16f3d69620100000002000000",
+              "value": "0x246d6f6f6e7269766572246d6f6f6e726976657203000000c80000000000000034d2bc9897eed08f1503000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f02000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d02000000ea93e3f16f3d69620100000002000000",
               "documentation": [
                 " Get the chain's current version."
               ]
@@ -1555,6 +1555,17 @@
             "prefix": "ParachainStaking",
             "items": [
               {
+                "name": "DelayNominationExitsMigration",
+                "modifier": "Default",
+                "type": {
+                  "plain": "bool"
+                },
+                "fallback": "0x00",
+                "documentation": [
+                  " True if executed, false by default"
+                ]
+              },
+              {
                 "name": "CollatorCommission",
                 "modifier": "Default",
                 "type": {
@@ -1606,6 +1617,23 @@
                     "hasher": "Twox64Concat",
                     "key": "AccountId",
                     "value": "Nominator",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "documentation": [
+                  " DEPRECATED AFTER `DelayNominationExitsMigration` migration is executed",
+                  " Get nominator state associated with an account if account is nominating else None"
+                ]
+              },
+              {
+                "name": "NominatorState2",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Twox64Concat",
+                    "key": "AccountId",
+                    "value": "Nominator2",
                     "linked": false
                   }
                 },
@@ -1667,11 +1695,23 @@
                 "name": "ExitQueue",
                 "modifier": "Default",
                 "type": {
-                  "plain": "OrderedSet"
+                  "plain": "Vec<(AccountId,RoundIndex)>"
                 },
                 "fallback": "0x00",
                 "documentation": [
-                  " A queue of collators awaiting exit `BondDuration` delay after request"
+                  " DEPRECATED",
+                  " A queue of collators awaiting exit"
+                ]
+              },
+              {
+                "name": "ExitQueue2",
+                "modifier": "Default",
+                "type": {
+                  "plain": "ExitQ"
+                },
+                "fallback": "0x00000000",
+                "documentation": [
+                  " A queue of collators and nominators awaiting exit"
                 ]
               },
               {
@@ -1870,7 +1910,7 @@
               "documentation": [
                 " Request to leave the set of candidates. If successful, the account is immediately",
                 " removed from the candidate pool to prevent selection as a collator, but unbonding is",
-                " executed with a delay of `BondDuration` rounds."
+                " executed with a delay of `T::LeaveCandidates` rounds."
               ]
             },
             {
@@ -1945,7 +1985,8 @@
                 }
               ],
               "documentation": [
-                " Leave the set of nominators and, by implication, revoke all ongoing nominations"
+                " Request to leave the set of nominators. If successful, the nominator is scheduled",
+                " to exit"
               ]
             },
             {
@@ -1957,7 +1998,8 @@
                 }
               ],
               "documentation": [
-                " Revoke an existing nomination"
+                " Request to revoke an existing nomination. If successful, the nomination is scheduled",
+                " to exit"
               ]
             },
             {
@@ -2111,6 +2153,29 @@
               "documentation": []
             },
             {
+              "name": "NominatorExitScheduled",
+              "args": [
+                "RoundIndex",
+                "AccountId",
+                "RoundIndex"
+              ],
+              "documentation": [
+                " Round, Nominator, Scheduled Exit"
+              ]
+            },
+            {
+              "name": "NominationRevocationScheduled",
+              "args": [
+                "RoundIndex",
+                "AccountId",
+                "AccountId",
+                "RoundIndex"
+              ],
+              "documentation": [
+                " Round, Nominator, Collator, Scheduled Exit"
+              ]
+            },
+            {
               "name": "NominatorLeft",
               "args": [
                 "AccountId",
@@ -2243,9 +2308,137 @@
               "documentation": [
                 " Set blocks per round [current_round, first_block, old, new, new_per_round_inflation]"
               ]
+            },
+            {
+              "name": "DelayNominationExitsMigrationExecuted",
+              "args": [],
+              "documentation": [
+                " Migrated NominatorState -> NominatorState2, ExitQueue -> ExitQueue2"
+              ]
             }
           ],
-          "constants": [],
+          "constants": [
+            {
+              "name": "MinBlocksPerRound",
+              "type": "u32",
+              "value": "0x0a000000",
+              "documentation": [
+                " Minimum number of blocks per round"
+              ]
+            },
+            {
+              "name": "DefaultBlocksPerRound",
+              "type": "u32",
+              "value": "0x2c010000",
+              "documentation": [
+                " Default number of blocks per round at genesis"
+              ]
+            },
+            {
+              "name": "LeaveCandidatesDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "documentation": [
+                " Number of rounds that collators remain bonded before exit request is executed"
+              ]
+            },
+            {
+              "name": "LeaveNominatorsDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "documentation": [
+                " Number of rounds that nominators remain bonded before exit request is executed"
+              ]
+            },
+            {
+              "name": "RevokeNominationDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "documentation": [
+                " Number of rounds that nominations remain bonded before revocation request is executed"
+              ]
+            },
+            {
+              "name": "RewardPaymentDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "documentation": [
+                " Number of rounds after which block authors are rewarded"
+              ]
+            },
+            {
+              "name": "MinSelectedCandidates",
+              "type": "u32",
+              "value": "0x08000000",
+              "documentation": [
+                " Minimum number of selected candidates every round"
+              ]
+            },
+            {
+              "name": "MaxNominatorsPerCollator",
+              "type": "u32",
+              "value": "0x0a000000",
+              "documentation": [
+                " Maximum nominators counted per collator"
+              ]
+            },
+            {
+              "name": "MaxCollatorsPerNominator",
+              "type": "u32",
+              "value": "0x19000000",
+              "documentation": [
+                " Maximum collators per nominator"
+              ]
+            },
+            {
+              "name": "DefaultCollatorCommission",
+              "type": "Perbill",
+              "value": "0x00c2eb0b",
+              "documentation": [
+                " Default commission due to collators, set at genesis"
+              ]
+            },
+            {
+              "name": "DefaultParachainBondReservePercent",
+              "type": "Percent",
+              "value": "0x1e",
+              "documentation": [
+                " Default percent of inflation set aside for parachain bond account"
+              ]
+            },
+            {
+              "name": "MinCollatorStk",
+              "type": "BalanceOf",
+              "value": "0x0000a0dec5adc9353600000000000000",
+              "documentation": [
+                " Minimum stake required for any account to be in `SelectedCandidates` for the round"
+              ]
+            },
+            {
+              "name": "MinCollatorCandidateStk",
+              "type": "BalanceOf",
+              "value": "0x000010632d5ec76b0500000000000000",
+              "documentation": [
+                " Minimum stake required for any account to be a collator candidate"
+              ]
+            },
+            {
+              "name": "MinNomination",
+              "type": "BalanceOf",
+              "value": "0x0000f444829163450000000000000000",
+              "documentation": [
+                " Minimum stake for any registered on-chain account to nominate"
+              ]
+            },
+            {
+              "name": "MinNominatorStk",
+              "type": "BalanceOf",
+              "value": "0x0000f444829163450000000000000000",
+              "documentation": [
+                " Minimum stake for any registered on-chain account to become a nominator"
+              ]
+            }
+          ],
           "errors": [
             {
               "name": "NominatorDNE",
@@ -2253,6 +2446,10 @@
             },
             {
               "name": "CandidateDNE",
+              "documentation": []
+            },
+            {
+              "name": "NominationDNE",
               "documentation": []
             },
             {
@@ -2284,11 +2481,23 @@
               "documentation": []
             },
             {
-              "name": "AlreadyLeaving",
+              "name": "NominatorAlreadyLeaving",
               "documentation": []
             },
             {
-              "name": "CannotActivateIfLeaving",
+              "name": "NominationAlreadyRevoked",
+              "documentation": []
+            },
+            {
+              "name": "CandidateAlreadyLeaving",
+              "documentation": []
+            },
+            {
+              "name": "CannotActBecauseLeaving",
+              "documentation": []
+            },
+            {
+              "name": "CannotActBecauseRevoking",
               "documentation": []
             },
             {
@@ -2297,10 +2506,6 @@
             },
             {
               "name": "AlreadyNominatedCollator",
-              "documentation": []
-            },
-            {
-              "name": "NominationDNE",
               "documentation": []
             },
             {
@@ -3226,158 +3431,6 @@
             }
           ],
           "index": 31
-        },
-        {
-          "name": "Sudo",
-          "storage": {
-            "prefix": "Sudo",
-            "items": [
-              {
-                "name": "Key",
-                "modifier": "Default",
-                "type": {
-                  "plain": "AccountId"
-                },
-                "fallback": "0x0000000000000000000000000000000000000000",
-                "documentation": [
-                  " The `AccountId` of the sudo key."
-                ]
-              }
-            ]
-          },
-          "calls": [
-            {
-              "name": "sudo",
-              "args": [
-                {
-                  "name": "call",
-                  "type": "Call"
-                }
-              ],
-              "documentation": [
-                " Authenticates the sudo key and dispatches a function call with `Root` origin.",
-                "",
-                " The dispatch origin for this call must be _Signed_.",
-                "",
-                " # <weight>",
-                " - O(1).",
-                " - Limited storage reads.",
-                " - One DB write (event).",
-                " - Weight of derivative `call` execution + 10,000.",
-                " # </weight>"
-              ]
-            },
-            {
-              "name": "sudo_unchecked_weight",
-              "args": [
-                {
-                  "name": "call",
-                  "type": "Call"
-                },
-                {
-                  "name": "_weight",
-                  "type": "Weight"
-                }
-              ],
-              "documentation": [
-                " Authenticates the sudo key and dispatches a function call with `Root` origin.",
-                " This function does not check the weight of the call, and instead allows the",
-                " Sudo user to specify the weight of the call.",
-                "",
-                " The dispatch origin for this call must be _Signed_.",
-                "",
-                " # <weight>",
-                " - O(1).",
-                " - The weight of this call is defined by the caller.",
-                " # </weight>"
-              ]
-            },
-            {
-              "name": "set_key",
-              "args": [
-                {
-                  "name": "new",
-                  "type": "LookupSource"
-                }
-              ],
-              "documentation": [
-                " Authenticates the current sudo key and sets the given AccountId (`new`) as the new sudo key.",
-                "",
-                " The dispatch origin for this call must be _Signed_.",
-                "",
-                " # <weight>",
-                " - O(1).",
-                " - Limited storage reads.",
-                " - One DB change.",
-                " # </weight>"
-              ]
-            },
-            {
-              "name": "sudo_as",
-              "args": [
-                {
-                  "name": "who",
-                  "type": "LookupSource"
-                },
-                {
-                  "name": "call",
-                  "type": "Call"
-                }
-              ],
-              "documentation": [
-                " Authenticates the sudo key and dispatches a function call with `Signed` origin from",
-                " a given account.",
-                "",
-                " The dispatch origin for this call must be _Signed_.",
-                "",
-                " # <weight>",
-                " - O(1).",
-                " - Limited storage reads.",
-                " - One DB write (event).",
-                " - Weight of derivative `call` execution + 10,000.",
-                " # </weight>"
-              ]
-            }
-          ],
-          "events": [
-            {
-              "name": "Sudid",
-              "args": [
-                "DispatchResult"
-              ],
-              "documentation": [
-                " A sudo just took place. \\[result\\]"
-              ]
-            },
-            {
-              "name": "KeyChanged",
-              "args": [
-                "AccountId"
-              ],
-              "documentation": [
-                " The \\[sudoer\\] just switched identity; the old key is supplied."
-              ]
-            },
-            {
-              "name": "SudoAsDone",
-              "args": [
-                "DispatchResult"
-              ],
-              "documentation": [
-                " A sudo just took place. \\[result\\]"
-              ]
-            }
-          ],
-          "constants": [],
-          "errors": [
-            {
-              "name": "RequireSudo",
-              "documentation": [
-                " Sender must be the Sudo account"
-              ]
-            }
-          ],
-          "index": 40
         },
         {
           "name": "EthereumChainId",
@@ -6784,7 +6837,7 @@
             {
               "name": "RewardsDoNotMatchFund",
               "documentation": [
-                " Reward vec has already been initialized"
+                " Rewards should match funds of the pallet"
               ]
             },
             {

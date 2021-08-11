@@ -47,6 +47,7 @@ public class BMV implements IBMV {
   private final VarDB<Address> bmcDb = Context.newVarDB("bmc", Address.class);
   private final VarDB<String> netAddressDb = Context.newVarDB("netAddr", String.class);
   private final VarDB<Long> lastHeightDb = Context.newVarDB("lastHeight", Long.class);
+  private final VarDB<Long> lastUpdateValidatorSetDb = Context.newVarDB("lastUpdateValidatorSet", Long.class);
   private final VarDB<Long> paraChainIdDb = Context.newVarDB("paraId", Long.class);
   private final VarDB<SerializableMTA> paraMtaDb = Context.newVarDB("paraMta", SerializableMTA.class);
   private final VarDB<SerializableMTA> relayMtaDb = Context.newVarDB("relayMta", SerializableMTA.class);
@@ -94,6 +95,7 @@ public class BMV implements IBMV {
     Validators validatorsObject = new Validators(validators);
     this.validatorsDb.set(validatorsObject);
     this.relaySetIdDb.set(BigInteger.valueOf(relayCurrentSetId));
+    this.lastUpdateValidatorSetDb.set(relayMtaOffset);
 
     SerializableMTA paraMta = new SerializableMTA(0, paraMtaOffset, mtaRootSize, mtaCacheSize, mtaIsAllowNewerWitness, paraLastBlockHash, null, null);
     SerializableMTA relayMta = new SerializableMTA(0, relayMtaOffset, mtaRootSize, mtaCacheSize, mtaIsAllowNewerWitness, relayLastBlockHash, null, null);
@@ -464,11 +466,16 @@ public class BMV implements IBMV {
           EventRecord eventRecord = new EventRecord(rawEventRecord);
           // update new validator set
           if (eventRecord.getEventIndex()[0] == newAuthoritiesEventIndex[0] && eventRecord.getEventIndex()[1] == newAuthoritiesEventIndex[1]) {
+            long lastUpdateValidatorSet = this.lastUpdateValidatorSetDb.get();
+            if (relayChainBlockVerifyResult.lastHeight <= lastUpdateValidatorSet) {
+              continue;
+            }
             NewAuthoritiesEvent newAuthoritiesEvent = new NewAuthoritiesEvent(eventRecord.getEventData());
             List<byte[]> newValidators = newAuthoritiesEvent.getValidators();
             Validators newValidatorsObject = new Validators(newValidators);
             this.validatorsDb.set(newValidatorsObject);
             this.relaySetIdDb.set(this.relaySetIdDb.get().add(BigInteger.valueOf(1)));
+            this.lastUpdateValidatorSetDb.set(relayChainBlockVerifyResult.lastHeight);
             continue;
           }
 
