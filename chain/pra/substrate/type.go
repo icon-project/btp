@@ -13,7 +13,9 @@ type SubstrateBlockNumber = types.BlockNumber
 type SubstrateEventRecordsRaw types.EventRecordsRaw
 type SubstrateParachainId = types.U32
 type SetId = types.U64
+type U32 = types.U32
 type HexString = string
+
 type SubstrateReadProof struct {
 	At    SubstrateHash `json:"at"`
 	Proof []HexString   `json:"proof"`

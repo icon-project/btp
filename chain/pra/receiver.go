@@ -1,7 +1,6 @@
 package pra
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -82,25 +81,13 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 			return nil, err
 		}
 
-		update.FinalityProof, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
+		update.FinalityProofs, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
 		if err != nil {
 			return nil, err
 		}
-
-		if !bytes.Equal(update.FinalityProof, []byte{0xf8, 00}) {
-			var fp ParachainFinalityProof
-			_, err = codec.RLP.UnmarshalFromBytes(update.FinalityProof, &fp)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(fp.RelayStateProofs) > 1 {
-				update.NilEncodedBlockHeader = 0x01
-			}
-		}
 	} else {
 		// For local testing without relay chain
-		update.FinalityProof = nil
+		update.FinalityProofs = nil
 	}
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(&update)

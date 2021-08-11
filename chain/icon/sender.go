@@ -287,19 +287,12 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 // Can't import pra package because of cycle import
 type parachainBlockUpdateExtra struct {
 	ScaleEncodedBlockHeader []byte
-	FinalityProof           []byte
-	NilEncodedBlockHeader   byte
+	FinalityProofs          [][]byte
 }
 
 type parachainBlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
-}
-
-type parachainFinalityProof struct {
-	RelayBlockUpdates [][]byte
-	RelayBlockProof   []byte
-	RelayStateProofs  [][]byte
 }
 
 func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
@@ -321,55 +314,36 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 		paraBu := parachainBlockUpdate{
 			ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
-			FinalityProof:           paraBuExtra.FinalityProof,
+			FinalityProof:           paraBuExtra.FinalityProofs[len(paraBuExtra.FinalityProofs)-1],
 		}
 
-		realBu, err := codec.RLP.MarshalToBytes(paraBu)
+		realParaBu, err := codec.RLP.MarshalToBytes(paraBu)
 		if err != nil {
 			return nil, err
 		}
 
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
 
-		if paraBuExtra.NilEncodedBlockHeader == 0x01 {
-			s.l.Tracef("Segment: NilEncodedBlockHeader")
-			var fp parachainFinalityProof
-			if _, err = codec.RLP.UnmarshalFromBytes(paraBu.FinalityProof, &fp); err != nil {
-				return nil, err
-			}
-
-			for i := 0; i < 2; i++ {
+		if len(paraBuExtra.FinalityProofs) > 0 {
+			s.l.Tracef("Segment: Send muliple finalitiyProofs")
+			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
-				if i == 0 {
-					newFp := parachainFinalityProof{
-						RelayBlockUpdates: fp.RelayBlockUpdates,
-						RelayStateProofs:  fp.RelayStateProofs[:1],
-					}
-					encodeNewFp, err := codec.RLP.MarshalToBytes(newFp)
-					if err != nil {
-						return nil, err
-					}
+
+				if i == len(paraBuExtra.FinalityProofs)-1 {
 					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
-						ScaleEncodedBlockHeader: nil,
-						FinalityProof:           encodeNewFp,
+						ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
+						FinalityProof:           paraBuExtra.FinalityProofs[i],
 					})
+
 					if err != nil {
 						return nil, err
 					}
 				} else {
-					newFp := parachainFinalityProof{
-						RelayBlockUpdates: make([][]byte, 0),
-						RelayBlockProof:   fp.RelayBlockProof,
-						RelayStateProofs:  fp.RelayStateProofs[len(fp.RelayStateProofs)-1:],
-					}
-					encodeNewFp, err := codec.RLP.MarshalToBytes(newFp)
-					if err != nil {
-						return nil, err
-					}
 					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
-						ScaleEncodedBlockHeader: paraBu.ScaleEncodedBlockHeader,
-						FinalityProof:           encodeNewFp,
+						ScaleEncodedBlockHeader: nil,
+						FinalityProof:           paraBuExtra.FinalityProofs[i],
 					})
+
 					if err != nil {
 						return nil, err
 					}
@@ -413,7 +387,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				ReceiptProofs: make([][]byte, 0),
 			}
 
-			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realBu)
+			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
 
 			rmb, err := codec.RLP.MarshalToBytes(subMsg)
 			if err != nil {
@@ -427,7 +401,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			segments = append(segments, segment)
 			continue
 		}
-		msg.BlockUpdates = append(msg.BlockUpdates, realBu)
+		msg.BlockUpdates = append(msg.BlockUpdates, realParaBu)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
 	}

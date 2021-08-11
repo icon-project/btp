@@ -129,6 +129,5 @@ type ParaChainBlockUpdate struct {
 
 type ParaChainBlockUpdateExtra struct {
 	ScaleEncodedBlockHeader []byte
-	FinalityProof           []byte
-	NilEncodedBlockHeader   byte
+	FinalityProofs          [][]byte
 }
