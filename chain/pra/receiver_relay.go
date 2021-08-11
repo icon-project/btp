@@ -178,7 +178,7 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 	bus = append(bus, hds...)
 	bus = append(bus, missingBlockHeaders...)
 
-	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", from, to)
+	r.log.Debugf("pullBlockHeaders: blockUpdates %d ~ %d", bus[0].Number, bus[len(bus)-1].Number)
 	return bus, nil
 }
 
