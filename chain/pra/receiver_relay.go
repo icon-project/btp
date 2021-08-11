@@ -152,7 +152,7 @@ func (r *relayReceiver) newStateProof(blockHash substrate.SubstrateHash) ([]byte
 	return sp, nil
 }
 
-func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader, paraIncludeBn substrate.SubstrateBlockNumber) ([]substrate.SubstrateHeader, error) {
+func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader) ([]substrate.SubstrateHeader, error) {
 	bus := make([]substrate.SubstrateHeader, 0)
 
 	from := substrate.SubstrateBlockNumber(gj.Commit.TargetNumber)
@@ -160,9 +160,6 @@ func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds
 		from = hds[len(hds)-1].Number
 	}
 	to := gj.Commit.TargetNumber
-	if substrate.U32(paraIncludeBn) > to {
-		to = substrate.U32(paraIncludeBn)
-	}
 
 	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
@@ -273,11 +270,11 @@ func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHa
 	return nil, fmt.Errorf("not supported relay spec %s", spec)
 }
 
-func (r *relayReceiver) buildBlockUpdates(remoteSetId uint64, paraIncludedHeader *substrate.SubstrateHeader, gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader) ([][]byte, error) {
+func (r *relayReceiver) buildBlockUpdates(remoteSetId uint64, gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader) ([][]byte, error) {
 	bus := make([][]byte, 0)
 
 	// pull all headers with unknowheader in finality proofs
-	blockHeaders, err := r.pullBlockHeaders(gj, hds, paraIncludedHeader.Number)
+	blockHeaders, err := r.pullBlockHeaders(gj, hds)
 	if err != nil {
 		return nil, err
 	}
@@ -328,15 +325,6 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	// Sync
 	if r.mtaHeight < remoteRelayMtaHeight {
-		// for i := uint64(localRelayMtaHeight + 1); i <= remoteRelayMtaHeight; i++ {
-		// 	hash, err := r.c.GetBlockHash(i)
-		// 	if err != nil {
-		// 		return nil, nil
-		// 	}
-
-		// 	r.syncBlocks(i, hash)
-		// }
-
 		r.mtaHeight = remoteRelayMtaHeight
 		r.mtaOffset = remoteMtaOffet
 	}
@@ -354,85 +342,78 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	}
 
 	if r.mtaHeight < uint64(paraIncludedHeader.Number) {
-		bus := make([][]byte, 0)
-		var bp []byte
-		sps := make([][]byte, 0)
-
-		// get the latest block contains justification
-		gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(substrate.NewBlockNumber(r.mtaHeight))
-		if err != nil {
-			return nil, err
-		}
-
-		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
-		if err != nil {
-			return nil, nil
-		}
-
-		lastBlockNumber := gj.Commit.TargetNumber
-		r.log.Debugf("newParaFinalityProof: found justification at %d", lastBlockNumber)
-
-		if len(eventGrandpaNewAuthorities) > 0 {
-			newAuthoritiesStateProof, err := r.newStateProof(gj.Commit.TargetHash)
-			if err != nil {
-				return nil, err
-			}
-
-			sps = append(sps, newAuthoritiesStateProof)
-			bus, err = r.buildBlockUpdates(remoteSetId, paraIncludedHeader, gj, hds)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		msg := &ParachainFinalityProof{
-			RelayBlockUpdates: bus,
-			RelayBlockProof:   bp,
-			RelayStateProofs:  sps,
-		}
-
-		rmb, err := codec.RLP.MarshalToBytes(msg)
-		if err != nil {
-			return nil, err
-		}
-
-		finalitiyProofs = append(finalitiyProofs, rmb)
-
-		// No need blockProof
-		if gj.Commit.TargetNumber == substrate.U32(paraIncludedHeader.Number) {
-			return finalitiyProofs, err
-		}
-
-		if gj.Commit.TargetNumber < substrate.U32(paraIncludedHeader.Number) {
+		blockToFetchJustification := substrate.NewBlockNumber(r.mtaHeight)
+		for r.mtaHeight < uint64(paraIncludedHeader.Number) {
 			bus := make([][]byte, 0)
 			var bp []byte
 			sps := make([][]byte, 0)
 
-			// get the latest block contains justification
-			gj2, hds2, err := r.c.GetJustificationsAndUnknownHeaders(substrate.NewBlockNumber(uint64(gj.Commit.TargetNumber + 1)))
+			// get the latest block contains justification with mtaHeight
+			gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(blockToFetchJustification)
 			if err != nil {
 				return nil, err
 			}
 
-			eventGrandpaNewAuthorities2, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
-			if err != nil {
-				return nil, nil
-			}
+			justBlockNumber := gj.Commit.TargetNumber
+			justBlockHash := gj.Commit.TargetHash
+			r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
 
-			lastBlockNumber2 := gj2.Commit.TargetNumber
-			r.log.Debugf("newParaFinalityProof: found justification at %d", lastBlockNumber2)
-
-			if len(eventGrandpaNewAuthorities2) > 0 {
-				newAuthoritiesStateProof, err := r.newStateProof(gj.Commit.TargetHash)
+			if r.mtaHeight < uint64(justBlockNumber) {
+				bus, err = r.buildBlockUpdates(remoteSetId, gj, hds)
 				if err != nil {
 					return nil, err
 				}
 
-				sps = append(sps, newAuthoritiesStateProof)
-				bus, err = r.buildBlockUpdates(remoteSetId+1, paraIncludedHeader, gj2, hds2)
+				eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(justBlockHash)
+				if err != nil {
+					return nil, nil
+				}
+
+				if len(eventGrandpaNewAuthorities) > 0 {
+					newAuthoritiesStateProof, err := r.newStateProof(justBlockHash)
+					if err != nil {
+						return nil, err
+					}
+
+					sps = append(sps, newAuthoritiesStateProof)
+				}
+			} else if r.mtaHeight == uint64(justBlockNumber) {
+				blockToFetchJustification += 1
+				gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(blockToFetchJustification)
 				if err != nil {
 					return nil, err
 				}
+
+				justBlockNumber := gj.Commit.TargetNumber
+				// justBlockHash := gj.Commit.TargetHash
+				r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
+
+				blockHash, err := r.c.GetBlockHash(uint64(blockToFetchJustification))
+				if err != nil {
+					return nil, err
+				}
+
+				blockHeader, err := r.c.GetHeader(blockHash)
+				if err != nil {
+					return nil, err
+				}
+
+				bu, err := r.newBlockUpdate(*blockHeader, nil)
+				if err != nil {
+					return nil, err
+				}
+
+				r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
+				r.mtaHeight = uint64(blockHeader.Number - 1)
+
+				bus, err = r.buildBlockUpdates(remoteSetId, gj, hds)
+				if err != nil {
+					return nil, err
+				}
+
+				firstBus := make([][]byte, 0)
+				firstBus = append(firstBus, bu)
+				bus = append(firstBus, bus...)
 			}
 
 			msg := &ParachainFinalityProof{
@@ -447,6 +428,11 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 			}
 
 			finalitiyProofs = append(finalitiyProofs, rmb)
+
+			// No need blockProof for paraInclude
+			if justBlockNumber == substrate.U32(paraIncludedHeader.Number) {
+				return finalitiyProofs, err
+			}
 		}
 	}
 
