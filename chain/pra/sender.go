@@ -23,13 +23,13 @@ const (
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
-	defaultGasLimit                  = 6721975 // estimation for 3 blocks MaxBlockUpdatesPerSegment
+	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
 var RetrableRelayReSendReExp = regexp.MustCompile(``)
 
 type praSenderOptions struct {
-	GasLimit uint64 `json:"gas_limit"`
+	GasLimit uint64 `json:"gasLimit"`
 }
 
 var (
