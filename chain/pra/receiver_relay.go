@@ -386,6 +386,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 				justBlockNumber := gj.Commit.TargetNumber
 				// justBlockHash := gj.Commit.TargetHash
+				r.log.Debugf("newParaFinalityProof: get another justification")
 				r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
 
 				blockHash, err := r.c.GetBlockHash(uint64(blockToFetchJustification))
@@ -403,6 +404,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 
+				r.log.Debugf("newParaFinalityProof: blockUpdate %d", blockHeader.Number)
 				r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
 				r.mtaHeight = uint64(blockHeader.Number - 1)
 
