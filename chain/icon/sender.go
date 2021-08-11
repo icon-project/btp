@@ -390,6 +390,8 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				segments = append(segments, segment)
 			}
 
+			msg.BlockUpdates = make([][]byte, 0)
+			msg.numberOfBlockUpdate = 0
 			continue
 		}
 
