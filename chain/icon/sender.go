@@ -322,10 +322,8 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			return nil, err
 		}
 
-		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
-
 		if len(paraBuExtra.FinalityProofs) > 1 {
-			s.l.Tracef("Segment: Send muliple finalitiyProofs")
+			s.l.Tracef("Segment: send muliple finalitiyProofs")
 			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
 
@@ -370,37 +368,15 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					return nil, err
 				}
 				segments = append(segments, segment)
-			}
 
+				msg = &RelayMessage{
+					BlockUpdates:  make([][]byte, 0),
+					ReceiptProofs: make([][]byte, 0),
+				}
+			}
 			continue
 		}
 
-		if obl {
-			s.l.Tracef("Segment: over block limit: %t", obl)
-			segment := &chain.Segment{
-				Height:              bu.Height,
-				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-			}
-
-			subMsg := &RelayMessage{
-				BlockUpdates:  make([][]byte, 0),
-				ReceiptProofs: make([][]byte, 0),
-			}
-
-			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
-
-			rmb, err := codec.RLP.MarshalToBytes(subMsg)
-			if err != nil {
-				return nil, err
-			}
-
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
-				return nil, err
-			}
-
-			segments = append(segments, segment)
-			continue
-		}
 		msg.BlockUpdates = append(msg.BlockUpdates, realParaBu)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
