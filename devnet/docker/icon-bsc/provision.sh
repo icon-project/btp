@@ -18,7 +18,9 @@ GOLOOP_CONFIG=${GOLOOP_PROVISION_CONFIG}/server.json
 ensure_server_start
 
 goloop gn gen --out src.genesis.json $GOLOOP_KEY_STORE
+echo $(cat src.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > src.genesis.json
 goloop gn gen --out dst.genesis.json $GOLOOP_KEY_STORE
+echo $(cat dst.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > dst.genesis.json
 
 goloop chain join --genesis_template src.genesis.json --channel src --auto_start
 goloop chain join --genesis_template dst.genesis.json --channel dst --auto_start
