@@ -305,6 +305,32 @@ func (r *relayReceiver) buildBlockUpdates(remoteSetId uint64, gj *substrate.Gran
 	return bus, nil
 }
 
+// TODO merge with buildBlockUpdates
+func (r *relayReceiver) buildBlockUpdateWithoutVotes(remoteSetId uint64, blockNumber uint64) ([][]byte, error) {
+	bus := make([][]byte, 0)
+	blockHash, err := r.c.GetBlockHash(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	blockHeader, err := r.c.GetHeader(blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	bu, err := r.newBlockUpdate(*blockHeader, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	r.log.Debugf("buildBlockUpdate: blockUpdate %d", blockHeader.Number)
+	r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
+	r.mtaHeight = uint64(blockHeader.Number - 1)
+
+	bus = append(bus, bu)
+	return bus, nil
+}
+
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([][]byte, error) {
 	r.log.Tracef("newParaFinalityProof: paraBlock %d relayChainId %d", paraHeight, paraChainId)
 	paraMtaHeight := r.pC.getParaMtaHeight()
@@ -388,32 +414,16 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 				justBlockNumber := gj.Commit.TargetNumber
 				r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
 
-				blockHash, err := r.c.GetBlockHash(uint64(blockToFetchJustification))
+				firstBus, err := r.buildBlockUpdateWithoutVotes(remoteSetId, uint64(blockToFetchJustification))
 				if err != nil {
 					return nil, err
 				}
-
-				blockHeader, err := r.c.GetHeader(blockHash)
-				if err != nil {
-					return nil, err
-				}
-
-				bu, err := r.newBlockUpdate(*blockHeader, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				r.log.Debugf("newParaFinalityProof: blockUpdate %d", blockHeader.Number)
-				r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
-				r.mtaHeight = uint64(blockHeader.Number - 1)
 
 				bus, err = r.buildBlockUpdates(remoteSetId, gj, hds)
 				if err != nil {
 					return nil, err
 				}
 
-				firstBus := make([][]byte, 0)
-				firstBus = append(firstBus, bu)
 				bus = append(firstBus, bus...)
 			}
 
