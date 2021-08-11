@@ -430,6 +430,27 @@ type EventUtilityBatchCompleted struct {
 	Topics []Hash
 }
 
+// EventSudoSudid is emitted when a sudo just took place.
+type EventSudoSudid struct {
+	Phase  Phase
+	Result DispatchResult
+	Topics []Hash
+}
+
+// EventSudoKeyChanged is emitted when the sudoer just switched identity; the old key is supplied.
+type EventSudoKeyChanged struct {
+	Phase     Phase
+	AccountID AccountID
+	Topics    []Hash
+}
+
+// A sudo just took place.
+type EventSudoAsDone struct {
+	Phase  Phase
+	Done   bool
+	Topics []Hash
+}
+
 type XcmErrorEnum byte
 
 const (
@@ -752,4 +773,7 @@ type KusamaEventRecord struct {
 	System_NewAccount       []EventSystemNewAccount
 	System_Remarked         []EventSystemRemarked
 	Session_NewSession      []EventSessionNewSession
+	Sudo_KeyChanged         []EventSudoKeyChanged
+	Sudo_Sudid              []EventSudoSudid
+	Sudo_SudoAsDone         []EventSudoAsDone
 }
