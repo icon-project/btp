@@ -185,7 +185,7 @@ public class ServiceHandler {
         Context.println("################# BMC.SendMessage initiated");
         Context.call(bmcDb.get(), "sendMessage", _to.getNet(), _svc, serialNo.get(), msg);
         //TODO: emit event
-        TransferStart(sender, tokenName, sn, assets);
+        TransferStart(sender, tokenName, sn, encodeToBytes(assets));
     }
 
     /**
@@ -433,8 +433,18 @@ public class ServiceHandler {
         return newSnNo;
     }
 
+    static byte[] encodeToBytes(List<Asset> assets) {
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
+        writer.beginList(assets.size());
+        for(Asset v : assets) {
+            Asset.writeObject(writer,v);
+        }
+        writer.end();
+        return writer.toByteArray();
+    }
+
     @EventLog(indexed = 2)
-    public void TransferStart(Address from, String tokenName, BigInteger sn, List<Asset> assets) {
+    public void TransferStart(Address from, String tokenName, BigInteger sn, byte[] assets) {
     }
 
     @EventLog(indexed = 1)

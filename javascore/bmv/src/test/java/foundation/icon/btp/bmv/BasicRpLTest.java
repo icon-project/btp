@@ -48,7 +48,7 @@ public class BasicRpLTest {
 
     }
 
-    @Test
+  /*  @Test
     public void testRplDecoder() {
         String data = "-EcF-ESgLRW8UPg-kGpGwRkzumLmCqfvZJ_97J7DYioRPCizgcH4AKAUevyJu0uatfNpHBb_AJs5WDRfAtrOsbGsMXLamB2Alw==";
         StringBuilder res = new StringBuilder();
@@ -69,6 +69,6 @@ public class BasicRpLTest {
 
         r.avm_end();
         assertFalse(r.avm_hasNext());
-    }
+    }*/
 }
 
