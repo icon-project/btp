@@ -155,15 +155,19 @@ func (r *relayReceiver) newStateProof(blockHash substrate.SubstrateHash) ([]byte
 func (r *relayReceiver) pullBlockHeaders(gj *substrate.GrandpaJustification, hds []substrate.SubstrateHeader) ([]substrate.SubstrateHeader, error) {
 	bus := make([]substrate.SubstrateHeader, 0)
 
+	// Single block
 	from := substrate.SubstrateBlockNumber(gj.Commit.TargetNumber)
+	to := gj.Commit.TargetNumber + 1
+
+	// Missing mulitple block
 	if len(hds) > 0 {
 		from = hds[len(hds)-1].Number
+		to = gj.Commit.TargetNumber
 	}
-	to := gj.Commit.TargetNumber
 
 	r.log.Debugf("pullBlockHeaders: missing [%d ~ %d]", from, to)
 	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
-	for i := from; i <= substrate.NewBlockNumber(uint64(to)); i++ {
+	for i := from; i < substrate.NewBlockNumber(uint64(to)); i++ {
 		missingBlockNumbers = append(missingBlockNumbers, i)
 	}
 
@@ -294,6 +298,7 @@ func (r *relayReceiver) buildBlockUpdates(remoteSetId uint64, gj *substrate.Gran
 			return nil, err
 		}
 
+		r.log.Debugf("buildBlockUpdates: %d", blockHeader.Number)
 		r.syncBlocks(uint64(blockHeader.Number-1), blockHeader.ParentHash)
 		r.mtaHeight = uint64(blockHeader.Number - 1)
 		bus = append(bus, bu)
@@ -411,8 +416,9 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 					return nil, err
 				}
 
-				justBlockNumber := gj.Commit.TargetNumber
-				r.log.Debugf("newParaFinalityProof: found justification at %d by fetch %d", justBlockNumber, blockToFetchJustification)
+				newJustBlockNumber := gj.Commit.TargetNumber
+				newJustBlockHash := gj.Commit.TargetHash
+				r.log.Debugf("newParaFinalityProof: found new Justification at %d by fetch %d", newJustBlockNumber, blockToFetchJustification)
 
 				firstNewBus, err := r.buildBlockUpdateWithoutVotes(remoteSetId, uint64(blockToFetchJustification))
 				if err != nil {
@@ -426,6 +432,20 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 				bus = append(bus, firstNewBus...)
 				bus = append(bus, newBus...)
+
+				eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(newJustBlockHash)
+				if err != nil {
+					return nil, nil
+				}
+
+				if len(eventGrandpaNewAuthorities) > 0 {
+					newAuthoritiesStateProof, err := r.newStateProof(newJustBlockHash)
+					if err != nil {
+						return nil, err
+					}
+
+					sps = append(sps, newAuthoritiesStateProof)
+				}
 			}
 
 			msg := &ParachainFinalityProof{
