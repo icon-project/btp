@@ -346,6 +346,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			s.l.Tracef("Segment: send muliple finalitiyProofs")
 			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
 				var rawBu []byte
+				sps := make([][]byte, 0)
 
 				if i == len(paraBuExtra.FinalityProofs)-1 {
 					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
@@ -356,6 +357,13 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					if err != nil {
 						return nil, err
 					}
+
+					// Only on stateProof at rm.LastBlockUpdate
+					if rm.ReceiptProofs[0].Height == bu.Height {
+						s.l.Debugf("Segment: at %d StateProof[%d]: %x", rm.ReceiptProofs[0].Height, i, rm.ReceiptProofs[0].Proof)
+						sps = append(sps, rm.ReceiptProofs[0].Proof)
+					}
+
 				} else {
 					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
 						ScaleEncodedBlockHeader: nil,
@@ -371,10 +379,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					Height:              bu.Height,
 					NumberOfBlockUpdate: 1,
 				}
-
 				subMsg := &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
-					ReceiptProofs: make([][]byte, 0),
+					ReceiptProofs: sps,
 				}
 
 				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
@@ -449,6 +456,8 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				NumberOfBlockUpdate: len(msg.BlockUpdates),
 			}
 
+			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
+
 			rmb, err := codec.RLP.MarshalToBytes(msg)
 			if err != nil {
 				return nil, err
@@ -462,7 +471,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			continue
 		} else {
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
+			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
 		}
 	}
 
