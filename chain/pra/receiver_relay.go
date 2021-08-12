@@ -80,6 +80,11 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 	if len(fetchtedBlockHeaders) > 0 {
 		from = uint64(fetchtedBlockHeaders[len(fetchtedBlockHeaders)-1].Number)
 
+		// not need to fetch again
+		if from == to {
+			to -= 1
+		}
+
 		nextMtaHash, err := r.c.GetBlockHash(nexMtaHeight)
 		if err != nil {
 			return nil, err
@@ -94,6 +99,7 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 	}
 
 	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+
 	for i := from; i <= to; i++ {
 		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
 	}
@@ -120,6 +126,8 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		if err != nil {
 			return nil, err
 		}
+
+		r.log.Tracef("buildBlockUpdates: %d", blockHeader.Number)
 
 		// Sync MTA
 		r.updateMta(uint64(blockHeader.Number-1), blockHeader.ParentHash)
