@@ -149,3 +149,37 @@ func (c *PraBmvClient) GetSetId() uint64 {
 		return uint64(value)
 	}
 }
+
+func (c *PraBmvClient) GetPraBmvStatus() PraBmvStatus {
+	relayMtaHeightChan := make(chan int64)
+	relayMtaOffsetChan := make(chan int64)
+	relaySetIdChan := make(chan int64)
+	paraMtaHeightChan := make(chan int64)
+
+	for i := 0; i < 4; i++ {
+		index := i
+		go func() {
+			switch index {
+			case 0:
+				defer close(relayMtaHeightChan)
+				relayMtaHeightChan <- int64(c.GetRelayMtaHeight())
+			case 1:
+				defer close(relayMtaOffsetChan)
+				relayMtaOffsetChan <- int64(c.GetRelayMtaOffset())
+			case 2:
+				defer close(relaySetIdChan)
+				relaySetIdChan <- int64(c.GetSetId())
+			case 3:
+				defer close(paraMtaHeightChan)
+				paraMtaHeightChan <- int64(c.GetParaMtaHeight())
+			}
+		}()
+	}
+
+	return PraBmvStatus{
+		RelayMtaHeight: <-relayMtaHeightChan,
+		RelayMtaOffset: <-relayMtaOffsetChan,
+		RelaySetId:     <-relaySetIdChan,
+		ParaMtaHeight:  <-paraMtaHeightChan,
+	}
+}
