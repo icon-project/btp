@@ -196,7 +196,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		finalityProofs = append(finalityProofs, finalityProof)
 
 		// early exit and only need one StateProof
-		if (r.expectMtaHeight) == uint64(includeHeader.Number) {
+		if (r.expectMtaHeight) == uint64(includeHeader.Number) && len(eventGrandpaNewAuthorities) > 0 {
 			return finalityProofs, nil
 		}
 	}
