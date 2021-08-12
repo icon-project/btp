@@ -16,11 +16,11 @@ import (
 
 type receiverOptions struct {
 	config.FileConfig
-	RelayEndpoint   string           `json:"relayEndpoint"`
 	RelayBtpAddress chain.BtpAddress `json:"relayBtpAddress"`
-	IconEndpoint    string           `json:"iconEndpoint"`
-	PraBmvAddress   string           `json:"iconBmvAddress"`
+	RelayEndpoint   string           `json:"relayEndpoint"`
 	RelayOffSet     int64            `json:"relayOffset"`
+	PraBmvAddress   chain.BtpAddress `json:"iconBmvAddress"`
+	DstEndpoint     string
 }
 
 type Receiver struct {
@@ -35,7 +35,7 @@ type Receiver struct {
 	isFoundMessageEventByOffset bool
 }
 
-func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
+func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger, cfgAbsBaseDir string, dstEndpoint string) chain.Receiver {
 	r := &Receiver{
 		src: src,
 		dst: dst,
@@ -52,7 +52,9 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	paraId, err := r.c.subClient.GetParachainId()
 	r.parachainId = *paraId
 
-	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
+	if len(r.opt.RelayEndpoint) > 0 {
+		r.opt.BaseDir = cfgAbsBaseDir
+		r.opt.DstEndpoint = dstEndpoint
 		r.relayReceiver = NewRelayReceiver(r.opt, l)
 		if err != nil {
 			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)

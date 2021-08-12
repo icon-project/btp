@@ -85,7 +85,7 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 	case "icon":
 		receiver = icon.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
 	case "pra":
-		receiver = pra.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
+		receiver = pra.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l, cfg.AbsBaseDir(), cfg.Dst.Endpoint)
 	default:
 		return nil, errors.New("Chain not supported yet")
 	}
