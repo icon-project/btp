@@ -11,6 +11,7 @@ import (
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/config"
+	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -207,7 +208,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("ReceiveLoop parachain, got err: %v", err)
+		return errors.Wrap(err, "ReceiveLoop parachain, got err")
 	}
 
 	return nil
