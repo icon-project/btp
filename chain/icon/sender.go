@@ -341,6 +341,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				}
 
 				segments = append(segments, segment)
+				msg.BlockUpdates = make([][]byte, 0)
+				msg.height = bu.Height
+				msg.numberOfBlockUpdate = 0
 			}
 
 			s.l.Tracef("Segment: send muliple finalitiyProofs")
@@ -420,6 +423,9 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 
 			segments = append(segments, segment)
+			msg.BlockUpdates = make([][]byte, 0)
+			msg.height = bu.Height
+			msg.numberOfBlockUpdate = 0
 			continue
 		}
 
