@@ -199,7 +199,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	r.bmvStatus.RelayMtaHeight = int64(r.bmvC.GetRelayMtaHeight())
 	r.bmvStatus.ParaMtaHeight = int64(r.bmvC.GetParaMtaHeight())
 
-	// Sync MTA
+	// Sync MTA per pra block
 	localRelayMtaHeight := r.store.Height()
 	to := localRelayMtaHeight + 5
 	if r.bmvStatus.RelayMtaHeight < to {
@@ -223,6 +223,15 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 
 	if uint64(includeHeader.Number) < r.bmvC.GetRelayMtaOffset() {
 		r.log.Panicf("newParaFinalityProof: includeHeader %d <= relayMtaOffset %d", uint64(includeHeader.Number), r.bmvC.GetRelayMtaOffset())
+	}
+
+	// Sync MTA completely
+	localRelayMtaHeight = r.store.Height()
+	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
+		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
+			relayHash, _ := r.c.GetBlockHash(uint64(i))
+			r.updateMta(uint64(i), relayHash)
+		}
 	}
 
 	return r.buildFinalityProof(includeHeader, includeHash)
