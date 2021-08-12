@@ -445,7 +445,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 	for i, rp := range rm.ReceiptProofs {
 		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
 			if rm.BlockProof == nil {
-				s.l.Tracef("Segment: ignore past StateProof at %d", rp.Height)
 				return segments, nil
 			}
 			msg.BlockProof = bp

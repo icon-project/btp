@@ -69,18 +69,29 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 	return nil, nil
 }
 
-func (r *relayReceiver) buildBlockUpdates(from uint64, to uint64, gj *substrate.GrandpaJustification) ([][]byte, error) {
+func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.GrandpaJustification, fetchtedBlockHeaders []substrate.SubstrateHeader) ([][]byte, error) {
 	bus := make([][]byte, 0)
-	blockNumbers := make([]substrate.SubstrateBlockNumber, 0)
 
-	for i := from; i <= to; i++ {
-		blockNumbers = append(blockNumbers, substrate.SubstrateBlockNumber(i))
+	from := nexMtaHeight
+	to := uint64(gj.Commit.TargetNumber)
+
+	if len(fetchtedBlockHeaders) > 0 {
+		from = uint64(fetchtedBlockHeaders[len(fetchtedBlockHeaders)-1].Number)
 	}
 
-	blockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(blockNumbers)
+	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+	for i := from; i <= to; i++ {
+		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
+	}
+
+	var blockHeaders = make([]substrate.SubstrateHeader, 0)
+
+	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(misisingBlockNumbers)
 	if err != nil {
 		return nil, err
 	}
+
+	blockHeaders = append(fetchtedBlockHeaders, missingBlockHeaders...)
 
 	for i, blockHeader := range blockHeaders {
 		var bu []byte
@@ -97,7 +108,7 @@ func (r *relayReceiver) buildBlockUpdates(from uint64, to uint64, gj *substrate.
 			return nil, err
 		}
 
-		r.log.Debugf("buildBlockUpdates: %d", blockHeader.Number)
+		r.log.Tracef("buildBlockUpdates: %d", blockHeader.Number)
 
 		// Sync MTA
 		r.updateMta(uint64(blockHeader.Number-1), blockHeader.ParentHash)
@@ -130,20 +141,22 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		bus := make([][]byte, 0)
 		sps := make([][]byte, 0)
 
-		gj, _, err := r.c.GetJustificationsAndUnknownHeaders(substrate.SubstrateBlockNumber(r.expectMtaHeight + 1))
+		gj, bhs, err := r.c.GetJustificationsAndUnknownHeaders(substrate.SubstrateBlockNumber(r.expectMtaHeight + 1))
 		if err != nil {
 			return nil, err
 		}
 
-		// Update expectMta for next message
-		r.expectMtaHeight = uint64(gj.Commit.TargetNumber)
+		r.log.Debugf("buildFinalityProof: found justification at %d by %d", gj.Commit.TargetNumber, r.expectMtaHeight+1)
 
-		newBus, err := r.buildBlockUpdates(uint64(r.expectMtaHeight+1), uint64(gj.Commit.TargetNumber), gj)
+		newBus, err := r.buildBlockUpdates(uint64(r.expectMtaHeight+1), gj, bhs)
 		if err != nil {
 			return nil, err
 		}
 
 		bus = append(bus, newBus...)
+
+		// Update expectMta for next message
+		r.expectMtaHeight = uint64(gj.Commit.TargetNumber)
 
 		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
 		if err != nil {
