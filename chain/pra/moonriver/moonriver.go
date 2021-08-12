@@ -1700,6 +1700,7 @@ type EventParachainStakingNominationIncreased struct {
 	Nominator     AccountID
 	Collator      AccountID
 	OldNomination Balance
+	Bool          bool
 	NewNomination Balance
 	Topics        []types.Hash
 }
