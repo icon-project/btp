@@ -131,13 +131,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 	}
 
 	// Sync MTA
-	relayBlockhash, err := r.c.GetBlockHash(to)
+	relayBlockhash, err := r.c.GetBlockHash(uint64(blockHeaders[len(blockHeaders)-1].Number))
 	if err != nil {
 		return nil, err
 	}
 
-	r.updateMta(uint64(to), relayBlockhash)
-	r.expectMtaHeight = uint64(to)
+	r.updateMta(uint64(blockHeaders[len(blockHeaders)-1].Number), relayBlockhash)
+	r.expectMtaHeight = uint64(blockHeaders[len(blockHeaders)-1].Number)
 
 	r.log.Debugf("buildBlockUpdates: %d ~ %d", blockHeaders[0].Number, blockHeaders[len(blockHeaders)-1].Number)
 	return bus, nil
