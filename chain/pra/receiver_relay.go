@@ -11,7 +11,7 @@ type relayReceiver struct {
 	c               substrate.SubstrateClient
 	bmvC            icon.PraBmvClient
 	bmvStatus       icon.PraBmvStatus
-	expectMtaHeight uint64
+	expectMtaHeight uint64 // keep track of MtaHeight per paraFinalityProof
 	store           *mta.ExtAccumulator
 	log             log.Logger
 }
@@ -27,7 +27,7 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 		ParaMtaHeight:  int64(rC.bmvC.GetParaMtaHeight()),
 	}
 
-	rC.prepareDatabase(int64(rC.bmvStatus.RelayMtaOffset), opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
+	rC.prepareDatabase(int64(opt.RelayOffSet), opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
 	return rC
 }
 
@@ -184,6 +184,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 			sps = append(sps, newAuthoritiesStateProof)
 		}
 
+		r.log.Tracef("newFinalityProofs: lastBlocks %d", r.expectMtaHeight)
 		finalityProof, err := r.newFinalityProof(bus, sps, nil)
 		if err != nil {
 			return nil, err
@@ -219,7 +220,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([][]byte, error) {
-	r.log.Tracef("newParaFinalityProof: paraBlock %d", paraHeight)
+	r.log.Tracef("newParaFinalityProof: paraBlock %d paraHead %s", paraHeight, paraHead.Hex())
 
 	r.bmvStatus.RelayMtaHeight = int64(r.bmvC.GetRelayMtaHeight())
 	r.bmvStatus.ParaMtaHeight = int64(r.bmvC.GetParaMtaHeight())
@@ -243,21 +244,14 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		return nil, nil
 	}
 
-	r.bmvStatus.RelaySetId = int64(r.bmvC.GetSetId())
 	includeHeader, includeHash := r.findParasInclusionCandidateIncludedHead(uint64(vd.RelayParentNumber), paraHead, paraChainId)
 
 	if uint64(includeHeader.Number) < r.bmvC.GetRelayMtaOffset() {
 		r.log.Panicf("newParaFinalityProof: includeHeader %d <= relayMtaOffset %d", uint64(includeHeader.Number), r.bmvC.GetRelayMtaOffset())
 	}
 
-	// Sync MTA completely
-	localRelayMtaHeight = r.store.Height()
-	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
-		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
-			relayHash, _ := r.c.GetBlockHash(uint64(i))
-			r.updateMta(uint64(i), relayHash)
-		}
-	}
+	r.bmvStatus.RelaySetId = int64(r.bmvC.GetSetId())
+	r.bmvStatus.RelayMtaOffset = int64(r.bmvC.GetRelayMtaOffset())
 
 	return r.buildFinalityProof(includeHeader, includeHash)
 }

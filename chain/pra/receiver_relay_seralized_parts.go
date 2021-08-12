@@ -96,7 +96,8 @@ func (r *relayReceiver) newBlockProof(height int64, expectMtaHeight int64) ([]by
 		},
 	}
 
-	r.log.Debugf("newBlockProof height:%d, at:%d, w:%x", height, at, bp.BlockWitness.Witness)
+	r.log.Debugf("newBlockProof height:%d, at:%d", height, at)
+	r.log.Tracef("newBlockProof %x", bp.BlockWitness.Witness)
 
 	b, err := codec.RLP.MarshalToBytes(bp)
 	if err != nil {
