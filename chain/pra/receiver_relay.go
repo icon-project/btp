@@ -240,7 +240,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 		}
 	}
 
-	if paraHeight < uint64(r.bmvStatus.ParaMtaHeight) {
+	if paraHeight <= uint64(r.bmvStatus.ParaMtaHeight) {
 		return nil, nil
 	}
 
