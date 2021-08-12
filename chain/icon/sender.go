@@ -349,7 +349,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				sps := make([][]byte, 0)
 
 				if i == len(paraBuExtra.FinalityProofs)-1 {
-					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
+					realParaBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
 						ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
 						FinalityProof:           paraBuExtra.FinalityProofs[i],
 					})
@@ -358,12 +358,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 						return nil, err
 					}
 
-					// Only on stateProof at rm.LastBlockUpdate
-					if rm.ReceiptProofs[0].Height == bu.Height {
-						s.l.Debugf("Segment: at %d StateProof[%d]: %x", rm.ReceiptProofs[0].Height, i, rm.ReceiptProofs[0].Proof)
-						sps = append(sps, rm.ReceiptProofs[0].Proof)
-					}
-
+					continue
 				} else {
 					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
 						ScaleEncodedBlockHeader: nil,
@@ -396,10 +391,6 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 				}
 				segments = append(segments, segment)
 			}
-
-			msg.BlockUpdates = make([][]byte, 0)
-			msg.numberOfBlockUpdate = 0
-			continue
 		}
 
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
