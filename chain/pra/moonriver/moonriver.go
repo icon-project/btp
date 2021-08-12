@@ -1772,7 +1772,7 @@ type EventParachainStakingNominationRevocationScheduled struct {
 	Round         RoundIndex
 	Nominator     AccountID
 	Collator      AccountID
-	ScheduledExit AccountID
+	ScheduledExit RoundIndex
 	Topics        []Hash
 }
 
