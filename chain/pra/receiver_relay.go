@@ -185,7 +185,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		}
 
 		r.log.Tracef("newFinalityProofs: lastBlocks %d", r.expectMtaHeight)
-		finalityProof, err := r.newFinalityProof(bus, sps, nil)
+		finalityProof, err := r.newFinalityProof(bus, sps, []byte{})
 		if err != nil {
 			return nil, err
 		}
@@ -215,6 +215,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		return nil, err
 	}
 
+	r.log.Tracef("newFinalityProofs: bp %d", includeHeader.Number)
 	finalityProofs = append(finalityProofs, finalityProof)
 	return finalityProofs, nil
 }

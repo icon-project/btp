@@ -129,7 +129,7 @@ func (r *relayReceiver) newStateProof(blockHash substrate.SubstrateHash) ([]byte
 
 func (r *relayReceiver) newFinalityProof(bus, sps [][]byte, bp []byte) ([]byte, error) {
 	msg := &ParachainFinalityProof{
-		RelayBlockUpdates: make([][]byte, 0),
+		RelayBlockUpdates: bus,
 		RelayBlockProof:   bp,
 		RelayStateProofs:  sps,
 	}
