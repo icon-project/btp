@@ -35,7 +35,6 @@ func (r *relayReceiver) getParasInclusionCandidateIncluded(blockHash substrate.S
 }
 
 func (r *relayReceiver) getGrandpaNewAuthorities(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, error) {
-	r.log.Debugf("getGrandpaNewAuthorities: %s", blockHash.Hex())
 	meta := r.c.GetMetadataLatest()
 	key, err := r.c.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {

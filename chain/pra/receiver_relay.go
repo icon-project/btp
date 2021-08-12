@@ -178,6 +178,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		}
 
 		if len(eventGrandpaNewAuthorities) > 0 {
+			r.log.Debugf("buildFinalityProof: found GrandpaNewAuthorities %d", gj.Commit.TargetNumber)
 			newAuthoritiesStateProof, err := r.newStateProof(gj.Commit.TargetHash)
 			if err != nil {
 				return nil, err
