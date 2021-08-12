@@ -1759,6 +1759,23 @@ type EventParachainStakingTotalSelectedSet struct {
 	Topics []types.Hash
 }
 
+type EventParachainStakingNominatorExitScheduled struct {
+	Phase         Phase
+	Round         RoundIndex
+	Nominator     AccountID
+	ScheduledExit RoundIndex
+	Topics        Hash
+}
+
+type EventParachainStakingNominationRevocationScheduled struct {
+	Phase         Phase
+	Round         RoundIndex
+	Nominator     AccountID
+	Collator      AccountID
+	ScheduledExit AccountID
+	Topics        Hash
+}
+
 type EventParachainSystemDownwardMessagesProcessed struct {
 	Phase         types.Phase
 	WeightUsed    types.U64
@@ -1857,6 +1874,8 @@ type MoonriverEventRecord struct {
 	ParachainStaking_Nomination                                  []EventParachainStakingNomination
 	ParachainStaking_NominationDecreased                         []EventParachainStakingNominationDecreased
 	ParachainStaking_NominationIncreased                         []EventParachainStakingNominationIncreased
+	ParachainStaking_NominatorExitScheduled                      []EventParachainStakingNominatorExitScheduled
+	ParachainStaking_NominationRevocationScheduled               []EventParachainStakingNominationRevocationScheduled
 	ParachainStaking_NominatorLeft                               []EventParachainStakingNominatorLeft
 	ParachainStaking_NominatorLeftCollator                       []EventParachainStakingNominatorLeftCollator
 	ParachainStaking_ParachainBondAccountSet                     []EventParachainStakingParachainBondAccountSet
