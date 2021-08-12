@@ -71,6 +71,7 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 
 func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.GrandpaJustification, fetchtedBlockHeaders []substrate.SubstrateHeader) ([][]byte, error) {
 	bus := make([][]byte, 0)
+	blockHeaders := make([]substrate.SubstrateHeader, 0)
 
 	// Fetch headers with fetched blockheaders.
 	from := nexMtaHeight
@@ -78,6 +79,18 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 
 	if len(fetchtedBlockHeaders) > 0 {
 		from = uint64(fetchtedBlockHeaders[len(fetchtedBlockHeaders)-1].Number)
+
+		nextMtaHash, err := r.c.GetBlockHash(nexMtaHeight)
+		if err != nil {
+			return nil, err
+		}
+
+		nextMtaBlockHeader, err := r.c.GetHeader(nextMtaHash)
+		if err != nil {
+			return nil, err
+		}
+
+		blockHeaders = append(blockHeaders, *nextMtaBlockHeader)
 	}
 
 	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
@@ -85,14 +98,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
 	}
 
-	var blockHeaders = make([]substrate.SubstrateHeader, 0)
-
 	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(misisingBlockNumbers)
 	if err != nil {
 		return nil, err
 	}
 
-	blockHeaders = append(fetchtedBlockHeaders, missingBlockHeaders...)
+	blockHeaders = append(blockHeaders, fetchtedBlockHeaders...)
+	blockHeaders = append(blockHeaders, missingBlockHeaders...)
 
 	for i, blockHeader := range blockHeaders {
 		var bu []byte
