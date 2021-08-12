@@ -235,5 +235,17 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	if uint64(includeHeader.Number) < r.bmvC.GetRelayMtaOffset() {
 		r.log.Panicf("newParaFinalityProof: includeHeader %d <= relayMtaOffset %d", uint64(includeHeader.Number), r.bmvC.GetRelayMtaOffset())
 	}
+
+	localRelayMtaHeight := r.store.Height()
+
+	// Sync MTA completely
+	// TODO fetch 50 hash per syncing
+	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
+		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
+			relayHash, _ := r.c.GetBlockHash(uint64(i))
+			r.updateMta(uint64(i), relayHash)
+		}
+	}
+
 	return r.buildFinalityProof(includeHeader, includeHash)
 }
