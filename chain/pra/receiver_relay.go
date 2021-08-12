@@ -262,5 +262,13 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	r.bmvStatus.RelaySetId = int64(r.bmvC.GetSetId())
 	r.bmvStatus.RelayMtaOffset = int64(r.bmvC.GetRelayMtaOffset())
 
+	// Sync MTA completely
+	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
+		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
+			relayHash, _ := r.c.GetBlockHash(uint64(i))
+			r.updateMta(uint64(i), relayHash)
+		}
+	}
+
 	return r.buildFinalityProof(includeHeader, includeHash)
 }
