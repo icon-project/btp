@@ -7,6 +7,8 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/substrate"
+	"github.com/icon-project/btp/common/log"
 )
 
 type EventCouncilCollectiveApproved = types.EventCollectiveApproved
@@ -1781,6 +1783,16 @@ type EventParachainSystemValidationFunctionStored struct {
 	Phase                 types.Phase
 	RelayChainBlockNumber BlockNumber
 	Topics                []types.Hash
+}
+
+func NewMoonRiverEventRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.SubstrateMetaData) *MoonriverEventRecord {
+	records := &MoonriverEventRecord{}
+	if err := substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+		log.Debugf("NewMoonRiverEventRecord decode fails: %v", err)
+		return nil
+	}
+
+	return records
 }
 
 type MoonriverEventRecord struct {

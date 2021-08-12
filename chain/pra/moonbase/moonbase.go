@@ -9,7 +9,7 @@ import (
 func NewMoonbaseEventRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.SubstrateMetaData) *MoonbaseEventRecord {
 	records := &MoonbaseEventRecord{}
 	if err := substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		log.Debugf("NewWestendEventRecord decode fails: %v", err)
+		log.Debugf("NewMoonbaseEventRecord decode fails: %v", err)
 		return nil
 	}
 
