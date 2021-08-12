@@ -51,7 +51,7 @@ func (r *relayReceiver) updateMta(bn uint64, blockHash substrate.SubstrateHash) 
 		return
 	}
 	if next == int64(bn) {
-		r.log.Tracef("updateMta: syncing Merkle Tree Accumulator at %d", bn)
+		r.log.Debugf("updateMta: syncing Merkle Tree Accumulator at %d", bn)
 		r.store.AddHash(blockHash[:])
 		if err := r.store.Flush(); err != nil {
 			r.log.Fatalf("fail to MTA Flush err:%+v", err)

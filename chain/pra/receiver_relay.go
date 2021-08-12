@@ -72,6 +72,7 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.GrandpaJustification, fetchtedBlockHeaders []substrate.SubstrateHeader) ([][]byte, error) {
 	bus := make([][]byte, 0)
 
+	// Fetch headers with fetched blockheaders.
 	from := nexMtaHeight
 	to := uint64(gj.Commit.TargetNumber)
 
@@ -108,8 +109,6 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 			return nil, err
 		}
 
-		r.log.Tracef("buildBlockUpdates: %d", blockHeader.Number)
-
 		// Sync MTA
 		r.updateMta(uint64(blockHeader.Number-1), blockHeader.ParentHash)
 		r.expectMtaHeight = uint64(blockHeader.Number - 1)
@@ -126,6 +125,7 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 	r.updateMta(uint64(to), relayBlockhash)
 	r.expectMtaHeight = uint64(to)
 
+	r.log.Debugf("buildBlockUpdates: %d ~ %d", blockHeaders[0].Number, blockHeaders[len(blockHeaders)-1].Number)
 	return bus, nil
 }
 
