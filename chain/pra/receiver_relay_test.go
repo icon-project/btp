@@ -61,8 +61,27 @@ func TestRelayReceiver(t *testing.T) {
 
 		fps, err := r.buildFinalityProof(finalizeHeader, &finalizedHash)
 		assert.NoError(t, err)
+
+		var fp1 ParachainFinalityProof
+		_, err = codec.RLP.UnmarshalFromBytes(fps[0], &fp1)
+		assert.NoError(t, err)
+
+		var lastDecodeHeader substrate.SubstrateHeader
+		for i := 0; i < len(fp1.RelayBlockUpdates); i++ {
+			var bu RelayBlockUpdate
+			_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[i], &bu)
+			assert.NoError(t, err)
+			var bh substrate.SubstrateHeader
+			err = types.DecodeFromBytes(bu.ScaleEncodedBlockHeader, &bh)
+			assert.NoError(t, err)
+			if i != 0 {
+				assert.EqualValues(t, lastDecodeHeader.Number+1, bh.Number)
+			}
+			lastDecodeHeader = bh
+		}
+
 		assert.Equal(t, len(fps), 1)
-		assert.EqualValues(t, r.store.Height(), 2)
+		assert.EqualValues(t, lastDecodeHeader.Number, r.store.Height())
 	})
 
 	t.Run("should build 2 finalityproof with candidateInclude smaller than Justification Block", func(t *testing.T) {
@@ -106,17 +125,18 @@ func TestRelayReceiver(t *testing.T) {
 		var lastDecodeHeader substrate.SubstrateHeader
 		for i := 0; i < len(fp1.RelayBlockUpdates); i++ {
 			var bu RelayBlockUpdate
-			_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[len(fp1.RelayBlockUpdates)-1], &bu)
+			_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[i], &bu)
 			assert.NoError(t, err)
 			var bh substrate.SubstrateHeader
 			err = types.DecodeFromBytes(bu.ScaleEncodedBlockHeader, &bh)
 			assert.NoError(t, err)
-			assert.EqualValues(t, r.store.Height(), bh.Number)
 			if i != 0 {
 				assert.EqualValues(t, lastDecodeHeader.Number+1, bh.Number)
 			}
 			lastDecodeHeader = bh
 		}
+
+		assert.EqualValues(t, lastDecodeHeader.Number, r.store.Height())
 
 		var fp2 ParachainFinalityProof
 		_, err = codec.RLP.UnmarshalFromBytes(fps[1], &fp2)
@@ -161,26 +181,42 @@ func TestRelayReceiver(t *testing.T) {
 		var fp1 ParachainFinalityProof
 		_, err = codec.RLP.UnmarshalFromBytes(fps[0], &fp1)
 		assert.NoError(t, err)
-		var lastBuOfFp1 RelayBlockUpdate
-		_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[len(fp1.RelayBlockUpdates)-1], &lastBuOfFp1)
-		assert.NoError(t, err)
-		var lastBuOfFp1Header substrate.SubstrateHeader
-		err = types.DecodeFromBytes(lastBuOfFp1.ScaleEncodedBlockHeader, &lastBuOfFp1Header)
-		assert.NoError(t, err)
+		var lastDecodeHeaderOfFp1 substrate.SubstrateHeader
+		for i := 0; i < len(fp1.RelayBlockUpdates); i++ {
+			var bu RelayBlockUpdate
+			_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[i], &bu)
+			assert.NoError(t, err)
+			var bh substrate.SubstrateHeader
+			err = types.DecodeFromBytes(bu.ScaleEncodedBlockHeader, &bh)
+			assert.NoError(t, err)
+			if i != 0 {
+				assert.EqualValues(t, lastDecodeHeaderOfFp1.Number+1, bh.Number)
+			}
+			lastDecodeHeaderOfFp1 = bh
+		}
+
 		// GrandpaNewAuthorities
-		assert.EqualValues(t, 8751752, lastBuOfFp1Header.Number)
+		assert.EqualValues(t, 8751752, lastDecodeHeaderOfFp1.Number)
 
 		var fp2 ParachainFinalityProof
 		_, err = codec.RLP.UnmarshalFromBytes(fps[1], &fp2)
 		assert.NoError(t, err)
-		var lastBuOfFp2 RelayBlockUpdate
-		_, err = codec.RLP.UnmarshalFromBytes(fp1.RelayBlockUpdates[len(fp1.RelayBlockUpdates)-1], &lastBuOfFp2)
-		assert.NoError(t, err)
-		var lastBuOfFp2Header substrate.SubstrateHeader
-		err = types.DecodeFromBytes(lastBuOfFp1.ScaleEncodedBlockHeader, &lastBuOfFp2Header)
-		assert.NoError(t, err)
-		// NewJustification or GrandpaNewAuthorities
-		// assert.EqualValues(t, , lastBuOfFp1Header.Number)
+		var lastDecodeHeaderOfFp2 substrate.SubstrateHeader
+		for i := 0; i < len(fp2.RelayBlockUpdates); i++ {
+			var bu RelayBlockUpdate
+			_, err = codec.RLP.UnmarshalFromBytes(fp2.RelayBlockUpdates[i], &bu)
+			assert.NoError(t, err)
+			var bh substrate.SubstrateHeader
+			err = types.DecodeFromBytes(bu.ScaleEncodedBlockHeader, &bh)
+			assert.NoError(t, err)
+			if i != 0 {
+				assert.EqualValues(t, lastDecodeHeaderOfFp2.Number+1, bh.Number)
+			}
+			lastDecodeHeaderOfFp2 = bh
+		}
+
+		// GrandpaNewAuthorities
+		assert.EqualValues(t, lastDecodeHeaderOfFp2.Number, r.store.Height())
 
 		var fp3 ParachainFinalityProof
 		_, err = codec.RLP.UnmarshalFromBytes(fps[2], &fp3)
@@ -191,7 +227,7 @@ func TestRelayReceiver(t *testing.T) {
 		encodedIncludeHeader, err := types.EncodeToHexString(candidateIncludeHeader)
 		assert.NoError(t, err)
 
-		assert.EqualValues(t, lastBuOfFp2Header.Number, bpOfFp3.BlockWitness.Height)
+		assert.EqualValues(t, lastDecodeHeaderOfFp2.Number, bpOfFp3.BlockWitness.Height)
 		assert.EqualValues(t, encodedIncludeHeader, fmt.Sprintf("0x%x", bpOfFp3.Header))
 	})
 
