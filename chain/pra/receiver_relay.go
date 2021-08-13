@@ -12,6 +12,7 @@ type relayReceiver struct {
 	bmvC            icon.PraBmvClient
 	bmvStatus       icon.PraBmvStatus
 	expectMtaHeight uint64 // keep track of MtaHeight per paraFinalityProof
+	expectSetId     uint64
 	store           *mta.ExtAccumulator
 	log             log.Logger
 }
@@ -110,7 +111,7 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		var bu []byte
 		var votes []byte = nil
 		if i == len(blockHeaders)-1 {
-			votes, err = r.newVotes(gj, substrate.SetId(r.bmvStatus.RelaySetId))
+			votes, err = r.newVotes(gj, substrate.SetId(r.expectSetId))
 			if err != nil {
 				return nil, err
 			}
@@ -148,6 +149,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 
 	if r.expectMtaHeight < uint64(r.bmvStatus.RelayMtaHeight) {
 		r.expectMtaHeight = uint64(r.bmvStatus.RelayMtaHeight)
+		r.expectSetId = uint64(r.bmvStatus.RelaySetId)
 	}
 
 	// For blockproof to work
@@ -185,6 +187,8 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 			}
 
 			sps = append(sps, newAuthoritiesStateProof)
+
+			r.expectSetId++
 		}
 
 		r.log.Tracef("newFinalityProofs: lastBlocks %d", r.expectMtaHeight)
