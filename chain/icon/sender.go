@@ -61,7 +61,12 @@ type sender struct {
 	opt SenderOptions
 }
 
-func (s *sender) newTransactionParam(prev string, b []byte) (*TransactionParam, error) {
+func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
+	b, err := codec.RLP.MarshalToBytes(rm)
+	if err != nil {
+		return nil, err
+	}
+
 	rmp := BMCRelayMethodParams{
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
@@ -141,14 +146,10 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
 
-			rmb, err := codec.RLP.MarshalToBytes(msg)
-			if err != nil {
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 				return nil, err
 			}
 
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
-				return nil, err
-			}
 			segments = append(segments, segment)
 			msg = &RelayMessage{
 				BlockUpdates:  make([][]byte, 0),
@@ -224,12 +225,7 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 					NumberOfEvent:       msg.numberOfEvent,
 				}
 
-				rmb, err := codec.RLP.MarshalToBytes(msg)
-				if err != nil {
-					return nil, err
-				}
-
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 					return nil, err
 				}
 
@@ -271,12 +267,7 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 		NumberOfEvent:       msg.numberOfEvent,
 	}
 
-	rmb, err := codec.RLP.MarshalToBytes(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 		return nil, err
 	}
 
@@ -331,12 +322,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 				}
 
-				rmb, err := codec.RLP.MarshalToBytes(msg)
-				if err != nil {
-					return nil, err
-				}
-
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 					return nil, err
 				}
 
@@ -384,12 +370,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
 
-				rmb, err := codec.RLP.MarshalToBytes(subMsg)
-				if err != nil {
-					return nil, err
-				}
-
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
 					return nil, err
 				}
 				segments = append(segments, segment)
@@ -413,12 +394,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
 
-			rmb, err := codec.RLP.MarshalToBytes(subMsg)
-			if err != nil {
-				return nil, err
-			}
-
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
 				return nil, err
 			}
 
@@ -454,12 +430,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 
 			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
 
-			rmb, err := codec.RLP.MarshalToBytes(msg)
-			if err != nil {
-				return nil, err
-			}
-
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 				return nil, err
 			}
 
@@ -479,12 +450,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			NumberOfEvent:       msg.numberOfEvent,
 		}
 
-		rmb, err := codec.RLP.MarshalToBytes(msg)
-		if err != nil {
-			return nil, err
-		}
-
-		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), rmb); err != nil {
+		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 			return nil, err
 		}
 
@@ -519,31 +485,19 @@ func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 	p := segment.TransactionParam.(*TransactionParam)
 	cd := p.Data.(CallData)
 	rmp := cd.Params.(BMCRelayMethodParams)
-	b64, err := base64.URLEncoding.DecodeString(rmp.Messages)
+	msg := &RelayMessage{}
+	b, err := base64.URLEncoding.DecodeString(rmp.Messages)
 	if err != nil {
 		return err
 	}
-
-	msg := &RelayMessage{}
-	if _, err = codec.RLP.UnmarshalFromBytes(b64, msg); err != nil {
+	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
 		return err
 	}
-
 	if msg.BlockProof, err = codec.RLP.MarshalToBytes(bp); err != nil {
 		return err
 	}
-
-	b, err := codec.RLP.MarshalToBytes(msg)
-	if err != nil {
-		return err
-	}
-
-	segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, b)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, msg)
+	return err
 }
 
 func (s *sender) signAndSendTransaction(p *TransactionParam) (chain.GetResultParam, error) {
