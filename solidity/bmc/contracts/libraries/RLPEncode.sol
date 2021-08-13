@@ -43,14 +43,6 @@ library RLPEncode {
     uint120 internal constant MAX_UINT120 = type(uint120).max;
     uint128 internal constant MAX_UINT128 = type(uint128).max;
 
-    uint8 internal constant MAX_UINT8 = type(uint8).max;
-    uint16 internal constant MAX_UINT16 = type(uint16).max;
-    uint24 internal constant MAX_UINT24 = type(uint24).max;
-    uint32 internal constant MAX_UINT32 = type(uint32).max;
-    uint40 internal constant MAX_UINT40 = type(uint40).max;
-    uint48 internal constant MAX_UINT48 = type(uint48).max;
-    uint56 internal constant MAX_UINT56 = type(uint56).max;
-
     /*
      * Internal functions
      */

@@ -363,13 +363,4 @@ library RLPEncode {
         }
         return count;
     }
-
-    function bitLength(uint256 n) internal pure returns (uint256) {
-        uint256 count;
-        while (n != 0) {
-            count += 1;
-            n >>= 1;
-        }
-        return count;
-    }
 }
