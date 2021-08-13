@@ -74,6 +74,9 @@ public class BMVScore extends Score {
                 .put("paraEventDecoderAddress", new RpcValue(paraEventDecoderAddress))
                 .put("relayCurrentSetId", new RpcValue(currentSetId.toString()))
                 .put("paraChainId", new RpcValue(paraChainId.toString()))
+                .put("evmEventIndex", new RpcValue("3300"))
+                .put("newAuthoritiesEventIndex", new RpcValue("0a00"))
+                .put("candidateIncludedEventIndex", new RpcValue("3501"))
                 .build();
         Score score = txHandler.deploy(owner, getFilePath("parachain"), params);
         LOG.info("bmv score address = " + score.getAddress());

@@ -54,6 +54,9 @@ public class BMV implements IBMV {
   private final VarDB<Address> paraEventDecoderDb = Context.newVarDB("paraEventDecoder", Address.class);
   private final VarDB<Address> relayEventDecoderDb = Context.newVarDB("relayEventDecoder", Address.class);
   private final VarDB<BigInteger> relaySetIdDb = Context.newVarDB("relaySetId", BigInteger.class);
+  private final VarDB<byte[]> evmEventIndexDb = Context.newVarDB("evmEventIndex", byte[].class);
+  private final VarDB<byte[]> newAuthoritiesEventIndexDb = Context.newVarDB("newAuthoritiesEventIndex", byte[].class);
+  private final VarDB<byte[]> candidateIncludedEventIndexDb = Context.newVarDB("candidateIncludedEventIndex", byte[].class);
 
   public BMV(
     Address bmc,
@@ -69,7 +72,10 @@ public class BMV implements IBMV {
     Address relayEventDecoderAddress,
     Address paraEventDecoderAddress,
     long relayCurrentSetId,
-    long paraChainId
+    long paraChainId,
+    byte[] evmEventIndex,
+    byte[] newAuthoritiesEventIndex,
+    byte[] candidateIncludedEventIndex
   ) {
     this.bmcDb.set(bmc);
     this.netAddressDb.set(net);
@@ -99,6 +105,10 @@ public class BMV implements IBMV {
     this.relayEventDecoderDb.set(relayEventDecoderAddress);
 
     this.paraChainIdDb.set(paraChainId);
+
+    this.evmEventIndexDb.set(evmEventIndex);
+    this.newAuthoritiesEventIndexDb.set(newAuthoritiesEventIndex);
+    this.candidateIncludedEventIndexDb.set(candidateIncludedEventIndex);
   }
 
   /**
@@ -216,6 +226,7 @@ public class BMV implements IBMV {
     // list of bytes message return to bmc
     List<byte[]> bmcMsgs = new ArrayList<byte[]>(5);
     if (paraBlockVerifyResult != null) {
+      byte[] evmEventIndex = this.evmEventIndexDb.get();
       for (StateProof stateProof : relayMessage.getStateProof()) {
         byte[] encodedStorage = stateProof.prove(paraBlockVerifyResult.stateRoot);
         if (Arrays.equals(stateProof.getKey(), Constant.EventStorageKey)) {
@@ -224,7 +235,7 @@ public class BMV implements IBMV {
             EventRecord eventRecord = new EventRecord(rawEventRecord);
 
             // filter evm log of BMC
-            if (eventRecord.getEventIndex()[0] == Constant.EvmEventIndex[0] && eventRecord.getEventIndex()[1] == Constant.EvmEventIndex[1]) {
+            if (eventRecord.getEventIndex()[0] == evmEventIndex[0] && eventRecord.getEventIndex()[1] == evmEventIndex[1]) {
               EVMLogEvent evmLogEvent = new EVMLogEvent(eventRecord.getEventData());
               if (evmLogEvent.getEvmTopics().size() == 0 || !Arrays.equals(evmLogEvent.getEvmTopics().get(0), Constant.MessageEventTopic)) {
                 continue;
@@ -443,6 +454,8 @@ public class BMV implements IBMV {
 
   private byte[] verifyRelayChainState(List<StateProof> relayChainStateProofs, BlockVerifyResult relayChainBlockVerifyResult) {
     byte[] paraIncludedHead = null;
+    byte[] candidateIncludedEventIndex = this.candidateIncludedEventIndexDb.get();
+    byte[] newAuthoritiesEventIndex = this.newAuthoritiesEventIndexDb.get();
     for (StateProof stateProof : relayChainStateProofs) {
       byte[] encodedStorage = stateProof.prove(relayChainBlockVerifyResult.stateRoot);
       if (Arrays.equals(stateProof.getKey(), Constant.EventStorageKey)) {
@@ -450,7 +463,7 @@ public class BMV implements IBMV {
         for (Map<String, Object> rawEventRecord: eventRecords) {
           EventRecord eventRecord = new EventRecord(rawEventRecord);
           // update new validator set
-          if (eventRecord.getEventIndex()[0] == Constant.NewAuthoritiesEventIndex[0] && eventRecord.getEventIndex()[1] == Constant.NewAuthoritiesEventIndex[1]) {
+          if (eventRecord.getEventIndex()[0] == newAuthoritiesEventIndex[0] && eventRecord.getEventIndex()[1] == newAuthoritiesEventIndex[1]) {
             NewAuthoritiesEvent newAuthoritiesEvent = new NewAuthoritiesEvent(eventRecord.getEventData());
             List<byte[]> newValidators = newAuthoritiesEvent.getValidators();
             Validators newValidatorsObject = new Validators(newValidators);
@@ -460,7 +473,7 @@ public class BMV implements IBMV {
           }
 
           // filter Candidate Included Event of Relay chain
-          if (eventRecord.getEventIndex()[0] == Constant.CandidateIncludedEventIndex[0] && eventRecord.getEventIndex()[1] == Constant.CandidateIncludedEventIndex[1]) {
+          if (eventRecord.getEventIndex()[0] == candidateIncludedEventIndex[0] && eventRecord.getEventIndex()[1] == candidateIncludedEventIndex[1]) {
             CandidateIncludedEvent candidateIncludedEvent = new CandidateIncludedEvent(eventRecord.getEventData());
             // check inclusion of current paraChain Id and return included block hash
             if (candidateIncludedEvent.getCandidateReceipt().getCandidateDescriptor().getParaId() == this.paraChainIdDb.get()) {

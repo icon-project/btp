@@ -48,6 +48,8 @@ public class BMV implements IBMV {
   private final VarDB<Validators> validatorsDb = Context.newVarDB("validators", Validators.class);
   private final VarDB<Address> eventDecoderDb = Context.newVarDB("eventDecoder", Address.class);
   private final VarDB<BigInteger> setIdDb = Context.newVarDB("setId", BigInteger.class);
+  private final VarDB<byte[]> newAuthoritiesEventIndexDb = Context.newVarDB("newAuthoritiesEventIndex", byte[].class);
+  private final VarDB<byte[]> evmEventIndexDb = Context.newVarDB("evmEventIndex", byte[].class);
 
   public BMV(
     Address bmc,
@@ -59,7 +61,9 @@ public class BMV implements IBMV {
     boolean mtaIsAllowNewerWitness,
     byte[] lastBlockHash,
     Address eventDecoderAddress,
-    long currentSetId
+    long currentSetId,
+    byte[] newAuthoritiesEventIndex,
+    byte[] evmEventIndex
   ) {
     this.bmcDb.set(bmc);
     this.netAddressDb.set(net);
@@ -84,6 +88,8 @@ public class BMV implements IBMV {
     this.mtaDb.set(mta);
 
     this.eventDecoderDb.set(eventDecoderAddress);
+    this.evmEventIndexDb.set(evmEventIndex);
+    this.newAuthoritiesEventIndexDb.set(newAuthoritiesEventIndex);
   }
 
   /**
@@ -168,6 +174,8 @@ public class BMV implements IBMV {
 
     // list of bytes message return to bmc
     List<byte[]> bmcMsgs = new ArrayList<byte[]>(5);
+    byte[] newAuthoritiesEventIndex = this.newAuthoritiesEventIndexDb.get();
+    byte[] evmEventIndex = this.evmEventIndexDb.get();
     for (StateProof stateProof : relayMessage.getStateProof()) {
       byte[] encodedStorage = stateProof.prove(blockVerifyResult.stateRoot);
       if (Arrays.equals(stateProof.getKey(), Constant.EventStorageKey)) {
@@ -175,7 +183,7 @@ public class BMV implements IBMV {
         for (Map<String, Object> rawEventRecord: eventRecords) {
           // update new validator set
           EventRecord eventRecord = new EventRecord(rawEventRecord);
-          if (eventRecord.getEventIndex()[0] == Constant.NewAuthoritiesEventIndex[0] && eventRecord.getEventIndex()[1] == Constant.NewAuthoritiesEventIndex[1]) {
+          if (eventRecord.getEventIndex()[0] == newAuthoritiesEventIndex[0] && eventRecord.getEventIndex()[1] == newAuthoritiesEventIndex[1]) {
             NewAuthoritiesEvent newAuthoritiesEvent = new NewAuthoritiesEvent(eventRecord.getEventData());
             List<byte[]> newValidators = newAuthoritiesEvent.getValidators();
             Validators newValidatorsObject = new Validators(newValidators);
@@ -185,7 +193,7 @@ public class BMV implements IBMV {
           }
 
           // filter evm log of BMC
-          if (eventRecord.getEventIndex()[0] == Constant.EvmEventIndex[0] && eventRecord.getEventIndex()[1] == Constant.EvmEventIndex[1]) {
+          if (eventRecord.getEventIndex()[0] == evmEventIndex[0] && eventRecord.getEventIndex()[1] == evmEventIndex[1]) {
             EVMLogEvent evmLogEvent = new EVMLogEvent(eventRecord.getEventData());
             if (evmLogEvent.getEvmTopics().size() == 0 || !Arrays.equals(evmLogEvent.getEvmTopics().get(0), Constant.MessageEventTopic)) {
               continue;

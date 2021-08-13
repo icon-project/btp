@@ -3,6 +3,9 @@ import { xxhashAsHex } from '@polkadot/util-crypto';
 import * as fs from 'fs';
 import * as RLP from 'rlp';
 import * as URLSafeBase64 from 'urlsafe-base64';
+import { findEventIndex, decimalToHex } from './util'; 
+
+require('dotenv').config()
 
 function convertLEtoBE(input) {
     let result = "";
@@ -27,11 +30,11 @@ async function main() {
     // const wssEndpoint = "wss://wss.testnet.moonbeam.network"; // moonbase alpha parachain
     // const wssEndpoint = "wss://icon-btp.ecl.vn:34008/"; // lecle moonbase parachain
 
-    const relayWssEndpoint = process.env.RELAY_ENDPOINT // wss endpoint of relay chain
-    const relayChainOffset = process.env.RELAY_OFFSET // offset of relay chain
+    const relayWssEndpoint = process.env.RELAY_ENDPOINT; // wss endpoint of relay chain
+    const paraWssEndpoint = process.env.PARA_ENDPOINT; // wss endpoint of para chain
 
-    const paraWssEndpoint = process.env.PARA_ENDPOINT // wss endpoint of para chain
-    const paraChainOffset = process.env.PARA_OFFSET // offset of para chain
+    const relayChainOffset = process.env.RELAY_CHAIN_OFFSET; // offset of relay chain
+    const paraChainOffset = process.env.PARA_CHAIN_OFFSET; // offset of para chain
 
     const relayWsProvider = new WsProvider(relayWssEndpoint);
     const paraWsProvider = new WsProvider(paraWssEndpoint);
@@ -60,8 +63,24 @@ async function main() {
     console.log("para chain name: ", JSON.stringify(paraChainName));
 
     /*
-     * get meta data
+     * get meta data of relay chain
      */
+    console.log(" Get metadata of relay chain...");
+    const relayMetaData = await relayApi.rpc.state.getMetadata();
+    fs.writeFileSync("./relayMetaData.json", JSON.stringify(relayMetaData, null, 2));
+
+    const newAuthoritiesEventIndex = findEventIndex(relayMetaData, "Grandpa", "NewAuthorities");
+    const candidateIncludedEventIndex = findEventIndex(relayMetaData, "ParasInclusion", "CandidateIncluded");
+
+    /*
+     * get meta data of para chain
+     */
+    console.log(" Get metadata of para chain...");
+    const paraMetaData = await paraApi.rpc.state.getMetadata();
+    fs.writeFileSync("./paraMetaData.json", JSON.stringify(paraMetaData, null, 2));
+
+    const evmEventIndex = findEventIndex(paraMetaData, "EVM", "Log");
+
     const relayLastBlockHash = await relayApi.rpc.chain.getBlockHash(relayChainOffset);
     const paraLastBlockHash = await paraApi.rpc.chain.getBlockHash(paraChainOffset);
 
@@ -92,6 +111,9 @@ async function main() {
         paraLastBlockHash: paraLastBlockHash.toHex(),
         relayCurrentSetId: convertLEtoBE(grandPaCurrentSetId.toHex().replace("0x", "")),
         paraChainId: convertLEtoBE(paraChainId.toHex().replace("0x", "")),
+        evmEventIndex: "0x" + decimalToHex(evmEventIndex[0]).replace("0x", "") + decimalToHex(evmEventIndex[1]).replace("0x", ""),
+        newAuthoritiesEventIndex: "0x" + decimalToHex(newAuthoritiesEventIndex[0]).replace("0x", "") + decimalToHex(newAuthoritiesEventIndex[1]).replace("0x", ""),
+        candidateIncludedEventIndex: "0x" + decimalToHex(candidateIncludedEventIndex[0]).replace("0x", "") + decimalToHex(candidateIncludedEventIndex[1]).replace("0x", ""),
         encodedValidators: validatorListBase64Encoded,
     }
 

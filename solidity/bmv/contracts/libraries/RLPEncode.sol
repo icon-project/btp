@@ -19,6 +19,15 @@ library RLPEncode {
     uint40 internal constant MAX_UINT40 = type(uint40).max;
     uint48 internal constant MAX_UINT48 = type(uint48).max;
     uint56 internal constant MAX_UINT56 = type(uint56).max;
+    uint64 internal constant MAX_UINT64 = type(uint64).max;
+    uint72 internal constant MAX_UINT72 = type(uint72).max;
+    uint80 internal constant MAX_UINT80 = type(uint80).max;
+    uint88 internal constant MAX_UINT88 = type(uint88).max;
+    uint96 internal constant MAX_UINT96 = type(uint96).max;
+    uint104 internal constant MAX_UINT104 = type(uint104).max;
+    uint112 internal constant MAX_UINT112 = type(uint112).max;
+    uint120 internal constant MAX_UINT120 = type(uint120).max;
+    uint128 internal constant MAX_UINT128 = type(uint128).max;
 
     /*
      * Internal functions
@@ -300,6 +309,12 @@ library RLPEncode {
         return abi.encodePacked(uint8(LIST_LONG_START + length));
     }
 
+    /**
+     * @dev convert uint to strict bytes.
+     * @notice only handle to uint128 due to contract code size limit
+     * @param length The uint to convert.
+     * @return The uint in strict bytes without padding.
+     */
     function encodeUintByLength(uint256 length)
         internal
         pure
@@ -319,8 +334,34 @@ library RLPEncode {
             return abi.encodePacked(uint48(length));
         } else if (length >= MAX_UINT48 && length < MAX_UINT56) {
             return abi.encodePacked(uint56(length));
+        } else if (length >= MAX_UINT56 && length < MAX_UINT64) {
+            return abi.encodePacked(uint64(length));
+        } else if (length >= MAX_UINT64 && length < MAX_UINT72) {
+            return abi.encodePacked(uint72(length));
+        } else if (length >= MAX_UINT72 && length < MAX_UINT80) {
+            return abi.encodePacked(uint80(length));
+        } else if (length >= MAX_UINT80 && length < MAX_UINT88) {
+            return abi.encodePacked(uint88(length));
+        } else if (length >= MAX_UINT88 && length < MAX_UINT96) {
+            return abi.encodePacked(uint96(length));
+        } else if (length >= MAX_UINT96 && length < MAX_UINT104) {
+            return abi.encodePacked(uint104(length));
+        } else if (length >= MAX_UINT104 && length < MAX_UINT112) {
+            return abi.encodePacked(uint112(length));
+        } else if (length >= MAX_UINT112 && length < MAX_UINT120) {
+            return abi.encodePacked(uint120(length));
         }
-        return abi.encodePacked(uint64(length));
+        require(length >= MAX_UINT120 && length < MAX_UINT128, "outOfBounds: [0, 2^128]");
+        return abi.encodePacked(uint128(length));
+    }
+
+    function bitLength(uint256 n) internal pure returns (uint256) {
+        uint256 count;
+        while (n != 0) {
+            count += 1;
+            n >>= 1;
+        }
+        return count;
     }
 
     function bitLength(uint256 n) internal pure returns (uint256) {
