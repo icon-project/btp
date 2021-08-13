@@ -389,3 +389,42 @@ impl BmcGeneric {
         })
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, MockedBlockchain, VMContext};
+    use std::convert::TryInto;
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .signer_account_id("bob_near".try_into().expect("Failed to convert"))
+            .is_view(is_view)
+            .build()
+    }
+
+    #[test]
+    fn test_encode_and_decode_btp_message() {
+        testing_env!(get_context(false));
+        let rlp: Vec<u8> = vec![1, 2, 3, 4, 5];
+        let bmc_msg = BmcMessage {
+            src: "btp://1234.PARA/0x1234".to_string(),
+            dst: "btp://5678.PARA/0x5678".to_string(),
+            svc: "NEAR Protocol".to_string(),
+            sn: 100,
+            message: rlp,
+        };
+        let encoded_bmc_msg = bmc_msg
+            .try_to_vec()
+            .expect("Failed to serialize bmc message");
+        let decoded_bmc_msg = BmcMessage::try_from_slice(&encoded_bmc_msg)
+            .expect("Failed to deserialize bmc message");
+        assert_eq!(bmc_msg.src, decoded_bmc_msg.src);
+        assert_eq!(bmc_msg.dst, decoded_bmc_msg.dst);
+        assert_eq!(bmc_msg.svc, decoded_bmc_msg.svc);
+        assert_eq!(bmc_msg.sn, decoded_bmc_msg.sn);
+        assert_eq!(bmc_msg.message, decoded_bmc_msg.message);
+    }
+}
