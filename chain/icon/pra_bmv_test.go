@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetPraBmvStatus(t *testing.T) {
-	// t.Skip("Manual test only")
+	t.Skip("Manual test only")
 	c := NewPraBmvClient("https://btp.net.solidwallet.io/api/v3/icon_dex", "cx88fe82e2427432bb0b2ba6d75b3ef4e25eb9d085", log.New())
 
 	start1 := time.Now()
