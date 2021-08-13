@@ -55,7 +55,17 @@ BUILD_TARGETS += btpsimple
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
-PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/pyscore
+PYSCORE_DIST_DIR = $(BUILD_ROOT)/build/contracts/pyscore
+SOLIDITY_DIST_DIR = $(BUILD_ROOT)/build/contracts/solidity
+
+$(SOLIDITY_DIST_DIR)/%:
+	$(eval MODULE := $(patsubst $(SOLIDITY_DIST_DIR)/%,%,$@))
+	mkdir -p $@/contracts ; \
+	mkdir -p $@/migrations ; \
+	cp -r solidity/$(MODULE)/contracts/* $@/contracts ; \
+	cp -r solidity/$(MODULE)/migrations/* $@/migrations ; \
+	cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
+	rm -rf $@/contracts/Mock ; \
 
 $(PYSCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%,%,$@))
@@ -79,10 +89,20 @@ dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
 	cd token_bsh/sample/irc2_token ; \
     zip -r -v $(PYSCORE_DIST_DIR)/irc2_token.zip * -x *__pycache__* -x *tests*
 
+dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
+	cd $(SOLIDITY_DIST_DIR)/bmc ; \
+	npm install --only=prod; \
+	truffle compile
+
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*
+
+clean-dist-sol:
+	rm -rf $(SOLIDITY_DIST_DIR)
+
+dist-sol: dist-sol-bmc
 
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
@@ -94,7 +114,7 @@ btpsimple-image: btpsimple-linux dist-py
 	BIN_DIR=$(abspath $(LINUX_BIN_DIR)) \
 	BIN_VERSION=$(GL_VERSION) \
 	BUILD_TAGS="$(GOBUILD_TAGS)" \
-	DIST_DIR="$(PYSCORE_DIST_DIR)" \
+	DIST_DIR="$(BUILD_ROOT)/build/contracts" \
 	$(BUILD_ROOT)/docker/btpsimple/build.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
 
 .PHONY: test
