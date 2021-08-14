@@ -31,11 +31,12 @@ var (
 )
 
 const (
-	CodeBTP      errors.Code = 0
-	CodeBMC      errors.Code = 10
-	CodeBMV      errors.Code = 25
-	CodeBSH      errors.Code = 40
-	CodeReserved errors.Code = 55
+	CodeBTP       errors.Code = 0
+	CodeBMC       errors.Code = 10
+	CodeBMV       errors.Code = 25
+	CodeBSH       errors.Code = 40
+	CodeReserved  errors.Code = 55
+	CodeRetryable errors.Code = 1000
 )
 
 const (
@@ -99,6 +100,31 @@ var (
 		BMVRevertInvalidBlockWitnessOld:   "BMVRevertInvalidBlockWitnessOld",
 	}
 )
+
+const (
+	GenericRetryable = CodeRetryable + iota
+	ICONSkipTransaction
+)
+
+var (
+	RetrybleCodeNames = map[errors.Code]string{
+		GenericRetryable:    "GenericRetryable",
+		ICONSkipTransaction: "ICONSkipTransaction",
+	}
+)
+
+func NewRetryable(code int) error {
+	c := errors.Code(code)
+	if c >= CodeRetryable {
+		var msg string
+		var ok bool
+		if msg, ok = RetrybleCodeNames[c]; !ok {
+			msg = fmt.Sprintf("Retryable[%d]", c)
+		}
+		return errors.NewBase(c, msg)
+	}
+	return nil
+}
 
 func NewRevertError(code int) error {
 	c := errors.Code(code)

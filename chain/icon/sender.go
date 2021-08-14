@@ -602,6 +602,8 @@ func mapErrorWithTransactionResult(txr *TransactionResult, err error) error {
 		if fc < ResultStatusFailureCodeRevert || fc > ResultStatusFailureCodeEnd {
 			err = fmt.Errorf("failure with code:%s, message:%s",
 				txr.Failure.CodeValue, txr.Failure.MessageValue)
+		} else if fc == ResultStatusSkipTransaction {
+			err = chain.NewRetryable(int(chain.ICONSkipTransaction))
 		} else {
 			err = chain.NewRevertError(int(fc - ResultStatusFailureCodeRevert))
 		}
