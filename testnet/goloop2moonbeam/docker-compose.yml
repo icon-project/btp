@@ -96,7 +96,7 @@ services:
             - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
             - BTPSIMPLE_DST_ENDPOINT=http://gochain:9080/api/v3/icon
-            - BTPSIMPLE_DST_OPTIONS="step_limit=5000000000"
+            - BTPSIMPLE_DST_OPTIONS="stepLimit=5000000000"
             - BTPSIMPLE_OFFSET=/btpsimple/config/offset.moonbeam
             - BTPSIMPLE_KEY_STORE=/btpsimple/config/gochain.keystore.json
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/gochain.keysecret
