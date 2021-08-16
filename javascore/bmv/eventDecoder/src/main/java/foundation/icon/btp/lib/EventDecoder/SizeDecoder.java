@@ -798,6 +798,52 @@ public class SizeDecoder {
         return 32;
     }
 
+    public static int CurrencyId(ByteSliceInput input, int offset) {
+        return 8;
+    }
+
+    public static int CurrencyIdOf(ByteSliceInput input, int offset) {
+        return 8;
+    }
+
+    public static int AmountOf(ByteSliceInput input, int offset) {
+        return 16;
+    }
+
+    public static int ClassId(ByteSliceInput input, int offset) {
+        return 4;
+    }
+
+    public static int ClassIdOf(ByteSliceInput input, int offset) {
+        return 4;
+    }
+
+    public static int TokenId(ByteSliceInput input, int offset) {
+        return 8;
+    }
+
+    public static int TokenIdOf(ByteSliceInput input, int offset) {
+        return 8;
+    }
+
+    public static int u8(ByteSliceInput input, int offset) {
+        return 1;
+    }
+
+    public static int DustHandlerType(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int dustHandlerTypeEnum = input.takeUByte();
+        if (dustHandlerTypeEnum > 0) {
+            input.take(accountIdSize);
+        }
+
+        int endPoint = input.getOffset();
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
+    }
+
     public static int NominatorAdded(ByteSliceInput input, int offset) {
         int startPoint = input.getOffset();
         

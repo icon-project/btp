@@ -17,3 +17,6 @@ javascore/bmv/godWallet.json
 EventDecoder.java
 metaData.json
 BMVInitializeData.json
+paraMetaData.json
+relayMetaData.json
+sovereignMetaData.json

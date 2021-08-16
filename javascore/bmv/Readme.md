@@ -2,6 +2,9 @@
 
 - [Introduction](#introduction)
 - [Requirements](#requirements)
+- [Deployment script](#deploymentScript)
+    - [Deploy script for sovereign chain](#sovereignDeployScript)
+    - [Deploy script for para chain](#paraDeployScript)
 - [Build Event decoder SCORE](#buildEventDecoder)
     - [Build with predefined metaData](#buildPredefinedMetadata)
     - [Build with custom metaData](#buildCustomMetadata)
@@ -24,7 +27,8 @@ BMV smart contracts consists of Event decoder score that exists per chain and BM
 
 Sovereign chain only need one event decoder score. On other hand, parachain BMV need two event decoder SCORE, one for decoder event of para chain and one for decode event of relay chain.
 
-We will go through how to build event decoder for each type of chain, how to build BMV score and run integration test. Finaly, we will deploy SCORE and call method of SCORE.
+To ease the deployment process, we have set up typescript for auto build and deploy event decoder, BMV SCORE for both sovereign chain and para chain. Read [Deployment script](#deploymentScript) for more details.
+If you want to walk through how to build event decoder for each type of chain, how to build BMV score, run integration test and deploy score, read four last sessions for more details. 
 
 ## Requirements
 
@@ -34,6 +38,111 @@ Gradle  6.7.1
 Java OpenJDK 11
 goloop/gochain 0.9.7 or higher
 
+## Deployment script
+
+<a name="deploymentScript"></a>
+
+### Deploy BMV SCORE of sovereign chain
+
+<a name="sovereignDeployScript"></a>
+
+1. Create `.env` file in `javascore/helper` directory
+2. Configure `.env` file above with following parameters:
+
+```
+# address of BMC SCORE
+BMC_ADDRESS=
+# network address that BMV verify (eg 0x501.pra)
+DST_NET_ADDRESS=
+
+# size of mta root
+MTA_ROOT_SIZE=
+# size of mta cache
+MTA_CACHE_SIZE=
+# allow to verify old mta witness or not
+MTA_IS_ALLOW_WITNESS=
+
+# endpoint of ICON RPC
+ICON_ENDPOINT=
+# path to keystore file that sign deploy transaction
+ICON_KEYSTORE_PATH=
+# password of keystore file above
+ICON_KEYSTORE_PASSWORD=
+# network id of ICON chain
+ICON_NID=
+
+# sovereign chain websocket endpoint
+SOVEREIGN_ENDPOINT=
+# block height of sovereign chain BMV start to sync
+SOVEREIGN_CHAIN_OFFSET=
+```
+
+3. Install yarn package
+
+```
+yarn install
+```
+
+4. Execute sovereign chain deploy script
+
+```
+yarn deploySovereignBMV
+```
+
+After building and deployment, script will print out event decoder and sovereign chain BMV SCORE address.
+
+### Deploy BMV SCORE of para chain
+
+<a name="paraDeployScript"></a>
+
+1. Create `.env` file in `javascore/helper` directory
+2. Configure `.env` file above with following parameters:
+
+```
+# address of BMC SCORE
+BMC_ADDRESS=
+# network address that BMV verify (eg 0x501.pra)
+DST_NET_ADDRESS=
+
+# block height of relay chain BMV start to sync
+RELAY_CHAIN_OFFSET=
+# block height of para chain BMV start to sync
+PARA_CHAIN_OFFSET=
+# relay chain websocket endpoint
+RELAY_ENDPOINT=wss://wss-relay.testnet.moonbeam.network
+# para chain websocket endpoint
+PARA_ENDPOINT=wss://moonbeam-alpha.api.onfinality.io/public-ws
+
+# size of mta root
+MTA_ROOT_SIZE=
+# size of mta cache
+MTA_CACHE_SIZE=
+# allow to verify old mta witness or not
+MTA_IS_ALLOW_WITNESS=
+
+# endpoint of ICON RPC
+ICON_ENDPOINT=
+# path to keystore file that sign deploy transaction
+ICON_KEYSTORE_PATH=
+# password of keystore file above
+ICON_KEYSTORE_PASSWORD=
+# network id of ICON chain
+ICON_NID=
+```
+
+3. Install yarn package
+
+```
+yarn install
+```
+
+4. Execute sovereign chain deploy script
+
+```
+yarn deployParaBMV
+```
+
+After building and deployment, script will print out event decoder and sovereign chain BMV SCORE address.
 ## Build event decoder SCORE
 
 <a name="buildEventDecoder"></a>
@@ -44,7 +153,7 @@ Each chain has different type of event and data structure, we need meta data fil
 
 <a name="buildPredefinedMetadata"></a>
 
-we have predefined meta data for Kusama, Edgeware and Moonriver chain. It's stored in `./eventDecoder/KusamaMetaData.json`, `./eventDecoder/EdgewareMetaData.json` and `./eventDecoder/MoonriverMetaData.json`. To build score for these chains use the following command:
+we have predefined meta data for Kusama, Edgeware and Moonriver mainnet. It's stored in `./eventDecoder/KusamaMetaData.json`, `./eventDecoder/EdgewareMetaData.json` and `./eventDecoder/MoonriverMetaData.json`. To build score for these chains use the following command:
 
 ```bash
 cd eventDecoder
@@ -116,18 +225,6 @@ Because each chain has thier own module structure and event index, we need to co
 ### Build BMV SCORE for sovereign chain
 
 <a name="buildSovereign"></a>
-
-Configure `NewAuthorities`, `EvmEvent` event index constant base on your sovereign chain meta data.
-
-1. Open relay chain and para chain `metadata.json` file
-2. Find modules name `Grandpa`, `EVM` module in sovereign chain metadata, get these modules index
-3. Get index of `NewAuthorities` event in `Grandpa` module and `Log` event of `EVM` module (index of element in array)
-4. Edit corresponding parameter in `javascore/bmv/sovereignChain/src/main/java/foundation/icon/btp/lib/Constant.java` line 9, 10, first byte is index of module, second byte is index of event in array
-
-```java
-    public static final byte[] NewAuthoritiesEventIndex = new byte[]{ (byte) 0x0e, (byte) 0x00 };
-    public static final byte[] EvmEventIndex = new byte[]{ (byte) 0x22, (byte) 0x00 };
-```
 
 5. Save and execute bellow command to build BMV SCORE
 
@@ -252,6 +349,8 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./eventDecoder/build
 - `encodedValidators`: `Base64(RLP.encode(List<byte[]> validatorPublicKey))`, encoded of validators list
 - `eventDecoderAddress`: address of event decoder score
 - `currentSetId`: current validator set id
+- `newAuthoritiesEventIndex`: two byte index of new authorities event
+- `evmEventIndex`: two byte index of evm log event
 
 ```shell
 goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./sovereignChain/build/libs/SovereignChain-BMV-optimized.jar \
@@ -268,6 +367,8 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./sovereignChain/bui
     --param encodedValidators=4aCI3DQX1QWOxLRQPgwS6hoKib4gD-mJIkI9QzQBT6aw7g \
     --param eventDecoderAddress=cx4b577d3b165c14b313294c6babef37fcb3ae7e7d \
     --param currentSetId=0x0
+    --param newAuthoritiesEventIndex=0x0a00
+    --param evmEventIndex=0x0c00
 ```
 
 ### add BMV address as verifier for network in BMV
@@ -420,6 +521,9 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./eventDecoder/build
 - `paraEventDecoderAddress`: address of event decoder score for para chain
 - `relayCurrentSetId`: current validator set id of relay chain
 - `paraChainId`: para chain id
+- `evmEventIndex`: index of evm log event in para chain
+- `newAuthoritiesEventIndex`: index of new authorities event in relay chain
+- `candidateIncludedEventIndex`: index of candidate included in relay chain
 
 ### BMV initialize helper
 
@@ -437,15 +541,23 @@ cd javascore/bmv/helper
 yarn install
 ```
 
-3. Specify your chain configuration
-
-- Open file `javascore/bmv/helper/getBMVInitializeParams.ts`
-
-- Specify relay and para chain endpoint, replace `RELAY_ENDPOINT`, `PARA_ENDPOINT` in line 30, 31 with your relay chain and para endpoint.
+3. Create `.env` file and input following parameters:
 
 - Use https://polkadot.js.org/apps/?#/explorer, choose your chain in top left corner, to monitor current block height of para and relay chain. Choose one block height for offset of chain.
 
-- Specify para and para chain offset, replace `RELAY_OFFSET`, `PARA_OFFSET` in line 33, 34 with your relay chain and para endpoint.
+- Specify relay and para chain offset, replace `RELAY_OFFSET`, `PARA_OFFSET` in line 33, 34 with your relay chain and para endpoint.
+
+````
+# websocket endpoint of relay chain
+RELAY_ENDPOINT=
+# websocket endpoint of para chain
+PARA_ENDPOINT=
+
+# block height that BMV start to sync from relay chain
+RELAY_CHAIN_OFFSET=
+# block height that BMV start to sync from para chain
+PARA_CHAIN_OFFSET=
+````
 
 4. Run `yarn getBMVInitializeParams` in `javascore/bmv/helper` directory
 
@@ -475,7 +587,10 @@ goloop rpc --uri http://localhost:9082/api/v3 sendtx deploy ./parachain/build/li
     --param paraEventDecoderAddress=cxa6525b38f8bf513fdd55c506f7cf6bc95d0d30a0 \
     --param relayCurrentSetId=0xca1 \
     --param paraChainId=0x7e7 \
-    --param encodedValidators=4aCI3DQX1QWOxLRQPgwS6hoKib4gD-mJIkI9QzQBT6aw7g
+    --param encodedValidators=4aCI3DQX1QWOxLRQPgwS6hoKib4gD-mJIkI9QzQBT6aw7g \
+    --param evmEventIndex=0x0a00 \
+    --param newAuthoritiesEventIndex=0x0a00 \
+    --param candidateIncludedEventIndex=0x0a00
 ```
 
 ### add BMV address as verifier for network in BMV
