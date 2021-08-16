@@ -104,6 +104,9 @@ clean-dist-sol:
 
 dist-sol: dist-sol-bmc
 
+dist-javascore:
+	$(BUILD_ROOT)/docker/javascore/build.sh
+
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
 
