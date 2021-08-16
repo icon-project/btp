@@ -4,6 +4,7 @@ geth --datadir node1 \
     --port 30310 \
     --rpc --rpcaddr 0.0.0.0 \
     --rpccorsdomain "*" \
+    --rpcvhosts "*" \
     --rpcport 8545 \
     --ws --wsaddr 0.0.0.0 \
     --wsport 8546 \
