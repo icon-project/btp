@@ -51,6 +51,9 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
 	paraId, err := r.c.subClient.GetParachainId()
+	if err != nil {
+		l.Panicf("fail to get parachainId %v", err)
+	}
 	r.parachainId = *paraId
 
 	if len(r.opt.RelayEndpoint) > 0 {

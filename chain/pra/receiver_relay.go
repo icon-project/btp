@@ -19,7 +19,11 @@ type relayReceiver struct {
 
 func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	rC := relayReceiver{log: log}
-	rC.c, _ = substrate.NewSubstrateClient(opt.RelayEndpoint)
+	var err error
+	rC.c, err = substrate.NewSubstrateClient(opt.RelayEndpoint)
+	if err != nil {
+		log.Panic("fail to connect to relay endpoint %v", err)
+	}
 	rC.bmvC = icon.NewPraBmvClient(opt.DstEndpoint, opt.PraBmvAddress.ContractAddress(), log)
 	rC.bmvStatus = rC.bmvC.GetPraBmvStatus()
 	rC.prepareDatabase(int64(opt.RelayOffSet), opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
@@ -28,9 +32,8 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 
 func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, paraHead substrate.SubstrateHash, paraChainId substrate.SubstrateParachainId) (*substrate.SubstrateHeader, *substrate.SubstrateHash) {
 	r.log.Debugf("findParasInclusionCandidateIncludedHead: from %d paraHead: %s", from, paraHead.Hex())
-	foundEvent := false
 	blockNumber := from
-	for !foundEvent {
+	for {
 		blockHash, err := r.c.GetBlockHash(blockNumber)
 		if err != nil {
 			r.log.Panicf("findParasInclusionCandidateIncludedHead: can't get blockhash %d", blockNumber)
@@ -60,8 +63,6 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 
 		blockNumber++
 	}
-
-	return nil, nil
 }
 
 func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.GrandpaJustification, fetchtedBlockHeaders []substrate.SubstrateHeader) ([][]byte, error) {
@@ -154,8 +155,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 
 	// For blockproof to work
 	for r.expectMtaHeight < uint64(includeHeader.Number) {
-		bus := make([][]byte, 0)
-		sps := make([][]byte, 0)
+		stateProofs := make([][]byte, 0)
 
 		gj, bhs, err := r.c.GetJustificationsAndUnknownHeaders(substrate.SubstrateBlockNumber(r.expectMtaHeight + 1))
 		if err != nil {
@@ -164,12 +164,10 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 
 		r.log.Debugf("buildFinalityProof: found justification at %d by %d", gj.Commit.TargetNumber, r.expectMtaHeight+1)
 
-		newBus, err := r.buildBlockUpdates(uint64(r.expectMtaHeight+1), gj, bhs)
+		blockUpdates, err := r.buildBlockUpdates(uint64(r.expectMtaHeight+1), gj, bhs)
 		if err != nil {
 			return nil, err
 		}
-
-		bus = append(bus, newBus...)
 
 		// Update expectMta for next message
 		r.expectMtaHeight = uint64(gj.Commit.TargetNumber)
@@ -186,13 +184,13 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 				return nil, err
 			}
 
-			sps = append(sps, newAuthoritiesStateProof)
+			stateProofs = append(stateProofs, newAuthoritiesStateProof)
 
 			r.expectSetId++
 		}
 
 		r.log.Tracef("newFinalityProofs: lastBlocks %d", r.expectMtaHeight)
-		finalityProof, err := r.newFinalityProof(bus, sps, []byte{})
+		finalityProof, err := r.newFinalityProof(blockUpdates, stateProofs, []byte{})
 		if err != nil {
 			return nil, err
 		}
@@ -215,9 +213,9 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		return nil, err
 	}
 
-	sps := [][]byte{includedStateProof}
+	stateProofs := [][]byte{includedStateProof}
 
-	finalityProof, err := r.newFinalityProof(nil, sps, bp)
+	finalityProof, err := r.newFinalityProof(nil, stateProofs, bp)
 	if err != nil {
 		return nil, err
 	}
