@@ -605,6 +605,7 @@ name = "bmv"
 version = "0.1.0"
 dependencies = [
  "btp-common",
+ "libraries",
  "near-sdk",
  "serde",
 ]
