@@ -31,6 +31,13 @@ module.exports = {
               providerOrUrl: "http://localhost:8545",
           }),
           network_id: '97',
+      },
+      bscDocker: {
+          provider: () => new HDWalletProvider({
+              privateKeys: privKeys,
+              providerOrUrl: "http://binancesmartchain:8545",
+          }),
+          network_id: '97',
       }
   },
 
