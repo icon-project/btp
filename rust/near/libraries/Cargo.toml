@@ -1,9 +1,10 @@
 [package]
-name = "bsh-types"
+name = "libraries"
 version = "0.1.0"
+description = "Data Types for BSH, BMC, and BMV Contracts"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
-btp-common = { path="../../../btp-common" }
+btp-common = { path="../../btp-common" }
 near-sdk = "3.1.0"

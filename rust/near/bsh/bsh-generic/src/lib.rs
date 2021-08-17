@@ -33,8 +33,8 @@
     unused_results
 )]
 
-use bsh_types::*;
 use btp_common::BTPAddress;
+use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, near_bindgen, setup_alloc};

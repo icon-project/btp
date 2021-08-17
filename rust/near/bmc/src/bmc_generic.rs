@@ -1,11 +1,11 @@
 //! BMC Generic Contract
 
-use crate::bmc_types::*;
 use crate::{BmcManagement, Utils};
 use bmv::Bmv;
 use bsh_generic::BshGeneric;
-use bsh_types::*;
 use btp_common::BTPAddress;
+use libraries::bmc_types::*;
+use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, near_bindgen, setup_alloc};
 

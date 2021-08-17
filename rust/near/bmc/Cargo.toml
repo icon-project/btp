@@ -8,5 +8,5 @@ edition = "2018"
 btp-common = { path = "../../btp-common" }
 bmv = { path = "../bmv" }
 bsh-generic = { path = "../bsh/bsh-generic" }
-bsh-types = { path = "../bsh/bsh-types" }
+libraries = { path = "../libraries" }
 near-sdk = "3.1.0"

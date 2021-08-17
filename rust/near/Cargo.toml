@@ -9,8 +9,8 @@ members = [
     "bmc",
     "bmv",
     "bsh/bsh-generic",
-    "bsh/bsh-types",
     "bsh/token-bsh",
+    "libraries",
 ]
 [features]
 integration-tests = []
@@ -18,7 +18,7 @@ integration-tests = []
 [dev-dependencies]
 bmc = { path = "./bmc" }
 bsh-generic = { path = "./bsh/bsh-generic" }
-bsh-types = { path = "./bsh/bsh-types" }
+libraries = { path = "./libraries" }
 token-bsh = { path = "./bsh/token-bsh" }
 near-sdk = "3.1.0"
 lazy_static = "1.4.0"

@@ -595,8 +595,8 @@ version = "0.1.0"
 dependencies = [
  "bmv",
  "bsh-generic",
- "bsh-types",
  "btp-common",
+ "libraries",
  "near-sdk",
 ]
 
@@ -684,16 +684,8 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 name = "bsh-generic"
 version = "0.1.0"
 dependencies = [
- "bsh-types",
  "btp-common",
- "near-sdk",
-]
-
-[[package]]
-name = "bsh-types"
-version = "0.1.0"
-dependencies = [
- "btp-common",
+ "libraries",
  "near-sdk",
 ]
 
@@ -2105,6 +2097,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "libraries"
+version = "0.1.0"
+dependencies = [
+ "btp-common",
+ "near-sdk",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "6.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2303,9 +2303,9 @@ dependencies = [
  "actix",
  "bmc",
  "bsh-generic",
- "bsh-types",
  "kitten",
  "lazy_static",
+ "libraries",
  "near-chain-configs",
  "near-logger-utils",
  "near-network",
@@ -4477,8 +4477,8 @@ name = "token-bsh"
 version = "0.1.0"
 dependencies = [
  "bsh-generic",
- "bsh-types",
  "btp-common",
+ "libraries",
  "near-sdk",
 ]
 
