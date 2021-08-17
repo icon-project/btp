@@ -15,12 +15,13 @@ ENV PATH $PATH:/btpsimple/bin
 # copy extras
 COPY dist/contracts/pyscore/*.zip /btpsimple/contracts/pyscore/
 COPY dist/contracts/solidity /btpsimple/contracts/solidity
+COPY dist/contracts/javascore /btpsimple/contracts/javascore
 WORKDIR /btpsimple
 
 # container configuration
 VOLUME ["/btpsimple/data"]
 
-# goloop entrypoint.sh
+# goloop entrypoint
 ENV BTPSIMPLE_BASE_DIR=/btpsimple/data
 ENV BTPSIMPLE_CONFIG=/btpsimple/config/config.json
 ENV BTPSIMPLE_KEY_STORE=/btpsimple/config/keystore.json

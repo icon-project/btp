@@ -94,6 +94,11 @@ dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
 	npm install --only=prod; \
 	truffle compile
 
+dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
+	cd $(SOLIDITY_DIST_DIR)/bmv ; \
+	npm install --only=prod; \
+	truffle compile
+
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 
 clean-dist-py:
