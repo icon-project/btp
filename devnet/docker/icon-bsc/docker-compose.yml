@@ -1,8 +1,9 @@
 version: "3.9"  # optional since v1.27.0
 services:
   goloop:
+    container_name: goloop
     build:
-      context: .
+      context: ../goloop
       args:
         BTPSIMPLE_VERSION: latest
         GOLOOP_IMAGE: goloop:latest
@@ -15,23 +16,34 @@ services:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
 
-  binance_smart_chain:
-    container_name: binance_smart_chain
+  binancesmartchain:
+    container_name: binancesmartchain
     image: bsc-node:latest
     ports:
       - "8545:8545"
       - "8546:8546"
 
-  btpsimple_icon_bsc:
-    container_name: btp_icon_bsc
-    image: btpsimple:latest
+  btp:
+    container_name: btp
+    build:
+      context: .
     volumes:
       - ./work:/btpsimple/config
       - ./work:/btpsimple/data
-    command: btpsimple start --config /btpsimple/config/src.config.json
-    links:
+      #- ./work/contracts:/btpsimple/contracts
+    command: btpsimple start --config /btpsimple/config/icon.config.json
+    depends_on:
       - goloop
-
-
-
-
+      - binancesmartchain
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
+      - BTPSIMPLE_CONFIG=/btpsimple/config/icon.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.bsc
+      - BTPSIMPLE_DST_ENDPOINT=http://binancesmartchain:8546
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.bsc
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/bsc.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/bsc.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btp.log
+     # - binance_smart_chain

@@ -1,74 +1,133 @@
 #!/bin/sh
 set -e
 
-GOLOOP_PROVISION=${GOLOOP_PROVISION:-/goloop/provisioning}
-GOLOOP_PROVISION_CONFIG=${GOLOOP_PROVISION_CONFIG:-${GOLOOP_PROVISION}/config}
-GOLOOP_PROVISION_DATA=${GOLOOP_PROVISION_DATA:-${GOLOOP_PROVISION}/data}
-cd ${GOLOOP_PROVISION_CONFIG}
+# Parts of this code is adapted from https://github.com/icon-project/btp/blob/goloop2moonbeam/testnet/goloop2moonbeam/scripts
 
-##########################
-# Chain setup
-source server.sh
+export CONFIG_DIR=${CONFIG_DIR:-${BTPSIMPLE_CONFIG_DIR}}
+export CONTRACTS_DIR=${CONTRACTS_DIR:-${BTPSIMPLE_CONTRACTS_DIR}}
+export SCRIPTS_DIR=${SCRIPTS_DIR:-${BTPSIMPLE_SCRIPTS_DIR}}
 
-GOLOOP_NODE_DIR=${GOLOOP_PROVISION_DATA}
-GOLOOP_LOG_WRITER_FILENAME=${GOLOOP_PROVISION}/goloop.log
-GOLOOP_KEY_SECRET=${GOLOOP_PROVISION_CONFIG}/keysecret
-GOLOOP_KEY_STORE=${GOLOOP_PROVISION_CONFIG}/keystore.json
-GOLOOP_CONFIG=${GOLOOP_PROVISION_CONFIG}/server.json
-ensure_server_start
+export BSC_NID="0x97"
+export BSC_BMC_NET="0x97.bsc"
+export BSC_RPC_URI=http://goloop:9080/api/v3/icon
 
-goloop gn gen --out src.genesis.json $GOLOOP_KEY_STORE
-echo $(cat src.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > src.genesis.json
-goloop gn gen --out dst.genesis.json $GOLOOP_KEY_STORE
-echo $(cat dst.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x10000000","query":"0x1000000"}}}}') > dst.genesis.json
+# configure env in the container
+export GOLOOP_RPC_URI=http://goloop:9080/api/v3/icon
+export GOLOOP_CONFIG=$CONFIG_DIR/goloop.server.json
+export GOLOOP_KEY_STORE=$CONFIG_DIR/goloop.keystore.json
+export GOLOOP_KEY_SECRET=$CONFIG_DIR/goloop.keysecret
+export GOLOOP_RPC_KEY_STORE=$CONFIG_DIR/goloop.keystore.json
+export GOLOOP_RPC_KEY_SECRET=$CONFIG_DIR/goloop.keysecret
+export GOLOOP_RPC_STEP_LIMIT=${GOLOOP_RPC_STEP_LIMIT:-5000000000}
+export GOLOOP_CHAINSCORE=cx000000000000000000000000000000000000000
 
-goloop chain join --genesis_template src.genesis.json --channel src --auto_start
-goloop chain join --genesis_template dst.genesis.json --channel dst --auto_start
+export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat $CONFIG_DIR/nid.icon)}
 
-goloop chain start src
-goloop chain start dst
+BSC_KEY_SECRET="Perlia0"
 
-##########################
-# Deploy BMC, BMV
-source btp.sh
+source rpc.sh
 
-deploy_bmc src
-deploy_bmc dst
+deploy_solidity_bmc() {
+  echo "deploying solidity bmc"
+  cd $CONTRACTS_DIR/solidity/bmc
+  rm -rf contracts/test build .openzeppelin
 
-deploy_bmv src dst
-deploy_bmv dst src
+  BMC_PRA_NET=$BSC_BMC_NET \
+  truffle migrate --network bscDocker --compile-all
 
-##########################
-# Configuration for relay
-bmc_link src dst
-bmc_link dst src
+  BMC_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BMCPeriphery.json)
+  echo btp://0x97.bsc/"${BMC_ADDRESS}" > /btpsimple/config/btp.bsc
 
-bmc_setLink src dst
-bmc_setLink dst src
+  jq -r '.networks[] | .address' build/contracts/BMCManagement.json > $CONFIG_DIR/bmc.bsc
 
-ensure_key_store src.ks.json src.secret
-rpcks src.ks.json src.secret
-bmc_addRelayer dst
-bmc_addRelay dst src
+  wait_for_file $CONFIG_DIR/bmc.bsc
+}
 
-ensure_key_store dst.ks.json dst.secret
-rpcks dst.ks.json dst.secret
-bmc_addRelayer src
-bmc_addRelay src dst
+deploy_solidity_bmv() {
+   echo "deploying solidity bmv"
+   cd $CONTRACTS_DIR/solidity/bmv
+   rm -rf contracts/test build .openzeppelin
 
-##########################
-# Deploy Token-BSH, IRC2-Token
-source token.sh
-deploy_bsh src
-deploy_bsh dst
+   LAST_BOCK=$(goloop_lastblock)
+   LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
+   LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
+   echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
+   echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
 
-deploy_irc2 src
-deploy_irc2 dst proxy
+   BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.bsc) \
+   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
+   BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
+   BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
+   BMV_ICON_INIT_ROOTSSIZE=8 \
+   BMV_ICON_INIT_CACHESIZE=8 \
+   BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
+   truffle migrate --compile-all --network bscDocker
 
-##########################
-# Configuration for token service
-bsh_register src
-bsh_register dst
+   jq -r '.networks[] | .address' build/contracts/BMV.json > $CONFIG_DIR/bmv.bsc
 
-goloop chain stop src
-goloop chain stop dst
+   wait_for_file $CONFIG_DIR/bmv.bsc
+}
+
+deploy_javascore_bmc() {
+  echo "deploying javascore bmc"
+  cd $CONFIG_DIR
+  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmc-optimized.jar \
+    --content_type application/java \
+    --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
+  extract_scoreAddress tx.bmc.icon bmc.icon
+  echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
+}
+
+add_icon_verifier() {
+  echo "adding icon verifier $(cat $CONFIG_DIR/bmv.bsc)"
+  cd $CONTRACTS_DIR/solidity/bmc
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+  --method addVerifier --net $(cat $CONFIG_DIR/net.btp.icon) --addr $(cat $CONFIG_DIR/bmv.bsc)
+}
+
+eth_blocknumber() {
+  curl -s -X POST 'http://binancesmartchain:8545' --header 'Content-Type: application/json' \
+    --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
+}
+
+goloop_lastblock() {
+  goloop rpc lastblock
+}
+
+provision() {
+ if [ ! -f /btpsimple/provision ]; then
+   echo "start provisioning..."
+
+   cp /bsc.ks.json "$BTPSIMPLE_CONFIG_DIR"/bsc.ks.json
+   # shellcheck disable=SC2059
+   printf $BSC_KEY_SECRET > "$BTPSIMPLE_CONFIG_DIR"/bsc.secret
+   echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
+
+   deploy_solidity_bmc
+   eth_blocknumber > /btpsimple/config/offset.bsc
+   deploy_solidity_bmv
+   add_icon_verifier
+   deploy_javascore_bmc
+
+   touch /btpsimple/provision
+   echo "provision is now complete"
+ fi
+}
+
+wait_for_file() {
+    FILE_NAME=$1
+    timeout=10
+    while [ ! -f "$FILE_NAME" ];
+    do
+        if [ "$timeout" == 0 ]; then
+            echo "ERROR: Timeout while waiting for the file $FILE_NAME."
+            exit 1
+        fi
+        sleep 1
+        timeout=$(expr $timeout - 1)
+
+        echo "waiting for the output file: $FILE_NAME"
+    done
+}
+# run provisioning
+provision
