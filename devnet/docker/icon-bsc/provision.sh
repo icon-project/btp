@@ -85,6 +85,20 @@ add_icon_verifier() {
   --method addVerifier --net $(cat $CONFIG_DIR/net.btp.icon) --addr $(cat $CONFIG_DIR/bmv.bsc)
 }
 
+add_icon_link() {
+  echo "adding icon link $(cat $CONFIG_DIR/btp.icon)"
+  cd $CONTRACTS_DIR/solidity/bmc
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+  --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 2000 --maxAggregation 1 --delayLimit 3
+}
+
+add_icon_relay() {
+  echo "adding icon link $(cat $CONFIG_DIR/bmv.bsc)"
+  cd $CONTRACTS_DIR/solidity/bmc
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+  --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr 0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776
+}
+
 eth_blocknumber() {
   curl -s -X POST 'http://binancesmartchain:8545' --header 'Content-Type: application/json' \
     --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
@@ -106,8 +120,10 @@ provision() {
    deploy_solidity_bmc
    eth_blocknumber > /btpsimple/config/offset.bsc
    deploy_solidity_bmv
-   add_icon_verifier
    deploy_javascore_bmc
+   add_icon_verifier
+   add_icon_link
+   add_icon_relay
 
    touch /btpsimple/provision
    echo "provision is now complete"
