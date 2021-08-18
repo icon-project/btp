@@ -23,6 +23,11 @@ export GOLOOP_CHAINSCORE=cx000000000000000000000000000000000000000
 
 export GOLOOP_RPC_NID=${GOLOOP_RPC_NID:-$(cat $CONFIG_DIR/nid.icon)}
 
+export TOKEN_NAME=ETH
+export TOKEN_SYM=ETH
+export TOKEN_SUPPLY=0x3e8
+export TOKEN_DECIMALS=0x12
+
 BSC_KEY_SECRET="Perlia0"
 
 source rpc.sh
@@ -31,7 +36,7 @@ deploy_solidity_bmc() {
   echo "deploying solidity bmc"
   cd $CONTRACTS_DIR/solidity/bmc
   rm -rf contracts/test build .openzeppelin
-
+  npm install
   BMC_PRA_NET=$BSC_BMC_NET \
   truffle migrate --network bscDocker --compile-all
 
@@ -47,7 +52,7 @@ deploy_solidity_bmv() {
    echo "deploying solidity bmv"
    cd $CONTRACTS_DIR/solidity/bmv
    rm -rf contracts/test build .openzeppelin
-
+   npm install
    LAST_BOCK=$(goloop_lastblock)
    LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
    LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
@@ -68,14 +73,24 @@ deploy_solidity_bmv() {
    wait_for_file $CONFIG_DIR/bmv.bsc
 }
 
-deploy_javascore_bmc() {
-  echo "deploying javascore bmc"
-  cd $CONFIG_DIR
-  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmc-optimized.jar \
-    --content_type application/java \
-    --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
-  extract_scoreAddress tx.bmc.icon bmc.icon
-  echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
+deploy_solidity_tokenBSH() {
+  echo "deploying solidity Token BSH"
+  cd $CONTRACTS_DIR/solidity/TokenBSH
+  rm -rf contracts/test build .openzeppelin
+  npm install
+  SVC_NAME=TokenBSH
+
+  BSH_TOKEN_FEE=1 \
+  BMC_PERIPHERY_ADDRESS=$BMC_ADDRESS \
+  BSH_SERVICE=$SVC_NAME \
+  truffle migrate -f 2 --to 2 --compile-all --network bscLocal
+
+  BSH_IMPL_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BSHImpl.json) 
+  jq -r '.networks[] | .address' build/contracts/BSHImpl.json > $CONFIG_DIR/token_bsh.impl.bsc
+  jq -r '.networks[] | .address' build/contracts/BSHProxy.json > $CONFIG_DIR/token_bsh.proxy.bsc
+
+  wait_for_file $CONFIG_DIR/token_bsh.impl.bsc
+  wait_for_file $CONFIG_DIR/token_bsh.proxy.bsc
 }
 
 add_icon_verifier() {
@@ -99,6 +114,198 @@ add_icon_relay() {
   --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr 0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776
 }
 
+bsc_addService() {
+  echo "adding ${SVC_NAME} service into BMC"
+  cd $CONTRACTS_DIR/solidity/bmc
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+  --method addService --name $SVC_NAME --addr "$BSH_IMPL_ADDRESS"
+}
+
+######################################## javascore service methods - start ######################################
+
+deploy_javascore_bmc() {
+  echo "deploying javascore BMC"
+  cd $CONFIG_DIR
+  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmc-optimized.jar \
+    --content_type application/java \
+    --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
+  extract_scoreAddress tx.bmc.icon bmc.icon
+  echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
+}
+
+
+deploy_javascore_bmv() {
+ echo "deploying javascore BMV"
+ cd $CONFIG_DIR
+  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmv-optimized.jar \
+      --content_type application/java \
+      --param network=$(cat net.btp.icon) \
+      --param bmc=$(cat bmc.icon) \
+      --param offset=$(cat offset.icon) \
+      --param rootSize=0x3 \
+      --param cacheSize=0xA \
+      --param isAllowNewerWitness=0x1 \
+       | jq -r . > tx.bmv.icon
+  extract_scoreAddress tx.bmv.icon bmv.icon
+  echo "BMV deployment success"
+}
+
+
+deploy_javascore_bsh() {
+  echo "deploying javascore Token BSH"
+  cd $CONFIG_DIR
+  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bsh-optimized.jar \
+    --content_type application/java \
+    --param _bmc=$(cat bmc.icon) | jq -r . > tx.token_bsh.icon
+  extract_scoreAddress tx.token_bsh.icon token_bsh.icon
+}
+
+
+deploy_javascore_irc2() { 
+  echo "deploying javascore IRC2Token"
+  cd $CONFIG_DIR
+ 
+  goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/irc2-token-optimized.jar \
+      --content_type application/java \
+      --param _name=${TOKEN_NAME} \
+      --param _symbol=${TOKEN_SYM} \
+      --param _initialSupply=${TOKEN_SUPPLY} \
+      --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.irc2_token.icon
+  extract_scoreAddress tx.irc2_token.icon irc2_token.icon
+}
+
+
+bmc_javascore_addverifier() {
+  echo "adding verifier"
+  cd $CONFIG_DIR
+  goloop rpc sendtx call --to $(cat bmc.icon) \
+    --method addVerifier \
+    --param _net=$BSC_BMC_NET \
+    --param _addr=$(cat bmv.icon) | jq -r . > tx.addverifier.icon
+  ensure_txresult tx.addverifier.icon
+  echo "Added verifier for $(cat bmv.icon)"
+}
+
+add_bsc_link() { 
+  echo "Adding bsc link"
+  cd $CONFIG_DIR
+  goloop rpc sendtx call --to $(cat bmc.icon) \
+    --method addLink \
+    --param _link=$(cat btp.bsc) | jq -r . > tx.addLink.icon
+  ensure_txresult tx.addLink.icon
+  echo "Added Link $(cat btp.bsc)"
+} 
+
+
+bsh_javascore_register() {
+  cd $CONFIG_DIR
+  FEE_NUMERATOR=0x1
+  goloop rpc sendtx call --to $(cat token_bsh.icon) \
+    --method register \
+    --param name=${TOKEN_NAME} \
+    --param symbol=${TOKEN_SYM} \
+    --param feeNumerator=${FEE_NUMERATOR} \
+    --param decimals=${TOKEN_DECIMALS} \
+    --param address=$(cat irc2_token.icon) | jq -r . > tx.register.icon
+  ensure_txresult tx.register.icon
+}
+
+
+
+bmc_javascore_addService() {
+   cd $CONFIG_DIR
+  goloop rpc sendtx call --to $(cat bmc.icon) \
+    --method addService \
+    --param _svc=${SVC_NAME} \
+    --param _addr=$(cat token_bsh.icon) | jq -r . > tx.addService.icon
+  ensure_txresult tx.addService.icon
+} 
+
+
+bmc_javascore_getServices() {
+   cd $CONFIG_DIR
+  goloop rpc call --to $(cat bmc.icon) \
+    --method getServices
+} 
+
+
+bsh_javascore_balance() {
+   cd $CONFIG_DIR
+  if [ $# -lt 1 ] ; then
+    echo "Usage: bsh_balance [EOA=$(rpceoa)]"
+    return 1
+  fi 
+
+  local EOA=$(rpceoa $1)  
+  echo "Balance of user $EOA"
+  goloop rpc call --to $(cat token_bsh.icon) \
+    --method getBalance \
+    --param user=$EOA \
+    --param tokenName=$TOKEN_NAME
+}
+
+
+bsh_javascore_transfer() {
+   cd $CONFIG_DIR
+  if [ $# -lt 2 ] ; then
+    echo "Usage: bsh_transfer [VAL=0x10] [EOA=$(rpceoa)]"
+    return 1
+  fi
+  local VAL=${1:-0x10}
+  local EOA=$2
+  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)  
+  echo "Transfering $VAL to: $EOA from: $FROM "
+  TX=$(goloop rpc sendtx call --to $(cat token_bsh.icon) \
+    --method transfer \
+    --param tokenName=${TOKEN_NAME} \
+    --param value=$VAL \
+    --param to=btp://$BSC_BMC_NET/$EOA | jq -r .)
+  ensure_txresult $TX
+}
+
+
+
+irc2_javascore_balance() {
+   cd $CONFIG_DIR
+  if [ $# -lt 1 ] ; then
+    echo "Usage: irc2_balance [EOA=$(rpceoa)]"
+    return 1
+  fi     
+  local EOA=$(rpceoa $1) 
+  goloop rpc call --to $(cat irc2_token.icon) \
+    --method balanceOf \
+    --param _owner=$EOA
+}
+
+
+irc2_javascore_transfer() {
+  cd $CONFIG_DIR
+  if [ $# -lt 1 ] ; then
+    echo "Usage: irc2_transfer [VAL=0x10] [EOA=Address of Token-BSH]"
+    return 1
+  fi 
+  local VAL=${1:-0x10}
+  local EOA=$(rpceoa ${2:-$(cat token_bsh.icon)})    
+  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)  
+  echo "Transfering $VAL to: $EOA from: $FROM "
+  TX=$(goloop rpc sendtx call --to $(cat irc2_token.icon) \
+    --method transfer \
+    --param _to=$EOA \
+    --param _value=$VAL | jq -r .)
+  ensure_txresult $TX
+}
+
+
+rpceoa() {
+  local EOA=${1:-${GOLOOP_RPC_KEY_STORE}}
+  if [ "$EOA" != "" ] && [ -f "$EOA" ]; then
+    echo $(cat $EOA | jq -r .address)
+  else
+    echo $EOA
+  fi
+}
+
+########################################################### javascore service methods - END #####################################################################
 eth_blocknumber() {
   curl -s -X POST 'http://binancesmartchain:8545' --header 'Content-Type: application/json' \
     --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
@@ -117,13 +324,26 @@ provision() {
    printf $BSC_KEY_SECRET > "$BTPSIMPLE_CONFIG_DIR"/bsc.secret
    echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
 
-   deploy_solidity_bmc
-   eth_blocknumber > /btpsimple/config/offset.bsc
-   deploy_solidity_bmv
-   deploy_javascore_bmc
-   add_icon_verifier
-   add_icon_link
-   add_icon_relay
+  
+
+    deploy_solidity_bmc
+    eth_blocknumber > /btpsimple/config/offset.bsc
+    deploy_solidity_bmv
+    deploy_javascore_bmc
+    
+    add_icon_verifier
+    add_icon_link
+    add_icon_relay
+
+    deploy_javascore_bmv
+    deploy_javascore_bsh
+    deploy_javascore_irc2
+    bmc_javascore_addverifier
+    add_bsc_link
+
+    #add_bsc_link      
+    bsh_javascore_register
+    bmc_javascore_addService
 
    touch /btpsimple/provision
    echo "provision is now complete"

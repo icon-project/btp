@@ -64,7 +64,10 @@ $(SOLIDITY_DIST_DIR)/%:
 	mkdir -p $@/migrations ; \
 	cp -r solidity/$(MODULE)/contracts/* $@/contracts ; \
 	cp -r solidity/$(MODULE)/migrations/* $@/migrations ; \
-	cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
+	#cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
+	cp solidity/$(MODULE)/truffle-config.js $@/ ; \
+	cp solidity/$(MODULE)/*.json $@/ ; \
+	cp solidity/$(MODULE)/*.lock $@/ ; \
 	rm -rf $@/contracts/Mock ; \
 
 $(PYSCORE_DIST_DIR)/%:
@@ -90,14 +93,10 @@ dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
     zip -r -v $(PYSCORE_DIST_DIR)/irc2_token.zip * -x *__pycache__* -x *tests*
 
 dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
-	cd $(SOLIDITY_DIST_DIR)/bmc ; \
-	npm install --only=prod; \
-	truffle compile
+	cd $(SOLIDITY_DIST_DIR)/bmc ; 
 
 dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
-	cd $(SOLIDITY_DIST_DIR)/bmv ; \
-	npm install --only=prod; \
-	truffle compile
+	cd $(SOLIDITY_DIST_DIR)/bmv ; 
 
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 
