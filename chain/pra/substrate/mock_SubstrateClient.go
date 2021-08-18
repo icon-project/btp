@@ -165,29 +165,6 @@ func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (typ
 	return r0, r1
 }
 
-// GetHashesByRange provides a mock function with given fields: from, to
-func (_m *MockSubstrateClient) GetHashesByRange(from uint64, to uint64) ([]types.Hash, error) {
-	ret := _m.Called(from, to)
-
-	var r0 []types.Hash
-	if rf, ok := ret.Get(0).(func(uint64, uint64) []types.Hash); ok {
-		r0 = rf(from, to)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]types.Hash)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(uint64, uint64) error); ok {
-		r1 = rf(from, to)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetHeader provides a mock function with given fields: hash
 func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error) {
 	ret := _m.Called(hash)
@@ -204,29 +181,6 @@ func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error)
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
 		r1 = rf(hash)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetHeaderByBlockNumber provides a mock function with given fields: blockNumber
-func (_m *MockSubstrateClient) GetHeaderByBlockNumber(blockNumber types.BlockNumber) (*types.Header, error) {
-	ret := _m.Called(blockNumber)
-
-	var r0 *types.Header
-	if rf, ok := ret.Get(0).(func(types.BlockNumber) *types.Header); ok {
-		r0 = rf(blockNumber)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Header)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(types.BlockNumber) error); ok {
-		r1 = rf(blockNumber)
 	} else {
 		r1 = ret.Error(1)
 	}

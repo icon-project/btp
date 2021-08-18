@@ -2,6 +2,8 @@ package substrate
 
 import (
 	"fmt"
+	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -111,29 +113,10 @@ func (c *SubstrateAPI) GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) 
 	return c.GetHeader(blockHash)
 }
 
-func (c *SubstrateAPI) GetHashesByRange(from uint64, to uint64) ([]SubstrateHash, error) {
-	hashes := make([]SubstrateHash, 0)
-	wp := workerpool.New(30)
-	rspChan := make(chan SubstrateHash, to-from+1)
-
-	for i := from; i <= to; i++ {
-		bn := i
-		wp.Submit(func() {
-			blockHash, _ := c.GetBlockHash(bn)
-			rspChan <- blockHash
-		})
-	}
-
-	wp.StopWait()
-	close(rspChan)
-
-	return hashes, nil
-}
-
 func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error) {
 	headers := make([]SubstrateHeader, 0)
 
-	wp := workerpool.New(30)
+	wp := workerpool.New(runtime.NumCPU())
 	rspChan := make(chan *SubstrateHeader, len(blockNumbers))
 
 	for _, blockNumber := range blockNumbers {
@@ -150,6 +133,10 @@ func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBloc
 	for header := range rspChan {
 		headers = append(headers, *header)
 	}
+
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].Number < headers[j].Number
+	})
 
 	return headers, nil
 }
@@ -239,7 +226,7 @@ func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.Bloc
 		}
 	}
 
-	return nil, nil, fmt.Errorf("Not supported chain spec %s", spec)
+	return nil, nil, fmt.Errorf("not supported chain spec %s", spec)
 }
 
 func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error) {
