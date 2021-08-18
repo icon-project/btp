@@ -12,6 +12,7 @@ deploy_javascore_bmc() {
     --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
 
     extract_scoreAddress tx.bmc.icon bmc.icon
+    ensure_file_exist $CONFIG_DIR bmc.icon
     echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
 
@@ -23,6 +24,7 @@ _deploy_kusamaDecoder(){
     --content_type application/java | jq -r . > tx.kusamaDecoder.icon
 
     extract_scoreAddress tx.kusamaDecoder.icon kusamaDecoder.icon
+    ensure_file_exist $CONFIG_DIR kusamaDecoder.icon
 }
 
 _deploy_moonriverDecoder(){
@@ -33,6 +35,7 @@ _deploy_moonriverDecoder(){
     --content_type application/java | jq -r . > tx.moonriverDecoder.icon
 
     extract_scoreAddress tx.moonriverDecoder.icon moonriverDecoder.icon
+    ensure_file_exist $CONFIG_DIR moonriverDecoder.icon
 }
 
 _prepare_javascore_bmv() {
@@ -94,6 +97,7 @@ deploy_javascore_bmv() {
         | jq -r . > tx.bmv.icon
 
     extract_scoreAddress tx.bmv.icon bmv.icon
+    ensure_file_exist $CONFIG_DIR bmv.icon
 }
 
 deploy_javascore_IRC31Token() {
@@ -104,6 +108,7 @@ deploy_javascore_IRC31Token() {
     --content_type application/java | jq -r . > tx.irc31token.icon
 
     extract_scoreAddress tx.irc31token.icon irc31token.icon
+    ensure_file_exist $CONFIG_DIR irc31token.icon
 }
 
 deploy_javascore_NativeCoinBSH() {
@@ -118,6 +123,7 @@ deploy_javascore_NativeCoinBSH() {
         --param _name=ICX | jq -r . > tx.nativeCoinBsh.icon
 
     extract_scoreAddress tx.nativeCoinBsh.icon nativeCoinBsh.icon
+    ensure_file_exist $CONFIG_DIR nativeCoinBsh.icon
 }
 
 deploy_javascore_FeeAggregation() {
@@ -130,6 +136,7 @@ deploy_javascore_FeeAggregation() {
         --content_type application/java | jq -r . > tx.feeAggregation.icon
 
     extract_scoreAddress tx.feeAggregation.icon feeAggregation.icon
+    ensure_file_exist $CONFIG_DIR feeAggregation.icon
 }
 
 goloop_bmc_addVerifier() {

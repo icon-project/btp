@@ -114,3 +114,11 @@ hex2int() {
   echo "ibase=16; $input" | bc
 }
 
+ensure_file_exist() {
+    FILE_DIR=$1
+    FILE_NAME=$2
+    
+    if [ ! -f $FILE_DIR/$FILE_NAME ]; then
+      echo "Missing file $FILE_NAME"
+    fi
+}
