@@ -120,5 +120,6 @@ ensure_file_exist() {
     
     if [ ! -f $FILE_DIR/$FILE_NAME ]; then
       echo "Missing file $FILE_NAME"
+      exit 1
     fi
 }

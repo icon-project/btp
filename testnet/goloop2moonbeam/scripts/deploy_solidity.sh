@@ -109,3 +109,11 @@ moonbeam_bsh_registerCoin() {
     cp $SCRIPT_DIR/mb_bsh_register_coin.js .
     truffle exec mb_bsh_register_coin.js --network moonbeamlocal
 }
+
+clean_solidity_build() {
+    echo "cleaning solidity build"
+    for module in bmc bmv bsh
+    do
+        cd $SOLIDITY_DIST_DIR/$module && rm -rf .openzeppelin build node_modules
+    done
+}

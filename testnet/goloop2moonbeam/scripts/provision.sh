@@ -37,6 +37,7 @@ provision() {
     ## finalizing
     echo "finished provisioning at: $(date)" > $PROVISION_STATUS_DONE
     rm $PROVISION_STATUS_PROCESSING
+    clean_solidity_build
     sleep 1
 }
 
