@@ -53,12 +53,6 @@ func NewStateProof(key substrate.SubstrateStorageKey, rp *substrate.SubstrateRea
 	}
 }
 
-type DecodedRelayMessage struct {
-	BlockUpdates []BlockUpdate
-	BlockProof   *chain.BlockProof
-	StateProof   *[]StateProof
-}
-
 type RelayMessage struct {
 	BlockUpdates  [][]byte
 	BlockProof    []byte
@@ -107,9 +101,33 @@ type ReceiptProof struct {
 	EventProofs []*chain.EventProof
 }
 
-type BlockUpdate struct {
+type ValidatorSignature struct {
+	Signature []byte
+	Id        []byte
+}
+
+type Votes struct {
+	VoteMessage []byte
+	Signatures  [][]byte
+}
+
+type RelayBlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	Votes                   []byte
+}
+
+type ParachainFinalityProof struct {
+	RelayBlockUpdates [][]byte
+	RelayBlockProof   []byte
+	RelayStateProofs  [][]byte
+}
+
+type ParaChainBlockUpdate struct {
 	ScaleEncodedBlockHeader []byte
 	FinalityProof           []byte
 }
 
-type PrachainFinalityProof struct{}
+type ParaChainBlockUpdateExtra struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProofs          [][]byte
+}

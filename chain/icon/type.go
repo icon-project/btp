@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/jsonrpc"
 )
 
@@ -63,6 +64,7 @@ const (
 
 const (
 	BMCRelayMethod     = "handleRelayMessage"
+	BMCFragmentMethod  = "handleFragment"
 	BMCGetStatusMethod = "getStatus"
 )
 
@@ -161,6 +163,12 @@ type DeployParamsBMV struct {
 type BMCRelayMethodParams struct {
 	Prev     string `json:"_prev"`
 	Messages string `json:"_msg"`
+}
+
+type BMCFragmentMethodParams struct {
+	Prev     string `json:"_prev"`
+	Messages string `json:"_msg"`
+	Index    HexInt `json:"_idx"`
 }
 
 type BMCLinkMethodParams struct {
@@ -308,7 +316,7 @@ func (i HexInt) Int() (int, error) {
 }
 
 func NewHexInt(v int64) HexInt {
-	return HexInt("0x" + strconv.FormatInt(v, 16))
+	return HexInt(intconv.FormatInt(v))
 }
 
 //T_ADDR_EOA, T_ADDR_SCORE

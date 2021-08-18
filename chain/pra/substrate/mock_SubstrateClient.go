@@ -98,22 +98,22 @@ func (_m *MockSubstrateClient) GetBlockHashLatest() (types.Hash, error) {
 	return r0, r1
 }
 
-// GetFinalitiyProof provides a mock function with given fields: blockNumber
-func (_m *MockSubstrateClient) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
-	ret := _m.Called(blockNumber)
+// GetBlockHeaderByBlockNumbers provides a mock function with given fields: blockNumbers
+func (_m *MockSubstrateClient) GetBlockHeaderByBlockNumbers(blockNumbers []types.BlockNumber) ([]types.Header, error) {
+	ret := _m.Called(blockNumbers)
 
-	var r0 *FinalityProof
-	if rf, ok := ret.Get(0).(func(types.U32) *FinalityProof); ok {
-		r0 = rf(blockNumber)
+	var r0 []types.Header
+	if rf, ok := ret.Get(0).(func([]types.BlockNumber) []types.Header); ok {
+		r0 = rf(blockNumbers)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FinalityProof)
+			r0 = ret.Get(0).([]types.Header)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(types.U32) error); ok {
-		r1 = rf(blockNumber)
+	if rf, ok := ret.Get(1).(func([]types.BlockNumber) error); ok {
+		r1 = rf(blockNumbers)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -145,16 +145,14 @@ func (_m *MockSubstrateClient) GetFinalizedHead() (types.Hash, error) {
 }
 
 // GetGrandpaCurrentSetId provides a mock function with given fields: blockHash
-func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (*types.U64, error) {
+func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (types.U64, error) {
 	ret := _m.Called(blockHash)
 
-	var r0 *types.U64
-	if rf, ok := ret.Get(0).(func(types.Hash) *types.U64); ok {
+	var r0 types.U64
+	if rf, ok := ret.Get(0).(func(types.Hash) types.U64); ok {
 		r0 = rf(blockHash)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.U64)
-		}
+		r0 = ret.Get(0).(types.U64)
 	}
 
 	var r1 error
@@ -213,6 +211,38 @@ func (_m *MockSubstrateClient) GetHeaderLatest() (*types.Header, error) {
 	return r0, r1
 }
 
+// GetJustificationsAndUnknownHeaders provides a mock function with given fields: blockNumber
+func (_m *MockSubstrateClient) GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []types.Header, error) {
+	ret := _m.Called(blockNumber)
+
+	var r0 *GrandpaJustification
+	if rf, ok := ret.Get(0).(func(types.BlockNumber) *GrandpaJustification); ok {
+		r0 = rf(blockNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*GrandpaJustification)
+		}
+	}
+
+	var r1 []types.Header
+	if rf, ok := ret.Get(1).(func(types.BlockNumber) []types.Header); ok {
+		r1 = rf(blockNumber)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]types.Header)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(types.BlockNumber) error); ok {
+		r2 = rf(blockNumber)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetMetadata provides a mock function with given fields: blockHash
 func (_m *MockSubstrateClient) GetMetadata(blockHash types.Hash) (*types.Metadata, error) {
 	ret := _m.Called(blockHash)
@@ -229,6 +259,45 @@ func (_m *MockSubstrateClient) GetMetadata(blockHash types.Hash) (*types.Metadat
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
 		r1 = rf(blockHash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetMetadataLatest provides a mock function with given fields:
+func (_m *MockSubstrateClient) GetMetadataLatest() *types.Metadata {
+	ret := _m.Called()
+
+	var r0 *types.Metadata
+	if rf, ok := ret.Get(0).(func() *types.Metadata); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Metadata)
+		}
+	}
+
+	return r0
+}
+
+// GetParachainId provides a mock function with given fields:
+func (_m *MockSubstrateClient) GetParachainId() (*types.U32, error) {
+	ret := _m.Called()
+
+	var r0 *types.U32
+	if rf, ok := ret.Get(0).(func() *types.U32); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.U32)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

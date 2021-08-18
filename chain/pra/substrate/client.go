@@ -1,27 +1,33 @@
 package substrate
 
 import (
+	"fmt"
+	"runtime"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/rpc"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/common/log"
 )
 
 const (
-	Westend   = "Westend"
-	Kusama    = "Kusama"
-	Moonriver = "Moonriver"
-	Moonbase  = "Moonbase"
+	Westend   = "westend"
+	Kusama    = "kusama"
+	Polkadot  = "polkadot"
+	Moonriver = "moonriver"
+	Moonbase  = "moonbase"
 )
 
 type SubstrateAPI struct {
+	client.Client
 	RPC      *rpc.RPC
 	metadata *SubstrateMetaData
 	metaLock sync.RWMutex // Lock metadata for updates, allows concurrent reads
-	client.Client
+	// parachainId               SubstrateParachainId
 	specName                  string
 	keepSubscribeFinalizeHead chan bool
 	blockInterval             time.Duration
@@ -98,6 +104,43 @@ func (c *SubstrateAPI) GetSpecName() string {
 	return c.specName
 }
 
+func (c *SubstrateAPI) GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) (*SubstrateHeader, error) {
+	blockHash, err := c.GetBlockHash(uint64(blockNumber))
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetHeader(blockHash)
+}
+
+func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error) {
+	headers := make([]SubstrateHeader, 0)
+
+	wp := workerpool.New(runtime.NumCPU())
+	rspChan := make(chan *SubstrateHeader, len(blockNumbers))
+
+	for _, blockNumber := range blockNumbers {
+		blockNumber := blockNumber
+		wp.Submit(func() {
+			blockHash, _ := c.GetBlockHash(uint64(blockNumber))
+			header, _ := c.GetHeader(blockHash)
+			rspChan <- header
+		})
+	}
+
+	wp.StopWait()
+	close(rspChan)
+	for header := range rspChan {
+		headers = append(headers, *header)
+	}
+
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].Number < headers[j].Number
+	})
+
+	return headers, nil
+}
+
 func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (SubstrateReadProof, error) {
 	var res SubstrateReadProof
 	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
@@ -122,27 +165,27 @@ func (c *SubstrateAPI) GetSystemEventStorageKey(blockhash SubstrateHash) (Substr
 	return SubstrateStorageKey(key), nil
 }
 
-func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (*types.U64, error) {
+func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error) {
 	meta := c.GetMetadataLatest()
 	key, err := types.CreateStorageKey(meta, "Grandpa", "CurrentSetId", nil, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	storageRaw, err := c.GetStorageRaw(key, blockHash)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	var setId *types.U64
-	err = types.DecodeFromBytes(*storageRaw, setId)
+	var setId types.U64
+	err = types.DecodeFromBytes(*storageRaw, &setId)
 
 	return setId, err
 }
 
-func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error) {
+func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error) {
 	var finalityProofHexstring string
-	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", blockNumber)
+	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +197,36 @@ func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.U32) (*FinalityProof,
 	}
 
 	return fp, err
+}
+
+func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error) {
+	var finalityProofHexstring string
+	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	spec := c.GetSpecName()
+
+	if spec == Kusama || spec == Polkadot {
+		fp := &FinalityProof{}
+		err = types.DecodeFromHexString(finalityProofHexstring, fp)
+
+		if fp != nil {
+			return &fp.Justification.EncodedJustification, fp.UnknownHeaders, err
+		}
+	}
+
+	if spec == Westend {
+		fp := &WestendFinalityProof{}
+		err = types.DecodeFromHexString(finalityProofHexstring, fp)
+
+		if fp != nil {
+			return &fp.Justification.EncodedJustification, fp.UnknownHeaders, err
+		}
+	}
+
+	return nil, nil, fmt.Errorf("not supported chain spec %s", spec)
 }
 
 func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error) {
@@ -172,6 +245,29 @@ func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedVal
 	err = types.DecodeFromBytes(*storageRaw, pvd)
 
 	return pvd, err
+}
+
+func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
+	meta := c.GetMetadataLatest()
+	key, err := types.CreateStorageKey(meta, "ParachainInfo", "ParachainId", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	blockHash, err := c.GetBlockHashLatest()
+	if err != nil {
+		return nil, err
+	}
+
+	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	var pid SubstrateParachainId
+	err = types.DecodeFromBytes(*storageRaw, &pid)
+
+	return &pid, err
 }
 
 func (c *SubstrateAPI) SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error {

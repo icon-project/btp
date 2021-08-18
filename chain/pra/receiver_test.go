@@ -49,12 +49,12 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				subClient:         subClient,
 				stopMonitorSignal: make(chan bool),
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_243221.json", bi))
 
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Twice()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
@@ -70,7 +70,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
 				fmt.Sprintf("0x%x", bu.Header),
 			)
-			assert.Equal(t, "0xf90140b9013b4b6ca5b74e19d4bc04280edf20a53a4ebe1402cbb2ef7ed9a1611fb8411a33ca56d80e006415ef11020701d83ae5456ccecb3685eb39acc6b52d3e481214d8f1aa6b5465e347562ba9c7c993862047e1d6f020c25ab4139676afbf7170c254e2f36cefe70c046e6d62738060eed538a43e6738f4c560c5d950be96c72ad591f0c16f564c003b5c7b895c0e0466726f6e890101f7b9c5fb3f5b72f937ed511b173e5a39b9fb3ffaa1cc4dd024a4c7c36c7da8610847fec28647d5f0806548f385257170d76cf6e890f7467ef33b36dcc5b9be1b15d0fdb267aa2fce057cc81a0e2397f5a32ffd8637753f7d0c0c0b7289b002dc3f056e6d627301019a1b7069e8aa71015a15925595589999890dba42cb87dae2b5aabfee791bad47d380392c626eef34701ea3a95d7dd4fc891759cb375991aacbc1ee3663742289f800",
+			assert.Equal(t, "0xf90141b9013b4b6ca5b74e19d4bc04280edf20a53a4ebe1402cbb2ef7ed9a1611fb8411a33ca56d80e006415ef11020701d83ae5456ccecb3685eb39acc6b52d3e481214d8f1aa6b5465e347562ba9c7c993862047e1d6f020c25ab4139676afbf7170c254e2f36cefe70c046e6d62738060eed538a43e6738f4c560c5d950be96c72ad591f0c16f564c003b5c7b895c0e0466726f6e890101f7b9c5fb3f5b72f937ed511b173e5a39b9fb3ffaa1cc4dd024a4c7c36c7da8610847fec28647d5f0806548f385257170d76cf6e890f7467ef33b36dcc5b9be1b15d0fdb267aa2fce057cc81a0e2397f5a32ffd8637753f7d0c0c0b7289b002dc3f056e6d627301019a1b7069e8aa71015a15925595589999890dba42cb87dae2b5aabfee791bad47d380392c626eef34701ea3a95d7dd4fc891759cb375991aacbc1ee3663742289f80000",
 				fmt.Sprintf("0x%x", bu.Proof),
 			)
 			r.StopReceiveLoop()
@@ -89,11 +89,12 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				stopMonitorSignal: make(chan bool),
 				bmc:               bmcContract,
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_315553.json", bi))
+
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
@@ -112,7 +113,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
 				fmt.Sprintf("0x%x", bu.Header),
 			)
-			assert.Equal(t, "0xf90180b9017bf1e8f0653422859dea6705ec5d86015a3c9f4c7c03eccbcb4bf858682956fb2886421300932c9abc4e9966ecf08dd3a5aa7087b448a88e54d18b3caebdbb2559c3f8744b25385e8e912f3965b85334a4524a6e15b21fb3c1b355d9e64df395b856a635970c046e6d6273802485ca9e9427894cb1864d725977e3c168171daf22bacf64c7ad5e0674c331730466726f6e890201e93015e1d2195ae2d73004a790db2e4bf394e40f14df3e0a2edd9dff0930e8a910ef0e6bfa9d8bb055f94e873f1df551b42df11d2cb053811279a1101e9c03fcf9cfa1b41ba3027ac3bbda9af6685440e8d89f12c7aca5987b334e91dbbaa4aa9356cb1e07577d7374463ec88709ce945f280b072b89f4bc8c0e70abf4b9b267c090d9ec032f7d7121f9bc2b2a8b9a6a06fd7f434cbebb963d6cfcb2e4206d2f43056e6d627301019cb74fccc8c86d67b5766b1c035e16ed4de18ecd091d4dd8724185eb28dbd1612983e904aafb984f05bd27443b6f8a56fbea955e208718d02e52eb28d0e62e89f800",
+			assert.Equal(t, "0xf90181b9017bf1e8f0653422859dea6705ec5d86015a3c9f4c7c03eccbcb4bf858682956fb2886421300932c9abc4e9966ecf08dd3a5aa7087b448a88e54d18b3caebdbb2559c3f8744b25385e8e912f3965b85334a4524a6e15b21fb3c1b355d9e64df395b856a635970c046e6d6273802485ca9e9427894cb1864d725977e3c168171daf22bacf64c7ad5e0674c331730466726f6e890201e93015e1d2195ae2d73004a790db2e4bf394e40f14df3e0a2edd9dff0930e8a910ef0e6bfa9d8bb055f94e873f1df551b42df11d2cb053811279a1101e9c03fcf9cfa1b41ba3027ac3bbda9af6685440e8d89f12c7aca5987b334e91dbbaa4aa9356cb1e07577d7374463ec88709ce945f280b072b89f4bc8c0e70abf4b9b267c090d9ec032f7d7121f9bc2b2a8b9a6a06fd7f434cbebb963d6cfcb2e4206d2f43056e6d627301019cb74fccc8c86d67b5766b1c035e16ed4de18ecd091d4dd8724185eb28dbd1612983e904aafb984f05bd27443b6f8a56fbea955e208718d02e52eb28d0e62e89f80000",
 				fmt.Sprintf("0x%x", bu.Proof),
 			)
 			r.StopReceiveLoop()
@@ -137,11 +138,12 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				stopMonitorSignal: make(chan bool),
 				bmc:               bmc,
 			},
-			opt: ReceiverOptions{},
 		}
 
 		bi := &blockinfo{}
 		require.NoError(t, readBlockInfoFromAssets("assets/moonriverlocal_blockinfo_143004.json", bi))
+
+		subClient.On("GetSpecName").Return(substrate.Moonbase, nil).Once()
 		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
 		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
 		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
@@ -159,7 +161,7 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 				fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
 				fmt.Sprintf("0x%x", bu.Header),
 			)
-			assert.Equal(t, "0xf8d8b8d4b02aebd1719933b78c76c3f51f6e1b2f760162f3b2f43c6818367dbadb8f7c2072ba0800049ac1e8cddb4d4de2fbe62e180ce05a2b329069f863a9855eb64534a846fa0cd7397f52d2d32573926eee56ca9a35f0c90d1c9a9610e21916c9b8aff1b9ba7608046e6d627380d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0466726f6e0901010db4dc2444f0ac86a3202819682e13bb5fd9d70ce01006f67720c1628f04745604bfafb68beb571aac735e8be629f3a13eb6e0263b873a9039f1103164da6eefb4f800",
+			assert.Equal(t, "0xf8d9b8d4b02aebd1719933b78c76c3f51f6e1b2f760162f3b2f43c6818367dbadb8f7c2072ba0800049ac1e8cddb4d4de2fbe62e180ce05a2b329069f863a9855eb64534a846fa0cd7397f52d2d32573926eee56ca9a35f0c90d1c9a9610e21916c9b8aff1b9ba7608046e6d627380d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d0466726f6e0901010db4dc2444f0ac86a3202819682e13bb5fd9d70ce01006f67720c1628f04745604bfafb68beb571aac735e8be629f3a13eb6e0263b873a9039f1103164da6eefb4f80000",
 				fmt.Sprintf("0x%x", bu.Proof),
 			)
 			assert.NotEmpty(t, rps)

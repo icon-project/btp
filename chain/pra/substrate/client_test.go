@@ -26,23 +26,72 @@ func TestClient(t *testing.T) {
 		c.GetValidationData(NewSubstrateHashFromHexString("0xfd7a2619ce12f375cd2c170090ea5f206ab69068affba91c75eda76925e13284"))
 	})
 
+	t.Run("should return decode FinalityProof on polkadot", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://rpc.polkadot.io")
+		require.NoError(t, err)
+
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(6247439)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
+	})
+
 	t.Run("should return decode FinalityProof on kusama", func(t *testing.T) {
 		t.Skip("Manual run only")
 		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(8007753)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(8007753)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
+	})
+
+	t.Run("should return decode FinalityProof on westend", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://westend-rpc.polkadot.io")
+		require.NoError(t, err)
+
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(6788687)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
 	})
 
 	t.Run("should return decode FinalityProof on moonbase relay chain", func(t *testing.T) {
 		t.Skip("Manual run only")
-		c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		// c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		c, err := NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network/")
 		require.NoError(t, err)
 
-		fp, err := c.GetFinalitiyProof(913571)
+		gj, hds, err := c.GetJustificationsAndUnknownHeaders(1016190)
 		assert.NoError(t, err)
-		assert.NotNil(t, fp)
+		assert.NotEmpty(t, hds)
+		assert.NotNil(t, gj)
+	})
+
+	t.Run("should return multiple block headers", func(t *testing.T) {
+		t.Skip("Manual run only")
+		// c, err := NewSubstrateClient("wss://wss-relay.testnet.moonbeam.network/")
+		c, err := NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network/")
+		require.NoError(t, err)
+
+		bh, err := c.GetBlockHeaderByBlockNumbers([]SubstrateBlockNumber{913571, 913572, 913573, 913574, 913575, 913576, 913577})
+		assert.NoError(t, err)
+		assert.NotNil(t, bh)
+	})
+
+	t.Run("should return set id", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
+		require.NoError(t, err)
+
+		blockHash, err := c.GetBlockHash(8654865)
+		require.NoError(t, err)
+
+		setId, err := c.GetGrandpaCurrentSetId(blockHash)
+		assert.NoError(t, err)
+		assert.NotNil(t, setId)
 	})
 }

@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -89,8 +90,34 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 		},
 	}
 
-	s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
-	s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
+	// s.l.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
+	// s.l.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Messages)
+	return p, nil
+}
+
+// TODO refactor with newTransactionParam
+func (s *sender) newFragmentationsTransactionParam(prev string, msg string, idx int) (*TransactionParam, error) {
+	sl := NewHexInt(s.opt.StepLimit)
+	if s.opt.StepLimit == 0 {
+		sl = NewHexInt(DefaultStepLimit)
+	}
+
+	p := &TransactionParam{
+		Version:     NewHexInt(JsonrpcApiVersion),
+		FromAddress: Address(s.w.Address()),
+		ToAddress:   Address(s.dst.ContractAddress()),
+		NetworkID:   HexInt(s.dst.NetworkID()),
+		StepLimit:   sl,
+		DataType:    "call",
+		Data: CallData{
+			Method: BMCFragmentMethod,
+			Params: BMCFragmentMethodParams{
+				Prev:     prev,
+				Messages: msg,
+				Index:    NewHexInt(int64(idx)),
+			},
+		},
+	}
 	return p, nil
 }
 
@@ -248,6 +275,17 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 	return segments, nil
 }
 
+// Can't import pra package because of cycle import
+type parachainBlockUpdateExtra struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProofs          [][]byte
+}
+
+type parachainBlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+}
+
 func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
 	segments := make([]*chain.Segment, 0)
 	var err error
@@ -255,40 +293,119 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 		BlockUpdates:  make([][]byte, 0),
 		ReceiptProofs: make([][]byte, 0),
 	}
-	size := 0
-	for i, bu := range rm.BlockUpdates {
+	for _, bu := range rm.BlockUpdates {
 		if bu.Height <= height {
 			continue
 		}
-		buSize := len(bu.Proof)
-		if s.isOverSizeLimit(buSize) {
-			return nil, ErrInvalidBlockUpdateProofSize
+
+		var paraBuExtra parachainBlockUpdateExtra
+		if _, err = codec.RLP.UnmarshalFromBytes(bu.Proof, &paraBuExtra); err != nil {
+			return nil, err
 		}
-		size += buSize
-		osl := s.isOverSizeLimit(size)
+
+		paraBu := parachainBlockUpdate{
+			ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
+			FinalityProof:           paraBuExtra.FinalityProofs[len(paraBuExtra.FinalityProofs)-1],
+		}
+
+		realParaBu, err := codec.RLP.MarshalToBytes(paraBu)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(paraBuExtra.FinalityProofs) > 1 {
+			// If message contains previous blockupdates, split into 1 segments
+			if len(msg.BlockUpdates) > 0 {
+				s.l.Tracef("Segment: send previous blocks")
+				segment := &chain.Segment{
+					Height:              msg.height,
+					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+				}
+
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+					return nil, err
+				}
+
+				segments = append(segments, segment)
+				msg.BlockUpdates = make([][]byte, 0)
+				msg.height = bu.Height
+				msg.numberOfBlockUpdate = 0
+			}
+
+			s.l.Tracef("Segment: send muliple finalitiyProofs")
+			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
+				var rawBu []byte
+				sps := make([][]byte, 0)
+
+				if i == len(paraBuExtra.FinalityProofs)-1 {
+					realParaBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
+						ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
+						FinalityProof:           paraBuExtra.FinalityProofs[i],
+					})
+
+					if err != nil {
+						return nil, err
+					}
+
+					continue
+				} else {
+					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
+						ScaleEncodedBlockHeader: nil,
+						FinalityProof:           paraBuExtra.FinalityProofs[i],
+					})
+
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				segment := &chain.Segment{
+					Height:              bu.Height,
+					NumberOfBlockUpdate: 1,
+				}
+				subMsg := &RelayMessage{
+					BlockUpdates:  make([][]byte, 0),
+					ReceiptProofs: sps,
+				}
+
+				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
+
+				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
+					return nil, err
+				}
+				segments = append(segments, segment)
+			}
+		}
+
 		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
-		if osl || obl {
-			s.l.Tracef("Segment: over size limit: %t or over block limit: %t", osl, obl)
+
+		// If the remaining blockupdates over limit
+		if obl {
+			s.l.Tracef("Segment: over block limit: %t", obl)
 			segment := &chain.Segment{
-				Height:              msg.height,
+				Height:              bu.Height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
 
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-				return nil, err
-			}
-
-			segments = append(segments, segment)
-
-			msg = &RelayMessage{
+			subMsg := &RelayMessage{
 				BlockUpdates:  make([][]byte, 0),
 				ReceiptProofs: make([][]byte, 0),
 			}
 
-			size = buSize
+			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
+
+			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
+				return nil, err
+			}
+
+			segments = append(segments, segment)
+			msg.BlockUpdates = make([][]byte, 0)
+			msg.height = bu.Height
+			msg.numberOfBlockUpdate = 0
+			continue
 		}
-		s.l.Tracef("Segment: at %d BlockUpdates[%d]: %x", bu.Height, i, bu.Proof)
-		msg.BlockUpdates = append(msg.BlockUpdates, bu.Proof)
+
+		msg.BlockUpdates = append(msg.BlockUpdates, realParaBu)
 		msg.height = bu.Height
 		msg.numberOfBlockUpdate += 1
 	}
@@ -296,65 +413,49 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 	var bp []byte
 	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
 		return nil, err
-	} else {
-		if s.isOverLimit(len(bp)) {
-			return nil, ErrInvalidBlockProofSize
-		}
 	}
 
 	for i, rp := range rm.ReceiptProofs {
-		if s.isOverSizeLimit(len(rp.Proof)) {
-			return nil, ErrInvalidStateProofSize
-		}
-
 		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
 			if rm.BlockProof == nil {
-				s.l.Tracef("Segment: ignore past StateProof at %d", rp.Height)
 				return segments, nil
 			}
-
 			msg.BlockProof = bp
-			size += len(bp)
-			s.l.Tracef("Segment: at %d BlockProof: %x", rm.BlockProof.BlockWitness.Height, msg.BlockProof)
-			if s.isOverLimit(size) {
-				return nil, ErrInvalidBlockProofSize
-			}
-
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			size += len(rp.Proof)
-			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
-			if s.isOverSizeLimit(size) {
-				return nil, ErrInvalidStateProofSize
-			}
 
 			segment := &chain.Segment{
 				Height:              rm.BlockProof.BlockWitness.Height,
 				NumberOfBlockUpdate: len(msg.BlockUpdates),
 			}
 
+			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
+
 			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 				return nil, err
 			}
 
 			segments = append(segments, segment)
+			continue
 		} else {
 			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			s.l.Tracef("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
+			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
 		}
 	}
 
-	segment := &chain.Segment{
-		Height:              msg.height,
-		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		EventSequence:       msg.eventSequence,
-		NumberOfEvent:       msg.numberOfEvent,
-	}
+	if len(msg.BlockUpdates) > 0 {
+		segment := &chain.Segment{
+			Height:              msg.height,
+			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			EventSequence:       msg.eventSequence,
+			NumberOfEvent:       msg.numberOfEvent,
+		}
 
-	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-		return nil, err
-	}
+		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+			return nil, err
+		}
 
-	segments = append(segments, segment)
+		segments = append(segments, segment)
+	}
 
 	return segments, nil
 }
@@ -399,11 +500,7 @@ func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 	return err
 }
 
-func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
-	p, ok := segment.TransactionParam.(*TransactionParam)
-	if !ok {
-		return nil, fmt.Errorf("casting failure")
-	}
+func (s *sender) signAndSendTransaction(p *TransactionParam) (chain.GetResultParam, error) {
 	thp := &TransactionHashParam{}
 SignLoop:
 	for {
@@ -412,7 +509,7 @@ SignLoop:
 		}
 	SendLoop:
 		for {
-			s.l.Tracef("Relay: TransactionParam %+v\n", p)
+			// s.l.Tracef("signAndSendTransaction: TransactionParam %+v\n", p)
 			txh, err := s.c.SendTransaction(p)
 			if txh != nil {
 				thp.Hash = *txh
@@ -439,6 +536,89 @@ SignLoop:
 			}
 			return thp, nil
 		}
+	}
+}
+
+func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.GetResultParam, error) {
+	s.l.Tracef("sendFragmentations: start")
+	var grp chain.GetResultParam
+	var err error
+
+	for i := 0; i < len(tps); i++ {
+		grp, err = s.signAndSendTransaction(tps[i])
+		s.l.Debugf("sendFragmentations: fragment %d hash %+v", idxs[i], grp)
+		if err != nil {
+			s.l.Panicf("sendFragmentations: fails result %+v error%+v", grp, err)
+		}
+		// TODO use (finalizelatency * blockinterval / appropriateratio) * time.Second
+		time.Sleep(time.Duration(s.FinalizeLatency()) * time.Second)
+	}
+
+	s.l.Tracef("sendFragmentations: end")
+	return grp, err
+}
+
+func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetResultParam, error) {
+	callData, ok1 := p.Data.(CallData)
+	if !ok1 {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	bmcRelayMessageParams, ok2 := callData.Params.(BMCRelayMethodParams)
+	if !ok2 {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	prev := bmcRelayMessageParams.Prev
+	msg := bmcRelayMessageParams.Messages
+	tps := make([]*TransactionParam, 0)
+	idxs := make([]int, 0)
+	// + 1 is safeguard against transaction limit
+	nuFragments := int(math.Ceil(float64(dataSize)/float64(txMaxDataSize))) + 1
+	fragmentStringSize := len(msg) / nuFragments
+	if (len(msg) % nuFragments) != 0 {
+		nuFragments += 1
+	}
+
+	s.l.Debugf("relayByFragments: fragments: %d size: %d", nuFragments, fragmentStringSize)
+	for i := 0; i < len(msg); i += fragmentStringSize {
+		end := i + fragmentStringSize
+
+		if end > len(msg) {
+			end = len(msg)
+		}
+
+		var index int
+		if i == 0 {
+			index = ^nuFragments + 2
+		} else if end >= len(msg) {
+			index = 0
+		} else {
+			index = (nuFragments - 1 - (i / fragmentStringSize))
+		}
+
+		tp, err := s.newFragmentationsTransactionParam(prev, msg[i:end], index)
+		if err != nil {
+			return nil, err
+		}
+
+		tps = append(tps, tp)
+		idxs = append(idxs, index)
+	}
+	return s.sendFragmentations(tps, idxs)
+}
+
+func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
+	p, ok := segment.TransactionParam.(*TransactionParam)
+	if !ok {
+		return nil, fmt.Errorf("casting failure")
+	}
+
+	dataSize := countBytesOfCompactJSON(p.Data)
+	if dataSize > txMaxDataSize {
+		return s.relayByFragments(p, dataSize)
+	} else {
+		return s.signAndSendTransaction(p)
 	}
 }
 
@@ -548,6 +728,8 @@ func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func())
 func (s *sender) StopMonitorLoop() {
 	s.c.CloseAllMonitor()
 }
+
+// the unit is block
 func (s *sender) FinalizeLatency() int {
 	//on-the-next
 	return 1

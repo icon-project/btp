@@ -7,6 +7,8 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/substrate"
+	"github.com/icon-project/btp/common/log"
 )
 
 type EventCouncilCollectiveApproved = types.EventCollectiveApproved
@@ -1692,6 +1694,7 @@ type EventParachainStakingNominationDecreased struct {
 	Nominator     AccountID
 	Collator      AccountID
 	OldNomination Balance
+	Bool          bool
 	NewNomination Balance
 	Topics        []types.Hash
 }
@@ -1700,6 +1703,7 @@ type EventParachainStakingNominationIncreased struct {
 	Nominator     AccountID
 	Collator      AccountID
 	OldNomination Balance
+	Bool          bool
 	NewNomination Balance
 	Topics        []types.Hash
 }
@@ -1755,6 +1759,23 @@ type EventParachainStakingTotalSelectedSet struct {
 	Topics []types.Hash
 }
 
+type EventParachainStakingNominatorExitScheduled struct {
+	Phase         Phase
+	Round         RoundIndex
+	Nominator     AccountID
+	ScheduledExit RoundIndex
+	Topics        []Hash
+}
+
+type EventParachainStakingNominationRevocationScheduled struct {
+	Phase         Phase
+	Round         RoundIndex
+	Nominator     AccountID
+	Collator      AccountID
+	ScheduledExit RoundIndex
+	Topics        []Hash
+}
+
 type EventParachainSystemDownwardMessagesProcessed struct {
 	Phase         types.Phase
 	WeightUsed    types.U64
@@ -1780,6 +1801,16 @@ type EventParachainSystemValidationFunctionStored struct {
 	Phase                 types.Phase
 	RelayChainBlockNumber BlockNumber
 	Topics                []types.Hash
+}
+
+func NewMoonRiverEventRecord(sdr *substrate.SubstrateStorageDataRaw, meta *substrate.SubstrateMetaData) *MoonriverEventRecord {
+	records := &MoonriverEventRecord{}
+	if err := substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
+		log.Debugf("NewMoonRiverEventRecord decode fails: %v", err)
+		return nil
+	}
+
+	return records
 }
 
 type MoonriverEventRecord struct {
@@ -1843,6 +1874,8 @@ type MoonriverEventRecord struct {
 	ParachainStaking_Nomination                                  []EventParachainStakingNomination
 	ParachainStaking_NominationDecreased                         []EventParachainStakingNominationDecreased
 	ParachainStaking_NominationIncreased                         []EventParachainStakingNominationIncreased
+	ParachainStaking_NominatorExitScheduled                      []EventParachainStakingNominatorExitScheduled
+	ParachainStaking_NominationRevocationScheduled               []EventParachainStakingNominationRevocationScheduled
 	ParachainStaking_NominatorLeft                               []EventParachainStakingNominatorLeft
 	ParachainStaking_NominatorLeftCollator                       []EventParachainStakingNominatorLeftCollator
 	ParachainStaking_ParachainBondAccountSet                     []EventParachainStakingParachainBondAccountSet

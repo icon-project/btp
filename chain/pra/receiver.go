@@ -5,36 +5,38 @@ import (
 	"fmt"
 
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/frontier"
-	"github.com/icon-project/btp/chain/pra/kusama"
+	"github.com/icon-project/btp/chain/pra/moonbase"
 	"github.com/icon-project/btp/chain/pra/moonriver"
-	"github.com/icon-project/btp/chain/pra/relaychain"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
+	"github.com/icon-project/btp/common/config"
+	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 )
 
-type ReceiverOptions struct {
-	RelayEndpoint  chain.BtpAddress `json:"relay_endpoint"`
-	ParaChainId    uint             `json:"prachain_id"`
-	IconEndpoint   string           `json:"icon_endpoint"`
-	IconBmvAddress string           `json:"icon_bmv_address"`
+type receiverOptions struct {
+	config.FileConfig
+	RelayBtpAddress chain.BtpAddress `json:"relayBtpAddress"`
+	RelayEndpoint   string           `json:"relayEndpoint"`
+	RelayOffSet     int64            `json:"relayOffset"`
+	PraBmvAddress   chain.BtpAddress `json:"iconBmvAddress"`
+	DstEndpoint     string
 }
 
 type Receiver struct {
 	c                           *Client
-	rC                          substrate.SubstrateClient
-	iC                          *icon.Client
+	relayReceiver               relayReceiver
 	src                         chain.BtpAddress
 	dst                         chain.BtpAddress
 	l                           log.Logger
-	opt                         ReceiverOptions
+	opt                         receiverOptions
+	parachainId                 substrate.SubstrateParachainId
 	rxSeq                       uint64
 	isFoundMessageEventByOffset bool
 }
 
-func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
+func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger, cfgAbsBaseDir string, dstEndpoint string) chain.Receiver {
 	r := &Receiver{
 		src: src,
 		dst: dst,
@@ -48,13 +50,16 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
 	r.c = NewClient(endpoint, src.ContractAddress(), l)
-	if len(r.opt.RelayEndpoint) > 0 && len(r.opt.IconEndpoint) > 0 {
-		r.rC, err = substrate.NewSubstrateClient(string(r.opt.RelayEndpoint))
-		if err != nil {
-			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
-		}
+	paraId, err := r.c.subClient.GetParachainId()
+	if err != nil {
+		l.Panicf("fail to get parachainId %v", err)
+	}
+	r.parachainId = *paraId
 
-		r.iC = icon.NewClient(r.opt.IconEndpoint, l)
+	if len(r.opt.RelayEndpoint) > 0 {
+		r.opt.BaseDir = cfgAbsBaseDir
+		r.opt.DstEndpoint = dstEndpoint
+		r.relayReceiver = NewRelayReceiver(r.opt, l)
 		if err != nil {
 			l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
 		}
@@ -69,19 +74,26 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		BlockHash: v.Hash[:],
 	}
 
-	var update BlockUpdate
+	r.l.Debugf("newParaBlockUpdate: %d", v.Height)
+	var update ParaChainBlockUpdateExtra
 	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(*v.Header); err != nil {
 		return nil, err
 	}
 
 	if len(r.opt.RelayEndpoint) > 0 {
-		update.FinalityProof, err = r.newFinalityProof(v)
+		var err error
+		vd, err := r.c.subClient.GetValidationData(v.Hash)
+		if err != nil {
+			return nil, err
+		}
+
+		update.FinalityProofs, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// For local testing without relay chain
-		update.FinalityProof = nil
+		update.FinalityProofs = nil
 	}
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
@@ -91,109 +103,6 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 
 	bu.Header = update.ScaleEncodedBlockHeader
 	return bu, nil
-}
-
-func (r *Receiver) newFinalityProof(v *BlockNotification) ([]byte, error) {
-	var err error
-	vd, err := r.c.subClient.GetValidationData(v.Hash)
-	if err != nil {
-		return nil, err
-	}
-
-	bus, rps, err := r.pullBlockUpdatesAndStateProofs(vd)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO fetch relay mta height from icon client
-	bp, err := codec.RLP.MarshalToBytes(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	msg := &RelayMessage{
-		BlockUpdates:  bus,
-		BlockProof:    bp,
-		ReceiptProofs: rps,
-	}
-
-	rmb, err := codec.RLP.MarshalToBytes(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return rmb, err
-}
-
-// func (r *Receiver) getRelayMtaLastHeight() int64 {
-// 	p := &icon.CallParam{
-// 		ToAddress: icon.Address(r.opt.IconBmvAddress),
-// 		DataType:  "call",
-// 		Data: icon.CallData{
-// 			Method: "relayMtaHeight",
-// 		},
-// 	}
-
-// 	var height *icon.HexInt
-// 	err := r.iC.Call(p, height)
-// 	if err != nil {
-// 		r.l.Panicf("getRelayMtaLastHeight: failed")
-// 	}
-
-// 	value, err := height.Value()
-// 	if err != nil {
-// 		r.l.Panicf("getRelayMtaLastHeight: failed")
-// 	}
-
-// 	return value
-// }
-
-func (r *Receiver) pullBlockUpdatesAndStateProofs(vd *substrate.PersistedValidationData) ([][]byte, [][]byte, error) {
-	bus := make([][]byte, 0)
-	sps := make([][]byte, 0)
-
-	foundEvent := false
-	from := uint64(vd.RelayParentNumber + 1)
-	for !foundEvent {
-		bh, err := r.rC.GetBlockHash(from)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		_, _, err = r.getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(bh)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		foundEvent = true
-	}
-
-	return bus, sps, nil
-}
-
-func (r *Receiver) getGrandpaNewAuthorityAndParasInclusionCandidateIncluded(blockHash substrate.SubstrateHash) ([]relaychain.EventGrandpaNewAuthorities, []relaychain.EventParasInclusionCandidateIncluded, error) {
-	meta, err := r.rC.GetMetadata(blockHash)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	key, err := r.rC.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sdr, err := r.rC.GetStorageRaw(key, blockHash)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Build relay adapter here
-	records := &kusama.KusamaEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, nil, err
-	}
-
-	return records.Grandpa_NewAuthorities, records.ParasInclusion_CandidateIncluded, nil
 }
 
 func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog, error) {
@@ -212,13 +121,16 @@ func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog
 		return nil, err
 	}
 
-	// Build parachain adapter here
-	records := &moonriver.MoonriverEventRecord{}
-	if err = substrate.SubstrateEventRecordsRaw(*sdr).DecodeEventRecords(meta, records); err != nil {
-		return nil, err
-	}
+	spec := r.c.subClient.GetSpecName()
+	switch spec {
+	case substrate.Moonriver:
+		return moonriver.NewMoonRiverEventRecord(sdr, meta).EVM_Log, nil
+	case substrate.Moonbase:
+		return moonbase.NewMoonbaseEventRecord(sdr, meta).EVM_Log, nil
 
-	return records.EVM_Log, nil
+	default:
+		return nil, fmt.Errorf("not supported relay spec %s", spec)
+	}
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
@@ -245,6 +157,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					Sequence: bmcMsg.Seq.Int64(),
 				})
 
+				r.l.Debugf("newReceiptProofs: newEvent %d", rp.Events[len(rp.Events)-1].Sequence)
 				if bmcMsg.Seq.Int64() == int64(r.rxSeq) {
 					r.isFoundMessageEventByOffset = true
 				}
@@ -253,6 +166,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 		// only get ReceiptProof that has right Events
 		if len(rp.Events) > 0 {
+			r.l.Debugf("newReceiptProofs: build StateProof %d", v.Height)
 			key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
 			if err != nil {
 				return nil, err
@@ -297,7 +211,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("ReceiveLoop parachain, got err: %v", err)
+		return errors.Wrap(err, "ReceiveLoop parachain, got err")
 	}
 
 	return nil

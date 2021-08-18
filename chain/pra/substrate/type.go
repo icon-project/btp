@@ -11,7 +11,11 @@ type SubstrateStorageKey = types.StorageKey
 type SubstrateStorageDataRaw = types.StorageDataRaw
 type SubstrateBlockNumber = types.BlockNumber
 type SubstrateEventRecordsRaw types.EventRecordsRaw
+type SubstrateParachainId = types.U32
+type SetId = types.U64
+type U32 = types.U32
 type HexString = string
+
 type SubstrateReadProof struct {
 	At    SubstrateHash `json:"at"`
 	Proof []HexString   `json:"proof"`
@@ -48,6 +52,17 @@ type Justification struct {
 	EncodedJustification GrandpaJustification
 }
 
+type WestendJustification struct {
+	ConsensusEngineId    [2]types.U8
+	EncodedJustification GrandpaJustification
+}
+
+type WestendFinalityProof struct {
+	Block          types.Hash
+	Justification  WestendJustification
+	UnknownHeaders []types.Header
+}
+
 type FinalityProof struct {
 	Block          types.Hash
 	Justification  Justification
@@ -61,9 +76,30 @@ type PersistedValidationData struct {
 	MaxPovSize              types.U32
 }
 
+type SignedMessage struct {
+	TargetHash   types.Hash
+	TargetNumber types.U32
+}
+
+type SignedMessageEnum struct {
+	IsPrevote        bool
+	AsPrevote        SignedMessage
+	IsPrecommit      bool
+	AsPrecommit      SignedMessage
+	IsPrimaryPropose bool
+	AsPrimaryPropose SignedMessage
+}
+
+type VoteMessage struct {
+	Message SignedMessageEnum
+	Round   types.U64
+	SetId   types.U64
+}
+
 type SubstrateClient interface {
 	Call(result interface{}, method string, args ...interface{}) error
 	GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error)
+	GetMetadataLatest() *SubstrateMetaData
 	GetFinalizedHead() (SubstrateHash, error)
 	GetHeader(hash SubstrateHash) (*SubstrateHeader, error)
 	GetHeaderLatest() (*SubstrateHeader, error)
@@ -73,9 +109,11 @@ type SubstrateClient interface {
 	GetSpecName() string
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
 	CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
-	GetFinalitiyProof(blockNumber types.U32) (*FinalityProof, error)
-	GetGrandpaCurrentSetId(blockHash SubstrateHash) (*types.U64, error)
+	GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error)
+	GetGrandpaCurrentSetId(blockHash SubstrateHash) (SetId, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)
+	GetParachainId() (*SubstrateParachainId, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error
 	GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error)
+	GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error)
 }
