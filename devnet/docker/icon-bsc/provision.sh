@@ -27,6 +27,7 @@ export TOKEN_NAME=ETH
 export TOKEN_SYM=ETH
 export TOKEN_SUPPLY=0x3e8
 export TOKEN_DECIMALS=0x12
+export SVC_NAME=TokenBSH
 
 BSC_KEY_SECRET="Perlia0"
 
