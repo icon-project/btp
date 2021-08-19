@@ -441,6 +441,9 @@ func decodeEvmError(dataerr EvmDataError) (string, error) {
 	}
 
 	s := dataerr.ErrorData().(string)
+	if len(s) < 136 {
+		return "", fmt.Errorf("decodeEvmError: unknow error")
+	}
 	s = s[136:]
 	s = strings.TrimRight(s, "0")
 	d, err := hex.DecodeString(s)
