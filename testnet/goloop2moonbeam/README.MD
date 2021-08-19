@@ -22,15 +22,15 @@ sudo groupadd docker
 sudo usermod -aG docker $USER
 ```
 
-### Build image goloop/gochain-icon:0.9.7
+### Build image goloop/goloop-icon:0.9.9
 
 ```
 cd ~/work
 git clone https://github.com/icon-project/goloop.git
 cd ~/work/goloop
 git fetch --tags
-git checkout v0.9.7 -b v0.9.7
-GL_TAG=0.9.7 make gochain-icon-image
+git checkout v0.9.9 -b v0.9.9
+GL_TAG=0.9.9 make goloop-icon-image
 ```
 
 ### Build image btpsimple:latest
