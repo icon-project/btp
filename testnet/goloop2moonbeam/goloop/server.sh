@@ -3,6 +3,8 @@
 source keystore.sh
 
 ensure_config() {
+  # echo "ensure_config"
+
   local CONFIG=${1:-${GOLOOP_CONFIG:-/goloop/config/goloop.server.json}}
   if [ ! -f "${CONFIG}" ]; then
     export GOLOOP_KEY_SECRET=$(ensure_key_secret ${GOLOOP_KEY_SECRET:-/goloop/config/goloop.keysecret})
@@ -29,6 +31,7 @@ server_start() {
     export GOLOOP_CONFIG=$(ensure_config)
     goloop server start > /dev/null 2>&1 &
     echo "$!" > ${GOLOOP_PID}
+    cat $GOLOOP_CONFIG | jq -r
   fi
 }
 

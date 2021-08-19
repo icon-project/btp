@@ -1,24 +1,16 @@
 version: "3.4"
 services:
-    gochain:
-        container_name: gochain
+    goloop:
+        container_name: goloop
         build:
-            context: ./gochain
+            context: ./goloop
         logging:
-            driver: none
+                driver: none
         volumes:
-            - ${PWD}/config:/gochain/config
-            - ${PWD}/data/gochain:/gochain/data
+            - ${PWD}/config:/goloop/config
+            - ${PWD}/data/goloop:/goloop/data
         ports:
             - 9080:9080
-        environment: 
-            - GOCHAIN_CONFIG=/gochain/config/gochain.server.json
-            - GOCHAIN_DATA=/gochain/data/iconee
-            - GOCHAIN_LOGFILE=/gochain/data/gochain.log
-            - GOCHAIN_CLEAN_DATA=false
-            - GOCHAIN_PROVISION_CONFIG=/gochain/provision/config
-            - JAVAEE_BIN=/goloop/execman/bin/execman
-            - PYEE_VERIFY_PACKAGE=true
     moonbeam:
         container_name: moonbeam
         image: purestake/moonbeam:v0.9.6
@@ -36,11 +28,11 @@ services:
         build:
             context: .
         depends_on: 
-            - gochain
+            - goloop
             - moonbeam
         entrypoint: 
             - "/wait_for_it.sh"
-            - "gochain:9080"
+            - "goloop:9080"
             - --
             - "/wait_for_it.sh"
             - "moonbeam:9933"
@@ -55,7 +47,7 @@ services:
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
             - BTPSIMPLE_CONFIG=/btpsimple/config/config.icon.json
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
-            - BTPSIMPLE_SRC_ENDPOINT=http://gochain:9080/api/v3/icon
+            - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
             - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:9933
             - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
@@ -67,12 +59,12 @@ services:
         build:
             context: .
         depends_on: 
-            - gochain
+            - goloop
             - moonbeam
             - btp_icon
         entrypoint: 
             - "/wait_for_it.sh"
-            - "gochain:9080"
+            - "goloop:9080"
             - --
             - "/wait_for_it.sh"
             - "moonbeam:9933"
@@ -89,9 +81,9 @@ services:
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam
             - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
-            - BTPSIMPLE_DST_ENDPOINT=http://gochain:9080/api/v3/icon
+            - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
             - BTPSIMPLE_DST_OPTIONS="stepLimit=5000000000"
-            - BTPSIMPLE_OFFSET=/btpsimple/config/offset.moonbeam
-            - BTPSIMPLE_KEY_STORE=/btpsimple/config/gochain.keystore.json
-            - BTPSIMPLE_KEY_SECRET=/btpsimple/config/gochain.keysecret
+            - BTPSIMPLE_OFFSET=/btpsimple/config/offset.moonbeam_parachain
+            - BTPSIMPLE_KEY_STORE=/btpsimple/config/goloop.keystore.json
+            - BTPSIMPLE_KEY_SECRET=/btpsimple/config/goloop.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_moonbeam/btpsimple_moonbeam.log

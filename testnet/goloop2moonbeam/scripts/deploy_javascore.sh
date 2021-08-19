@@ -195,7 +195,7 @@ goloop_bmc_addRelay() {
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method addRelay \
         --param _link=$(cat btp.moonbeam) \
-        --param _addr=$(jq -r .address gochain.keystore.json) \
+        --param _addr=$(jq -r .address $GOLOOP_KEY_STORE) \
         | jq -r . > tx.registerRelay.icon
     ensure_txresult tx.registerRelay.icon
 }
