@@ -50,12 +50,13 @@ type SenderOptions struct {
 }
 
 type sender struct {
-	c   *Client
-	src chain.BtpAddress
-	dst chain.BtpAddress
-	w   Wallet
-	l   log.Logger
-	opt SenderOptions
+	c                 *Client
+	src               chain.BtpAddress
+	dst               chain.BtpAddress
+	w                 Wallet
+	l                 log.Logger
+	opt               SenderOptions
+	iconBlockInterval int
 }
 
 func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
@@ -351,10 +352,10 @@ func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.
 		if err != nil {
 			s.l.Panicf("sendFragmentations: fails result %+v error%+v", grp, err)
 		}
-		// TODO use (finalizelatency * blockinterval / appropriateratio) * time.Second
-		time.Sleep(time.Duration(s.FinalizeLatency()) * time.Second)
 	}
 
+	// Only last fragmnetation need this
+	time.Sleep(time.Duration(s.FinalizeLatency()*s.iconBlockInterval) * time.Second)
 	s.l.Tracef("sendFragmentations: end")
 	return grp, err
 }
@@ -500,6 +501,7 @@ func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	ls.RxHeightSrc, err = bs.RxHeightSrc.Value()
 	ls.BlockIntervalSrc, err = bs.BlockIntervalSrc.Int()
 	ls.BlockIntervalDst, err = bs.BlockIntervalDst.Int()
+	s.iconBlockInterval = ls.BlockIntervalDst
 	return ls, nil
 }
 
