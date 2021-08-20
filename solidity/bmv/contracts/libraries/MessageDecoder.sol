@@ -67,7 +67,7 @@ library MessageDecoder {
                     subList[0].toBytes().bytesToBytes32(),
                     subList[1].toBytes().bytesToBytes32(),
                     subList[2].toBytes().bytesToBytes32(),
-                    subList[3].toBytes()
+                    subList.length == 4 ? subList[3].toBytes(): bytes("")
                 ),
                 isResultEmpty
             );
