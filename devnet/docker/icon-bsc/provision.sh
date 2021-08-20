@@ -112,7 +112,7 @@ add_icon_relay() {
   echo "adding icon link $(cat $CONFIG_DIR/bmv.bsc)"
   cd $CONTRACTS_DIR/solidity/bmc
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-  --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr 0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776
+  --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr 0x70e789d2f5d469ea30e0525dbfdd5515d6ead30d
 }
 
 bsc_addService() {
@@ -134,7 +134,6 @@ deploy_javascore_bmc() {
   echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
 
-
 deploy_javascore_bmv() {
  echo "deploying javascore BMV"
  cd $CONFIG_DIR
@@ -151,7 +150,6 @@ deploy_javascore_bmv() {
   echo "BMV deployment success"
 }
 
-
 deploy_javascore_bsh() {
   echo "deploying javascore Token BSH"
   cd $CONFIG_DIR
@@ -161,8 +159,7 @@ deploy_javascore_bsh() {
   extract_scoreAddress tx.token_bsh.icon token_bsh.icon
 }
 
-
-deploy_javascore_irc2() { 
+deploy_javascore_irc2() {
   echo "deploying javascore IRC2Token"
   cd $CONFIG_DIR
  
@@ -175,8 +172,7 @@ deploy_javascore_irc2() {
   extract_scoreAddress tx.irc2_token.icon irc2_token.icon
 }
 
-
-bmc_javascore_addverifier() {
+bmc_javascore_addVerifier() {
   echo "adding verifier"
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
@@ -197,7 +193,6 @@ add_bsc_link() {
   echo "Added Link $(cat btp.bsc)"
 } 
 
-
 bsh_javascore_register() {
   cd $CONFIG_DIR
   FEE_NUMERATOR=0x1
@@ -211,8 +206,6 @@ bsh_javascore_register() {
   ensure_txresult tx.register.icon
 }
 
-
-
 bmc_javascore_addService() {
    cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
@@ -222,13 +215,11 @@ bmc_javascore_addService() {
   ensure_txresult tx.addService.icon
 } 
 
-
 bmc_javascore_getServices() {
    cd $CONFIG_DIR
   goloop rpc call --to $(cat bmc.icon) \
     --method getServices
 } 
-
 
 bsh_javascore_balance() {
    cd $CONFIG_DIR
@@ -244,7 +235,6 @@ bsh_javascore_balance() {
     --param user=$EOA \
     --param tokenName=$TOKEN_NAME
 }
-
 
 bsh_javascore_transfer() {
    cd $CONFIG_DIR
@@ -264,8 +254,6 @@ bsh_javascore_transfer() {
   ensure_txresult $TX
 }
 
-
-
 irc2_javascore_balance() {
    cd $CONFIG_DIR
   if [ $# -lt 1 ] ; then
@@ -277,7 +265,6 @@ irc2_javascore_balance() {
     --method balanceOf \
     --param _owner=$EOA
 }
-
 
 irc2_javascore_transfer() {
   cd $CONFIG_DIR
@@ -295,7 +282,6 @@ irc2_javascore_transfer() {
     --param _value=$VAL | jq -r .)
   ensure_txresult $TX
 }
-
 
 rpceoa() {
   local EOA=${1:-${GOLOOP_RPC_KEY_STORE}}
@@ -317,7 +303,7 @@ goloop_lastblock() {
 }
 
 provision() {
- if [ ! -f /btpsimple/provision ]; then
+ if [ ! -f $BTPSIMPLE_CONFIG_DIR/provision ]; then
    echo "start provisioning..."
 
    cp /bsc.ks.json "$BTPSIMPLE_CONFIG_DIR"/bsc.ks.json
@@ -325,28 +311,26 @@ provision() {
    printf $BSC_KEY_SECRET > "$BTPSIMPLE_CONFIG_DIR"/bsc.secret
    echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
 
-  
+   eth_blocknumber > /btpsimple/config/offset.bsc
 
-    deploy_solidity_bmc
-    eth_blocknumber > /btpsimple/config/offset.bsc
-    deploy_solidity_bmv
-    deploy_javascore_bmc
-    
-    add_icon_verifier
-    add_icon_link
-    add_icon_relay
+   deploy_javascore_bmc
+   deploy_solidity_bmc
+   deploy_solidity_bmv
+   deploy_javascore_bmv
 
-    deploy_javascore_bmv
-    deploy_javascore_bsh
-    deploy_javascore_irc2
-    bmc_javascore_addverifier
-    add_bsc_link
+   deploy_javascore_bsh
+   deploy_javascore_irc2
 
-    #add_bsc_link      
-    bsh_javascore_register
-    bmc_javascore_addService
+   bmc_javascore_addVerifier
+   add_icon_verifier
+   add_icon_link
+   add_icon_relay
+   add_bsc_link
 
-   touch /btpsimple/provision
+   bsh_javascore_register
+   bmc_javascore_addService
+
+   touch $BTPSIMPLE_CONFIG_DIR/provision
    echo "provision is now complete"
  fi
 }
