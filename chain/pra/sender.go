@@ -135,9 +135,9 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
 			size += len(lbu.Proof)
-			s.log.Tracef("Segment: at %d BlockProof: %x", rm.BlockProof.BlockWitness.Height, msg.BlockProof)
 			msg.BlockProof = lbu.Proof
 			msg.height = lbu.Height
+			s.log.Tracef("Segment: at %d BlockProof: %x", msg.height, msg.BlockProof)
 		}
 
 		size += len(rp.Proof)
@@ -160,7 +160,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 				// TODO: need a confirmation
 				// I'm not sure why this EventProofs is missing
-				// at here this https://github.com/icon-project/btp/blob/master/cmd/btpsimple/module/icon/sender.go#L162
+				// at here this https://github.com/icon-project/btp/blob/3babaa101cc0ff469e7d769b450485fa7af14757/cmd/btpsimple/module/icon/sender.go#L162
 
 				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
 					return nil, err
@@ -210,7 +210,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 	}
 
-	if len(msg.BlockUpdates) > 0 {
+	if len(msg.BlockUpdates) > 0 || len(msg.BlockProof) > 0 {
 		segment := &chain.Segment{
 			Height:              msg.height,
 			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
@@ -222,7 +222,6 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 		segments = append(segments, segment)
 	}
-
 	return segments, nil
 }
 
