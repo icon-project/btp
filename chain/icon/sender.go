@@ -354,8 +354,6 @@ func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.
 		}
 	}
 
-	// Only last fragmnetation need this
-	time.Sleep(time.Duration(s.FinalizeLatency()*s.iconBlockInterval) * time.Second)
 	s.l.Tracef("sendFragmentations: end")
 	return grp, err
 }
