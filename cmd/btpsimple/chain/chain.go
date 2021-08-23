@@ -123,7 +123,7 @@ func (s *SimpleChain) _relay() {
 					s.l.Panicf("fail to segment err:%+v", err)
 				}
 			}
-			s._log("before relay", rm, nil, -1)
+			//s._log("before relay", rm, nil, -1)
 			reSegment := true
 			for j, segment := range rm.Segments {
 				if segment == nil {

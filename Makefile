@@ -98,6 +98,9 @@ dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
 dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
 	cd $(SOLIDITY_DIST_DIR)/bmv ; 
 
+dist-sol-token_bsh: $(SOLIDITY_DIST_DIR)/TokenBSH
+	cd $(SOLIDITY_DIST_DIR)/TokenBSH ;
+
 dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
 
 clean-dist-py:
@@ -114,7 +117,7 @@ dist-javascore:
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
 
-btpsimple-image: btpsimple-linux dist-py
+btpsimple-image: btpsimple-linux
 	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
 	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
 	@ \

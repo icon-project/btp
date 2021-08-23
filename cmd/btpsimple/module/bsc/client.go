@@ -41,7 +41,7 @@ const (
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
 	DefaultTimeout                             = 10 * time.Second        //
 	ChainID                                    = 56
-	DefaultGasLimit                            = 210000
+	DefaultGasLimit                            = 8000000
 	DefaultGasPrice                            = 5000000000
 )
 
