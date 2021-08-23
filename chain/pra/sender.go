@@ -210,16 +210,18 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		}
 	}
 
-	segment := &chain.Segment{
-		Height:              msg.height,
-		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		EventSequence:       msg.eventSequence,
-		NumberOfEvent:       msg.numberOfEvent,
+	if len(msg.BlockUpdates) > 0 || len(msg.BlockProof) > 0 {
+		segment := &chain.Segment{
+			Height:              msg.height,
+			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
+			EventSequence:       msg.eventSequence,
+			NumberOfEvent:       msg.numberOfEvent,
+		}
+		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
+			return nil, err
+		}
+		segments = append(segments, segment)
 	}
-	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-		return nil, err
-	}
-	segments = append(segments, segment)
 	return segments, nil
 }
 
