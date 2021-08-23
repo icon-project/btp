@@ -50,13 +50,12 @@ type SenderOptions struct {
 }
 
 type sender struct {
-	c                 *Client
-	src               chain.BtpAddress
-	dst               chain.BtpAddress
-	w                 Wallet
-	l                 log.Logger
-	opt               SenderOptions
-	iconBlockInterval int
+	c   *Client
+	src chain.BtpAddress
+	dst chain.BtpAddress
+	w   Wallet
+	l   log.Logger
+	opt SenderOptions
 }
 
 func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
@@ -499,7 +498,6 @@ func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	ls.RxHeightSrc, err = bs.RxHeightSrc.Value()
 	ls.BlockIntervalSrc, err = bs.BlockIntervalSrc.Int()
 	ls.BlockIntervalDst, err = bs.BlockIntervalDst.Int()
-	s.iconBlockInterval = ls.BlockIntervalDst
 	return ls, nil
 }
 
