@@ -269,6 +269,22 @@ func TestSenderSegment(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("should not segment if there is no new blockupdates and receipt_proofs", func(t *testing.T) {
+		segments, err := sender.Segment(&chain.RelayMessage{
+			BlockUpdates: []*chain.BlockUpdate{
+				{
+					Height: 1,
+					Proof:  genFakeBytes(txSizeLimit),
+				},
+			},
+			ReceiptProofs: nil,
+			BlockProof:    nil,
+		}, 2)
+
+		require.Nil(t, err)
+		assert.Len(t, segments, 0)
+	})
 }
 
 func TestSenderParseTransactionError(t *testing.T) {
