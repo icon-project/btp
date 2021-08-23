@@ -9,25 +9,25 @@
   "backup_dir": "",
   "node_dir": "../data",
   "key_store": {
-    "address": "hx14ed22a9e1803afb8a1e238cd7484038dabe5ac2",
-    "id": "46cba548-68cb-4cc2-9c35-15e894ce82c1",
+    "address": "hxb6b5791be0b5ef67063b3c10b840fb81514db2fd",
+    "id": "87323a66-289a-4ce2-88e4-00278deb5b84",
     "version": 3,
     "coinType": "icx",
     "crypto": {
       "cipher": "aes-128-ctr",
       "cipherparams": {
-        "iv": "a9c34b7e06061afbe0930ad11c85204e"
+        "iv": "069e46aaefae8f1c1f840d6b09144999"
       },
-      "ciphertext": "8b3bdc1b284e5556e4ba43b81fe0ccde9c128a8e4fdbecdfb00c406247814961",
+      "ciphertext": "f35ff7cf4f5759cb0878088d0887574a896f7f0fc2a73898d88be1fe52977dbd",
       "kdf": "scrypt",
       "kdfparams": {
         "dklen": 32,
         "n": 65536,
         "r": 8,
         "p": 1,
-        "salt": "23123b1a64f11ec4"
+        "salt": "0fc9c3b24cdb8175"
       },
-      "mac": "e53dccdf096e0abc4fdb33f2a2cf183f93f98d82d920f91de643c7c4af818efd"
+      "mac": "1ef4ff51fdee8d4de9cf59e160da049eb0099eb691510994f5eca492f56c817a"
     }
   },
   "log_level": "debug",

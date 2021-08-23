@@ -56,6 +56,19 @@ deploy_solidity_bmv() {
     echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
     echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
 
+    # - BMC_CONTRACT_ADDRESS: an address on chain of BMCPeriphery contract
+    # This address is queried after deploying BMC contracts
+    # For example: BMC_CONTRACT_ADDRESS = 0x5CC307268a1393AB9A764A20DACE848AB8275c46
+    # - BMV_ICON_NET: Chain ID and name of a network that BMV is going to verify BTP Message
+    # - BMV_ICON_INIT_OFFSET: a block height when ICON-BMC was deployed
+    # - BMV_ICON_LASTBLOCK_HASH: a hash of the above block
+    # - BMV_ICON_ENCODED_VALIDATORS: RLP encoding of Validators. It can be generated in two ways:
+    #    + Using library: https://www.npmjs.com/package/rlp
+    #    + Web App: https://toolkit.abdk.consulting/ethereum#rlp
+    # Get the validators by call this command 'goloop rpc call --to $GOLOOP_CHAINSCORE --method getValidators'
+    # The curruent list of validators, which is being used in this example, is ["hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"]
+    # Replace 'hx' by '0x00' -> RLP encode -> 0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd
+
     BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
     BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
     BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
