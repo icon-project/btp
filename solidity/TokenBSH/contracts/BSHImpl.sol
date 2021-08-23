@@ -119,16 +119,8 @@ contract BSHImpl is IBSHImpl, Initializable {
         bytes calldata _msg
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "Invalid Service Name");
-        //todo: temp remove comment
         Types.ServiceMessage memory _sm = _msg.decodeServiceMessage();
-        //todo: temp remove this line, temp added
-        /*  (
-            Types.ServiceMessage memory _sm,
-            Types.TransferAssets memory _ta
-        ) = _msg.decodeTransferAssetTemp();
- */
         if (_sm.serviceType == Types.ServiceType.REQUEST_TOKEN_TRANSFER) {
-            //todo: temp remove comment
             Types.TransferAssets memory _ta = _sm.data.decodeTransferAsset();
             string memory _statusMsg;
             uint256 _status;
@@ -136,7 +128,7 @@ contract BSHImpl is IBSHImpl, Initializable {
                 _statusMsg = "Transfer Success";
                 _status = RC_OK;
                 return;
-            } catch Error(string memory _err) {
+            } catch Error(string memory _err) {                
                 _statusMsg = _err;
                 _status = RC_ERR;
             }
@@ -171,11 +163,11 @@ contract BSHImpl is IBSHImpl, Initializable {
         external
     {
         require(msg.sender == address(this), "Unauthorized");
-        // string memory _toNetwork;
-        // string memory _toAddress;
-        string memory _toAddress = transferAssets.to;
+        string memory _toNetwork;
+        string memory _toAddress;
+        //string memory _toAddress = transferAssets.to;
         //TODO: check the to address format is it btp address or just account?
-        //(_toNetwork, _toAddress) = _to.splitBTPAddress();
+        (_toNetwork, _toAddress) = transferAssets.to.splitBTPAddress();
         try this.checkParseAddress(_toAddress) {} catch {
             revert("Invalid Address");
         }

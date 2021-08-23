@@ -50,31 +50,31 @@ deploy_solidity_bmc() {
 }
 
 deploy_solidity_bmv() {
-   echo "deploying solidity bmv"
-   cd $CONTRACTS_DIR/solidity/bmv
-   rm -rf contracts/test build .openzeppelin
-   npm install
-   LAST_BOCK=$(goloop_lastblock)
-   LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
-   LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
-   echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
-   echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
+  echo "deploying solidity bmv"
+  cd $CONTRACTS_DIR/solidity/bmv
+  rm -rf contracts/test build .openzeppelin
+  npm install
+  LAST_BOCK=$(goloop_lastblock)
+  LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
+  LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
+  echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
+  echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
 
-   BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.bsc) \
-   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
-   BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
-   BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
-   BMV_ICON_INIT_ROOTSSIZE=8 \
-   BMV_ICON_INIT_CACHESIZE=8 \
-   BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
-   truffle migrate --compile-all --network bscDocker
+  BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.bsc) \
+  BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
+  BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
+  BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
+  BMV_ICON_INIT_ROOTSSIZE=8 \
+  BMV_ICON_INIT_CACHESIZE=8 \
+  BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
+  truffle migrate --compile-all --network bscDocker
 
-   jq -r '.networks[] | .address' build/contracts/BMV.json > $CONFIG_DIR/bmv.bsc
+  jq -r '.networks[] | .address' build/contracts/BMV.json > $CONFIG_DIR/bmv.bsc
 
-   wait_for_file $CONFIG_DIR/bmv.bsc
+  wait_for_file $CONFIG_DIR/bmv.bsc
 }
 
-deploy_solidity_tokenBSH() {
+deploy_solidity_tokenBSH_BEP20() {
   echo "deploying solidity Token BSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   rm -rf contracts/test build .openzeppelin
@@ -84,14 +84,17 @@ deploy_solidity_tokenBSH() {
   BSH_TOKEN_FEE=1 \
   BMC_PERIPHERY_ADDRESS=$BMC_ADDRESS \
   BSH_SERVICE=$SVC_NAME \
-  truffle migrate -f 2 --to 2 --compile-all --network bscLocal
+  truffle migrate --compile-all --network bscDocker
 
-  BSH_IMPL_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BSHImpl.json) 
+  BSH_IMPL_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BSHImpl.json)
   jq -r '.networks[] | .address' build/contracts/BSHImpl.json > $CONFIG_DIR/token_bsh.impl.bsc
   jq -r '.networks[] | .address' build/contracts/BSHProxy.json > $CONFIG_DIR/token_bsh.proxy.bsc
 
   wait_for_file $CONFIG_DIR/token_bsh.impl.bsc
   wait_for_file $CONFIG_DIR/token_bsh.proxy.bsc
+
+  jq -r '.networks[] | .address' build/contracts/BEP20TKN.json > $CONFIG_DIR/bep20_token.bsc
+  wait_for_file $CONFIG_DIR/bep20_token.bsc
 }
 
 add_icon_verifier() {
@@ -105,7 +108,7 @@ add_icon_link() {
   echo "adding icon link $(cat $CONFIG_DIR/btp.icon)"
   cd $CONTRACTS_DIR/solidity/bmc
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-  --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 2000 --maxAggregation 1 --delayLimit 3
+  --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 3000 --maxAggregation 2 --delayLimit 3
 }
 
 add_icon_relay() {
@@ -118,8 +121,17 @@ add_icon_relay() {
 bsc_addService() {
   echo "adding ${SVC_NAME} service into BMC"
   cd $CONTRACTS_DIR/solidity/bmc
+  BSH_IMPL_ADDRESS=$(cat $CONFIG_DIR/token_bsh.impl.bsc)
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
   --method addService --name $SVC_NAME --addr "$BSH_IMPL_ADDRESS"
+}
+
+bsc_registerToken() {
+  echo "Registering ${TOKEN_NAME} into tokenBSH"
+  cd $CONTRACTS_DIR/solidity/TokenBSH
+  BEP20_TKN_ADDRESS=$(cat $CONFIG_DIR/bep20_token.bsc)
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.js \
+  --method registerToken --name $TOKEN_NAME --symbol $TOKEN_SYM --addr "$BEP20_TKN_ADDRESS"
 }
 
 ######################################## javascore service methods - start ######################################
@@ -128,24 +140,24 @@ deploy_javascore_bmc() {
   echo "deploying javascore BMC"
   cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmc-optimized.jar \
-    --content_type application/java \
-    --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
+  --content_type application/java \
+  --param _net=$(cat net.btp.icon) | jq -r . >tx.bmc.icon
   extract_scoreAddress tx.bmc.icon bmc.icon
   echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
 
 deploy_javascore_bmv() {
- echo "deploying javascore BMV"
- cd $CONFIG_DIR
+  echo "deploying javascore BMV"
+  cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmv-optimized.jar \
-      --content_type application/java \
-      --param network=$(cat net.btp.icon) \
-      --param bmc=$(cat bmc.icon) \
-      --param offset=$(cat offset.icon) \
-      --param rootSize=0x3 \
-      --param cacheSize=0xA \
-      --param isAllowNewerWitness=0x1 \
-       | jq -r . > tx.bmv.icon
+  --content_type application/java \
+  --param network=$(cat net.btp.icon) \
+  --param bmc=$(cat bmc.icon) \
+  --param offset=$(cat offset.icon) \
+  --param rootSize=0x3 \
+  --param cacheSize=0xA \
+  --param isAllowNewerWitness=0x1 | \
+  jq -r . > tx.bmv.icon
   extract_scoreAddress tx.bmv.icon bmv.icon
   echo "BMV deployment success"
 }
@@ -154,21 +166,21 @@ deploy_javascore_bsh() {
   echo "deploying javascore Token BSH"
   cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bsh-optimized.jar \
-    --content_type application/java \
-    --param _bmc=$(cat bmc.icon) | jq -r . > tx.token_bsh.icon
+  --content_type application/java \
+  --param _bmc=$(cat bmc.icon) | jq -r . > tx.token_bsh.icon
   extract_scoreAddress tx.token_bsh.icon token_bsh.icon
 }
 
 deploy_javascore_irc2() {
   echo "deploying javascore IRC2Token"
   cd $CONFIG_DIR
- 
+
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/irc2-token-optimized.jar \
-      --content_type application/java \
-      --param _name=${TOKEN_NAME} \
-      --param _symbol=${TOKEN_SYM} \
-      --param _initialSupply=${TOKEN_SUPPLY} \
-      --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.irc2_token.icon
+  --content_type application/java \
+  --param _name=${TOKEN_NAME} \
+  --param _symbol=${TOKEN_SYM} \
+  --param _initialSupply=${TOKEN_SUPPLY} \
+  --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.irc2_token.icon
   extract_scoreAddress tx.irc2_token.icon irc2_token.icon
 }
 
@@ -176,110 +188,114 @@ bmc_javascore_addVerifier() {
   echo "adding verifier"
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
-    --method addVerifier \
-    --param _net=$BSC_BMC_NET \
-    --param _addr=$(cat bmv.icon) | jq -r . > tx.addverifier.icon
+  --method addVerifier \
+  --param _net=$BSC_BMC_NET \
+  --param _addr=$(cat bmv.icon) | jq -r . > tx.addverifier.icon
   ensure_txresult tx.addverifier.icon
   echo "Added verifier for $(cat bmv.icon)"
 }
 
-add_bsc_link() { 
+bmc_javascore_addLink() {
   echo "Adding bsc link"
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
-    --method addLink \
-    --param _link=$(cat btp.bsc) | jq -r . > tx.addLink.icon
+  --method addLink \
+  --param _link=$(cat btp.bsc) | jq -r . > tx.addLink.icon
   ensure_txresult tx.addLink.icon
   echo "Added Link $(cat btp.bsc)"
-} 
+}
 
 bsh_javascore_register() {
   cd $CONFIG_DIR
   FEE_NUMERATOR=0x1
   goloop rpc sendtx call --to $(cat token_bsh.icon) \
-    --method register \
-    --param name=${TOKEN_NAME} \
-    --param symbol=${TOKEN_SYM} \
-    --param feeNumerator=${FEE_NUMERATOR} \
-    --param decimals=${TOKEN_DECIMALS} \
-    --param address=$(cat irc2_token.icon) | jq -r . > tx.register.icon
+  --method register \
+  --param name=${TOKEN_NAME} \
+  --param symbol=${TOKEN_SYM} \
+  --param feeNumerator=${FEE_NUMERATOR} \
+  --param decimals=${TOKEN_DECIMALS} \
+  --param address=$(cat irc2_token.icon) | jq -r . > tx.register.icon
   ensure_txresult tx.register.icon
 }
 
 bmc_javascore_addService() {
-   cd $CONFIG_DIR
+  cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
-    --method addService \
-    --param _svc=${SVC_NAME} \
-    --param _addr=$(cat token_bsh.icon) | jq -r . > tx.addService.icon
+  --method addService \
+  --param _svc=${SVC_NAME} \
+  --param _addr=$(cat token_bsh.icon) | jq -r . > tx.addService.icon
   ensure_txresult tx.addService.icon
-} 
+}
 
 bmc_javascore_getServices() {
-   cd $CONFIG_DIR
+  cd $CONFIG_DIR
   goloop rpc call --to $(cat bmc.icon) \
-    --method getServices
-} 
+  --method getServices
+}
 
 bsh_javascore_balance() {
-   cd $CONFIG_DIR
-  if [ $# -lt 1 ] ; then
+  cd $CONFIG_DIR
+  if [ $# -lt 1 ]; then
     echo "Usage: bsh_balance [EOA=$(rpceoa)]"
     return 1
-  fi 
+  fi
 
-  local EOA=$(rpceoa $1)  
+  local EOA=$(rpceoa $1)
   echo "Balance of user $EOA"
   goloop rpc call --to $(cat token_bsh.icon) \
-    --method getBalance \
-    --param user=$EOA \
-    --param tokenName=$TOKEN_NAME
+  --method getBalance \
+  --param user=$EOA \
+  --param tokenName=$TOKEN_NAME
 }
 
 bsh_javascore_transfer() {
-   cd $CONFIG_DIR
-  if [ $# -lt 2 ] ; then
+  cd $CONFIG_DIR
+  if [ $# -lt 2 ]; then
     echo "Usage: bsh_transfer [VAL=0x10] [EOA=$(rpceoa)]"
     return 1
   fi
   local VAL=${1:-0x10}
   local EOA=$2
-  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)  
+  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)
   echo "Transfering $VAL to: $EOA from: $FROM "
-  TX=$(goloop rpc sendtx call --to $(cat token_bsh.icon) \
+  TX=$(
+    goloop rpc sendtx call --to $(cat token_bsh.icon) \
     --method transfer \
     --param tokenName=${TOKEN_NAME} \
     --param value=$VAL \
-    --param to=btp://$BSC_BMC_NET/$EOA | jq -r .)
+    --param to=btp://$BSC_BMC_NET/$EOA | jq -r .
+  )
   ensure_txresult $TX
 }
 
 irc2_javascore_balance() {
-   cd $CONFIG_DIR
-  if [ $# -lt 1 ] ; then
+  cd $CONFIG_DIR
+  if [ $# -lt 1 ]; then
     echo "Usage: irc2_balance [EOA=$(rpceoa)]"
     return 1
-  fi     
-  local EOA=$(rpceoa $1) 
+  fi
+  local EOA=$(rpceoa $1)
   goloop rpc call --to $(cat irc2_token.icon) \
-    --method balanceOf \
-    --param _owner=$EOA
+  --method balanceOf \
+  --param _owner=$EOA
 }
 
 irc2_javascore_transfer() {
   cd $CONFIG_DIR
-  if [ $# -lt 1 ] ; then
+  if [ $# -lt 1 ]; then
     echo "Usage: irc2_transfer [VAL=0x10] [EOA=Address of Token-BSH]"
     return 1
-  fi 
+  fi
   local VAL=${1:-0x10}
-  local EOA=$(rpceoa ${2:-$(cat token_bsh.icon)})    
-  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)  
+  local EOA=$(rpceoa ${2:-$(cat token_bsh.icon)})
+  local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)
   echo "Transfering $VAL to: $EOA from: $FROM "
-  TX=$(goloop rpc sendtx call --to $(cat irc2_token.icon) \
+  TX=$(
+    goloop rpc sendtx call --to $(cat irc2_token.icon) \
     --method transfer \
     --param _to=$EOA \
-    --param _value=$VAL | jq -r .)
+    --param _value=$VAL | jq -r .
+  )
   ensure_txresult $TX
 }
 
@@ -295,7 +311,7 @@ rpceoa() {
 ########################################################### javascore service methods - END #####################################################################
 eth_blocknumber() {
   curl -s -X POST 'http://binancesmartchain:8545' --header 'Content-Type: application/json' \
-    --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
+  --data-raw '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[], "id": 1}' | jq -r .result | xargs printf "%d\n"
 }
 
 goloop_lastblock() {
@@ -303,52 +319,54 @@ goloop_lastblock() {
 }
 
 provision() {
- if [ ! -f $BTPSIMPLE_CONFIG_DIR/provision ]; then
-   echo "start provisioning..."
+  if [ ! -f $BTPSIMPLE_CONFIG_DIR/provision ]; then
+    echo "start provisioning..."
 
-   cp /bsc.ks.json "$BTPSIMPLE_CONFIG_DIR"/bsc.ks.json
-   # shellcheck disable=SC2059
-   printf $BSC_KEY_SECRET > "$BTPSIMPLE_CONFIG_DIR"/bsc.secret
-   echo "$GOLOOP_RPC_NID.icon" > net.btp.icon
+    cp /bsc.ks.json "$BTPSIMPLE_CONFIG_DIR"/bsc.ks.json
+    # shellcheck disable=SC2059
+    printf $BSC_KEY_SECRET >"$BTPSIMPLE_CONFIG_DIR"/bsc.secret
+    echo "$GOLOOP_RPC_NID.icon" >net.btp.icon
 
-   eth_blocknumber > /btpsimple/config/offset.bsc
+    eth_blocknumber >/btpsimple/config/offset.bsc
 
-   deploy_javascore_bmc
-   deploy_solidity_bmc
-   deploy_solidity_bmv
-   deploy_javascore_bmv
+    deploy_javascore_bmc
+    deploy_solidity_bmc
+    deploy_solidity_bmv
+    deploy_javascore_bmv
 
-   deploy_javascore_bsh
-   deploy_javascore_irc2
+    deploy_solidity_tokenBSH_BEP20
+    deploy_javascore_bsh
+    deploy_javascore_irc2
 
-   bmc_javascore_addVerifier
-   add_icon_verifier
-   add_icon_link
-   add_icon_relay
-   add_bsc_link
+    add_icon_verifier
+    add_icon_link
+    add_icon_relay
+    bsc_addService
+    bsc_registerToken
 
-   bsh_javascore_register
-   bmc_javascore_addService
+    bmc_javascore_addVerifier
+    bmc_javascore_addLink
+    bmc_javascore_addService
+    bsh_javascore_register
 
-   touch $BTPSIMPLE_CONFIG_DIR/provision
-   echo "provision is now complete"
- fi
+    touch $BTPSIMPLE_CONFIG_DIR/provision
+    echo "provision is now complete"
+  fi
 }
 
 wait_for_file() {
-    FILE_NAME=$1
-    timeout=10
-    while [ ! -f "$FILE_NAME" ];
-    do
-        if [ "$timeout" == 0 ]; then
-            echo "ERROR: Timeout while waiting for the file $FILE_NAME."
-            exit 1
-        fi
-        sleep 1
-        timeout=$(expr $timeout - 1)
+  FILE_NAME=$1
+  timeout=10
+  while [ ! -f "$FILE_NAME" ]; do
+    if [ "$timeout" == 0 ]; then
+      echo "ERROR: Timeout while waiting for the file $FILE_NAME."
+      exit 1
+    fi
+    sleep 1
+    timeout=$(expr $timeout - 1)
 
-        echo "waiting for the output file: $FILE_NAME"
-    done
+    echo "waiting for the output file: $FILE_NAME"
+  done
 }
 # run provisioning
 provision
