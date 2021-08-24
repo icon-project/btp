@@ -1,4 +1,4 @@
-//! BMC
+//! BMV Contract
 
 #![forbid(
     arithmetic_overflow,
@@ -32,10 +32,10 @@
     unused_qualifications,
     unused_results
 )]
-pub mod bmc_generic;
-pub mod bmc_management;
-pub mod utils;
 
-pub use bmc_generic::BmcGeneric;
-pub use bmc_management::BmcManagement;
-pub use utils::Utils;
+pub mod bmv;
+pub mod data_validator;
+pub mod verifier;
+pub use bmv::Bmv;
+pub use data_validator::DataValidator;
+pub use verifier::*;

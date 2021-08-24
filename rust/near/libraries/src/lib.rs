@@ -1,4 +1,4 @@
-//! BMC
+//! Library of BMC, BMV, and BSH Data Types
 
 #![forbid(
     arithmetic_overflow,
@@ -32,10 +32,7 @@
     unused_qualifications,
     unused_results
 )]
-pub mod bmc_generic;
-pub mod bmc_management;
-pub mod utils;
 
-pub use bmc_generic::BmcGeneric;
-pub use bmc_management::BmcManagement;
-pub use utils::Utils;
+pub mod bmc_types;
+pub mod bmv_types;
+pub mod bsh_types;

@@ -1,12 +1,11 @@
 [package]
-name = "bmc"
+name = "bmv"
 version = "0.1.0"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
 btp-common = { path = "../../btp-common" }
-bmv = { path = "../bmv" }
-bsh-generic = { path = "../bsh/bsh-generic" }
 libraries = { path = "../libraries" }
 near-sdk = "3.1.0"
+serde = {version = "1.0", features = ["derive"]}
