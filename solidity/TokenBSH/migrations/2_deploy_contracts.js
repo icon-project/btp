@@ -2,7 +2,6 @@
 const BSHImpl = artifacts.require("BSHImpl");
 const BSHProxy = artifacts.require("BSHProxy");
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
-const Web3 = require('web3');
 
 const TruffleConfig = require('../truffle-config');
 module.exports = async function (deployer, network) {

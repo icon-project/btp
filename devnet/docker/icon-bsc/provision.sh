@@ -37,7 +37,7 @@ deploy_solidity_bmc() {
   echo "deploying solidity bmc"
   cd $CONTRACTS_DIR/solidity/bmc
   rm -rf contracts/test build .openzeppelin
-  npm install
+  npm install --force
   BMC_PRA_NET=$BSC_BMC_NET \
   truffle migrate --network bscDocker --compile-all
 
@@ -53,7 +53,7 @@ deploy_solidity_bmv() {
   echo "deploying solidity bmv"
   cd $CONTRACTS_DIR/solidity/bmv
   rm -rf contracts/test build .openzeppelin
-  npm install
+  npm install --force
   LAST_BOCK=$(goloop_lastblock)
   LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
   LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
@@ -78,7 +78,7 @@ deploy_solidity_tokenBSH_BEP20() {
   echo "deploying solidity Token BSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   rm -rf contracts/test build .openzeppelin
-  npm install
+  npm install --force
   SVC_NAME=TokenBSH
 
   BSH_TOKEN_FEE=1 \

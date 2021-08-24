@@ -1,4 +1,10 @@
 {
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^4.1.0",
+    "@openzeppelin/truffle-upgrades": "^1.7.0",
+    "@truffle/hdwallet-provider": "^1.4.0",
+    "@openzeppelin/contracts": "^4.0.0"
+  },
   "devDependencies": {
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.9",
@@ -19,15 +25,5 @@
     "test-proxy-upgrade": "truffle test ./test/integration/proxy-upgrade.js",
     "test-bsh-upgrade": "truffle test ./test/integration/token-bsh-upgrade.js",
     "test-all": "truffle test ./test/integration/token-bsh.js ./test/integration/proxy-upgrade.js ./test/integration/token-bsh-upgrade.js"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^4.1.0",
-    "@openzeppelin/truffle-upgrades": "^1.7.0",
-    "web3-eth-personal": "^1.4.0",
-    "ethlint": "^1.2.5",
-    "truffle-contract-size": "^2.0.1",
-    "web3": "^1.3.6",
-    "@truffle/hdwallet-provider": "^1.4.1",
-    "@openzeppelin/contracts": "^4.0.0"
   }
 }
