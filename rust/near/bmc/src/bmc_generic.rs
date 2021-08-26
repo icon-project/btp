@@ -189,7 +189,7 @@ impl BmcGeneric {
                     // If `svc` not found, ignore
                     if bsh_addr != env::predecessor_account_id() {
                         bsh_generic
-                            .handle_fee_gathering(&gather_fee.fa, svc)
+                            .handle_fee_gathering(gather_fee.fa.clone(), svc.to_string())
                             .expect("Failed to handle fee gathering");
                     }
                 }
