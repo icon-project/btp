@@ -75,7 +75,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 	}
 
 	r.l.Debugf("newParaBlockUpdate: %d", v.Height)
-	var update ParaChainBlockUpdateExtra
+	var update chain.ParaChainBlockUpdateExtra
 	if update.ScaleEncodedBlockHeader, err = substrate.NewEncodedSubstrateHeader(*v.Header); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		}
 	} else {
 		// For local testing without relay chain
-		update.FinalityProofs = nil
+		update.FinalityProofs = [][]byte{nil}
 	}
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
@@ -157,7 +157,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					Sequence: bmcMsg.Seq.Int64(),
 				})
 
-				r.l.Debugf("newReceiptProofs: newEvent %d", rp.Events[len(rp.Events)-1].Sequence)
+				r.l.Debugf("newReceiptProofs: newEvent Seq %d", rp.Events[len(rp.Events)-1].Sequence)
 				if bmcMsg.Seq.Int64() == int64(r.rxSeq) {
 					r.isFoundMessageEventByOffset = true
 				}

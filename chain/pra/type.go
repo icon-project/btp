@@ -121,13 +121,3 @@ type ParachainFinalityProof struct {
 	RelayBlockProof   []byte
 	RelayStateProofs  [][]byte
 }
-
-type ParaChainBlockUpdate struct {
-	ScaleEncodedBlockHeader []byte
-	FinalityProof           []byte
-}
-
-type ParaChainBlockUpdateExtra struct {
-	ScaleEncodedBlockHeader []byte
-	FinalityProofs          [][]byte
-}
