@@ -1,4 +1,5 @@
-FROM goloop-icon:0.9.9
+ARG GOLOOP_IMAGE=iconloop/goloop-icon:latest
+FROM ${GOLOOP_IMAGE} as goloop
 
 RUN apk add --no-cache jq
 

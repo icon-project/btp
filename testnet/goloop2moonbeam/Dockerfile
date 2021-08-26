@@ -1,5 +1,6 @@
+ARG GOLOOP_IMAGE=iconloop/goloop-icon:latest
+FROM ${GOLOOP_IMAGE} as goloop
 FROM canhlinh/truffle:5.3.0-alpine as truffle
-FROM iconloop/goloop-icon:v0.9.7 as goloop
 FROM btpsimple:latest
 
 # install truffle cli

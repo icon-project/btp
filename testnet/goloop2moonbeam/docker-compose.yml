@@ -1,9 +1,13 @@
 version: "3.4"
+x-common-args: &common-args
+    GOLOOP_IMAGE: iconloop/goloop-icon:v0.9.9
 services:
     goloop:
         container_name: goloop
+        env_file: ./btp.share.env
         build:
             context: ./goloop
+            args: *common-args
         logging:
                 driver: none
         volumes:
@@ -27,6 +31,7 @@ services:
         container_name: btp_icon
         build:
             context: .
+            args: *common-args
         depends_on: 
             - goloop
             - moonbeam
@@ -58,6 +63,7 @@ services:
         container_name: btp_moonbeam
         build:
             context: .
+            args: *common-args
         depends_on: 
             - goloop
             - moonbeam
