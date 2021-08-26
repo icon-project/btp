@@ -3,6 +3,7 @@ package pra
 import (
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra/substrate"
+	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
 )
@@ -11,7 +12,7 @@ type relayReceiver struct {
 	c               substrate.SubstrateClient
 	bmvC            icon.PraBmvClient
 	bmvStatus       icon.PraBmvStatus
-	expectMtaHeight uint64 // keep track of MtaHeight per paraFinalityProof
+	expectMtaHeight uint64 // keep track of localRelayMtaHeight per paraFinalityProof
 	expectSetId     uint64
 	store           *mta.ExtAccumulator
 	log             log.Logger
@@ -36,12 +37,12 @@ func (r *relayReceiver) findParasInclusionCandidateIncludedHead(from uint64, par
 	for {
 		blockHash, err := r.c.GetBlockHash(blockNumber)
 		if err != nil {
-			r.log.Panicf("findParasInclusionCandidateIncludedHead: can't get blockhash %d", blockNumber)
+			r.log.Panic(errors.Wrapf(err, "findParasInclusionCandidateIncludedHead: can't get blockhash %d", blockNumber))
 		}
 
 		eventParasInclusionCandidateIncluded, err := r.getParasInclusionCandidateIncluded(blockHash)
 		if err != nil {
-			r.log.Panicf("findParasInclusionCandidateIncludedHead: can't get events %s", blockHash.Hex())
+			r.log.Panic(errors.Wrapf(err, "findParasInclusionCandidateIncludedHead: can't get events %s", blockHash.Hex()))
 		}
 
 		if len(eventParasInclusionCandidateIncluded) > 0 {
@@ -148,11 +149,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHeader, includeHash *substrate.SubstrateHash) ([][]byte, error) {
 	finalityProofs := make([][]byte, 0)
 
+	r.log.Debugf("buildFinalityProof: remoteRelayMtaHeight: %d", r.bmvStatus.RelayMtaHeight)
 	if r.expectMtaHeight < uint64(r.bmvStatus.RelayMtaHeight) {
 		r.expectMtaHeight = uint64(r.bmvStatus.RelayMtaHeight)
 		r.expectSetId = uint64(r.bmvStatus.RelaySetId)
 	}
 
+	r.log.Debugf("buildFinalityProof: localExpectRelayMtaHeight: %d", r.expectMtaHeight)
 	// For blockproof to work
 	for r.expectMtaHeight < uint64(includeHeader.Number) {
 		stateProofs := make([][]byte, 0)
@@ -163,7 +166,6 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		}
 
 		r.log.Debugf("buildFinalityProof: found justification at %d by %d", gj.Commit.TargetNumber, r.expectMtaHeight+1)
-
 		blockUpdates, err := r.buildBlockUpdates(uint64(r.expectMtaHeight+1), gj, bhs)
 		if err != nil {
 			return nil, err
@@ -185,11 +187,10 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 			}
 
 			stateProofs = append(stateProofs, newAuthoritiesStateProof)
-
 			r.expectSetId++
 		}
 
-		r.log.Tracef("newFinalityProofs: lastBlocks %d", r.expectMtaHeight)
+		r.log.Tracef("newFinalityProofs: lastBlock at %d", r.expectMtaHeight)
 		finalityProof, err := r.newFinalityProof(blockUpdates, stateProofs, []byte{})
 		if err != nil {
 			return nil, err
@@ -199,6 +200,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 
 		// early exit and only need one StateProof
 		if (r.expectMtaHeight) == uint64(includeHeader.Number) && len(eventGrandpaNewAuthorities) > 0 {
+			r.log.Debugf("buildFinalityProof: GrandpaNewAuthorities and LastBlock is equal at %d", gj.Commit.TargetNumber)
 			return finalityProofs, nil
 		}
 	}
@@ -220,16 +222,15 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		return nil, err
 	}
 
-	r.log.Tracef("newFinalityProofs: bp %d", includeHeader.Number)
+	r.log.Tracef("newFinalityProofs: blockProof and stateProof at %d", includeHeader.Number)
 	finalityProofs = append(finalityProofs, finalityProof)
 	return finalityProofs, nil
 }
 
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([][]byte, error) {
-	r.log.Tracef("newParaFinalityProof: paraBlock %d paraHead %s", paraHeight, paraHead.Hex())
 	r.bmvStatus = r.bmvC.GetPraBmvStatus()
-
 	if paraHeight <= uint64(r.bmvStatus.ParaMtaHeight) {
+		r.log.Tracef("newParaFinalityProof: paraHeight smaller than paraMtaHeght")
 		return nil, nil
 	}
 
@@ -245,6 +246,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	// TODO fetch with runtime.GOMAXPROCS(runtime.NumCPU()) hashes per call
 	// sort these hashses, and add to MTA one by one
 	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
+		r.log.Tracef("newParaFinalityProof: sync localRelayMtaHeight %d with remoteRelayMtaHeight", localRelayMtaHeight, r.bmvStatus.RelayMtaHeight)
 		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
 			relayHash, _ := r.c.GetBlockHash(uint64(i))
 			r.updateMta(uint64(i), relayHash)

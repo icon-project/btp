@@ -42,8 +42,7 @@ const (
 	DefaultGetRelayResultInterval   = time.Second
 	DefaultRelayReSendInterval      = time.Second * 3
 	MaxDefaultGetRelayResultRetries = int((time.Minute * 5) / (DefaultGetRelayResultInterval)) // Pending or stale transaction timeout is 5 minute
-	MaxBlockUpdatesPerSegment       = 10
-	DefaultStepLimit                = 2500000000 // estimated step limit for 10 blockupdates per segment
+	DefaultStepLimit                = 2500000000                                               // estimated step limit for 10 blockupdates per segment
 )
 
 var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
@@ -286,180 +285,6 @@ type parachainBlockUpdate struct {
 	FinalityProof           []byte
 }
 
-func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
-	segments := make([]*chain.Segment, 0)
-	var err error
-	msg := &RelayMessage{
-		BlockUpdates:  make([][]byte, 0),
-		ReceiptProofs: make([][]byte, 0),
-	}
-	for _, bu := range rm.BlockUpdates {
-		if bu.Height <= height {
-			continue
-		}
-
-		var paraBuExtra parachainBlockUpdateExtra
-		if _, err = codec.RLP.UnmarshalFromBytes(bu.Proof, &paraBuExtra); err != nil {
-			return nil, err
-		}
-
-		paraBu := parachainBlockUpdate{
-			ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
-			FinalityProof:           paraBuExtra.FinalityProofs[len(paraBuExtra.FinalityProofs)-1],
-		}
-
-		realParaBu, err := codec.RLP.MarshalToBytes(paraBu)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(paraBuExtra.FinalityProofs) > 1 {
-			// If message contains previous blockupdates, split into 1 segments
-			if len(msg.BlockUpdates) > 0 {
-				s.l.Tracef("Segment: send previous blocks")
-				segment := &chain.Segment{
-					Height:              msg.height,
-					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-				}
-
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-					return nil, err
-				}
-
-				segments = append(segments, segment)
-				msg.BlockUpdates = make([][]byte, 0)
-				msg.height = bu.Height
-				msg.numberOfBlockUpdate = 0
-			}
-
-			s.l.Tracef("Segment: send muliple finalitiyProofs")
-			for i := 0; i < len(paraBuExtra.FinalityProofs); i++ {
-				var rawBu []byte
-				sps := make([][]byte, 0)
-
-				if i == len(paraBuExtra.FinalityProofs)-1 {
-					realParaBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
-						ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
-						FinalityProof:           paraBuExtra.FinalityProofs[i],
-					})
-
-					if err != nil {
-						return nil, err
-					}
-
-					continue
-				} else {
-					rawBu, err = codec.RLP.MarshalToBytes(parachainBlockUpdate{
-						ScaleEncodedBlockHeader: nil,
-						FinalityProof:           paraBuExtra.FinalityProofs[i],
-					})
-
-					if err != nil {
-						return nil, err
-					}
-				}
-
-				segment := &chain.Segment{
-					Height:              bu.Height,
-					NumberOfBlockUpdate: 1,
-				}
-				subMsg := &RelayMessage{
-					BlockUpdates:  make([][]byte, 0),
-					ReceiptProofs: sps,
-				}
-
-				subMsg.BlockUpdates = append(subMsg.BlockUpdates, rawBu)
-
-				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
-					return nil, err
-				}
-				segments = append(segments, segment)
-			}
-		}
-
-		obl := s.isOverBlocksLimit(msg.numberOfBlockUpdate)
-
-		// If the remaining blockupdates over limit
-		if obl {
-			s.l.Tracef("Segment: over block limit: %t", obl)
-			segment := &chain.Segment{
-				Height:              bu.Height,
-				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-			}
-
-			subMsg := &RelayMessage{
-				BlockUpdates:  make([][]byte, 0),
-				ReceiptProofs: make([][]byte, 0),
-			}
-
-			subMsg.BlockUpdates = append(subMsg.BlockUpdates, realParaBu)
-
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), subMsg); err != nil {
-				return nil, err
-			}
-
-			segments = append(segments, segment)
-			msg.BlockUpdates = make([][]byte, 0)
-			msg.height = bu.Height
-			msg.numberOfBlockUpdate = 0
-			continue
-		}
-
-		msg.BlockUpdates = append(msg.BlockUpdates, realParaBu)
-		msg.height = bu.Height
-		msg.numberOfBlockUpdate += 1
-	}
-
-	var bp []byte
-	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
-		return nil, err
-	}
-
-	for i, rp := range rm.ReceiptProofs {
-		if len(rp.Proof) > 0 && len(msg.BlockUpdates) == 0 {
-			if rm.BlockProof == nil {
-				return segments, nil
-			}
-			msg.BlockProof = bp
-			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-
-			segment := &chain.Segment{
-				Height:              rm.BlockProof.BlockWitness.Height,
-				NumberOfBlockUpdate: len(msg.BlockUpdates),
-			}
-
-			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
-
-			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-				return nil, err
-			}
-
-			segments = append(segments, segment)
-			continue
-		} else {
-			msg.ReceiptProofs = append(msg.ReceiptProofs, rp.Proof)
-			s.l.Debugf("Segment: at %d StateProof[%d]: %x", rp.Height, i, rp.Proof)
-		}
-	}
-
-	if len(msg.BlockUpdates) > 0 {
-		segment := &chain.Segment{
-			Height:              msg.height,
-			NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-			EventSequence:       msg.eventSequence,
-			NumberOfEvent:       msg.numberOfEvent,
-		}
-
-		if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
-			return nil, err
-		}
-
-		segments = append(segments, segment)
-	}
-
-	return segments, nil
-}
-
 func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
 	s.l.Tracef("Segments: create Segment for height %d", height)
 	switch s.src.BlockChain() {
@@ -474,10 +299,6 @@ func (s *sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 func (s *sender) isOverSizeLimit(size int) bool {
 	return txSizeLimit < float64(size)
-}
-
-func (s *sender) isOverBlocksLimit(blockupdates int) bool {
-	return blockupdates >= MaxBlockUpdatesPerSegment
 }
 
 // UpdateSegment updates segment

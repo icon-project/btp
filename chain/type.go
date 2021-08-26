@@ -142,3 +142,14 @@ type Receiver interface {
 	ReceiveLoop(height int64, seq int64, cb ReceiveCallback, scb func()) error
 	StopReceiveLoop()
 }
+
+// Suppose to be in pra package, however it occurs cycle import so place here
+type ParaChainBlockUpdate struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProof           []byte
+}
+
+type ParaChainBlockUpdateExtra struct {
+	ScaleEncodedBlockHeader []byte
+	FinalityProofs          [][]byte
+}
