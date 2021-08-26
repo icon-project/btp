@@ -1,7 +1,7 @@
 //! BMV
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{near_bindgen, setup_alloc};
+use near_sdk::{near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
 /// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
@@ -20,10 +20,8 @@ impl Default for Bmv {
 #[near_bindgen]
 impl Bmv {
     #[init]
-    pub fn new(addr: &str) -> Self {
-        Self {
-            todo: addr.to_string(),
-        }
+    pub fn new(addr: AccountId) -> Self {
+        Self { todo: addr }
     }
 
     pub fn get_mta(&self) -> String {
@@ -38,7 +36,7 @@ impl Bmv {
         todo!()
     }
 
-    pub fn get_validators(&self) -> (Vec<u32>, Vec<String>) {
+    pub fn get_validators(&self) -> (Vec<u32>, Vec<AccountId>) {
         todo!()
     }
 
@@ -52,10 +50,10 @@ impl Bmv {
     /// BTP Messages with old sequence numbers are ignored. A BTP Message containing future sequence number will fail.
     pub fn handle_relay_message(
         &mut self,
-        _bmc: &str,
-        _prev: &str,
+        _bmc: AccountId,
+        _prev: AccountId,
         _seq: u128,
-        _msg: &str,
+        _msg: String,
     ) -> Vec<Vec<u8>> {
         todo!()
     }

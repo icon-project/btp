@@ -7,5 +7,6 @@ edition = "2018"
 [dependencies]
 btp-common = { path = "../../btp-common" }
 libraries = { path = "../libraries" }
+merkletree = "0.21.0"
 near-sdk = "3.1.0"
 serde = {version = "1.0", features = ["derive"]}

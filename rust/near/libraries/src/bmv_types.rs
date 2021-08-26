@@ -2,9 +2,7 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{
-    AccountId, BlockHeight, BorshStorageKey, CryptoHash, IteratorIndex, PublicKey, Timestamp,
-};
+use near_sdk::{AccountId, BorshStorageKey, CryptoHash, IteratorIndex, PublicKey, Timestamp};
 use std::collections::HashMap;
 
 #[derive(
@@ -33,7 +31,7 @@ pub struct BmvResult {
 pub struct BlockHeader {
     pub block_hash: CryptoHash,
     pub version: u64,
-    pub height: BlockHeight,
+    pub height: u128,
     pub timestamp: Timestamp,
     pub proposer: PublicKey,
     pub prev_hash: CryptoHash,
@@ -95,7 +93,7 @@ pub struct Votes {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct BlockWitness {
-    pub height: BlockHeight,
+    pub height: u128,
     pub witnesses: Vec<PublicKey>,
 }
 
