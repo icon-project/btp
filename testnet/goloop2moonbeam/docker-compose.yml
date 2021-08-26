@@ -3,7 +3,7 @@ x-common-args: &common-args
     GOLOOP_IMAGE: iconloop/goloop-icon:v0.9.9
 services:
     goloop:
-        container_name: goloop
+        container_name: g2m_goloop
         env_file: ./btp.share.env
         build:
             context: ./goloop
@@ -16,7 +16,7 @@ services:
         ports:
             - 9080:9080
     moonbeam:
-        container_name: moonbeam
+        container_name: g2m_moonbeam
         image: purestake/moonbeam:v0.9.6
         logging:
             driver: none
@@ -28,7 +28,7 @@ services:
         command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
         user: root
     btp_icon:
-        container_name: btp_icon
+        container_name: g2m_btp_icon
         build:
             context: .
             args: *common-args
@@ -60,7 +60,7 @@ services:
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btp.icon.log
     btp_moonbeam:
-        container_name: btp_moonbeam
+        container_name: g2m_btp_moonbeam
         build:
             context: .
             args: *common-args
