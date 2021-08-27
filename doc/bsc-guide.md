@@ -11,18 +11,18 @@ This document provides guide for Binance Smart Chain BTP development environment
 - GoLang 1.13+  
 - OpenJDK 11
 - Docker
-- Goloop 0.9.7 (optional)
+- Goloop 0.9.7 (build from source)
 - Node.js version >= 16.1.0 or above
 - Binance Smart Chain
 
 On macOS, you also need Xcode and Command Line Tools.
 
-### Build goloop (optional)
+### Build goloop
 
 #### Get the code
 checkout version 0.9.7
 ```
-git clone -b 0.9.7 https://github.com/icon-project/goloop 
+git clone -b v0.9.7 https://github.com/icon-project/goloop 
 ```
 
 #### Build executables
@@ -31,7 +31,18 @@ navigate to goloop directory
 make
 ```
 
+build goloop docker image
+```
+make goloop-image
+```
+
 This is sufficient for BTP purpose at this point, however for more details, please read [Goloop build guide] (https://github.com/icon-project/goloop/blob/master/doc/build.md)
+
+### Build Binance Smart Chain docker
+
+We will need a custom BSC build to include SHA3-256 FIPS 202 hash,
+please read instructions [here](https://github.com/icon-project/btp/tree/btp_web3labs/devnet)
+for information on how to build bsc node docker image.
 
 ### Build BTP Relay
 
@@ -47,11 +58,30 @@ navigate to btp directory
 make
 ```
 
-### Build Binance Smart Chain docker
+### Build JavaScore Contracts
+from btp directory, run
+```
+make dist-javascore
+```
+This will build dist contract jars for bmc, bmv, bsh and example irc2 token 
 
-We will need a custom BSC build to include SHA3-256 FIPS 202 hash, 
-please read instructions [here](https://github.com/icon-project/btp/tree/btp_web3labs/devnet)
-for information on how to build bsc node docker image.
+### Build Solidity Contracts
+
+Build BSC BSH and BEP Token Service
+
+```
+make dist-sol
+```
+This will prepare copy of bmc, bmv and TokenBSH solidity contracts
+
+Note: this step doesn't compile the contracts, this happens at later stage during the btp docker image setup
+
+### Build BTP Simple Docker Image
+
+```
+make btpsimple-image
+```
+This will prepare copy of bmc, bmv and TokenBSH solidity contracts
 
 ### Running BTP BSC Docker
 
@@ -68,22 +98,6 @@ docker-compose up
 ```
 If all successful, this should start docker network containing provisioned
 goloop, binance smart chain and BSC ICON BTP relayer.
-
-### Build JavaScore Contracts
- 
-Build BSC BMV 
-   
-https://github.com/icon-project/btp/tree/btp_web3labs/javascore
-
-Note: we will be building and deploying BMC from ICONDAO repo
-
-### Build Solidity Contracts
-
-Build BSC BSH and BEP Token Service
-
-https://github.com/icon-project/btp/tree/btp_web3labs/solidity/TokenBSH
-
-Note: we will be building and deploying BMV & BMC from ICONDAO repo
 
 ## Testnet
 

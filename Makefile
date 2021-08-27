@@ -64,7 +64,7 @@ $(SOLIDITY_DIST_DIR)/%:
 	mkdir -p $@/migrations ; \
 	cp -r solidity/$(MODULE)/contracts/* $@/contracts ; \
 	cp -r solidity/$(MODULE)/migrations/* $@/migrations ; \
-	#cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
+	cp solidity/$(MODULE)/{truffle-config.js,*.json,*.lock} $@/ ; \
 	cp solidity/$(MODULE)/truffle-config.js $@/ ; \
 	cp solidity/$(MODULE)/*.json $@/ ; \
 	cp solidity/$(MODULE)/*.lock $@/ ; \
@@ -109,7 +109,7 @@ clean-dist-py:
 clean-dist-sol:
 	rm -rf $(SOLIDITY_DIST_DIR)
 
-dist-sol: dist-sol-bmc
+dist-sol: dist-sol-bmc dist-sol-bmv dist-sol-token_bsh
 
 dist-javascore:
 	$(BUILD_ROOT)/docker/javascore/build.sh
