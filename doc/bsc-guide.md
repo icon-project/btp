@@ -11,18 +11,18 @@ This document provides guide for Binance Smart Chain BTP development environment
 - GoLang 1.13+  
 - OpenJDK 11
 - Docker
-- Goloop 0.9.7 (build from source)
+- Goloop 0.9.7 (optional)
 - Node.js version >= 16.1.0 or above
 - Binance Smart Chain
 
 On macOS, you also need Xcode and Command Line Tools.
 
-### Build goloop
+### Build goloop (optional)
 
 #### Get the code
 checkout version 0.9.7
 ```
-git clone -b 0.9.7 https://github.com/icon-project/btp 
+git clone -b 0.9.7 https://github.com/icon-project/goloop 
 ```
 
 #### Build executables
@@ -38,7 +38,7 @@ This is sufficient for BTP purpose at this point, however for more details, plea
 ### Get the code
 currently, lives in Web3 Labs branch
 ```
-git clone -b web3_labs https://github.com/icon-project/btp 
+git clone -b btp_web3labs https://github.com/icon-project/btp 
 ```
 
 ### Build executables
