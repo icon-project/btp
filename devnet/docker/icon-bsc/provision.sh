@@ -37,7 +37,7 @@ deploy_solidity_bmc() {
   echo "deploying solidity bmc"
   cd $CONTRACTS_DIR/solidity/bmc
   rm -rf contracts/test build .openzeppelin
-  npm install --force
+  npm install --legacy-peer-deps
   BMC_PRA_NET=$BSC_BMC_NET \
   truffle migrate --network bscDocker --compile-all
 
@@ -53,7 +53,7 @@ deploy_solidity_bmv() {
   echo "deploying solidity bmv"
   cd $CONTRACTS_DIR/solidity/bmv
   rm -rf contracts/test build .openzeppelin
-  npm install --force
+  npm install --legacy-peer-deps
   LAST_BOCK=$(goloop_lastblock)
   LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
   LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
@@ -78,7 +78,7 @@ deploy_solidity_tokenBSH_BEP20() {
   echo "deploying solidity Token BSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   rm -rf contracts/test build .openzeppelin
-  npm install --force
+  npm install --legacy-peer-deps
   SVC_NAME=TokenBSH
 
   BSH_TOKEN_FEE=1 \
@@ -113,9 +113,10 @@ add_icon_link() {
 
 add_icon_relay() {
   echo "adding icon link $(cat $CONFIG_DIR/bmv.bsc)"
+  BSC_RELAY_USER=$(cat  $CONFIG_DIR/bsc.ks.json | jq -r .address)
   cd $CONTRACTS_DIR/solidity/bmc
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-  --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr 0x70e789d2f5d469ea30e0525dbfdd5515d6ead30d
+  --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr "0x${BSC_RELAY_USER}"
 }
 
 bsc_addService() {
@@ -141,19 +142,20 @@ deploy_javascore_bmc() {
   cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmc-optimized.jar \
   --content_type application/java \
-  --param _net=$(cat net.btp.icon) | jq -r . >tx.bmc.icon
+  --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
   extract_scoreAddress tx.bmc.icon bmc.icon
   echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
 
 deploy_javascore_bmv() {
   echo "deploying javascore BMV"
+  eth_blocknumber >/btpsimple/config/offset.bsc
   cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmv-optimized.jar \
   --content_type application/java \
   --param network=$(cat net.btp.icon) \
   --param bmc=$(cat bmc.icon) \
-  --param offset=$(cat offset.icon) \
+  --param offset=$(cat offset.bsc) \
   --param rootSize=0x3 \
   --param cacheSize=0xA \
   --param isAllowNewerWitness=0x1 | \
@@ -174,7 +176,6 @@ deploy_javascore_bsh() {
 deploy_javascore_irc2() {
   echo "deploying javascore IRC2Token"
   cd $CONFIG_DIR
-
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/irc2-token-optimized.jar \
   --content_type application/java \
   --param _name=${TOKEN_NAME} \
@@ -201,6 +202,18 @@ bmc_javascore_addLink() {
   goloop rpc sendtx call --to $(cat bmc.icon) \
   --method addLink \
   --param _link=$(cat btp.bsc) | jq -r . > tx.addLink.icon
+  ensure_txresult tx.addLink.icon
+  echo "Added Link $(cat btp.bsc)"
+}
+
+bmc_javascore_addRelay() {
+  echo "Adding bsc Relay"
+  ICON_RELAY_USER=$(cat  $CONFIG_DIR/goloop.keystore.json | jq -r .address)
+  cd $CONFIG_DIR
+  goloop rpc sendtx call --to $(cat bmc.icon) \
+  --method addRelay \
+  --param _link=$(cat btp.bsc) \
+  --param _addr=${ICON_RELAY_USER} | jq -r . > tx.addLink.icon
   ensure_txresult tx.addLink.icon
   echo "Added Link $(cat btp.bsc)"
 }
@@ -331,10 +344,10 @@ provision() {
 
     deploy_javascore_bmc
     deploy_solidity_bmc
-    deploy_solidity_bmv
-    deploy_javascore_bmv
-
+    deploy_solidity_bmv    
     deploy_solidity_tokenBSH_BEP20
+
+    deploy_javascore_bmv
     deploy_javascore_bsh
     deploy_javascore_irc2
 
@@ -346,6 +359,7 @@ provision() {
 
     bmc_javascore_addVerifier
     bmc_javascore_addLink
+    bmc_javascore_addRelay
     bmc_javascore_addService
     bsh_javascore_register
 

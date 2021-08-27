@@ -47,3 +47,31 @@ services:
       - BTPSIMPLE_KEY_SECRET=/btpsimple/config/bsc.secret
       - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btp.log
      # - binance_smart_chain
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /btpsimple/config/provision"]
+      interval: 10s
+      timeout: 5s
+      retries: 100
+
+  btp-bsc:
+    container_name: btp-bsc
+    image: btpsimple:latest
+    volumes:
+      - ./work:/btpsimple/config
+      - ./work:/btpsimple/data
+      #- ./work/contracts:/btpsimple/contracts
+    command: btpsimple start --config /btpsimple/config/bsc.config.json
+    depends_on:
+      btp:
+        condition: service_healthy
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
+      - BTPSIMPLE_CONFIG=/btpsimple/config/bsc.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.bsc
+      - BTPSIMPLE_SRC_ENDPOINT=ws://binancesmartchain:8546
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.bsc
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/goloop.keystore.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/goloop.keysecret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btp.log
