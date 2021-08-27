@@ -17,11 +17,6 @@ services:
     environment:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://goloop:9080/metrics"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
   btpsimple_src:
     container_name: g2g_btp_src
     image: btpsimple:latest

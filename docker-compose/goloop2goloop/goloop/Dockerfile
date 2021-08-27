@@ -16,3 +16,5 @@ COPY ./entrypoint /
 
 RUN provision.sh
 WORKDIR /goloop/config
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=5s --retries=10 CMD ["curl", "-f", "http://127.0.0.1:9080/metrics" ]
