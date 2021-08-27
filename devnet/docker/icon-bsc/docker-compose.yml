@@ -23,8 +23,8 @@ services:
       - "8545:8545"
       - "8546:8546"
 
-  btp:
-    container_name: btp
+  btp-icon:
+    container_name: btp-icon
     build:
       context: .
     volumes:
@@ -62,7 +62,7 @@ services:
       #- ./work/contracts:/btpsimple/contracts
     command: btpsimple start --config /btpsimple/config/bsc.config.json
     depends_on:
-      btp:
+      btp-icon:
         condition: service_healthy
     environment:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
