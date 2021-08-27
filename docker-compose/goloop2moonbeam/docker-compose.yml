@@ -1,7 +1,6 @@
 version: "3.9"
 x-common-args: &common-args
     GOLOOP_IMAGE: iconloop/goloop-icon:v0.9.9
-    MOONBEAM_VERSION: v0.9.6
 services:
     goloop:
         container_name: g2m_goloop
@@ -20,7 +19,8 @@ services:
         container_name: g2m_moonbeam
         build:
             context: ./moonbeam
-            args: *common-args
+            args:     
+                MOONBEAM_VERSION: v0.9.6
         logging:
             driver: none
         volumes:
