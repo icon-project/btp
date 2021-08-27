@@ -10,7 +10,12 @@ bin/
 **/**/.idea
 **/**/node_modules/
 
-/testnet/goloop/pyscore/*.zip
+
+/docker-compose/goloop2goloop/config
+/docker-compose/goloop2goloop/data
+/docker-compose/goloop2moonbeam/config
+/docker-compose/goloop2moonbeam/data
+
 .gradle/*
 javascore/bmv/godWallet.json
 **/**/Module/*
