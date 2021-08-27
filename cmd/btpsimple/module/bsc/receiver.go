@@ -18,10 +18,16 @@ package bsc
 
 import (
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 	"math/big"
+)
+
+const (
+	EPOCH = 200
 )
 
 type receiver struct {
@@ -44,7 +50,8 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 		Height:    v.Height.Int64(),
 	}
 
-	bu.Header, err = codec.RLP.MarshalToBytes(*v.Header)
+	header := MakeHeader(v.Header)
+	bu.Header, err = codec.RLP.MarshalToBytes(*header)
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +61,12 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 		return nil, err
 	}*/
 
-	/*if (v.Height % epoch) == 0 {
-	   If (height % epoch)==0, should fetch ValidatorSet from BSCValidatorSet contract.
-		r.consensusStates , err = r.c.GetLatestConsensusState()
-	}*/
+	if (v.Height.Int64() % EPOCH) == 0 {
+		r.consensusStates, err = r.c.GetLatestConsensusState()
+	}
 
 	update := &BlockUpdate{}
-	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*v.Header)
+	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*header)
 	update.Validators = r.consensusStates.NextValidatorSet
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(update)
@@ -84,21 +90,40 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 		return nil, err
 	}
 
+	srcContractAddress := HexToAddress(r.src.ContractAddress())
+
 	for _, receipt := range receipts {
 		rp := &module.ReceiptProof{}
-		rp.Index = int(receipt.TransactionIndex)
-		rp.Proof, err = codec.RLP.MarshalToBytes(receipt)
-		if err != nil {
-			return nil, err
-		}
 		eventProofs := make([]*module.EventProof, 0)
 		for _, eventLog := range receipt.Logs {
-			ep := &module.EventProof{}
-			ep.Proof, err = codec.RLP.MarshalToBytes(eventLog)
-			ep.Index = int(eventLog.Index)
-			eventProofs = append(eventProofs, ep)
+			if eventLog.Address != srcContractAddress {
+				continue
+			}
+
+			if bmcMsg, err := binding.UnpackEventLog(eventLog.Data); err == nil {
+				rp.Events = append(rp.Events, &module.Event{
+					Message:  bmcMsg.Msg,
+					Next:     module.BtpAddress(bmcMsg.Next),
+					Sequence: bmcMsg.Seq.Int64(),
+				})
+			}
+
+			eventProof := &module.EventProof{}
+			eventProof.Proof, err = rlp.EncodeToBytes(eventLog) //codec.RLP.MarshalToBytes(eventLog)
+			eventProof.Index = int(eventLog.Index)
+			eventProofs = append(eventProofs, eventProof)
 		}
-		rps = append(rps, rp)
+
+		if len(rp.Events) > 0 {
+			r.log.Debugf("newReceiptProofs: %d", v.Height)
+			rp.Index = int(receipt.TransactionIndex)
+			rp.Proof, err = rlp.EncodeToBytes(receipt) //codec.RLP.MarshalToBytes(receipt)
+			if err != nil {
+				return nil, err
+			}
+			rp.EventProofs = eventProofs
+			rps = append(rps, rp)
+		}
 	}
 
 	return rps, nil

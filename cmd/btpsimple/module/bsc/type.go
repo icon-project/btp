@@ -190,10 +190,10 @@ type ConsensusStates struct {
 
 type StorageProof struct {
 	StateRoot    common.Hash     `json:"stateRoot"`
-	Height       *big.Int        `json:"height"`
+	Height       uint64          `json:"height"`
 	Address      common.Address  `json:"address"`
 	AccountProof []string        `json:"accountProof"`
-	Balance      *hexutil.Big    `json:"balance"`
+	Balance      uint64          `json:"balance"`
 	CodeHash     common.Hash     `json:"codeHash"`
 	Nonce        hexutil.Uint64  `json:"nonce"`
 	StorageHash  common.Hash     `json:"storageHash"`
@@ -204,6 +204,46 @@ type StorageResult struct {
 	Key   string       `json:"key"`
 	Value *hexutil.Big `json:"value"`
 	Proof []string     `json:"proof"`
+}
+
+// Header represents a block header in the Ethereum blockchain.
+type Header struct {
+	ParentHash  common.Hash
+	UncleHash   common.Hash
+	Coinbase    common.Address
+	Root        common.Hash
+	TxHash      common.Hash
+	ReceiptHash common.Hash
+	Bloom       []byte
+	Difficulty  uint64
+	Number      uint64
+	GasLimit    uint64
+	GasUsed     uint64
+	Time        uint64
+	Extra       []byte
+	MixDigest   common.Hash
+	Nonce       types.BlockNonce
+}
+
+func MakeHeader(header *types.Header) *Header {
+	// Convert Geth types to Goloop RLP friendly type
+	return &Header{
+		ParentHash:  header.ParentHash,
+		UncleHash:   header.UncleHash,
+		Coinbase:    header.Coinbase,
+		Root:        header.Root,
+		TxHash:      header.TxHash,
+		ReceiptHash: header.ReceiptHash,
+		Bloom:       header.Bloom.Bytes(),
+		Difficulty:  header.Difficulty.Uint64(),
+		Number:      header.Number.Uint64(),
+		GasLimit:    header.GasLimit,
+		GasUsed:     header.GasUsed,
+		Time:        header.Time,
+		Extra:       header.Extra,
+		MixDigest:   header.MixDigest,
+		Nonce:       header.Nonce,
+	}
 }
 
 func HexToAddress(s string) common.Address {
