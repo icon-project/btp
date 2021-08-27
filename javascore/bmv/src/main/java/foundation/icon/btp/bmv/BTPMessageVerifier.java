@@ -62,7 +62,7 @@ public class BTPMessageVerifier {
     }
 
     @External
-    public List<byte[]> handleRelayMessage(String bmc, String prev, BigInteger seq, byte[] msg) {
+    public List<byte[]> handleRelayMessage(String bmc, String prev, BigInteger seq, String msg) {
         byte[] messageEventSignature = HexConverter.hexStringToByteArray("37be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1b"); // kekak256("Message(string,uint256,bytes)");
         List<byte[]> msgList = new ArrayList<>();
         BTPAddress currBMCAddress = BTPAddress.fromString(bmc);
@@ -70,7 +70,7 @@ public class BTPMessageVerifier {
         canBMCAccess(currBMCAddress, prevBMCAddress);
         byte[] _msg = null;
         try {
-            _msg = Base64.getUrlDecoder().decode(msg);
+            _msg = Base64.getUrlDecoder().decode(msg.getBytes());
         } catch (Exception e) {
             Context.revert(BMVErrorCodes.INVALID_RELAY_MSG, "Failed to decode relay message");
         }
