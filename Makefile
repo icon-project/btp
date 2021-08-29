@@ -116,19 +116,3 @@ test :
 
 .DEFAULT_GOAL := all
 all : $(BUILD_TARGETS)
-
-cp_pyscore_testnet: dist-py
-	rsync -a ${PYSCORE_DIST_DIR}/*.zip ${PYSCORE_TESTNET_DIR}
-
-build-docker: cp_pyscore_testnet
-	docker-compose build
-	
-run-docker: cp_pyscore_testnet
-	docker-compose up
-	
-clean-docker:
-	docker-compose down -v --remove-orphans
-	sudo rm -rf build/*
-
-run-test-scenario:
-	docker-compose exec goloop sh /goloop/bin/scenario_test.sh

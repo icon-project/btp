@@ -36,7 +36,7 @@ make btpsimple-image
 ### Run docker-compose
 
 ```
-cd ~/work/btp/testnet/goloop2moonbeam
+cd ~/work/btp/docker-compose/goloop2moonbeam
 make build
 make run
 ```

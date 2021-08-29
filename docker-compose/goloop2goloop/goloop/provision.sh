@@ -18,7 +18,10 @@ GOLOOP_CONFIG=${GOLOOP_PROVISION_CONFIG}/server.json
 ensure_server_start
 
 goloop gn gen --out src.genesis.json $GOLOOP_KEY_STORE
+echo $(cat src.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x12A05F200","query":"0x2faf080"}}}}') > src.genesis.json
+
 goloop gn gen --out dst.genesis.json $GOLOOP_KEY_STORE
+echo $(cat dst.genesis.json | jq -r '.*{"chain":{"fee":{"stepLimit":{"invoke":"0x12A05F200","query":"0x2faf080"}}}}') > dst.genesis.json
 
 goloop chain join --genesis_template src.genesis.json --channel src --auto_start
 goloop chain join --genesis_template dst.genesis.json --channel dst --auto_start
@@ -28,7 +31,6 @@ goloop chain start dst
 
 ##########################
 # Deploy BMC, BMV
-
 source btp.sh
 
 deploy_bmc src
@@ -36,7 +38,6 @@ deploy_bmc dst
 
 deploy_bmv src dst
 deploy_bmv dst src
-
 
 ##########################
 # Configuration for relay
@@ -55,7 +56,6 @@ ensure_key_store dst.ks.json dst.secret
 rpcks dst.ks.json dst.secret
 bmc_addRelayer src
 bmc_addRelay src dst
-
 
 ##########################
 # Deploy Token-BSH, IRC2-Token

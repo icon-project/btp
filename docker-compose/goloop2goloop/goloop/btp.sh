@@ -4,11 +4,8 @@ deploy_bmc() {
   local CHAIN=$1
   rpcch ${CHAIN}
   echo "$GOLOOP_RPC_NID.icon" > net.btp.${CHAIN}
-
   goloop rpc sendtx deploy pyscore/bmc.zip \
       --param _net=$(cat net.btp.${CHAIN}) | jq -r . > tx.bmc.${CHAIN}
-
-  cat tx.bmc.${CHAIN}
   extract_scoreAddress tx.bmc.${CHAIN} bmc.${CHAIN}
   echo "btp://$(cat net.btp.${CHAIN})/$(cat bmc.${CHAIN})" > btp.${CHAIN}
 }

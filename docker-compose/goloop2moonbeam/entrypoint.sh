@@ -1,20 +1,6 @@
 #!/bin/sh
 
-wait_config_ready() {
-    timeout=10
-    while [ ! -f $BTPSIMPLE_CONFIG ];
-    do
-        if [ "$timeout" == 0 ]; then
-            echo "ERROR: Timeout while waiting for the file $BTPSIMPLE_CONFIG."
-            exit 1
-        fi
-        sleep 1
-        timeout=$(expr $timeout - 1)
-        echo "waiting for the config file: $BTPSIMPLE_CONFIG"
-    done
-}
-
-cp -u /btpsimple/moonbeam/* /btpsimple/config/
+cp -u /moonbeam/keystore/* /btpsimple/config/
 source provision.sh
 
 if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then
@@ -51,5 +37,16 @@ if [ "$BTPSIMPLE_CONFIG" != "" ] && [ ! -f "$BTPSIMPLE_CONFIG" ]; then
     sh -c "unset $UNSET ; $CMD"
 fi
 
-wait_config_ready
+timeout=10
+while [ ! -f $BTPSIMPLE_CONFIG ];
+do
+    if [ "$timeout" == 0 ]; then
+        echo "ERROR: Timeout while waiting for the file $BTPSIMPLE_CONFIG."
+        exit 1
+    fi
+    sleep 1
+    timeout=$(expr $timeout - 1)
+    echo "waiting for the config file: $BTPSIMPLE_CONFIG"
+done
+
 btpsimple start --config $BTPSIMPLE_CONFIG

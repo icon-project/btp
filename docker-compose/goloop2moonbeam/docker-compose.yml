@@ -1,4 +1,4 @@
-version: "3.4"
+version: "3.9"
 x-common-args: &common-args
     GOLOOP_IMAGE: iconloop/goloop-icon:v0.9.9
 services:
@@ -17,7 +17,10 @@ services:
             - 9080:9080
     moonbeam:
         container_name: g2m_moonbeam
-        image: purestake/moonbeam:v0.9.6
+        build:
+            context: ./moonbeam
+            args:     
+                MOONBEAM_VERSION: v0.9.6
         logging:
             driver: none
         volumes:
@@ -26,23 +29,16 @@ services:
             - "9933:9933"
             - "9944:9944"
         command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
-        user: root
     btp_icon:
         container_name: g2m_btp_icon
         build:
             context: .
             args: *common-args
         depends_on: 
-            - goloop
-            - moonbeam
-        entrypoint: 
-            - "/wait_for_it.sh"
-            - "goloop:9080"
-            - --
-            - "/wait_for_it.sh"
-            - "moonbeam:9933"
-            - --
-            - "/entrypoint.sh"
+            goloop:
+                condition: service_healthy
+            moonbeam:
+                condition: service_healthy
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
@@ -65,17 +61,10 @@ services:
             context: .
             args: *common-args
         depends_on: 
-            - goloop
-            - moonbeam
-            - btp_icon
-        entrypoint: 
-            - "/wait_for_it.sh"
-            - "goloop:9080"
-            - --
-            - "/wait_for_it.sh"
-            - "moonbeam:9933"
-            - --
-            - "/entrypoint.sh"
+            goloop:
+                condition: service_healthy
+            moonbeam:
+                condition: service_healthy
         volumes: 
             - ./scripts:/btpsimple/scripts
             - ${PWD}/config:/btpsimple/config
