@@ -76,17 +76,6 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
         _;
     }
 
-    function initialize(
-        address _bmc,
-        address _bshCore,
-        string memory _serviceName
-    ) public initializer {
-        bmc = IBMCPeriphery(_bmc);
-        bshCore = IBSHCore(_bshCore);
-        serviceName = _serviceName;
-        serialNo = 0;
-    }
-
     /**
      @notice Check whether BSHPeriphery has any pending transferring requests
      @return true or false
@@ -147,7 +136,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
         }
 
         serialNo++;
-        
+
         //  Because `stack is too deep`, must create `_strFrom` to waive this error
         //  `_strFrom` is a string type of an address `_from`
         string memory _strFrom = _from.toString();
@@ -264,7 +253,7 @@ contract BSHPeripheryV2 is Initializable, IBSHPeriphery {
      @param _msg     A response message
     */
     function handleBTPError(
-        string calldata /* _src */,
+        string calldata, /* _src */
         string calldata _svc,
         uint256 _sn,
         uint256 _code,

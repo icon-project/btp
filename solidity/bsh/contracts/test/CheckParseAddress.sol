@@ -8,11 +8,19 @@ contract CheckParseAddress {
     using ParseAddress for address;
     using ParseAddress for string;
 
-    function convertAddressToString(address _addr) external pure returns (string memory strAddr) {
+    function convertAddressToString(address _addr)
+        external
+        pure
+        returns (string memory strAddr)
+    {
         strAddr = _addr.toString();
     }
 
-    function convertStringToAddress(string calldata _addr) external pure returns (address addr) {
+    function convertStringToAddress(string calldata _addr)
+        external
+        pure
+        returns (address addr)
+    {
         addr = _addr.parseAddress();
     }
 }

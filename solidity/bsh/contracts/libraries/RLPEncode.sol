@@ -118,7 +118,7 @@ library RLPEncode {
      * @return The RLP encoded uint in bytes.
      */
     function encodeUint(uint256 self) internal pure returns (bytes memory) {
-        uint nBytes = bitLength(self)/8 + 1;
+        uint256 nBytes = bitLength(self) / 8 + 1;
         bytes memory uintBytes = encodeUintByLength(self);
         if (nBytes - uintBytes.length > 0) {
             uintBytes = abi.encodePacked(bytes1(0), uintBytes);
@@ -164,7 +164,10 @@ library RLPEncode {
         } else if (-MAX_INT120 - 1 <= n && n <= MAX_INT120) {
             return abi.encodePacked(int120(n));
         }
-        require(-MAX_INT128 - 1 <= n && n <= MAX_INT128, "outOfBounds: [-2^128-1, 2^128]");
+        require(
+            -MAX_INT128 - 1 <= n && n <= MAX_INT128,
+            "outOfBounds: [-2^128-1, 2^128]"
+        );
         return abi.encodePacked(int128(n));
     }
 
@@ -423,7 +426,10 @@ library RLPEncode {
         } else if (length >= MAX_UINT112 && length < MAX_UINT120) {
             return abi.encodePacked(uint120(length));
         }
-        require(length >= MAX_UINT120 && length < MAX_UINT128, "outOfBounds: [0, 2^128]");
+        require(
+            length >= MAX_UINT120 && length < MAX_UINT128,
+            "outOfBounds: [0, 2^128]"
+        );
         return abi.encodePacked(uint128(length));
     }
 

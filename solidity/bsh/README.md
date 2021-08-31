@@ -16,7 +16,7 @@ $ yarn
 ## Test
 1. Run in a background process or seperate terminal window
 ```
-$ docker run --rm -p 9933:9933 -p 9944:9944 purestake/moonbeam:v0.9.2 --dev --ws-external --rpc-external
+$ docker run --rm -d -p 9933:9933 -p 9944:9944 purestake/moonbeam:v0.9.2 --dev --ws-external --rpc-external
 ```
 2. Compile contracts
 ```

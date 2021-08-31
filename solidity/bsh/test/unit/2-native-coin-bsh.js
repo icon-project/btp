@@ -6,12 +6,12 @@ const truffleAssert = require('truffle-assertions');
 
 contract('BSHCore Unit Tests', (accounts) => {
     let bsh_core;
-    let _native = 'PARA';                   let _fee = 10;
-    let _uri = 'https://github.com/icon-project/btp'
+    let _native = 'PARA';       let _uri = 'https://github.com/icon-project/btp'              
+    let _fee = 10;      let _fixed_fee = 500000;
 
     before(async () => {
         bsh_core = await MockBSHCore.new();
-        await bsh_core.initialize(_uri, _native, _fee);
+        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
     });
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
@@ -66,25 +66,74 @@ contract('BSHCore Unit Tests', (accounts) => {
     it('Scenario 8: Should allow contract owner to update fee ratio', async () => {
         let new_fee = 20;
         await bsh_core.setFeeRatio(new_fee);
+
+        assert(
+            web3.utils.BN(await bsh_core.feeNumerator()).toNumber() === new_fee
+        );
     });
 
     it('Scenario 9: Should revert when arbitrary client updates fee ratio', async () => {
-        let new_fee = 20;
+        let old_fee = 20;
+        let new_fee = 50;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee, {from: accounts[1]}),
             "Unauthorized"
         );
+
+        assert(
+            web3.utils.BN(await bsh_core.feeNumerator()).toNumber() === old_fee
+        );
     });
 
     it('Scenario 10: Should revert when Fee Numerator is higher than Fee Denominator', async () => {
+        let old_fee = 20;
         let new_fee = 20000;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee),
             "InvalidSetting"
         );
+
+        assert(
+            web3.utils.BN(await bsh_core.feeNumerator()).toNumber() === old_fee
+        );
     });
 
-    it('Scenario 11: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
+    it('Scenario 11: Should allow contract owner to update fixed fee', async () => {
+        let new_fixed_fee = 1000000;
+        await bsh_core.setFixedFee(new_fixed_fee);
+
+        assert(
+            web3.utils.BN(await bsh_core.fixedFee()).toNumber() === new_fixed_fee
+        );
+    });
+
+    it('Scenario 12: Should revert when arbitrary client updates fixed fee', async () => {
+        let old_fixed_fee = 1000000;
+        let new_fixed_fee = 2000000;
+        await truffleAssert.reverts(
+            bsh_core.setFixedFee.call(new_fixed_fee, {from: accounts[1]}),
+            "Unauthorized"
+        );
+
+        assert(
+            web3.utils.BN(await bsh_core.fixedFee()).toNumber() === old_fixed_fee
+        );
+    });
+
+    it('Scenario 13: Should revert when Owner set fixed fee is zero', async () => {
+        let old_fixed_fee = 1000000;
+        let new_fixed_fee = 0;
+        await truffleAssert.reverts(
+            bsh_core.setFixedFee.call(new_fixed_fee),
+            "InvalidSetting"
+        );
+
+        assert(
+            web3.utils.BN(await bsh_core.fixedFee()).toNumber() === old_fixed_fee
+        );
+    });
+
+    it('Scenario 14: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
         let _name1 = "wBTC";    let _name2 = "Ethereum";
         await bsh_core.register(_name1);
         await bsh_core.register(_name2);
@@ -97,7 +146,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     }); 
 
-    it('Scenario 12: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 15: Should receive an id = 0 when querying an invalid supporting coin', async () => {
         let _query = "EOS";
         let result = await bsh_core.coinId(_query);
         assert(
@@ -105,7 +154,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     }); 
 
-    it('Scenario 13: Should revert when a non-Owner tries to add a new Owner', async () => {
+    it('Scenario 16: Should revert when a non-Owner tries to add a new Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.addOwner.call(accounts[1], {from: accounts[2]}),
@@ -118,7 +167,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     }); 
 
-    it('Scenario 14: Should allow a current Owner to add a new Owner', async () => {
+    it('Scenario 17: Should allow a current Owner to add a new Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await bsh_core.addOwner(accounts[1]);
         let newList = await bsh_core.getOwners();
@@ -128,7 +177,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     }); 
     
-    it('Scenario 15: Should allow old owner to register a new coin - After adding new Owner', async () => {
+    it('Scenario 18: Should allow old owner to register a new coin - After adding new Owner', async () => {
         let _name3 = "TRON";
         await bsh_core.register(_name3);
         output = await bsh_core.coinNames();
@@ -139,7 +188,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 16: Should allow new owner to register a new coin', async () => {   
+    it('Scenario 19: Should allow new owner to register a new coin', async () => {   
         let _name3 = "BINANCE";
         await bsh_core.register(_name3, {from: accounts[1]});
         output = await bsh_core.coinNames();
@@ -150,7 +199,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     }); 
 
-    it('Scenario 17: Should allow new owner to update BSHPeriphery contract', async () => {
+    it('Scenario 20: Should allow new owner to update BSHPeriphery contract', async () => {
         //  Must clear BSHPerif setting since BSHPeriphery has been set
         //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
         //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
@@ -158,7 +207,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[1]});
     });
 
-    it('Scenario 18: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
+    it('Scenario 21: Should also allow old owner to update BSHPeriphery contract - After adding new Owner', async () => {
         //  Must clear BSHPerif setting since BSHPeriphery has been set
         //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
         //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
@@ -166,27 +215,53 @@ contract('BSHCore Unit Tests', (accounts) => {
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]});
     });
 
-    it('Scenario 19: Should allow new owner to update the new URI', async () => {
+    it('Scenario 22: Should allow new owner to update the new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[1]});
     });
 
-    it('Scenario 20: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+    it('Scenario 23: Should also allow old owner to update the new URI - After adding new Owner', async () => {
         let new_uri = 'https://1234.iconee/'
         await bsh_core.updateUri(new_uri, {from: accounts[0]});
     });
 
-    it('Scenario 21: Should allow new owner to update new fee ratio', async () => {
+    it('Scenario 24: Should allow new owner to update new fee ratio', async () => {
         let new_fee = 30;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[1]});
+
+        assert(
+            web3.utils.BN(await bsh_core.feeNumerator()).toNumber() === new_fee
+        );
     });
 
-    it('Scenario 22: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
-        let new_fee = 30;
+    it('Scenario 25: Should also allow old owner to update new fee ratio - After adding new Owner', async () => {
+        let new_fee = 40;
         await bsh_core.setFeeRatio(new_fee, {from: accounts[0]});
+
+        assert(
+            web3.utils.BN(await bsh_core.feeNumerator()).toNumber() === new_fee
+        );
     });
 
-    it('Scenario 23: Should revert when non-Owner tries to remove an Owner', async () => {
+    it('Scenario 26: Should allow new owner to update new fixed fee', async () => {
+        let new_fixed_fee = 3000000;
+        await bsh_core.setFixedFee(new_fixed_fee, {from: accounts[1]});
+
+        assert(
+            web3.utils.BN(await bsh_core.fixedFee()).toNumber() === new_fixed_fee
+        );
+    });
+
+    it('Scenario 27: Should also allow old owner to update new fixed fee - After adding new Owner', async () => {
+        let new_fixed_fee = 4000000;
+        await bsh_core.setFixedFee(new_fixed_fee, {from: accounts[0]});
+
+        assert(
+            web3.utils.BN(await bsh_core.fixedFee()).toNumber() === new_fixed_fee
+        );
+    });
+
+    it('Scenario 28: Should revert when non-Owner tries to remove an Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner.call(accounts[0], {from: accounts[2]}),
@@ -199,7 +274,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 24: Should allow one current Owner to remove another Owner', async () => {
+    it('Scenario 29: Should allow one current Owner to remove another Owner', async () => {
         let oldList = await bsh_core.getOwners();
         await bsh_core.removeOwner(accounts[0], {from: accounts[1]});
         let newList = await bsh_core.getOwners();
@@ -209,7 +284,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 25: Should revert when the last Owner removes him/herself', async () => {
+    it('Scenario 30: Should revert when the last Owner removes him/herself', async () => {
         let oldList = await bsh_core.getOwners();
         await truffleAssert.reverts(
             bsh_core.removeOwner.call(accounts[1], {from: accounts[1]}),
@@ -222,7 +297,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 26: Should revert when removed Owner tries to register a new coin', async () => {
+    it('Scenario 31: Should revert when removed Owner tries to register a new coin', async () => {
         let _name3 = "KYBER";
         await truffleAssert.reverts(
             bsh_core.register.call(_name3),
@@ -236,7 +311,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 27: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
+    it('Scenario 32: Should revert when removed Owner tries to update BSHPeriphery contract', async () => {
         //  Must clear BSHPerif setting since BSHPeriphery has been set
         //  The requirement: if (BSHPerif.address != address(0)) must check whether BSHPerif has any pending requests
         //  Instead of creating a MockBSHPerif, just clear BSHPerif setting 
@@ -247,7 +322,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 28: Should revert when removed Owner tries to update the new URI', async () => {
+    it('Scenario 33: Should revert when removed Owner tries to update the new URI', async () => {
         let new_uri = 'https://1234.iconee/'
         await truffleAssert.reverts(
             bsh_core.updateUri.call(new_uri, {from: accounts[0]}),
@@ -255,7 +330,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 29: Should revert when removed Owner tries to update new fee ratio', async () => {
+    it('Scenario 34: Should revert when removed Owner tries to update new fee ratio', async () => {
         let new_fee = 30;
         await truffleAssert.reverts(
             bsh_core.setFeeRatio.call(new_fee, {from: accounts[0]}),
@@ -263,7 +338,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 30: Should allow arbitrary client to query balance of an account', async () => {
+    it('Scenario 35: Should allow arbitrary client to query balance of an account', async () => {
         let _coin = 'ICON';
         let _id = await bsh_core.coinId(_coin);
         let _value = 2000;
@@ -276,7 +351,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 31: Should allow arbitrary client to query a batch of balances of an account', async () => {
+    it('Scenario 36: Should allow arbitrary client to query a batch of balances of an account', async () => {
         let _coin1 = 'ICON';        let _coin2 = 'TRON';             
         let _id = await bsh_core.coinId(_coin2);
         let _value = 10000;         let another_value = 2000;
@@ -293,7 +368,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 32: Should allow arbitrary client to query an Accumulated Fees', async () => {
+    it('Scenario 37: Should allow arbitrary client to query an Accumulated Fees', async () => {
         let _coin1 = 'ICON';    let _coin2 = 'TRON';
         let _value1 = 40000;    let _value2 = 10000;    let _native_value = 2000;
         await bsh_core.setAggregationFee(_coin1, _value1);
@@ -309,7 +384,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 33: Should revert when a client reclaims an exceeding amount', async () => {
+    it('Scenario 38: Should revert when a client reclaims an exceeding amount', async () => {
         let _coin = 'ICON';     let _value = 10000;     let _exceedAmt = 20000;
         await bsh_core.setRefundableBalance(accounts[2], _coin, _value);
         await truffleAssert.reverts(
@@ -318,7 +393,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 34: Should revert when a client, which does not own a refundable, tries to reclaim', async () => {
+    it('Scenario 39: Should revert when a client, which does not own a refundable, tries to reclaim', async () => {
         let _coin = 'ICON';     let _value = 10000;
         await truffleAssert.reverts(
             bsh_core.reclaim.call(_coin, _value, {from: accounts[3]}),
@@ -326,7 +401,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 35: Should succeed when a client, which owns a refundable, tries to reclaim', async () => {
+    it('Scenario 40: Should succeed when a client, which owns a refundable, tries to reclaim', async () => {
         let _coin = 'ICON';     let _value = 10000;
         let _id = await bsh_core.coinId(_coin);
         await bsh_core.mintMock(bsh_core.address, _id, _value);
@@ -339,7 +414,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 36: Should not allow any clients (even a contract owner) to call a refund()', async () => {
+    it('Scenario 41: Should not allow any clients (even a contract owner) to call a refund()', async () => {
         //  This function should be called only by itself (BSHCore contract)
         let _coin = 'ICON';     let _value = 10000;
         await truffleAssert.reverts(
@@ -348,7 +423,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 37: Should not allow any clients (even a contract owner) to call a mint()', async () => {
+    it('Scenario 42: Should not allow any clients (even a contract owner) to call a mint()', async () => {
         //  This function should be called only by BSHPeriphery contract
         let _coin = 'ICON';     let _value = 10000;
         await truffleAssert.reverts(
@@ -357,7 +432,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 38: Should not allow any clients (even a contract owner) to call a handleResponseService()', async () => {
+    it('Scenario 43: Should not allow any clients (even a contract owner) to call a handleResponseService()', async () => {
         //  This function should be called only by BSHPeriphery contract
         let RC_OK = 0;
         let _coin = 'ICON';     let _value = 10000;     let _fee = 1;   let _rspCode = RC_OK;
@@ -367,7 +442,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 39: Should not allow any clients (even a contract owner) to call a transferFees()', async () => {
+    it('Scenario 44: Should not allow any clients (even a contract owner) to call a transferFees()', async () => {
         //  This function should be called only by BSHPeriphery contract
         let _fa = 'btp://1234.iconee/0x1234567812345678';
         await truffleAssert.reverts(

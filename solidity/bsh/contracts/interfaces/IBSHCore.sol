@@ -71,6 +71,13 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     function setFeeRatio(uint256 _feeNumerator) external;
 
     /**
+        @notice set Fixed Fee.
+        @dev Caller must be an Owner
+        @param _fixedFee    A new value of Fixed Fee
+    */
+    function setFixedFee(uint256 _fixedFee) external;
+
+    /**
         @notice Registers a wrapped coin and id number of a supporting coin.
         @dev Caller must be an Owner of this contract
         _name Must be different with the native coin name.
@@ -197,19 +204,6 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
         @param _value       An amount of re-claiming tokens
     */
     function reclaim(string calldata _coinName, uint256 _value) external;
-
-    /**
-        @notice return coin for the failed transfer.
-        @dev Caller must be itself
-        @param _to    account
-        @param _coinName    coin name    
-        @param _value    the minted amount   
-    */
-    function refund(
-        address _to,
-        string calldata _coinName,
-        uint256 _value
-    ) external;
 
     /**
         @notice mint the wrapped coin.

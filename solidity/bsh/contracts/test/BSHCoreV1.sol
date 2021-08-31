@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
    @title BSHCore contract
@@ -21,7 +22,8 @@ contract BSHCoreV1 is
     Initializable,
     IBSHCore,
     ERC1155Upgradeable,
-    ERC1155HolderUpgradeable
+    ERC1155HolderUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     using SafeMathUpgradeable for uint256;
     using String for string;
@@ -38,26 +40,29 @@ contract BSHCoreV1 is
         _;
     }
 
-    mapping(address => bool) private owners;
-    address[] private listOfOwners;
+    uint256 private constant FEE_DENOMINATOR = 10**4;
+    uint256 public feeNumerator;
+    uint256 public fixedFee;
+    uint256 private constant RC_OK = 0;
+    uint256 private constant RC_ERR = 1;
 
-    IBSHPeriphery private bshPeriphery;
+    IBSHPeriphery internal bshPeriphery;
+
+    address[] private listOfOwners;
+    uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
+    string[] internal coinsName; // a string array stores names of supported coins
+    string[] private chargedCoins; //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
+
+    mapping(address => bool) private owners;
     mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
     mapping(address => mapping(string => Types.Balance)) internal balances;
     mapping(string => uint256) private coins; //  a list of all supported coins
-    string[] internal coinsName; // a string array stores names of supported coins
-    string[] private chargedCoins; //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
-    uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
-
-    uint256 private constant FEE_DENOMINATOR = 10**4;
-    uint256 private feeNumerator;
-    uint256 private constant RC_OK = 0;
-    uint256 private constant RC_ERR = 1;
 
     function initialize(
         string calldata _uri,
         string calldata _nativeCoinName,
-        uint256 _feeNumerator
+        uint256 _feeNumerator,
+        uint256 _fixedFee
     ) public initializer {
         __ERC1155_init(_uri);
         __ERC1155Holder_init();
@@ -68,6 +73,7 @@ contract BSHCoreV1 is
 
         coins[_nativeCoinName] = 0;
         feeNumerator = _feeNumerator;
+        fixedFee = _fixedFee;
         coinsName.push(_nativeCoinName);
     }
 
@@ -77,9 +83,10 @@ contract BSHCoreV1 is
        @param _owner    Address of a new Onwer.
    */
     function addOwner(address _owner) external override onlyOwner {
+        require(owners[_owner] == false, "ExistedOwner");
         owners[_owner] = true;
         listOfOwners.push(_owner);
-        emit SetOwnership(_msgSender(), _owner);
+        emit SetOwnership(msg.sender, _owner);
     }
 
     /**
@@ -90,9 +97,10 @@ contract BSHCoreV1 is
    */
     function removeOwner(address _owner) external override onlyOwner {
         require(listOfOwners.length > 1, "Unable to remove last Owner");
+        require(owners[_owner] == true, "Removing Owner not found");
         delete owners[_owner];
         _remove(_owner);
-        emit RemoveOwnership(_msgSender(), _owner);
+        emit RemoveOwnership(msg.sender, _owner);
     }
 
     function _remove(address _addr) internal {
@@ -164,6 +172,16 @@ contract BSHCoreV1 is
     function setFeeRatio(uint256 _feeNumerator) external override onlyOwner {
         require(_feeNumerator <= FEE_DENOMINATOR, "InvalidSetting");
         feeNumerator = _feeNumerator;
+    }
+
+    /**
+        @notice set Fixed Fee.
+        @dev Caller must be an Owner
+        @param _fixedFee    A new value of Fixed Fee
+    */
+    function setFixedFee(uint256 _fixedFee) external override onlyOwner {
+        require(_fixedFee > 0, "InvalidSetting");
+        fixedFee = _fixedFee;
     }
 
     /**
@@ -311,11 +329,13 @@ contract BSHCoreV1 is
     */
     function transferNativeCoin(string calldata _to) external payable override {
         //  Aggregation Fee will be charged on BSH Contract
-        //  A Fee Ratio is set when BSH contract is created
-        //  If charging fee amount is zero, revert()
-        //  Otherwise, charge_amt = (_amt * feeNumerator) / FEE_DENOMINATOR
-        uint256 _chargeAmt = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
-        require(_chargeAmt > 0, "InvalidAmount");
+        //  A new charging fee has been proposed. `fixedFee` is introduced
+        //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+        //  Thus, it's likely that _chargeAmt is always greater than 0
+        //  require(_chargeAmt > 0) can be omitted
+        uint256 _chargeAmt =
+            msg.value.mul(feeNumerator).div(FEE_DENOMINATOR).add(fixedFee);
+
         //  @dev msg.value is an amount request to transfer (include fee)
         //  Later on, it will be calculated a true amount that should be received at a destination
         _sendServiceMessage(
@@ -341,8 +361,12 @@ contract BSHCoreV1 is
         string calldata _to
     ) external override {
         require(coins[_coinName] != 0, "UnregisterCoin");
-        uint256 _chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR);
-        require(_chargeAmt > 0, "InvalidAmount");
+        //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+        //  Thus, it's likely that _chargeAmt is always greater than 0
+        //  require(_chargeAmt > 0) can be omitted
+        uint256 _chargeAmt =
+            _value.mul(feeNumerator).div(FEE_DENOMINATOR).add(fixedFee);
+
         //  Transfer and Lock Token processes:
         //  BSHCore contract calls safeTransferFrom() to transfer the Token from Caller's account (msg.sender)
         //  Before that, Caller must approve (setApproveForAll) to accept
@@ -383,7 +407,7 @@ contract BSHCoreV1 is
         uint256 _chargeAmt
     ) private {
         //  Lock this requested _value as a record of a pending transferring transaction
-        //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
+        //  @dev `_value` is a requested amount to transfer, from a Requester, including charged fee
         //  The true amount to receive at a destination receiver is calculated by
         //  _amounts[0] = _value.sub(_chargeAmt);
         lockBalance(_from, _coinName, _value);
@@ -393,7 +417,8 @@ contract BSHCoreV1 is
         _amounts[0] = _value.sub(_chargeAmt);
         uint256[] memory _fees = new uint256[](1);
         _fees[0] = _chargeAmt;
-        //  @dev Note that: `_amounts` is a true amount to receive at a destination after deducting a charged fee
+
+        //  @dev `_amounts` is a true amount to receive at a destination after deducting a charged fee
         bshPeriphery.sendServiceMessage(_from, _to, _coins, _amounts, _fees);
     }
 
@@ -401,8 +426,7 @@ contract BSHCoreV1 is
        @notice Allow users to transfer multiple coins/wrapped coins to another chain
        @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
        It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
-       In case of transferring a native coin, it also checks `msg.value` with `_values[i]`
-       It MUST revert if `msg.value` is not equal to `_values[i]`
+       In case of transferring a native coin, it also checks `msg.value`
        The number of requested coins MUST be as the same as the number of requested values
        The requested coins and values MUST be matched respectively
        @param _coinNames    A list of requested transferring coins/wrapped coins
@@ -410,12 +434,13 @@ contract BSHCoreV1 is
        @param _to          Target BTP address.
     */
     function transferBatch(
-        string[] memory _coinNames,
+        string[] calldata _coinNames,
         uint256[] memory _values,
         string calldata _to
     ) external payable override {
         require(_coinNames.length == _values.length, "InvalidRequest");
-        uint256 size = msg.value != 0 ? _coinNames.length.add(1) : _coinNames.length;
+        uint256 size =
+            msg.value != 0 ? _coinNames.length.add(1) : _coinNames.length;
         uint256[] memory _ids = new uint256[](_coinNames.length);
         string[] memory _coins = new string[](size);
         uint256[] memory _amounts = new uint256[](size);
@@ -426,10 +451,17 @@ contract BSHCoreV1 is
             //  Does not need to check if _coinNames[i] == native_coin
             //  If _coinNames[i] is a native_coin, coins[_coinNames[i]] = 0
             require(_ids[i] != 0, "UnregisterCoin");
+
+            //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+            //  Thus, it's likely that _chargeAmt is always greater than 0
+            //  require(_chargeAmt > 0) can be omitted
             _coins[i] = _coinNames[i];
-            _chargeAmts[i] = _values[i].mul(feeNumerator).div(FEE_DENOMINATOR);
-            require(_chargeAmts[i] > 0, "InvalidAmount");
+            _chargeAmts[i] = _values[i]
+                .mul(feeNumerator)
+                .div(FEE_DENOMINATOR)
+                .add(fixedFee);
             _amounts[i] = _values[i].sub(_chargeAmts[i]);
+
             //  Lock this requested _value as a record of a pending transferring transaction
             //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
             //  The true amount to receive at a destination receiver is calculated by
@@ -446,14 +478,20 @@ contract BSHCoreV1 is
         );
 
         if (msg.value != 0) {
-            _coins[size - 1] = coinsName[0];   // push native_coin at the end of request
-            _chargeAmts[size - 1] = msg.value.mul(feeNumerator).div(FEE_DENOMINATOR);
-            require(_chargeAmts[size - 1] > 0, "InvalidAmount");
+            //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+            //  Thus, it's likely that _chargeAmt is always greater than 0
+            //  require(_chargeAmt > 0) can be omitted
+            _coins[size - 1] = coinsName[0]; // push native_coin at the end of request
+            _chargeAmts[size - 1] = msg
+                .value
+                .mul(feeNumerator)
+                .div(FEE_DENOMINATOR)
+                .add(fixedFee);
             _amounts[size - 1] = msg.value.sub(_chargeAmts[size - 1]);
             lockBalance(msg.sender, coinsName[0], msg.value);
         }
 
-        //  @dev Note that: `_amounts` is true amounts to receive at a destination after deducting charged fees
+        //  @dev `_amounts` is true amounts to receive at a destination after deducting charged fees
         bshPeriphery.sendServiceMessage(
             msg.sender,
             _to,
@@ -473,6 +511,7 @@ contract BSHCoreV1 is
     function reclaim(string calldata _coinName, uint256 _value)
         external
         override
+        nonReentrant
     {
         require(
             balances[msg.sender][_coinName].refundableBalance >= _value,
@@ -488,25 +527,33 @@ contract BSHCoreV1 is
         this.refund(msg.sender, _coinName, _value);
     }
 
-    /**
-        @notice return coin for the failed transfer.
-        @dev Caller must be this contract
-        @param _to    account
-        @param _coinName    coin name    
-        @param _value    the minted amount   
-    */
+    //  Solidity does not allow using try_catch with interal/private function
+    //  Thus, this function would be set as 'external`
+    //  But, it has restriction. It should be called by this contract only
+    //  In addition, there are only two functions calling this refund()
+    //  + handleRequestService(): this function only called by BSHPeriphery
+    //  + reclaim(): this function can be called by ANY
+    //  In case of reentrancy attacks, the chance happenning on BSHPeriphery
+    //  since it requires a request from BMC which requires verification fron BMV
+    //  reclaim() has higher chance to have reentrancy attacks.
+    //  So, it must be prevented by adding 'nonReentrant'
     function refund(
         address _to,
         string calldata _coinName,
         uint256 _value
-    ) external override {
+    ) external {
         require(msg.sender == address(this), "Unauthorized");
         uint256 _id = coins[_coinName];
         if (_id == 0) {
-            payable(_to).transfer(_value);
+            paymentTransfer(payable(_to), _value);
         } else {
             this.safeTransferFrom(address(this), _to, _id, _value, "");
         }
+    }
+
+    function paymentTransfer(address payable _to, uint256 _amount) private {
+        (bool sent, ) = _to.call{value: _amount}("");
+        require(sent, "Payment transfer failed");
     }
 
     /**
@@ -526,7 +573,7 @@ contract BSHCoreV1 is
     ) external override onlyBSHPeriphery {
         uint256 _id = coins[_coinName];
         if (_id == 0) {
-            payable(_to).transfer(_value);
+            paymentTransfer(payable(_to), _value);
         } else {
             _mint(_to, _id, _value, "");
         }
@@ -547,6 +594,14 @@ contract BSHCoreV1 is
         uint256 _fee,
         uint256 _rspCode
     ) external override onlyBSHPeriphery {
+        //  Fee Gathering and Transfer Coin Request use the same method
+        //  and both have the same response
+        //  In case of Fee Gathering's response, `_requester` is this contract's address
+        //  Thus, check that first
+        //  -- If `_requester` is this contract's address, then check whethere response's code is RC_ERR
+        //  In case of RC_ERR, adding back charged fees to `aggregationFee` state variable
+        //  In case of RC_OK, ignore and return
+        //  -- Otherwise, handle service's response as normal
         if (_requester == address(this)) {
             if (_rspCode == RC_ERR) {
                 aggregationFee[_coinName] = aggregationFee[_coinName].add(
@@ -561,21 +616,24 @@ contract BSHCoreV1 is
         ]
             .lockedBalance
             .sub(_amount);
+
+        //  A new implementation has been proposed to prevent spam attacks
+        //  In receiving error response, BSHCore refunds `_value`, not including `_fee`, back to Requestor
         if (_rspCode == RC_ERR) {
-            try this.refund(_requester, _coinName, _amount) {} catch {
+            try this.refund(_requester, _coinName, _value) {} catch {
                 balances[_requester][_coinName].refundableBalance = balances[
                     _requester
                 ][_coinName]
                     .refundableBalance
-                    .add(_amount);
+                    .add(_value);
             }
         } else if (_rspCode == RC_OK) {
             uint256 _id = coins[_coinName];
             if (_id != 0) {
                 _burn(address(this), _id, _value);
             }
-            aggregationFee[_coinName] = aggregationFee[_coinName].add(_fee);
         }
+        aggregationFee[_coinName] = aggregationFee[_coinName].add(_fee);
     }
 
     /**
