@@ -95,7 +95,7 @@ pub struct Votes {
 #[serde(crate = "near_sdk::serde")]
 pub struct BlockWitness {
     pub height: u128,
-    pub witnesses: Vec<PublicKey>,
+    pub witnesses: Vec<Hash>,
 }
 
 #[derive(

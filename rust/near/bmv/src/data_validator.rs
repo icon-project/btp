@@ -31,7 +31,7 @@ impl DataValidator {
         prev: AccountId,
         seq: u128,
         serialized_msg: &[u8],
-        receipt_hash: Hash,
+        receipt_hash: &Hash,
     ) -> Result<Vec<Vec<u8>>, &str> {
         let mut next_seq = seq + 1;
         let mut receipt = Receipt {
@@ -52,8 +52,9 @@ impl DataValidator {
         if !self.messages.is_empty() {
             self.messages.clear();
         }
+
         for mut receipt_proof in receipt_proofs {
-            receipt = receipt_proof.verify_mtp_proof(receipt_hash);
+            receipt = receipt_proof.verify_mpt_proof(receipt_hash);
             for mut event_log in receipt.event_logs {
                 if event_log.addr != contract_addr {
                     continue;
