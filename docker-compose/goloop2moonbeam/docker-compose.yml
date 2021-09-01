@@ -19,16 +19,15 @@ services:
         container_name: g2m_moonbeam
         build:
             context: ./moonbeam
-            args:     
-                MOONBEAM_VERSION: v0.9.6
         logging:
             driver: none
         volumes:
-            - ${PWD}/data/moonbase_dev:/data/chains/moonbase_dev
+            - /var/run/docker.sock:/var/run/docker.sock
         ports:
-            - "9933:9933"
-            - "9944:9944"
-        command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--sealing', '3000']
+            - "34001:34001" # relay rpc
+            - "34002:34002" # relay ws
+            - "34101:34101" # para rpc
+            - "34102:34102" # para ws
     btp_icon:
         container_name: g2m_btp_icon
         build:
@@ -50,7 +49,7 @@ services:
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
             - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
-            - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:9933
+            - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:34101
             - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
             - BTPSIMPLE_KEY_STORE=/btpsimple/config/moonbeam.keystore.json
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
@@ -74,7 +73,7 @@ services:
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_moonbeam
             - BTPSIMPLE_CONFIG=/btpsimple/config/config.moonbeam.json
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam
-            - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
+            - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:34101
             - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
             - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
             - BTPSIMPLE_DST_OPTIONS="stepLimit=5000000000"
