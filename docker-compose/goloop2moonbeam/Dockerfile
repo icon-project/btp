@@ -5,8 +5,8 @@ FROM btpsimple:latest
 
 # install truffle cli
 COPY --from=truffle /usr/local/node /usr/local/node
-RUN apk add --no-cache libstdc++ git bash jq curl
-RUN apk add --no-cache --virtual .build-deps curl
+RUN apk add --no-cache libstdc++ git bash jq curl ca-certificates
+RUN apk add --no-cache --virtual .build-deps
 ENV PATH $PATH:/usr/local/node/bin
 RUN node -v
 RUN yarn --version
