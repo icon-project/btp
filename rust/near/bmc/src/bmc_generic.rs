@@ -108,12 +108,14 @@ impl BmcGeneric {
         let (prev_height, _, _) = bmv.get_status();
 
         // decode and verify relay message
-        let serialized_msgs = bmv.handle_relay_message(
-            self.get_bmc_btp_address(),
-            prev.clone(),
-            bmc_mgt.get_link_rx_seq(prev.clone()),
-            msg,
-        );
+        let serialized_msgs = bmv
+            .handle_relay_message(
+                self.get_bmc_btp_address(),
+                prev.clone(),
+                bmc_mgt.get_link_rx_seq(prev.clone()),
+                msg,
+            )
+            .expect("Failed to handle relay message");
 
         // rotate and check valid relay
         let (height, last_height, _) = bmv.get_status();

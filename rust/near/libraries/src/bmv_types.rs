@@ -1,8 +1,9 @@
 //! BMC Data Types
 
+use merkle_tree_accumulator::hash::Hash;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{AccountId, BorshStorageKey, CryptoHash, IteratorIndex, PublicKey, Timestamp};
+use near_sdk::{AccountId, BorshStorageKey, IteratorIndex, PublicKey, Timestamp};
 use std::collections::HashMap;
 
 #[derive(
@@ -18,9 +19,9 @@ pub enum BmvStorageKey {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct BmvResult {
-    pub state_hash: CryptoHash,
-    pub patch_receipt_hash: CryptoHash,
-    pub receipt_hash: CryptoHash,
+    pub state_hash: Hash,
+    pub patch_receipt_hash: Hash,
+    pub receipt_hash: Hash,
     pub extension_data: Vec<u8>,
 }
 
@@ -29,14 +30,14 @@ pub struct BmvResult {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct BlockHeader {
-    pub block_hash: CryptoHash,
+    pub block_hash: Hash,
     pub version: u64,
     pub height: u128,
     pub timestamp: Timestamp,
     pub proposer: PublicKey,
-    pub prev_hash: CryptoHash,
-    pub vote_hash: CryptoHash,
-    pub next_validator_hash: CryptoHash,
+    pub prev_hash: Hash,
+    pub vote_hash: Hash,
+    pub next_validator_hash: Hash,
     pub patch_tx_hash: Vec<u8>,
     pub tx_hash: Vec<u8>,
     pub logs_bloom: Vec<u8>,
@@ -72,7 +73,7 @@ pub struct Bpsi {
 #[serde(crate = "near_sdk::serde")]
 pub struct Validators {
     pub serialized_bytes: Vec<u8>,
-    pub validator_hash: CryptoHash,
+    pub validator_hash: Hash,
     pub validator_addrs: Vec<AccountId>,
     pub contained_validators: HashMap<AccountId, bool>,
     pub check_duplicate_votes: HashMap<AccountId, bool>,
@@ -116,7 +117,7 @@ pub struct BlockUpdate {
     pub votes: Votes,
     pub next_validators: Vec<AccountId>,
     pub next_validators_rlp: Vec<u8>,
-    pub next_validators_hash: CryptoHash,
+    pub next_validators_hash: Hash,
 }
 
 #[derive(
@@ -125,7 +126,7 @@ pub struct BlockUpdate {
 #[serde(crate = "near_sdk::serde")]
 pub struct Receipt {
     pub event_logs: Vec<EventLog>,
-    pub event_log_hash: CryptoHash,
+    pub event_log_hash: Hash,
 }
 
 #[derive(
