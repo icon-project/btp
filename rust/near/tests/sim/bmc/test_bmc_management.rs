@@ -1,11 +1,11 @@
 use kitten::*;
 use near_sdk_sim::{call, view};
 
-#[path ="../traits.rs"]
+#[path = "../traits.rs"]
 mod traits;
 use traits::BMC;
 
-pub struct Contract{}
+pub struct Contract {}
 
 impl BMC for Contract {
     fn add_service(&mut self, svc: String, add: String) -> Result<(), String> {
@@ -30,84 +30,105 @@ impl BMC for Contract {
         Ok(())
     }
     fn get_verifiers(&self) -> Vec<traits::Verifier> {
-        
-       let r =  traits::Verifier{
-           addr:"".to_string(),
-           net:"".to_string()
-       };
-       vec![r]
+        let r = traits::Verifier {
+            addr: "".to_string(),
+            net: "".to_string(),
+        };
+        vec![r]
     }
+
+    fn add_link(&mut self, link: String) -> Result<(), String> {
+        Ok(())
+    }
+    fn remove_link(&mut self, link: String) -> Result<(), String> {
+        Ok(())
+    }
+    fn get_links(&self) -> &Vec<String> {
+        
+        return vec!["".to_string()];
+    }
+
+    fn set_link(
+        &mut self,
+        link: String,
+        block_interval: u128,
+        max_agg: u128,
+        delay_limit: u128,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+
+    
 }
 //Manage BSH Services
 #[test]
-fn add_service_sucess(){
-
+fn add_service_sucess() {
     //add service sucessfully
     let mut contract = Contract{
         //contract deployed - initializes and adds account_id to owner 
-        //contract owner can add services 
-        
+        //contract owner can add services
         
     };
-    let err = contract.add_service("TokenA".to_string(), "bsh1address".to_string()).unwrap_err();
-    assert_eq!("",err);
+    let err = contract
+        .add_service("TokenA".to_string(), "bsh1address".to_string())
+        .unwrap_err();
+    assert_eq!("", err);
 }
 
 #[test]
-fn add_service_fails(){
+fn add_service_fails() {
     //add service fails due to service associated with diffrent BSH address.
     let mut contract = Contract{
-
         //contract deployed - initializes and adds account_id to owner 
         //contract owner can add services 
     };
-    let err = contract.add_service("TokenA".to_string(), "bsh2address".to_string()).unwrap_err();
-    assert_eq!("BMCRevertAlreadyExistsBSH",err)
+    let err = contract
+        .add_service("TokenA".to_string(), "bsh2address".to_string())
+        .unwrap_err();
+    assert_eq!("BMCRevertAlreadyExistsBSH", err)
 }
 #[test]
-fn add_service_fails_2(){
-
+fn add_service_fails_2() {
     //add service fails due to method invoked my non bmc owner
 
     let mut contract = Contract{
-
         //contract deployed - initializes and adds account_id to owner 
         //contract owner can add services 
     };
-    let err = contract.add_service("TokenA".to_string(), "bsh2address".to_string()).unwrap_err();
-    assert_eq!("BMCRevertUnauthorized",err)
-
+    let err = contract
+        .add_service("TokenA".to_string(), "bsh2address".to_string())
+        .unwrap_err();
+    assert_eq!("BMCRevertUnauthorized", err)
 }
 
 #[test]
-fn add_service_fails_address_invalid(){
-
+fn add_service_fails_address_invalid() {
     //add service fails due to invalid service address
     let mut contract = Contract{
-
         //contract deployed - initializes and adds account_id to owner 
         //contract owner can add services 
     };
-    let err = contract.add_service("TokenA".to_string(), "0x0000000000000000000000000000000000000000".to_string()).unwrap_err();
-    assert_eq!("BMCRevertInvalidAddress",err);
-
+    let err = contract
+        .add_service(
+            "TokenA".to_string(),
+            "0x0000000000000000000000000000000000000000".to_string(),
+        )
+        .unwrap_err();
+    assert_eq!("BMCRevertInvalidAddress", err);
 }
 
 #[test]
-fn remove_service_fails(){
-
+fn remove_service_fails() {
     //remove service fails due to non contract owner
     let mut contract = Contract{
-
         //contract deployed - initializes and adds account_id to owner 
         //contract owner can add services 
     };
-    let err= contract.remove_service("TokenA".to_string()).unwrap_err();
-    assert_eq!("BMCRevertUnauthorized",err);
+    let err = contract.remove_service("TokenA".to_string()).unwrap_err();
+    assert_eq!("BMCRevertUnauthorized", err);
 }
 #[test]
-fn remove_service_not_exist_fails(){
-
+fn remove_service_not_exist_fails() {
     //remove service fails due to service not exists
     let mut contract = Contract{
                 //contract deployed - initializes and adds account_id to owner 
@@ -116,11 +137,11 @@ fn remove_service_not_exist_fails(){
 
     let err = contract.remove_service("TokenA".to_string()).unwrap_err();
 
-    assert_eq!("BMCRevertNotExistsBSH",err)
+    assert_eq!("BMCRevertNotExistsBSH", err)
 }
 
 #[test]
-fn remove_service_sucess(){
+fn remove_service_sucess() {
     //remove service when caller is contract owner
 
     let mut contract = Contract{
@@ -130,8 +151,7 @@ fn remove_service_sucess(){
 
     let err = contract.remove_service("TokenA".to_string()).unwrap_err();
 
-    assert_eq!("",err);
-
+    assert_eq!("", err);
 }
 //Manage BMR relays
 #[test]
@@ -139,7 +159,6 @@ fn remove_service_sucess(){
 fn add_relays_fails() {
     //add realys fails due to non contract owner
     let mut contract = Contract{
-
          //contract deployed - initializes and adds account_id to owner 
         //contract owner can add services 
     };
@@ -290,15 +309,243 @@ fn remove_relays_sucess() {
 //manage BMV Verifiers
 
 #[test]
-fn add_verifier_sucess(){
-
+fn add_verifier_sucess() {
     //add verifier sucessfully -> by contract owner
 
- let mut contract = Contract{
+    let mut contract = Contract{
 
         //contract deployed - initializes and adds account_id to owner 
        //contract owner can add services 
    };
+    let netaddr = String::from("0x03.icon");
+    let addr = String::from("addressb1");
+    let _ = contract.add_verifier(netaddr, addr).unwrap();
+
+    let verifier = contract.get_verifiers();
+
+    assert_eq!("", "hello")
+}
+
+#[test]
+fn add_verifer_fails() {
+    //Fail to add verifier if caller is not a contract owner
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //calling add verifier as non contract owner
+    let netaddr = String::from("0x03.icon");
+    let addr = String::from("addressb1");
+    let err = contract.add_verifier(netaddr, addr).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized", err);
+}
+
+#[test]
+fn add_verfier_fails_toadd() {
+    // Fail to add berifier if verifier is already registered
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //calling add verifier as non contract owner
+    let netaddr = String::from("0x03.icon");
+    let addr = String::from("addressb1");
+    let err = contract.add_verifier(netaddr, addr).unwrap_err();
+    assert_eq!("BMCRevertAlreadyExistsBMV", err);
+}
+
+#[test]
+fn remove_verifer_fails() {
+    //Fail to add verifier if caller is not a contract owner
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //calling add verifier as non contract owner
+    let netaddr = String::from("0x03.icon");
+
+    let err = contract.remove_verifier(netaddr).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized", err);
+}
+
+#[test]
+fn remove_verifer_fails_notregistered() {
+    //Fail to remove verifier if caller if verifier is not regsitered
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+    let netaddr = String::from("0x04.xyz");
+
+    let err = contract.remove_verifier(netaddr).unwrap_err();
+
+    assert_eq!("BMCRevertNotExistsBMV", err);
+}
+
+#[test]
+fn remove_verfier_sucess() {
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+    let netaddr = String::from("0x04.xyz");
+
+    let _ = contract.remove_verifier(netaddr).unwrap();
+
+    let _ = contract.get_verifiers();
+
+    assert_eq!("", "verifer_address");
+}
+
+//Manage Links
+
+#[test]
+fn add_link_sucess() {
+
+    //Add link sucessfullyy if caller is contract owner
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+    //BMV1 is registered on BMC with address B1 and binded to “0x03.icon” 
+    //Previous BMC BTP address: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let links = contract.get_links();
+
+    let mut link = String::new();
+
+    for _link in links{
+
+        if _link == "btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef"{
+            link = String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+        }
+    }
+
+    assert_eq!("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef",links);
+
 
 }
 
+#[test]
+fn add_link_fails(){
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+    //BMV1 is registered on BMC with address B1 and binded to “0x03.icon” 
+    //Previous BMC BTP address: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let err = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized",err)
+}
+
+#[test]
+fn add_link_verifier_fails(){
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let err = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("BMCRevertNotExistsBMV",err)
+
+}
+
+#[test]
+fn add_link_fails_invbtp(){
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let err = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("Invalid Opcode",err)
+
+}
+
+#[test]
+fn add_link_fails_ifpresent(){
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let err = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("BMCRevertAlreadyExistsLink",err)
+}
+
+#[test]
+fn remove_link_fails(){
+
+    //remove link fails due to non owner call
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let err = contract.remove_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized",err)
+
+}
+
+#[test]
+fn remove_link_fails_dnexist(){
+    // Fail to remove link if link does not exist
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let err = contract.remove_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+    assert_eq!("BMCRevertNotExistsLink",err)
+
+}
+
+#[test]
+fn remove_link_success(){
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+       
+    };
+
+    //fails when bmv not exists
+    let _ = contract.remove_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let links = contract.get_links();
+    let value  = false;
+
+    for _link in links{
+
+        if _link == "btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef"{
+            value= true;
+        }
+    }
+
+    assert_eq!(true, value)
+
+}
+
+
+//Configure Link 

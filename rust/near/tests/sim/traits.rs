@@ -10,5 +10,15 @@ pub trait BMC {
     fn get_relays(&self, link: String) -> Vec<String>;
     fn add_verifier(&mut self, net: String, addr: String) -> Result<(), String>;
     fn remove_verifier(&mut self, net: String) -> Result<(), String>;
-    fn get_verifiers(&self) -> Vec<Verifier> ;
+    fn get_verifiers(&self) -> Vec<Verifier>;
+    fn add_link(&mut self, link: String) -> Result<(), String>;
+    fn remove_link(&mut self, link: String) -> Result<(), String>;
+    fn get_links(&self) -> &Vec<String>;
+    fn set_link(
+        &mut self,
+        link: String,
+        block_interval: u128,
+        max_agg: u128,
+        delay_limit: u128,
+    ) -> Result<(), String>;
 }
