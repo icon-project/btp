@@ -2,6 +2,7 @@ pub struct Verifier {
     pub net: String,
     pub addr: String,
 }
+pub struct Route{}
 pub trait BMC {
     fn add_service(&mut self, svc: String, add: String) -> Result<(), String>;
     fn remove_service(&mut self, svc: String) -> Result<(), String>;
@@ -21,4 +22,9 @@ pub trait BMC {
         max_agg: u128,
         delay_limit: u128,
     ) -> Result<(), String>;
+
+    fn add_route(&mut self, dst:String, link: String) -> Result<(), String>;
+    fn remove_route(&mut self, dst: String) -> Result<(), String>;
+    fn get_routes(&self) -> Vec<Route>;
+
 }

@@ -58,6 +58,21 @@ impl BMC for Contract {
         Ok(())
     }
 
+    fn add_route(&mut self, dst: String, link: String) -> Result<(), String>{
+        Ok(())
+    }
+    
+    fn remove_route(&mut self, dst: String) -> Result<(), String>{
+
+        Ok(())
+    }
+
+    fn get_routes(&self) -> Vec<traits::Route> {
+
+        vec![traits::Route{}]
+
+    }
+
     
 }
 //Manage BSH Services
@@ -548,4 +563,129 @@ fn remove_link_success(){
 }
 
 
-//Configure Link 
+//Configure Link  set  link {link status}
+
+#[test]
+fn set_link_fail(){
+    //set link status fails due to non contract owner call
+
+    let mut contract = Contract{
+       //contract deployed - initializes and adds account_id to owner 
+    };
+    let link = String::from("btp://0x04.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+    let block_interval:u128 = 3000;
+    let max_agg :u128 = 5;
+    let delay_limit:u128 = 3;
+
+    let _ = contract.add_link(link.clone()).unwrap();
+
+    let err = contract.set_link(link.clone(), block_interval, max_agg, delay_limit).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized",err);
+
+}
+#[test]
+fn set_link_fail_notexist(){
+
+    //set link status fails due to non existed link 
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     let link = String::from("btp://0x05.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+     let block_interval:u128 = 3000;
+     let max_agg :u128 = 5;
+     let delay_limit:u128 = 3;
+
+     let _ = contract.add_link(String::from("btp://0x04.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let err = contract.set_link(link, block_interval, max_agg, delay_limit).unwrap_err();
+
+    assert_eq!("BMCRevertNotExistsLink",err);
+
+}
+
+#[test]
+fn set_link_fail_mxagg(){
+
+    //set link status fails when mx_agg set to 0
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     let link = String::from("btp://0x04.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+     let block_interval:u128 = 3000;
+     let max_agg :u128 = 0;
+     let delay_limit:u128 = 3;
+ 
+     let _ = contract.add_link(link.clone()).unwrap();
+ 
+     let err = contract.set_link(link.clone(), block_interval, max_agg, delay_limit).unwrap_err();
+ 
+     assert_eq!("BMCRevertInvalidParam",err);
+
+
+}
+
+#[test]
+fn set_link_fail_invalid_delay(){
+    //set link status fails when delay_limit is invalid
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     let link = String::from("btp://0x04.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+     let block_interval:u128 = 3000;
+     let max_agg :u128 = 5;
+     let delay_limit:u128 = 0;
+ 
+     let _ = contract.add_link(link.clone()).unwrap();
+ 
+     let err = contract.set_link(link.clone(), block_interval, max_agg, delay_limit).unwrap_err();
+ 
+     assert_eq!("BMCRevertInvalidParam",err);
+}
+
+#[test]
+fn set_link_success(){
+
+
+    //set link status success
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     let link = String::from("btp://0x04.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef");
+     let block_interval:u128 = 3000;
+     let max_agg :u128 = 5;
+     let delay_limit:u128 = 0;
+ 
+     let _ = contract.add_link(link.clone()).unwrap();
+ 
+     let _ = contract.set_link(link.clone(), block_interval, max_agg, delay_limit).unwrap();
+
+     let linkstatus = contract.get_links(); // need to change
+
+     assert_eq!("",linkstatus);
+
+}
+
+//Manage Routes
+
+#[test]
+fn add_route_success(){
+
+    //add route by contract owner
+
+    //Destined BMC: “btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930” 
+    //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+
+    //Add link 
+
+    let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+   let err =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+   assert_eq!("",err);
+}
