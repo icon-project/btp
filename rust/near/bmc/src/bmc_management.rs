@@ -1,9 +1,9 @@
 //! BMC Management Contract
 
-use crate::bmc_types::*;
 use crate::{BmcGeneric, Utils};
 use bmv::Bmv;
 use btp_common::BTPAddress;
+use libraries::bmc_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, near_bindgen, setup_alloc};
