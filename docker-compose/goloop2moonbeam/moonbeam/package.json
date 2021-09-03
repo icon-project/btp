@@ -1,0 +1,19 @@
+{
+  "name": "moonbeam-launch",
+  "version": "0.0.0",
+  "description": "launch moonbeam parachain and relay chain network locally",
+  "main": "launch.ts",
+  "dependencies": {
+    "polkadot-launch": "^1.7.0",
+    "ts-node": "^8.10.1",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "@types/yargs": "^15.0.12"
+  },
+  "scripts": {
+    "launch": "ts-node launch"
+  },
+  "author": "",
+  "license": "Apache-2.0"
+}
