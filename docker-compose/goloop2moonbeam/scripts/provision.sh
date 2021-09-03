@@ -1,7 +1,7 @@
 source util.sh
 
 provision() {  
-    echo "start provisioning at: $(date)" > $PROVISION_STATUS_PROCESSING
+    echo "start provisioning at: $(date)" > $PROVISION_STATUS_STARTED
     echo "provisioning..."
 
 
@@ -36,13 +36,12 @@ provision() {
 
     ## finalizing
     echo "finished provisioning at: $(date)" > $PROVISION_STATUS_DONE
-    rm $PROVISION_STATUS_PROCESSING
     clean_solidity_build
     sleep 1
 }
 
 if [ ! -f "$PROVISION_STATUS_DONE" ]; then
-    if [ ! -f "$PROVISION_STATUS_PROCESSING" ]; then
+    if [ ! -f "$PROVISION_STATUS_STARTED" ]; then
         provision
     else
         while [ ! -f $PROVISION_STATUS_DONE ];

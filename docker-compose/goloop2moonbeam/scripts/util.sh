@@ -6,7 +6,7 @@ export JAVASCORE_HELPER_DIR=${JAVASCORE_HELPER_DIR:-$JAVASCORE_DIST_DIR/helper}
 export MOONBEAM_CHAIN_ID=1281 # https://github.com/PureStake/moonbeam#chain-ids
 export MOONBEAM_RPC_URL=${MOONBEAM_RPC_URL:-'http://moonbeam:9933'}
 export PROVISION_STATUS_DONE=$CONFIG_DIR/provision.done
-export PROVISION_STATUS_PROCESSING=$CONFIG_DIR/provision.processing
+export PROVISION_STATUS_STARTED=$CONFIG_DIR/provision.started
 
 # goloop env
 export GOLOOP_CONFIG=$CONFIG_DIR/$GOLOOPCHAIN.server.json
