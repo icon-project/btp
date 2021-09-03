@@ -26,5 +26,10 @@ pub trait BMC {
     fn add_route(&mut self, dst:String, link: String) -> Result<(), String>;
     fn remove_route(&mut self, dst: String) -> Result<(), String>;
     fn get_routes(&self) -> Vec<Route>;
+    fn add_owner(&mut self, owner: String) -> Result<(), String>;
+    fn remove_owner(&mut self, owner: String) -> Result<(), String>;
+    fn is_owner(&self, owner: String) -> bool;
+
+
 
 }

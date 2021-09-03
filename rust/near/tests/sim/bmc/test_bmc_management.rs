@@ -73,6 +73,20 @@ impl BMC for Contract {
 
     }
 
+    fn add_owner(&mut self, owner: String) -> Result<(),String>{
+
+        Ok(())
+    }
+
+    fn remove_owner(&mut self, owner: String) -> Result<(), String>{
+        Ok(())
+    }
+
+    fn is_owner(&self, owner: String) -> bool{
+
+        true
+    }
+
     
 }
 //Manage BSH Services
@@ -688,4 +702,217 @@ fn add_route_success(){
    let err =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
 
    assert_eq!("",err);
+}
+
+#[test]
+fn add_route_fail_nonowner(){
+
+    //add route by non contract owner
+
+    //Destined BMC: “btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930” 
+    //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     //Add link 
+
+    let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let err =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+ 
+    assert_eq!("BMCRevertUnauthorized",err);
+
+}
+
+#[test]
+
+fn add_route_fail_alreadyexist(){
+
+    //add route fail already exists
+
+    //Destined BMC: “btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930” 
+    //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     //Add link 
+
+    let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let err =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+ 
+    assert_eq!("BTPRevertAlreadyExistRoute",err);
+}
+
+#[test]
+fn add_route_fails_invalidlink(){
+
+    //add route fail already exists
+
+    //Destined BMC: “btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930” 
+    //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+    let mut contract = Contract{
+        //contract deployed - initializes and adds account_id to owner 
+     };
+     //Add link 
+
+    let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+    let err =  contract.add_route(String::from("btp://0x050xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+ 
+    assert_eq!("nvalid opcode",err);
+
+
+}
+
+#[test]
+
+fn remove_route_fails(){
+
+    //remove fails - non contract owner call 
+
+   //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+   let mut contract = Contract{
+    //contract deployed - initializes and adds account_id to owner 
+ };
+
+//Add link 
+
+let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+let _ =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+let err = contract.remove_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930")).unwrap_err();
+
+assert_eq!("BMCRevertUnauthorized",err);
+}
+
+#[test]
+fn remove_route_notexists(){
+
+ //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+ let mut contract = Contract{
+    //contract deployed - initializes and adds account_id to owner 
+ };
+
+//Add link 
+
+let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+let _ =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+let err = contract.remove_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930")).unwrap_err();
+
+assert_eq!("BTPRevertNotExistRoute",err);    
+}
+
+#[test]
+fn remove_route_sucess(){
+
+
+ //Linked BMC: “btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef”
+
+ let mut contract = Contract{
+    //contract deployed - initializes and adds account_id to owner 
+ };
+
+//Add link 
+
+let _ = contract.add_link(String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap();
+
+let _ =  contract.add_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930"),String::from("btp://0x03.icon/cxf3d12e9baef523c5a2d03c67b2792f3548926cef")).unwrap_err();
+
+let err = contract.remove_route(String::from("btp://0x05.pra/0xb6F2B9415fc599130084b7F20B84738aCBB15930")).unwrap_err();
+
+assert_eq!("_",err);  
+}
+
+//Manage Owner Accounts
+#[test]
+fn add_owner_success(){
+
+    // add owner - by contract owner
+
+    let addr = "0xb6F2B9415fc599130084b7F20B84738aCBB15930".to_string() ;
+
+    let mut contract = Contract{
+
+    };
+
+    let _ = contract.add_owner(addr).unwrap();
+
+    let owner = contract.is_owner(addr);
+
+    assert_eq!(true,owner);
+    
+}
+
+#[test]
+fn add_owner_fails(){
+
+    // add owner by non contract owner 
+    let addr = "0xb6F2B9415fc599130084b7F20B84738aCBB15930".to_string() ;
+
+    let mut contract = Contract{
+
+    };
+    let err = contract.add_owner(addr).unwrap_err();
+
+    assert_eq!("BMCRevertUnauthorized",err);
+
+}
+#[test]
+fn remove_owner_fails(){
+
+    // remove owner fails -> { only one owner present}
+    let mut contract = Contract{
+
+    };
+
+    let err = contract.remove_owner("0xb6F2B9415fc599130084b7F20B84738aCBB15930".to_string()).unwrap_err();
+
+    assert_eq!("BMCRevertLastOwner", err);
+    
+}
+
+#[test]
+fn remove_onwer_fails_nonowner(){
+
+    let addr = "0xb6F2B9415fc599130084b7F20B84738aCBB15930".to_string() ;
+
+    let mut contract = Contract{
+
+    };
+
+    let _ = contract.add_owner(addr).unwrap();
+
+    let err = contract.remove_owner(addr).unwrap_err();
+    assert_eq!("BMCRevertUnauthorized", err);
+
+}
+
+#[test]
+fn remove_owner_success(){
+
+    let addr = "0xb6F2B9415fc599130084b7F20B84738aCBB15930".to_string() ;
+
+    let mut contract = Contract{
+
+    };
+
+    let _ = contract.add_owner(addr).unwrap();
+
+    let _ = contract.remove_owner(addr).unwrap();
+
+    let is_owner = contract.is_owner(addr);
+
+    assert_eq!(true,is_owner)
+    
+
+
 }
