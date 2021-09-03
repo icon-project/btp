@@ -3,7 +3,7 @@ set -e
 source transfer_util.sh
 
 ICX_DEPOSIT_AMOUNT=$(coin2wei 1000) # 1000 ICX
-ICX_TRANSER_AMOUNT=$(coin2wei 1) # 1 ICX
+ICX_TRANSER_AMOUNT=$(coin2wei 10) # 1 ICX
 
 deposit_ICX_for_Alice() {
     get_alice_balance
@@ -36,18 +36,50 @@ transfer_ICX_from_Alice_to_Bob() {
     ensure_txresult tx.Alice2Bob.transfer
 }
 
-check_bob_balance_in_Moonbeam() {
-    echo "$1. Checking Bob's balance after 10 seconds..."
-    sleep 10
-
+bob_balance_in_moonbeam_before_transfering() {
     cd $CONFIG_DIR
     eth abi:add bshcore abi.bsh_core.json
-    eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(get_bob_address)', 'ICX')"
+
+    RESULT=$(eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(get_bob_address)', 'ICX')")
+    BOB_BALANCE=$(echo "$RESULT" | awk '/_usableBalance/ {print $2}' | sed 's/[^0-9]*//g')
+    echo "$1. Bob's balance before transfering: $(wei2coin $BOB_BALANCE) (ICX)"
 }
+
+bob_balance_in_moonbeam_after_transfering() {
+    echo "$1. Checking Bob's balance after transfering with 60s timeout"
+    cd $CONFIG_DIR
+
+    BF_TF=$BOB_BALANCE
+    TIMEOUT=60
+
+    printf "["
+    while true;
+    do
+        printf  "▓"
+        if [ $TIMEOUT -le 0 ]; then
+            printf "] error!\n"
+            echo "Timeout while checking Bob's balance."
+            exit 1
+        fi
+        # sleep 3 seconds as the moonbeam block interval
+        sleep 3 
+        TIMEOUT=$(expr $TIMEOUT - 3)
+
+        RESULT=$(eth contract:call --network $MOONBEAM_RPC_URL bshcore@$(cat bsh_core.moonbeam) "getBalanceOf('$(get_bob_address)', 'ICX')")
+        BOB_BALANCE=$(echo "$RESULT" | awk '/_usableBalance/ {print $2}' | sed 's/[^0-9]*//g')
+        if [ "$BOB_BALANCE" != "$BF_TF" ]; then
+            printf "] done!\n"
+            break
+        fi
+    done
+    echo "Bob's balance after transfering: $(wei2coin $BOB_BALANCE) (ICX)"
+}
+
 
 echo "This script demonstrates how to transfer a NativeCoin from ICON to MOONBEAM."
 create_alice_account_in_Gochain "1"
 deposit_ICX_for_Alice           "2"
 create_bob_account_in_Moonbeam  "3"
-transfer_ICX_from_Alice_to_Bob  "4"
-check_bob_balance_in_Moonbeam   "5"
+bob_balance_in_moonbeam_before_transfering "4"
+transfer_ICX_from_Alice_to_Bob  "5"
+bob_balance_in_moonbeam_after_transfering   "6"
