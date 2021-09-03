@@ -31,7 +31,7 @@ brew install git make go dokcer docker-compose
 
 ## Computer specs
 
-At least 16 CPUs, 16 RAM.
+At least 16 CPUs, 8 RAM.
 
 For Mac OS, you need to setup docker engine resoures after install docker
 
