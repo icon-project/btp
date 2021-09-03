@@ -55,7 +55,7 @@ make run
 ```
 
 Now all that remains is to wait for the provisioning process to be completed.    
-The folder `~/work/btp/testnet/goloop2moonbeam/config` will contain all of the configuration files.   
+The folder `~/work/btp/docker-compose/goloop2moonbeam/config` will contain all of the configuration files.   
 Note: If you want a fresh test, run `make clean` to remove the old test data.
 
 ### Run test scenarios:

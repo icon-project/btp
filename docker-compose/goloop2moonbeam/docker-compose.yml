@@ -44,6 +44,11 @@ services:
             - ${PWD}/config:/btpsimple/config
             - ${PWD}/data/btpsimple_icon:/btpsimple/data
         env_file: ./btp.share.env
+        healthcheck:
+            test: ["CMD", "test",  "-f", "/btpsimple/config/provision.started"]
+            interval: 3s
+            timeout: 3s
+            retries: 10
         environment: 
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
             - BTPSIMPLE_CONFIG=/btpsimple/config/config.icon.json
@@ -61,9 +66,7 @@ services:
             context: .
             args: *common-args
         depends_on: 
-            goloop:
-                condition: service_healthy
-            moonbeam:
+            btp_icon:
                 condition: service_healthy
         volumes: 
             - ./scripts:/btpsimple/scripts
