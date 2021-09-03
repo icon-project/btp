@@ -61,7 +61,7 @@ Note: If you want a fresh test, run `make clean` to remove the old test data.
 ### Run test scenarios:
 
 Keep the docker-compose running and open an other terminal.  
-Run this command to transfer the native coin ICX from ICON to MOONBEAN. FYI, numbers in the result are floating-point, so if they are `0,99` it will show as `0`, so you need to run `make transfer_icx` for the transferred balances to become `1,99`
+Run this command to transfer the native coin ICX from ICON to MOONBEAN
 ```
 make transfer_icx
 ```

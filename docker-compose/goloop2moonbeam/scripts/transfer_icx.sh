@@ -37,8 +37,8 @@ transfer_ICX_from_Alice_to_Bob() {
 }
 
 check_bob_balance_in_Moonbeam() {
-    echo "$1. Checking Bob's balance after 10 seconds..."
-    sleep 10
+    echo "$1. Checking Bob's balance after 15 seconds..."
+    sleep 15
 
     cd $CONFIG_DIR
     eth abi:add bshcore abi.bsh_core.json
