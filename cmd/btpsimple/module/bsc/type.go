@@ -246,6 +246,79 @@ func MakeHeader(header *types.Header) *Header {
 	}
 }
 
+type EVMLog struct {
+	Address     string
+	Topics      [][]byte
+	Data        []byte
+	BlockNumber uint64
+	TxHash      []byte
+	TxIndex     uint
+	BlockHash   []byte
+	Index       uint
+	Removed     bool
+}
+
+func MakeLog(log *types.Log) *EVMLog {
+	topics := make([][]byte, 0)
+
+	for _, topic := range log.Topics {
+		topics = append(topics, topic.Bytes())
+	}
+
+	return &EVMLog{
+		Address:     log.Address.String(),
+		Topics:      topics,
+		Data:        log.Data,
+		BlockNumber: log.BlockNumber,
+		TxHash:      log.TxHash.Bytes(),
+		TxIndex:     log.TxIndex,
+		BlockHash:   log.BlockHash.Bytes(),
+		Index:       log.Index,
+		Removed:     log.Removed,
+	}
+}
+
+type Receipt struct {
+	// Consensus fields: These fields are defined by the Yellow Paper
+	Type              uint8
+	PostState         []byte
+	Status            uint64
+	CumulativeGasUsed uint64
+	Bloom             []byte
+	Logs              []*EVMLog
+
+	TxHash          common.Hash
+	ContractAddress common.Address
+	GasUsed         uint64
+
+	BlockHash        common.Hash
+	BlockNumber      uint64
+	TransactionIndex uint
+}
+
+func MakeReceipt(receipt *types.Receipt) *Receipt {
+	logs := make([]*EVMLog, len(receipt.Logs))
+
+	for _, log := range receipt.Logs {
+		logs = append(logs, MakeLog(log))
+	}
+
+	return &Receipt{
+		Type:              receipt.Type,
+		PostState:         receipt.PostState,
+		Status:            receipt.Status,
+		CumulativeGasUsed: receipt.CumulativeGasUsed,
+		Bloom:             receipt.Bloom.Bytes(),
+		Logs:              logs,
+		TxHash:            receipt.TxHash,
+		ContractAddress:   receipt.ContractAddress,
+		GasUsed:           receipt.GasUsed,
+		BlockHash:         receipt.BlockHash,
+		BlockNumber:       receipt.BlockNumber.Uint64(),
+		TransactionIndex:  receipt.TransactionIndex,
+	}
+}
+
 func HexToAddress(s string) common.Address {
 	return common.HexToAddress(s)
 }

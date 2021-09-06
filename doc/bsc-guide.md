@@ -89,7 +89,7 @@ From <btp repo>/devnet/docker/icon-bsc project directory
 
 Build with docker-compose using the following script
 ```
-./build
+./build.sh
 ```
 
 Once build is complete, start docker-compose

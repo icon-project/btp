@@ -18,7 +18,6 @@ package bsc
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
@@ -94,7 +93,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 
 	for _, receipt := range receipts {
 		rp := &module.ReceiptProof{}
-		eventProofs := make([]*module.EventProof, 0)
+
 		for _, eventLog := range receipt.Logs {
 			if eventLog.Address != srcContractAddress {
 				continue
@@ -108,20 +107,23 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 				})
 			}
 
-			eventProof := &module.EventProof{}
-			eventProof.Proof, err = rlp.EncodeToBytes(eventLog) //codec.RLP.MarshalToBytes(eventLog)
-			eventProof.Index = int(eventLog.Index)
-			eventProofs = append(eventProofs, eventProof)
+			proof, err := codec.RLP.MarshalToBytes(*MakeLog(eventLog))
+			if err != nil {
+				return nil, err
+			}
+			rp.EventProofs = append(rp.EventProofs, &module.EventProof{
+				Index: int(eventLog.Index),
+				Proof: proof,
+			})
 		}
 
 		if len(rp.Events) > 0 {
 			r.log.Debugf("newReceiptProofs: %d", v.Height)
 			rp.Index = int(receipt.TransactionIndex)
-			rp.Proof, err = rlp.EncodeToBytes(receipt) //codec.RLP.MarshalToBytes(receipt)
+			rp.Proof, err = codec.RLP.MarshalToBytes(*MakeReceipt(receipt))
 			if err != nil {
 				return nil, err
 			}
-			rp.EventProofs = eventProofs
 			rps = append(rps, rp)
 		}
 	}
