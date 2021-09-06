@@ -2,7 +2,7 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::BorshStorageKey;
+use near_sdk::{AccountId, BorshStorageKey};
 
 #[derive(
     BorshDeserialize, BorshSerialize, BorshStorageKey, Clone, Debug, Deserialize, Serialize,
@@ -15,31 +15,31 @@ pub enum BshStorageKey {
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
-pub enum BshEvents<'a> {
+pub enum BshEvents {
     SetOwnership {
-        promoter: &'a str,
-        new_owner: &'a str,
+        promoter: AccountId,
+        new_owner: AccountId,
     },
     RemoveOwnership {
-        remover: &'a str,
-        former_owner: &'a str,
+        remover: AccountId,
+        former_owner: AccountId,
     },
     /// Sends a receipt to user
     TransferStart {
-        from: &'a str,
-        to: &'a str,
+        from: AccountId,
+        to: AccountId,
         sn: u64,
         asset_details: Vec<AssetTransferDetail>,
     },
     /// Sends a final notification to a user
     TransferEnd {
-        from: &'a str,
+        from: AccountId,
         sn: u64,
         code: u64,
-        response: &'a str,
+        response: String,
     },
     /// Notify that BSH contract has received unknown response
-    UnknownResponse { from: &'a str, sn: u64 },
+    UnknownResponse { from: String, sn: u64 },
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -56,8 +56,8 @@ pub enum ServiceType {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct PendingTransferCoin {
-    pub from: String,
-    pub to: String,
+    pub from: AccountId,
+    pub to: AccountId,
     pub coin_names: Vec<String>,
     pub amounts: Vec<u128>,
     pub fees: Vec<u128>,
@@ -66,8 +66,8 @@ pub struct PendingTransferCoin {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TransferCoin {
-    pub from: String,
-    pub to: String,
+    pub from: AccountId,
+    pub to: AccountId,
     pub assets: Vec<Asset>,
 }
 

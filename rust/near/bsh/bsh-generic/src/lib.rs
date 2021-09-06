@@ -37,7 +37,7 @@ use btp_common::BTPAddress;
 use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, near_bindgen, setup_alloc};
+use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
 /// BSH Generic contract is used to handle communications
@@ -46,14 +46,14 @@ setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BshGeneric {
-    bmc_contract: String,
-    bsh_contract: String,
+    bmc_contract: AccountId,
+    bsh_contract: AccountId,
     /// A list of transferring requests
     /// Use `HashMap` because `LookupMap` doesn't implement
     /// Clone, Debug, and Default traits
     pub requests: UnorderedMap<u64, PendingTransferCoin>,
     /// BSH Service name
-    pub service_name: String,
+    pub service_name: AccountId,
     /// A counter of sequence number of service message
     serial_no: u64,
     num_of_pending_requests: u64,
@@ -78,14 +78,14 @@ impl BshGeneric {
     pub const RC_ERR: u64 = 1;
 
     #[init]
-    pub fn new(bmc: &str, bsh_contract: &str, service_name: &str) -> Self {
+    pub fn new(bmc_contract: AccountId, bsh_contract: AccountId, service_name: String) -> Self {
         // TODO: fully implement after BMC and BSH core contracts are written
 
         Self {
-            bmc_contract: bmc.to_string(),
-            bsh_contract: bsh_contract.to_string(),
+            bmc_contract,
+            bsh_contract,
             requests: UnorderedMap::new(BshStorageKey::BshGeneric),
-            service_name: service_name.to_string(),
+            service_name,
             serial_no: 0,
             num_of_pending_requests: 0,
         }
@@ -99,13 +99,13 @@ impl BshGeneric {
     /// Send Service Message from BSH contract to BMCService contract
     pub fn send_service_message(
         &mut self,
-        from: &str,
-        to: &str,
+        from: AccountId,
+        to: AccountId,
         coin_names: Vec<String>,
         values: Vec<u128>,
         fees: Vec<u128>,
     ) -> Result<(), &str> {
-        let btp_addr = BTPAddress::new(to.to_string());
+        let btp_addr = BTPAddress::new(to.clone());
         let _network_addr = btp_addr
             .network_address()
             .expect("Failed to retrieve network address")
@@ -163,8 +163,8 @@ impl BshGeneric {
     /// BSH handle BTP Message from BMC contract
     pub fn handle_btp_message(
         &mut self,
-        from: &str,
-        svc: &str,
+        from: AccountId,
+        svc: AccountId,
         sn: u64,
         msg: &[u8],
     ) -> Result<(), &str> {
@@ -180,12 +180,12 @@ impl BshGeneric {
             //  or revert if not a valid one
             let btp_addr = BTPAddress::new(tc.to.clone());
             if btp_addr.is_valid().is_ok() {
-                if self.handle_request_service(&tc.to, tc.assets).is_ok() {
+                if self.handle_request_service(tc.to, tc.assets).is_ok() {
                     self.send_response_message(
                         ServiceType::ResponseHandleService,
-                        from,
+                        from.clone(),
                         sn,
-                        "",
+                        "".to_string(),
                         Self::RC_OK,
                     );
                 } else {
@@ -198,7 +198,7 @@ impl BshGeneric {
                 ServiceType::ResponseHandleService,
                 from,
                 sn,
-                "Invalid address",
+                "Invalid address".to_string(),
                 Self::RC_ERR,
             );
         } else if sm.service_type == ServiceType::ResponseHandleService {
@@ -211,7 +211,7 @@ impl BshGeneric {
             }
             let response = Response::try_from_slice(sm.data.as_slice())
                 .expect("Failed to deserialize service message");
-            self.handle_response_service(sn, response.code, response.message.as_str())
+            self.handle_response_service(sn, response.code, response.message)
                 .expect("Error in handling response service");
         } else if sm.service_type == ServiceType::UnknownType {
             let bsh_event = BshEvents::UnknownResponse { from, sn };
@@ -222,7 +222,13 @@ impl BshGeneric {
         } else {
             // If none of those types above BSH responds with a message of
             // RES_UNKNOWN_TYPE
-            self.send_response_message(ServiceType::UnknownType, from, sn, "Unknown", Self::RC_ERR);
+            self.send_response_message(
+                ServiceType::UnknownType,
+                from,
+                sn,
+                "Unknown".to_string(),
+                Self::RC_ERR,
+            );
         }
         Ok(())
     }
@@ -230,11 +236,11 @@ impl BshGeneric {
     /// BSH handle BTP Error from BMC contract
     pub fn handle_btp_error(
         &mut self,
-        _src: &str,
-        svc: &str,
+        _src: AccountId,
+        svc: AccountId,
         sn: u64,
         code: u64,
-        msg: &str,
+        msg: String,
     ) -> Result<(), &str> {
         if *svc != self.service_name {
             return Err("Invalid SVC");
@@ -250,9 +256,9 @@ impl BshGeneric {
     }
 
     #[private]
-    pub fn handle_response_service(&mut self, sn: u64, code: u64, msg: &str) -> Result<(), &str> {
+    pub fn handle_response_service(&mut self, sn: u64, code: u64, msg: String) -> Result<(), &str> {
         let req = self.requests.get(&sn).expect("Failed to retrieve request");
-        let caller = req.from.as_str();
+        let caller = req.from;
         let data_len = req.coin_names.len();
         for _i in 0..data_len {
             // BSH core: bsh_core.handle_response_service();
@@ -275,7 +281,11 @@ impl BshGeneric {
 
     /// Handle a list of minting/transferring coins/tokens
     #[payable]
-    pub fn handle_request_service(&mut self, _to: &str, assets: Vec<Asset>) -> Result<(), &str> {
+    pub fn handle_request_service(
+        &mut self,
+        _to: AccountId,
+        assets: Vec<Asset>,
+    ) -> Result<(), &str> {
         if env::current_account_id() != env::signer_account_id() {
             return Err("Unauthorized");
         }
@@ -290,9 +300,9 @@ impl BshGeneric {
     pub fn send_response_message(
         &mut self,
         _service_type: ServiceType,
-        _to: &str,
+        _to: AccountId,
         _sn: u64,
-        _msg: &str,
+        _msg: String,
         _code: u64,
     ) {
         // BMC: bmc.send_message();
@@ -301,13 +311,13 @@ impl BshGeneric {
     /// BSH handle `Gather Fee Message` request from BMC contract
     /// fa: fee aggregator
     #[payable]
-    pub fn handle_fee_gathering(&mut self, fa: &str, svc: &str) -> Result<(), &str> {
+    pub fn handle_fee_gathering(&mut self, fa: AccountId, svc: String) -> Result<(), &str> {
         if self.service_name != *svc {
             return Err("Invalid SVC");
         }
         //  If adress of Fee Aggregator (fa) is invalid BTP address format
         //  revert(). Then, BMC will catch this error
-        let btp_addr = BTPAddress::new(fa.to_string());
+        let btp_addr = BTPAddress::new(fa);
         if btp_addr.is_valid().is_ok() {
             // BSH core: bsh_core.transfer_fees(fa);
         }
@@ -320,8 +330,8 @@ impl BshGeneric {
     }
 
     /// Update contract address
-    pub fn set_contract_address(&mut self, new_addr: &str) {
-        self.bsh_contract = new_addr.to_string();
+    pub fn set_contract_address(&mut self, new_addr: AccountId) {
+        self.bsh_contract = new_addr;
     }
 }
 

@@ -7,7 +7,7 @@ use btp_common::BTPAddress;
 use libraries::bmc_types::*;
 use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, near_bindgen, setup_alloc};
+use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
 #[near_bindgen]
@@ -35,7 +35,7 @@ impl BmcGeneric {
     pub const BSH_ERR: u32 = 40;
 
     #[init]
-    pub fn new(network: &str, bmc_mgt_addr: &str) -> Self {
+    pub fn new(network: AccountId, bmc_mgt_addr: AccountId) -> Self {
         let bmc_btp_address = format!("btp://{}/{}", network, env::current_account_id());
         Self {
             bmc_btp_address,
@@ -50,14 +50,15 @@ impl BmcGeneric {
 
     /// Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
     /// Caller must be a registered relayer.
-    pub fn handle_relay_message(&mut self, prev: &str, msg: &str) {
+    pub fn handle_relay_message(&mut self, prev: AccountId, msg: String) {
         let serialized_msgs = self
-            .decode_msg_and_validate_relay(prev, msg)
+            .decode_msg_and_validate_relay(prev.clone(), msg)
             .expect("Failed to decode messages");
         let mut bmc_mgt = BmcManagement::default();
 
         // dispatch BTP messages
         for msg in &serialized_msgs {
+            let prev = prev.clone();
             if let Ok(decoded) = self.clone().decode_btp_message(msg.as_slice()) {
                 let message = decoded.clone();
                 let _ = BmcMessage {
@@ -68,18 +69,18 @@ impl BmcGeneric {
                     message: decoded.message,
                 };
                 if message.dst == self.get_bmc_btp_address() {
-                    self.handle_message_internal(prev, &message)
+                    self.handle_message_internal(prev.clone(), &message)
                         .expect("Error in handling message");
                 } else {
                     let net = BTPAddress::new(message.dst.clone())
                         .network_address()
                         .expect("Failed to retrieve network address");
-                    if let Ok((next_link, _)) = bmc_mgt.resolve_route(&net) {
-                        self.send_message_internal(&next_link, msg.as_slice())
+                    if let Ok((next_link, _)) = bmc_mgt.resolve_route(net.clone()) {
+                        self.send_message_internal(next_link, msg.as_slice())
                             .expect("Failed to send message");
                     }
-                    if let Err(error) = bmc_mgt.resolve_route(&net) {
-                        self.send_error_internal(prev, &message, Self::BMC_ERR, &error)
+                    if let Err(error) = bmc_mgt.resolve_route(net) {
+                        self.send_error_internal(prev, &message, Self::BMC_ERR, error)
                             .expect("Failed to send error");
                     }
                 }
@@ -92,32 +93,39 @@ impl BmcGeneric {
 
     pub fn decode_msg_and_validate_relay(
         &mut self,
-        prev: &str,
-        msg: &str,
+        prev: AccountId,
+        msg: String,
     ) -> Result<Vec<Vec<u8>>, &str> {
         let mut bmc_mgt = BmcManagement::default();
         let mut bmv = Bmv::default();
-        let net = BTPAddress::new(prev.to_string())
+        let net = BTPAddress::new(prev.clone())
             .network_address()
             .expect("Failed to retrieve network address");
-        let bmv_addr = bmc_mgt.get_bmv_service_by_net(&net);
+        let bmv_addr = bmc_mgt.get_bmv_service_by_net(net);
         if bmv_addr == env::predecessor_account_id() {
             return Err("BMC revert, BMV does not exist");
         }
         let (prev_height, _, _) = bmv.get_status();
 
         // decode and verify relay message
-        let serialized_msgs = bmv.handle_relay_message(
-            &self.get_bmc_btp_address(),
-            prev,
-            bmc_mgt.get_link_rx_seq(prev),
-            msg,
-        );
+        let serialized_msgs = bmv
+            .handle_relay_message(
+                self.get_bmc_btp_address(),
+                prev.clone(),
+                bmc_mgt.get_link_rx_seq(prev.clone()),
+                msg,
+            )
+            .expect("Failed to handle relay message");
 
         // rotate and check valid relay
         let (height, last_height, _) = bmv.get_status();
         let mut relay = bmc_mgt
-            .rotate_relay(prev, height, last_height, !serialized_msgs.is_empty())
+            .rotate_relay(
+                prev.clone(),
+                height,
+                last_height,
+                !serialized_msgs.is_empty(),
+            )
             .expect("Failed to rotate relay");
         let mut check = false;
         if relay == env::predecessor_account_id() {
@@ -136,7 +144,7 @@ impl BmcGeneric {
             return Err("BMCRevertUnauthorized: invalid relay");
         }
         bmc_mgt
-            .update_relay_stats(&relay, height - prev_height, serialized_msgs.len() as u128)
+            .update_relay_stats(relay, height - prev_height, serialized_msgs.len() as u128)
             .expect("Failed to update relay stats");
 
         Ok(serialized_msgs)
@@ -146,7 +154,7 @@ impl BmcGeneric {
         Ok(BmcMessage::try_from_slice(rlp).expect("Failed to decode message"))
     }
 
-    fn handle_message_internal(&mut self, prev: &str, msg: &BmcMessage) -> Result<(), &str> {
+    fn handle_message_internal(&mut self, prev: AccountId, msg: &BmcMessage) -> Result<(), &str> {
         let mut bsh_addr = String::from("");
         let mut bmc_mgt = BmcManagement::default();
         let mut bsh_generic = BshGeneric::default();
@@ -155,8 +163,13 @@ impl BmcGeneric {
             if let Ok(res) = BmcService::try_from_slice(&msg.message) {
                 sm = res;
             } else {
-                self.send_error_internal(prev, msg, Self::BMC_ERR, "BMCRevertParseFailure")
-                    .expect("Failed to send error");
+                self.send_error_internal(
+                    prev,
+                    msg,
+                    Self::BMC_ERR,
+                    "BMCRevertParseFailure".to_string(),
+                )
+                .expect("Failed to send error");
                 return Ok(());
             }
             if &sm.service_type == "FeeGathering" {
@@ -164,22 +177,27 @@ impl BmcGeneric {
                 if let Ok(res) = GatherFeeMessage::try_from_slice(&sm.payload) {
                     gather_fee = res;
                 } else {
-                    self.send_error_internal(prev, msg, Self::BMC_ERR, "BMCRevertParseFailure")
-                        .expect("Failed to send error");
+                    self.send_error_internal(
+                        prev,
+                        msg,
+                        Self::BMC_ERR,
+                        "BMCRevertParseFailure".to_string(),
+                    )
+                    .expect("Failed to send error");
                     return Ok(());
                 }
                 for svc in &gather_fee.svcs {
-                    bsh_addr = bmc_mgt.get_bsh_service_by_name(svc);
+                    bsh_addr = bmc_mgt.get_bsh_service_by_name(svc.to_string());
                     // If `svc` not found, ignore
                     if bsh_addr != env::predecessor_account_id() {
                         bsh_generic
-                            .handle_fee_gathering(&gather_fee.fa, svc)
+                            .handle_fee_gathering(gather_fee.fa.clone(), svc.to_string())
                             .expect("Failed to handle fee gathering");
                     }
                 }
             } else if &sm.service_type == "Link" {
                 let to = std::str::from_utf8(&sm.payload).expect("Failed to decode payload");
-                let link = bmc_mgt.get_link(prev);
+                let link = bmc_mgt.get_link(prev.clone());
                 let mut check = false;
                 if link.is_connected {
                     for entry in link.reachable {
@@ -197,9 +215,10 @@ impl BmcGeneric {
                 }
             } else if &sm.service_type == "Unlink" {
                 let to = std::str::from_utf8(&sm.payload).expect("Failed to decode payload");
-                let link = bmc_mgt.get_link(prev);
+                let link = bmc_mgt.get_link(prev.clone());
                 if link.is_connected {
                     for i in 0..link.reachable.len() {
+                        let prev = prev.clone();
                         if to == link.reachable[i] {
                             bmc_mgt
                                 .delete_link_reachable(prev, i)
@@ -218,10 +237,15 @@ impl BmcGeneric {
                 return Err("BMCRevert: internal handler does not exist");
             }
         } else {
-            bsh_addr = bmc_mgt.get_bsh_service_by_name(&msg.svc);
+            bsh_addr = bmc_mgt.get_bsh_service_by_name(msg.svc.clone());
             if bsh_addr == env::predecessor_account_id() {
-                self.send_error_internal(prev, msg, Self::BMC_ERR, "BMCRevertNotExistsBSH")
-                    .expect("Failed to send error");
+                self.send_error_internal(
+                    prev,
+                    msg,
+                    Self::BMC_ERR,
+                    "BMCRevertNotExistsBSH".to_string(),
+                )
+                .expect("Failed to send error");
                 return Ok(());
             }
             if msg.sn >= 0 {
@@ -229,23 +253,23 @@ impl BmcGeneric {
                     .network_address()
                     .expect("Failed to retrieve network address");
                 if let Err(error) = bsh_generic.handle_btp_message(
-                    &net,
-                    &msg.svc,
+                    net,
+                    msg.svc.clone(),
                     msg.sn as u64,
                     msg.message.as_slice(),
                 ) {
-                    self.send_error_internal(prev, msg, Self::BSH_ERR, error)
+                    self.send_error_internal(prev, msg, Self::BSH_ERR, error.to_string())
                         .expect("Failed to send error");
                 }
             } else {
                 let err_msg =
                     Response::try_from_slice(&msg.message).expect("Failed to decode message");
                 if let Err(error) = bsh_generic.handle_btp_error(
-                    &msg.src,
-                    &msg.svc,
+                    msg.src.clone(),
+                    msg.svc.clone(),
                     msg.sn as u64,
                     err_msg.code,
-                    &err_msg.message,
+                    err_msg.message.clone(),
                 ) {
                     let bmc_events = BmcEvents::ErrorOnBtpError {
                         svc: msg.svc.clone(),
@@ -265,13 +289,13 @@ impl BmcGeneric {
         Ok(())
     }
 
-    fn send_message_internal(&mut self, to: &str, serialized_msg: &[u8]) -> Result<(), &str> {
+    fn send_message_internal(&mut self, to: AccountId, serialized_msg: &[u8]) -> Result<(), &str> {
         let mut bmc_mgt = BmcManagement::default();
         bmc_mgt
-            .update_link_tx_seq(to)
+            .update_link_tx_seq(to.clone())
             .expect("Failed to update link");
         let bmc_events = BmcEvents::Message {
-            next: to.to_string(),
+            next: to.clone(),
             seq: bmc_mgt.get_link_tx_seq(to),
             msg: serialized_msg.to_vec(),
         };
@@ -284,15 +308,15 @@ impl BmcGeneric {
 
     fn send_error_internal(
         &mut self,
-        prev: &str,
+        prev: AccountId,
         msg: &BmcMessage,
         err_code: u32,
-        err_msg: &str,
+        err_msg: String,
     ) -> Result<(), &str> {
         if msg.sn > 0 {
             let res = Response {
                 code: err_code as u64,
-                message: err_msg.to_string(),
+                message: err_msg,
             };
             let encoded_res = res.try_to_vec().expect("Failed to serialize response");
 
@@ -314,10 +338,16 @@ impl BmcGeneric {
 
     /// Send the message to a specific network
     /// Caller must be a registered BSH
-    pub fn send_message(&mut self, to: &str, svc: &str, sn: i64, msg: &[u8]) -> Result<(), &str> {
+    pub fn send_message(
+        &mut self,
+        to: AccountId,
+        svc: String,
+        sn: i64,
+        msg: &[u8],
+    ) -> Result<(), &str> {
         let mut bmc_mgt = BmcManagement::default();
         if self.bmc_management != env::current_account_id()
-            || env::current_account_id() != bmc_mgt.get_bsh_service_by_name(svc)
+            || env::current_account_id() != bmc_mgt.get_bsh_service_by_name(svc.clone())
         {
             return Err("BMCRevertUnauthorized");
         }
@@ -327,38 +357,38 @@ impl BmcGeneric {
         //  In case BSH sends a REQUEST_COIN_TRANSFER,
         //  but `to` is a network which is not supported by BMC
         //  revert() therein
-        if bmc_mgt.get_bmv_service_by_net(to) == env::predecessor_account_id() {
+        if bmc_mgt.get_bmv_service_by_net(to.clone()) == env::predecessor_account_id() {
             return Err("BMCRevertNotExistBMV");
         }
         let (next_link, dst) = bmc_mgt.resolve_route(to).expect("Failed to resolve route");
         let bmc_msg = BmcMessage {
             src: self.get_bmc_btp_address(),
             dst,
-            svc: svc.to_string(),
+            svc,
             sn,
             message: msg.to_vec(),
         };
         let rlp = bmc_msg
             .try_to_vec()
             .expect("Failed to serialize BMC message");
-        self.send_message_internal(&next_link, &rlp)
+        self.send_message_internal(next_link, &rlp)
             .expect("Failed to send message");
         Ok(())
     }
 
     /// Get status of BMC
-    pub fn get_status(&self, link: &str) -> Result<LinkStats, &str> {
+    pub fn get_status(&self, link: String) -> Result<LinkStats, &str> {
         let bmc_mgt = BmcManagement::default();
-        let link_struct = bmc_mgt.get_link(link);
+        let link_struct = bmc_mgt.get_link(link.clone());
         if !link_struct.is_connected {
             return Err("BMCRevertNotExistsLink");
         }
-        let relays = bmc_mgt.get_relay_status_by_link(link);
-        let net = BTPAddress::new(link.to_string())
+        let relays = bmc_mgt.get_relay_status_by_link(link.clone());
+        let net = BTPAddress::new(link.clone())
             .network_address()
             .expect("Failed to retrieve network address");
         let (height, offset, last_height) =
-            Bmv::new(&bmc_mgt.get_bmv_service_by_net(&net)).get_status();
+            Bmv::new(bmc_mgt.get_bmv_service_by_net(net)).get_status();
         let scale = u128::get_scale(
             link_struct.block_interval_src,
             link_struct.block_interval_dst,
