@@ -43,9 +43,10 @@ deploy_solidity_bmc() {
 
   BMC_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BMCPeriphery.json)
   echo btp://0x97.bsc/"${BMC_ADDRESS}" > /btpsimple/config/btp.bsc
+  echo "${BMC_ADDRESS}" > $CONFIG_DIR/bmc.periphery.bsc
+  wait_for_file $CONFIG_DIR/bmc.periphery.bsc
 
   jq -r '.networks[] | .address' build/contracts/BMCManagement.json > $CONFIG_DIR/bmc.bsc
-
   wait_for_file $CONFIG_DIR/bmc.bsc
 }
 
@@ -59,10 +60,12 @@ deploy_solidity_bmv() {
   LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
   echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
   echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
+  echo $LAST_HASH > $CONFIG_DIR/last.hash.icon
+  ICON_RELAY_USER=$(cat  $CONFIG_DIR/goloop.keystore.json | jq -r .address)
 
-  BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.bsc) \
+  BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.periphery.bsc) \
   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
-  BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
+  BMV_ICON_ENCODED_VALIDATORS=0xd69500275c118617610e65ba572ac0a621ddd13255242b \
   BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
   BMV_ICON_INIT_ROOTSSIZE=8 \
   BMV_ICON_INIT_CACHESIZE=8 \
@@ -133,6 +136,41 @@ bsc_registerToken() {
   BEP20_TKN_ADDRESS=$(cat $CONFIG_DIR/bep20_token.bsc)
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.js \
   --method registerToken --name $TOKEN_NAME --symbol $TOKEN_SYM --addr "$BEP20_TKN_ADDRESS"
+}
+
+bsc_updateRxSeq() {
+  cd $CONTRACTS_DIR/solidity/bmc
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+  --method updateRxSeq --link $(cat $CONFIG_DIR/btp.icon) --value 1
+}
+
+token_fundBSH() {
+  echo "Funding BSH"
+  cd $CONTRACTS_DIR/solidity/TokenBSH
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.js \
+  --method fundBSH --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount 100
+}
+
+getBalance() {
+  cd $CONTRACTS_DIR/solidity/TokenBSH
+  BSC_USER=0x$(cat $CONFIG_DIR/bsc.ks.json | jq -r .address)
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.js \
+  --method getBalance --addr $BSC_USER
+}
+
+setMTASolidity(){
+  echo "Setting latest block and last hash"
+  cd $CONTRACTS_DIR/solidity/bmv 
+
+  LAST_BOCK=$(goloop_lastblock)
+  LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
+  LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
+  echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
+  echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
+  echo $LAST_HASH > $CONFIG_DIR/last.hash.icon
+  
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmv.js \
+  --method setMTA --offset "$(cat $CONFIG_DIR/offset.icon)" --lasthash "$(cat $CONFIG_DIR/last.hash.icon)"
 }
 
 ######################################## javascore service methods - start ######################################
@@ -342,20 +380,13 @@ provision() {
 
     eth_blocknumber >/btpsimple/config/offset.bsc
 
-    deploy_javascore_bmc
-    deploy_solidity_bmc
-    deploy_solidity_bmv    
-    deploy_solidity_tokenBSH_BEP20
-
+    deploy_javascore_bmc    
     deploy_javascore_bmv
     deploy_javascore_bsh
     deploy_javascore_irc2
 
-    add_icon_verifier
-    add_icon_link
-    add_icon_relay
-    bsc_addService
-    bsc_registerToken
+
+    deploy_solidity_bmc
 
     bmc_javascore_addVerifier
     bmc_javascore_addLink
@@ -363,6 +394,17 @@ provision() {
     bmc_javascore_addService
     bsh_javascore_register
 
+    deploy_solidity_bmv    
+    deploy_solidity_tokenBSH_BEP20
+
+    add_icon_verifier
+    add_icon_link
+    add_icon_relay
+    bsc_addService
+    bsc_registerToken
+
+    token_fundBSH
+    
     touch $BTPSIMPLE_CONFIG_DIR/provision
     echo "provision is now complete"
   fi

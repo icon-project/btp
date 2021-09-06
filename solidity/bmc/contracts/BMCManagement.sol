@@ -671,10 +671,11 @@ contract BMCManagement is IBMCManagement, Initializable {
         }
     }
 
+    //todo: commented temp         //onlyBMCPeriphery
     function updateLinkRxSeq(string calldata _prev, uint256 _val)
         external
         override
-        onlyBMCPeriphery
+        //onlyBMCPeriphery
     {
         links[_prev].rxSeq += _val;
     }

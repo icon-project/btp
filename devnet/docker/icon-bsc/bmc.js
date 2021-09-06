@@ -29,6 +29,10 @@ module.exports = async function (callback) {
         await bmcManagement.addService(argv.name, argv.addr)
         console.log(await bmcManagement.getServices())
         break;
+      case "updateRxSeq":
+        await bmcManagement.updateLinkRxSeq(argv.link, argv.value)
+        console.log(await bmcManagement.getLinkRxSeq(argv.link))
+        break;
       default:
         console.error("Bad input for method, ", argv)
     }
