@@ -15,14 +15,6 @@ services:
             - ${PWD}/data/gochain:/gochain/data
         ports:
             - 9080:9080
-        environment: 
-            - GOCHAIN_CONFIG=/gochain/config/gochain.server.json
-            - GOCHAIN_DATA=/gochain/data/iconee
-            - GOCHAIN_LOGFILE=/gochain/data/gochain.log
-            - GOCHAIN_CLEAN_DATA=false
-            - GOCHAIN_PROVISION_CONFIG=/gochain/provision/config
-            - JAVAEE_BIN=/goloop/execman/bin/execman
-            - PYEE_VERIFY_PACKAGE=true
     moonbeam:
         container_name: g2m_moonbeam
         build:
