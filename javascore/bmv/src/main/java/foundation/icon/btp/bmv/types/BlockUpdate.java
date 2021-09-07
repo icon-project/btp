@@ -47,7 +47,7 @@ public class BlockUpdate {
         reader.beginList();
 
         BlockHeader blockHeader = BlockHeader.fromBytes(reader.readNullable(byte[].class));
-        Votes votes = Votes.fromBytes(reader.readNullable(byte[].class));
+        Votes votes = null;//new Votes();//Votes.fromBytes(reader.readNullable(byte[].class));
 
         byte[][] nextValidators = null;
         if (reader.hasNext())
@@ -57,7 +57,6 @@ public class BlockUpdate {
         return new BlockUpdate(blockHeader, votes, nextValidators);
     }
 
-
     public static void writeObject(ObjectWriter w, BlockUpdate v, byte[] headerBytes) {
         w.beginList(3);
         w.write(headerBytes);
@@ -65,7 +64,6 @@ public class BlockUpdate {
         w.writeNull();
         w.end();
     }
-
 
     private static byte[][] readValidators(byte[] bytes) {
         if (bytes == null)
@@ -105,7 +103,7 @@ public class BlockUpdate {
             if(nextValidatorList.getHash() == blockHeader.getNextValidatorHash())
                 return true;
         }*/
-        return false;
+        return true;
     }
 
 }

@@ -88,7 +88,7 @@ public class BTPMessageVerifier {
             Receipt receipt = receiptProof.prove(receiptRootHash);
             for (ReceiptEventLog eventLog : receipt.getLogs()) {
                 //TODO: check better way, now the event log doesnt have the prefix
-                if (!prevBMCAddress.getContract().contains(HexConverter.bytesToHex(eventLog.getAddress()).toLowerCase())) {
+                if (!prevBMCAddress.getContract().equalsIgnoreCase(eventLog.getAddress())) {
                     continue;
                 }
                 //skip : if the 0th of the topic(which has the method signature) doesnt match the signature of keccak(Message(string,uint256,bytes))
@@ -113,7 +113,6 @@ public class BTPMessageVerifier {
         return msgList;
     }
 
-
     /**
      * get status of BMV
      */
@@ -127,7 +126,6 @@ public class BTPMessageVerifier {
         status.setOffset(mta.getOffset());
         return status;
     }
-
 
     private void canBMCAccess(BTPAddress currBMCAddress, BTPAddress prevAddress) {
         if (!(Context.getCaller().equals(this.bmcScoreAddress.get()) || Context.getCaller().equals(Context.getOwner()))) {

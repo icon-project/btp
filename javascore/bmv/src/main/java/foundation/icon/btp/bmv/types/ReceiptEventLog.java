@@ -11,11 +11,11 @@ public class ReceiptEventLog {
 
     final static String RLPn = "RLPn";
 
-    private final byte[] address;
+    private final String address;
     private final List<byte[]> topics;
     private final byte[] data;
 
-    public ReceiptEventLog(byte[] address, List<byte[]> topics, byte[] data) {
+    public ReceiptEventLog(String address, List<byte[]> topics, byte[] data) {
         this.address = address;
         this.topics = topics;
         this.data = data;
@@ -29,19 +29,16 @@ public class ReceiptEventLog {
         reader.beginList();
         //TODO: remove later
         if (!reader.hasNext())
-            return new ReceiptEventLog(new byte[]{0}, new ArrayList<>(), new byte[]{0});
+            return new ReceiptEventLog(null, new ArrayList<>(), new byte[]{0});
         //address
-        byte[] address = reader.readByteArray();
+        String address = reader.readString();
         //indexed
-        List<byte[]> indexed = readByteArrayListFromRLP(reader);
+        List<byte[]> topics = readByteArrayListFromRLP(reader);
         //data
         byte[] data = reader.readByteArray();
         reader.end();
 
-        ReceiptEventLog eventLog = new ReceiptEventLog(address, indexed, data);
-
-
-        return eventLog;
+        return new ReceiptEventLog(address, topics, data);
     }
 
 
@@ -51,17 +48,14 @@ public class ReceiptEventLog {
             return null;
 
         //address
-        byte[] address = reader.readByteArray();
-        //indexed
-        List<byte[]> indexed = readByteArrayListFromRLP(reader);
+        String address = reader.readString();
+        //topics
+        List<byte[]> topics = readByteArrayListFromRLP(reader);
         //data
         byte[] data = reader.readByteArray();
         reader.end();
 
-        ReceiptEventLog eventLog = new ReceiptEventLog(address, indexed, data);
-
-
-        return eventLog;
+        return new ReceiptEventLog(address, topics, data);
     }
 
 
@@ -79,7 +73,7 @@ public class ReceiptEventLog {
         return lists;
     }
 
-    public byte[] getAddress() {
+    public String getAddress() {
         return address;
     }
 
@@ -90,6 +84,4 @@ public class ReceiptEventLog {
     public byte[] getData() {
         return data;
     }
-
-
 }

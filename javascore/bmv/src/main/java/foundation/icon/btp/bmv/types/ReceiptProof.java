@@ -15,6 +15,7 @@
  */
 package foundation.icon.btp.bmv.types;
 
+import foundation.icon.btp.bmv.lib.HexConverter;
 import foundation.icon.btp.bmv.lib.mpt.MerklePatriciaTree;
 import score.ByteArrayObjectWriter;
 import score.Context;
@@ -43,11 +44,11 @@ public class ReceiptProof {
 
     public static ReceiptProof fromBytes(byte[] serialized) {
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, serialized);
-        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
         reader.beginList();
         //Index
         int index = reader.readInt();
 
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
         //TODO: change later: see how to accommodate '0x0' from not failing the prove
         //mptKey
         byte[] mptKey = new byte[0];
@@ -63,15 +64,20 @@ public class ReceiptProof {
             byte[] src = writer.toByteArray();
             mptKey = new byte[1];
             System.arraycopy(src, 1, mptKey, 0, 1);
-
         }
 
-        //proofs
-        List<byte[]> mptProofs = readByteArrayListFromRLP(reader.readNullable(byte[].class));
+        List<byte[]> mptProofs = new ArrayList<>();
+        mptProofs.add(reader.readNullable(byte[].class));
+
         //EventProofs
-        List<EventProof> eventProofs = readEventProof(reader.readNullable(byte[].class));
+        List<EventProof> eventProofs = readEventProofs(reader);
+
         //Event Logs
-        List<ReceiptEventLog> eventLogs = readEventLog(reader.readNullable(byte[].class));
+        List<ReceiptEventLog> eventLogs = new ArrayList<>();
+        for (EventProof ef: eventProofs) {
+            eventLogs.add(ReceiptEventLog.fromBytes(ef.getProof()));
+        }
+
         return new ReceiptProof(index, mptKey, mptProofs, eventProofs, eventLogs);
     }
 
@@ -92,42 +98,20 @@ public class ReceiptProof {
         return lists;
     }
 
-    public static List<EventProof> readEventProof(byte[] serialized) {
-        if (serialized == null)
-            return null;
-        ObjectReader reader = Context.newByteArrayObjectReader(RLPn, serialized);
-        reader.beginList();
+    public static List<EventProof> readEventProofs(ObjectReader reader) {
+        List<EventProof> eventProofs = new ArrayList<>();
 
-        List<EventProof> lists = new ArrayList<>();
-        if (!reader.hasNext())
-            return lists;
-        while (reader.hasNext()) {
-            lists.add(EventProof.fromBytes(reader.readByteArray()));
+        reader.beginList();
+        while(reader.hasNext()) {
+            reader.beginList();
+            int index    = reader.readInt();
+            byte[] proof = reader.readNullable(byte[].class);
+            eventProofs.add(new EventProof(index, proof));
+            reader.end();
         }
         reader.end();
 
-        return lists;
-    }
-
-    public static List<ReceiptEventLog> readEventLog(byte[] serialized) {
-        if (serialized == null)
-            return null;
-        ObjectReader reader = Context.newByteArrayObjectReader(RLPn, serialized);
-        reader.beginList();
-
-        List<ReceiptEventLog> lists = new ArrayList<>();
-        if (!reader.hasNext())
-            return lists;
-        while (reader.hasNext()) {
-            lists.add(ReceiptEventLog.fromBytes(reader.readByteArray()));
-        }
-        reader.end();
-
-        return lists;
-    }
-
-    public static String getRLPn() {
-        return RLPn;
+        return eventProofs;
     }
 
     public Receipt prove(byte[] receiptRootHash) {
