@@ -19,6 +19,7 @@ package foundation.icon.btp.bmc;
 import score.Address;
 import score.ObjectReader;
 import score.ObjectWriter;
+import score.annotation.Keep;
 
 import java.math.BigInteger;
 
@@ -30,6 +31,7 @@ public class Relayer {
     private BigInteger bond;
     private BigInteger reward;
 
+    @Keep
     public Address getAddr() {
         return addr;
     }
@@ -38,6 +40,7 @@ public class Relayer {
         this.addr = addr;
     }
 
+    @Keep
     public String getDesc() {
         return desc;
     }
@@ -46,6 +49,7 @@ public class Relayer {
         this.desc = desc;
     }
 
+    @Keep
     public long getSince() {
         return since;
     }
@@ -54,6 +58,7 @@ public class Relayer {
         this.since = since;
     }
 
+    @Keep
     public int getSinceExtra() {
         return sinceExtra;
     }
@@ -62,6 +67,7 @@ public class Relayer {
         this.sinceExtra = sinceExtra;
     }
 
+    @Keep
     public BigInteger getBond() {
         return bond;
     }
@@ -70,6 +76,7 @@ public class Relayer {
         this.bond = bond;
     }
 
+    @Keep
     public BigInteger getReward() {
         return reward;
     }
