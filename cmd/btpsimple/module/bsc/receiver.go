@@ -17,10 +17,14 @@
 package bsc
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
+
 	"github.com/icon-project/btp/common/log"
 	"math/big"
 )
@@ -53,6 +57,10 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	bu.Header, err = codec.RLP.MarshalToBytes(*header)
 	if err != nil {
 		return nil, err
+	}
+
+	if !bytes.Equal(v.Header.Hash().Bytes(), crypto.Keccak256(bu.Header)) {
+		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
 
 	/*proof, err := r.c.GetProof(v.Height, HexToAddress(r.src.ContractAddress()))
