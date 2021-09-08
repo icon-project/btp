@@ -150,11 +150,6 @@ impl Bmv {
             // verify prev block hash
             if i == 0 && relay_msg.block_updates[i].block_header.prev_hash != self.last_block_hash {
                 return Err("BMVRevertInvalidBlockUpdate: Invalid block hash");
-            } else if i != 0
-                && relay_msg.block_updates[i].block_header.prev_hash
-                    != relay_msg.block_updates[i - 1].block_header.block_hash
-            {
-                return Err("BMVRevertInvalidBlockUpdate: Invalid block hash");
             }
 
             if i == relay_msg.block_updates.len() - 1 {

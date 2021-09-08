@@ -9,8 +9,8 @@ use near_sdk::{AccountId, BorshStorageKey};
 )]
 #[serde(crate = "near_sdk::serde")]
 pub enum BshStorageKey {
-    BshGeneric,
-    TokenBsh,
+    BshPeriphery,
+    BshToken,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
@@ -35,7 +35,7 @@ pub enum BshEvents {
     TransferEnd {
         from: AccountId,
         sn: u64,
-        code: u64,
+        code: usize,
         response: String,
     },
     /// Notify that BSH contract has received unknown response
@@ -89,7 +89,7 @@ pub struct AssetTransferDetail {
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Response {
-    pub code: u64,
+    pub code: usize,
     pub message: String,
 }
 

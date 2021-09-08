@@ -29,10 +29,10 @@ impl Default for BmcGeneric {
 
 #[near_bindgen]
 impl BmcGeneric {
-    pub const UNKNOWN_ERR: u32 = 0;
-    pub const BMC_ERR: u32 = 10;
-    pub const BMV_ERR: u32 = 25;
-    pub const BSH_ERR: u32 = 40;
+    pub const UNKNOWN_ERR: usize = 0;
+    pub const BMC_ERR: usize = 10;
+    pub const BMV_ERR: usize = 25;
+    pub const BSH_ERR: usize = 40;
 
     #[init]
     pub fn new(network: AccountId, bmc_mgt_addr: AccountId) -> Self {
@@ -310,12 +310,12 @@ impl BmcGeneric {
         &mut self,
         prev: AccountId,
         msg: &BmcMessage,
-        err_code: u32,
+        err_code: usize,
         err_msg: String,
     ) -> Result<(), &str> {
         if msg.sn > 0 {
             let res = Response {
-                code: err_code as u64,
+                code: err_code,
                 message: err_msg,
             };
             let encoded_res = res.try_to_vec().expect("Failed to serialize response");

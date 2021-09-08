@@ -10,6 +10,8 @@ members = [
     "bmv",
     "bsh/bsh-generic",
     "bsh/token-bsh",
+    "bsh-periphery",
+    "bsh-token",
     "libraries",
 ]
 [features]

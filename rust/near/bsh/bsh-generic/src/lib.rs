@@ -42,15 +42,14 @@ use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 setup_alloc!();
 /// BSH Generic contract is used to handle communications
 /// among BMC Service and a BSH core contract.
-/// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
+/// This contract does not have its own Owners.
+/// Instead, another BSH contract manages ownership roles.
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BshGeneric {
     bmc_contract: AccountId,
     bsh_contract: AccountId,
     /// A list of transferring requests
-    /// Use `HashMap` because `LookupMap` doesn't implement
-    /// Clone, Debug, and Default traits
     pub requests: UnorderedMap<u64, PendingTransferCoin>,
     /// BSH Service name
     pub service_name: AccountId,
@@ -64,7 +63,7 @@ impl Default for BshGeneric {
         Self {
             bmc_contract: "".to_string(),
             bsh_contract: "".to_string(),
-            requests: UnorderedMap::new(BshStorageKey::BshGeneric),
+            requests: UnorderedMap::new(BshStorageKey::BshPeriphery),
             service_name: "".to_string(),
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -74,8 +73,8 @@ impl Default for BshGeneric {
 
 #[near_bindgen]
 impl BshGeneric {
-    pub const RC_OK: u64 = 0;
-    pub const RC_ERR: u64 = 1;
+    pub const RC_OK: usize = 0;
+    pub const RC_ERR: usize = 1;
 
     #[init]
     pub fn new(bmc_contract: AccountId, bsh_contract: AccountId, service_name: String) -> Self {
@@ -84,7 +83,7 @@ impl BshGeneric {
         Self {
             bmc_contract,
             bsh_contract,
-            requests: UnorderedMap::new(BshStorageKey::BshGeneric),
+            requests: UnorderedMap::new(BshStorageKey::BshPeriphery),
             service_name,
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -239,7 +238,7 @@ impl BshGeneric {
         _src: AccountId,
         svc: AccountId,
         sn: u64,
-        code: u64,
+        code: usize,
         msg: String,
     ) -> Result<(), &str> {
         if *svc != self.service_name {
@@ -256,7 +255,12 @@ impl BshGeneric {
     }
 
     #[private]
-    pub fn handle_response_service(&mut self, sn: u64, code: u64, msg: String) -> Result<(), &str> {
+    pub fn handle_response_service(
+        &mut self,
+        sn: u64,
+        code: usize,
+        msg: String,
+    ) -> Result<(), &str> {
         let req = self.requests.get(&sn).expect("Failed to retrieve request");
         let caller = req.from;
         let data_len = req.coin_names.len();
@@ -303,7 +307,7 @@ impl BshGeneric {
         _to: AccountId,
         _sn: u64,
         _msg: String,
-        _code: u64,
+        _code: usize,
     ) {
         // BMC: bmc.send_message();
     }

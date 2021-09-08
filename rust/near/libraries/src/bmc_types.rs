@@ -29,7 +29,7 @@ pub enum BmcEvents {
     ErrorOnBtpError {
         svc: String,
         sn: i64,
-        code: u64,
+        code: usize,
         err_msg: String,
         svc_err_code: u64,
         svc_err_msg: String,

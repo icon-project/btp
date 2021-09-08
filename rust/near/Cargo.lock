@@ -750,6 +750,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bsh-periphery"
+version = "0.1.0"
+dependencies = [
+ "btp-common",
+ "libraries",
+ "near-sdk",
+]
+
+[[package]]
+name = "bsh-token"
+version = "0.1.0"
+dependencies = [
+ "bsh-periphery",
+ "btp-common",
+ "libraries",
+ "near-sdk",
+]
+
+[[package]]
 name = "btp-common"
 version = "0.1.0"
 dependencies = [

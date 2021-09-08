@@ -74,13 +74,13 @@ metadata! {
 impl Default for TokenBsh {
     fn default() -> Self {
         Self {
-            owners: UnorderedMap::new(BshStorageKey::TokenBsh),
+            owners: UnorderedMap::new(BshStorageKey::BshToken),
             list_of_owners: vec![],
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(BshStorageKey::TokenBsh),
-            coin_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
-            account_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
-            coins: UnorderedMap::new(BshStorageKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(BshStorageKey::BshToken),
+            coin_balances: UnorderedMap::new(BshStorageKey::BshToken),
+            account_balances: UnorderedMap::new(BshStorageKey::BshToken),
+            coins: UnorderedMap::new(BshStorageKey::BshToken),
             coin_names: vec![],
             charged_coins: vec![],
             charged_amounts: vec![],
@@ -97,9 +97,9 @@ impl TokenBsh {
 
     #[init]
     pub fn new(native_coin_name: String, fee_numerator: u128) -> Self {
-        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(BshStorageKey::TokenBsh);
+        let mut owners: UnorderedMap<String, bool> = UnorderedMap::new(BshStorageKey::BshToken);
         let list_of_owners: Vec<String> = vec![env::current_account_id()];
-        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(BshStorageKey::TokenBsh);
+        let mut coins: UnorderedMap<String, u64> = UnorderedMap::new(BshStorageKey::BshToken);
         let coin_names: Vec<String> = vec![native_coin_name.clone()];
 
         let _ = owners.insert(&env::current_account_id(), &true);
@@ -118,9 +118,9 @@ impl TokenBsh {
             owners,
             list_of_owners,
             bsh_generic: BshGeneric::default(),
-            aggregation_fee: UnorderedMap::new(BshStorageKey::TokenBsh),
-            coin_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
-            account_balances: UnorderedMap::new(BshStorageKey::TokenBsh),
+            aggregation_fee: UnorderedMap::new(BshStorageKey::BshToken),
+            coin_balances: UnorderedMap::new(BshStorageKey::BshToken),
+            account_balances: UnorderedMap::new(BshStorageKey::BshToken),
             coins,
             coin_names,
             charged_coins: vec![],
