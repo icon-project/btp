@@ -5,8 +5,8 @@ authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
-btp-common = { path = "../../btp-common" }
-libraries = { path = "../libraries" }
+btp-common = { path = "../../../btp-common" }
+libraries = { path = "../../libraries" }
 near-sdk = "3.1.0"
 
 [lib]
