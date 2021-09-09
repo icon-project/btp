@@ -1,5 +1,5 @@
 [package]
-name = "bmv"
+name = "bmv-v2"
 version = "0.1.0"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
@@ -12,3 +12,14 @@ merkle-tree-accumulator = "0.1.4"
 near-sdk = "3.1.0"
 rlp = "0.5.1"
 serde = { version = "1.0", features = ["derive"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
