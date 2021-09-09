@@ -1,6 +1,6 @@
 use near_sdk::ext_contract;
 
-#[ext_contract]
+#[ext_contract(ibsh)]
 pub trait Ibsh {
     /**
        @notice BSH handle BTP Message from BMC contract

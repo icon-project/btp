@@ -1,3 +1,4 @@
+pub mod ibmc_management;
 pub mod ibmc_periphery;
 pub mod ibmv;
 pub mod ibsh;

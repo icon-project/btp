@@ -4,7 +4,7 @@ use near_sdk::ext_contract;
    @title Interface of BSHPeriphery contract
    @dev This contract is used to handle communications among BMCService and BSHCore contract
 */
-#[ext_contract]
+#[ext_contract(ibsh_periphery)]
 pub trait IbshPeriphery: Ibsh {
     /**
        @notice Check whether BSHPeriphery has any pending transferring requests

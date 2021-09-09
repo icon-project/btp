@@ -7,7 +7,7 @@ use near_sdk::ext_contract;
   Native Coin : The native coin of this chain
   Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-#[ext_contract]
+#[ext_contract(ibsh_core)]
 pub trait IbshCore {
     /**
        @notice Adding another Onwer.

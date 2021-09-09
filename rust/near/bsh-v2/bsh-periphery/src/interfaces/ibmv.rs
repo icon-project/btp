@@ -1,6 +1,6 @@
 use near_sdk::ext_contract;
 
-#[ext_contract]
+#[ext_contract(ibmv)]
 pub trait Ibmv {
     /**
        @return        Base64 encode of Merkle Tree
