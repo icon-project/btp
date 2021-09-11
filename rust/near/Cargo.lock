@@ -637,6 +637,7 @@ dependencies = [
  "near-sdk",
  "rlp",
  "serde",
+ "vrf",
 ]
 
 [[package]]
@@ -1532,7 +1533,7 @@ checksum = "53d4e679d6864bc26210feb5cf044e245741cd9d7701b35c00440a6e84d61399"
 dependencies = [
  "anyhow",
  "ethereum-types 0.10.0",
- "hex",
+ "hex 0.4.3",
  "serde",
  "serde_json",
  "sha3",
@@ -1969,9 +1970,21 @@ dependencies = [
 
 [[package]]
 name = "hex"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
+name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hmac-sha256"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcdc571e566521512579aab40bf807c5066e1765fb36857f16ed7595c13567c6"
 
 [[package]]
 name = "http"
@@ -2351,7 +2364,7 @@ dependencies = [
  "borsh 0.9.1",
  "bytebuffer",
  "failure",
- "hex",
+ "hex 0.4.3",
  "near-sdk",
  "rand 0.8.4",
  "serde",
@@ -2788,7 +2801,7 @@ dependencies = [
  "chrono",
  "derive_more",
  "easy-ext",
- "hex",
+ "hex 0.4.3",
  "jemallocator",
  "lazy_static",
  "near-crypto",
@@ -2816,7 +2829,7 @@ dependencies = [
  "borsh 0.8.2",
  "bs58",
  "derive_more",
- "hex",
+ "hex 0.4.3",
  "lazy_static",
  "num-rational",
  "serde",
@@ -2834,7 +2847,7 @@ dependencies = [
  "borsh 0.8.2",
  "bs58",
  "derive_more",
- "hex",
+ "hex 0.4.3",
  "lazy_static",
  "num-rational",
  "serde",
@@ -3025,7 +3038,7 @@ version = "3.0.0"
 source = "git+https://github.com/HugoByte/nearcore.git?tag=1.19.1#70a27bd81545a6e426625a5a9e1d08b71d7b34c2"
 dependencies = [
  "borsh 0.8.2",
- "hex",
+ "hex 0.4.3",
  "near-rpc-error-macro 0.1.0 (git+https://github.com/HugoByte/nearcore.git?tag=1.19.1)",
  "serde",
 ]
@@ -3037,7 +3050,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e281d8730ed8cb0e3e69fb689acee6b93cdb43824cd69a8ffd7e1bfcbd1177d7"
 dependencies = [
  "borsh 0.8.2",
- "hex",
+ "hex 0.4.3",
  "near-rpc-error-macro 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
 ]
@@ -3165,7 +3178,7 @@ dependencies = [
  "borsh 0.8.2",
  "byteorder 1.4.3",
  "ethereum-types 0.11.0",
- "hex",
+ "hex 0.4.3",
  "lazy_static",
  "log",
  "near-chain-configs",
@@ -4443,7 +4456,7 @@ dependencies = [
  "ethabi-derive",
  "ethereum-types 0.11.0",
  "futures",
- "hex",
+ "hex 0.4.3",
  "lazy-static-include",
  "lazy_static",
  "log",
@@ -4776,7 +4789,7 @@ checksum = "6470ab50f482bde894a037a57064480a246dbfdd5960bd65a44824693f08da5f"
 dependencies = [
  "byteorder 1.4.3",
  "crunchy",
- "hex",
+ "hex 0.4.3",
  "static_assertions",
 ]
 
@@ -4879,6 +4892,18 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "vrf"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71327171f80b19c06263831d1c6aefb5629131c06dd7006d2865f108af656397"
+dependencies = [
+ "failure",
+ "hex 0.3.2",
+ "hmac-sha256",
+ "openssl",
+]
 
 [[package]]
 name = "wasi"
@@ -5119,7 +5144,7 @@ dependencies = [
  "cc",
  "digest 0.8.1",
  "errno",
- "hex",
+ "hex 0.4.3",
  "indexmap",
  "lazy_static",
  "libc",

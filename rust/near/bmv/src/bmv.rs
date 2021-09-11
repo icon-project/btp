@@ -7,7 +7,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
-/// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Clone)]
 pub struct Bmv {
