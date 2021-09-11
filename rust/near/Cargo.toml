@@ -6,18 +6,10 @@ edition = "2018"
 
 [workspace]
 members = [
-    # Old
     "bmc",
     "bmv",
     "bsh/bsh-generic",
     "bsh/token-bsh",
-
-    # New
-    "bmc-v2/bmc-periphery",
-    "bmc-v2/bmc-management",
-    "bmv-v2",
-    "bsh-v2/bsh-periphery",
-    "bsh-v2/bsh-token",
     "libraries",
 ]
 [features]

@@ -627,38 +627,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bmc-management"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "libraries",
- "near-sdk",
-]
-
-[[package]]
-name = "bmc-periphery"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "libraries",
- "near-sdk",
-]
-
-[[package]]
 name = "bmv"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "byteorder 1.4.3",
- "libraries",
- "merkle-tree-accumulator",
- "near-sdk",
- "rlp",
- "serde",
-]
-
-[[package]]
-name = "bmv-v2"
 version = "0.1.0"
 dependencies = [
  "btp-common",
@@ -790,25 +759,6 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 name = "bsh-generic"
 version = "0.1.0"
 dependencies = [
- "btp-common",
- "libraries",
- "near-sdk",
-]
-
-[[package]]
-name = "bsh-periphery"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "libraries",
- "near-sdk",
-]
-
-[[package]]
-name = "bsh-token"
-version = "0.1.0"
-dependencies = [
- "bsh-periphery",
  "btp-common",
  "libraries",
  "near-sdk",
