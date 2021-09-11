@@ -1,10 +1,11 @@
 [package]
-name = "bsh-generic"
+name = "bsh-token"
 version = "0.1.0"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
+bsh-periphery = { path = "../bsh-periphery" }
 btp-common = { path = "../../../btp-common" }
 libraries = { path = "../../libraries" }
 near-sdk = "3.1.0"

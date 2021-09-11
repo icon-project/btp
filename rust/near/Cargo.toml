@@ -8,18 +8,19 @@ edition = "2018"
 members = [
     "bmc",
     "bmv",
-    "bsh/bsh-generic",
-    "bsh/token-bsh",
+    "bsh/bsh-periphery",
+    "bsh/bsh-token",
     "libraries",
 ]
+
 [features]
 integration-tests = []
 
 [dev-dependencies]
 bmc = { path = "./bmc" }
-bsh-generic = { path = "./bsh/bsh-generic" }
+bsh-periphery = { path = "./bsh/bsh-periphery" }
 libraries = { path = "./libraries" }
-token-bsh = { path = "./bsh/token-bsh" }
+bsh-token = { path = "./bsh/bsh-token" }
 near-sdk = "3.1.0"
 lazy_static = "1.4.0"
 kitten = "^0.1.3"

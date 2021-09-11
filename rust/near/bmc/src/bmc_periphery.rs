@@ -2,7 +2,7 @@
 
 use crate::{BmcManagement, Utils};
 use bmv::Bmv;
-use bsh_generic::BshGeneric;
+use bsh_periphery::BshPeriphery;
 use btp_common::BTPAddress;
 use libraries::bmc_types::*;
 use libraries::bsh_types::*;
@@ -12,13 +12,13 @@ use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Clone)]
-pub struct BmcGeneric {
+pub struct BmcPeriphery {
     // a network address BMV, i.e. btp://1234.pra/0xabcd
     bmc_btp_address: String,
     bmc_management: String,
 }
 
-impl Default for BmcGeneric {
+impl Default for BmcPeriphery {
     fn default() -> Self {
         Self {
             bmc_btp_address: "".to_string(),
@@ -28,7 +28,7 @@ impl Default for BmcGeneric {
 }
 
 #[near_bindgen]
-impl BmcGeneric {
+impl BmcPeriphery {
     pub const UNKNOWN_ERR: usize = 0;
     pub const BMC_ERR: usize = 10;
     pub const BMV_ERR: usize = 25;
@@ -157,7 +157,7 @@ impl BmcGeneric {
     fn handle_message_internal(&mut self, prev: AccountId, msg: &BmcMessage) -> Result<(), &str> {
         let mut bsh_addr = String::from("");
         let mut bmc_mgt = BmcManagement::default();
-        let mut bsh_generic = BshGeneric::default();
+        let mut bsh_periphery = BshPeriphery::default();
         if &msg.svc == "bmc" {
             let mut sm = BmcService::default();
             if let Ok(res) = BmcService::try_from_slice(&msg.message) {
@@ -190,7 +190,7 @@ impl BmcGeneric {
                     bsh_addr = bmc_mgt.get_bsh_service_by_name(svc.to_string());
                     // If `svc` not found, ignore
                     if bsh_addr != env::predecessor_account_id() {
-                        bsh_generic
+                        bsh_periphery
                             .handle_fee_gathering(gather_fee.fa.clone(), svc.to_string())
                             .expect("Failed to handle fee gathering");
                     }
@@ -252,7 +252,7 @@ impl BmcGeneric {
                 let net = BTPAddress::new(msg.src.to_string())
                     .network_address()
                     .expect("Failed to retrieve network address");
-                if let Err(error) = bsh_generic.handle_btp_message(
+                if let Err(error) = bsh_periphery.handle_btp_message(
                     net,
                     msg.svc.clone(),
                     msg.sn as u64,
@@ -264,8 +264,7 @@ impl BmcGeneric {
             } else {
                 let err_msg =
                     Response::try_from_slice(&msg.message).expect("Failed to decode message");
-                if let Err(error) = bsh_generic.handle_btp_error(
-                    msg.src.clone(),
+                if let Err(error) = bsh_periphery.handle_btp_error(
                     msg.svc.clone(),
                     msg.sn as u64,
                     err_msg.code,

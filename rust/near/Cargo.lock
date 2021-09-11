@@ -620,7 +620,7 @@ name = "bmc"
 version = "0.1.0"
 dependencies = [
  "bmv",
- "bsh-generic",
+ "bsh-periphery",
  "btp-common",
  "libraries",
  "near-sdk",
@@ -757,9 +757,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
-name = "bsh-generic"
+name = "bsh-periphery"
 version = "0.1.0"
 dependencies = [
+ "btp-common",
+ "libraries",
+ "near-sdk",
+]
+
+[[package]]
+name = "bsh-token"
+version = "0.1.0"
+dependencies = [
+ "bsh-periphery",
  "btp-common",
  "libraries",
  "near-sdk",
@@ -2431,7 +2441,8 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "bmc",
- "bsh-generic",
+ "bsh-periphery",
+ "bsh-token",
  "kitten",
  "lazy_static",
  "libraries",
@@ -2442,7 +2453,6 @@ dependencies = [
  "near-sdk",
  "near-telemetry",
  "testlib",
- "token-bsh",
 ]
 
 [[package]]
@@ -4606,16 +4616,6 @@ name = "to_vec"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e78d504a6bccd4b4f3dcd7006f1674877e329655b1ec34d5fd7a640681a45ad"
-
-[[package]]
-name = "token-bsh"
-version = "0.1.0"
-dependencies = [
- "bsh-generic",
- "btp-common",
- "libraries",
- "near-sdk",
-]
 
 [[package]]
 name = "tokio"

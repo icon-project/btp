@@ -109,9 +109,9 @@ impl Bmv {
     /**
        @notice Used by the relay to resolve next BTP Message to send.
                Called by BMC.
-       @return height height of MerkleTreeAccumulator
-       @return offset offset of MerkleTreeAccumulator
-       @return last_height block height of last relayed BTP Message
+       @return height        height of MerkleTreeAccumulator
+       @return offset        offset of MerkleTreeAccumulator
+       @return               block height of last relayed BTP Message
     */
     pub fn get_status(&self) -> (u128, u128, u128) {
         (
