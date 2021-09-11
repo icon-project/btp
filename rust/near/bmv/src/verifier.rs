@@ -11,15 +11,14 @@ use vrf::VRF;
 
 pub trait Verifier {
     fn verify_mta_proof(
-        &mut self,
-        block_proof: BlockProof,
-        mut mta: MerkleTreeAccumulator,
-    ) -> Result<(), &str> {
+        block_proof: &BlockProof,
+        mta: &mut MerkleTreeAccumulator,
+    ) -> Result<(), String> {
         if block_proof.block_witness.witnesses.is_empty() {
-            return Err("BMVRevertInvalidBlockWitness");
+            return Err("BMVRevertInvalidBlockWitness".to_string());
         }
         if mta.height < block_proof.block_header.height {
-            return Err("BMVRevertInvalidBlockProofHigher");
+            return Err("BMVRevertInvalidBlockProofHigher".to_string());
         }
         mta.verify(
             block_proof.block_witness.witnesses.as_slice(),
@@ -32,15 +31,14 @@ pub trait Verifier {
     }
 
     fn verify_validators(
-        &mut self,
         block_update: &BlockUpdate,
         validators: &mut Validators,
-    ) -> Result<bool, &str> {
+    ) -> Result<bool, String> {
         if block_update.votes.ts.is_empty() {
-            return Err("BMVRevertInvalidBlockUpdate: Not exists votes");
+            return Err("BMVRevertInvalidBlockUpdate: Not exists votes".to_string());
         }
 
-        self.verify_votes(
+        Self::verify_votes(
             &block_update.votes,
             block_update.block_header.height,
             &block_update.block_header.block_hash,
@@ -52,24 +50,23 @@ pub trait Verifier {
         if block_update.block_header.next_validator_hash != validators.validator_hash
             && block_update.next_validators.is_empty()
         {
-            return Err("BMVRevertInvalidBlockUpdate: Not exists next validators");
+            return Err("BMVRevertInvalidBlockUpdate: Not exists next validators".to_string());
         } else if block_update.next_validators_hash == block_update.block_header.next_validator_hash
         {
             return Ok(true);
         } else {
-            return Err("BMVRevertInvalidBlockUpdate: Invalid next validator hash");
+            return Err("BMVRevertInvalidBlockUpdate: Invalid next validator hash".to_string());
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     fn verify_votes(
-        &mut self,
         votes: &Votes,
         block_height: u128,
         block_hash: &Hash,
         validators: &mut Validators,
         is_next_validators_updated: bool,
-    ) -> Result<(), &str> {
+    ) -> Result<(), String> {
         // Calculate RLP of vote item
         // [block height, vote.round, vote_type precommit = 1, block hash, vote.bpsi]
         let mut block_part_set_id: Vec<Vec<u8>> = Vec::with_capacity(2);
@@ -111,18 +108,18 @@ pub trait Verifier {
                 .expect("Failed to convert slice to string");
 
             if !validators.contained_validators.contains_key(&address) {
-                return Err("BMVRevertInvalidVotes: Invalid signature");
+                return Err("BMVRevertInvalidVotes: Invalid signature".to_string());
             }
 
             if validators.check_duplicate_votes.contains_key(&address) {
                 let _ = validators
                     .check_duplicate_votes
                     .insert(address.clone(), true);
-                return Err("BMVRevertInvalidVotes: Duplicate votes");
+                return Err("BMVRevertInvalidVotes: Duplicate votes".to_string());
             }
         }
         if votes.ts.len() > (validators.validator_addrs.len() * 2) / 3 {
-            return Err("BMVRevertInvalidVotes: Require votes > 2/3");
+            return Err("BMVRevertInvalidVotes: Require votes > 2/3".to_string());
         }
 
         for addr in &validators.validator_addrs {

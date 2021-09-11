@@ -1,10 +1,13 @@
 //! BMV
 
+use crate::{DataValidator, Verifier};
 use btp_common::BTPAddress;
 use libraries::bmv_types::*;
 use merkle_tree_accumulator::{hash::Hash, mta::MerkleTreeAccumulator};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
+use near_sdk::{
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    env, near_bindgen, setup_alloc, AccountId,
+};
 
 setup_alloc!();
 
@@ -65,27 +68,37 @@ impl Bmv {
         }
     }
 
-    pub fn new(_addr: AccountId) -> Self {
-        todo!()
+    pub fn new(addr: AccountId) -> Self {
+        let mut bmv = Self::default();
+        bmv.net_addr = addr;
+        bmv
     }
 
-    /// Return base 64 encode of Merkle tree
+    /**
+       @return Base64 encode of Merkle Tree
+    */
     pub fn get_mta(&self) -> String {
         String::from_utf8(self.mta.to_bytes()).expect("Failed to encode bytes into string")
     }
 
-    /// Return connected BMC address
+    /**
+       @return connected BMC address
+    */
     pub fn get_connected_bmc(&self) -> &AccountId {
         &self.bmc_addr
     }
 
-    /// Return network address of the blockchain
+    /**
+       @return network address of the blockchain
+    */
     pub fn get_net_address(&self) -> &AccountId {
         &self.net_addr
     }
 
-    /// Return hash of Rlp encode from given list of validators
-    /// and a list of validators' addresses
+    /**
+       @return hash of RLP encode from given list of validators
+       @return list of validators' addresses
+    */
     pub fn get_validators(&self) -> (Hash, &Vec<AccountId>) {
         (
             self.validators.validator_hash,
@@ -93,7 +106,13 @@ impl Bmv {
         )
     }
 
-    /// Used by the relay to resolve next BTP Message to send. Called by BMC
+    /**
+       @notice Used by the relay to resolve next BTP Message to send.
+               Called by BMC.
+       @return height height of MerkleTreeAccumulator
+       @return offset offset of MerkleTreeAccumulator
+       @return last_height block height of last relayed BTP Message
+    */
     pub fn get_status(&self) -> (u128, u128, u128) {
         (
             self.mta.height,
@@ -102,9 +121,16 @@ impl Bmv {
         )
     }
 
-    /// Decode Relay Messages and process BTP Messages.
-    /// If there is an error, then it sends a BTP Message containing the Error Message.
-    /// BTP Messages with old sequence numbers are ignored. A BTP Message containing future sequence number will fail.
+    /**
+       @notice Decodes Relay Messages and process BTP Messages.
+               If there is an error, then it sends a BTP Message containing the Error Message.
+               BTP Messages with old sequence numbers are ignored. A BTP Message contains future sequence number will fail.
+       @param bmc           BTP Address of the BMC handling the message
+       @param prev          BTP Address of the previous BMC
+       @param seq           next sequence number to get a message
+       @param msg           serialized bytes of Relay Message
+       @return              List of serialized bytes of a BTP Message
+    */
     pub fn handle_relay_message(
         &mut self,
         bmc: AccountId,
@@ -112,22 +138,25 @@ impl Bmv {
         seq: u128,
         msg: String,
     ) -> Result<Vec<Vec<u8>>, &str> {
-        self.check_accessible(bmc, prev)
+        self.check_accessible(bmc.clone(), prev.clone())
             .expect("Error in executing check_accessible");
 
+        let serialized_msg = msg.as_bytes();
+
         let relay_msg =
-            RelayMessage::try_from_slice(msg.as_bytes()).expect("Failed to decode relay message");
+            RelayMessage::try_from_slice(&serialized_msg).expect("Failed to decode relay message");
 
         if relay_msg.block_updates.is_empty() {
             return Err("BMVRevert: Invalid relay message");
         }
 
-        let (_receipt_hash, last_height) = self
+        let (receipt_hash, last_height) = self
             .get_last_receipt_hash(&relay_msg)
             .expect("Failed to get last receipt hash");
 
-        // TODO
-        let msgs: Vec<Vec<u8>> = vec![];
+        let msgs = DataValidator::default()
+            .validate_receipt(bmc, prev, seq, serialized_msg, &receipt_hash)
+            .expect("Failed to validate receipt");
 
         if msg.len() > 0 {
             self.last_block_height = last_height;
@@ -161,20 +190,24 @@ impl Bmv {
             if self.validators.validator_hash != relay_msg.block_updates[i].next_validators_hash
                 || i == relay_msg.block_updates.len() - 1
             {
-                // TODO
-                // if relay_msg.block_updates[i].verify_validators(&self.validators) {
-                //     self.validators = Validators::default();
-                //     self.validators
-                //         .decode_validators(&relay_msg.block_updates[i].next_validators_rlp);
-                // }
+                if BlockUpdate::verify_validators(
+                    &relay_msg.block_updates[i].clone(),
+                    &mut self.validators,
+                )
+                .unwrap()
+                {
+                    self.validators =
+                        Validators::try_from_slice(&relay_msg.block_updates[i].next_validators_rlp)
+                            .unwrap();
+                }
             }
 
             self.mta
                 .add(relay_msg.block_updates[i].block_header.block_hash);
         }
 
-        // TODO
-        // relay_msg.block_proof.verify_mta_proof(self.mta);
+        BlockProof::verify_mta_proof(&relay_msg.block_proof, &mut self.mta)
+            .expect("Failed to verify MTA proof");
         receipt_hash = relay_msg.block_proof.block_header.result.receipt_hash;
         last_height = relay_msg.block_proof.block_header.height;
 
@@ -204,3 +237,6 @@ impl Bmv {
         Ok(())
     }
 }
+
+impl Verifier for BlockUpdate {}
+impl Verifier for BlockProof {}

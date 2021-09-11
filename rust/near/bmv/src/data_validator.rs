@@ -4,8 +4,10 @@ use crate::Verifier;
 use btp_common::BTPAddress;
 use libraries::bmv_types::*;
 use merkle_tree_accumulator::hash::Hash;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{near_bindgen, setup_alloc, AccountId};
+use near_sdk::{
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    near_bindgen, setup_alloc, AccountId,
+};
 
 setup_alloc!();
 
