@@ -4,11 +4,13 @@ use crate::Verifier;
 use btp_common::BTPAddress;
 use libraries::bmv_types::*;
 use merkle_tree_accumulator::hash::Hash;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{near_bindgen, setup_alloc, AccountId};
+use near_sdk::{
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    near_bindgen, setup_alloc, AccountId,
+};
 
 setup_alloc!();
-/// This struct implements `Default`: https://github.com/near/near-sdk-rs#writing-rust-contract
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Clone)]
 pub struct DataValidator {
@@ -34,15 +36,7 @@ impl DataValidator {
         receipt_hash: &Hash,
     ) -> Result<Vec<Vec<u8>>, &str> {
         let mut next_seq = seq + 1;
-        let mut receipt = Receipt {
-            event_logs: vec![],
-            event_log_hash: Hash::default(),
-        };
-        let mut message_event = MessageEvent {
-            next_bmc: "".to_string(),
-            seq: 0,
-            message: vec![],
-        };
+
         let receipt_proofs: Vec<ReceiptProof> =
             vec![ReceiptProof::try_from_slice(serialized_msg)
                 .expect("Failed to decode receipt proof")];
@@ -53,13 +47,13 @@ impl DataValidator {
             self.messages.clear();
         }
 
-        for mut receipt_proof in receipt_proofs {
-            receipt = receipt_proof.verify_mpt_proof(receipt_hash);
+        for receipt_proof in receipt_proofs {
+            let receipt = Self::verify_mpt_proof(&receipt_proof, receipt_hash);
             for mut event_log in receipt.event_logs {
                 if event_log.addr != contract_addr {
                     continue;
                 }
-                message_event = event_log.to_message_event();
+                let message_event = event_log.to_message_event();
                 if !message_event.next_bmc.as_bytes().is_empty() {
                     if message_event.seq > next_seq {
                         return Err("BMVRevertInvalidSequenceHigher");
@@ -83,3 +77,4 @@ impl DataValidator {
 
 impl Verifier for ReceiptProof {}
 impl Verifier for EventLog {}
+impl Verifier for DataValidator {}

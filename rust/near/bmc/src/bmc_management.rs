@@ -1,6 +1,6 @@
 //! BMC Management Contract
 
-use crate::{BmcGeneric, Utils};
+use crate::{BmcPeriphery, Utils};
 use bmv::Bmv;
 use btp_common::BTPAddress;
 use libraries::bmc_types::*;
@@ -493,7 +493,7 @@ impl BmcManagement {
         let encoded_bmc_service = bmc_service
             .try_to_vec()
             .expect("Failed to encode BMC Service");
-        let mut bmc_generic = BmcGeneric::default();
+        let mut bmc_generic = BmcPeriphery::default();
         for name in &self.list_of_link_names {
             if self
                 .links
@@ -528,7 +528,7 @@ impl BmcManagement {
         let encoded_bmc_service = bmc_service
             .try_to_vec()
             .expect("Failed to encode BMC Service");
-        let mut bmc_generic = BmcGeneric::default();
+        let mut bmc_generic = BmcPeriphery::default();
         let net = BTPAddress::new(target)
             .network_address()
             .expect("Failed to retrieve network address");
