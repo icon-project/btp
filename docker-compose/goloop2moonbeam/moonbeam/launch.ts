@@ -80,10 +80,15 @@ const parachains: { [name: string]: ParachainConfig } = {
     chain: "moonbase-local",
     docker: "purestake/moonbeam:v0.10.0",
   },
-  "moonbase-0.11.2": {
+  "moonbase-0.11.3": {
     relay: "rococo-9004",
     chain: "moonbase-local",
-    docker: "purestake/moonbeam:v0.11.2",
+    docker: "purestake/moonbeam:v0.11.3",
+  },
+  "moonbase-0.12.1": {
+    relay: "rococo-9102",
+    chain: "moonbase-local",
+    docker: "purestake/moonbeam:v0.12.1",
   },
   local: {
     relay: "rococo-9004",
@@ -116,6 +121,10 @@ const relays: { [name: string]: NetworkConfig } = {
   },
   "rococo-9003": {
     docker: "purestake/moonbase-relay-testnet:sha-aa386760",
+    chain: "rococo-local",
+  },
+  "rococo-9102": {
+    docker: "purestake/moonbase-relay-testnet:sha-43d9b899",
     chain: "rococo-local",
   },
   "rococo-9004": {
@@ -281,16 +290,17 @@ function start() {
       if (!fs.existsSync(parachainPath)) {
         console.log(`     Missing ${parachainBinary} locally, downloading it...`);
         child_process.execSync(`mkdir -p ${path.dirname(parachainPath)} && \
-             docker create --name moonbeam-tmp ${paras[i].docker} && \
-             docker cp moonbeam-tmp:/moonbeam/moonbeam ${parachainPath} && \
-             docker rm moonbeam-tmp`);
+            docker create --name moonbeam-tmp ${paras[i].docker} && \
+            docker cp moonbeam-tmp:/moonbeam/moonbeam ${parachainPath} && \
+            docker rm moonbeam-tmp`);
         console.log(`${parachainBinary} downloaded !`);
       }
       parachainBinaries.push(parachainBinary);
       parachainPaths.push(parachainPath);
     }
     console.log(
-      `🚀 Parachain: ${parasNames[i].padEnd(20)} - ${paras[i].docker || paras[i].binary} (${parachainsChains[i]
+      `🚀 Parachain: ${parasNames[i].padEnd(20)} - ${paras[i].docker || paras[i].binary} (${
+        parachainsChains[i]
       })`
     );
   }
@@ -315,9 +325,9 @@ function start() {
     if (!fs.existsSync(relayPath)) {
       console.log(`     Missing ${relayBinary} locally, downloading it...`);
       child_process.execSync(`mkdir -p ${path.dirname(relayPath)} && \
-           docker create --name polkadot-tmp ${relay.docker} && \
-           docker cp polkadot-tmp:/usr/local/bin/polkadot ${relayPath} && \
-           docker rm polkadot-tmp`);
+          docker create --name polkadot-tmp ${relay.docker} && \
+          docker cp polkadot-tmp:/usr/local/bin/polkadot ${relayPath} && \
+          docker rm polkadot-tmp`);
       console.log(`     ${relayBinary} downloaded !`);
     }
   }
