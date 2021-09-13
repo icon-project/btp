@@ -11,7 +11,7 @@ It's configured for one sealer account to allow running single node.
 docker build --tag bsc-node ./devnet/docker/bsc-node --build-arg KEYSTORE_PASS=<SECRET>
 ```
 
-Note: The docker folder contains test accounts which are copied during the docker build in the provisioning step.
+Note: The <SECRET> to unlock existing keystore is "Perlia0". The docker folder contains test accounts which are copied during the docker build in the provisioning step.
 
 See [this page](https://geth.ethereum.org/docs/interface/managing-your-accounts) for information on how to create Ethereum accounts.
 

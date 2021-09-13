@@ -9,10 +9,10 @@ export SCRIPTS_DIR=${SCRIPTS_DIR:-${BTPSIMPLE_SCRIPTS_DIR}}
 
 export BSC_NID="0x97"
 export BSC_BMC_NET="0x97.bsc"
-export BSC_RPC_URI=http://goloop:9080/api/v3/icon
 
 # configure env in the container
 export GOLOOP_RPC_URI=http://goloop:9080/api/v3/icon
+export GOLOOP_RPC_ADMIN_URI=http://goloop:9080/admin/system
 export GOLOOP_CONFIG=$CONFIG_DIR/goloop.server.json
 export GOLOOP_KEY_STORE=$CONFIG_DIR/goloop.keystore.json
 export GOLOOP_KEY_SECRET=$CONFIG_DIR/goloop.keysecret
@@ -424,5 +424,6 @@ wait_for_file() {
     echo "waiting for the output file: $FILE_NAME"
   done
 }
+wait-for-it.sh $GOLOOP_RPC_ADMIN_URI
 # run provisioning
 provision
