@@ -30,6 +30,13 @@ module.exports = {
       }),
       network_id: 1281
     },
+    moonbaselocal: {
+      provider: () => new HDWalletProvider({
+        privateKeys: privKeys,
+        providerOrUrl: "http://localhost:34101",
+      }),
+      network_id: 1287
+    },
     moonbase: {
       provider: () => new HDWalletProvider({
         privateKeys: privKeys,
