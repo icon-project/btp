@@ -860,6 +860,11 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 name = "contract-test"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "kitten",
+ "near-crypto",
+ "near-primitives",
+ "rand 0.8.4",
  "runner",
  "serde_json",
  "tokio",
@@ -2002,6 +2007,12 @@ name = "keccak"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
+
+[[package]]
+name = "kitten"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e97c084e23f4f55b15dd6f933a80d27946e75a0da79c8538bf3995dc878f8c27"
 
 [[package]]
 name = "language-tags"

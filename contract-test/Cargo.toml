@@ -9,3 +9,8 @@ edition = "2018"
 runner = { git = "https://github.com/near/runner-rs.git"}
 tokio = { version = "1", features = ["full"] }
 serde_json = "1.0.64"
+kitten = "^0.2.0"
+near-crypto = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
+near-primitives = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
+chrono = "0.4.19"
+rand = "0.8.4"
