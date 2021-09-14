@@ -2,7 +2,7 @@
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::BorshStorageKey;
+use near_sdk::{AccountId, BorshStorageKey};
 
 #[derive(
     BorshDeserialize, BorshSerialize, BorshStorageKey, Clone, Debug, Deserialize, Serialize,
@@ -20,7 +20,7 @@ pub enum BmcStorageKey {
 pub enum BmcEvents {
     Message {
         // an address of the next BMC (it could be a destination BMC)
-        next: String,
+        next: AccountId,
         // a sequence number of BMC (not a sequence number of BSH)
         seq: u128,
         msg: Vec<u8>,
@@ -29,7 +29,7 @@ pub enum BmcEvents {
     ErrorOnBtpError {
         svc: String,
         sn: i64,
-        code: u64,
+        code: usize,
         err_msg: String,
         svc_err_code: u64,
         svc_err_msg: String,
@@ -56,7 +56,7 @@ pub struct VerifierStats {
 #[serde(crate = "near_sdk::serde")]
 pub struct Service {
     pub svc: String,
-    pub addr: String,
+    pub addr: AccountId,
 }
 
 #[derive(
@@ -64,8 +64,8 @@ pub struct Service {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct Verifier {
-    pub net: String,
-    pub addr: String,
+    pub net: AccountId,
+    pub addr: AccountId,
 }
 
 #[derive(
@@ -74,9 +74,9 @@ pub struct Verifier {
 #[serde(crate = "near_sdk::serde")]
 pub struct Route {
     /// BTP address of destination BMC
-    pub dst: String,
+    pub dst: AccountId,
     /// BTP address of a BMC before reaching dst BMC
-    pub next: String,
+    pub next: AccountId,
 }
 
 #[derive(
@@ -85,9 +85,9 @@ pub struct Route {
 #[serde(crate = "near_sdk::serde")]
 pub struct Link {
     /// Address of multiple relay handles for this link network
-    pub relays: Vec<String>,
+    pub relays: Vec<AccountId>,
     /// A BTP address of the next BMC that can be reached using this link
-    pub reachable: Vec<String>,
+    pub reachable: Vec<AccountId>,
     pub rx_seq: u128,
     pub tx_seq: u128,
     pub block_interval_src: u128,
@@ -127,7 +127,7 @@ pub struct LinkStats {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct RelayStats {
-    pub addr: String,
+    pub addr: AccountId,
     pub block_count: u128,
     pub msg_count: u128,
 }
@@ -138,9 +138,9 @@ pub struct RelayStats {
 #[serde(crate = "near_sdk::serde")]
 pub struct BmcMessage {
     /// an address of BMC (e.g. btp://1234.PARA/0x1234)
-    pub src: String,
+    pub src: AccountId,
     /// an address of destination BMC
-    pub dst: String,
+    pub dst: AccountId,
     /// service name of BSH
     pub svc: String,
     /// sequence number of BMC
@@ -164,7 +164,7 @@ pub struct BmcService {
 #[serde(crate = "near_sdk::serde")]
 pub struct GatherFeeMessage {
     /// BTP address of Fee Aggregator
-    pub fa: String,
+    pub fa: AccountId,
     /// a list of services
     pub svcs: Vec<String>,
 }
@@ -174,6 +174,6 @@ pub struct GatherFeeMessage {
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct Tuple {
-    pub prev: String,
-    pub to: String,
+    pub prev: AccountId,
+    pub to: AccountId,
 }

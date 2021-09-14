@@ -5,7 +5,11 @@ authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
 [dependencies]
+byteorder = "1.4.3"
 btp-common = { path = "../../btp-common" }
 libraries = { path = "../libraries" }
+merkle-tree-accumulator = "0.1.4"
 near-sdk = "3.1.0"
-serde = {version = "1.0", features = ["derive"]}
+rlp = "0.5.1"
+serde = { version = "1.0", features = ["derive"] }
+vrf = "0.2.2"

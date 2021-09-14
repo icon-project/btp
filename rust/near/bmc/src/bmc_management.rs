@@ -1,12 +1,12 @@
 //! BMC Management Contract
 
-use crate::{BmcGeneric, Utils};
+use crate::{BmcPeriphery, Utils};
 use bmv::Bmv;
 use btp_common::BTPAddress;
 use libraries::bmc_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, near_bindgen, setup_alloc};
+use near_sdk::{env, near_bindgen, setup_alloc, AccountId};
 
 setup_alloc!();
 #[near_bindgen]
@@ -65,45 +65,45 @@ impl BmcManagement {
 
     /// Update BMC generic
     /// Caller must be an owner of BTP network
-    pub fn set_bmc_generic(&mut self, addr: &str) -> Result<(), &str> {
+    pub fn set_bmc_generic(&mut self, addr: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        if *addr == env::predecessor_account_id() {
+        if addr == env::predecessor_account_id() {
             return Err("BMCRevertInvalidAddress");
         }
-        if *addr == self.bmc_generic {
+        if addr == self.bmc_generic {
             return Err("BMCRevertAlreadyExistsBMCGeneric");
         }
-        self.bmc_generic = addr.to_string();
+        self.bmc_generic = addr;
         Ok(())
     }
 
     /// Add another owner
     /// Caller must be an owner of BTP network
-    pub fn add_owner(&mut self, owner: &str) -> Result<(), &str> {
+    pub fn add_owner(&mut self, owner: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        let _ = self.owners.insert(&owner.to_string(), &true);
+        let _ = self.owners.insert(&owner, &true);
         self.num_of_owners += 1;
         Ok(())
     }
 
     /// Remove an existing owner
     /// Caller must be an owner of BTP network
-    pub fn remove_owner(&mut self, owner: &str) -> Result<(), &str> {
+    pub fn remove_owner(&mut self, owner: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
@@ -111,72 +111,58 @@ impl BmcManagement {
         if self.num_of_owners <= 1 {
             return Err("BMCRevertLastOwner");
         }
-        if !self
-            .owners
-            .get(&owner.to_string())
-            .expect("Error in owner lookup")
-        {
+        if !self.owners.get(&owner).expect("Error in owner lookup") {
             return Err("BMCRevertNotExistsPermission");
         }
-        let _ = self.owners.remove(&owner.to_string());
+        let _ = self.owners.remove(&owner);
         Ok(())
     }
 
     /// Check whether one specific address has owner role
     /// Caller can be ANY
-    pub fn is_owner(&self, owner: &str) -> bool {
-        self.owners
-            .get(&owner.to_string())
-            .expect("Error in owner lookup")
+    pub fn is_owner(&self, owner: AccountId) -> bool {
+        self.owners.get(&owner).expect("Error in owner lookup")
     }
 
     /// Register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn add_service(&mut self, svc: &str, addr: &str) -> Result<(), &str> {
+    pub fn add_service(&mut self, svc: String, addr: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        if *addr == env::predecessor_account_id() {
+        if addr == env::predecessor_account_id() {
             return Err("BMCRevertInvalidAddress");
         }
-        if self
-            .bsh_services
-            .get(&svc.to_string())
-            .expect("Error in SVC lookup")
+        if self.bsh_services.get(&svc).expect("Error in SVC lookup")
             != env::predecessor_account_id()
         {
             return Err("BMCRevertAlreadyExistsBSH");
         }
-        let _ = self
-            .bsh_services
-            .insert(&svc.to_string(), &addr.to_string());
-        self.list_of_bsh_names.push(svc.to_string());
+        let _ = self.bsh_services.insert(&svc, &addr);
+        self.list_of_bsh_names.push(svc);
         Ok(())
     }
 
     /// De-register the smart contract for the service
     /// Caller must be an operator of BTP network
-    pub fn remove_service(&mut self, svc: &str) -> Result<(), &str> {
+    pub fn remove_service(&mut self, svc: String) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        if self
-            .bsh_services
-            .get(&svc.to_string())
-            .expect("Error in SVC lookup")
+        if self.bsh_services.get(&svc).expect("Error in SVC lookup")
             == env::predecessor_account_id()
         {
             return Err("BMCRevertNotExistsBSH");
         }
-        let _ = self.bsh_services.remove(&svc.to_string());
+        let _ = self.bsh_services.remove(&svc);
         let index = self
             .list_of_bsh_names
             .iter()
@@ -205,48 +191,40 @@ impl BmcManagement {
 
     /// Register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn add_verifier(&mut self, net: &str, addr: &str) -> Result<(), &str> {
+    pub fn add_verifier(&mut self, net: AccountId, addr: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        if self
-            .bmv_services
-            .get(&net.to_string())
-            .expect("Error in BMV lookup")
+        if self.bmv_services.get(&net).expect("Error in BMV lookup")
             != env::predecessor_account_id()
         {
             return Err("BMCRevertAlreadyExistsBMV");
         }
-        let _ = self
-            .bmv_services
-            .insert(&net.to_string(), &addr.to_string());
-        self.list_of_bmv_names.push(net.to_string());
+        let _ = self.bmv_services.insert(&net, &addr);
+        self.list_of_bmv_names.push(net);
         Ok(())
     }
 
     /// De-register BMV for the network
     /// Caller must be an operator of BTP network
-    pub fn remove_verifier(&mut self, net: &str) -> Result<(), &str> {
+    pub fn remove_verifier(&mut self, net: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
-        if self
-            .bmv_services
-            .get(&net.to_string())
-            .expect("Error in BMV lookup")
+        if self.bmv_services.get(&net).expect("Error in BMV lookup")
             == env::predecessor_account_id()
         {
             return Err("BMCRevertNotExistsBMV");
         }
-        let _ = self.bmv_services.remove(&net.to_string());
+        let _ = self.bmv_services.remove(&net);
         let index = self
             .list_of_bmv_names
             .iter()
@@ -275,8 +253,8 @@ impl BmcManagement {
 
     /// Initialize status information for the link
     /// Caller must be an operator of BTP network
-    pub fn add_link(&mut self, link: &str) -> Result<(), &str> {
-        let net = BTPAddress::new(link.to_string())
+    pub fn add_link(&mut self, link: AccountId) -> Result<(), &str> {
+        let net = BTPAddress::new(link.clone())
             .network_address()
             .expect("Failed to retrieve network address");
         if self
@@ -289,7 +267,7 @@ impl BmcManagement {
         }
         if self
             .links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Error in link lookup")
             .is_connected
         {
@@ -310,45 +288,45 @@ impl BmcManagement {
             rx_height_src: 0,
             is_connected: true,
         };
-        let _ = self.links.insert(&link.to_string(), &link_struct);
+        let _ = self.links.insert(&link, &link_struct);
 
         // propagate an event "LINK"
-        self.propagate_internal("Link", link);
+        self.propagate_internal("Link".to_string(), link.clone());
 
         let links = self.list_of_link_names.clone();
-        self.list_of_link_names.push(link.to_string());
-        let _ = self.get_link_from_net.insert(&net, &link.to_string());
+        self.list_of_link_names.push(link.clone());
+        let _ = self.get_link_from_net.insert(&net, &link);
 
         // init link
-        self.send_internal(link, "Init", links);
+        self.send_internal(link, "Init".to_string(), links);
 
         Ok(())
     }
 
     /// Remove the link and status information
     /// Caller must be an operator of BTP network
-    pub fn remove_link(&mut self, link: &str) -> Result<(), &str> {
+    pub fn remove_link(&mut self, link: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Error in link lookup")
             .is_connected
         {
             return Err("BMCRevertNotExistsLink");
         }
-        let _ = self.links.remove(&link.to_string());
-        let net = BTPAddress::new(link.to_string())
+        let _ = self.links.remove(&link);
+        let net = BTPAddress::new(link.clone())
             .network_address()
             .expect("Failed to retrieve network address");
         let _ = self.get_link_from_net.remove(&net);
-        self.propagate_internal("Unlink", link);
+        self.propagate_internal("Unlink".to_string(), link.clone());
         let index = self
             .list_of_link_names
             .iter()
@@ -368,21 +346,21 @@ impl BmcManagement {
     /// Caller must be an operator of BTP network
     pub fn set_link(
         &mut self,
-        link: &str,
+        link: AccountId,
         block_interval: u128,
         max_agg: u128,
         delay_limit: u128,
     ) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Error in link lookup")
             .is_connected
         {
@@ -391,10 +369,7 @@ impl BmcManagement {
         if max_agg < 1 && delay_limit < 1 {
             return Err("BMCRevertInvalidParam");
         }
-        let mut link_struct = self
-            .links
-            .get(&link.to_string())
-            .expect("Failed to get Link");
+        let mut link_struct = self.links.get(&link).expect("Failed to get Link");
         let mut scale = u128::get_scale(
             link_struct.block_interval_src,
             link_struct.block_interval_dst,
@@ -413,13 +388,13 @@ impl BmcManagement {
         if reset_rotate_height && rotate_term > 0 {
             link_struct.rotate_height = env::block_index() as u128 + rotate_term;
             link_struct.rx_height = env::block_index() as u128;
-            let net = BTPAddress::new(link.to_string())
+            let net = BTPAddress::new(link.clone())
                 .network_address()
                 .expect("Failed to retrieve network address");
-            let (height, _, _) = Bmv::new(&net).get_status(); // refactor this and all others
+            let (height, _, _) = Bmv::new(net).get_status(); // refactor this and all others
             link_struct.rx_height_src = height;
         }
-        let _ = self.links.insert(&link.to_string(), &link_struct);
+        let _ = self.links.insert(&link, &link_struct);
         Ok(())
     }
 
@@ -427,7 +402,7 @@ impl BmcManagement {
     /// Returns relay address
     pub fn rotate_relay(
         &mut self,
-        link: &str,
+        link: AccountId,
         current_height: u128,
         relay_msg_height: u128,
         has_msg: bool,
@@ -492,27 +467,24 @@ impl BmcManagement {
 
     fn rotate(
         &mut self,
-        link: &str,
+        link: AccountId,
         rotate_term: u128,
         rotate_count: u128,
         base_height: u128,
     ) -> String {
-        let mut link_struct = self
-            .links
-            .get(&link.to_string())
-            .expect("Failed to get Link");
+        let mut link_struct = self.links.get(&link).expect("Failed to get Link");
         if rotate_term > 0 && rotate_count > 0 {
             link_struct.rotate_height = base_height + rotate_term;
             link_struct.relay_idx += rotate_count;
             if link_struct.relay_idx >= link_struct.relays.len() as u128 {
                 link_struct.relay_idx %= link_struct.relays.len() as u128;
             }
-            let _ = self.links.insert(&link.to_string(), &link_struct);
+            let _ = self.links.insert(&link, &link_struct);
         }
         link_struct.relays[link_struct.relay_idx as usize].clone()
     }
 
-    fn propagate_internal(&mut self, service_type: &str, link: &str) {
+    fn propagate_internal(&mut self, service_type: String, link: AccountId) {
         let rlp_bytes = link.as_bytes().to_vec();
         let bmc_service = BmcService {
             service_type: service_type.to_string(),
@@ -521,7 +493,7 @@ impl BmcManagement {
         let encoded_bmc_service = bmc_service
             .try_to_vec()
             .expect("Failed to encode BMC Service");
-        let mut bmc_generic = BmcGeneric::default();
+        let mut bmc_generic = BmcPeriphery::default();
         for name in &self.list_of_link_names {
             if self
                 .links
@@ -533,13 +505,13 @@ impl BmcManagement {
                     .network_address()
                     .expect("Failed to retrieve network address");
                 bmc_generic
-                    .send_message(&net, "bmc", 0, &encoded_bmc_service)
+                    .send_message(net, "bmc".to_string(), 0, &encoded_bmc_service)
                     .expect("Failed to send BMC message");
             }
         }
     }
 
-    fn send_internal(&mut self, target: &str, service_type: &str, links: Vec<String>) {
+    fn send_internal(&mut self, target: String, service_type: String, links: Vec<AccountId>) {
         let mut rlp_bytes: Vec<u8> = vec![];
         if links.is_empty() {
             rlp_bytes.push(0xc0);
@@ -550,68 +522,68 @@ impl BmcManagement {
             }
         }
         let bmc_service = BmcService {
-            service_type: service_type.to_string(),
+            service_type,
             payload: rlp_bytes,
         };
         let encoded_bmc_service = bmc_service
             .try_to_vec()
             .expect("Failed to encode BMC Service");
-        let mut bmc_generic = BmcGeneric::default();
-        let net = BTPAddress::new(target.to_string())
+        let mut bmc_generic = BmcPeriphery::default();
+        let net = BTPAddress::new(target)
             .network_address()
             .expect("Failed to retrieve network address");
         bmc_generic
-            .send_message(&net, "bmc", 0, &encoded_bmc_service)
+            .send_message(net, "bmc".to_string(), 0, &encoded_bmc_service)
             .expect("Failed to send BMC message");
     }
 
     /// Add route to the BMC
     /// Caller must be an operator of BTP network
-    pub fn add_route(&mut self, dst: &str, link: &str) -> Result<(), &str> {
+    pub fn add_route(&mut self, dst: AccountId, link: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .routes
-            .get(&dst.to_string())
+            .get(&dst)
             .expect("Error in route lookup")
             .is_empty()
         {
             return Err("BTPRevertAlreadyExistRoute");
         }
-        let net = BTPAddress::new(dst.to_string())
+        let net = BTPAddress::new(dst.clone())
             .network_address()
             .expect("Failed to retrieve network address");
-        let _ = self.routes.insert(&dst.to_string(), &link.to_string());
-        self.list_of_route_keys.push(dst.to_string());
-        let _ = self.get_route_dst_from_net.insert(&net, &dst.to_string());
+        let _ = self.routes.insert(&dst, &link);
+        self.list_of_route_keys.push(dst.clone());
+        let _ = self.get_route_dst_from_net.insert(&net, &dst);
         Ok(())
     }
 
     /// Remove route to the BMC
     /// Caller must be an operator of BTP network
-    pub fn remove_route(&mut self, dst: &str) -> Result<(), &str> {
+    pub fn remove_route(&mut self, dst: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .routes
-            .get(&dst.to_string())
+            .get(&dst)
             .expect("Error in route lookup")
             .is_empty()
         {
             return Err("BTPRevertAlreadyExistRoute");
         }
-        let _ = self.routes.remove(&dst.to_string());
-        let net = BTPAddress::new(dst.to_string())
+        let _ = self.routes.remove(&dst);
+        let net = BTPAddress::new(dst.clone())
             .network_address()
             .expect("Failed to retrieve network address");
         let _ = self.get_route_dst_from_net.remove(&net);
@@ -640,26 +612,23 @@ impl BmcManagement {
 
     /// Register Relay for the network
     /// Caller must be an operator of BTP network
-    pub fn add_relay(&mut self, link: &str, addrs: Vec<String>) -> Result<(), &str> {
+    pub fn add_relay(&mut self, link: AccountId, addrs: Vec<AccountId>) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Error in link lookup")
             .is_connected
         {
             return Err("BMCRevertNotExistsLink");
         }
-        self.links
-            .get(&link.to_string())
-            .expect("Error in link lookup")
-            .relays = addrs.clone();
+        self.links.get(&link).expect("Error in link lookup").relays = addrs.clone();
         for addr in addrs {
             let relay_stats = RelayStats {
                 addr: addr.clone(),
@@ -673,117 +642,104 @@ impl BmcManagement {
 
     /// Unregister Relay for the network
     /// Caller must be an operator of BTP network
-    pub fn remove_relay(&mut self, link: &str, addr: &str) -> Result<(), &str> {
+    pub fn remove_relay(&mut self, link: AccountId, addr: AccountId) -> Result<(), &str> {
         if !self
             .owners
-            .get(&env::current_account_id())
+            .get(&env::signer_account_id())
             .expect("Error in owner lookup")
         {
             return Err("BMCRevertUnauthorized");
         }
         if !self
             .links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Error in link lookup")
             .is_connected
             && self
                 .links
-                .get(&link.to_string())
+                .get(&link)
                 .expect("Error in link lookup")
                 .relays
                 .is_empty()
         {
             return Err("BMCRevertUnauthorized");
         }
-        for relay in self
-            .links
-            .get(&link.to_string())
-            .expect("Error in link lookup")
-            .relays
-        {
-            if *addr != relay {
+        for relay in self.links.get(&link).expect("Error in link lookup").relays {
+            if addr != relay {
                 self.addrs.push(relay);
             }
         }
-        self.links
-            .get(&link.to_string())
-            .expect("Error in link lookup")
-            .relays = self.addrs.clone();
+        self.links.get(&link).expect("Error in link lookup").relays = self.addrs.clone();
         self.addrs.clear();
         Ok(())
     }
 
     /// Get registered relays
     /// Returns a list of relays
-    pub fn get_relays(&self, link: &str) -> Vec<String> {
+    pub fn get_relays(&self, link: AccountId) -> Vec<AccountId> {
         self.links
-            .get(&link.to_string())
+            .get(&link)
             .expect("Failed to retrieve Link")
             .relays
     }
 
     /// Get BSH services by name. Only called by BMC generic
     /// Returns BSH service address
-    pub fn get_bsh_service_by_name(&self, service_name: &str) -> String {
+    pub fn get_bsh_service_by_name(&self, service_name: String) -> String {
         self.bsh_services
-            .get(&service_name.to_string())
+            .get(&service_name)
             .expect("Failed to get service name")
     }
 
     /// Get BMV services by net. Only called by BMC generic
     /// Returns BMV service address
-    pub fn get_bmv_service_by_net(&self, net: &str) -> String {
+    pub fn get_bmv_service_by_net(&self, net: AccountId) -> String {
         self.bmv_services
-            .get(&net.to_string())
+            .get(&net)
             .expect("Failed to retrieve BMV service")
     }
 
     /// Get link info. Only called by BMC generic
     /// Returns link info
-    pub fn get_link(&self, to: &str) -> Link {
-        self.links
-            .get(&to.to_string())
-            .expect("Failed to retrieve Link")
+    pub fn get_link(&self, to: AccountId) -> Link {
+        self.links.get(&to).expect("Failed to retrieve Link")
     }
 
     /// Get rotation sequence by link. Only called by BMC generic
     /// Returns rotation sequence
-    pub fn get_link_rx_seq(&self, prev: &str) -> u128 {
+    pub fn get_link_rx_seq(&self, prev: AccountId) -> u128 {
         self.links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Failed to retrieve Link")
             .rx_seq
     }
 
     /// Get transaction sequence by link. Only called by BMC generic
     /// Returns transaction sequence
-    pub fn get_link_tx_seq(&self, prev: &str) -> u128 {
+    pub fn get_link_tx_seq(&self, prev: AccountId) -> u128 {
         self.links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Failed to retrieve Link")
             .tx_seq
     }
 
     /// Get relays by link. Only called by BMC generic
     /// Returns a list of relays' addresses
-    pub fn get_link_relays(&self, prev: &str) -> Vec<String> {
+    pub fn get_link_relays(&self, prev: AccountId) -> Vec<AccountId> {
         self.links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Failed to retrieve Link")
             .relays
     }
 
     /// Get relays status by link. Only called by BMC generic
     /// Returns relay status of all relays
-    pub fn get_relay_status_by_link(&self, prev: &str) -> Vec<RelayStats> {
-        let link = self
-            .links
-            .get(&prev.to_string())
-            .expect("Failed to retrieve Link");
+    pub fn get_relay_status_by_link(&self, prev: AccountId) -> Vec<RelayStats> {
+        let link = self.links.get(&prev).expect("Failed to retrieve Link");
         let mut relays: Vec<RelayStats> = Vec::with_capacity(link.relays.len());
         for relay in &self
             .links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Failed to retrieve Link")
             .relays
         {
@@ -797,92 +753,76 @@ impl BmcManagement {
     }
 
     /// Update rotation sequence by link. Only called by BMC generic
-    pub fn update_link_rx_seq(&mut self, prev: &str, val: u128) -> Result<(), &str> {
+    pub fn update_link_rx_seq(&mut self, prev: AccountId, val: u128) -> Result<(), &str> {
         if env::current_account_id() != self.bmc_generic {
             return Err("BMCRevertUnauthorized");
         }
-        self.links
-            .get(&prev.to_string())
-            .expect("Error in lookup")
-            .rx_seq += val;
+        self.links.get(&prev).expect("Error in lookup").rx_seq += val;
         Ok(())
     }
 
     /// Increase transaction sequence by 1
-    pub fn update_link_tx_seq(&mut self, prev: &str) -> Result<(), &str> {
+    pub fn update_link_tx_seq(&mut self, prev: AccountId) -> Result<(), &str> {
         if env::current_account_id() != self.bmc_generic {
             return Err("BMCRevertUnauthorized");
         }
-        self.links
-            .get(&prev.to_string())
-            .expect("Error in lookup")
-            .tx_seq += 1;
+        self.links.get(&prev).expect("Error in lookup").tx_seq += 1;
         Ok(())
     }
 
     /// Add a reachable BTP address to link. Only called by BMC generic
-    pub fn update_link_reachable(&mut self, prev: &str, to: Vec<String>) -> Result<(), &str> {
+    pub fn update_link_reachable(
+        &mut self,
+        prev: AccountId,
+        to: Vec<AccountId>,
+    ) -> Result<(), &str> {
         if env::current_account_id() != self.bmc_generic {
             return Err("BMCRevertUnauthorized");
         }
         for link in to {
+            let prev = prev.clone();
             self.links
-                .get(&prev.to_string())
+                .get(&prev)
                 .expect("Error in lookup")
                 .reachable
-                .push(link.to_string());
+                .push(link.clone());
             let net = BTPAddress::new(link.clone())
                 .network_address()
                 .expect("Failed to retrieve network address");
-            let tuple = Tuple {
-                prev: prev.to_string(),
-                to: link,
-            };
+            let tuple = Tuple { prev, to: link };
             let _ = self.get_link_from_reachable_net.insert(&net, &tuple);
         }
         Ok(())
     }
 
     /// Remove a reachable BTP address. Only called by BMC generic
-    pub fn delete_link_reachable(&mut self, prev: &str, index: usize) -> Result<(), &str> {
+    pub fn delete_link_reachable(&mut self, prev: AccountId, index: usize) -> Result<(), &str> {
         if env::current_account_id() != self.bmc_generic {
             return Err("BMCRevertUnauthorized");
         }
         let net = BTPAddress::new(
-            self.links
-                .get(&prev.to_string())
-                .expect("Error in lookup")
-                .reachable[index]
-                .clone(),
+            self.links.get(&prev).expect("Error in lookup").reachable[index].clone(),
         )
         .network_address()
         .expect("Failed to retrieve network address");
         let _ = self.get_link_from_reachable_net.remove(&net);
         let _ = self
             .links
-            .remove(&prev.to_string())
+            .remove(&prev)
             .expect("Error in link lookup")
             .reachable[index];
         let idx = self
             .links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Failed to get Link")
             .reachable
             .len()
             - 1;
-        let link = self
-            .links
-            .get(&prev.to_string())
-            .expect("Error in lookup")
-            .reachable[idx]
-            .clone();
-        self.links
-            .get(&prev.to_string())
-            .expect("Error in lookup")
-            .reachable[index] = link;
+        let link = self.links.get(&prev).expect("Error in lookup").reachable[idx].clone();
+        self.links.get(&prev).expect("Error in lookup").reachable[index] = link;
         let _ = self
             .links
-            .get(&prev.to_string())
+            .get(&prev)
             .expect("Error in lookup")
             .reachable
             .pop();
@@ -892,7 +832,7 @@ impl BmcManagement {
     /// Update relay status. Only called by BMC generic
     pub fn update_relay_stats(
         &mut self,
-        relay: &str,
+        relay: AccountId,
         block_count_val: u128,
         msg_count_val: u128,
     ) -> Result<(), &str> {
@@ -900,11 +840,11 @@ impl BmcManagement {
             return Err("BMCRevertUnauthorized");
         }
         self.relay_stats
-            .get(&relay.to_string())
+            .get(&relay)
             .expect("Error in lookup")
             .block_count += block_count_val;
         self.relay_stats
-            .get(&relay.to_string())
+            .get(&relay)
             .expect("Error in lookup")
             .msg_count += msg_count_val;
         Ok(())
@@ -912,14 +852,14 @@ impl BmcManagement {
 
     /// Resolve next BMC. Only called by BMC generic
     /// Returns BTP address of next BMC and destined BMC
-    pub fn resolve_route(&mut self, dst_net: &str) -> Result<(String, String), String> {
+    pub fn resolve_route(&mut self, dst_net: AccountId) -> Result<(String, String), String> {
         if env::current_account_id() != self.bmc_generic {
             return Err("BMCRevertUnauthorized".to_string());
         }
         // search in routes
         let mut dst = self
             .get_route_dst_from_net
-            .get(&dst_net.to_string())
+            .get(&dst_net)
             .expect("Error retrieving route");
         if !dst.as_bytes().is_empty() {
             let route = self.routes.get(&dst).expect("Failed to get route");
@@ -929,7 +869,7 @@ impl BmcManagement {
         // search in links
         dst = self
             .get_link_from_net
-            .get(&dst_net.to_string())
+            .get(&dst_net)
             .expect("Error in lookup");
         if !dst.as_bytes().is_empty() {
             return Ok((dst.clone(), dst));
@@ -938,7 +878,7 @@ impl BmcManagement {
         // search link by reachable net
         let res = self
             .get_link_from_reachable_net
-            .get(&dst_net.to_string())
+            .get(&dst_net)
             .expect("Error in link lookup");
         if !res.to.as_bytes().is_empty() {
             let error = format!("BMCRevertUnreachable: {} is unreachable", dst_net);
