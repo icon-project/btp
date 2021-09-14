@@ -1,7 +1,9 @@
 # Docker integration of BTP betwwen ICON and MOONBEAM
 
 This document will walk you through setting up a Docker environment to demonstrate how to run BTP between ICON and MOONBEAM.   
-(Tested on macos 11.4 and ubuntu 18.04+)
+(Tested on ubuntu 18.04+)
+
+This is for development usage only, because running Blockchain Nodes requires larger computer resources. 
 
 ## Prerequisites:  
 ```
@@ -29,7 +31,7 @@ cd ~/work
 git clone git@github.com:icon-project/btp.git
 cd ~/work/btp
 git fetch
-git checkout goloop2moonbeam
+git checkout icondao
 make btpsimple-image
 ```
 
