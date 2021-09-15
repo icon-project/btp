@@ -11,6 +11,7 @@ deploy_solidity_bmc() {
 
     truffle compile --all
     cat ./build/contracts/BMCManagement.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_management.json
+    cat ./build/contracts/BMCPeriphery.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_periphery.json
 
     BMC_PRA_NET=$(cat $CONFIG_DIR/net.btp.moonbeam) \
     truffle migrate --network moonbeamlocal
@@ -29,6 +30,7 @@ deploy_solidity_bsh() {
     yarn && yarn add fs@0.0.1-security
     truffle compile --all
     cat ./build/contracts/BSHCore.json  | jq -r .abi > $CONFIG_DIR/abi.bsh_core.json
+    cat ./build/contracts/BSHPeriphery.json  | jq -r .abi > $CONFIG_DIR/abi.bsh_periphery.json
 
     BSH_COIN_URL=https://moonbeam.network \
     BSH_COIN_NAME=DEV \
@@ -50,6 +52,8 @@ deploy_solidity_bmv() {
     rm -rf .openzeppelin build node_modules
     yarn && yarn add fs@0.0.1-security
     truffle compile --all
+    cat ./build/contracts/BMV.json  | jq -r .abi > $CONFIG_DIR/abi.bmv.json
+    cat ./build/contracts/DataValidator.json  | jq -r .abi > $CONFIG_DIR/abi.data_validator.json
 
     LAST_BOCK=$(latest_block_goloop)
     LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
