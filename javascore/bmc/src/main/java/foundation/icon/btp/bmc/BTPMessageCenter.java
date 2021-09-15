@@ -1274,4 +1274,10 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         relayers.setProperties(properties);
     }
 
+    // for re-deploy test only, temporary only
+    @External(readonly = true)
+    public RelayersProperties getRelayersProperties() {
+        return relayers.getProperties();
+    }
+
 }

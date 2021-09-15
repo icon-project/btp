@@ -34,6 +34,8 @@ public class RelayerManagementTest implements BMCIntegrationTest {
     static Address address = Address.of(tester);
     static BigInteger bond = BigInteger.valueOf(10);
     static String desc = "description";
+    static BigInteger carryOverFromPrevious;
+    static Boolean isRedeploy = false;
 
     static Predicate<Relayer> relayerPredicate(Address address, BigInteger bond, String desc) {
         return (o) -> o.getAddr().equals(address) && o.getBond().equals(bond) && o.getDesc().equals(desc);
@@ -70,9 +72,14 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
+        BigInteger carryOverValue = BigInteger.ZERO;
         BigInteger value = BigInteger.valueOf(100000000);
         ScoreIntegrationTest.balanceCheck(address, value,
                 () -> client._transfer(address, value, null));
+        carryOverFromPrevious = bmcClient._balance(); // for testing re-deploy
+        if( carryOverFromPrevious.compareTo(carryOverValue) == 1) {
+            isRedeploy = true;
+        }
     }
 
     @AfterAll
@@ -95,6 +102,13 @@ public class RelayerManagementTest implements BMCIntegrationTest {
     @Override
     public void clearIfExists(TestInfo testInfo) {
         clearRelayer();
+    }
+
+    @Test
+    void getPropertiesShouldBeValidAfterRedeploy() {
+        if(!isRedeploy) return;
+        RelayersProperties prop = iconSpecific.getRelayersProperties();
+        assertEquals(carryOverFromPrevious, prop.getCarryover(), "CarryOver is equal to BMC balace after redeploy");
     }
 
     @Test
@@ -145,6 +159,7 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
         System.out.println("transfer to relayer address: "+ address+", value: "+value);
         client._transfer(address, value, null);
+
         return iconSpecificScoreClient;
     }
 
@@ -163,7 +178,7 @@ public class RelayerManagementTest implements BMCIntegrationTest {
         if (isDistributeRelayerTests(testInfo)) {
             System.out.println("beforeDistributeRelayerTests start on "+testInfo.getDisplayName());
             assertEquals(0, iconSpecific.getRelayers().size(), "required relayers is empty");
-            assertEquals(BigInteger.ZERO, bmcClient._balance(),"required BMC.balance is zero");
+            //assertEquals(BigInteger.ZERO, bmcClient._balance(),"required BMC.balance is zero");
 
             iconSpecific.setRelayerTerm(relayerTerm);
             iconSpecific.setRelayerRewardRank(relayerRewardRank);
@@ -214,14 +229,14 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
     @Test
     void distributeRelayerRewardShouldDistributedAndHasCarryOver() {
+        if (isRedeploy) return;
         BigInteger expectedCarryOver = BigInteger.ONE;
         BigInteger expectedDistributed = sumOfBond;
         BigInteger reward = expectedDistributed.add(expectedCarryOver);
-        System.out.println("transfer to BMC for reward "+ reward + " includeCarryOver: " + expectedCarryOver);
+        BigInteger previousCarryOver = bmcClient._balance();
         Address bmcAddress = bmcClient._address();
         ScoreIntegrationTest.balanceCheck(bmcAddress, reward,
                 () -> client._transfer(bmcAddress, reward, null));
-
         BigInteger notInTermBond = BigInteger.valueOf(sortedBonds[0]);
         ICONSpecificScoreClient notInTermClient = newICONSpecificScoreClientWithTransfer(notInTermBond);
         registerRelayer(notInTermClient, notInTermBond, "notInTerm");
@@ -237,15 +252,12 @@ public class RelayerManagementTest implements BMCIntegrationTest {
             if (i <  relayerRewardRank) {
                 assertEquals(BigInteger.valueOf(sortedBonds[i]), relayer.getReward());
 
-                System.out.println("claimRelayerRewardShouldSuccess relayerInRank "+relayer);
                 ScoreIntegrationTest.balanceCheck((Address) relayer.getAddr(), relayer.getReward(),
                         iconSpecificScoreClient::claimRelayerReward);
 
                 sumOfRewardOfRelayer = sumOfRewardOfRelayer.add(relayer.getReward());
             } else {
                 assertEquals(BigInteger.ZERO, relayer.getReward(), "relayerNotInRank");
-
-                System.out.println("claimRelayerRewardShouldRevertRewardIsZero relayerNotInRank "+relayer);
                 AssertBMCException.assertUnknown(iconSpecificScoreClient::claimRelayerReward);
             }
         }
@@ -254,7 +266,6 @@ public class RelayerManagementTest implements BMCIntegrationTest {
 
         Relayer notInTermRelayer = relayers.get(Address.of(notInTermClient._wallet()).toString());
         assertEquals(BigInteger.ZERO, notInTermRelayer.getReward(), "notInTermRelayer");
-        System.out.println("claimRelayerRewardShouldRevertRewardIsZero notInTermRelayer "+notInTermRelayer);
         AssertBMCException.assertUnknown(notInTermClient::claimRelayerReward);
     }
 

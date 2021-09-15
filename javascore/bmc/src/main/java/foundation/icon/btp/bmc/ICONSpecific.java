@@ -316,4 +316,7 @@ public interface ICONSpecific {
     @EventLog(indexed = 2)
     void MessageDropped(String _link, BigInteger _seq, byte[] _msg);
 
+    @External(readonly = true)
+    RelayersProperties getRelayersProperties();
+
 }
