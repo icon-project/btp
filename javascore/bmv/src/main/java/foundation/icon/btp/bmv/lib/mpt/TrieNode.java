@@ -1,11 +1,8 @@
 package foundation.icon.btp.bmv.lib.mpt;
 
-import a.ByteArray;
-import foundation.icon.btp.bmv.lib.ArraysUtil;
 import foundation.icon.btp.bmv.lib.BytesUtil;
 import foundation.icon.btp.bmv.lib.Pair;
-import foundation.icon.ee.io.RLPDataWriter;
-import pi.ObjectWriterImpl;
+import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
 import scorex.util.ArrayList;
@@ -18,6 +15,8 @@ public abstract class TrieNode {
     public abstract byte[] getKey();
     public abstract void setKey(byte[] key);
     public abstract byte[] encodeRLP();
+    //public abstract Pair<byte[][], byte[]> getRaw();
+    public abstract List<byte[][]> getRaw();
 
     private byte[] value;
     public byte[] getValue() {
@@ -63,32 +62,41 @@ public abstract class TrieNode {
 
     public static class BranchNode extends TrieNode {
         private byte[] value;
-        private byte[][] branches;
+        //private byte[][] branches;
+        private List<byte[][]> branches;
 
         public BranchNode() {
-            this.branches = new byte[16][];
+            //this.branches = new byte[16][];
+            this.branches = new ArrayList<>(16);
+            for(int i=0; i < 16; i++) {
+                this.branches.add(null);
+            }
             this.value = null;
         }
 
         public static BranchNode fromBytes(byte[][] bytes) {
             BranchNode node = new BranchNode();
-            node.branches = ArraysUtil.copyOfRangeByteArray(bytes, 0, 16);
+            //node.branches = ArraysUtil.copyOfRangeByteArray(bytes, 0, 16);
             node.value = bytes[16];
             return node;
         }
 
         public byte[] getBranch(int index) {
-            byte[] b = branches[index];
+            byte[] b = branches.get(index)[0];
             if (BytesUtil.isEmptyOrNull(b))
                 return b;
             else
                 return null;
         }
 
+        public void setBranch(int index, byte[][] branch) {
+            this.branches.set(index, branch);
+        }
+
         public List<Pair<Integer, byte[]>> getChildren() {
             List<Pair<Integer, byte[]>> children = new ArrayList<Pair<Integer, byte[]>>();
             for(int i = 0; i < 16; i++) {
-                byte[] b = branches[i];
+                byte[] b = branches.get(i)[0];
                 if (BytesUtil.isEmptyOrNull(b))
                     children.add(Pair.of(i, b));
             }
@@ -102,28 +110,47 @@ public abstract class TrieNode {
 
         @Override
         public void setKey(byte[] key) {
+        }
 
+        @Override
+        public List<byte[][]> getRaw() {
+            List<byte[][]> raw = new ArrayList<>();
+            for(byte[][] b : branches){
+                raw.add(b);
+            }
+            if (value != null)
+                raw.add(new byte[][]{value});
+            else
+                raw.add(null);
+            return raw;
         }
 
         public byte[] encodeRLP() {
-            //ObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
-            ObjectWriterImpl writer = new ObjectWriterImpl(new RLPDataWriter());
-            writer.avm_beginList(2);
-            writer.avm_beginList(16);
-            for (byte[] branch : branches){
-                writer.avm_write(ByteArray.newWithCharge(branch));
+            ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
+            writer.beginNullableList(17);
+            for (byte[][] branch : branches){
+                if (branch == null) {
+                    writer.write(new byte[]{});
+                } else {
+                    writer.beginList(2);
+                    writer.writeNullable(branch[0]);
+                    writer.writeNullable(branch[1]);
+                    writer.end();
+                }
             }
-            writer.avm_end();
-            writer.avm_write(ByteArray.newWithCharge(value));
-            writer.avm_end();
-            return (writer).toByteArray();
+            if(value == null)
+                writer.write(new byte[]{});
+            else
+                writer.write(value);
+            writer.end();
+            return writer.toByteArray();
         }
-
-    }
+     }
 
     public static class ExtensionNode extends TrieNode {
         private byte[] nibbles;
         private byte[] value;
+        private List<byte[][]> values;
 
         public ExtensionNode(byte[] nibbles, byte[] value) {
             this.nibbles = nibbles;
@@ -139,12 +166,17 @@ public abstract class TrieNode {
         }
 
         public byte[] encodedKey() {
-            return encodeKey(encodeKey(this.nibbles));
+            return encodeKey(this.nibbles);
+        }
+
+        public void setValues(List<byte[][]> values) {
+            this.value = null;
+            this.values = values;
         }
 
         @Override
         public byte[] getKey() {
-            return new byte[0];
+            return this.nibbles;
         }
 
         @Override
@@ -152,13 +184,52 @@ public abstract class TrieNode {
             this.nibbles = key;
         }
 
+        /*@Override
+        public List<byte[][]> getRaw() {
+            List<byte[][]> raw = new ArrayList<>();
+            raw.add(new byte[][]{nibbles});
+            raw.add(new byte[][]{value});
+            return raw;
+        }*/
+
+        @Override
+        public List<byte[][]> getRaw() {
+            List<byte[][]> raw = new ArrayList<>();
+            raw.add(new byte[][]{Nibbles.nibblesToBytes(encodedKey())});
+
+            if(this.value != null)
+               raw.add(new byte[][]{value});
+            else for (byte[][] val : this.values)
+                raw.add(val);
+
+            return raw;
+        }
+
         public byte[] encodeRLP() {
-            //ObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
-            ObjectWriterImpl writer = new ObjectWriterImpl(new RLPDataWriter());
-            writer.avm_beginList(2);
-            writer.avm_write(ByteArray.newWithCharge(Nibbles.nibblesToBytes(encodedKey())));
-            writer.avm_write(ByteArray.newWithCharge(value));
-            writer.avm_end();
+            ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
+            writer.beginList(2);
+            writer.write(Nibbles.nibblesToBytes(encodedKey()));
+            if (value != null) {
+                writer.write(value);
+                writer.end();
+            } else if (values != null) {
+              writer.beginNullableList(values.size());
+              for (int i=0; i < this.values.size(); i++) {
+                  byte[][] val = values.get(i);
+                  if (val == null) {
+                      writer.write(new byte[]{});
+                  } else {
+                      writer.beginList(2);
+                      writer.writeNullable(val[0]);
+                      writer.writeNullable(val[1]);
+                      writer.end();
+                  }
+              }
+             writer.end();
+            } else {
+                writer.write(new byte[]{});
+            }
+            writer.end();
             return writer.toByteArray();
         }
 
@@ -195,15 +266,21 @@ public abstract class TrieNode {
             this.nibbles = key;
         }
 
+        @Override
+        public List<byte[][]> getRaw() {
+            List<byte[][]> raw = new ArrayList<>();
+            raw.add(new byte[][]{Nibbles.nibblesToBytes(encodedKey())});
+            raw.add(new byte[][]{value});
+            return raw;
+        }
+
         public byte[] encodeRLP() {
-            //ObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
-            ObjectWriterImpl writer = new ObjectWriterImpl(new RLPDataWriter());
-            writer.avm_beginList(2);
-            writer.avm_write(ByteArray.newWithCharge(Nibbles.nibblesToBytes(encodedKey())));
-            writer.avm_write(ByteArray.newWithCharge(value));
-            writer.avm_end();
+            ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
+            writer.beginList(2);
+            writer.write(Nibbles.nibblesToBytes(encodedKey()));
+            writer.write(value);
+            writer.end();
             return (writer).toByteArray();
-            //return ((ObjectWriterImpl)writer).toByteArray();
         }
     }
 
