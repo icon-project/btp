@@ -16,7 +16,8 @@ import yargs from "yargs";
 import * as fs from "fs";
 import * as path from "path";
 import * as child_process from "child_process";
-import { killAll, run } from "polkadot-launch";
+import { killAll } from "./spawn";
+import { run } from "./runner";
 
 // Description of the network to launch
 type NetworkConfig = {
@@ -417,6 +418,7 @@ function start() {
     process.exit(2);
   });
 
+  // @ts-expect-error
   run(__dirname, launchConfig);
 }
 

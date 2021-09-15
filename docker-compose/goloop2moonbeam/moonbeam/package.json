@@ -12,7 +12,7 @@
     "@types/yargs": "^15.0.12"
   },
   "scripts": {
-    "launch": "ts-node launch"
+    "launch": "ts-node src/launch"
   },
   "author": "",
   "license": "Apache-2.0"
