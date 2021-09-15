@@ -25,22 +25,12 @@ public class TypeDecoder {
         return uint;
     }
 
-    public static String getString() {
-        int serLen = getUint().intValue();
-        int totalLen = (serLen / 32 + 1) * 32;
-        String str = new String(slice(serLen));
-        slice(totalLen - serLen);
-        return str;
-    }
-
     public static byte[] getBytes() {
         int serLen = (getUint().intValue());
         int totalLen = (serLen / 32 + 1) * 32;
-        offset = offset + 32;//skiping another 32 bytes : TODO: check what the number is for
-        byte[] bytes = slice(data.length - offset);
+        byte[] bytes = slice(totalLen);
         return bytes;
     }
-
 
     public static byte[] slice(int len) {
         byte[] result = Arrays.copyOfRange(data, offset, len + offset);
@@ -48,4 +38,11 @@ public class TypeDecoder {
         return result;
     }
 
+    public static byte[] getData() {
+        return data;
+    }
+
+    public static int getOffset() {
+        return offset;
+    }
 }

@@ -19,6 +19,27 @@ public class EventDataBTPMessage {
     }
 
 
+    public static EventDataBTPMessage fromBytes(byte[] serialized) {
+        if (serialized == null)
+            return null;
+        TypeDecoder typeDecoder = new TypeDecoder(serialized, 0);
+        BigInteger _nextPos = TypeDecoder.getUint();
+        //sequence
+        BigInteger _seq = TypeDecoder.getUint();
+        BigInteger _msgPos = TypeDecoder.getUint();
+        if (_nextPos.intValue() != typeDecoder.getOffset()) {
+            throw new AssertionError("Event BTP Data, Next position Invalid" + _nextPos.toString() + "; expected: " + typeDecoder.getOffset());
+        }
+        //Next_bmc
+        String _nxt_bmc = new String(TypeDecoder.getBytes());
+        if (_msgPos.intValue() != typeDecoder.getOffset()) {
+            throw new AssertionError("Event BTP Data, Msg position Invalid" + _nextPos.toString() + "; expected: " + typeDecoder.getOffset());
+        }
+        //Msg
+        byte[] _msg = TypeDecoder.getBytes();
+        return new EventDataBTPMessage(_nxt_bmc, _seq, _msg);
+    }
+
     public static EventDataBTPMessage fromBytes(byte[] indexedValue, byte[] serialized) {
         if (serialized == null)
             return null;
@@ -26,7 +47,6 @@ public class EventDataBTPMessage {
         //next_bmc
         String next_bmc = HexConverter.bytesToHex(indexedValue);
         TypeDecoder typeDecoder = new TypeDecoder(serialized, 0);
-
         //seq
         BigInteger seq = TypeDecoder.getUint();
         //String test = TypeDecoder.getString();
