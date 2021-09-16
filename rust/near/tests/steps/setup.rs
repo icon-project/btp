@@ -1,22 +1,15 @@
-use futures::executor::LocalPool;
+use lazy_static::lazy_static;
+
 use test_helper::{
-    actions::deploy_contract,
-    types::{Context, Signer},
+    types::{Context, Contract},
 };
 
-const BMC_CONTRACT: &str = "res/BMC_CONTRACT.wasm";
-const BMV_CONTRACT: &str = "res/BMV_CONTRACT.wasm";
-const GENERIC_BSH_CONTRACT: &str = "res/GENERIC_BSH_CONTRACT.wasm";
-const BSH_CONTRACT: &str = "res/BSH_CONTRACT.wasm";
-
-fn bmc_contract_deployed(mut context: Context) -> Context {
-    let mut pool = LocalPool::new();
-    let (account_id, signer) =
-        pool.run_until(async { deploy_contract(BMC_CONTRACT).await.unwrap() });
-    let contract_owner = Signer::new(account_id, signer);
-    context.contracts.add("bmc", &contract_owner);
-    context
+lazy_static! {
+    pub static ref BMC_CONTRACT: Contract<'static> = Contract::new("bmc", "res/BMC_CONTRACT.wasm");
+    pub static ref BMV_CONTRACT: Contract<'static> = Contract::new("bmv", "res/BMV_CONTRACT.wasm");
+    pub static ref GENERIC_BSH_CONTRACT: Contract<'static> = Contract::new("bsh", "res/GENERIC_BSH_CONTRACT.wasm");
+    pub static ref BSH_CONTRACT: Contract<'static> = Contract::new("bsh", "res/BSH_CONTRACT.wasm");
 }
 
 pub static NEW_CONTEXT: fn() -> Context = || Context::new();
-pub static BMC_CONTRACT_DEPLOYED: fn(Context) -> Context = bmc_contract_deployed;
+pub static BMC_CONTRACT_DEPLOYED: fn(Context) -> Context = |context: Context| BMC_CONTRACT.deploy_contract(context);

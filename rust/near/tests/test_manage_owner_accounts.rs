@@ -15,10 +15,8 @@ mod manage_owner_accounts {
                 .and(BMC_CONTRACT_DEPLOYED)
                 .when(USER_INVOKES_ADD_OWNER)
                 .then(|_| {
-                    assert_eq!(true, true); // we assert on our Option<&str>
+                    assert_eq!(true, true);
                 });
-            // Deploy Smart Contracts
-            // deploy_bmc_contract
         }
 
         #[test]

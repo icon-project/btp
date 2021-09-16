@@ -1,5 +1,7 @@
-use crate::types::{Context};
+use crate::types::{Context, Contract};
 
-pub fn add_owner(context: Context) {
-
+impl Contract<'_> {
+    pub fn add_owner(&self, context: Context) -> Context {
+        context
+    }
 }

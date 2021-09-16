@@ -11,3 +11,4 @@ near-crypto = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5
 tokio = { version = "^1.6.0", features = ["full"] }
 chrono = "0.4.19"
 rand = "0.8.4"
+futures = "0.3.17"

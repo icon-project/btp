@@ -3,7 +3,7 @@ pub use context::Context;
 mod signer;
 pub use signer::Signer;
 mod contract;
-pub use contract::Contracts;
+pub use contract::{Contract, Contracts};
 
 // pub mod types {
 //     use super::*;
