@@ -11,9 +11,9 @@ mod manage_owner_accounts {
 
         #[runner::test(sandbox)]
         async fn add_new_owner_as_authorized_success() {
-            Kitten::given(new_context)
-                .and(bmc_contract_deployed)
-                .when(|hello_world| Some(hello_world))
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_DEPLOYED)
+                .when(USER_INVOKES_ADD_OWNER)
                 .then(|_| {
                     assert_eq!(true, true); // we assert on our Option<&str>
                 });

@@ -11,6 +11,7 @@ members = [
     "bsh/bsh-periphery",
     "bsh/bsh-token",
     "libraries",
+    "test-helper"
 ]
 
 [features]
@@ -21,15 +22,15 @@ bmc = { path = "./bmc" }
 bsh-periphery = { path = "./bsh/bsh-periphery" }
 libraries = { path = "./libraries" }
 bsh-token = { path = "./bsh/bsh-token" }
+test-helper = { path = "./test-helper" }
 near-sdk = "3.1.0"
 near-sdk-sim = "3.2.0"
 lazy_static = "1.4.0"
 kitten = "^0.2.0"
 near-crypto = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
-chrono = "0.4.19"
-rand = "0.8.4"
 runner = { git = "https://github.com/HugoByte/runner-rs.git"}
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "^1.6.0", features = ["full"] }
+futures = "0.3.17"
 
 [profile.release]
 lto = true

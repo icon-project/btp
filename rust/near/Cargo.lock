@@ -2528,15 +2528,15 @@ dependencies = [
  "bmc",
  "bsh-periphery",
  "bsh-token",
- "chrono",
+ "futures",
  "kitten",
  "lazy_static",
  "libraries",
  "near-crypto 0.1.0 (git+https://github.com/near/nearcore?rev=84ae110d99d26a5638d4aaca2ddaf08d048e0920)",
  "near-sdk",
  "near-sdk-sim",
- "rand 0.8.4",
  "runner",
+ "test-helper",
  "tokio",
 ]
 
@@ -4811,6 +4811,17 @@ dependencies = [
  "redox_syscall 0.2.10",
  "remove_dir_all",
  "winapi",
+]
+
+[[package]]
+name = "test-helper"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "near-crypto 0.1.0 (git+https://github.com/near/nearcore?rev=84ae110d99d26a5638d4aaca2ddaf08d048e0920)",
+ "rand 0.8.4",
+ "runner",
+ "tokio",
 ]
 
 [[package]]
