@@ -7,7 +7,6 @@ import score.Context;
 import scorex.util.HashMap;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -130,8 +129,11 @@ public class Trie {
             lastNode.setValue(value);
             stack.add(lastNode); // push
         } else if(lastNode instanceof TrieNode.BranchNode) {
+            stack.add(lastNode);
            if (keyRemainder.length != 0) {
                 // add an extension to a branch node
+               keyRemainder = ArraysUtil.copyOfRangeByte(keyRemainder, 1, keyRemainder.length);
+               stack.add(new TrieNode.LeafNode(keyRemainder, value));
             } else {
                 lastNode.setValue(value);
             }
@@ -160,8 +162,11 @@ public class Trie {
                     byte[][] flatten = {raw.get(0)[0], raw.get(1)[0]};
                     newBranchNode.setBranch(branchKey, flatten);
                 } else {
-                    newBranchNode.setValue(value);
+                    formatNode(lastNode, false, opStack, true);
+                    newBranchNode.setBranch(branchKey, ((TrieNode.ExtensionNode)lastNode).getValues());
                 }
+            }  else {
+                newBranchNode.setValue(value);
             }
 
             if (keyRemainder.length != 0) {
@@ -199,7 +204,6 @@ public class Trie {
             lastRoot = formatNode(node, stack.size() == 0, toSave, false);
         }
 
-        System.out.println(HexConverter.bytesToHex(lastRoot.get(0)[0]));
         if (lastRoot != null) {
             this.root = lastRoot.get(0)[0];
         }

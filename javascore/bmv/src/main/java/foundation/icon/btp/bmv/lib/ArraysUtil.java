@@ -22,4 +22,11 @@ public class ArraysUtil {
         return copy;
     }
 
+    public static byte[] concat(byte[] left, byte[] right) {
+        byte[] c = new byte[left.length + right.length];
+        System.arraycopy(left, 0, c, 0, left.length);
+        System.arraycopy(right, 0, c, left.length, right.length);
+        return c;
+    }
+
 }

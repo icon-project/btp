@@ -15,7 +15,6 @@ public abstract class TrieNode {
     public abstract byte[] getKey();
     public abstract void setKey(byte[] key);
     public abstract byte[] encodeRLP();
-    //public abstract Pair<byte[][], byte[]> getRaw();
     public abstract List<byte[][]> getRaw();
     public abstract byte[] getValue();
     public abstract void setValue(byte[] value);
@@ -70,9 +69,7 @@ public abstract class TrieNode {
 
         while (reader.hasNext())
             try {
-                //raw.add(reader.readByteArray());
                 raw.add(new byte[][]{reader.readNullable(byte[].class)});
-                //new byte[][]{reader.readNullable(byte[].class)};
             } catch (IllegalStateException e) {
                 break;
             }
@@ -81,19 +78,14 @@ public abstract class TrieNode {
             reader.beginList();
             List<byte[][]> lst = new ArrayList<>();
             while (reader.hasNext()) {
-
                 try {
                     reader.readNullable(byte[].class);
                     lst.add(new byte[][]{});
                 } catch(IllegalStateException e) {
                     reader.beginList();
                     lst.add(new byte[][]{reader.readByteArray(), reader.readByteArray()});
-                    //raw.add(reader.readByteArray());
-                    //raw.add(new byte[][]{reader.readByteArray());
-
                     reader.end();
                 }
-
             }
             raw.add(lst);
             reader.end();
@@ -106,8 +98,7 @@ public abstract class TrieNode {
 
     public static class BranchNode extends TrieNode {
         private byte[] value;
-        //private byte[][] branches;
-        private List<byte[][]> branches;
+        private  List<Value> branches;
 
         public BranchNode() {
             this.branches = new ArrayList<>(16);
@@ -120,9 +111,12 @@ public abstract class TrieNode {
         public BranchNode(List<byte[][]> _branches) {
             this.branches = new ArrayList<>(16);
             for(int i=0; i < 16; i++) {
-                this.branches.add(_branches.get(i));
+                if(_branches.get(i) == null || _branches.get(i).length == 0)
+                    this.branches.add(null);
+                else
+                    this.branches.add(new Value(_branches.get(i)));
             }
-            if (branches.get(0) != null && branches.get(0).length > 0)
+            if (_branches.get(0) != null && _branches.get(0).length > 0)
                 this.value = _branches.get(16)[0];
         }
 
@@ -137,21 +131,28 @@ public abstract class TrieNode {
         }
 
         public byte[][] getBranch(int index) {
-            return branches.get(index);
+            if (branches.get(index) == null)
+                return null;
+            return branches.get(index).first();
         }
 
         public void setBranch(int index, byte[][] branch) {
-            this.branches.set(index, branch);
+            this.branches.set(index, new Value(branch));
         }
 
-        public List<Pair<Integer, byte[]>> getChildren() {
-            List<Pair<Integer, byte[]>> children = new ArrayList<Pair<Integer, byte[]>>();
+        public void setBranch(int index, List<byte[][]> branch) {
+            this.branches.set(index, new Value(branch));
+        }
+
+        public List<Value> getChildren() {
+            /*List<Pair<Integer, byte[]>> children = new ArrayList<Pair<Integer, byte[]>>();
             for(int i = 0; i < 16; i++) {
-                byte[] b = branches.get(i)[0];
+                byte[] b = branches.get(i).first();
                 if (BytesUtil.isEmptyOrNull(b))
                     children.add(Pair.of(i, b));
             }
-            return children;
+            return children;*/
+            return null;
         }
 
         @Override
@@ -166,8 +167,11 @@ public abstract class TrieNode {
         @Override
         public List<byte[][]> getRaw() {
             List<byte[][]> raw = new ArrayList<>();
-            for(byte[][] b : branches){
-                raw.add(b);
+            for(Value b : branches){
+                if (b == null)
+                    raw.add(null);
+                else
+                    raw.add(b.first());
             }
             if (value != null)
                 raw.add(new byte[][]{value});
@@ -189,13 +193,13 @@ public abstract class TrieNode {
         public byte[] encodeRLP() {
             ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
             writer.beginNullableList(17);
-            for (byte[][] branch : branches){
-                if (branch == null || branch.length == 0) {
+            for (Value branch : branches){
+                if (branch == null || branch.isEmpty()) {
                     writer.write(new byte[]{});
                 } else {
                     writer.beginList(2);
-                    writer.writeNullable(branch[0]);
-                    writer.writeNullable(branch[1]);
+                    writer.writeNullable(branch.first()[0]);
+                    writer.writeNullable(branch.first()[1]);
                     writer.end();
                 }
             }
@@ -206,7 +210,7 @@ public abstract class TrieNode {
             writer.end();
             return writer.toByteArray();
         }
-     }
+    }
 
     public static class ExtensionNode extends TrieNode {
         private byte[] nibbles;
