@@ -22,4 +22,12 @@ impl Signer {
     pub fn new(account_id: String, signer: InMemorySigner) -> Signer {
         Signer { signer, account_id }
     }
+
+    pub fn account_id(&self) -> &String {
+        &self.account_id
+    }
+
+    pub fn signer(&self) -> &InMemorySigner {
+        &self.signer
+    }
 }
