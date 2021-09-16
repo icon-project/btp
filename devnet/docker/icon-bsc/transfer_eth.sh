@@ -2,7 +2,7 @@
 
 source /btpsimple/bin/provision.sh 
 #TODO: temp remove this later, updating the seq number to match
-bsc_updateRxSeq
+#bsc_updateRxSeq
 
 # ensure alice user keystore creation
 source /btpsimple/bin/keystore.sh 
