@@ -9,10 +9,10 @@ export SCRIPTS_DIR=${SCRIPTS_DIR:-${BTPSIMPLE_SCRIPTS_DIR}}
 
 export BSC_NID="0x97"
 export BSC_BMC_NET="0x97.bsc"
-export BSC_RPC_URI=http://goloop:9080/api/v3/icon
 
 # configure env in the container
 export GOLOOP_RPC_URI=http://goloop:9080/api/v3/icon
+export GOLOOP_RPC_ADMIN_URI=http://goloop:9080/admin/system
 export GOLOOP_CONFIG=$CONFIG_DIR/goloop.server.json
 export GOLOOP_KEY_STORE=$CONFIG_DIR/goloop.keystore.json
 export GOLOOP_KEY_SECRET=$CONFIG_DIR/goloop.keysecret
@@ -55,21 +55,14 @@ deploy_solidity_bmv() {
   cd $CONTRACTS_DIR/solidity/bmv
   rm -rf contracts/test build .openzeppelin
   npm install --legacy-peer-deps
-  LAST_BOCK=$(goloop_lastblock)
-  LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
-  LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
-  echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
-  echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
-  echo $LAST_HASH > $CONFIG_DIR/last.hash.icon
-  ICON_RELAY_USER=$(cat  $CONFIG_DIR/goloop.keystore.json | jq -r .address)
 
   BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.periphery.bsc) \
   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
   BMV_ICON_ENCODED_VALIDATORS=0xd69500275c118617610e65ba572ac0a621ddd13255242b \
-  BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
+  BMV_ICON_INIT_OFFSET=$(cat $CONFIG_DIR/offset.icon) \
   BMV_ICON_INIT_ROOTSSIZE=8 \
   BMV_ICON_INIT_CACHESIZE=8 \
-  BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
+  BMV_ICON_LASTBLOCK_HASH=$(cat $CONFIG_DIR/last.hash.icon) \
   truffle migrate --compile-all --network bscDocker
 
   jq -r '.networks[] | .address' build/contracts/BMV.json > $CONFIG_DIR/bmv.bsc
@@ -237,6 +230,13 @@ bmc_javascore_addVerifier() {
 bmc_javascore_addLink() {
   echo "Adding bsc link"
   cd $CONFIG_DIR
+  LAST_BOCK=$(goloop_lastblock)
+  LAST_HEIGHT=$(echo $LAST_BOCK | jq -r .height)
+  LAST_HASH=0x$(echo $LAST_BOCK | jq -r .block_hash)
+  echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
+  echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
+  echo $LAST_HASH > $CONFIG_DIR/last.hash.icon
+  
   goloop rpc sendtx call --to $(cat bmc.icon) \
   --method addLink \
   --param _link=$(cat btp.bsc) | jq -r . > tx.addLink.icon
@@ -424,5 +424,6 @@ wait_for_file() {
     echo "waiting for the output file: $FILE_NAME"
   done
 }
+wait-for-it.sh $GOLOOP_RPC_ADMIN_URI
 # run provisioning
 provision

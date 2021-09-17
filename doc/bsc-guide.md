@@ -8,7 +8,7 @@ This document provides guide for Binance Smart Chain BTP development environment
 
 ### Requirements
 
-- GoLang 1.13+  
+- GoLang 1.16
 - OpenJDK 11
 - Docker
 - Goloop 0.9.7 (build from source)
@@ -58,6 +58,11 @@ navigate to btp directory
 make
 ```
 
+Note: 
+- In case make fails with "missing go.sum entry" with go-ethereum, it can be fixed by manually adding `go mod download github.com/ethereum/go-ethereum`.
+
+- If running `make` after the above command still encounters several "missing go.sum entry", running `go mod tidy` will fix the errors, then proceed with `make`.
+
 ### Build JavaScore Contracts
 from btp directory, run
 ```
@@ -94,7 +99,7 @@ Build with docker-compose using the following script
 
 Once build is complete, start docker-compose
 ```
-docker-compose up
+docker-compose up -d
 ```
 If all successful, this should start docker network containing provisioned
 goloop, binance smart chain and BSC ICON BTP relayer.
