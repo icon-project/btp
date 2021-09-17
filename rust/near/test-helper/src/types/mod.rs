@@ -3,8 +3,6 @@ pub use context::Context;
 mod signer;
 pub use signer::Signer;
 mod contract;
-pub use contract::{Contract, Contracts};
+pub use contract::{BmcContract, BmvContract, BshContract, Contract, Bmc, Bmv, Bsh};
 
-// pub mod types {
-//     use super::*;
-// }
+pub(crate) use contract::Contracts;

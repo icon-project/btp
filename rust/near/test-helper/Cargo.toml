@@ -12,3 +12,4 @@ tokio = { version = "^1.6.0", features = ["full"] }
 chrono = "0.4.19"
 rand = "0.8.4"
 futures = "0.3.17"
+duplicate = "0.3.0"

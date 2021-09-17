@@ -1,6 +1,12 @@
-use crate::types::{Context, Contract};
+use crate::types::{Context, Contract, Bmc, Bsh};
+use duplicate::duplicate;
 
-impl Contract<'_> {
+#[duplicate(
+    contract_type;
+    [ Bmc ];
+    [ Bsh ];
+)]
+impl Contract<'_, contract_type> {
     pub fn add_owner(&self, context: Context) -> Context {
         context
     }
