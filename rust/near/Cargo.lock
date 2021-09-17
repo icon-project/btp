@@ -4832,6 +4832,7 @@ dependencies = [
  "near-crypto 0.1.0 (git+https://github.com/near/nearcore?rev=84ae110d99d26a5638d4aaca2ddaf08d048e0920)",
  "rand 0.8.4",
  "runner",
+ "serde_json",
  "tokio",
 ]
 

@@ -10,10 +10,11 @@ mod manage_owner_accounts {
         use super::*;
 
         #[runner::test(sandbox)]
-        async fn add_new_owner_as_authorized_success() {
+        async fn add_new_owner_as_bmc_contract_owner_success() {
             Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_DEPLOYED)
-                .when(USER_INVOKES_ADD_OWNER)
+                .and(BMC_CONTRACT_IS_DEPLOYED)
+                .and(NEW_OWNER_IS_PROVIDED)
+                .when(BMC_CONTRACT_OWNER_INVOKES_ADD_OWNER)
                 .then(|_| {
                     assert_eq!(true, true);
                 });
