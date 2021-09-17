@@ -8,7 +8,7 @@ DIST_DIR=build/contracts/javascore
 build_image() {
     echo $BASE_DIR
 
-    mkdir ${DIST_DIR}
+    mkdir -p ${DIST_DIR}
 
     docker build -f ./docker/javascore/Dockerfile . --tag btp/javascore:latest
     docker create -ti --name javascore-dist -i btp/javascore
