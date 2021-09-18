@@ -3,6 +3,6 @@ pub use context::Context;
 mod signer;
 pub use signer::Signer;
 mod contract;
-pub use contract::{BmcContract, BmvContract, BshContract, Contract, Bmc, Bmv, Bsh};
+pub use contract::{Bmc, BmcContract, Bmv, BmvContract, Bsh, BshContract, Contract};
 
 pub(crate) use contract::Contracts;

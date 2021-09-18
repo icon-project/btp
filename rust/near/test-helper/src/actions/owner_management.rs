@@ -1,6 +1,6 @@
-use crate::types::{Context, Contract, Bmc, Bsh};
-use duplicate::duplicate;
 use crate::invoke_call;
+use crate::types::{Bmc, Bsh, Context, Contract};
+use duplicate::duplicate;
 
 #[duplicate(
     contract_type;
