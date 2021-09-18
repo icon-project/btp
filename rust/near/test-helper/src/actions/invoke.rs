@@ -42,8 +42,7 @@ pub fn view(contract_id: &str, method: &str, value: Value) -> serde_json::Value 
 #[macro_export]
 macro_rules! invoke_call {
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
-        use crate::actions::call;
-        call(
+        crate::actions::call(
             $context.signer().get(),
             $context.signer().account_id(),
             $context.contracts.get($self.name()).account_id(),
@@ -56,8 +55,7 @@ macro_rules! invoke_call {
 #[macro_export]
 macro_rules! invoke_view {
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
-        use crate::actions::view;
-        view(
+        crate::actions::view(
             $context.contracts.get($self.name()).account_id(),
             $method,
             $context.$param($method),
