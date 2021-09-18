@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 runner = { git = "https://github.com/HugoByte/runner-rs.git"}
 near-crypto = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
+near-primitives = { git = "https://github.com/near/nearcore", rev = "84ae110d99d26a5638d4aaca2ddaf08d048e0920" }
 tokio = { version = "^1.6.0", features = ["full"] }
 chrono = "0.4.19"
 rand = "0.8.4"

@@ -33,11 +33,11 @@ impl Context {
         self.method_responses.insert(key.to_string(), value);
     }
 
-    pub fn method_params(&self, key: &str) -> &Value {
-        self.method_params.get(key).unwrap()
+    pub fn method_params(&self, key: &str) -> Value {
+        self.method_params.get(key).unwrap_or(&Value::default()).to_owned()
     }
 
-    pub fn method_responses(&self, key: &str) -> &Value {
-        self.method_responses.get(key).unwrap()
+    pub fn method_responses(&self, key: &str) -> Value {
+        self.method_responses.get(key).unwrap_or(&Value::default()).to_owned()
     }
 }
