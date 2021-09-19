@@ -2545,6 +2545,7 @@ dependencies = [
  "near-sdk",
  "near-sdk-sim",
  "runner",
+ "serde_json",
  "test-helper",
  "tokio",
 ]
