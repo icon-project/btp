@@ -14,6 +14,10 @@ impl Contracts {
     pub fn get(&self, name: &str) -> &Signer {
         self.0.get(name).unwrap()
     }
+
+    pub fn as_mut(&mut self) -> &mut Self {
+        self
+    }
 }
 
 pub struct Contract<'a, T> {

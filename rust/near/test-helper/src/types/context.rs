@@ -4,7 +4,8 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct Context {
-    pub contracts: Contracts,
+    contracts: Contracts,
+    accounts: Accounts,
     signer: Signer,
     method_params: HashMap<String, Value>,
     method_responses: HashMap<String, Value>,
@@ -15,6 +16,22 @@ impl Context {
         Context {
             ..Default::default()
         }
+    }
+
+    pub fn contracts(&self) -> &Contracts {
+        &self.contracts
+    }
+
+    pub fn contracts_mut(&mut self) -> &mut Contracts {
+        self.contracts.as_mut()
+    }
+
+    pub fn accounts(&self) -> &Accounts {
+        &self.accounts
+    }
+
+    pub fn accounts_mut(&mut self) -> &mut Accounts {
+        self.accounts.as_mut()
     }
 
     pub fn signer(&self) -> &Signer {
