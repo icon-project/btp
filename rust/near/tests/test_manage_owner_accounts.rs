@@ -13,11 +13,12 @@ mod manage_owner_accounts {
         async fn add_new_owner_as_bmc_contract_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(NEW_OWNER_IS_PROVIDED)
-                .when(BMC_CONTRACT_OWNER_INVOKES_ADD_OWNER)
-                .then(|_| {
-                    assert_eq!(true, true);
-                });
+                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .then(ON_QUERYING_OWNERS_IN_BMC)
+                .and(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST);
         }
 
         #[test]
@@ -30,9 +31,17 @@ mod manage_owner_accounts {
             unimplemented!();
         }
 
-        #[test]
-        fn remove_owner_as_authorized_success() {
-            unimplemented!();
+        #[runner::test(sandbox)]
+        async fn remove_owner_as_authorized_success() {
+            Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED)
+            .and(ALICE_IS_BMC_CONTRACT_OWNER)
+            .and(CHARLIES_ACCOUNT_IS_CREATED)
+            .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+            .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+            .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+            .then(ON_QUERYING_OWNERS_IN_BMC)
+            .and(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST);
         }
 
         #[test]

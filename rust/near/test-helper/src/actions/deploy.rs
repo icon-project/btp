@@ -7,6 +7,8 @@ use std::path::Path;
 use tokio::time::{sleep, Duration};
 
 pub async fn deploy(path: &str) -> Result<(String, InMemorySigner), String> {
+    // Wait is addeded to wait until the sandbox starts up
+    // TODO: Use api to query status of the sandbox
     sleep(Duration::from_millis(18000)).await;
     dev_deploy(Path::new(path)).await
 }
@@ -22,7 +24,7 @@ impl Contract<'_, contract_type> {
         let mut pool = LocalPool::new();
         let (_, signer) = pool.run_until(async { deploy(self.source()).await.unwrap() });
         let contract_owner = Signer::new(signer);
-        context.contracts.add(self.name(), &contract_owner);
+        context.contracts_mut().add(self.name(), &contract_owner);
         context
     }
 }
