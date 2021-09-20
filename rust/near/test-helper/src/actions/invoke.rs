@@ -21,8 +21,7 @@ pub fn call(
             value
                 .unwrap_or_default()
                 .to_string()
-                .try_to_vec()
-                .unwrap_or_default(),
+                .into_bytes(),
             None,
         )
         .await
@@ -40,8 +39,7 @@ pub fn view(contract_id: &str, method: &str, value: Option<Value>) -> serde_json
                 value
                     .unwrap_or_default()
                     .to_string()
-                    .try_to_vec()
-                    .unwrap_or_default(),
+                    .into_bytes(),
             ),
         )
         .await
