@@ -424,6 +424,7 @@ wait_for_file() {
     echo "waiting for the output file: $FILE_NAME"
   done
 }
-wait-for-it.sh $GOLOOP_RPC_ADMIN_URI
+chmod 777 /btpsimple/bin/wait-for-it.sh
+/btpsimple/bin/wait-for-it.sh $GOLOOP_RPC_ADMIN_URI
 # run provisioning
 provision
