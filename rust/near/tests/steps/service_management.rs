@@ -5,7 +5,7 @@ use test_helper::types::Context;
 pub static SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_ADD_SERVICE_PARAM: fn(
     Context,
 ) -> Context = |mut context: Context| {
-    let address = context.contracts().get("bmc").account_id();
+    let address = context.contracts().get("bmc").account_id().clone();
     context.add_method_params(
         "add_service",
         json!({
