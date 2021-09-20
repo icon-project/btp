@@ -25,7 +25,7 @@ The provisioned btp-icon image already holds the script to initiate token transf
 		getBalance
 4. From  `/btpsimple/config` dir 
 
-      	 /btpsimple/bin/transfer_eth.sh
+      	 source /btpsimple/bin/transfer_eth.sh
 This should initate transfer `10 ETH` tokens from alice to address in bsc.ks.json of the binance smart chain & store the transaction json in  `tx.transfer` file
 
 Check the balance of the BSC user using the getBalance after the script run to ensure the transfer completion.
