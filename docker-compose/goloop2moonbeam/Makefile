@@ -1,7 +1,6 @@
 clean:
 	docker-compose down -v --remove-orphans
-	rm -rf data
-	rm -rf config
+	rm -rf data config
 
 build:
 	docker-compose build

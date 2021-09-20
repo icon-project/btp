@@ -14,8 +14,8 @@ deploy_solidity_bmc() {
     cat ./build/contracts/BMCPeriphery.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_periphery.json
 
     BMC_PRA_NET=$(cat $CONFIG_DIR/net.btp.moonbeam) \
-    truffle migrate --network moonbeamlocal
-    truffle exec $SCRIPT_DIR/mb_extract_bmc.js --network moonbeamlocal
+    truffle migrate --network moonbaselocal
+    truffle exec $SCRIPT_DIR/mb_extract_bmc.js --network moonbaselocal
 
     wait_file_created $CONFIG_DIR bmc.moonbeam
     echo "btp://$(cat $CONFIG_DIR/net.btp.moonbeam)/$(cat $CONFIG_DIR/bmc.moonbeam)" > $CONFIG_DIR/btp.moonbeam
@@ -38,9 +38,9 @@ deploy_solidity_bsh() {
     BSH_FIXED_FEE=50000 \
     BMC_PERIPHERY_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
     BSH_SERVICE=nativecoin \
-    truffle migrate --network moonbeamlocal
+    truffle migrate --network moonbaselocal
 
-    truffle exec $SCRIPT_DIR/mb_extract_bsh.js --network moonbeamlocal
+    truffle exec $SCRIPT_DIR/mb_extract_bsh.js --network moonbaselocal
     wait_file_created $CONFIG_DIR bsh.moonbeam
 }
 
@@ -81,9 +81,9 @@ deploy_solidity_bmv() {
     BMV_ICON_INIT_ROOTSSIZE=8 \
     BMV_ICON_INIT_CACHESIZE=8 \
     BMV_ICON_LASTBLOCK_HASH=$LAST_HASH \
-    truffle migrate --network moonbeamlocal
+    truffle migrate --network moonbaselocal
 
-    truffle exec $SCRIPT_DIR/mb_extract_bmv.js --network moonbeamlocal
+    truffle exec $SCRIPT_DIR/mb_extract_bmv.js --network moonbaselocal
     wait_file_created $CONFIG_DIR bmv.moonbeam
 }
 
@@ -96,7 +96,7 @@ moonbeam_bmc_addVerifier() {
     
     ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
     BMV_MOONBEAM=$(cat $CONFIG_DIR/bmv.moonbeam) \
-    truffle exec mb_bmc_add_verifier.js --network moonbeamlocal
+    truffle exec mb_bmc_add_verifier.js --network moonbaselocal
 }
 
 moonbeam_bmc_addLink() {
@@ -106,7 +106,7 @@ moonbeam_bmc_addLink() {
     cp $SCRIPT_DIR/mb_bmc_add_link.js .
 
     ICON_BTP_ADDRESS=$(cat $CONFIG_DIR/btp.icon) \
-    truffle exec mb_bmc_add_link.js --network moonbeamlocal
+    truffle exec mb_bmc_add_link.js --network moonbaselocal
 }
 
 moonbeam_bmc_addService() {
@@ -118,14 +118,14 @@ moonbeam_bmc_addService() {
     BSH_MOONBEAM=$(cat $CONFIG_DIR/bsh.moonbeam) \
     ICON_BTP_ADDRESS=$(cat $CONFIG_DIR/btp.icon) \
     RELAY_ADDRESS=0x$(cat $CONFIG_DIR/moonbeam.keystore.json | jq -r .address) \
-    truffle exec mb_bmc_add_service.js --network moonbeamlocal
+    truffle exec mb_bmc_add_service.js --network moonbaselocal
 }
 
 moonbeam_bsh_registerCoin() {
     echo "moonbeam_bsh_registerCoin"
     cd $SOLIDITY_DIST_DIR/bsh
     cp $SCRIPT_DIR/mb_bsh_register_coin.js .
-    truffle exec mb_bsh_register_coin.js --network moonbeamlocal
+    truffle exec mb_bsh_register_coin.js --network moonbaselocal
 }
 
 clean_solidity_build() {
