@@ -3,20 +3,23 @@ package foundation.icon.btp.bmv.lib.mpt;
 import foundation.icon.btp.bmv.lib.ArraysUtil;
 import foundation.icon.btp.bmv.lib.BytesUtil;
 import foundation.icon.btp.bmv.lib.HexConverter;
+import foundation.icon.btp.bmv.lib.Pair;
 import score.Context;
-import scorex.util.HashMap;
+//import scorex.util.HashMap;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 public class Trie {
 
+    /**
+     *   Merkle root of an empty tree, which the Keccak hash of an empty byte sequence.
+     */
     private static final byte[] EMPTY_HASH = HexConverter
             .hexStringToByteArray("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
 
     private byte[] root = null;
-    private final Map<byte[], byte[]> db = new HashMap<>();
+    private final Map<ByteBuffer, byte[]> db = new HashMap<>();
 
     public Trie() {
         this.root = EMPTY_HASH;
@@ -29,7 +32,7 @@ public class Trie {
     private void createInitialNode(byte[] key, byte[] value) {
        var node = new TrieNode.LeafNode(Nibbles.bytesToNibbles(key), value);
        this.root = node.hash();
-       this.db.put(this.root, node.encodeRLP());
+       this.db.put(ByteBuffer.wrap(this.root), node.encodeRLP());
     }
 
     public void put(byte[] key, byte[] value) throws MPTException {
@@ -43,7 +46,23 @@ public class Trie {
         }
     }
 
+    public byte[] get(byte[] key) throws MPTException {
+        Path path = findPath(key);
+        //byte[] value = null;
+        if(path.node != null && path.remaining.length == 0){
+           return path.node.getValue();
+        }
+        return null;
+    }
+
     private void delete(byte[] key){
+    }
+
+    public static byte[] createProof(Trie trie, byte[] key){
+        return null;
+    }
+
+    public static void verifyProof(byte[] hashRoot, byte[] key, Object proof) {
     }
 
     private static class Path{
@@ -57,7 +76,7 @@ public class Trie {
         }
     }
 
-    private Path findPath(byte[] key) throws MPTException {
+    public Path findPath(byte[] key) throws MPTException {
         byte[] targetKey = Nibbles.bytesToNibbles(key);
         TrieNode node = lookupNode(root);
         List<TrieNode> stack = new ArrayList<>();
@@ -95,14 +114,38 @@ public class Trie {
             if(matchingLen != node.getKey().length) {
                return new Path(null, keyRemainder, stack);
             } else {
-                var childKey = new byte[]{node.getKey()[0]};
-                childKey = ArraysUtil.concat(currentKey, childKey);
-                List nodeRef = ((TrieNode.ExtensionNode)node).getValues();
-                TrieNode childNode = lookupNode(nodeRef);
-                return _findPath(childNode, key, childKey, stack);
+                return childrenPath(node, currentKey, key, stack);
             }
         }
 
+        return null;
+    }
+
+    private Path childrenPath(TrieNode node, byte[] key, byte[] currentKey, List<TrieNode> stack) throws MPTException {
+        List<Pair<byte[], Object>> children = new ArrayList<>();
+        if (node instanceof TrieNode.ExtensionNode) {
+            Pair<byte[], Object> value;
+            if (node.getValue() != null)
+                value = Pair.of(node.getKey(), node.getValue());
+            else {
+                value = Pair.of(node.getKey(), ((TrieNode.ExtensionNode)node).getValues());
+            }
+            children.add(value);
+        } else if(node instanceof TrieNode.BranchNode){
+            //children = node.getChildren().map((b) => [[b[0]], b[1]])
+        }
+        for(Pair<byte[], Object> child:children){
+            //_findPath(childNode, key, childKey, stack);
+            var childKey = child.key;
+            childKey = ArraysUtil.concat(key, childKey);
+            TrieNode childNode = null;
+            if(child.value instanceof byte[]){
+                childNode = lookupNode((byte[]) child.value);
+            } else if (child.value instanceof List) {
+                childNode = lookupNode((List) child.value);
+            }
+            return _findPath(childNode, currentKey, childKey, stack);
+        }
         return null;
     }
 
@@ -146,8 +189,8 @@ public class Trie {
                 byte[] newKey =  ArraysUtil.copyOfRangeByte(key, 0, matchingLength);
                 TrieNode.ExtensionNode extensionNode = new TrieNode.ExtensionNode(newKey, value);
                 stack.add(extensionNode);
-                lastKey =  ArraysUtil.copyOfRangeByte(lastKey, 1, matchingLength + 1);
-                keyRemainder =  ArraysUtil.copyOfRangeByte(keyRemainder, 1, matchingLength + 1);
+                lastKey = ArraysUtil.copyOfRangeByte(lastKey, matchingLength, lastKey.length);
+                keyRemainder = ArraysUtil.copyOfRangeByte(keyRemainder, matchingLength, keyRemainder.length);
             }
 
             stack.add(newBranchNode);
@@ -170,7 +213,7 @@ public class Trie {
             }
 
             if (keyRemainder.length != 0) {
-                keyRemainder = ArraysUtil.copyOfRangeByte(keyRemainder, 0, keyRemainder.length - 1);
+                keyRemainder = ArraysUtil.copyOfRangeByte(keyRemainder, 1, keyRemainder.length);
                 TrieNode newLeafNode = new TrieNode.LeafNode(keyRemainder, value);
                 stack.add(newLeafNode);
             } else {
@@ -191,7 +234,10 @@ public class Trie {
             else if (node instanceof TrieNode.ExtensionNode) {
                 key = ArraysUtil.copyOfRangeByte(key, 0, key.length - node.getKey().length);
                 if(lastRoot != null){
-                    ((TrieNode.ExtensionNode) node).setValues(lastRoot);
+                    if (lastRoot.size() == 1)
+                        node.setValue(lastRoot.get(0)[0]);
+                    else
+                       ((TrieNode.ExtensionNode) node).setValues(lastRoot);
                 }
             } else if (node instanceof TrieNode.BranchNode) {
                 if(lastRoot != null) {
@@ -230,9 +276,9 @@ public class Trie {
     private void updateDB(List<DBUpdate> stack) {
         for(DBUpdate dbUpdate:stack) {
             switch(dbUpdate.op){
-                case PUT:this.db.put(dbUpdate.key, dbUpdate.rlpNode);
+                case PUT:this.db.put(ByteBuffer.wrap(dbUpdate.key), dbUpdate.rlpNode);
                 break;
-                case DELETE:this.db.remove(dbUpdate.key);
+                case DELETE:this.db.remove(ByteBuffer.wrap(dbUpdate.key));
                 break;
                 default:
             }
@@ -240,7 +286,7 @@ public class Trie {
     }
 
     private TrieNode lookupNode(byte[] bytes) throws MPTException {
-        var value = db.get(bytes);
+        var value = this.db.get(ByteBuffer.wrap(bytes));
         if(value != null) {
             return TrieNode.decode(value);
         } else {

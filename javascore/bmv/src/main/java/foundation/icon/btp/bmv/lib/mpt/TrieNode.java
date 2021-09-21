@@ -1,7 +1,5 @@
 package foundation.icon.btp.bmv.lib.mpt;
 
-import foundation.icon.btp.bmv.lib.BytesUtil;
-import foundation.icon.btp.bmv.lib.Pair;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
@@ -62,6 +60,13 @@ public abstract class TrieNode {
     }
 
     public static TrieNode decode(byte[] serialized) throws MPTException {
+        List<Object> decoded = decodeLeafOrExtension(serialized);
+        if (decoded.get(0) instanceof byte[][] && ((byte[][]) decoded.get(0))[0].length == 0)
+            decoded = decodeBranch(serialized);
+       return decodeRaw(decoded);
+    }
+
+    public static List<Object> decodeLeafOrExtension(byte[] serialized) throws MPTException {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", serialized);
         List<Object> raw = new ArrayList<>();
 
@@ -80,7 +85,7 @@ public abstract class TrieNode {
             while (reader.hasNext()) {
                 try {
                     reader.readNullable(byte[].class);
-                    lst.add(new byte[][]{});
+                    lst.add(null);
                 } catch(IllegalStateException e) {
                     reader.beginList();
                     lst.add(new byte[][]{reader.readByteArray(), reader.readByteArray()});
@@ -91,9 +96,55 @@ public abstract class TrieNode {
             reader.end();
         }
 
+        return raw;
+    }
+
+    public static List<Object> decodeBranch(byte[] serialized) throws MPTException {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", serialized);
+        List<Object> raw = new ArrayList<>();
+
+        reader.beginList();
+
+        while (reader.hasNext())
+            try {
+                raw.add(new byte[][]{reader.readNullable(byte[].class)});
+            } catch (IllegalStateException e) {
+                break;
+            }
+
+        while(reader.hasNext()) {
+            List<byte[][]> branches = new ArrayList<>();
+            try {
+                var val = reader.readNullable(byte[].class);
+                if(val != null && val.length > 0)
+                    branches.add(new byte[][]{val, reader.readByteArray()});
+                else
+                    branches.add(null);
+            } catch(IllegalStateException e) {
+                reader.beginList();
+                branches.add(new byte[][]{reader.readByteArray(), reader.readByteArray()});
+                reader.end();
+            }
+            raw.add(branches);
+        }
+
+        if (raw.size() > 2 && raw.size() < 16) {
+            List<Object> flatten = new ArrayList<>(17);
+            for (int i=0; i < raw.size(); i++){
+                for(byte[][] v : (List<byte[][]>) raw.get(i))
+                    if(v[0].length == 0)
+                        flatten.add(null);
+                    else
+                        flatten.add(v);
+            }
+            for(int i=raw.size();i < 17;i++)
+                flatten.add(null);
+            raw = flatten;
+        }
+
         reader.end();
 
-        return decodeRaw(raw);
+        return raw;
     }
 
     public static class BranchNode extends TrieNode {
@@ -108,16 +159,34 @@ public abstract class TrieNode {
             this.value = null;
         }
 
-        public BranchNode(List<byte[][]> _branches) {
+        public BranchNode(List<Object> _branches) {
             this.branches = new ArrayList<>(16);
             for(int i=0; i < 16; i++) {
-                if(_branches.get(i) == null || _branches.get(i).length == 0)
+                if(_branches.get(i) == null || isEmptyArrayOrList(_branches.get(i)))
                     this.branches.add(null);
-                else
-                    this.branches.add(new Value(_branches.get(i)));
+                else {
+                    if(_branches.get(i) instanceof byte[][])
+                        this.branches.add(new Value((byte[][])_branches.get(i)));
+                    else{
+                        List<byte[][]> val = (List<byte[][]>) _branches.get(i);
+                        this.branches.add(new Value(val));
+                    }
+                }
             }
-            if (_branches.get(0) != null && _branches.get(0).length > 0)
-                this.value = _branches.get(16)[0];
+
+            if (_branches.size() == 17 && _branches.get(16) != null && isEmptyArrayOrList(_branches.get(16)))
+                if(_branches.get(16) instanceof byte[][])
+                   this.value = ((byte[][]) _branches.get(16))[0];
+                else
+                   this.value = ((List<byte[][]>) _branches.get(16)).get(0)[0];
+        }
+
+        private boolean isEmptyArrayOrList(Object arr) {
+            if (arr instanceof byte[][]){
+                return ((byte[][])arr).length == 0;
+            } else {
+                return ((List)arr).size() == 0;
+            }
         }
 
         public static BranchNode fromBytes(byte[][] bytes) {
@@ -194,7 +263,7 @@ public abstract class TrieNode {
             ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
             writer.beginNullableList(17);
             for (Value branch : branches){
-                if (branch == null || branch.isEmpty()) {
+                if (branch == null || branch.isEmpty() || branch.first() == null || branch.first()[0].length == 0) {
                     writer.write(new byte[]{});
                 } else {
                     writer.beginList(2);
@@ -287,7 +356,6 @@ public abstract class TrieNode {
             writer.write(Nibbles.nibblesToBytes(encodedKey()));
             if (value != null) {
                 writer.write(value);
-                writer.end();
             } else if (values != null) {
               writer.beginNullableList(values.size());
               for (int i=0; i < this.values.size(); i++) {
