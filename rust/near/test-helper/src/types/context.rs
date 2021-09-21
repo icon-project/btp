@@ -18,6 +18,10 @@ impl Context {
         }
     }
 
+    pub fn pipe(self, function: fn(Self) -> Self) -> Self {
+        function(self)
+    } 
+
     pub fn contracts(&self) -> &Contracts {
         &self.contracts
     }
