@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+pub use std::collections::HashSet;
 
 use test_helper::{
     types::{Context, BmcContract, BmvContract, BshContract, Contract, Bmc, Bmv, Bsh},
@@ -13,3 +14,4 @@ lazy_static! {
 
 pub static NEW_CONTEXT: fn() -> Context = || Context::new();
 pub static BMC_CONTRACT_IS_DEPLOYED: fn(Context) -> Context = |context: Context| BMC_CONTRACT.deploy(context);
+pub static BSH_CONTRACT_IS_DEPLOYED: fn(Context) -> Context = |context: Context| BSH_CONTRACT.deploy(context);

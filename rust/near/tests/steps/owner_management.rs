@@ -1,6 +1,7 @@
 use super::{BMC_CONTRACT, BSH_CONTRACT};
-use serde_json::json;
+use serde_json::{json,from_value};
 use test_helper::types::Context;
+use super::*;
 
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
@@ -10,13 +11,11 @@ use test_helper::types::Context;
 
 pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
-    assert_eq!(
-        owners,
-        json!([
-            context.accounts().get("alice").account_id(),
-            context.accounts().get("charlie").account_id()
-        ])
-    );
+    
+    
+    let result: HashSet<_> = from_value::<Vec<String>>(owners).unwrap().into_iter().collect();
+    let expected: HashSet<_> = vec![context.accounts().get("alice").account_id().to_string(), context.accounts().get("charlie").account_id().to_string()].into_iter().collect();
+    assert_eq!(result, expected);
 };
 
 pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
@@ -26,6 +25,7 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |cont
         json!([context.accounts().get("alice").account_id()])
     );
 };
+
 
 
 // * * * * * * * * * * * * * *
@@ -42,7 +42,7 @@ pub static ALICE_IS_BMC_CONTRACT_OWNER: fn(Context) -> Context = |mut context: C
 
 pub static CHUCK_IS_NOT_A_BMC_OWNER: fn(Context) -> Context = |context: Context| context;
 
-pub static ON_QUERYING_OWNERS_IN_BMC: fn(Context) -> Context =
+pub static OWNERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_owners(context);
 
 pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
@@ -56,19 +56,23 @@ pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |contex
 pub static BMC_SHOULD_THROW_LASTOWNER_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_NOTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
 
+
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 // *   BMC Add Owner * * * * *
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
+pub static CHARLES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context = |mut context: Context| {
+    context.pipe(CHARLIES_ACCOUNT_IS_CREATED)
+    .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+};
 
-pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
+pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context = |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(
             "add_owner",
             json!({
-                "account_id": charlie.account_id()
+                "address": charlie.account_id()
             }),
         );
         context
