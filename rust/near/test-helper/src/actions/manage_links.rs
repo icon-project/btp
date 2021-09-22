@@ -9,12 +9,12 @@ use duplicate::duplicate;
 
 impl Contract<'_, contract_type> {
     pub fn add_link(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_link", method_params);
+        invoke_call!(self, context, "add_link", method_params).unwrap();
         context
     }
 
     pub fn remove_link(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_link", method_params);
+        invoke_call!(self, context, "remove_link", method_params).unwrap();
         context
     }
 
@@ -22,8 +22,9 @@ impl Contract<'_, contract_type> {
         invoke_view!(self, context, "get_links");
         context
     }
-    pub fn set_link(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "set_link", method_params);
+
+    pub fn set_link(&self, context: Context) -> Context {
+        invoke_call!(self, context, "set_link", method_params).unwrap();
         context
     }
 }

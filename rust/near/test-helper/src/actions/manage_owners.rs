@@ -9,12 +9,12 @@ use duplicate::duplicate;
 )]
 impl Contract<'_, contract_type> {
     pub fn add_owner(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_owner", method_params);
+        invoke_call!(self, context, "add_owner", method_params).unwrap();
         context
     }
 
     pub fn remove_owner(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_owner", method_params);
+        invoke_call!(self, context, "remove_owner", method_params).unwrap();
         context
     }
 
