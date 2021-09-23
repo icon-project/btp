@@ -223,7 +223,7 @@ class ServiceHandlerTest extends TestBase {
     @Order(11)
     @Test
     public void scenario11() {
-        String _from = "0x1234567890123456789";
+        String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, handleBTPResponseBtpMsg(1, "Transfer Failed"));
         Balance balanceAfter = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
@@ -237,7 +237,7 @@ class ServiceHandlerTest extends TestBase {
     @Order(12)
     @Test
     public void scenario12() {
-        String _from = "0x1234567890123456789";
+        String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         String _to = "btp://0x1.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to);
@@ -256,7 +256,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     @Order(13)
     public void scenario13() {
-        String _from = "0x1234567890123456789";
+        String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         //Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         BigInteger balanceBefore = (BigInteger) token.call("balanceOf", owners[0].getAddress());
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ZERO, handleBTPRequestBtpMsg(_from, owners[0].getAddress().toString()));
@@ -318,7 +318,7 @@ class ServiceHandlerTest extends TestBase {
         BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(100));
         assertEquals(_assets.get(0).get(tokenName), _fees);
         bmc.invoke(owners[1], "handleFeeGathering", _fa, _svc);
-        String _from = "0x1234567890123456789";
+        String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.valueOf(3), handleBTPResponseBtpMsg(1, "Trasnfer Failed"));
         _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
         // should still have the fees in accumulator after failure handleresponse
@@ -336,7 +336,7 @@ class ServiceHandlerTest extends TestBase {
         BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(100));
         assertEquals(_assets.get(0).get(tokenName), _fees);
         bmc.invoke(owners[1], "handleFeeGathering", _fa, _svc);
-        String _from = "0x1234567890123456789";
+        String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.valueOf(4), handleBTPResponseBtpMsg(0, "Trasnfer Success"));
         _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
         // Should not have any fees left in FeeAccumulator db

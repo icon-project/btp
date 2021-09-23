@@ -49,6 +49,7 @@ public class ServiceHandler {
     private final DictDB<String, BigInteger> feeCollector = Context.newDictDB("fee_collector", BigInteger.class);
     private final DictDB<BigInteger, TransferAsset> pendingFeesDb = Context.newDictDB("pending_fees", TransferAsset.class);
     DictDB<Address, Boolean> ownersDb = Context.newDictDB("owners", Boolean.class);
+    private final VarDB<String> fromAddr = Context.newVarDB("fromAddr", String.class);
 
     public ServiceHandler(String _bmc) {
         //register the BMC link for this BSH
@@ -185,7 +186,7 @@ public class ServiceHandler {
         Context.println("################# BMC.SendMessage initiated");
         Context.call(bmcDb.get(), "sendMessage", _to.getNet(), _svc, serialNo.get(), msg);
         //TODO: emit event
-        TransferStart(sender, tokenName, sn, encodeToBytes(assets));
+        TransferStart(sender, to, sn, encodeToBytes(assets));
     }
 
     /**
@@ -247,6 +248,7 @@ public class ServiceHandler {
                 pmsgReader.skip();
                 ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, pmsgReader.readByteArray());
                 TransferAsset pendingMsg = TransferAsset.readObject(readerTa);
+                fromAddr.set(pendingMsg.getFrom());
                 Address pmsgFrom = Address.fromString(pendingMsg.getFrom());
                 for (int i = 0; i < pendingMsg.getAssets().size(); i++) {
                     Asset _asset = pendingMsg.getAssets().get(i);
@@ -265,6 +267,7 @@ public class ServiceHandler {
                 deletePending(sn);
             } else {
                 TransferAsset _pendingFAReq = pendingFeesDb.get(sn);
+                fromAddr.set(_pendingFAReq.getFrom());
                 if (code == RC_ERR) {
                     for (int i = 0; i < _pendingFAReq.getAssets().size(); i++) {
                         Asset _asset = _pendingFAReq.getAssets().get(i);
@@ -276,7 +279,8 @@ public class ServiceHandler {
                 //delete pending fee request
                 pendingFeesDb.set(sn, null);
             }
-            TransferEnd(sn, code, msg);
+            Address _owner = Address.fromString(fromAddr.get());
+            TransferEnd(_owner, sn, BigInteger.valueOf(code), msg);
         } else if (actionType == RESPONSE_UNKNOWN_) {
             return;
         } else {
@@ -436,19 +440,19 @@ public class ServiceHandler {
     static byte[] encodeToBytes(List<Asset> assets) {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
         writer.beginList(assets.size());
-        for(Asset v : assets) {
-            Asset.writeObject(writer,v);
+        for (Asset v : assets) {
+            Asset.writeObject(writer, v);
         }
         writer.end();
         return writer.toByteArray();
     }
 
-    @EventLog(indexed = 2)
-    public void TransferStart(Address from, String tokenName, BigInteger sn, byte[] assets) {
+    @EventLog(indexed = 1)
+    public void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assetDetails) {
     }
 
     @EventLog(indexed = 1)
-    protected void TransferEnd(BigInteger sn, int code, byte[] msg) {
+    protected void TransferEnd(Address _from, BigInteger _sn, BigInteger _code, byte[] _msg) {
     }
 }
 
