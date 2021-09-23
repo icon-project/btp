@@ -21,13 +21,19 @@ pub mod errors {
         RequestNotExist,
         ServiceExist,
         ServiceNotExist,
-        NotExistsPermission,
+        PermissionNotExist,
         LastOwner,
         OwnerExist,
-        NotExistsOwner,
-        ExistLink,
-        NotExistsLink,
+        OwnerNotExist,
+        LinkExist,
+        LinkNotExist,
+        RouteExist,
+        RouteNotExist,
         InvalidParam,
+        VerifierExist,
+        VerifierNotExist,
+        RelayExist { link: String },
+        RelayNotExist { link: String },
     }
 
     impl fmt::Display for BMCError {
@@ -40,13 +46,23 @@ pub mod errors {
                 BMCError::RequestNotExist => write!(f, "{}{}", label, "NotExistRequest"),
                 BMCError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),
                 BMCError::ServiceNotExist => write!(f, "{}{}", label, "NotExistBSH"),
-                BMCError::NotExistsPermission => write!(f, "{}{}", label, "NotExistsPermission"),
+                BMCError::PermissionNotExist => write!(f, "{}{}", label, "NotExistsPermission"),
                 BMCError::LastOwner => write!(f, "{}{}", label, "LastOwner"),
                 BMCError::OwnerExist => write!(f, "{}{}", label, "AlreadyExistsOwner"),
-                BMCError::NotExistsOwner => write!(f, "{}{}", label, "NotExistsOwner"),
-                BMCError::ExistLink => write!(f, "{}{}", label, "AlreadyExistsLink"),
-                BMCError::NotExistsLink => write!(f, "{}{}", label, "NotExistsLink"),
+                BMCError::OwnerNotExist => write!(f, "{}{}", label, "NotExistsOwner"),
+                BMCError::LinkExist => write!(f, "{}{}", label, "AlreadyExistsLink"),
+                BMCError::LinkNotExist => write!(f, "{}{}", label, "NotExistsLink"),
+                BMCError::RouteExist => write!(f, "{}{}", label, "AlreadyExistsRoute"),
+                BMCError::RouteNotExist => write!(f, "{}{}", label, "NotExistsRoute"),
                 BMCError::InvalidParam => write!(f, "{}{}", label, "InvalidParam"),
+                BMCError::VerifierExist => write!(f, "{}{}", label, "AlreadyExistsBMV"),
+                BMCError::VerifierNotExist => write!(f, "{}{}", label, "NotExistBMV"),
+                BMCError::RelayExist { link } => {
+                    write!(f, "{}{} for {}", label, "RelayExist", link)
+                },
+                BMCError::RelayNotExist { link } => {
+                    write!(f, "{}{} for {}", label, "NotExistRelay", link)
+                }
             }
         }
     }
