@@ -10,17 +10,17 @@ use duplicate::duplicate;
 
 impl Contract<'_, contract_type> {
     pub fn request_service(&self, context: Context) -> Context {
-        invoke_call!(self, context, "request_service", method_params);
+        invoke_call!(self, context, "request_service", method_params).unwrap();
         context
     }
 
     pub fn approve_service(&self, context: Context) -> Context {
-        invoke_call!(self, context, "approve_service", method_params);
+        invoke_call!(self, context, "approve_service", method_params).unwrap();
         context
     }
     
     pub fn remove_service(&self, context: Context) -> Context{
-        invoke_call!(self, context, "remove_service",method_params);
+        invoke_call!(self, context, "remove_service",method_params).unwrap();
         context
     }
 

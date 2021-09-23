@@ -1,7 +1,7 @@
 use futures::executor::LocalPool;
 use near_crypto::InMemorySigner;
-use near_primitives::{borsh::BorshSerialize, types::FunctionArgs};
-use runner;
+use near_primitives::{types::FunctionArgs, views::FinalExecutionStatus, errors::TxExecutionError};
+use runner::{self};
 use serde_json::Value;
 
 pub fn call(
@@ -10,10 +10,10 @@ pub fn call(
     contract_id: &str,
     method: &str,
     value: Option<Value>,
-) {
+) -> Result<(), TxExecutionError> {
     let mut pool = LocalPool::new();
     pool.run_until(async {
-        runner::call(
+        let request = runner::call(
             signer,
             account_id.to_owned(),
             contract_id.to_owned(),
@@ -25,8 +25,14 @@ pub fn call(
             None,
         )
         .await
-        .unwrap()
-    });
+        .unwrap();
+        match &request.status {
+            FinalExecutionStatus::Failure(_) => {
+                return Err(request.status.as_failure().unwrap())
+            }
+            _ => return Ok(())
+        }
+    })
 }
 
 pub fn view(contract_id: &str, method: &str, value: Option<Value>) -> serde_json::Value {
@@ -56,7 +62,7 @@ macro_rules! invoke_call {
             $context.contracts().get($self.name()).account_id(),
             $method,
             None,
-        );
+        )
     };
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
         crate::actions::call(
@@ -65,7 +71,7 @@ macro_rules! invoke_call {
             $context.contracts().get($self.name()).account_id(),
             $method,
             Some($context.$param($method)),
-        );
+        )
     };
 }
 
