@@ -3,7 +3,7 @@
 use crate::Verifier;
 use btp_common::BTPAddress;
 use libraries::bmv_types::*;
-use merkle_tree_accumulator::hash::Hash;
+use libraries::mta::{hash::Hash, mta::MerkleTreeAccumulator};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     near_bindgen, setup_alloc, AccountId,

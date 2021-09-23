@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ByteOrder};
 use libraries::bmv_types::*;
-use merkle_tree_accumulator::{hash::Hash, mta::MerkleTreeAccumulator};
+use libraries::mta::{hash::Hash, mta::MerkleTreeAccumulator};
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     env,
