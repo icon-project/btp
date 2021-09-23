@@ -4,9 +4,26 @@ version = "0.1.0"
 authors = ["Icon Foundation<foo@icon.foundation>"]
 edition = "2018"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 btp-common = { path = "../../btp-common" }
-bmv = { path = "../bmv" }
-bsh-periphery = { path = "../bsh/bsh-periphery" }
 libraries = { path = "../libraries" }
-near-sdk = "3.1.0"
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
+
+[[test]]
+name = "test_ownership_management"
+path = "tests/test_ownership_management.rs"
+
+[[test]]
+name = "test_service_management"
+path = "tests/test_service_management.rs"
+
+[[test]]
+name = "test_relay_management"
+path = "tests/test_relay_management.rs"
+
+[[test]]
+name = "test_verifier_managementt"
+path = "tests/test_verifier_management.rs"
