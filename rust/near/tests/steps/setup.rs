@@ -15,3 +15,4 @@ lazy_static! {
 pub static NEW_CONTEXT: fn() -> Context = || Context::new();
 pub static BMC_CONTRACT_IS_DEPLOYED: fn(Context) -> Context = |context: Context| BMC_CONTRACT.deploy(context);
 pub static BSH_CONTRACT_IS_DEPLOYED: fn(Context) -> Context = |context: Context| BSH_CONTRACT.deploy(context);
+pub static BMV_CONTRACT_IS_DEPLOYED: fn(Context) -> Context = |context: Context| BMV_CONTRACT.deploy(context);

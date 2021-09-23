@@ -55,6 +55,7 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut co
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_LASTOWNER_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_NOTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
+pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context = | context: Context| context;
 
 
 // * * * * * * * * * * * * * *
@@ -123,13 +124,13 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) ->
 pub static ALICE_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
     context.set_signer(&signer);
-    BMC_CONTRACT.add_owner(context)
+    BMC_CONTRACT.remove_owner(context)
 };
 
 pub static CHUCK_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("chuck").to_owned();
     context.set_signer(&signer);
-    BMC_CONTRACT.add_owner(context)
+    BMC_CONTRACT.remove_owner(context)
 };
 
 // * * * * * * * * * * * * * *

@@ -9,3 +9,6 @@ pub use account_management::*;
 
 mod service_management;
 pub use service_management::*;
+
+mod verifer_management;
+pub use verifer_management::*;

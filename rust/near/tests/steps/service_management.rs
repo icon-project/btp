@@ -142,7 +142,6 @@ pub static APPROVED_BSH_SERVICE: fn(Context) -> Context = |mut context: Context|
 };
 
 pub static SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM: fn(Context) -> Context = |mut context: Context| {
-    let bob = context.accounts().get("bob").to_owned();
     context.add_method_params(
         "request_service",
         json!({
@@ -153,7 +152,6 @@ pub static SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM: fn(Context) -> Context
 };
 
 pub static NONEXISTING_SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM: fn(Context) -> Context = |mut context: Context| {
-    let bob = context.accounts().get("alice").to_owned();
     context.add_method_params(
         "request_service",
         json!({
