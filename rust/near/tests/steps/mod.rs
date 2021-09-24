@@ -14,3 +14,6 @@ pub use service_management::*;
 
 mod verifer_management;
 pub use verifer_management::*;
+
+mod relay_management;
+pub use relay_management::*;
