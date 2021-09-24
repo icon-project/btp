@@ -606,19 +606,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bmv"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "byteorder",
- "libraries",
- "near-sdk 3.1.0",
- "rlp",
- "serde",
- "vrf",
-]
-
-[[package]]
 name = "borsh"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -688,25 +675,6 @@ name = "bs58"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
-
-[[package]]
-name = "bsh-periphery"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "libraries",
- "near-sdk 3.1.0",
-]
-
-[[package]]
-name = "bsh-token"
-version = "0.1.0"
-dependencies = [
- "bsh-periphery",
- "btp-common",
- "libraries",
- "near-sdk 3.1.0",
-]
 
 [[package]]
 name = "btp-common"
@@ -2014,12 +1982,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "hmac-sha256"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcdc571e566521512579aab40bf807c5066e1765fb36857f16ed7595c13567c6"
-
-[[package]]
 name = "home"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2472,8 +2434,6 @@ name = "near-btp"
 version = "0.1.0"
 dependencies = [
  "bmc",
- "bsh-periphery",
- "bsh-token",
  "kitten",
  "lazy_static",
  "libraries",
@@ -5136,18 +5096,6 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
-
-[[package]]
-name = "vrf"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71327171f80b19c06263831d1c6aefb5629131c06dd7006d2865f108af656397"
-dependencies = [
- "failure",
- "hex 0.3.2",
- "hmac-sha256",
- "openssl",
-]
 
 [[package]]
 name = "wasi"

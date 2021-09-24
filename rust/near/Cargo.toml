@@ -7,9 +7,6 @@ edition = "2018"
 [workspace]
 members = [
     "bmc",
-    "bmv",
-    "bsh/bsh-periphery",
-    "bsh/bsh-token",
     "libraries",
     "test-helper"
 ]
@@ -19,9 +16,7 @@ integration-tests = []
 
 [dev-dependencies]
 bmc = { path = "./bmc" }
-bsh-periphery = { path = "./bsh/bsh-periphery" }
 libraries = { path = "./libraries" }
-bsh-token = { path = "./bsh/bsh-token" }
 test-helper = { path = "./test-helper" }
 near-sdk = "3.1.0"
 near-sdk-sim = "3.2.0"

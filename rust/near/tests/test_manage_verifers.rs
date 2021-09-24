@@ -51,7 +51,7 @@ mod manage_verifers {
 
         #[runner::test(sandbox)]
         async fn remove_verifier_authorized_success(){
-            Kitten::given(NEW_CONTEXT
+            Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
                 .when(REMOVE_VERIFER_INOKED_BY_BMC_OWNER)
@@ -61,7 +61,7 @@ mod manage_verifers {
 
         #[runner::test(sandbox)]
         async fn remove_verifier_unauthorized_fail(){
-            Kitten::given(NEW_CONTEXT
+            Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
                 .when(REMOVE_VERIFER_INOKED_BY_NON_BMC_OWNER)
@@ -71,7 +71,7 @@ mod manage_verifers {
 
         #[runner::test(sandbox)]
         async fn remove_nonexisting_verifer_authorized_fail(){
-            Kitten::given(NEW_CONTEXT
+            Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
                 .and(REMOVE_VERIFER_INOKED_BY_BMC_OWNER)
