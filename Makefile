@@ -52,6 +52,7 @@ $(foreach M,$(CMDS),$(eval $(call CMD_template,$(M))))
 # Build flags for each command
 btpsimple_LDFLAGS = -X 'main.version=$(GL_VERSION)' -X 'main.build=$(BUILD_INFO)'
 BUILD_TARGETS += btpsimple
+BUILD_TARGETS += iconvalidators
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 

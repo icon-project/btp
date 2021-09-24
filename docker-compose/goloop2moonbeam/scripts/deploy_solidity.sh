@@ -13,7 +13,7 @@ deploy_solidity_bmc() {
     cat ./build/contracts/BMCManagement.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_management.json
     cat ./build/contracts/BMCPeriphery.json  | jq -r .abi > $CONFIG_DIR/abi.bmc_periphery.json
 
-    BMC_PRA_NET=$(cat $CONFIG_DIR/net.btp.moonbeam) \
+    BMC_BTP_NET=$(cat $CONFIG_DIR/net.btp.moonbeam) \
     truffle migrate --network moonbeamlocal
     truffle exec $SCRIPT_DIR/mb_extract_bmc.js --network moonbeamlocal
 
@@ -61,9 +61,9 @@ deploy_solidity_bmv() {
     echo "goloop height:$LAST_HEIGHT hash:$LAST_HASH"
     echo $LAST_HEIGHT > $CONFIG_DIR/offset.icon
 
-    # - BMC_CONTRACT_ADDRESS: an address on chain of BMCPeriphery contract
+    # - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
     # This address is queried after deploying BMC contracts
-    # For example: BMC_CONTRACT_ADDRESS = 0x5CC307268a1393AB9A764A20DACE848AB8275c46
+    # For example: BMC_PERIPHERY_ADDRESS = 0x5CC307268a1393AB9A764A20DACE848AB8275c46
     # - BMV_ICON_NET: Chain ID and name of a network that BMV is going to verify BTP Message
     # - BMV_ICON_INIT_OFFSET: a block height when ICON-BMC was deployed
     # - BMV_ICON_LASTBLOCK_HASH: a hash of the above block
@@ -74,7 +74,7 @@ deploy_solidity_bmv() {
     # The curruent list of validators, which is being used in this example, is ["hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"]
     # Replace 'hx' by '0x00' -> RLP encode -> 0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd
 
-    BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
+    BMC_PERIPHERY_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
     BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
     BMV_ICON_ENCODED_VALIDATORS=0xd69500b6b5791be0b5ef67063b3c10b840fb81514db2fd \
     BMV_ICON_INIT_OFFSET=$LAST_HEIGHT \
