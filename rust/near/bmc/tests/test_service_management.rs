@@ -38,7 +38,7 @@ fn request_service_new_request_pass() {
     let requests = contract.get_requests();
     assert_eq!(
         requests,
-        "[{\"name\":\"test\",\"address\":\"sssssssss.ss\"}]"
+        "[{\"name\":\"test\",\"service\":\"sssssssss.ss\"}]"
     );
 }
 
@@ -105,7 +105,7 @@ fn get_requests_pass() {
     testing_env!(context(alice()));
     assert_eq!(
         contract.get_requests(),
-        "[{\"name\":\"test\",\"address\":\"sssssssss.s\"}]"
+        "[{\"name\":\"test\",\"service\":\"sssssssss.s\"}]"
     );
 }
 
@@ -125,7 +125,7 @@ fn approve_service_approve_pass() {
     testing_env!(context(bob()));
     assert_eq!(
         contract.get_services(),
-        "[{\"name\":\"test\",\"address\":\"sssssssss.s\"}]"
+        "[{\"name\":\"test\",\"service\":\"sssssssss.s\"}]"
     );
 }
 
@@ -229,6 +229,6 @@ fn get_services_pass() {
     contract.approve_service("test".to_string(), true);
     assert_eq!(
         contract.get_services(),
-        "[{\"name\":\"test\",\"address\":\"sssssssss.s\"}]"
+        "[{\"name\":\"test\",\"service\":\"sssssssss.s\"}]"
     );
 }

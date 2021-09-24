@@ -6,7 +6,9 @@ use btp_common::{
     messages::BMCMessage,
     owner,
 };
-use libraries::types::{Address, BTPAddress, Bmv, Bsh, Links, Owners, Routes};
+use libraries::types::{
+    Address, BTPAddress, Bmv, Bsh, Connection, Connections, Links, Owners, Routes,
+};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::serde_json::{from_str, json, to_value, Value};
@@ -14,7 +16,7 @@ use near_sdk::AccountId;
 use near_sdk::{
     env,
     json_types::{Base64VecU8, U128, U64},
-    log, near_bindgen, require, serde_json, setup_alloc, PanicOnDefault,
+    log, near_bindgen, require, serde_json, PanicOnDefault,
 };
 use std::collections::HashMap;
 
@@ -26,6 +28,7 @@ pub struct BTPMessageCenter {
     bmv: Bmv,
     links: Links,
     routes: Routes,
+    connections: Connections,
 }
 
 impl Default for BTPMessageCenter {
@@ -35,19 +38,120 @@ impl Default for BTPMessageCenter {
         let bmv = Bmv::new();
         let links = Links::new();
         let routes = Routes::new();
+        let connections = Connections::new();
         owners.add(&env::current_account_id());
         Self {
             owners,
             bsh,
             bmv,
             links,
-            routes
+            routes,
+            connections,
         }
     }
 }
 
 #[near_bindgen]
 impl BTPMessageCenter {
+    // * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * *
+    // * * * * Interval Validations  * *
+    // * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * *
+
+    /// Check whether signer account id is an owner
+    fn assert_have_permission(&self) {
+        require!(
+            self.owners.contains(&env::signer_account_id()),
+            format!("{}", BMCError::PermissionNotExist)
+        );
+    }
+
+    fn assert_link_exists(&self, link: &BTPAddress) {
+        require!(
+            self.links.contains(link),
+            format!("{}", BMCError::LinkNotExist)
+        );
+    }
+
+    fn assert_link_does_not_exists(&self, link: &BTPAddress) {
+        require!(
+            !self.links.contains(link),
+            format!("{}", BMCError::LinkExist)
+        );
+    }
+
+    fn assert_owner_exists(&self, account: &AccountId) {
+        require!(
+            self.owners.contains(&account),
+            format!("{}", BMCError::OwnerNotExist)
+        );
+    }
+
+    fn assert_owner_does_not_exists(&self, account: &AccountId) {
+        require!(
+            !self.owners.contains(account),
+            format!("{}", BMCError::OwnerExist)
+        );
+    }
+
+    fn assert_owner_is_not_last_owner(&self) {
+        assert!(self.owners.len() > 1, "{}", BMCError::LastOwner);
+    }
+
+    fn assert_request_exists(&self, name: &str) {
+        require!(
+            self.bsh.requests.contains(name),
+            format!("{}", BMCError::RequestNotExist)
+        );
+    }
+
+    fn assert_request_does_not_exists(&self, name: &str) {
+        require!(
+            !self.bsh.requests.contains(name),
+            format!("{}", BMCError::RequestExist)
+        );
+    }
+
+    fn assert_route_exists(&self, destination: &BTPAddress) {
+        require!(
+            self.routes.contains(destination),
+            format!("{}", BMCError::RouteNotExist)
+        );
+    }
+
+    fn assert_route_does_not_exists(&self, destination: &BTPAddress) {
+        require!(
+            !self.routes.contains(destination),
+            format!("{}", BMCError::RouteExist)
+        );
+    }
+
+    fn assert_service_exists(&self, name: &str) {
+        require!(
+            self.bsh.services.contains(name),
+            format!("{}", BMCError::ServiceNotExist)
+        );
+    }
+    fn assert_service_does_not_exists(&self, name: &str) {
+        require!(
+            !self.bsh.services.contains(name),
+            format!("{}", BMCError::ServiceExist)
+        );
+    }
+    fn assert_verifier_exists(&self, network: &str) {
+        require!(
+            self.bmv.contains(network),
+            format!("{}", BMCError::VerifierNotExist)
+        );
+    }
+    fn assert_verifier_does_not_exists(&self, network: &str) {
+        require!(
+            !self.bmv.contains(network),
+            format!("{}", BMCError::VerifierExist)
+        );
+    }
+
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * Owner Management  * * * *
@@ -57,23 +161,17 @@ impl BTPMessageCenter {
     /// Add another owner
     /// Caller must be an owner of BTP network
     pub fn add_owner(&mut self, account: AccountId) {
-        self.has_permission();
-        require!(
-            !self.owners.contains(&account),
-            format!("{}", BMCError::OwnerExist)
-        );
+        self.assert_have_permission();
+        self.assert_owner_does_not_exists(&account);
         self.owners.add(&account);
     }
 
     /// Remove an existing owner
     /// Caller must be an owner of BTP network
     pub fn remove_owner(&mut self, account: AccountId) {
-        self.has_permission();
-        require!(
-            self.owners.contains(&account),
-            format!("{}", BMCError::OwnerNotExist)
-        );
-        assert!(self.owners.len() > 1, "{}", BMCError::LastOwner);
+        self.assert_have_permission();
+        self.assert_owner_exists(&account);
+        self.assert_owner_is_not_last_owner();
         self.owners.remove(&account)
     }
 
@@ -83,14 +181,6 @@ impl BTPMessageCenter {
         self.owners.to_vec()
     }
 
-    /// Check whether signer account id is an owner
-    fn has_permission(&self) {
-        require!(
-            self.owners.contains(&env::signer_account_id()),
-            format!("{}", BMCError::PermissionNotExist)
-        );
-    }
-
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * Service Management  * * *
@@ -98,15 +188,9 @@ impl BTPMessageCenter {
     // * * * * * * * * * * * * * * * * *
 
     pub fn approve_service(&mut self, name: String, approve: bool) {
-        self.has_permission();
-        require!(
-            !self.bsh.services.contains(&name),
-            format!("{}", BMCError::ServiceExist)
-        );
-        require!(
-            self.bsh.requests.contains(&name),
-            format!("{}", BMCError::RequestNotExist)
-        );
+        self.assert_have_permission();
+        self.assert_service_does_not_exists(&name);
+        self.assert_request_exists(&name);
         if let Some(service) = self.bsh.requests.get(&name) {
             if approve {
                 self.bsh.services.add(&name, &service);
@@ -118,31 +202,16 @@ impl BTPMessageCenter {
     /// Register the smart contract for the service
     /// Caller must be an operator of BTP network
     pub fn request_service(&mut self, name: String, service: AccountId) {
-        require!(
-            env::is_valid_account_id(service.as_bytes()),
-            format!("{}", BMCError::InvalidAddress)
-        );
-        require!(
-            !self.bsh.services.contains(&name),
-            format!("{}", BMCError::ServiceExist)
-        );
-        require!(
-            !self.bsh.requests.contains(&name),
-            format!("{}", BMCError::RequestExist)
-        );
-
+        self.assert_request_does_not_exists(&name);
+        self.assert_service_does_not_exists(&name);
         self.bsh.requests.add(&name, &service);
     }
 
     /// De-register the service from BSH
     /// Caller must be an operator of BTP network    
     pub fn remove_service(&mut self, name: String) {
-        self.has_permission();
-        require!(
-            self.bsh.services.contains(&name),
-            format!("{}", BMCError::ServiceNotExist)
-        );
-
+        self.assert_have_permission();
+        self.assert_service_exists(&name);
         self.bsh.services.remove(&name);
     }
 
@@ -165,22 +234,16 @@ impl BTPMessageCenter {
     /// Register BMV for the network
     /// Caller must be an operator of BTP network
     pub fn add_verifier(&mut self, network: String, verifier: AccountId) {
-        self.has_permission();
-        require!(
-            !self.bmv.contains(&network),
-            format!("{}", BMCError::VerifierExist)
-        );
+        self.assert_have_permission();
+        self.assert_verifier_does_not_exists(&network);
         self.bmv.add(&network, &verifier);
     }
 
     /// De-register BMV for the network
     /// Caller must be an operator of BTP network
     pub fn remove_verifier(&mut self, network: String) {
-        self.has_permission();
-        require!(
-            self.bmv.contains(&network),
-            format!("{}", BMCError::VerifierNotExist)
-        );
+        self.assert_have_permission();
+        self.assert_verifier_exists(&network);
         self.bmv.remove(&network)
     }
 
@@ -197,24 +260,15 @@ impl BTPMessageCenter {
     // * * * * * * * * * * * * * * * * *
 
     pub fn add_link(&mut self, link: BTPAddress) {
-        self.has_permission();
-        require!(
-            self.bmv.contains(&link.network_address().unwrap()),
-            format!("{}", BMCError::VerifierNotExist)
-        );
-        require!(
-            !self.links.contains(&link),
-            format!("{}", BMCError::LinkExist)
-        );
+        self.assert_have_permission();
+        self.assert_verifier_exists(&link.network_address().unwrap());
+        self.assert_link_does_not_exists(&link);
         self.links.add(&link);
     }
 
     pub fn remove_link(&mut self, link: BTPAddress) {
-        self.has_permission();
-        require!(
-            self.links.contains(&link),
-            format!("{}", BMCError::LinkNotExist)
-        );
+        self.assert_have_permission();
+        self.assert_link_exists(&link);
         self.links.remove(&link);
     }
 
@@ -222,12 +276,16 @@ impl BTPMessageCenter {
         to_value(self.links.to_vec()).unwrap().to_string()
     }
 
-    pub fn set_link(&mut self, link: BTPAddress, block_interval: u64, max_aggregation: u64, delay_limit: u64) {
-        self.has_permission();
-        require!(
-            self.links.contains(&link),
-            format!("{}", BMCError::LinkNotExist)
-        );
+    pub fn set_link(
+        &mut self,
+        link: BTPAddress,
+        block_interval: u64,
+        max_aggregation: u64,
+        delay_limit: u64,
+    ) {
+        unimplemented!();
+        self.assert_have_permission();
+        self.assert_link_exists(&link);
         require!(
             max_aggregation >= 1 && delay_limit >= 1,
             format!("{}", BMCError::InvalidParam)
@@ -249,29 +307,55 @@ impl BTPMessageCenter {
     // * * * * * * * * * * * * * * * * *
 
     pub fn add_route(&mut self, destination: BTPAddress, link: BTPAddress) {
-        self.has_permission();
-        require!(
-            !self.routes.links().contains(&destination),
-            format!("{}", BMCError::RouteExist)
-        );
+        self.assert_have_permission();
+        self.assert_route_does_not_exists(&destination);
+        self.assert_link_exists(&link);
         self.routes.add(&destination, &link);
-    }
-
-    pub fn remove_route(&mut self, destination: BTPAddress, link: BTPAddress) {
-        self.has_permission();
-        require!(
-            self.routes.links().contains(&destination),
-            format!("{}", BMCError::RouteNotExist)
+        self.connections.add(
+            &Connection::Route(destination.network_address().unwrap()),
+            &link,
         );
-        self.routes.remove(&destination);
     }
 
-    pub fn get_routes() {
-        unimplemented!();
+    pub fn remove_route(&mut self, destination: BTPAddress) {
+        self.assert_have_permission();
+        self.assert_route_exists(&destination);
+        let link = self.routes.get(&destination).unwrap_or_default();
+        self.routes.remove(&destination);
+        self.connections.remove(
+            &Connection::Route(destination.network_address().unwrap()),
+            &link,
+        )
     }
-    
-    fn resolve_route() {
-        unimplemented!();
+
+    pub fn get_routes(&self) -> String {
+        to_value(self.routes.to_vec()).unwrap().to_string()
+    }
+
+    fn resolve_route(&self, destination: BTPAddress) -> Option<BTPAddress> {
+        //TODO: Revisit
+        // Check if part of links
+        if self.links.contains(&destination) {
+            return Some(destination);
+        }
+        // Check if part of routes
+        if self
+            .connections
+            .contains(&Connection::Route(destination.network_address().unwrap()))
+        {
+            return self
+                .connections
+                .get(&Connection::Route(destination.network_address().unwrap()));
+        }
+        // Check if part of link reachable
+        if self.connections.contains(&Connection::LinkReachable(
+            destination.network_address().unwrap(),
+        )) {
+            return self.connections.get(&Connection::LinkReachable(
+                destination.network_address().unwrap(),
+            ));
+        }
+        None
     }
 
     // * * * * * * * * * * * * * * * * *
@@ -281,12 +365,8 @@ impl BTPMessageCenter {
     // * * * * * * * * * * * * * * * * *
 
     pub fn add_relays(&mut self, link: BTPAddress, relays: Vec<AccountId>) {
-        self.has_permission();
-        require!(
-            self.links.contains(&link),
-            format!("{}", BMCError::LinkNotExist)
-        );
-
+        self.assert_have_permission();
+        self.assert_link_exists(&link);
         if let Some(link_property) = self.links.get(&link).as_mut() {
             link_property.relays_mut().set(&relays);
             self.links.set(&link, &link_property);
@@ -294,11 +374,8 @@ impl BTPMessageCenter {
     }
 
     pub fn add_relay(&mut self, link: BTPAddress, relay: AccountId) {
-        self.has_permission();
-        require!(
-            self.links.contains(&link),
-            format!("{}", BMCError::LinkNotExist)
-        );
+        self.assert_have_permission();
+        self.assert_link_exists(&link);
 
         if let Some(link_property) = self.links.get(&link).as_mut() {
             require!(
@@ -316,7 +393,7 @@ impl BTPMessageCenter {
     }
 
     pub fn remove_relay(&mut self, link: BTPAddress, relay: AccountId) {
-        self.has_permission();
+        self.assert_have_permission();
         require!(
             self.links.contains(&link),
             format!("{}", BMCError::LinkNotExist)
@@ -337,11 +414,7 @@ impl BTPMessageCenter {
     }
 
     pub fn get_relays(&self, link: BTPAddress) -> String {
-        self.has_permission();
-        require!(
-            self.links.contains(&link),
-            format!("{}", BMCError::LinkNotExist)
-        );
+        self.assert_link_exists(&link);
         if let Some(link_property) = self.links.get(&link).as_mut() {
             to_value(link_property.relays().to_vec())
                 .unwrap()
