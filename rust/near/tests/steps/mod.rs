@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod setup;
 pub use setup::*;
 
