@@ -25,6 +25,10 @@ public class Trie {
         this.root = EMPTY_HASH;
     }
 
+    public Trie(byte[] rootHash) {
+        this.root = rootHash;
+    }
+
     public byte[] getRoot() {
         return this.root;
     }
@@ -48,7 +52,6 @@ public class Trie {
 
     public byte[] get(byte[] key) throws MPTException {
         Path path = findPath(key);
-        //byte[] value = null;
         if(path.node != null && path.remaining.length == 0){
            return path.node.getValue();
         }
@@ -58,11 +61,31 @@ public class Trie {
     private void delete(byte[] key){
     }
 
-    public static byte[] createProof(Trie trie, byte[] key){
-        return null;
+    public static List<byte[]> createProof(Trie trie, byte[] key) throws MPTException {
+        Path path = trie.findPath(key);
+        List<byte[]> proofs = new ArrayList<>();
+        for (TrieNode node:path.stack)
+            proofs.add(node.encodeRLP());
+        return proofs;
     }
 
-    public static void verifyProof(byte[] hashRoot, byte[] key, Object proof) {
+    public static byte[] verifyProof(byte[] hashRoot, byte[] key, List<byte[]> proof) throws MPTException {
+        Trie proofTrie = new Trie(hashRoot);
+        Trie.fromProof(proof, proofTrie);
+        return proofTrie.get(key);
+    }
+
+    public static Trie fromProof(List<byte[]> proof, Trie trie){
+        ArrayList<DBUpdate> stack = new ArrayList<>();
+        for(byte[] value:proof){
+            stack.add(new DBUpdate(Operation.PUT,
+                    Keccak256Hash(value),
+                    value));
+        }
+        if (trie == null)
+            trie = new Trie();
+        trie.updateDB(stack);
+        return trie;
     }
 
     private static class Path{
@@ -127,9 +150,8 @@ public class Trie {
             Pair<byte[], Object> value;
             if (node.getValue() != null)
                 value = Pair.of(node.getKey(), node.getValue());
-            else {
+            else
                 value = Pair.of(node.getKey(), ((TrieNode.ExtensionNode)node).getValues());
-            }
             children.add(value);
         } else if(node instanceof TrieNode.BranchNode){
             //children = node.getChildren().map((b) => [[b[0]], b[1]])
@@ -186,7 +208,7 @@ public class Trie {
             TrieNode.BranchNode newBranchNode = new TrieNode.BranchNode();
 
             if (matchingLength != 0) {
-                byte[] newKey =  ArraysUtil.copyOfRangeByte(key, 0, matchingLength);
+                byte[] newKey =  ArraysUtil.copyOfRangeByte(lastNode.getKey(), 0, matchingLength);
                 TrieNode.ExtensionNode extensionNode = new TrieNode.ExtensionNode(newKey, value);
                 stack.add(extensionNode);
                 lastKey = ArraysUtil.copyOfRangeByte(lastKey, matchingLength, lastKey.length);
@@ -197,7 +219,7 @@ public class Trie {
 
             if(lastKey.length != 0) {
                 int branchKey = lastKey[0];
-                lastKey = ArraysUtil.copyOfRangeByte(lastKey, 0, lastKey.length - 1);
+                lastKey = ArraysUtil.copyOfRangeByte(lastKey, 1, lastKey.length);
 
                 if(lastKey.length != 0 || lastNode instanceof TrieNode.LeafNode) {
                     lastNode.setKey(lastKey);
@@ -209,7 +231,7 @@ public class Trie {
                     newBranchNode.setBranch(branchKey, ((TrieNode.ExtensionNode)lastNode).getValues());
                 }
             }  else {
-                newBranchNode.setValue(value);
+                newBranchNode.setValue(lastNode.getValue());
             }
 
             if (keyRemainder.length != 0) {
@@ -243,8 +265,12 @@ public class Trie {
                 if(lastRoot != null) {
                     int branchKey = key[key.length-1];
                     key = ArraysUtil.copyOfRangeByte(key, 0, key.length-1);
-                    byte[][] flatten = {lastRoot.get(0)[0], lastRoot.get(1)[0]};
-                    ((TrieNode.BranchNode) node).setBranch(branchKey, flatten);
+                    byte[][] branch = null;
+                    if (lastRoot.size() == 2)
+                        branch = new byte[][]{lastRoot.get(0)[0], lastRoot.get(1)[0]};
+                    else
+                        branch = new byte[][]{lastRoot.get(0)[0], new byte[0]};
+                    ((TrieNode.BranchNode) node).setBranch(branchKey, branch);
                 }
             }
             lastRoot = formatNode(node, stack.size() == 0, toSave, false);
@@ -295,6 +321,8 @@ public class Trie {
     }
 
     private TrieNode lookupNode(byte[][] bytes) throws MPTException {
+        if(bytes.length == 1 || bytes[1].length == 0)
+           return lookupNode(bytes[0]);
         return TrieNode.decodeRaw(bytes);
     }
 

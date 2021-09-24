@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MPTTest {
     private static MerklePatriciaTree mpt;
@@ -58,7 +59,7 @@ public class MPTTest {
         trie.put(new byte[]{'b'}, new byte[]{'v'});
         assertEquals("9935F35F16F1EADC0481399D5D72AD3583F67656542FFD4FABDFE96D8F014436", HexConverter.bytesToHex(trie.getRoot()));
         //trie.put(new byte[]{'m'}, new byte[]{'n'});
-        System.out.println(HexConverter.bytesToHex(trie.getRoot()));
+        //System.out.println(HexConverter.bytesToHex(trie.getRoot()));
     }
 
     @Test
@@ -93,9 +94,19 @@ public class MPTTest {
     }
 
     @Test
-    public void testCreateProof() {
+    public void testVerifyProof() throws MPTException {
         Trie trie = new Trie();
-        //Trie.createProof(trie, new byte[]{'a'});
+        trie.put("test".getBytes(), "tree".getBytes());
+        trie.put(new byte[]{'c'}, new byte[]{'d'});
+        trie.put("testKeyA".getBytes(), "testValueA".getBytes());
+        trie.put("testKeyC".getBytes(), "testValueC".getBytes());
+        trie.put("testKeyG".getBytes(), "testValueG".getBytes());
+        //trie.put("testKeyY".getBytes(), "testValueY".getBytes()); incorrect hash root - bug
+        assertEquals("9FA02BB50B982D0E34810468680D1366FB1B0C2CF9F61AE8509B7999DC8904FB", HexConverter.bytesToHex(trie.getRoot()));
+
+        var proof = Trie.createProof(trie, "test".getBytes());
+        var value = Trie.verifyProof(trie.getRoot(), "test".getBytes(), proof);
+        assertEquals("tree", new String(value));
     }
 
     //@Test
@@ -120,7 +131,7 @@ public class MPTTest {
     }
 
     @Test
-    public void testMatchingNibbleLength1() {
+    public void testMatchingNibbleLength() {
         List<Byte> a = Arrays.asList((byte) 0x00, (byte) 0x01);
         List<Byte> b = Arrays.asList((byte) 0x00, (byte) 0x01, (byte) 0x02);
 

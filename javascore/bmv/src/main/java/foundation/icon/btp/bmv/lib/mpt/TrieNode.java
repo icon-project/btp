@@ -1,5 +1,6 @@
 package foundation.icon.btp.bmv.lib.mpt;
 
+import foundation.icon.btp.bmv.lib.BytesUtil;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
@@ -112,11 +113,15 @@ public abstract class TrieNode {
                 break;
             }
 
+        byte[] value = null;
         while(reader.hasNext()) {
             List<byte[][]> branches = new ArrayList<>();
             try {
                 var val = reader.readNullable(byte[].class);
-                if(val != null && val.length > 0)
+                if(val != null && val.length > 0 && raw.size() == 16) {
+                    value = val;
+                    break;
+                } else if(val != null && val.length > 0)
                     branches.add(new byte[][]{val, reader.readByteArray()});
                 else
                     branches.add(null);
@@ -141,6 +146,9 @@ public abstract class TrieNode {
                 flatten.add(null);
             raw = flatten;
         }
+
+        if(raw.size() == 16)
+           raw.add(value);
 
         reader.end();
 
@@ -174,18 +182,23 @@ public abstract class TrieNode {
                 }
             }
 
-            if (_branches.size() == 17 && _branches.get(16) != null && isEmptyArrayOrList(_branches.get(16)))
+            if (_branches.size() == 17 && _branches.get(16) != null && !isEmptyArrayOrList(_branches.get(16)))
                 if(_branches.get(16) instanceof byte[][])
                    this.value = ((byte[][]) _branches.get(16))[0];
-                else
+                else if(_branches.get(16) instanceof byte[])
+                   this.value = ((byte[]) _branches.get(16));
+                else if(_branches.get(16) instanceof List &&
+                        ((List) _branches.get(16)).get(0) != null)
                    this.value = ((List<byte[][]>) _branches.get(16)).get(0)[0];
         }
 
-        private boolean isEmptyArrayOrList(Object arr) {
-            if (arr instanceof byte[][]){
-                return ((byte[][])arr).length == 0;
+        private boolean isEmptyArrayOrList(Object obj) {
+            if (obj instanceof byte[][]){
+                return ((byte[][])obj).length == 0;
+            } else if (obj instanceof byte[]) {
+               return ((byte[])obj).length == 0;
             } else {
-                return ((List)arr).size() == 0;
+                return ((List)obj).size() == 0;
             }
         }
 
@@ -265,6 +278,8 @@ public abstract class TrieNode {
             for (Value branch : branches){
                 if (branch == null || branch.isEmpty() || branch.first() == null || branch.first()[0].length == 0) {
                     writer.write(new byte[]{});
+                } else if (branch.first().length == 1 || (branch.first().length > 1 && branch.first()[1].length == 0)){
+                    writer.write(branch.first()[0]);
                 } else {
                     writer.beginList(2);
                     writer.writeNullable(branch.first()[0]);

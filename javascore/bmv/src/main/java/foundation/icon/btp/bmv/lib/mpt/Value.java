@@ -39,7 +39,7 @@ public class Value {
     }
 
     public boolean isEmpty() {
-        return this.val.isEmpty();
+        return this.val == null || this.val.isEmpty();
     }
 
 }
