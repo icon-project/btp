@@ -103,10 +103,7 @@ impl Links {
     }
 
     pub fn to_vec(&self) -> Vec<BTPAddress> {
-        if !self.0.is_empty() {
-            return self.0.keys().collect::<Vec<BTPAddress>>();
-        }
-        vec![]
+        self.0.keys_as_vector().to_vec()
     }
 
     pub fn get(&self, link: &BTPAddress) -> Option<LinkProperty> {

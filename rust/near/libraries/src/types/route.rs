@@ -1,15 +1,9 @@
 use super::{Address, BTPAddress};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap};
+use near_sdk::collections::UnorderedMap;
 use near_sdk::serde::Serialize;
-use rand::seq::SliceRandom;
+use std::collections::HashMap;
 use std::collections::HashSet;
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Routes {
-    networks: Networks,
-    links: Links,
-}
 
 #[derive(Serialize, Debug, Eq, PartialEq, Hash)]
 pub struct Route {
@@ -17,121 +11,55 @@ pub struct Route {
     next: BTPAddress,
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct Routes(UnorderedMap<String, HashMap<BTPAddress, BTPAddress>>);
+
 impl Routes {
     pub fn new() -> Self {
-        Self {
-            networks: Networks::new(),
-            links: Links::new(),
-        }
-    }
-
-    pub fn links(&self) -> &Links {
-        &self.links
-    }
-
-    pub fn networks(&self) -> &Networks {
-        &self.networks
+        Self(UnorderedMap::new(b"routes".to_vec()))
     }
 
     pub fn add(&mut self, destination: &BTPAddress, link: &BTPAddress) {
-        self.networks.add(destination);
-        self.links.add(destination, link);
+        let mut list = self.0.get(&destination.network_address().unwrap()).unwrap_or_default();
+        list.insert(destination.to_owned(), link.to_owned());
+        self.0.insert(&destination.network_address().unwrap(), &list);
     }
 
     pub fn remove(&mut self, destination: &BTPAddress) {
-        self.networks.remove(destination);
-        self.links.remove(destination);
-    }
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Networks(LookupMap<String, HashSet<BTPAddress>>);
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Links(UnorderedMap<BTPAddress, BTPAddress>);
-
-impl Networks {
-    fn new() -> Self {
-        Self(LookupMap::new(b"network_routes".to_vec()))
-    }
-
-    fn add(&mut self, destination: &BTPAddress) {
-        let mut list = self
-            .0
-            .get(&destination.network_address().unwrap())
-            .unwrap_or_default();
-        list.insert(destination.to_owned());
-        self.0
-            .insert(&destination.network_address().unwrap(), &list);
-    }
-
-    fn remove(&mut self, destination: &BTPAddress) {
-        let mut list = self
-            .0
-            .get(&destination.network_address().unwrap())
-            .unwrap_or_default();
-        list.remove(&destination.to_owned());
+        let mut list = self.0.get(&destination.network_address().unwrap()).unwrap_or_default();
+        list.remove(&destination);
 
         if list.is_empty() {
             self.0.remove(&destination.network_address().unwrap());
         } else {
-            self.0
-                .insert(&destination.network_address().unwrap(), &list);
+            self.0.insert(&destination.network_address().unwrap(), &list);
         }
-    }
-
-    pub fn get(&self, network: &str) -> Option<BTPAddress> {
-        // TODO: Map Destination and services available
-        let list = self.0.get(&network.to_string()).unwrap_or_default();
-        let mut rng = rand::thread_rng();
-        list.into_iter()
-            .collect::<Vec<BTPAddress>>()
-            .choose(&mut rng)
-            .map(|destination| destination.to_owned())
-    }
-
-    pub fn contains(&self, network: &str) -> bool {
-        let list = self.0.get(&network.to_string()).unwrap_or_default();
-        return !list.is_empty();
-    }
-}
-
-impl Links {
-    fn new() -> Self {
-        Self(UnorderedMap::new(b"link_routes".to_vec()))
-    }
-
-    fn add(&mut self, destination: &BTPAddress, link: &BTPAddress) {
-        self.0.insert(&destination, &link);
-    }
-
-    fn remove(&mut self, destination: &BTPAddress) {
-        self.0.remove(&destination);
     }
 
     pub fn get(&self, destination: &BTPAddress) -> Option<BTPAddress> {
-        if let Some(link) = self.0.get(&destination) {
-            return Some(link);
-        }
-        None
+        let list = self.0.get(&destination.network_address().unwrap()).unwrap_or_default();
+        list.get(destination).map(|link| link.to_owned())
+    }
+
+    pub fn contains_network(&self, network: &str) -> bool {
+        self.0.get(&network.to_string()).is_some()
     }
 
     pub fn contains(&self, destination: &BTPAddress) -> bool {
-        return self.0.get(&destination).is_some();
+        let list = self.0.get(&destination.network_address().unwrap()).unwrap_or_default();
+        list.contains_key(destination)
     }
 
     pub fn to_vec(&self) -> Vec<Route> {
+        let mut routes: HashSet<Route> = HashSet::new();
         if !self.0.is_empty() {
-            return self
-                .0
-                .iter()
-                .map(|v| Route {
-                    dst: v.0,
-                    next: v.1,
-                })
-                .collect();
+            self.0.iter().for_each(|network| {
+                network.1.into_iter().for_each(|(dst, next)| {
+                    routes.insert(Route { dst, next });
+                });
+            });
         }
-        vec![]
+        routes.into_iter().collect()
     }
 }
 
@@ -175,7 +103,7 @@ mod tests {
         );
         let mut routes = Routes::new();
         routes.add(&destination, &link);
-        let link = routes.links.get(&destination);
+        let link = routes.get(&destination);
         assert_eq!(
             link,
             Some(BTPAddress::new(
@@ -183,17 +111,10 @@ mod tests {
                     .to_string(),
             ))
         );
-        let network = routes.networks.get(&destination.network_address().unwrap());
-        assert_eq!(
-            network,
-            Some(BTPAddress::new(
-                "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-            ))
-        );
     }
 
     #[test]
-    fn get_link_route() {
+    fn get_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let dst_1 = BTPAddress::new(
@@ -217,45 +138,11 @@ mod tests {
         routes.add(&dst_1, &next_1);
         routes.add(&dst_2, &next_2);
         routes.add(&dst_3, &next_3);
-        let result = routes.links.get(&dst_2);
+        let result = routes.get(&dst_2);
         assert_eq!(
             result,
             Some(BTPAddress::new(
                 "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-            ))
-        );
-    }
-
-    #[test]
-    fn get_network_route() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let dst_1 = BTPAddress::new(
-            "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-        );
-        let next_1 = BTPAddress::new(
-            "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                .to_string(),
-        );
-        let dst_2 =
-            BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let next_2 = BTPAddress::new(
-            "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-        );
-        let dst_3 =
-            BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-        let next_3 = BTPAddress::new(
-            "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-        );
-        let mut routes = Routes::new();
-        routes.add(&dst_1, &next_1);
-        routes.add(&dst_2, &next_2);
-        routes.add(&dst_3, &next_3);
-        let result = routes.networks.get(&dst_2.network_address().unwrap());
-        assert_eq!(
-            result,
-            Some(BTPAddress::new(
-                "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
             ))
         );
     }
@@ -286,31 +173,47 @@ mod tests {
         routes.add(&dst_2, &next_2);
         routes.add(&dst_3, &next_3);
         routes.remove(&dst_2);
-        let links = routes.links.get(&dst_2);
+        let links = routes.get(&dst_2);
         assert_eq!(links, None);
-        let networks = routes.networks.get(&dst_2.network_address().unwrap());
-        assert_eq!(networks, None);
     }
 
     #[test]
-    fn contains_link_route() {
+    fn contains_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let dst = BTPAddress::new(
+        let dst_1 = BTPAddress::new(
             "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
-        let next = BTPAddress::new(
+        let next_1 = BTPAddress::new(
             "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                 .to_string(),
         );
+        let dst_2 =
+            BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let next_2 = BTPAddress::new(
+            "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+        );
+        let dst_3 =
+            BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+        let next_3 = BTPAddress::new(
+            "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+        );
         let mut routes = Routes::new();
-        routes.add(&dst, &next);
-        let result = routes.links.contains(&dst);
+        routes.add(&dst_1, &next_1);
+        routes.add(&dst_2, &next_2);
+        routes.add(&dst_3, &next_3);
+        let result = routes.contains_network(&dst_1.network_address().unwrap());
+        assert_eq!(result, true);
+        routes.remove(&dst_1);
+        let result = routes.contains_network(&dst_1.network_address().unwrap());
+        assert_eq!(result, false);
+        routes.remove(&dst_2);
+        let result = routes.contains_network(&dst_3.network_address().unwrap());
         assert_eq!(result, true);
     }
 
     #[test]
-    fn contains_network_route() {
+    fn contains_network() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let dst = BTPAddress::new(
@@ -322,7 +225,7 @@ mod tests {
         );
         let mut routes = Routes::new();
         routes.add(&dst, &next);
-        let result = routes.networks.contains(&dst.network_address().unwrap());
+        let result = routes.contains_network(&dst.network_address().unwrap());
         assert_eq!(result, true);
     }
 
@@ -351,7 +254,7 @@ mod tests {
         routes.add(&dst_1, &next_1);
         routes.add(&dst_2, &next_2);
         routes.add(&dst_3, &next_3);
-        let routes = routes.links.to_vec();
+        let routes = routes.to_vec();
         let expected_routes = vec![
             Route {
                 dst: BTPAddress::new(

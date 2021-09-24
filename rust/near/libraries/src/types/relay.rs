@@ -63,10 +63,7 @@ impl Relays {
     }
 
     pub fn to_vec(&self) -> Vec<AccountId> {
-        if !self.0.is_empty() {
-            return self.0.to_vec();
-        }
-        return vec![];
+        self.0.to_vec()
     }
 }
 

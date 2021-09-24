@@ -10,7 +10,7 @@ pub trait Account {
     fn account_id(&self) -> AccountId;
 }
 
-#[derive(BorshSerialize, Serialize, Debug, Eq, PartialEq, PartialOrd, Hash, Clone)]
+#[derive(Default, BorshSerialize, Serialize, Debug, Eq, PartialEq, PartialOrd, Hash, Clone)]
 pub struct BTPAddress(String);
 
 impl BTPAddress {

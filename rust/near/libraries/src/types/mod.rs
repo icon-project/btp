@@ -12,3 +12,5 @@ mod verifier;
 pub use verifier::Bmv;
 mod btp_address;
 pub use btp_address::{Address, BTPAddress};
+mod connection;
+pub use connection::{Connections, Connection};
