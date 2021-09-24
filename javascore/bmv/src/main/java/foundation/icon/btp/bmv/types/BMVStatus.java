@@ -16,6 +16,8 @@
 
 package foundation.icon.btp.bmv.types;
 
+import score.ObjectReader;
+import score.ObjectWriter;
 import score.annotation.Keep;
 
 public class BMVStatus {
@@ -55,6 +57,25 @@ public class BMVStatus {
     @Keep
     public void setLast_height(long last_height) {
         this.last_height = last_height;
+    }
+
+
+    public static void writeObject(ObjectWriter w, BMVStatus s) {
+        w.beginList(4);
+        w.write(s.height);
+        w.write(s.offset);
+        w.write(s.last_height);
+        w.end();
+    }
+
+    public static BMVStatus readObject(ObjectReader r) {
+        r.beginList();
+        BMVStatus s = new BMVStatus();
+        s.height = r.readLong();
+        s.offset = r.readLong();
+        s.last_height = r.readLong();
+        r.end();
+        return s;
     }
 
     @Override

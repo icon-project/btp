@@ -117,14 +117,14 @@ public class BTPMessageVerifier {
      * get status of BMV
      */
     @External(readonly = true)
-    public BMVStatus getStatus() {
+    public String getStatus() {
         MerkleTreeAccumulator mta = this.mta.get();
         BMVStatus status = new BMVStatus();
         long lastHeight = mta.getHeight();
         status.setHeight(lastHeight);
         status.setLast_height(this.lastHeight.get().longValue());
         status.setOffset(mta.getOffset());
-        return status;
+        return status.toString();
     }
 
     private void canBMCAccess(BTPAddress currBMCAddress, BTPAddress prevAddress) {

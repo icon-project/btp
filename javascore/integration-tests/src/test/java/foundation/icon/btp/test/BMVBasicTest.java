@@ -36,7 +36,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -46,7 +45,7 @@ import static foundation.icon.test.common.Env.LOG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(Constants.TAG_JAVA_SCORE)
-class MBVTest extends TestBase {
+class BMVBasicTest extends TestBase {
     private static final Address ZERO_ADDRESS = new Address("hx0000000000000000000000000000000000000000");
     private static IconService iconService;
     private static TransactionHandler txHandler;
@@ -138,11 +137,12 @@ class MBVTest extends TestBase {
         return score;
     }
 
+    @Test
     public void shouldDeploy() throws Exception {
         Score mtaScore = deployMessageVerifier(txHandler, ownerWallet);
     }
 
-    @Test
+    //@Test
     public void shouldRelayVerifiedMessage() throws Exception {
         Score bmv = deployMessageVerifier(txHandler, ownerWallet);
 
