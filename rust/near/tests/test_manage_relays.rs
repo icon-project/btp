@@ -20,10 +20,27 @@ mod manage_verifers {
         }
 
         #[runner::test(sandbox)]
+        async fn add_relays_as_authorized_success(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED)
+            .when(ADD_RELAYS_INVOKED_BY_BMC_OWNER)
+            .then(RELAYS_ARE_QURIED_IN_BMC)
+            .and(ADDED_RELAYS_SHOULD_BE_IN_LIST)
+        }
+
+        #[runner::test(sandbox)]
         async fn add_relay_as_unauthorized_fail(){
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .when(ADD_RELAY_INVOKED_BY_NON_BMC_OWNER)
+                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
+        }
+
+        #[runner::test(sandbox)]
+        async fn add_relays_as_unauthorized_fail(){
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED)
+                .when(ADD_RELAYS_INVOKED_BY_NON_BMC_OWNER)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
         }
 
@@ -49,7 +66,7 @@ mod manage_verifers {
         async fn remove_relay_as_unauthorized_success(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED)
-            .when(REMOVE_RELAY_INVOKED_BY_NON_BMC_OWNER)
+            .when(REMOVE_RELAYS_INVOKED_BY_NON_BMC_OWNER)
             .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
         }
 
@@ -59,15 +76,6 @@ mod manage_verifers {
             .and(BMC_CONTRACT_IS_DEPLOYED)
             .when(REMOVE_NON_EXISTING_RELAY_INVOKED_BY_BMC_OWNER)
             .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
-        }
-
-        #[runner::test(sandbox)]
-        async fn remove_realy_with_invalid_link_authorized_fail(){
-            async fn remove_non_existing_relay_authorized_success(){
-                Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .when(REMOVE_RELAY_WITH_INVALID_LINK_INVOKED_BY_BMC_OWNER)
-                .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
         }
 
     }

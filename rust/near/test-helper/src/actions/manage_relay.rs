@@ -12,6 +12,11 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "add_relay", method_params).unwrap();
         context
     }
+    
+    pub fn add_relays(&self, context: Context) -> Context {
+        invoke_call!(self, context, "add_relay", method_params).unwrap();
+        context
+    }
 
     pub fn remove_relay(&self, context: Context) -> Context {
         invoke_call!(self, context, "remove_relay", method_params).unwrap();
@@ -19,7 +24,7 @@ impl Contract<'_, contract_type> {
     }
 
     pub fn get_relays(&self, mut context: Context) -> Context {
-        invoke_view!(self, context, "get_relays");
+        invoke_view!(self, context, "get_relays",method_params);
         context
     }
 
