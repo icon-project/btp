@@ -8,7 +8,7 @@ module.exports = async function (deployer, network) {
     await deployProxy(
       BMV,
       [
-        process.env.BMC_CONTRACT_ADDRESS,
+        process.env.BMC_PERIPHERY_ADDRESS,
         SUB_BMV.address,
         process.env.BMV_ICON_NET,
         process.env.BMV_ICON_ENCODED_VALIDATORS,

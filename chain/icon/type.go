@@ -382,7 +382,7 @@ type ReceiptProof struct {
 }
 
 type Block struct {
-	//BlockHash              HexBytes  `json:"block_hash" validate:"required,t_hash"`
+	BlockHash HexBytes `json:"block_hash" validate:"required,t_hash"`
 	//Version                HexInt    `json:"version" validate:"required,t_int"`
 	Height int64 `json:"height" validate:"required,t_int"`
 	//Timestamp              int64             `json:"time_stamp" validate:"required,t_int"`

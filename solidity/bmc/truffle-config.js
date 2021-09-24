@@ -35,7 +35,16 @@ module.exports = {
         privateKeys: privKeys,
         providerOrUrl: "https://rpc.testnet.moonbeam.network",
       }),
-      network_id: 1287
+      network_id: 1287,
+      networkCheckTimeout: 100000,
+    },
+    moonriver: {
+      provider: () => new HDWalletProvider({
+        privateKeys: privKeys,
+        providerOrUrl: "https://rpc.moonriver.moonbeam.network",
+      }),
+      network_id: 1285,
+      networkCheckTimeout: 100000,
     },
   },
 
