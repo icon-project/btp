@@ -6,3 +6,6 @@ build/
 bin/
 docker-compose/logs
 **/target/**/*
+
+**/**.profraw
+**/lcov.info

@@ -191,3 +191,9 @@ fn remove_relay_non_existing_relay_fail() {
     testing_env!(context(alice()));
     contract.remove_verifier("test1".to_string());
 }
+
+#[ignore]
+#[test]
+fn rotate_relay() {
+    unimplemented!()
+}

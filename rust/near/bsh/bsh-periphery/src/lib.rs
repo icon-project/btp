@@ -1,6 +1,6 @@
 //! BTP Service Handler (BSH) Contract
 
-use btp_common::BTPAddress;
+use libraries::types::{BTPAddress, Address};
 use libraries::bsh_types::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
@@ -338,7 +338,7 @@ impl Default for BshPeriphery {
         Self {
             bmc: "".to_string(),
             bsh_core: "".to_string(),
-            requests: UnorderedMap::new(BshStorageKey::BshPeriphery),
+            requests: UnorderedMap::new(b"BshStorageKey::BshPeriphery".to_vec()),
             service_name: "".to_string(),
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -356,7 +356,7 @@ impl BshPeriphery {
         Self {
             bmc,
             bsh_core,
-            requests: UnorderedMap::new(BshStorageKey::BshPeriphery),
+            requests: UnorderedMap::new(b"BshStorageKey::BshPeriphery".to_vec()),
             service_name,
             serial_no: 0,
             num_of_pending_requests: 0,
@@ -414,7 +414,7 @@ impl BshPeriphery {
 
         // Send Service Message to BMC
         let tc = TransferCoin {
-            from: from.clone(),
+            from: from,
             to: to_address,
             assets,
         };

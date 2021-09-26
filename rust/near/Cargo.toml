@@ -7,9 +7,6 @@ edition = "2018"
 [workspace]
 members = [
     "bmc",
-    "bmv",
-    "bsh/bsh-periphery",
-    "bsh/bsh-token",
     "libraries",
     "test-helper"
 ]

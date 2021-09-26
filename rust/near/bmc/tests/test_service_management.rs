@@ -130,6 +130,21 @@ fn approve_service_approve_pass() {
 }
 
 #[test]
+#[should_panic(expected = "BMCRevertNotExistRequest")]
+fn approve_service_non_existing_request_fail() {
+    let context = |v: AccountId| (get_context(vec![], false, v));
+    testing_env!(context(bob()));
+    let mut contract = BTPMessageCenter::default();
+    contract.request_service(
+        "test".to_string(),
+        "sssssssss.s".parse::<AccountId>().unwrap(),
+    );
+
+    testing_env!(context(alice()));
+    contract.approve_service("test1".to_string(), true);
+}
+
+#[test]
 fn approve_service_reject_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));

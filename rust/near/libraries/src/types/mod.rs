@@ -14,3 +14,8 @@ mod btp_address;
 pub use btp_address::{Address, BTPAddress};
 mod connection;
 pub use connection::{Connections, Connection};
+pub mod message;
+mod transfer_request;
+pub use transfer_request::TransferRequest;
+mod transfer_response;
+pub use transfer_response::TransferResponse;

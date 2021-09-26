@@ -14,6 +14,7 @@ pub mod errors {
         }
     }
 
+    #[derive(Debug)]
     pub enum BMCError {
         Generic,
         InvalidAddress,
@@ -34,6 +35,7 @@ pub mod errors {
         VerifierNotExist,
         RelayExist { link: String },
         RelayNotExist { link: String },
+        DecodeFailed { message: String }
     }
 
     impl fmt::Display for BMCError {
@@ -62,6 +64,9 @@ pub mod errors {
                 },
                 BMCError::RelayNotExist { link } => {
                     write!(f, "{}{} for {}", label, "NotExistRelay", link)
+                },
+                BMCError::DecodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "DecodeError", message)
                 }
             }
         }

@@ -5,12 +5,14 @@ use near_sdk::{
     AccountId,
 };
 use std::convert::TryFrom;
+use rlp::{self, Decodable};
 
 pub trait Account {
     fn account_id(&self) -> AccountId;
 }
 
 #[derive(Default, BorshSerialize, Serialize, Debug, Eq, PartialEq, PartialOrd, Hash, Clone)]
+#[serde(crate = "near_sdk::serde")]
 pub struct BTPAddress(String);
 
 impl BTPAddress {
@@ -68,5 +70,12 @@ impl std::str::FromStr for BTPAddress {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         validate_btp_address(value)?;
         Ok(Self(value.to_string()))
+    }
+}
+
+impl Decodable for BTPAddress {
+    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        Ok(Self::try_from(rlp.as_val::<String>()?)
+            .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))?)
     }
 }

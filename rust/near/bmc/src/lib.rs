@@ -196,7 +196,7 @@ impl BTPMessageCenter {
                 self.bsh.services.add(&name, &service);
             }
             self.bsh.requests.remove(&name);
-        }
+        };
     }
 
     /// Register the smart contract for the service
@@ -433,4 +433,12 @@ impl BTPMessageCenter {
     // * * * *    Messaging    * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
+
+    pub fn handle_relay_message(&self, source: BTPAddress, message: Base64VecU8) {
+        unimplemented!()
+    }
+
+    pub fn send_message() {
+        unimplemented!()
+    }
 }
