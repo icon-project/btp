@@ -20,7 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/ethereum/go-ethereum/light"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
@@ -99,6 +105,8 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 
 	srcContractAddress := HexToAddress(r.src.ContractAddress())
 
+	receiptTrie, err := trieFromReceipts(receipts)
+
 	for _, receipt := range receipts {
 		rp := &module.ReceiptProof{}
 
@@ -127,8 +135,13 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 
 		if len(rp.Events) > 0 {
 			r.log.Debugf("newReceiptProofs: %d", v.Height)
+			key, err := codec.RLP.MarshalToBytes(receipt.TransactionIndex)
+			proof, err := receiptProof(receiptTrie, key)
+			if err != nil {
+				return nil, err
+			}
 			rp.Index = int(receipt.TransactionIndex)
-			rp.Proof, err = codec.RLP.MarshalToBytes(*MakeReceipt(receipt))
+			rp.Proof, err = codec.RLP.MarshalToBytes(proof)
 			if err != nil {
 				return nil, err
 			}
@@ -137,6 +150,45 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 	}
 
 	return rps, nil
+}
+
+func trieFromReceipts(receipts []*types.Receipt) (*trie.Trie, error) {
+	tr, _ := trie.New(common.Hash{}, trie.NewDatabase(memorydb.New()))
+
+	for i, r := range receipts {
+		path, err := rlp.EncodeToBytes(uint(i))
+
+		if err != nil {
+			return nil, err
+		}
+
+		rawReceipt, err := rlp.EncodeToBytes(r)
+		if err != nil {
+			return nil, err
+		}
+
+		tr.Update(path, rawReceipt)
+	}
+
+	_, err := tr.Commit(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return tr, nil
+}
+
+func receiptProof(receiptTrie *trie.Trie, key []byte) ([][]byte, error) {
+	proofSet := light.NewNodeSet()
+	err := receiptTrie.Prove(key, 0, proofSet)
+	if err != nil {
+		return nil, err
+	}
+	proofs := make([][]byte, 0)
+	for _, node := range proofSet.NodeList() {
+		proofs = append(proofs, node)
+	}
+	return proofs, nil
 }
 
 func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallback, scb func()) error {
