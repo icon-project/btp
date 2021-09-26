@@ -88,7 +88,7 @@ public class Trie {
         return trie;
     }
 
-    private static class Path{
+    public static class Path{
         TrieNode node;
         byte[] remaining;
         List<TrieNode> stack;
@@ -96,6 +96,9 @@ public class Trie {
             this.node = node;
             this.remaining = remaining;
             this.stack = stack;
+        }
+        public List<TrieNode> getNodes() {
+            return stack;
         }
     }
 
@@ -224,8 +227,12 @@ public class Trie {
                 if(lastKey.length != 0 || lastNode instanceof TrieNode.LeafNode) {
                     lastNode.setKey(lastKey);
                     var raw = formatNode(lastNode, false, opStack, false);
-                    byte[][] flatten = {raw.get(0)[0], raw.get(1)[0]};
-                    newBranchNode.setBranch(branchKey, flatten);
+                    byte[][] branch = null;
+                    if (raw.size() == 2)
+                        branch = new byte[][]{raw.get(0)[0], raw.get(1)[0]};
+                    else
+                        branch = new byte[][]{raw.get(0)[0], new byte[0]};
+                    newBranchNode.setBranch(branchKey, branch);
                 } else {
                     formatNode(lastNode, false, opStack, true);
                     newBranchNode.setBranch(branchKey, ((TrieNode.ExtensionNode)lastNode).getValues());
