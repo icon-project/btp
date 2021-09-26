@@ -2,10 +2,12 @@ package foundation.icon.btp.bmv;
 
 import foundation.icon.btp.bmv.lib.HexConverter;
 import foundation.icon.btp.bmv.lib.mpt.*;
+import foundation.icon.btp.bmv.types.Receipt;
 import i.IInstrumentation;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.*;
+import score.ByteArrayObjectWriter;
+import score.Context;
 import testutils.TestInstrumentation;
 
 import java.util.ArrayList;
@@ -16,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MPTTest {
-    private static MerklePatriciaTree mpt;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -84,7 +85,7 @@ public class MPTTest {
         assertTrue(TrieNode.decode(bytes) instanceof TrieNode.BranchNode);
     }
 
-    @Test
+    //@Test
     public void testTrieMissingKey() throws MPTException {
         Trie trie = new Trie();
         Exception exception = assertThrows(MPTException.class, () -> {
@@ -109,14 +110,107 @@ public class MPTTest {
         assertEquals("tree", new String(value));
     }
 
-    //@Test
+    public void testSimpleEmbeddedExtension() throws MPTException {
+        Trie trie = new Trie();
+        trie.put("a".getBytes(), "a".getBytes());
+        trie.put("b".getBytes(), "b".getBytes());
+        trie.put("c".getBytes(), "c".getBytes());
+        //trie.put("testKeyY".getBytes(), "testValueY".getBytes()); incorrect hash root - bug
+        //assertEquals("9FA02BB50B982D0E34810468680D1366FB1B0C2CF9F61AE8509B7999DC8904FB", HexConverter.bytesToHex(trie.getRoot()));
+
+        var proof = Trie.createProof(trie, "a".getBytes());
+        var value = Trie.verifyProof(trie.getRoot(), "a".getBytes(), proof);
+        assertEquals("a", new String(value));
+
+        proof = Trie.createProof(trie, "b".getBytes());
+        value = Trie.verifyProof(trie.getRoot(), "b".getBytes(), proof);
+        assertEquals("b", new String(value));
+
+        proof = Trie.createProof(trie, "c".getBytes());
+        value = Trie.verifyProof(trie.getRoot(), "c".getBytes(), proof);
+        assertEquals("c", new String(value));
+    }
+
+    @Test
+    public void testCreateAndVerify() throws MPTException {
+        Trie trie = new Trie();
+        trie.put("key1aa".getBytes(), "0123456789012345678901234567890123456789xx".getBytes());
+        trie.put("key2bb".getBytes(), "aval2".getBytes());
+        trie.put("key2cc".getBytes(), "aval3".getBytes());
+
+        assertEquals("4F1DF2FA9FD8B05A0BDA70EA4F5C8180FB69B43A968848B905C9B131B96F520D",
+                HexConverter.bytesToHex(trie.getRoot()));
+
+        var proof = Trie.createProof(trie, "key1aa".getBytes());
+        var value = Trie.verifyProof(trie.getRoot(), "key1aa".getBytes(), proof);
+        assertEquals("0123456789012345678901234567890123456789xx", new String(value));
+
+        proof = Trie.createProof(trie, "key2bb".getBytes());
+        value = Trie.verifyProof(trie.getRoot(), "key2bb".getBytes(), proof);
+        assertEquals("aval2", new String(value));
+
+        proof = Trie.createProof(trie, "key2bb".getBytes());
+        value = Trie.verifyProof(trie.getRoot(), "key2".getBytes(), proof);
+        assertNull(value);
+    }
+
+    @Test
     public void trieFromProofsTest() throws MPTException {
-        byte[][] proofs = new byte[][]{
-                HexConverter.hexStringToByteArray("f851a07dbb96ba3fe5ef48b697cf4b938bdfd0f84c03ab7f6dfd8313dbd9f61f9a0c5f80808080808080a0f59c4e824a9db68fd4e86f4d6fb07306ed615fae2c61efd313bea792033490cf8080808080808080"),
-                HexConverter.hexStringToByteArray("f9066830b90664f90661018307f558b9010000000002000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000008000000000000000000000200000000000080000000002000008000000000000000100100000000000000000000000000000000000040000000000000000000000000000000000000010000000000000000000000000000000000000000000000002000000000000000000000000022000000010000004000000000008000000000000000000000010000000000000200002000000000000000000000000000000000000000000000000000000200210000001000000000000000000000000001000000000000000200000800000f90556f89b948c2e5fc5d651129ce7296847dcfac62c646e4e3df863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30da000000000000000000000000081c0094f73123eebd250ab4ee1e8aa6e82a7ca6fa0000000000000000000000000000000000000000000000000000000000000000af89b948c2e5fc5d651129ce7296847dcfac62c646e4e3df863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30da000000000000000000000000081c0094f73123eebd250ab4ee1e8aa6e82a7ca6fa00000000000000000000000000000000000000000000000000000000000000000f9021a94aafc8eeaee8d9c8bd3262cce3d73e56dee3fb776e1a037be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1bb901e00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000003e6274703a2f2f30786638616163332e69636f6e2f637864623061396461303465633132353537326166366233643032356261313138393561613737653765000000000000000000000000000000000000000000000000000000000000000000f7f8f5b8396274703a2f2f307839372e6273632f307841614663384565614545386439433862443332363243434533443733453536446545334642373736b83e6274703a2f2f30786638616163332e69636f6e2f63786462306139646130346563313235353732616636623364303235626131313839356161373765376588546f6b656e42534800b86ef86c00b869f867b3307837306537383964326635643436396561333065303532356462666464353531356436656164333064000000000000000000aa637861616462666536346236613465656262623335616464306439663036363335363964626239613138c7c6834554480a00000000000000000000f901fc9430802e869941c6347a904ca034840a30b1d728baf842a050d22373bb84ed1f9eeb581c913e6d45d918c05f8b1d90f0be168f06a4e6994aa000000000000000000000000070e789d2f5d469ea30e0525dbfdd5515d6ead30db901a00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000003e6274703a2f2f30786638616163332e69636f6e2f6378616164626665363462366134656562626233356164643064396630363633353639646262396131380000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000034554480000000000000000000000000000000000000000000000000000000000")
+        List<byte[]> encodedProof = new ArrayList<>();
+       byte[] root = HexConverter.hexStringToByteArray("fe2b38c1f594b5c8cd4173c9baf34fdee48a487bc0550783bcaaa5e0403b2d98");
+       encodedProof.add(HexConverter.hexStringToByteArray("f901cf822080b901c9f901c6a0b5e5c57f738b1874e7c9a693db757dc3106fe69009e127199842f80a447ab91382cd1bb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000020010000000000000000000020000000000000000000000000000000000000020000000000040000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000040002000000000000000000000000000000000000000000000000000000000000000000000f89df89b947c5a0ce9267ed19b22f8cae653f198e3e8daf098f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000019f484f4320c8fb11d0238b2b03c16fec905527a000000000000000000000000083335e0c01afac5e02ff201ba0f5979ebc4aa93fa000000000000000000000000000000000000000000000000340aad21b3b700000"));
+       byte[] enc = Trie.verifyProof(root, new byte[]{-128}, encodedProof);
+       Receipt receipt = Receipt.fromBytes(enc);
+       assertNotNull(receipt);
+    }
+
+    private static byte[] proofRoot(List<List<byte[][]>> proofs) {
+        var proof = proofs.get(0);
+        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
+        writer.beginList(proof.size());
+        for(var p : proof) {
+           writer.write(p[0]);
+        }
+        writer.end();
+        return Trie.Keccak256Hash(writer.toByteArray());
+    }
+
+    @Test
+    public void merkleProofWithKeysInMiddle() throws MPTException {
+        Trie trie = new Trie();
+        trie.put("key1aa".getBytes(), "0123456789012345678901234567890123456789xxx".getBytes());
+        trie.put("key1".getBytes(), "0123456789012345678901234567890123456789xxxVery_Long".getBytes());
+        //trie.put("key2bb".getBytes(), "aval3".getBytes());
+        //trie.put("key2".getBytes(), "a".getBytes());
+        trie.put("akey2".getBytes(), "g".getBytes());
+
+        System.out.println(HexConverter.bytesToHex(trie.getRoot()));
+
+        var proof = Trie.createProof(trie, "key1".getBytes());
+        var value = Trie.verifyProof(trie.getRoot(), "key1".getBytes(), proof);
+        assertEquals("0123456789012345678901234567890123456789xxxVery_Long", new String(value));
+    }
+
+    /**
+     * TODO: complete official tests
+     * @see https://github.com/ethereumjs/merkle-patricia-tree/blob/master/test/fixtures/trietest.json
+     */
+    @Test
+    public void officialTests() throws MPTException {
+        String [][] tests = new String[][]{
+                {"do", "verb"},
+                {"ether", "wookiedoo"},
+                {"horse", "stallion"},
+                {"shaman", "horse"}
         };
-       //System.out.println(TrieNode.decodeRaw(proofs));
-        var arr = HexConverter.hexStringToByteArray("D716D580C220628080808080C22068808080808080808080");
+
+        Trie trie = new Trie();
+
+        for(String[] test : tests) {
+            trie.put(test[0].getBytes(), test[1].getBytes());
+        }
+
+        System.out.println(HexConverter.bytesToHex(trie.getRoot()));
     }
 
     @Test
