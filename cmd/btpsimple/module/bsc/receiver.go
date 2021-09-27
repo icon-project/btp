@@ -105,7 +105,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 
 	srcContractAddress := HexToAddress(r.src.ContractAddress())
 
-	receiptTrie, err := trieFromReceipts(receipts)
+	receiptTrie, err := trieFromReceipts(receipts) // receiptTrie.Hash() == block.ReceiptHash
 
 	for _, receipt := range receipts {
 		rp := &module.ReceiptProof{}
@@ -135,13 +135,13 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 
 		if len(rp.Events) > 0 {
 			r.log.Debugf("newReceiptProofs: %d", v.Height)
-			key, err := codec.RLP.MarshalToBytes(receipt.TransactionIndex)
-			proof, err := receiptProof(receiptTrie, key)
+			key, err := rlp.EncodeToBytes(receipt.TransactionIndex)
+			proofs, err := receiptProof(receiptTrie, key)
 			if err != nil {
 				return nil, err
 			}
 			rp.Index = int(receipt.TransactionIndex)
-			rp.Proof, err = codec.RLP.MarshalToBytes(proof)
+			rp.Proof, err = codec.RLP.MarshalToBytes(proofs)
 			if err != nil {
 				return nil, err
 			}
