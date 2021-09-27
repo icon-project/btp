@@ -60,8 +60,7 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut co
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_LASTOWNER_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_NOTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
-pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context =
-    |context: Context| context;
+pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context = |context: Context| context;
 
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *

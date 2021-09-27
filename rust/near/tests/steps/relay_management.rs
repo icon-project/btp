@@ -5,32 +5,6 @@ use super::*;
 
 //Common step in add_relays
 
-pub static ADD_LINK_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-
-    //provide the link to be added
-    //link provided shoud be in verifier
-    VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM(context)
-    .pipe(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-    .pipe(LINK_ADDRESS_PROVIDED_AS_ADD_LINK_PARAM)
-    .pipe(ALICE_INVOKES_ADD_LINK_IN_BMC)
-};
-
-pub static LINK_ADDRESS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Context = |mut context: Context| {
-    context.add_method_params(
-        "add_link",
-        json!({
-            "link": "BTPADDRESS"
-        }),
-    );
-    context
-};
-
-pub static ALICE_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("alice").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_link(context)
-};
-
 pub static LINK_AND_RELAY_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
         "add_realy",

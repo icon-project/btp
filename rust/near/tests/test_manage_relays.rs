@@ -10,7 +10,7 @@ mod manage_verifers {
         use super::*;
         
         #[runner::test(sandbox)]
-        async fn add_relay_as_authorized_success(){\
+        async fn add_relay_as_authorized_success(){
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .when(ADD_RELAY_INVOKED_BY_BMC_OWNER)
