@@ -19,3 +19,7 @@ mod transfer_request;
 pub use transfer_request::TransferRequest;
 mod transfer_response;
 pub use transfer_response::TransferResponse;
+mod wrapper;
+pub use wrapper::Wrapper;
+mod wrapped_i128;
+pub use wrapped_i128::WrappedI128;

@@ -7,7 +7,7 @@ use btp_common::{
     owner,
 };
 use libraries::types::{
-    Address, BTPAddress, Bmv, Bsh, Connection, Connections, Links, Owners, Routes,
+    message, Address, BTPAddress, Bmv, Bsh, Connection, Connections, Links, Owners, Routes,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
@@ -439,6 +439,16 @@ impl BTPMessageCenter {
     }
 
     pub fn send_message() {
+        let service_message = message::BmcService::new(message::ServiceType::Link {
+            link: BTPAddress::new("test".to_string()),
+        });
+        let s = service_message.service_type();
+        match service_message.service_type() {
+            message::ServiceType::Link { link} => {
+                println!("{}", link.blockchain().unwrap());
+            }
+            _ => ()
+        }
         unimplemented!()
     }
 }

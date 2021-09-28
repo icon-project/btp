@@ -5,8 +5,8 @@ use near_sdk::{
     AccountId,
 };
 use std::convert::TryFrom;
-use rlp::{self, Decodable};
-
+use rlp::{self, Decodable, Encodable};
+use std::str;
 pub trait Account {
     fn account_id(&self) -> AccountId;
 }
@@ -77,5 +77,11 @@ impl Decodable for BTPAddress {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         Ok(Self::try_from(rlp.as_val::<String>()?)
             .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))?)
+    }
+}
+
+impl Encodable for BTPAddress {
+    fn rlp_append(&self, stream: &mut rlp::RlpStream) {
+        stream.append_internal(&self.to_string());
     }
 }
