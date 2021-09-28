@@ -20,3 +20,7 @@ pub use relay_management::*;
 
 mod link_management;
 pub use link_management::*;
+
+mod route_management;
+
+pub use route_management::*;
