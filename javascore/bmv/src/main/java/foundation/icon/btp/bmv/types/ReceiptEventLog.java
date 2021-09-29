@@ -11,11 +11,11 @@ public class ReceiptEventLog {
 
     final static String RLPn = "RLPn";
 
-    private final String address;
+    private final byte[] address;
     private final List<byte[]> topics;
     private final byte[] data;
 
-    public ReceiptEventLog(String address, List<byte[]> topics, byte[] data) {
+    public ReceiptEventLog(byte[] address, List<byte[]> topics, byte[] data) {
         this.address = address;
         this.topics = topics;
         this.data = data;
@@ -31,7 +31,7 @@ public class ReceiptEventLog {
         if (!reader.hasNext())
             return new ReceiptEventLog(null, new ArrayList<>(), new byte[]{0});
         //address
-        String address = reader.readString();
+        byte[] address = reader.readByteArray();
         //indexed
         List<byte[]> topics = readByteArrayListFromRLP(reader);
         //data
@@ -48,7 +48,7 @@ public class ReceiptEventLog {
             return null;
 
         //address
-        String address = reader.readString();
+        byte[] address = reader.readByteArray();
         //topics
         List<byte[]> topics = readByteArrayListFromRLP(reader);
         //data
@@ -73,7 +73,7 @@ public class ReceiptEventLog {
         return lists;
     }
 
-    public String getAddress() {
+    public byte[] getAddress() {
         return address;
     }
 

@@ -15,8 +15,7 @@
  */
 package foundation.icon.btp.bmv.types;
 
-import foundation.icon.btp.bmv.lib.HexConverter;
-import foundation.icon.btp.bmv.lib.mpt.MerklePatriciaTree;
+import foundation.icon.btp.bmv.lib.mpt.Trie;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
@@ -67,14 +66,24 @@ public class ReceiptProof {
         }
 
         List<byte[]> mptProofs = new ArrayList<>();
-        mptProofs.add(reader.readNullable(byte[].class));
+        //mptProofs.add(reader.readNullable(byte[].class));
+        ObjectReader mptProofReader = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
+        try {
+            mptProofReader.beginList();
+            while (reader.hasNext()) {
+                mptProofs.add(mptProofReader.readByteArray());
+            }
+            mptProofReader.end();
+        } catch (Exception e) {
+            //TODO: check why last reader.hasNext = true, even where there is no data, hence the exception
+        }
 
         //EventProofs
         List<EventProof> eventProofs = readEventProofs(reader);
 
         //Event Logs
         List<ReceiptEventLog> eventLogs = new ArrayList<>();
-        for (EventProof ef: eventProofs) {
+        for (EventProof ef : eventProofs) {
             eventLogs.add(ReceiptEventLog.fromBytes(ef.getProof()));
         }
 
@@ -102,9 +111,9 @@ public class ReceiptProof {
         List<EventProof> eventProofs = new ArrayList<>();
 
         reader.beginList();
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             reader.beginList();
-            int index    = reader.readInt();
+            int index = reader.readInt();
             byte[] proof = reader.readNullable(byte[].class);
             eventProofs.add(new EventProof(index, proof));
             reader.end();
@@ -116,7 +125,8 @@ public class ReceiptProof {
 
     public Receipt prove(byte[] receiptRootHash) {
         try {
-            byte[] leaf = MerklePatriciaTree.prove(receiptRootHash, this.mptKey, this.mptProofs);
+            //byte[] leaf = MerklePatriciaTree.prove(receiptRootHash, this.mptKey, this.mptProofs);
+            byte[] leaf = Trie.verifyProof(receiptRootHash, this.mptKey, this.mptProofs);
             Receipt receipt = Receipt.fromBytes(leaf);
             //receipt.setEventLogsWithProofs(eventProofs);//TODO: check this
             return receipt;

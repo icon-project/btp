@@ -5,10 +5,10 @@ import foundation.icon.btp.bmv.lib.BytesUtil;
 import foundation.icon.btp.bmv.lib.HexConverter;
 import foundation.icon.btp.bmv.lib.Pair;
 import score.Context;
-//import scorex.util.HashMap;
+import scorex.util.HashMap;
+import scorex.util.ArrayList;
 
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.List;
 
 public class Trie {
 
@@ -19,7 +19,7 @@ public class Trie {
             .hexStringToByteArray("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421");
 
     private byte[] root = null;
-    private final Map<ByteBuffer, byte[]> db = new HashMap<>();
+    private final HashMap<String, byte[]> db = new HashMap<>();
 
     public Trie() {
         this.root = EMPTY_HASH;
@@ -36,7 +36,7 @@ public class Trie {
     private void createInitialNode(byte[] key, byte[] value) {
        var node = new TrieNode.LeafNode(Nibbles.bytesToNibbles(key), value);
        this.root = node.hash();
-       this.db.put(ByteBuffer.wrap(this.root), node.encodeRLP());
+       this.db.put(HexConverter.bytesToHex(this.root), node.encodeRLP());
     }
 
     public void put(byte[] key, byte[] value) throws MPTException {
@@ -309,9 +309,9 @@ public class Trie {
     private void updateDB(List<DBUpdate> stack) {
         for(DBUpdate dbUpdate:stack) {
             switch(dbUpdate.op){
-                case PUT:this.db.put(ByteBuffer.wrap(dbUpdate.key), dbUpdate.rlpNode);
+                case PUT:this.db.put(HexConverter.bytesToHex(dbUpdate.key), dbUpdate.rlpNode);
                 break;
-                case DELETE:this.db.remove(ByteBuffer.wrap(dbUpdate.key));
+                case DELETE:this.db.remove(HexConverter.bytesToHex(dbUpdate.key));
                 break;
                 default:
             }
@@ -319,7 +319,7 @@ public class Trie {
     }
 
     private TrieNode lookupNode(byte[] bytes) throws MPTException {
-        var value = this.db.get(ByteBuffer.wrap(bytes));
+        var value = this.db.get(HexConverter.bytesToHex(bytes));
         if(value != null) {
             return TrieNode.decode(value);
         } else {
@@ -358,5 +358,4 @@ public class Trie {
     public static byte[] Keccak256Hash(byte[] data) {
         return Context.hash("keccak-256", data);
     }
-
 }
