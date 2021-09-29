@@ -1,12 +1,14 @@
-use crate::types::{message::BtpMessage, message::ServiceMessage, BTPAddress, WrappedI128};
+use crate::types::{
+    message::BtpMessage, message::SerializedMessage, message::ServiceMessage, BTPAddress,
+    WrappedI128,
+};
 use btp_common::errors::BMCError;
-use bytes::BytesMut;
 use near_sdk::{
-    base64::{self, URL_SAFE, URL_SAFE_NO_PAD}, // TODO: Confirm
+    base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
     serde::{de, ser, Deserialize, Serialize},
 };
 use rlp::{self, Decodable, Encodable};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum BmcServiceType {
@@ -55,7 +57,7 @@ impl TryFrom<(&String, &Vec<u8>)> for BmcServiceType {
     }
 }
 
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 pub struct BmcServiceMessage {
     service_type: BmcServiceType,
 }
@@ -124,6 +126,19 @@ impl Encodable for BmcServiceMessage {
     }
 }
 
+impl Encodable for BtpMessage<BmcServiceMessage> {
+    fn rlp_append(&self, stream: &mut rlp::RlpStream) {
+        stream
+            .begin_unbounded_list()
+            .append(self.source())
+            .append(self.destination())
+            .append(self.service())
+            .append(self.serial_no())
+            .append(self.payload())
+            .finalize_unbounded_list()
+    }
+}
+
 impl<'de> Deserialize<'de> for BmcServiceMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as de::Deserializer<'de>>::Error>
     where
@@ -146,10 +161,11 @@ impl Serialize for BmcServiceMessage {
 impl TryFrom<String> for BmcServiceMessage {
     type Error = BMCError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let decoded =
-            base64::decode_config(value, URL_SAFE).map_err(|error| BMCError::DecodeFailed {
+        let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
+            BMCError::DecodeFailed {
                 message: format!("base64: {}", error),
-            })?;
+            }
+        })?;
         let rlp = rlp::Rlp::new(&decoded);
         Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
             message: format!("rlp: {}", error),
@@ -167,9 +183,22 @@ impl TryFrom<Vec<u8>> for BmcServiceMessage {
     }
 }
 
+impl From<BmcServiceMessage> for Vec<u8> {
+    fn from(service_message: BmcServiceMessage) -> Self {
+        rlp::encode(&service_message).to_vec()
+    }
+}
+
 impl From<&BmcServiceMessage> for String {
     fn from(service_message: &BmcServiceMessage) -> Self {
         let rlp = rlp::encode(service_message);
+        base64::encode_config(rlp, URL_SAFE_NO_PAD)
+    }
+}
+
+impl From<&BtpMessage<BmcServiceMessage>> for String {
+    fn from(btp_message: &BtpMessage<BmcServiceMessage>) -> Self {
+        let rlp = rlp::encode(btp_message);
         base64::encode_config(rlp, URL_SAFE_NO_PAD)
     }
 }
@@ -179,22 +208,19 @@ impl ServiceMessage for BmcServiceMessage {}
 impl Decodable for BtpMessage<BmcServiceMessage> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         let service = rlp.val_at::<String>(2)?;
-        let (service_message, payload) = match service.as_str() {
-            "bmc" => (
-                Some(
-                    BmcServiceMessage::try_from(rlp.val_at::<Vec<u8>>(4)?)
-                        .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))?,
-                ),
-                vec![0u8],
+        let service_message = match service.as_str() {
+            "bmc" => Some(
+                BmcServiceMessage::try_from(rlp.val_at::<Vec<u8>>(4)?)
+                    .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))?,
             ),
-            _ => (None, rlp.as_raw().to_vec()),
+            _ => None,
         };
         Ok(Self::new(
             rlp.val_at::<BTPAddress>(0)?,
             rlp.val_at::<BTPAddress>(1)?,
             service,
             rlp.val_at::<WrappedI128>(3)?,
-            payload,
+            rlp.val_at::<Vec<u8>>(4)?,
             service_message,
         ))
     }
@@ -203,10 +229,11 @@ impl Decodable for BtpMessage<BmcServiceMessage> {
 impl TryFrom<String> for BtpMessage<BmcServiceMessage> {
     type Error = BMCError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let decoded =
-            base64::decode_config(value, URL_SAFE).map_err(|error| BMCError::DecodeFailed {
+        let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
+            BMCError::DecodeFailed {
                 message: format!("base64: {}", error),
-            })?;
+            }
+        })?;
         let rlp = rlp::Rlp::new(&decoded);
         Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
             message: format!("rlp: {}", error),
@@ -214,11 +241,30 @@ impl TryFrom<String> for BtpMessage<BmcServiceMessage> {
     }
 }
 
+impl TryFrom<BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
+    type Error = BMCError;
+    fn try_from(value: BtpMessage<SerializedMessage>) -> Result<Self, Self::Error> {
+        let rlp = rlp::Rlp::new(value.payload());
+        Ok(Self::new(
+            value.source().clone(),
+            value.destination().clone(),
+            value.service().clone(),
+            value.serial_no().clone(),
+            value.payload().clone(),
+            Some(BmcServiceMessage::try_from(
+                rlp.val_at::<Vec<u8>>(0)
+                    .map_err(|_| BMCError::DecodeFailed {
+                        message: "Failed to Decode BMC Service Message".to_string(),
+                    })?,
+            )?),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::types::{message::btp_message::BtpMessage, WrappedI128};
-
     use super::{BTPAddress, BmcServiceMessage, BmcServiceType};
+    use crate::types::{message::btp_message::BtpMessage, WrappedI128};
     use std::convert::TryFrom;
 
     #[test]
@@ -346,6 +392,16 @@ mod tests {
 
     #[test]
     fn deserialize_btp_message() {
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Init {
+            links: vec![
+                BTPAddress::new(
+                    "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                ),
+                BTPAddress::new(
+                    "btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                ),
+            ],
+        });
         let btp_message = BtpMessage::try_from("-MKcYnRwOi8vMTIzNC5pY29uZWUvMHgxMjM0NTY3OJxidHA6Ly8xMjM0Lmljb25lZS8weDEyMzQ1Njc4g2JtYwG4gfh_hEluaXS4ePh2-HS4OGJ0cDovLzB4MS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjViuDhidHA6Ly8weDUucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yg".to_string()).unwrap();
         assert_eq!(
             btp_message,
@@ -354,7 +410,7 @@ mod tests {
                 BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
                 "bmc".to_string(),
                 WrappedI128::new(1),
-                vec![0_u8],
+                <Vec<u8>>::from(bmc_service_message.clone()),
                 Some(BmcServiceMessage::new(BmcServiceType::Init {
                     links: vec![
                         BTPAddress::new(
@@ -367,5 +423,28 @@ mod tests {
                 }))
             )
         );
+    }
+
+    #[test]
+    fn serialize_btp_message() {
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Init {
+            links: vec![
+                BTPAddress::new(
+                    "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                ),
+                BTPAddress::new(
+                    "btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                ),
+            ],
+        });
+        let btp_message = BtpMessage::new(
+            BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+            BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+            "bmc".to_string(),
+            WrappedI128::new(1),
+            <Vec<u8>>::from(bmc_service_message.clone()),
+            Some(bmc_service_message),
+        );
+        assert_eq!(String::from(&btp_message), "-MKcYnRwOi8vMTIzNC5pY29uZWUvMHgxMjM0NTY3OJxidHA6Ly8xMjM0Lmljb25lZS8weDEyMzQ1Njc4g2JtYwG4gfh_hEluaXS4ePh2-HS4OGJ0cDovLzB4MS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjViuDhidHA6Ly8weDUucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yg".to_string());
     }
 }
