@@ -15,8 +15,8 @@ deposit_ICX_for_Alice() {
             cd ${CONFIG_DIR}
             goloop rpc sendtx transfer \
                 --to $(get_alice_address) \
-                --value $ICX_DEPOSIT_AMOUNT | jq -r . > tx.deposit.alice
-            ensure_txresult tx.deposit.alice
+                --value $ICX_DEPOSIT_AMOUNT | jq -r . > tx.alice.deposit
+            ensure_txresult tx.alice.deposit
             get_alice_balance
         ;;
         *) return 0
@@ -32,8 +32,8 @@ transfer_ICX_from_Alice_to_Bob() {
         --to $(cat nativeCoinBsh.icon) --method transferNativeCoin \
         --param _to=$(cat bob.btp.address) --value $ICX_TRANSER_AMOUNT \
         --key_store alice.ks.json --key_secret alice.secret \
-        | jq -r . > tx.Alice2Bob.transfer
-    ensure_txresult tx.Alice2Bob.transfer
+        | jq -r . > tx.alice.transfer
+    ensure_txresult tx.alice.transfer
 }
 
 bob_balance_in_moonbeam_before_transfering() {

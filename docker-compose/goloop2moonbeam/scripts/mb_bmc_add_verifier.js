@@ -1,14 +1,11 @@
 const BMCManagement = artifacts.require('BMCManagement');
-const { assert } = require('chai');
+const fs = require('fs');
 
 module.exports = async function (callback) {
     try {
         const bmcManagement = await BMCManagement.deployed();
-        const tx = await bmcManagement.addVerifier(process.env.ICON_NET, process.env.BMV_MOONBEAM);
-        let verifers = await bmcManagement.getVerifiers();
-        assert(
-            verifers[0].net === process.env.ICON_NET, verifers[0].addr === process.env.BMV_MOONBEAM,
-        );
+        const addVerifier = await bmcManagement.addVerifier(process.env.ICON_NET, process.env.BMV_MOONBEAM);
+        fs.writeFileSync(process.env.CONFIG_DIR + "/tx.moonbeam.addVerifier", addVerifier.tx);
     }
     catch (error) {
         console.log(error)
