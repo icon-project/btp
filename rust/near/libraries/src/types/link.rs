@@ -2,16 +2,15 @@ use super::{BTPAddress, Relays};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use std::ops::{Deref, DerefMut};
-
-type Link = BTPAddress;
+use std::collections::HashSet;
 
 #[derive(Debug, Default, BorshDeserialize, BorshSerialize, Eq, PartialEq)]
-pub struct LinkProperty {
+pub struct Link {
     rx_seq: u128,
     tx_seq: u128,
     verifier: Verifier,
     relays: Relays,
-    reachable: Vec<u8>,
+    reachable: HashSet<BTPAddress>,
     relay_index: u64,
     rotate_height: u64,
     rotate_term: u64,
@@ -25,7 +24,15 @@ pub struct LinkProperty {
     current_epoch: u128
 }
 
-impl LinkProperty {
+impl Link {
+    pub fn reachable(&self) -> &HashSet<BTPAddress> {
+        &self.reachable
+    }
+
+    pub fn reachable_mut(&mut self) -> &mut HashSet<BTPAddress> {
+        &mut self.reachable
+    }
+
     pub fn set_block_interval_src(&mut self, block_interval_src: u64) {
         self.block_interval_src = block_interval_src;
     }
@@ -56,10 +63,10 @@ impl LinkProperty {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Links(UnorderedMap<Link, LinkProperty>);
+pub struct Links(UnorderedMap<BTPAddress, Link>);
 
 impl Deref for Links {
-    type Target = UnorderedMap<Link, LinkProperty>;
+    type Target = UnorderedMap<BTPAddress, Link>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -87,14 +94,14 @@ impl Links {
     pub fn add(&mut self, link: &BTPAddress) {
         self.0.insert(
             link,
-            &LinkProperty {
+            &Link{
                 relays: Relays::new(link),
                 ..Default::default()
             },
         );
     }
 
-    pub fn set(&mut self, link: &BTPAddress, property: &LinkProperty) {
+    pub fn set(&mut self, link: &BTPAddress, property: &Link) {
         self.0.insert(link, property);
     }
 
@@ -106,7 +113,7 @@ impl Links {
         self.0.keys_as_vector().to_vec()
     }
 
-    pub fn get(&self, link: &BTPAddress) -> Option<LinkProperty> {
+    pub fn get(&self, link: &BTPAddress) -> Option<Link> {
         if let Some(value) = self.0.get(link) {
             return Some(value);
         }
@@ -156,7 +163,7 @@ mod tests {
         );
         let mut links = Links::new();
         links.add(&link);
-        let expected = LinkProperty {
+        let expected = Link {
             ..Default::default()
         };
         assert_eq!(links.get(&link).unwrap(), expected);
@@ -166,21 +173,21 @@ mod tests {
     fn add_link_relays_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress::new(
+        let link_1 = BTPAddress::new(
             "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut links = Links::new();
-        links.add(&link);
+        links.add(&link_1);
 
-        if let Some(link_property) = links.get(&link).as_mut() {
-            link_property.relays.add(
+        if let Some(link) = links.get(&link_1).as_mut() {
+            link.relays.add(
                 &"88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                     .parse::<AccountId>()
                     .unwrap(),
             );
-            links.set(&link, &link_property);
+            links.set(&link_1, &link);
         }
-        let mut expected = LinkProperty {
+        let mut expected = Link {
             ..Default::default()
         };
         expected.relays.add(
@@ -188,81 +195,81 @@ mod tests {
                 .parse::<AccountId>()
                 .unwrap(),
         );
-        assert_eq!(links.get(&link).unwrap(), expected);
+        assert_eq!(links.get(&link_1).unwrap(), expected);
     }
 
     #[test]
     fn set_link_block_interval_src() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress::new(
+        let link_1 = BTPAddress::new(
             "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut links = Links::new();
-        links.add(&link);
-        if let Some(link_property) = links.get(&link).as_mut() {
-            link_property.set_block_interval_src(1000);
-            links.set(&link, &link_property);
+        links.add(&link_1);
+        if let Some(link) = links.get(&link_1).as_mut() {
+            link.set_block_interval_src(1000);
+            links.set(&link_1, &link);
         }
-        let expected = LinkProperty {
+        let expected = Link {
             block_interval_src: 1000,
             ..Default::default()
         };
-        assert_eq!(links.get(&link).unwrap(), expected);
+        assert_eq!(links.get(&link_1).unwrap(), expected);
     }
 
     #[test]
     fn set_link_max_aggregation_src() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress::new(
+        let link_1 = BTPAddress::new(
             "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut links = Links::new();
-        links.add(&link);
-        if let Some(link_property) = links.get(&link).as_mut() {
-            link_property.set_max_aggregation(10);
-            links.set(&link, &link_property);
+        links.add(&link_1);
+        if let Some(link) = links.get(&link_1).as_mut() {
+            link.set_max_aggregation(10);
+            links.set(&link_1, &link);
         }
-        let expected = LinkProperty {
+        let expected = Link {
             max_aggregation: 10,
             ..Default::default()
         };
-        assert_eq!(links.get(&link).unwrap(), expected);
+        assert_eq!(links.get(&link_1).unwrap(), expected);
     }
 
     #[test]
     fn set_link_delay_limit_src() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress::new(
+        let link_1 = BTPAddress::new(
             "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut links = Links::new();
-        links.add(&link);
-        if let Some(link_property) = links.get(&link).as_mut() {
-            link_property.set_delay_limit(100);
-            links.set(&link, &link_property);
+        links.add(&link_1);
+        if let Some(link) = links.get(&link_1).as_mut() {
+            link.set_delay_limit(100);
+            links.set(&link_1, &link);
         }
-        let expected = LinkProperty {
+        let expected = Link {
             delay_limit: 100,
             ..Default::default()
         };
-        assert_eq!(links.get(&link).unwrap(), expected);
+        assert_eq!(links.get(&link_1).unwrap(), expected);
     }
 
     #[test]
     fn set_link_relays_pass() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let link = BTPAddress::new(
+        let link_1 = BTPAddress::new(
             "btp://0x1.near/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut links = Links::new();
-        links.add(&link);
+        links.add(&link_1);
 
-        if let Some(link_property) = links.get(&link).as_mut() {
-            link_property.relays.set(&vec![
+        if let Some(link) = links.get(&link_1).as_mut() {
+            link.relays.set(&vec![
                 "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e2"
                     .parse::<AccountId>()
                     .unwrap(),
@@ -273,9 +280,9 @@ mod tests {
                     .parse::<AccountId>()
                     .unwrap(),
             ]);
-            links.set(&link, &link_property);
+            links.set(&link_1, &link);
         }
-        let mut expected = LinkProperty {
+        let mut expected = Link {
             ..Default::default()
         };
         expected.relays.set(&vec![
@@ -289,7 +296,7 @@ mod tests {
                 .parse::<AccountId>()
                 .unwrap(),
         ]);
-        assert_eq!(links.get(&link).unwrap(), expected);
+        assert_eq!(links.get(&link_1).unwrap(), expected);
     }
 
     #[test]

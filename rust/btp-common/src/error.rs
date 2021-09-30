@@ -17,7 +17,7 @@ pub mod errors {
     #[derive(Debug)]
     pub enum BMCError {
         Generic,
-        InvalidAddress,
+        InvalidAddress { description: String },
         RequestExist,
         RequestNotExist,
         ServiceExist,
@@ -45,7 +45,7 @@ pub mod errors {
             let label = "BMCRevert";
             match self {
                 BMCError::Generic => write!(f, "{}", label),
-                BMCError::InvalidAddress => write!(f, "{}{}", label, "InvalidAddress"),
+                BMCError::InvalidAddress { description } => write!(f, "{}{}: {}", label, "InvalidAddress", description),
                 BMCError::RequestExist => write!(f, "{}{}", label, "RequestPending"),
                 BMCError::RequestNotExist => write!(f, "{}{}", label, "NotExistRequest"),
                 BMCError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),

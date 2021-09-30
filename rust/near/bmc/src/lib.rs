@@ -75,11 +75,12 @@ impl BTPMessageCenter {
         );
     }
 
-    fn assert_internal_service_message_from_direct_source(&self, previous: &BTPAddress, source: &BTPAddress) {
-        require!(
-            previous == source,
-
-        )
+    fn assert_internal_service_message_from_direct_source(
+        &self,
+        previous: &BTPAddress,
+        source: &BTPAddress,
+    ) {
+        todo!()
     }
 
     fn assert_link_exists(&self, link: &BTPAddress) {
@@ -165,6 +166,97 @@ impl BTPMessageCenter {
             !self.bmv.contains(network),
             format!("{}", BMCError::VerifierExist)
         );
+    }
+    
+    // * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * *
+    // * * * * Interval Services * * * *
+    // * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * *
+
+    fn handle_init(
+        &mut self,
+        source: &BTPAddress,
+        links: &Vec<BTPAddress>,
+    ) -> Result<(), BMCError> {
+        if let Some(mut link) = self.links.get(source) {
+            for source_link in links.iter() {
+                // Add to Reachable list of the link
+                link.reachable_mut().insert(source_link.to_owned());
+
+                // Add to the connections for quickily quering for routing
+                self.connections.add(
+                    &Connection::LinkReachable(
+                        source_link
+                            .network_address()
+                            .map_err(|error| BMCError::InvalidAddress { description: error })?,
+                    ),
+                    source,
+                )
+            }
+            self.links.set(source, &link);
+            Ok(())
+        } else {
+            Err(BMCError::LinkNotExist)
+        }
+    }
+
+    fn handle_link(
+        &mut self,
+        source: &BTPAddress,
+        source_link: &BTPAddress,
+    ) -> Result<(), BMCError> {
+        if let Some(mut link) = self.links.get(source) {
+            if !link.reachable().contains(source_link) {
+                link.reachable_mut().insert(source_link.to_owned());
+
+                // Add to the connections for quickily quering for routing
+                self.connections.add(
+                    &Connection::LinkReachable(
+                        source_link
+                            .network_address()
+                            .map_err(|error| BMCError::InvalidAddress { description: error })?,
+                    ),
+                    source,
+                );
+            }
+
+            self.links.set(source, &link);
+            Ok(())
+        } else {
+            Err(BMCError::LinkNotExist)
+        }
+    }
+
+    fn handle_unlink(&mut self, source: &BTPAddress, source_link: &BTPAddress) -> Result<(), BMCError> {
+        if let Some(mut link) = self.links.get(source) {
+            if link.reachable().contains(source_link) {
+                link.reachable_mut().remove(source_link);
+
+                // Add to the connections for quickily quering for routing
+                self.connections.remove(
+                    &Connection::LinkReachable(
+                        source_link
+                            .network_address()
+                            .map_err(|error| BMCError::InvalidAddress { description: error })?,
+                    ),
+                    source,
+                );
+            }
+
+            self.links.set(source, &link);
+            Ok(())
+        } else {
+            Err(BMCError::LinkNotExist)
+        }
+    }
+
+    fn handle_fee_gathering(
+        &self,
+        fee_aggregator: &BTPAddress,
+        services: &Vec<String>,
+    ) -> Result<(), BMCError> {
+        todo!()
     }
 
     // * * * * * * * * * * * * * * * * *
@@ -459,16 +551,14 @@ impl BTPMessageCenter {
     // Though #[private] will let only if the predecessor is this smart contract account
     // An additional check can be added if the caller is registered BMV if any vulnerability found
     pub fn handle_serialized_btp_messages(
-        &self,
+        &mut self,
         source: BTPAddress,
-        messages: SerializedBtpMessages,
+        #[allow(unused_mut)] mut messages: SerializedBtpMessages,
     ) {
         messages
-            .into_iter()
-            .filter(|message| self.handle_btp_error_message(&source, message, BMCError::ErrorDrop))
-            .filter(|message| self.handle_service_message(&source, message))
-            .filter(|message| self.handle_route_message(message))
-            .for_each(drop);
+            .retain(|message| self.handle_btp_error_message(&source, message, BMCError::ErrorDrop));
+        messages.retain(|message| self.handle_service_message(&source, message));
+        messages.retain(|message| self.handle_route_message(message));
     }
 
     fn handle_btp_error_message(
@@ -481,7 +571,7 @@ impl BTPMessageCenter {
     }
 
     fn handle_service_message(
-        &self,
+        &mut self,
         source: &BTPAddress,
         message: &BtpMessage<SerializedMessage>,
     ) -> bool {
@@ -495,7 +585,7 @@ impl BTPMessageCenter {
                         .unwrap(), //TODO: Alert! This Panic stops execution, Handle Gracefully
                 ),
                 _ => self.handle_external_service_message(source, message),
-            }
+            };
             false
         } else {
             true
@@ -503,18 +593,21 @@ impl BTPMessageCenter {
     }
 
     fn handle_internal_service_message(
-        &self,
+        &mut self,
         source: &BTPAddress,
         message: BtpMessage<BmcServiceMessage>,
-    ) {
+    ) -> Result<(), BMCError> {
         self.assert_internal_service_message_from_direct_source(source, message.source());
         if let Some(service_message) = message.service_message() {
-            match  service_message.service_type() {
-                BmcServiceType::Init { links} => (),
-                BmcServiceType::Link { link } => (),
-                BmcServiceType::Unlink { link } => (),
-                BmcServiceType::FeeGathering { fee_aggregator, services } => (),
-                _ => ()
+            match service_message.service_type() {
+                BmcServiceType::Init { links } => self.handle_init(source, links),
+                BmcServiceType::Link { link } => self.handle_link(source, link),
+                BmcServiceType::Unlink { link } => self.handle_unlink(source, link),
+                BmcServiceType::FeeGathering {
+                    fee_aggregator,
+                    services,
+                } => self.handle_fee_gathering(fee_aggregator, services),
+                _ => todo!(),
             }
         } else {
             unimplemented!()
@@ -525,7 +618,8 @@ impl BTPMessageCenter {
         &self,
         source: &BTPAddress,
         message: &BtpMessage<SerializedMessage>,
-    ) {
+    ) -> Result<(), BMCError> {
+        todo!()
     }
 
     fn handle_route_message(&self, message: &BtpMessage<SerializedMessage>) -> bool {
