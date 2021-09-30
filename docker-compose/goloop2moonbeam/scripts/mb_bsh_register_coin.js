@@ -1,9 +1,11 @@
 const BSHCore = artifacts.require("BSHCore");
+const fs = require('fs');
 
 module.exports = async function (callback) {
     try {
         const bshCore = await BSHCore.deployed();
-        await bshCore.register("ICX");
+        const registerICX = await bshCore.register("ICX");
+        fs.writeFileSync(process.env.CONFIG_DIR + "/tx.moonbeam.registerICX", registerICX.tx);
         await bshCore.coinNames();
     }
     catch (error) {

@@ -9,9 +9,9 @@ deploy_javascore_bmc() {
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/bmc-0.1.0-optimized.jar \
     --content_type application/java \
-    --param _net=$(cat net.btp.icon) | jq -r . > tx.bmc.icon
+    --param _net=$(cat net.btp.icon) | jq -r . > tx.icon.deploy_bmc
 
-    extract_scoreAddress tx.bmc.icon bmc.icon
+    extract_scoreAddress tx.icon.deploy_bmc bmc.icon
     ensure_file_exist $CONFIG_DIR bmc.icon
     echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" > btp.icon
 }
@@ -21,9 +21,9 @@ _deploy_kusamaDecoder(){
     
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/KusamaEventDecoder-optimized.jar \
-    --content_type application/java | jq -r . > tx.kusamaDecoder.icon
+    --content_type application/java | jq -r . > tx.icon.deploy_kusamaDecoder
 
-    extract_scoreAddress tx.kusamaDecoder.icon kusamaDecoder.icon
+    extract_scoreAddress tx.icon.deploy_kusamaDecoder kusamaDecoder.icon
     ensure_file_exist $CONFIG_DIR kusamaDecoder.icon
 }
 
@@ -32,9 +32,9 @@ _deploy_moonriverDecoder(){
 
     cd $CONFIG_DIR
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/MoonriverEventDecoder-optimized.jar \
-    --content_type application/java | jq -r . > tx.moonriverDecoder.icon
+    --content_type application/java | jq -r . > tx.icon.deploy_moonriverDecoder
 
-    extract_scoreAddress tx.moonriverDecoder.icon moonriverDecoder.icon
+    extract_scoreAddress tx.icon.deploy_moonriverDecoder moonriverDecoder.icon
     ensure_file_exist $CONFIG_DIR moonriverDecoder.icon
 }
 
@@ -91,9 +91,9 @@ deploy_javascore_bmv() {
         --param paraEventDecoderAddress=$(cat moonriverDecoder.icon) \
         --param relayCurrentSetId=$relayCurrentSetId \
         --param paraChainId=0x0 \
-        | jq -r . > tx.bmv.icon
+        | jq -r . > tx.icon.deploy_bmv
 
-    extract_scoreAddress tx.bmv.icon bmv.icon
+    extract_scoreAddress tx.icon.deploy_bmv bmv.icon
     ensure_file_exist $CONFIG_DIR bmv.icon
 }
 
@@ -102,9 +102,9 @@ deploy_javascore_IRC31Token() {
     cd $CONFIG_DIR
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc31-0.1.0-optimized.jar \
-    --content_type application/java | jq -r . > tx.irc31token.icon
+    --content_type application/java | jq -r . > tx.icon.deploy_irc31token
 
-    extract_scoreAddress tx.irc31token.icon irc31token.icon
+    extract_scoreAddress tx.icon.deploy_irc31token irc31token.icon
     ensure_file_exist $CONFIG_DIR irc31token.icon
 }
 
@@ -117,9 +117,9 @@ deploy_javascore_NativeCoinBSH() {
         --content_type application/java \
         --param _bmc=$(cat bmc.icon) \
         --param _irc31=$(cat irc31token.icon) \
-        --param _name=ICX | jq -r . > tx.nativeCoinBsh.icon
+        --param _name=ICX | jq -r . > tx.icon.deploy_nativeCoinBsh
 
-    extract_scoreAddress tx.nativeCoinBsh.icon nativeCoinBsh.icon
+    extract_scoreAddress tx.icon.deploy_nativeCoinBsh nativeCoinBsh.icon
     ensure_file_exist $CONFIG_DIR nativeCoinBsh.icon
 }
 
@@ -130,9 +130,9 @@ deploy_javascore_FeeAggregation() {
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/fee-aggregation-system-1.0-optimized.jar \
         --param _cps_address=$ICON_RECEIVER_FEE_ADDRESS \
-        --content_type application/java | jq -r . > tx.feeAggregation.icon
+        --content_type application/java | jq -r . > tx.icon.deploy_feeAggregation
 
-    extract_scoreAddress tx.feeAggregation.icon feeAggregation.icon
+    extract_scoreAddress tx.icon.deploy_feeAggregation feeAggregation.icon
     ensure_file_exist $CONFIG_DIR feeAggregation.icon
 }
 
@@ -142,9 +142,9 @@ goloop_bmc_addVerifier() {
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method addVerifier \
         --param _net=$(cat net.btp.moonbeam) \
-        --param _addr=$(cat bmv.icon) | jq -r . > tx.verifier.icon
+        --param _addr=$(cat bmv.icon) | jq -r . > tx.icon.addVerifier
 
-    ensure_txresult tx.verifier.icon
+    ensure_txresult tx.icon.addVerifier
 }
 
 goloop_bmc_addLink() {
@@ -153,8 +153,8 @@ goloop_bmc_addLink() {
 
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method addLink \
-        --param _link=$(cat btp.moonbeam) | jq -r . > tx.link.icon
-    ensure_txresult tx.link.icon
+        --param _link=$(cat btp.moonbeam) | jq -r . > tx.icon.addLink
+    ensure_txresult tx.icon.addLink
 
     echo "goloop_bmc_setLinkRotateTerm"
     goloop rpc sendtx call --to $(cat bmc.icon) \
@@ -162,16 +162,16 @@ goloop_bmc_addLink() {
         --param _link=$(cat btp.moonbeam) \
         --param _block_interval=0x1770 \
         --param _max_agg=0x08 \
-        | jq -r . > tx.setLinkRotateTerm.icon
-    ensure_txresult tx.setLinkRotateTerm.icon
+        | jq -r . > tx.icon.setLinkRotateTerm
+    ensure_txresult tx.icon.setLinkRotateTerm
 
     echo "goloop_bmc_setLinkDelayLimit"
     goloop rpc sendtx call --to $(cat bmc.icon) \
     --method setLinkDelayLimit \
     --param _link=$(cat btp.moonbeam) \
     --param _value=4 \
-    | jq -r . > tx.setLinkDelayLimit.icon
-    ensure_txresult tx.setLinkDelayLimit.icon
+    | jq -r . > tx.icon.setLinkDelayLimit
+    ensure_txresult tx.icon.setLinkDelayLimit
 
     echo "finished goloop_bmc_addLink"
 }
@@ -184,8 +184,8 @@ goloop_bmc_addService() {
         --method addService \
         --param _addr=$(cat nativeCoinBsh.icon) \
         --param _svc=nativecoin \
-        | jq -r . > tx.addService.icon
-    ensure_txresult tx.addService.icon
+        | jq -r . > tx.icon.addService
+    ensure_txresult tx.icon.addService
 }
 
 goloop_bmc_addRelay() {
@@ -196,8 +196,8 @@ goloop_bmc_addRelay() {
         --method addRelay \
         --param _link=$(cat btp.moonbeam) \
         --param _addr=$(jq -r .address $GOLOOP_KEY_STORE) \
-        | jq -r . > tx.registerRelay.icon
-    ensure_txresult tx.registerRelay.icon
+        | jq -r . > tx.icon.addRelay
+    ensure_txresult tx.icon.addRelay
 }
 
 goloop_bmc_setFeeAggregator() {
@@ -207,8 +207,8 @@ goloop_bmc_setFeeAggregator() {
     goloop rpc sendtx call --to $(cat bmc.icon) \
         --method setFeeAggregator \
         --param _addr=$(cat feeAggregation.icon) \
-        | jq -r . > tx.addFeeAggregation.icon
-    ensure_txresult tx.addFeeAggregation.icon
+        | jq -r . > tx.icon.setFeeAggregator
+    ensure_txresult tx.icon.setFeeAggregator
 }
 
 goloop_bsh_config_native_coin() {
@@ -218,20 +218,20 @@ goloop_bsh_config_native_coin() {
     goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
         --method register \
         --param _name=DEV \
-        | jq -r . > tx.registerCoin.icon
-    ensure_txresult tx.registerCoin.icon
+        | jq -r . > tx.icon.registerCoin
+    ensure_txresult tx.icon.registerCoin
 
     echo "goloop_bsh_setFeeRatio"
     goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
         --method setFeeRatio \
         --param _feeNumerator=100 \
-        | jq -r . > tx.setFeeRatio.icon
-    ensure_txresult tx.setFeeRatio.icon
+        | jq -r . > tx.icon.setFeeRatio
+    ensure_txresult tx.icon.setFeeRatio
 
     echo "goloop_bsh_addOwner"
     goloop rpc sendtx call --to $(cat irc31token.icon) \
         --method addOwner \
         --param _addr=$(cat nativeCoinBsh.icon) \
-        | jq -r . > tx.addOwnerIrc31.icon
-    ensure_txresult tx.addOwnerIrc31.icon
+        | jq -r . > tx.icon.addOwnerIrc31
+    ensure_txresult tx.icon.addOwnerIrc31
 }

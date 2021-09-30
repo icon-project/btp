@@ -21,9 +21,9 @@ deposit_DEV_for_bob() {
                         --pk $MOONBEAM_PREFUND_PK \
                         --gas $MOONBEAM_GAS_LIMIT \
                         --to $(get_bob_address) \
-                        --value $DEV_DEPOSIT_AMOUNT | jq -r > tx.deposit_dev
+                        --value $DEV_DEPOSIT_AMOUNT | jq -r > tx.bob.deposit
 
-            eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.deposit_dev) | jq -r .receipt
+            eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.bob.deposit) | jq -r .receipt
             get_bob_balance
         ;;
         *) 
@@ -44,8 +44,8 @@ transfer_DEV_from_bob_to_alice() {
                 --gas $MOONBEAM_GAS_LIMIT \
                 --to $(cat bsh_core.moonbeam) \
                 --data $encoded_data \
-                --value $DEV_TRANSER_AMOUNT | jq -r > tx.transfer_dev
-    eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.transfer_dev) | jq -r .receipt
+                --value $DEV_TRANSER_AMOUNT | jq -r > tx.bob.transfer
+    eth transaction:get --network $MOONBEAM_RPC_URL $(cat tx.bob.transfer) | jq -r .receipt
     get_bob_balance
 }
 
