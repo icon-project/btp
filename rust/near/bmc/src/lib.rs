@@ -1,7 +1,7 @@
 //! BTP Message Center
 
 use btp_common::{
-    emit,
+    btp_address, emit,
     errors::{BMCError, BTPError},
     owner,
 };
@@ -23,9 +23,11 @@ use near_sdk::{
 };
 use std::collections::HashMap;
 use std::convert::TryInto;
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BTPMessageCenter {
+    btp_address: BTPAddress,
     owners: Owners,
     bsh: Bsh,
     bmv: Bmv,
@@ -34,6 +36,7 @@ pub struct BTPMessageCenter {
     connections: Connections,
 }
 
+//TODO: Remove Default and move to init
 impl Default for BTPMessageCenter {
     fn default() -> Self {
         let mut owners = Owners::new();
@@ -42,8 +45,10 @@ impl Default for BTPMessageCenter {
         let links = Links::new();
         let routes = Routes::new();
         let connections = Connections::new();
+        let btp_address = BTPAddress::new("".to_string()); //TODO: Fix
         owners.add(&env::current_account_id());
         Self {
+            btp_address,
             owners,
             bsh,
             bmv,
@@ -70,9 +75,11 @@ impl BTPMessageCenter {
         );
     }
 
-    fn assert_can_invoke_internal_service(&self, source: &BTPAddress) {
-        // TODO: Check if source net is self bmc address net
-        unimplemented!()
+    fn assert_internal_service_message_from_direct_source(&self, previous: &BTPAddress, source: &BTPAddress) {
+        require!(
+            previous == source,
+
+        )
     }
 
     fn assert_link_exists(&self, link: &BTPAddress) {
@@ -448,31 +455,80 @@ impl BTPMessageCenter {
 
     #[private]
     // Invoked by BMV as callback
-    pub fn handle_serialized_btp_messages(&self, messages: SerializedBtpMessages) {
-        // ****** Require Strict Vulnerability check here **********
-        // Though #[private] will let only if the this smart contract account is the predecessor
-        // An aditional can check be added if the caller is registered BMV if any vulnerability found
+    // ****** Require Strict Vulnerability check here **********
+    // Though #[private] will let only if the predecessor is this smart contract account
+    // An additional check can be added if the caller is registered BMV if any vulnerability found
+    pub fn handle_serialized_btp_messages(
+        &self,
+        source: BTPAddress,
+        messages: SerializedBtpMessages,
+    ) {
         messages
             .into_iter()
-            .filter(|_| true) //TODO: Handle Error Implementation
-            .for_each(|message| match message.service().as_str() {
-                "bmc" => self.handle_internal_service(
+            .filter(|message| self.handle_btp_error_message(&source, message, BMCError::ErrorDrop))
+            .filter(|message| self.handle_service_message(&source, message))
+            .filter(|message| self.handle_route_message(message))
+            .for_each(drop);
+    }
+
+    fn handle_btp_error_message(
+        &self,
+        source: &BTPAddress,
+        message: &BtpMessage<SerializedMessage>,
+        error: BMCError,
+    ) -> bool {
+        todo!()
+    }
+
+    fn handle_service_message(
+        &self,
+        source: &BTPAddress,
+        message: &BtpMessage<SerializedMessage>,
+    ) -> bool {
+        return if self.btp_address.network_address() == message.destination().network_address() {
+            match message.service().as_str() {
+                "bmc" => self.handle_internal_service_message(
+                    source,
                     message
                         .try_into()
-                        .map_err(|error| panic!("{}", error))
-                        .unwrap(),
+                        .map_err(|error| env::panic_str(format!("{}", error).as_str()))
+                        .unwrap(), //TODO: Alert! This Panic stops execution, Handle Gracefully
                 ),
-                _ => self.send_external_service_message(message),
-            });
+                _ => self.handle_external_service_message(source, message),
+            }
+            false
+        } else {
+            true
+        };
     }
 
-    fn handle_error_messages() -> bool {
+    fn handle_internal_service_message(
+        &self,
+        source: &BTPAddress,
+        message: BtpMessage<BmcServiceMessage>,
+    ) {
+        self.assert_internal_service_message_from_direct_source(source, message.source());
+        if let Some(service_message) = message.service_message() {
+            match  service_message.service_type() {
+                BmcServiceType::Init { links} => (),
+                BmcServiceType::Link { link } => (),
+                BmcServiceType::Unlink { link } => (),
+                BmcServiceType::FeeGathering { fee_aggregator, services } => (),
+                _ => ()
+            }
+        } else {
+            unimplemented!()
+        }
+    }
+
+    fn handle_external_service_message(
+        &self,
+        source: &BTPAddress,
+        message: &BtpMessage<SerializedMessage>,
+    ) {
+    }
+
+    fn handle_route_message(&self, message: &BtpMessage<SerializedMessage>) -> bool {
         true
     }
-
-    fn handle_internal_service(&self, message: BtpMessage<BmcServiceMessage>) {
-        self.assert_can_invoke_internal_service(&message.destination());
-    }
-
-    fn send_external_service_message(&self, message: BtpMessage<SerializedMessage>) {}
 }

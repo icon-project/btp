@@ -35,7 +35,9 @@ pub mod errors {
         VerifierNotExist,
         RelayExist { link: String },
         RelayNotExist { link: String },
-        DecodeFailed { message: String }
+        DecodeFailed { message: String },
+        ErrorDrop,
+        InternalServiceCallNotAllowed { source: String }
     }
 
     impl fmt::Display for BMCError {
@@ -67,6 +69,12 @@ pub mod errors {
                 },
                 BMCError::DecodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "DecodeError", message)
+                },
+                BMCError::ErrorDrop => {
+                    write!(f, "{}{}", label, "ErrorDrop")
+                },
+                BMCError::InternalServiceCallNotAllowed { source }=> {
+                    write!(f, "{}{} for {}", label, "NotAllowedInternalServiceCall", source)
                 }
             }
         }

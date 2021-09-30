@@ -7,6 +7,7 @@ use near_sdk::{
 };
 use rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
+use std::vec::IntoIter;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BtpMessage<T: ServiceMessage> {
@@ -66,16 +67,7 @@ where
 }
 
 pub type SerializedBtpMessages = Vec<BtpMessage<SerializedMessage>>;
-//TODO: Add context
-pub trait Handle {
-    fn handle(self) -> Self;
-}
 
-impl Handle for SerializedBtpMessages {
-    fn handle(self) -> Self {
-        self
-    }
-}
 pub struct SerializedMessage {}
 
 impl ServiceMessage for SerializedMessage {}

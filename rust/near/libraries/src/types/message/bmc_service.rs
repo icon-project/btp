@@ -241,9 +241,9 @@ impl TryFrom<String> for BtpMessage<BmcServiceMessage> {
     }
 }
 
-impl TryFrom<BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
+impl TryFrom<&BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
     type Error = BMCError;
-    fn try_from(value: BtpMessage<SerializedMessage>) -> Result<Self, Self::Error> {
+    fn try_from(value: &BtpMessage<SerializedMessage>) -> Result<Self, Self::Error> {
         let rlp = rlp::Rlp::new(value.payload());
         Ok(Self::new(
             value.source().clone(),
