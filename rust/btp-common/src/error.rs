@@ -40,6 +40,7 @@ pub mod errors {
         ErrorDrop,
         InternalServiceCallNotAllowed { source: String },
         FeeAggregatorNotAllowed { source: String },
+        Unreachable { destination: String }
     }
 
     impl fmt::Display for BMCError {
@@ -90,8 +91,15 @@ pub mod errors {
                 BMCError::FeeAggregatorNotAllowed { source } => {
                     write!(
                         f,
-                        "{}{} for {}",
-                        label, "NotAllowedFeeAggregator from:", source
+                        "{}{} from {}",
+                        label, "NotAllowedFeeAggregator", source
+                    )
+                },
+                BMCError::Unreachable { destination } => {
+                    write!(
+                        f,
+                        "{}{} at {}",
+                        label, "Unreachable", destination
                     )
                 }
             }
