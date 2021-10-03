@@ -8,23 +8,37 @@ use std::collections::HashSet;
 pub struct Link {
     rx_seq: u128,
     tx_seq: u128,
-    verifier: Verifier,
     relays: Relays,
     reachable: HashSet<BTPAddress>,
     relay_index: u64,
     rotate_height: u64,
-    rotate_term: u64,
+    rotate_term: u64, // TODO: X
     delay_limit: u64,
     max_aggregation: u64,
     rx_height_src: u128,
     rx_height: u128,
     block_interval_src: u64,
     block_interval_dst: u64,
-    current_height: u128,
-    current_epoch: u128
+    current_height: u128, // TODO: X
 }
 
 impl Link {
+    pub fn tx_seq(&self) -> u128 {
+        self.tx_seq
+    }
+
+    pub fn tx_seq_mut(&mut self) -> u128 {
+        self.tx_seq
+    }
+
+    pub fn rx_seq(&self) -> u128 {
+        self.rx_seq
+    }
+
+    pub fn rx_seq_mut(&mut self) -> u128 {
+        self.rx_seq
+    }
+
     pub fn reachable(&self) -> &HashSet<BTPAddress> {
         &self.reachable
     }

@@ -9,3 +9,4 @@ docker-compose/logs
 
 **/**.profraw
 **/lcov.info
+rust/**/coverage

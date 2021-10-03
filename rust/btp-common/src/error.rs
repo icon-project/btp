@@ -36,8 +36,10 @@ pub mod errors {
         RelayExist { link: String },
         RelayNotExist { link: String },
         DecodeFailed { message: String },
+        EncodeFailed { message: String },
         ErrorDrop,
-        InternalServiceCallNotAllowed { source: String }
+        InternalServiceCallNotAllowed { source: String },
+        FeeAggregatorNotAllowed { source: String },
     }
 
     impl fmt::Display for BMCError {
@@ -45,7 +47,9 @@ pub mod errors {
             let label = "BMCRevert";
             match self {
                 BMCError::Generic => write!(f, "{}", label),
-                BMCError::InvalidAddress { description } => write!(f, "{}{}: {}", label, "InvalidAddress", description),
+                BMCError::InvalidAddress { description } => {
+                    write!(f, "{}{}: {}", label, "InvalidAddress", description)
+                },
                 BMCError::RequestExist => write!(f, "{}{}", label, "RequestPending"),
                 BMCError::RequestNotExist => write!(f, "{}{}", label, "NotExistRequest"),
                 BMCError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),
@@ -70,11 +74,25 @@ pub mod errors {
                 BMCError::DecodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "DecodeError", message)
                 },
+                BMCError::EncodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "EncodeError", message)
+                },
                 BMCError::ErrorDrop => {
                     write!(f, "{}{}", label, "ErrorDrop")
                 },
-                BMCError::InternalServiceCallNotAllowed { source }=> {
-                    write!(f, "{}{} for {}", label, "NotAllowedInternalServiceCall", source)
+                BMCError::InternalServiceCallNotAllowed { source } => {
+                    write!(
+                        f,
+                        "{}{} for {}",
+                        label, "NotAllowedInternalServiceCall", source
+                    )
+                },
+                BMCError::FeeAggregatorNotAllowed { source } => {
+                    write!(
+                        f,
+                        "{}{} for {}",
+                        label, "NotAllowedFeeAggregator from:", source
+                    )
                 }
             }
         }

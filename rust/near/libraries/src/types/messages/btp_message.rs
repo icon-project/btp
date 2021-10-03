@@ -1,4 +1,4 @@
-use crate::types::{message::ServiceMessage, BTPAddress, WrappedI128};
+use crate::types::{messages::ServiceMessage, BTPAddress, WrappedI128};
 use btp_common::errors::BMCError;
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
@@ -68,9 +68,23 @@ where
 
 pub type SerializedBtpMessages = Vec<BtpMessage<SerializedMessage>>;
 
+#[derive(Clone)]
 pub struct SerializedMessage {}
 
 impl ServiceMessage for SerializedMessage {}
+
+impl Encodable for BtpMessage<SerializedMessage> {
+    fn rlp_append(&self, stream: &mut rlp::RlpStream) {
+        stream
+        .begin_unbounded_list()
+        .append(self.source())
+        .append(self.destination())
+        .append(self.service())
+        .append(self.serial_no())
+        .append(self.payload())
+        .finalize_unbounded_list()
+    }
+}
 
 impl Decodable for BtpMessage<SerializedMessage> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
@@ -87,7 +101,14 @@ impl Decodable for BtpMessage<SerializedMessage> {
 
 impl From<&BtpMessage<SerializedMessage>> for String {
     fn from(btp_message: &BtpMessage<SerializedMessage>) -> Self {
-        base64::encode_config(btp_message.payload.clone(), URL_SAFE_NO_PAD)
+        let rlp = rlp::encode(btp_message);
+        base64::encode_config(rlp, URL_SAFE_NO_PAD)
+    }
+}
+
+impl From<BtpMessage<SerializedMessage>> for Vec<u8> {
+    fn from(btp_message: BtpMessage<SerializedMessage>) -> Self {
+        rlp::encode(&btp_message).to_vec()
     }
 }
 

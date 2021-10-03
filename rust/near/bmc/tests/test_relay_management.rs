@@ -1,8 +1,10 @@
 use bmc::BTPMessageCenter;
-use near_sdk::{testing_env, AccountId, VMContext};
+use near_sdk::{serde_json::json, testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
-//TODO 
+use libraries::types::{Address, BTPAddress};
+
+//TODO
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
     VMContext {
         current_account_id: alice().to_string(),
@@ -29,16 +31,21 @@ fn add_relay_new_relay_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.ss".parse::<AccountId>().unwrap(),
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
     );
 
-    let verifiers = contract.get_verifiers();
-    assert_eq!(
-        verifiers,
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.ss\"}]"
-    );
+    let relays = contract.get_relays(link);
+    assert_eq!(relays, json!(["verifier_1.near", "verifier_2.near"]));
 }
 
 #[test]
@@ -46,66 +53,68 @@ fn add_relays_new_relay_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.ss".parse::<AccountId>().unwrap(),
-    );
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let verifiers = contract.get_verifiers();
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+    contract.add_relay(
+        link.clone(),
+        "verifier_3.near".parse::<AccountId>().unwrap(),
+    );
+    let relays = contract.get_relays(link);
     assert_eq!(
-        verifiers,
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.ss\"}]"
+        relays,
+        json!(["verifier_1.near", "verifier_2.near", "verifier_3.near"])
     );
 }
 
 #[test]
-fn add_relay_existing_relay_pass() {
+#[should_panic(expected = "BMCRevertRelayExist")]
+fn add_relay_existing_relay_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.ss".parse::<AccountId>().unwrap(),
-    );
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let verifiers = contract.get_verifiers();
-    assert_eq!(
-        verifiers,
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.ss\"}]"
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+    contract.add_relay(
+        link.clone(),
+        "verifier_2.near".parse::<AccountId>().unwrap(),
     );
 }
 
 #[test]
+#[should_panic(expected = "BMCRevertNotExistsLink")]
 fn add_relay_non_existing_link_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.ss".parse::<AccountId>().unwrap(),
-    );
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let verifiers = contract.get_verifiers();
-    assert_eq!(
-        verifiers,
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.ss\"}]"
-    );
-}
-
-#[test]
-#[should_panic(expected = "BMCRevertAlreadyExistsBMV")]
-fn add_verifier_existing_verifier_fail() {
-    let context = |v: AccountId| (get_context(vec![], false, v));
-    testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
-    );
-
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
     );
 }
 
@@ -114,15 +123,26 @@ fn get_relays_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
     );
-
+    contract.add_relay(
+        link.clone(),
+        "verifier_3.near".parse::<AccountId>().unwrap(),
+    );
     testing_env!(context(bob()));
+    let relays = contract.get_relays(link);
     assert_eq!(
-        contract.get_verifiers(),
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.s\"}]"
+        relays,
+        json!(["verifier_1.near", "verifier_2.near", "verifier_3.near"])
     );
 }
 
@@ -130,11 +150,20 @@ fn get_relays_pass() {
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
 fn add_relays_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
-    testing_env!(context(bob()));
+    testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    testing_env!(context(chuck()));
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
     );
 }
 
@@ -142,24 +171,64 @@ fn add_relays_permission_fail() {
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
 fn add_relay_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
-    testing_env!(context(bob()));
+    testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+    testing_env!(context(chuck()));
+    contract.add_relay(
+        link.clone(),
+        "verifier_3.near".parse::<AccountId>().unwrap(),
     );
 }
+
 #[test]
 fn remove_relay_existing_relay_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
-    );
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    contract.remove_verifier("test".to_string());
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+    contract.remove_relay(
+        link.clone(),
+        "verifier_1.near".parse::<AccountId>().unwrap(),
+    );
+    let relays = contract.get_relays(link);
+    assert_eq!(relays, json!(["verifier_2.near"]));
+}
+
+#[test]
+#[should_panic(expected = "BMCRevertNotExistsLink")]
+fn remove_relay_non_existing_link_fail() {
+    let context = |v: AccountId| (get_context(vec![], false, v));
+    testing_env!(context(alice()));
+    let mut contract = BTPMessageCenter::default();
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    contract.remove_relay(
+        link.clone(),
+        "verifier_3.near".parse::<AccountId>().unwrap(),
+    );
 }
 
 #[test]
@@ -168,28 +237,48 @@ fn remove_relay_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
     );
 
-    testing_env!(context(bob()));
-    contract.remove_verifier("test".to_string());
+    testing_env!(context(chuck()));
+    contract.remove_relay(
+        link.clone(),
+        "verifier_1.near".parse::<AccountId>().unwrap(),
+    );
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertNotExistBMV")]
+#[should_panic(expected = "BMCRevertNotExistRelay")]
 fn remove_relay_non_existing_relay_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BTPMessageCenter::default();
-    contract.add_verifier(
-        "test".to_string(),
-        "sssssssss.s".parse::<AccountId>().unwrap(),
-    );
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    testing_env!(context(alice()));
-    contract.remove_verifier("test1".to_string());
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+    contract.remove_relay(
+        link.clone(),
+        "verifier_3.near".parse::<AccountId>().unwrap(),
+    );
 }
 
 #[ignore]

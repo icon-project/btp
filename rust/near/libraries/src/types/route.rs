@@ -1,14 +1,24 @@
 use super::{Address, BTPAddress};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::serde::Serialize;
+use near_sdk::serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use near_sdk::serde_json::{Value, json};
 
-#[derive(Serialize, Debug, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Hash)]
 pub struct Route {
-    dst: BTPAddress,
+    destination: BTPAddress,
     next: BTPAddress,
+}
+
+impl From<Route> for Value {
+    fn from(route: Route) -> Self {
+        json!({
+            "dst": route.destination,
+            "next": route.next
+        })
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -54,8 +64,8 @@ impl Routes {
         let mut routes: HashSet<Route> = HashSet::new();
         if !self.0.is_empty() {
             self.0.iter().for_each(|network| {
-                network.1.into_iter().for_each(|(dst, next)| {
-                    routes.insert(Route { dst, next });
+                network.1.into_iter().for_each(|(destination, next)| {
+                    routes.insert(Route { destination, next });
                 });
             });
         }
@@ -117,28 +127,28 @@ mod tests {
     fn get_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let dst_1 = BTPAddress::new(
+        let destination_1 = BTPAddress::new(
             "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let next_1 = BTPAddress::new(
             "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                 .to_string(),
         );
-        let dst_2 =
+        let destination_2 =
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_2 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
-        let dst_3 =
+        let destination_3 =
             BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_3 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut routes = Routes::new();
-        routes.add(&dst_1, &next_1);
-        routes.add(&dst_2, &next_2);
-        routes.add(&dst_3, &next_3);
-        let result = routes.get(&dst_2);
+        routes.add(&destination_1, &next_1);
+        routes.add(&destination_2, &next_2);
+        routes.add(&destination_3, &next_3);
+        let result = routes.get(&destination_2);
         assert_eq!(
             result,
             Some(BTPAddress::new(
@@ -151,29 +161,29 @@ mod tests {
     fn remove_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let dst_1 = BTPAddress::new(
+        let destination_1 = BTPAddress::new(
             "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let next_1 = BTPAddress::new(
             "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                 .to_string(),
         );
-        let dst_2 =
+        let destination_2 =
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_2 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
-        let dst_3 =
+        let destination_3 =
             BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_3 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut routes = Routes::new();
-        routes.add(&dst_1, &next_1);
-        routes.add(&dst_2, &next_2);
-        routes.add(&dst_3, &next_3);
-        routes.remove(&dst_2);
-        let links = routes.get(&dst_2);
+        routes.add(&destination_1, &next_1);
+        routes.add(&destination_2, &next_2);
+        routes.add(&destination_3, &next_3);
+        routes.remove(&destination_2);
+        let links = routes.get(&destination_2);
         assert_eq!(links, None);
     }
 
@@ -181,34 +191,34 @@ mod tests {
     fn contains_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let dst_1 = BTPAddress::new(
+        let destination_1 = BTPAddress::new(
             "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let next_1 = BTPAddress::new(
             "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                 .to_string(),
         );
-        let dst_2 =
+        let destination_2 =
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_2 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
-        let dst_3 =
+        let destination_3 =
             BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_3 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut routes = Routes::new();
-        routes.add(&dst_1, &next_1);
-        routes.add(&dst_2, &next_2);
-        routes.add(&dst_3, &next_3);
-        let result = routes.contains_network(&dst_1.network_address().unwrap());
+        routes.add(&destination_1, &next_1);
+        routes.add(&destination_2, &next_2);
+        routes.add(&destination_3, &next_3);
+        let result = routes.contains_network(&destination_1.network_address().unwrap());
         assert_eq!(result, true);
-        routes.remove(&dst_1);
-        let result = routes.contains_network(&dst_1.network_address().unwrap());
+        routes.remove(&destination_1);
+        let result = routes.contains_network(&destination_1.network_address().unwrap());
         assert_eq!(result, false);
-        routes.remove(&dst_2);
-        let result = routes.contains_network(&dst_3.network_address().unwrap());
+        routes.remove(&destination_2);
+        let result = routes.contains_network(&destination_3.network_address().unwrap());
         assert_eq!(result, true);
     }
 
@@ -233,31 +243,31 @@ mod tests {
     fn to_vec_route() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let dst_1 = BTPAddress::new(
+        let destination_1 = BTPAddress::new(
             "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let next_1 = BTPAddress::new(
             "btp://0x1.bsc/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                 .to_string(),
         );
-        let dst_2 =
+        let destination_2 =
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_2 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
-        let dst_3 =
+        let destination_3 =
             BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
         let next_3 = BTPAddress::new(
             "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
         );
         let mut routes = Routes::new();
-        routes.add(&dst_1, &next_1);
-        routes.add(&dst_2, &next_2);
-        routes.add(&dst_3, &next_3);
+        routes.add(&destination_1, &next_1);
+        routes.add(&destination_2, &next_2);
+        routes.add(&destination_3, &next_3);
         let routes = routes.to_vec();
         let expected_routes = vec![
             Route {
-                dst: BTPAddress::new(
+                destination: BTPAddress::new(
                     "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
                 ),
                 next:
@@ -267,13 +277,13 @@ mod tests {
                 ),
             },
             Route {
-                dst: BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                destination: BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
                 next: BTPAddress::new(
                     "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
                 ),
             },
             Route {
-                dst: BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                destination: BTPAddress::new("btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
                 next: BTPAddress::new(
                     "btp://0x3.iconee/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
                 ),

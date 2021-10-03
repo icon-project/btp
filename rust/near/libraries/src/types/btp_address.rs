@@ -1,12 +1,16 @@
-pub use btp_common::btp_address::{Address, validate_btp_address};
+pub use btp_common::btp_address::{validate_btp_address, Address};
 use near_sdk::{
-    borsh::{maybestd::io, self, BorshDeserialize, BorshSerialize},
+    borsh::{self, maybestd::io, BorshDeserialize, BorshSerialize},
     serde::{de, Deserialize, Serialize},
+    serde_json::Value,
     AccountId,
 };
-use std::convert::TryFrom;
 use rlp::{self, Decodable, Encodable};
+use std::convert::TryFrom;
 use std::str;
+use std::iter::FromIterator;
+use super::{HashedCollection};
+
 pub trait Account {
     fn account_id(&self) -> AccountId;
 }
@@ -31,8 +35,7 @@ impl Address for BTPAddress {
 }
 impl Account for BTPAddress {
     fn account_id(&self) -> AccountId {
-        self
-            .contract_address()
+        self.contract_address()
             .unwrap()
             .parse::<AccountId>()
             .unwrap()
@@ -65,6 +68,12 @@ impl TryFrom<String> for BTPAddress {
     }
 }
 
+impl From<BTPAddress> for Value {
+    fn from(value: BTPAddress) -> Value {
+        value.to_string().into()
+    }
+}
+
 impl std::str::FromStr for BTPAddress {
     type Err = String;
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -83,5 +92,15 @@ impl Decodable for BTPAddress {
 impl Encodable for BTPAddress {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
         stream.append_internal(&self.to_string());
+    }
+}
+
+impl FromIterator<BTPAddress> for HashedCollection<BTPAddress> {
+    fn from_iter<I: IntoIterator<Item = BTPAddress>>(iter: I) -> Self {
+        let mut c = HashedCollection::new();
+        for i in iter {
+            c.add(i);
+        }
+        c
     }
 }

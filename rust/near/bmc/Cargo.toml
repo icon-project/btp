@@ -12,6 +12,9 @@ btp-common = { path = "../../btp-common" }
 libraries = { path = "../libraries" }
 near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
 
+[features]
+testable = []
+
 [[test]]
 name = "test_link_management"
 path = "tests/test_link_management.rs"

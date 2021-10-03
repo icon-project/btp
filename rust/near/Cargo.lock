@@ -2243,6 +2243,7 @@ version = "0.1.0"
 dependencies = [
  "btp-common",
  "byteorder",
+ "bytes",
  "getrandom 0.2.3",
  "near-sdk 4.0.0-pre.2",
  "rand 0.8.4",

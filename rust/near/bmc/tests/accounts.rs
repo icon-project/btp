@@ -19,3 +19,7 @@ pub fn charlie() -> AccountId {
 pub fn chuck() -> AccountId {
     "chuck.near".parse::<AccountId>().unwrap()
 }
+
+pub fn verifier() -> AccountId {
+    "verifier.near".parse::<AccountId>().unwrap()
+}
