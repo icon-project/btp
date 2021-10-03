@@ -1,106 +1,155 @@
 pub mod errors {
     use std::fmt::{self, Error, Formatter};
 
-    pub enum BTPError {
-        InvalidBTPAddress { description: String },
+    pub trait Exception {
+        fn code(&self) -> u32;
+        fn message(&self) -> String;
     }
-    impl fmt::Display for BTPError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+
+    pub enum BtpException<T: Exception> {
+        Base,
+        Bmc(T),
+        Bmv(T),
+        Bsh(T),
+        Reserved,
+    }
+
+    impl<T> Exception for BtpException<T>
+    where
+        T: Exception,
+    {
+        fn code(&self) -> u32 {
             match self {
-                BTPError::InvalidBTPAddress { description } => {
-                    write!(f, "{}: {}", "InvalidAddress", description)
-                }
+                BtpException::Base => 0,
+                BtpException::Bmc(error) => error.code() + 10,
+                _ => todo!(),
+            }
+        }
+
+        fn message(&self) -> String {
+            match self {
+                BtpException::Base => todo!(),
+                BtpException::Bmc(error) => error.message(),
+                _ => todo!(),
             }
         }
     }
 
-    #[derive(Debug)]
-    pub enum BMCError {
-        Generic,
-        InvalidAddress { description: String },
-        RequestExist,
-        RequestNotExist,
-        ServiceExist,
-        ServiceNotExist,
-        PermissionNotExist,
-        LastOwner,
-        OwnerExist,
-        OwnerNotExist,
-        LinkExist,
-        LinkNotExist,
-        RouteExist,
-        RouteNotExist,
-        InvalidParam,
-        VerifierExist,
-        VerifierNotExist,
-        RelayExist { link: String },
-        RelayNotExist { link: String },
+    #[derive(Debug, Clone)]
+    pub enum BmcError {
         DecodeFailed { message: String },
         EncodeFailed { message: String },
         ErrorDrop,
-        InternalServiceCallNotAllowed { source: String },
         FeeAggregatorNotAllowed { source: String },
-        Unreachable { destination: String }
+        InternalServiceCallNotAllowed { source: String },
+        InvalidAddress { description: String },
+        InvalidParam,
+        InvalidSerialNo,
+        LastOwner,
+        LinkExist,
+        LinkNotExist,
+        OwnerExist,
+        OwnerNotExist,
+        PermissionNotExist,
+        RelayExist { link: String },
+        RelayNotExist { link: String },
+        RequestExist,
+        RequestNotExist,
+        RouteExist,
+        RouteNotExist,
+        ServiceExist,
+        ServiceNotExist,
+        Unknown,
+        Unreachable { destination: String },
+        VerifierExist,
+        VerifierNotExist,
     }
 
-    impl fmt::Display for BMCError {
+    impl Exception for BmcError {
+        fn code(&self) -> u32 {
+            u32::from(self)
+        }
+        fn message(&self) -> String {
+            self.to_string()
+        }
+    }
+
+    impl From<&BmcError> for u32 {
+        fn from(bmc_error: &BmcError) -> Self {
+            match bmc_error {
+                BmcError::Unknown => 0,
+                BmcError::PermissionNotExist => 1,
+                BmcError::InvalidSerialNo => 2,
+                BmcError::VerifierExist => 3,
+                BmcError::VerifierNotExist => 4,
+                BmcError::ServiceExist => 5,
+                BmcError::ServiceNotExist => 6,
+                BmcError::LinkExist => 7,
+                BmcError::LinkNotExist => 8,
+                BmcError::RelayExist { link: _ } => 9,
+                BmcError::RelayNotExist { link: _ } => 10,
+                BmcError::Unreachable { destination: _ } => 11,
+                BmcError::ErrorDrop => 12,
+                _ => 0,
+            }
+        }
+    }
+
+    impl fmt::Display for BmcError {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
             let label = "BMCRevert";
             match self {
-                BMCError::Generic => write!(f, "{}", label),
-                BMCError::InvalidAddress { description } => {
+                BmcError::InvalidAddress { description } => {
                     write!(f, "{}{}: {}", label, "InvalidAddress", description)
-                },
-                BMCError::RequestExist => write!(f, "{}{}", label, "RequestPending"),
-                BMCError::RequestNotExist => write!(f, "{}{}", label, "NotExistRequest"),
-                BMCError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),
-                BMCError::ServiceNotExist => write!(f, "{}{}", label, "NotExistBSH"),
-                BMCError::PermissionNotExist => write!(f, "{}{}", label, "NotExistsPermission"),
-                BMCError::LastOwner => write!(f, "{}{}", label, "LastOwner"),
-                BMCError::OwnerExist => write!(f, "{}{}", label, "AlreadyExistsOwner"),
-                BMCError::OwnerNotExist => write!(f, "{}{}", label, "NotExistsOwner"),
-                BMCError::LinkExist => write!(f, "{}{}", label, "AlreadyExistsLink"),
-                BMCError::LinkNotExist => write!(f, "{}{}", label, "NotExistsLink"),
-                BMCError::RouteExist => write!(f, "{}{}", label, "AlreadyExistsRoute"),
-                BMCError::RouteNotExist => write!(f, "{}{}", label, "NotExistsRoute"),
-                BMCError::InvalidParam => write!(f, "{}{}", label, "InvalidParam"),
-                BMCError::VerifierExist => write!(f, "{}{}", label, "AlreadyExistsBMV"),
-                BMCError::VerifierNotExist => write!(f, "{}{}", label, "NotExistBMV"),
-                BMCError::RelayExist { link } => {
+                }
+                BmcError::RequestExist => write!(f, "{}{}", label, "RequestPending"),
+                BmcError::RequestNotExist => write!(f, "{}{}", label, "NotExistRequest"),
+                BmcError::ServiceExist => write!(f, "{}{}", label, "AlreadyExistsBSH"),
+                BmcError::ServiceNotExist => write!(f, "{}{}", label, "NotExistBSH"),
+                BmcError::PermissionNotExist => write!(f, "{}{}", label, "NotExistsPermission"),
+                BmcError::LastOwner => write!(f, "{}{}", label, "LastOwner"),
+                BmcError::OwnerExist => write!(f, "{}{}", label, "AlreadyExistsOwner"),
+                BmcError::OwnerNotExist => write!(f, "{}{}", label, "NotExistsOwner"),
+                BmcError::LinkExist => write!(f, "{}{}", label, "AlreadyExistsLink"),
+                BmcError::LinkNotExist => write!(f, "{}{}", label, "NotExistsLink"),
+                BmcError::RouteExist => write!(f, "{}{}", label, "AlreadyExistsRoute"),
+                BmcError::RouteNotExist => write!(f, "{}{}", label, "NotExistsRoute"),
+                BmcError::InvalidParam => write!(f, "{}{}", label, "InvalidParam"),
+                BmcError::VerifierExist => write!(f, "{}{}", label, "AlreadyExistsBMV"),
+                BmcError::VerifierNotExist => write!(f, "{}{}", label, "NotExistBMV"),
+                BmcError::RelayExist { link } => {
                     write!(f, "{}{} for {}", label, "RelayExist", link)
-                },
-                BMCError::RelayNotExist { link } => {
+                }
+                BmcError::RelayNotExist { link } => {
                     write!(f, "{}{} for {}", label, "NotExistRelay", link)
-                },
-                BMCError::DecodeFailed { message } => {
+                }
+                BmcError::DecodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "DecodeError", message)
-                },
-                BMCError::EncodeFailed { message } => {
+                }
+                BmcError::EncodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "EncodeError", message)
-                },
-                BMCError::ErrorDrop => {
+                }
+                BmcError::ErrorDrop => {
                     write!(f, "{}{}", label, "ErrorDrop")
-                },
-                BMCError::InternalServiceCallNotAllowed { source } => {
+                }
+                BmcError::InternalServiceCallNotAllowed { source } => {
                     write!(
                         f,
                         "{}{} for {}",
                         label, "NotAllowedInternalServiceCall", source
                     )
-                },
-                BMCError::FeeAggregatorNotAllowed { source } => {
-                    write!(
-                        f,
-                        "{}{} from {}",
-                        label, "NotAllowedFeeAggregator", source
-                    )
-                },
-                BMCError::Unreachable { destination } => {
-                    write!(
-                        f,
-                        "{}{} at {}",
-                        label, "Unreachable", destination
-                    )
+                }
+                BmcError::FeeAggregatorNotAllowed { source } => {
+                    write!(f, "{}{} from {}", label, "NotAllowedFeeAggregator", source)
+                }
+                BmcError::Unreachable { destination } => {
+                    write!(f, "{}{} at {}", label, "Unreachable", destination)
+                }
+                BmcError::Unknown => {
+                    write!(f, "{}{}", label, "Unknown")
+                }
+                BmcError::InvalidSerialNo => {
+                    write!(f, "{}{}", label, "Invalid Serial No")
                 }
             }
         }

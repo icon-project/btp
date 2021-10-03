@@ -1,11 +1,11 @@
 use bmc::BtpMessageCenter;
-use near_sdk::{serde_json::json, testing_env, AccountId, VMContext};
+use near_sdk::{AccountId, VMContext, serde_json::{json, from_value}, testing_env};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::BmcServiceMessage, messages::BmcServiceType, messages::BtpMessage,
-    messages::SerializedMessage, Address, BTPAddress, HashedCollection, WrappedI128,
+    messages::SerializedMessage, messages::SerializedBtpMessages, Address, BTPAddress, HashedCollection, WrappedI128,
 };
 
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
@@ -179,4 +179,11 @@ fn handle_internal_service_message_unlink_pass() {
         "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     ));
     assert_eq!(reachables, expected);
+}
+
+#[test]
+fn deserialize_serialized_btp_messages_from_json(){
+    let btp_message = json!(["-QEUuDlidHA6Ly8weDEuaWNvbi9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4TmJ0cDovLzB4NS5wcmEvODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNINibWOBgLiB-H-ESW5pdLh4-Hb4dLg4YnRwOi8vMHgxLnByYS9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4OGJ0cDovLzB4NS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjVi"]);
+    let serialized_btp_messages: SerializedBtpMessages = from_value(btp_message).unwrap();
+    // TODO: Add;
 }

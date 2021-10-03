@@ -1,3 +1,4 @@
+use super::HashedCollection;
 pub use btp_common::btp_address::{validate_btp_address, Address};
 use near_sdk::{
     borsh::{self, maybestd::io, BorshDeserialize, BorshSerialize},
@@ -7,9 +8,9 @@ use near_sdk::{
 };
 use rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
-use std::str;
+use std::fmt::{self, Error, Formatter};
 use std::iter::FromIterator;
-use super::{HashedCollection};
+use std::str;
 
 pub trait Account {
     fn account_id(&self) -> AccountId;
@@ -102,5 +103,11 @@ impl FromIterator<BTPAddress> for HashedCollection<BTPAddress> {
             c.add(i);
         }
         c
+    }
+}
+
+impl fmt::Display for BTPAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "{}", self.0)
     }
 }

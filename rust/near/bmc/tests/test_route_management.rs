@@ -200,6 +200,7 @@ fn get_routes() {
 }
 
 #[test]
+#[cfg(feature = "testable")]
 fn resolve_route_link_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
@@ -214,6 +215,7 @@ fn resolve_route_link_pass() {
 }
 
 #[test]
+#[cfg(feature = "testable")]
 fn resolve_route_link_reachable_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
@@ -245,6 +247,7 @@ fn resolve_route_link_reachable_pass() {
 }
 
 #[test]
+#[cfg(feature = "testable")]
 fn resolve_route_route_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));

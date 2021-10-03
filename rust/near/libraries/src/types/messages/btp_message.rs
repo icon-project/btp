@@ -1,5 +1,5 @@
-use crate::types::{messages::ServiceMessage, BTPAddress, WrappedI128};
-use btp_common::errors::BMCError;
+use crate::types::{messages::Message, BTPAddress, WrappedI128};
+use btp_common::errors::BmcError;
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
     borsh::{self, maybestd::io, BorshDeserialize, BorshSerialize},
@@ -10,18 +10,18 @@ use std::convert::TryFrom;
 use std::vec::IntoIter;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct BtpMessage<T: ServiceMessage> {
+pub struct BtpMessage<T: Message> {
     source: BTPAddress,
     destination: BTPAddress,
     service: String,
     serial_no: WrappedI128,
     payload: Vec<u8>,
-    service_message: Option<T>,
+    message: Option<T>,
 }
 
 impl<T> BtpMessage<T>
 where
-    T: ServiceMessage,
+    T: Message,
 {
     pub fn new(
         source: BTPAddress,
@@ -29,7 +29,7 @@ where
         service: String,
         serial_no: WrappedI128,
         payload: Vec<u8>,
-        service_message: Option<T>,
+        message: Option<T>,
     ) -> Self {
         Self {
             source,
@@ -37,7 +37,7 @@ where
             service,
             serial_no,
             payload,
-            service_message,
+            message,
         }
     }
 
@@ -61,8 +61,8 @@ where
         &self.payload
     }
 
-    pub fn service_message(&self) -> &Option<T> {
-        &self.service_message
+    pub fn message(&self) -> &Option<T> {
+        &self.message
     }
 }
 
@@ -71,7 +71,7 @@ pub type SerializedBtpMessages = Vec<BtpMessage<SerializedMessage>>;
 #[derive(Clone)]
 pub struct SerializedMessage {}
 
-impl ServiceMessage for SerializedMessage {}
+impl Message for SerializedMessage {}
 
 impl Encodable for BtpMessage<SerializedMessage> {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
@@ -94,7 +94,7 @@ impl Decodable for BtpMessage<SerializedMessage> {
             service: rlp.val_at::<String>(2)?,
             serial_no: rlp.val_at::<WrappedI128>(3)?,
             payload: rlp.val_at::<Vec<u8>>(4)?,
-            service_message: None,
+            message: None,
         })
     }
 }
@@ -112,11 +112,16 @@ impl From<BtpMessage<SerializedMessage>> for Vec<u8> {
     }
 }
 
-impl TryFrom<Vec<u8>> for BtpMessage<SerializedMessage> {
-    type Error = BMCError;
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let rlp = rlp::Rlp::new(&value);
-        Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
+impl TryFrom<String> for BtpMessage<SerializedMessage> {
+    type Error = BmcError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
+            BmcError::DecodeFailed {
+                message: format!("base64: {}", error),
+            }
+        })?;
+        let rlp = rlp::Rlp::new(&decoded);
+        Self::decode(&rlp).map_err(|error| BmcError::DecodeFailed {
             message: format!("rlp: {}", error),
         })
     }
@@ -136,7 +141,7 @@ impl<'de> Deserialize<'de> for BtpMessage<SerializedMessage> {
     where
         D: de::Deserializer<'de>,
     {
-        <Vec<u8> as Deserialize>::deserialize(deserializer)
+        <String as Deserialize>::deserialize(deserializer)
             .and_then(|s| Self::try_from(s).map_err(de::Error::custom))
     }
 }

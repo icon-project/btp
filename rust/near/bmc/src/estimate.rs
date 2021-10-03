@@ -1,0 +1,2 @@
+pub static SEND_MESSAGE: u64 = 10_000_000_000_000;
+pub static GATHER_FEE: u64 = 1_000_000_000_000;

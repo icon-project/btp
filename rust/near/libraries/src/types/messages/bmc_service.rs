@@ -1,8 +1,8 @@
 use crate::types::{
-    messages::BtpMessage, messages::SerializedMessage, messages::ServiceMessage, BTPAddress,
+    messages::BtpMessage, messages::SerializedMessage, messages::Message, BTPAddress,
     WrappedI128,
 };
-use btp_common::errors::BMCError;
+use btp_common::errors::BmcError;
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
     serde::{de, ser, Deserialize, Serialize},
@@ -159,25 +159,25 @@ impl Serialize for BmcServiceMessage {
 }
 
 impl TryFrom<String> for BmcServiceMessage {
-    type Error = BMCError;
+    type Error = BmcError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
-            BMCError::DecodeFailed {
+            BmcError::DecodeFailed {
                 message: format!("base64: {}", error),
             }
         })?;
         let rlp = rlp::Rlp::new(&decoded);
-        Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
+        Self::decode(&rlp).map_err(|error| BmcError::DecodeFailed {
             message: format!("rlp: {}", error),
         })
     }
 }
 
 impl TryFrom<&Vec<u8>> for BmcServiceMessage {
-    type Error = BMCError;
+    type Error = BmcError;
     fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
         let rlp = rlp::Rlp::new(value as &[u8]);
-        Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
+        Self::decode(&rlp).map_err(|error| BmcError::DecodeFailed {
             message: format!("rlp: {}", error),
         })
     }
@@ -203,7 +203,7 @@ impl From<&BtpMessage<BmcServiceMessage>> for String {
     }
 }
 
-impl ServiceMessage for BmcServiceMessage {}
+impl Message for BmcServiceMessage {}
 
 impl Decodable for BtpMessage<BmcServiceMessage> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
@@ -227,22 +227,22 @@ impl Decodable for BtpMessage<BmcServiceMessage> {
 }
 
 impl TryFrom<String> for BtpMessage<BmcServiceMessage> {
-    type Error = BMCError;
+    type Error = BmcError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
-            BMCError::DecodeFailed {
+            BmcError::DecodeFailed {
                 message: format!("base64: {}", error),
             }
         })?;
         let rlp = rlp::Rlp::new(&decoded);
-        Self::decode(&rlp).map_err(|error| BMCError::DecodeFailed {
+        Self::decode(&rlp).map_err(|error| BmcError::DecodeFailed {
             message: format!("rlp: {}", error),
         })
     }
 }
 
 impl TryFrom<&BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
-    type Error = BMCError;
+    type Error = BmcError;
     fn try_from(value: &BtpMessage<SerializedMessage>) -> Result<Self, Self::Error> {
         Ok(Self::new(
             value.source().clone(),
@@ -256,14 +256,14 @@ impl TryFrom<&BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
 }
 
 impl TryFrom<&BtpMessage<BmcServiceMessage>> for BtpMessage<SerializedMessage> {
-    type Error = BMCError;
+    type Error = BmcError;
     fn try_from(value: &BtpMessage<BmcServiceMessage>) -> Result<Self, Self::Error> {
         Ok(Self::new(
             value.source().clone(),
             value.destination().clone(),
             value.service().clone(),
             value.serial_no().clone(),
-            value.service_message().clone().ok_or(BMCError::EncodeFailed { message: "Encoding Failed".to_string()})?.into(),
+            value.message().clone().ok_or(BmcError::EncodeFailed { message: "Encoding Failed".to_string()})?.into(),
             None,
         ))
     }
