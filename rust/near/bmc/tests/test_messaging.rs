@@ -1,4 +1,4 @@
-use bmc::BTPMessageCenter;
+use bmc::BtpMessageCenter;
 use near_sdk::{serde_json::json, testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
@@ -33,7 +33,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn handle_serialized_btp_messages_service_message() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn handle_serialized_btp_messages_service_message() {
 fn handle_internal_service_message_init_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -54,7 +54,7 @@ fn handle_internal_service_message_init_pass() {
     });
     let btp_message = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
         "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message.clone()),
@@ -78,10 +78,10 @@ fn handle_internal_service_message_init_pass() {
 fn handle_internal_service_message_link_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -94,7 +94,7 @@ fn handle_internal_service_message_link_pass() {
     });
     let btp_message_1 = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
         "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message_1.clone()),
@@ -108,7 +108,7 @@ fn handle_internal_service_message_link_pass() {
     });
     let btp_message_2 = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
         "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message_2.clone()),
@@ -135,10 +135,10 @@ fn handle_internal_service_message_link_pass() {
 fn handle_internal_service_message_unlink_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -151,7 +151,7 @@ fn handle_internal_service_message_unlink_pass() {
     });
     let btp_message_1 = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
         "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message_1.clone()),
@@ -165,7 +165,7 @@ fn handle_internal_service_message_unlink_pass() {
     });
     let btp_message_2 = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
         "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message_2.clone()),

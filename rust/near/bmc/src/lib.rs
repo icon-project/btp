@@ -26,7 +26,7 @@ use near_sdk::{
     json_types::{Base64VecU8, U128, U64},
     log, near_bindgen, require, serde_json, PanicOnDefault,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::format};
 use std::convert::TryInto;
 use std::iter::FromIterator;
 
@@ -36,8 +36,8 @@ use external::*;
 const INTERNAL_SERVICE: &str = "bmc";
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct BTPMessageCenter {
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+pub struct BtpMessageCenter {
     btp_address: BTPAddress,
     owners: Owners,
     bsh: Bsh,
@@ -48,16 +48,17 @@ pub struct BTPMessageCenter {
     event: BmcEvent,
 }
 
-//TODO: Remove Default and move to init
-impl Default for BTPMessageCenter {
-    fn default() -> Self {
+#[near_bindgen]
+impl BtpMessageCenter {
+    #[init]
+    pub fn new(network: String) -> Self {
         let mut owners = Owners::new();
         let bsh = Bsh::new();
         let bmv = Bmv::new();
         let links = Links::new();
         let routes = Routes::new();
         let connections = Connections::new();
-        let btp_address = BTPAddress::new("btp://1234.iconee/0x12345678".to_string()); //TODO: Fix
+        let btp_address = BTPAddress::new(format!("btp://{}/{}", network, env::current_account_id()));
         let event = BmcEvent::new();
         owners.add(&env::current_account_id());
         Self {
@@ -71,10 +72,7 @@ impl Default for BTPMessageCenter {
             event,
         }
     }
-}
 
-#[near_bindgen]
-impl BTPMessageCenter {
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * Internal Validations  * *
@@ -698,5 +696,10 @@ impl BTPMessageCenter {
             self.links.set(&link, &link_property);
             emit_message!(self, event, link_property.tx_seq(), link, btp_message);
         }
+    }
+
+    #[private]
+    pub fn send_error(&mut self) {
+        todo!()
     }
 }

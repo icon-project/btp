@@ -1,4 +1,4 @@
-use bmc::BTPMessageCenter;
+use bmc::BtpMessageCenter;
 use near_sdk::{testing_env, AccountId, VMContext, serde_json::json};
 use std::collections::HashSet;
 pub mod accounts;
@@ -30,7 +30,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn add_link_new_link_pass(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -48,7 +48,7 @@ fn add_link_new_link_pass(){
 fn add_link_existing_link_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -62,7 +62,7 @@ fn add_link_existing_link_fail(){
 fn add_link_non_existing_verifier_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -74,7 +74,7 @@ fn add_link_non_existing_verifier_fail(){
 fn add_link_permission_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -88,7 +88,7 @@ fn add_link_permission_fail(){
 fn remove_link_existing_link_pass(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link_1 = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -113,7 +113,7 @@ fn remove_link_existing_link_pass(){
 fn remove_link_non_exisitng_link_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link_1 = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -131,7 +131,7 @@ fn remove_link_non_exisitng_link_fail(){
 fn remove_link_permission_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -146,7 +146,7 @@ fn remove_link_permission_fail(){
 fn set_link_existing_link_pass(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -160,7 +160,7 @@ fn set_link_existing_link_pass(){
 fn set_link_non_exisitng_link_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -173,7 +173,7 @@ fn set_link_non_exisitng_link_fail(){
 fn set_link_permission_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -189,7 +189,7 @@ fn set_link_permission_fail(){
 fn set_link_invalid_param_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -204,7 +204,7 @@ fn set_link_invalid_param_fail(){
 fn get_links_pass(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link_1 = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -229,7 +229,7 @@ fn get_links_pass(){
 fn get_status_exisitng_link_pass(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
@@ -242,7 +242,7 @@ fn get_status_exisitng_link_pass(){
 fn get_status_non_exisitng_link_fail(){
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let contract = BTPMessageCenter::default();
+    let contract = BtpMessageCenter::new("0x1.near".into());
     let link = BTPAddress::new(
         "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     );
