@@ -98,6 +98,9 @@ dist-sol-bmc: $(SOLIDITY_DIST_DIR)/bmc
 dist-sol-bmv: $(SOLIDITY_DIST_DIR)/bmv
 	cd $(SOLIDITY_DIST_DIR)/bmv ; 
 
+dist-sol-native_bsh: $(SOLIDITY_DIST_DIR)/bsh
+	cd $(SOLIDITY_DIST_DIR)/bsh ;
+
 dist-sol-token_bsh: $(SOLIDITY_DIST_DIR)/TokenBSH
 	cd $(SOLIDITY_DIST_DIR)/TokenBSH ;
 
@@ -109,7 +112,7 @@ clean-dist-py:
 clean-dist-sol:
 	rm -rf $(SOLIDITY_DIST_DIR)
 
-dist-sol: dist-sol-bmc dist-sol-bmv dist-sol-token_bsh
+dist-sol: dist-sol-bmc dist-sol-bmv dist-sol-token_bsh dist-sol-native_bsh
 
 dist-javascore:
 	$(BUILD_ROOT)/docker/javascore/build.sh

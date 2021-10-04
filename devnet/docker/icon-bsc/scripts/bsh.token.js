@@ -1,5 +1,6 @@
 const BSHProxy = artifacts.require('BSHProxy')
 const BEP20TKN = artifacts.require('BEP20TKN');
+var fs = require('fs');
 module.exports = async function (callback) {
   try {
     var argv = require('minimist')(process.argv.slice(2), { string: 'addr' });
@@ -14,14 +15,16 @@ module.exports = async function (callback) {
         break;
       case "fundBSH":
         console.log("fundBSH", argv.addr)
-        await bep20tkn.transfer(argv.addr, argv.amount)
+        await bep20tkn.transfer(argv.addr, web3.utils.toWei(""+argv.amount, 'ether'))
         var bal = await bep20tkn.balanceOf(argv.addr)
         console.log("BSH Balance" + bal)
         break;
       case "getBalance":
-        console.log("getBalance", argv.addr)
-        var bal = await bep20tkn.balanceOf(argv.addr)
-        console.log("User Balance: " + bal)
+        var balance = await bep20tkn.balanceOf(argv.addr)
+        //var balance=web3.utils.fromWei(await bep20tkn.balanceOf(argv.addr),"ether")
+        //console.log("Balance:" + balance);
+        var bal=await web3.utils.fromWei(balance,"ether")
+        console.log(bal)
         break;
       default:
         console.error("Bad input for method, ", argv)
