@@ -2,7 +2,14 @@
 
 ## Overall
 
-Votes -> BlockHeader -> Receipt/Log MerkleProof -> Event Proof (BTP event)
+Votes -> BlockHeader -> Receipt/Log MerkleProof (MTA) -> Event Proof (BTP event)
+
+BMR -> PRA BMC
+
+RelayMessage
+    BlockUpdates -> BlockHeader + ICON/Polkadot Votes
+    BlockProofs -> BlockHeader + MTA witness
+    ReceiptProofs -> Events contains (BTPMessage) + StateRoot in BlockHeader
 
 ## Practical byzantine fault tolerance (pbft)
     - Votes: how validators/block producers confirm the finality of a block
