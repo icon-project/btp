@@ -9,8 +9,9 @@
 ## Integrated blockchain
 * [ICON](icon.md)
 * [ICON Enterprise Edition](iconee.md)
-* [Polkadot Parachain With Frontier Support](frontier.md)
-  * Moonriver
+* [Polkadot/Kusama Parachain with Frontier Support](frontier.md)
+  * Moonbeam/Moonriver
+  <!-- * Astar(Plasm)/Shiden --> TBD
 
 ## General
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
@@ -182,6 +183,11 @@ make run-test-scenario
   ```bash
   bin/btpsimple start --config path/to/config/dst.config.json
   ```
+
+## Run in docker container
+
+TODO
+
 ## Management
 * [btpsimple command line](btpsimple_cli.md)
 {"mode":"full","isActive":false}
