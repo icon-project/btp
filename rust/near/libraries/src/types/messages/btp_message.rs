@@ -127,6 +127,15 @@ impl TryFrom<String> for BtpMessage<SerializedMessage> {
     }
 }
 
+impl TryFrom<Vec<u8>> for BtpMessage<SerializedMessage> {
+    type Error = String;
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let rlp = rlp::Rlp::new(&value);
+        Self::decode(&rlp).map_err(|error| format!("rlp: {}", error))
+    }
+}
+
+
 impl Serialize for BtpMessage<SerializedMessage> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, <S as ser::Serializer>::Error>
     where

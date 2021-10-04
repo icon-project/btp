@@ -5,8 +5,9 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::BmcServiceMessage, messages::BmcServiceType, messages::BtpMessage,
-    messages::SerializedMessage, messages::SerializedBtpMessages, Address, BTPAddress, HashedCollection, WrappedI128,
+    messages::SerializedMessage, messages::SerializedBtpMessages, messages::ErrorMessage, Address, BTPAddress, HashedCollection, WrappedI128,
 };
+use std::convert::TryInto;
 
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
     VMContext {
@@ -138,7 +139,6 @@ fn handle_internal_service_message_unlink_pass() {
     let mut contract = BtpMessageCenter::new("0x1.near".into());
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -186,4 +186,32 @@ fn deserialize_serialized_btp_messages_from_json(){
     let btp_message = json!(["-QEUuDlidHA6Ly8weDEuaWNvbi9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4TmJ0cDovLzB4NS5wcmEvODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNINibWOBgLiB-H-ESW5pdLh4-Hb4dLg4YnRwOi8vMHgxLnByYS9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4OGJ0cDovLzB4NS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjVi"]);
     let serialized_btp_messages: SerializedBtpMessages = from_value(btp_message).unwrap();
     // TODO: Add;
+}
+
+#[test]
+#[cfg(feature = "testable")]
+fn handle_route_message_fail() {
+    let btp_message = json!(["-QETuDlidHA6Ly8weDEuaWNvbi9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4TmJ0cDovLzB4MS5wcmEvODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNINibWMKuIH4f4RJbml0uHj4dvh0uDhidHA6Ly8weDEucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yrg4YnRwOi8vMHg1LnByYS9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWI"]);
+    let serialized_btp_messages: SerializedBtpMessages = from_value(btp_message).unwrap();
+    let context = |v: AccountId| (get_context(vec![], false, v));
+    testing_env!(context(alice()));
+    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let link =
+    BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.handle_serialized_btp_messages(link.clone(), serialized_btp_messages);
+    let btp_message: BtpMessage<ErrorMessage> = contract.get_message().unwrap().try_into().unwrap();
+    let error_message = ErrorMessage::new(21, "BMCRevertUnreachable at btp://0x1.pra/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string());
+    assert_eq!(
+        btp_message,
+        BtpMessage::new(
+            BTPAddress::new("btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string()),
+            BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+            "bmc".to_string(),
+            WrappedI128::new(-10),
+            error_message.clone().into(),
+            Some(error_message)
+        )
+    );
 }

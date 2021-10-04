@@ -497,7 +497,6 @@ impl BtpMessageCenter {
         //TODO: Revisit
         // Check if part of links
         if self.links.contains(destination) {
-            env::log_str(format!("link found for {}", destination).as_str());
             return Some(destination.clone());
         }
 
@@ -506,7 +505,6 @@ impl BtpMessageCenter {
             .connections
             .contains(&Connection::Route(destination.network_address().unwrap()))
         {
-            env::log_str(format!("route found for {}", destination).as_str());
             return self
                 .connections
                 .get(&Connection::Route(destination.network_address().unwrap()));
@@ -516,7 +514,6 @@ impl BtpMessageCenter {
         if self.connections.contains(&Connection::LinkReachable(
             destination.network_address().unwrap(),
         )) {
-            env::log_str(format!("link reachable found for {}", destination).as_str());
             return self.connections.get(&Connection::LinkReachable(
                 destination.network_address().unwrap(),
             ));
@@ -641,7 +638,7 @@ impl BtpMessageCenter {
             self.increment_link_rx_seq(source);
             let outcome = match message.service().as_str() {
                 INTERNAL_SERVICE => {
-                    self.handle_internal_service_message(source, message.try_into())
+                    self.handle_internal_service_message(source, message.clone().try_into())
                 }
                 _ => self.handle_external_service_message(source, message),
             };
@@ -691,7 +688,7 @@ impl BtpMessageCenter {
         message: &BtpMessage<SerializedMessage>,
     ) -> bool {
         self.increment_link_rx_seq(source);
-        self.send_message(source, message.to_owned());
+        self.send_message(source, &message.destination(),message.to_owned());
         true
     }
 
@@ -717,12 +714,17 @@ impl BtpMessageCenter {
     }
 
     #[cfg(feature = "testable")]
-    pub fn send_message(&mut self, source: &BTPAddress, message: BtpMessage<SerializedMessage>) {
-        if let Some(next) = self.resolve_route(message.destination()) {
+    pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
+        self.event.get_message()
+    }
+
+    #[cfg(feature = "testable")]
+    pub fn send_message(&mut self, previous: &BTPAddress, destination: &BTPAddress, message: BtpMessage<SerializedMessage>) {
+        if let Some(next) = self.resolve_route(destination) {
             self.emit_message(next, message);
         } else {
             self.send_error(
-                source,
+                previous,
                 &BtpException::Bmc(BmcError::Unreachable {
                     destination: message.destination().to_string(),
                 }),
@@ -737,7 +739,7 @@ impl BtpMessageCenter {
         message: BtpMessage<SerializedMessage>,
     ) {
         self.assert_sender_is_authorized_service(message.service());
-        self.send_message(source, message);
+        self.send_message(source, &message.destination().to_owned(), message);
     }
 
     #[private]
@@ -757,8 +759,9 @@ impl BtpMessageCenter {
     ) {
         self.send_message(
             source,
+            source,
             BtpMessage::new(
-                self.btp_address.clone(),
+                self.btp_address.to_owned(),
                 message.source().to_owned(),
                 message.service().to_owned(),
                 message.serial_no().negate(),

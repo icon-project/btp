@@ -6,7 +6,7 @@ use near_sdk::{
     collections::LazyOption,
     serde::{Deserialize, Serialize},
 };
-use std::convert::TryFrom;
+use std::convert::TryInto;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BmcEvent {
@@ -36,6 +36,14 @@ impl BmcEvent {
     }
 
     pub fn amend_error(&mut self) {}
+
+    pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
+        self.message.get().ok_or("Not Found")?.message.0.try_into()
+    }
+
+    pub fn get_error(&self){
+
+    }
 }
 
 #[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
