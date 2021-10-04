@@ -1,5 +1,9 @@
 # Knowledge
 
+## Overall
+
+Votes -> BlockHeader -> Receipt/Log MerkleProof -> Event Proof (BTP event)
+
 ## Practical byzantine fault tolerance (pbft)
     - Votes: how validators/block producers confirm the finality of a block
     - Votes: proofs depends on each chain implementation
