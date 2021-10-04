@@ -180,7 +180,7 @@ pub static ADDED_RELAYS_SHOULD_BE_IN_LIST: fn(Context) -> Context = |mut context
         .into_iter()
         .collect();
     let expected: HashSet<_> = vec![
-       "to_be_given",
+       "to_be_given".to_string(),
     ]
     .into_iter()
     .collect();
@@ -198,7 +198,7 @@ pub static DELETED_RELAY_SHOULD_NOT_BE_IN_LIST: fn(Context) -> Context = |mut co
         .into_iter()
         .collect();
     let expected: HashSet<_> = vec![
-       "to_be_given",
+       "to_be_given".to_string(),
     ]
     .into_iter()
     .collect();

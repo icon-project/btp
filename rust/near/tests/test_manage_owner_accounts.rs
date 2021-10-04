@@ -30,7 +30,7 @@ mod manage_owner_accounts {
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
                 .then(OWNERS_IN_BMC_ARE_QUERIED)
-                .and(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR);
+                .and(BMC_SHOULD_THROW_ALREADY_EXIST_ERROR);
         }
 
         #[runner::test(sandbox)]

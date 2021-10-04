@@ -49,7 +49,7 @@ pub static ADDED_ROUTE_SHOULD_BE_PRESENT: fn(Context) -> Context = |mut context:
         .unwrap()
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec!["BTPADDRES_OF_THE_LINK_PROVIDED"].into_iter().collect();
+    let expected: HashSet<_> = vec!["BTPADDRES_OF_THE_LINK_PROVIDED".to_string()].into_iter().collect();
     assert_eq!(result, expected)
 };
 
@@ -60,7 +60,7 @@ pub static REMOVED_ROUTE_SHOULD_NOT_BE_PRESENT: fn(Context) -> Context = |mut co
         .unwrap()
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec!["BTPADDRES_OF_THE_LINK_PROVIDED"].into_iter().collect();
+    let expected: HashSet<_> = vec!["BTPADDRES_OF_THE_LINK_PROVIDED".to_string()].into_iter().collect();
     assert_ne!(result, expected)
 };
 
