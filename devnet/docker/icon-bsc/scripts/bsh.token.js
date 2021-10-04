@@ -15,7 +15,7 @@ module.exports = async function (callback) {
         break;
       case "fundBSH":
         console.log("fundBSH", argv.addr)
-        await bep20tkn.transfer(argv.addr, web3.utils.toWei(""+argv.amount, 'ether'))
+        await bep20tkn.transfer(argv.addr, web3.utils.toWei("100", 'ether'))
         var bal = await bep20tkn.balanceOf(argv.addr)
         console.log("BSH Balance" + bal)
         break;
@@ -24,7 +24,7 @@ module.exports = async function (callback) {
         //var balance=web3.utils.fromWei(await bep20tkn.balanceOf(argv.addr),"ether")
         //console.log("Balance:" + balance);
         var bal=await web3.utils.fromWei(balance,"ether")
-        console.log(bal)
+        console.log("Balance: "+bal)
         break;
       default:
         console.error("Bad input for method, ", argv)

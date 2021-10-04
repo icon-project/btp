@@ -28,7 +28,6 @@ import "./Libraries/RLPEncodeStructLib.sol";
 import "./Libraries/RLPDecodeStructLib.sol";
 import "./Libraries/StringsLib.sol";
 import "./Libraries/ParseAddressLib.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -67,8 +66,6 @@ contract BSHImpl is IBSHImpl, Initializable {
         uint256 _code,
         string _response
     );
-
-    event debug(address addr, string name, uint256 val);
 
     modifier onlyBMC() {
         require(msg.sender == address(bmc), "Unauthorized");
@@ -128,7 +125,7 @@ contract BSHImpl is IBSHImpl, Initializable {
                 _statusMsg = "Transfer Success";
                 _status = RC_OK;
                 return;
-            } catch Error(string memory _err) {                
+            } catch Error(string memory _err) {
                 _statusMsg = _err;
                 _status = RC_ERR;
             }

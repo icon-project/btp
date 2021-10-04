@@ -18,7 +18,7 @@ The provisioned btp-icon image already holds the script to initiate token transf
 
  		make transfer_eth
 		
-Note: This initates transfer of `100 wei ETH token units` from Alice(ICON) to address in BOB(bsc.ks.json)(BSC) & store the transaction json in `tx.token.icon_bsc.transfer` file.
+Note: This initates transfer of `10 ETH token units` from Alice(ICON) to address in BOB(bsc.ks.json)(BSC) & store the transaction json in `tx.token.icon_bsc.transfer` file.
 
 The script should display "Bob Balance after BTP transfer" after a successful transfer. For more info, check [transfer_eth.sh](https://github.com/icon-project/btp/blob/btp_web3labs/devnet/docker/icon-bsc/scripts/transfer_eth.sh)
 

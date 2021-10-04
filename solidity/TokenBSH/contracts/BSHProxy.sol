@@ -32,7 +32,7 @@ import "./Libraries/RLPDecodeStructLib.sol";
 import "./Libraries/StringsLib.sol";
 import "./Libraries/ParseAddressLib.sol";
 import "./Libraries/Owner.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract BSHProxy is IBSHProxy, Initializable {
     using SafeMathUpgradeable for uint256;
@@ -66,7 +66,7 @@ contract BSHProxy is IBSHProxy, Initializable {
 
     uint256 private constant RC_OK = 0;
     uint256 private constant RC_ERR = 1;
-    uint256 constant FEE_DENOMINATOR = 100; //TODO: keeping it simple for now
+    uint256 constant FEE_DENOMINATOR = 10**4; //TODO: keeping it simple for now
     uint256 private feeNumerator;
 
     event Register(string indexed name, address addr);
@@ -238,11 +238,9 @@ contract BSHProxy is IBSHProxy, Initializable {
             msg.sender
         ][_tokenName].refundableBalance.sub(_value);
         address token_addr = tokenAddr[_tokenName];
-        ERC20(token_addr).approve(address(this), _value);
-        ERC20(token_addr).transferFrom(address(this), msg.sender, _value);
+        IERC20(token_addr).approve(address(this), _value);
+        IERC20(token_addr).transferFrom(address(this), msg.sender, _value);
     }
-
-    event debug(address add, string name, uint256 val);
 
     function transfer(
         string calldata _tokenName,
@@ -252,7 +250,7 @@ contract BSHProxy is IBSHProxy, Initializable {
         address token_addr = tokenAddr[_tokenName];
         require(token_addr != address(0), "UnRegisteredToken");
         require(_value > 0, "InvalidAmount");
-        ERC20(token_addr).transferFrom(msg.sender, address(this), _value);
+        IERC20(token_addr).transferFrom(msg.sender, address(this), _value);
         uint256 _fee;
         //todo check if the locked balance should hold with fee or without fee
         (_value, _fee) = this.calculateTransferFee(token_addr, _value);
@@ -366,8 +364,8 @@ contract BSHProxy is IBSHProxy, Initializable {
     ) external override onlyBSHImpl {
         //TODO: if there is no inital balance with the tokenBSH, this transfer will fail
         address token_addr = tokenAddr[_tokenName];
-        ERC20(token_addr).approve(address(this), _amount);
-        ERC20(token_addr).transferFrom(address(this), _toAddress, _amount);
+        IERC20(token_addr).approve(address(this), _amount);
+        IERC20(token_addr).transferFrom(address(this), _toAddress, _amount);
     }
 
     /**

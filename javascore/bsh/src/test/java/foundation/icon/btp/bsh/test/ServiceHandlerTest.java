@@ -48,8 +48,8 @@ class ServiceHandlerTest extends TestBase {
     final static String tokenName = "ETH";
     final static String symbol = "ETH";
     final static int decimals = 18;
-    final static BigInteger fees = BigInteger.valueOf(1);
-    final static BigInteger transferAmount = BigInteger.valueOf(100);
+    final static BigInteger fees = BigInteger.valueOf(100);
+    final static BigInteger transferAmount = new BigInteger("10000000000000000000");
     private static final BigInteger initialSupply = BigInteger.valueOf(2000);
     private static final BigInteger totalSupply = initialSupply.multiply(TEN.pow(decimals));
     private static final int REQUEST_TOKEN_TRANSFER = 0;
@@ -315,7 +315,7 @@ class ServiceHandlerTest extends TestBase {
     public void scenario18() {
         String _fa = "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         List<Map<String, BigInteger>> _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
-        BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(100));
+        BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(10000));
         assertEquals(_assets.get(0).get(tokenName), _fees);
         bmc.invoke(owners[1], "handleFeeGathering", _fa, _svc);
         String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
@@ -333,7 +333,7 @@ class ServiceHandlerTest extends TestBase {
     public void scenario19() {
         String _fa = "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         List<Map<String, BigInteger>> _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
-        BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(100));
+        BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(10000));
         assertEquals(_assets.get(0).get(tokenName), _fees);
         bmc.invoke(owners[1], "handleFeeGathering", _fa, _svc);
         String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";

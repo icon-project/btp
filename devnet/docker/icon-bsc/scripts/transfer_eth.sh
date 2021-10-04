@@ -15,7 +15,7 @@ ensure_key_store alice.ks.json alice.secret
 
 #transfer 10 ETH from IRC2 token to Alice#$(coin2wei ${1:-10})
 printf "\n\nStep 2: Transfer 10 ETH Tokens to Alice\n"
-TOKENS_DEPOSIT_AMOUNT=100
+TOKENS_DEPOSIT_AMOUNT=$(coin2wei ${1:-10})
 echo $TOKENS_DEPOSIT_AMOUNT
 irc2_javascore_transfer $TOKENS_DEPOSIT_AMOUNT alice.ks.json >$CONFIG_DIR/tx.token.alice.transfer
 
@@ -34,7 +34,7 @@ get_Bob_Token_Balance
 echo "$BOB_BALANCE"
 
 #initiate Transfer from ICON to BSC from BSH
-printf "\n\nStep 5: Alice Initiates BTP token transfer to BOB\n"
+printf "\n\nStep 5: Alice Initiates BTP token transfer of 10 ETH to BOB\n"
 rpcks alice.ks.json alice.secret
 bsh_javascore_transfer $TOKENS_DEPOSIT_AMOUNT $(get_bob_address) >$CONFIG_DIR/tx.token.icon_bsc.transfer
 wait_for_file $CONFIG_DIR/tx.token.icon_bsc.transfer

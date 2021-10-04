@@ -162,7 +162,7 @@ bsh_javascore_transfer() {
   local VAL=${1:-0x10}
   local EOA=$2
   local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)
-  echo "Transfering $VAL to: $EOA from: $FROM "
+  echo "Transfering $VAL wei to: $EOA from: $FROM "
   TX=$(
     goloop rpc sendtx call --to $(cat token_bsh.icon) \
       --method transfer \
@@ -194,7 +194,7 @@ irc2_javascore_transfer() {
   local VAL=${1:-0x10}
   local EOA=$(rpceoa ${2:-$(cat token_bsh.icon)})
   local FROM=$(rpceoa $GOLOOP_RPC_KEY_STORE)
-  echo "Transfering $VAL to: $EOA from: $FROM "
+  echo "Transfering $VAL wei to: $EOA from: $FROM "
   TX=$(
     goloop rpc sendtx call --to $(cat irc2_token.icon) \
       --method transfer \
