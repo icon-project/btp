@@ -28,14 +28,16 @@ module.exports = {
       bscLocal: {
           provider: () => new HDWalletProvider({
               privateKeys: privKeys,
-              providerOrUrl: "http://localhost:8545",
+              providerOrUrl: "ws://localhost:8546",
+              chainId: 97,
           }),
           network_id: '97',
       },
       bscDocker: {
           provider: () => new HDWalletProvider({
               privateKeys: privKeys,
-              providerOrUrl: "http://binancesmartchain:8545",
+              providerOrUrl: "ws://binancesmartchain:8546",
+              chainId: 97,
           }),
           network_id: '97',
       }
