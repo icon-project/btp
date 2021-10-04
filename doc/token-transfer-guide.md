@@ -12,20 +12,21 @@ Note:
 ### ICON to BSC Token Transfer
 
 ###### Run using script:
-The provisioned btp-icon image already holds the script to initiate token transfer.
-1. sh into the btp-icon container
- `docker exec -it btp-icon sh`
-2. Create keystore for Alice to transfer funds from  `/btpsimple/config` dir
+The provisioned btp-icon image already holds the script to initiate token transfer & native coin transfer.
+##### 1. Transfer Token(ETH) from ICON (Alice) -> BSC (BOB)
+1. From the `devnet/docker/icon-bsc` directory run 
 
-    	source /btpsimple/bin/keystore.sh 
-    	ensure_key_store alice.ks.json alice.secret 
-3. To check the BSC user balance before and after the token transfer, run,
+ 		make transfer_eth
+		
+Note: This initates transfer of `100 wei ETH token units` from Alice(ICON) to address in BOB(bsc.ks.json)(BSC) & store the transaction json in `tx.token.icon_bsc.transfer` file.
 
-		source /btpsimple/bin/provision.sh
-		getBalance
-4. From  `/btpsimple/config` dir 
+The script should display "Bob Balance after BTP transfer" after a successful transfer. For more info, check [transfer_eth.sh](https://github.com/icon-project/btp/blob/btp_web3labs/devnet/docker/icon-bsc/scripts/transfer_eth.sh)
 
-      	 source /btpsimple/bin/transfer_eth.sh
-This should initate transfer `10 ETH` tokens from alice to address in bsc.ks.json of the binance smart chain & store the transaction json in  `tx.transfer` file
+##### 2. Transfer Token(ICX) from ICON (Alice) -> BSC (BOB)
+1. From the `devnet/docker/icon-bsc` directory run 
 
-Check the balance of the BSC user using the getBalance after the script run to ensure the transfer completion.
+ 		make transfer_icx
+		
+Note: This initates transfer of `10 ICX` coins from Alice(ICON) to address in BOB(bsc.ks.json)(BSC) & store the transaction json in `tx.native.icon_bsc.transfer` file.
+
+The script should display "Bob's Balance after BTP Native transfer" after a successful transfer. For more info, check [transfer_icx.sh](https://github.com/icon-project/btp/blob/btp_web3labs/devnet/docker/icon-bsc/scripts/transfer_icx.sh)

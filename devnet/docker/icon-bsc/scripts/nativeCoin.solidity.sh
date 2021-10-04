@@ -68,5 +68,5 @@ get_Bob_ICX_Balance_with_wait() {
       break
     fi
   done
-  echo "Bob's Balance after BTP transfer: $BOB_CURRENT_BAL"
+  echo "Bob's Balance after BTP Native transfer: $BOB_CURRENT_BAL"
 }
