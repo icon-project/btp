@@ -1,0 +1,84 @@
+package foundation.icon.btp.bmv;
+
+import com.iconloop.testsvc.Account;
+import com.iconloop.testsvc.Score;
+import com.iconloop.testsvc.ServiceManager;
+import com.iconloop.testsvc.TestBase;
+import foundation.icon.btp.bmv.lib.mpt.MPTException;
+import foundation.icon.btp.bmv.types.RelayMessage;
+import foundation.icon.icx.KeyWallet;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
+import java.util.List;
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class RelayMessageTest extends TestBase {
+
+    final static String RLPn = "RLPn";
+    private static final ServiceManager sm = getServiceManager();
+
+    private static final int rootSize = 3;
+    private static final int cacheSize = 10;
+    private static final String sol_bmc = "0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776";
+    private static final int offset = 180;
+    private static final boolean isAllowNewerWitness = true;
+
+    private static Score bmv;
+    private static KeyWallet[] accounts;
+    private static String currentBMCAdd;
+    private static String currentBMCNet;
+    private static String prevBMCAdd;
+    private static String prevBMCnet;  //also destination network
+
+    private static String currentBMCBTPAdd;
+    private static String prevBMCBTPAdd;
+
+    private static Account[] owners;
+
+    @BeforeAll
+    public static void setup() throws Exception {
+        accounts = new KeyWallet[5];
+        owners = new Account[3];
+        for (int i = 0; i < owners.length; i++) {
+            owners[i] = sm.createAccount(100);
+        }
+        for (int i = 0; i < accounts.length; i++) {
+            accounts[i] = KeyWallet.create();
+        }
+        currentBMCAdd = owners[0].getAddress().toString();
+        currentBMCNet = "0x03.iconee";
+        prevBMCAdd = sol_bmc;
+        prevBMCnet = "0x97.bsc"; //also destination network
+
+        currentBMCBTPAdd = "btp://" + currentBMCNet + "/" + currentBMCAdd;
+        prevBMCBTPAdd = "btp://" + prevBMCnet + "/" + prevBMCAdd;
+
+        bmv = sm.deploy(owners[0], BTPMessageVerifier.class, currentBMCAdd, prevBMCnet, offset, rootSize, cacheSize, isAllowNewerWitness);
+
+    }
+
+    @Test
+    @Order(1)
+    public void test_handleRelayMessage() throws MPTException, IOException {
+        var msg = "-Qw_-QLiuQLf-QLcuQJf-QJcoFj4n3ZkdCoYPjCUFp36ydgvqeZf4M3E8Qx-Kkyztcr4oB3MTejex116q4W1Z7bM1BrTEkUblIp0E_ChQv1A1JNHlEiUgpfDI27D6myV9O7CL9sYJV5VoK992IufNyWO2D9HUaGiruhs6agwtGOHW1j_27nZyKfQoPRL3jOXrn89M_sn6aoK6bzqfciJ48fzZCnwdx0fQf61oOG3X5qs980uwpENOKDQRdCRShbrYTglNTZIBQ9FEIFeuQEAAAAAAgAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAgAAAAAACAAAAAAAAAAAAAACAAAEAAAAAAAAAAAAAACAAAAAAhAAABABAAAAAAAAEAAAAAAAgAIAAQAAQAAAAAAAAAAAAAAAABAAAAAAAAEAAAAAIAEAAAAAAAAAAAAAAAAAAAAAAEAgAAAAAAAAAAAAAACAIAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAoAAIAAAAAAAAAAAAAAAAAAAAAAAABBAEAAAACAKEAAAAAAAAAAAAAAAAAEAAAQAAAAAAAAAAAAAAIEAAAKCALWEASyN9YMwdTaEYVLAvLhh2IMBAAaEZ2V0aIhnbzEuMTYuNoVsaW51eAAAABHAqp6YaP7XqZm-iHps6eyWKnzez9kWlGS5kU39BqED_GCPa0EyM1zXa6fjAoscPGuJ8E_HrpTGm4sma5DyS4LbnckNAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAAAAALh4TRvmTw6aRmwuZqU0M5KBkng-Kfj6Ib6yEzSZte93D2AAAADo1KUQAJkwiqNlxAVUvImYKvUF2F2pUlFEXV3Uqbs33SWE_ZLTAAAA6NSlEAABd2kg_wsPONeM-VwDPCGt9wRXhRFOOSp1RBeWUuCmEgAAAOjUpRAA-AD5CVW5CVL5CU8AuQbG-QbDuFP4UaA7LGW2CCkiE35Yg5nS5t4faIO0KHJsDq2G2f--zcoyXoCAgICAgICgP2kzSfOdMIxK-J1L-ZSiuAtkOObzBpma4OnXdlO-LxKAgICAgICAgLkGa_kGaDC5BmT5BmEBgwf1WLkBAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAgAABAAAAAAAAAAAAAAAgAAAAAAAAAAQAQAAAAAAABAAAAAAAAAAAAEAAEAAAAAAAAAAAAAAAAAQAAAAAAABAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAgCAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgChAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAD5BVb4m5S6NPPGiTsS_0EVrPG0cSxuJ4Otg_hjoN3yUq0b4sibacKwaPw3jaqVK6fxY8ShFij1Wk31I7PvoAAAAAAAAAAAAAAAAHDnidL11GnqMOBSXb_dVRXW6tMNoAAAAAAAAAAAAAAAAHGhUgu7fmByu_NoKmDHPWO2k2kKoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK-JuUujTzxok7Ev9BFazxtHEsbieDrYP4Y6CMW-Hl6-x9W9FPcUJ9HoTz3QMUwPeyKR5bIArIx8O5JaAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDaAAAAAAAAAAAAAAAABxoVILu35gcrvzaCpgxz1jtpNpCqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPkCGpSq_I7q7o2ci9MmLM49c-Vt7j-3duGgN741PyFs9-M2ORAf1hDFQuagwBCRc_ocHYsE007bfBu5AeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9_j1uDlidHA6Ly8weDk3LmJzYy8weEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3Nza4PmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3iFRva2VuQlNIALhu-GwAuGn4Z7MweDcwZTc4OWQyZjVkNDY5ZWEzMGUwNTI1ZGJmZGQ1NTE1ZDZlYWQzMGQAAAAAAAAAAACqaHgyNzVjMTE4NjE3NjEwZTY1YmE1NzJhYzBhNjIxZGRkMTMyNTUyNDJix8aDRVRICgAAAAAAAAAAAAD5AfyUOryN_wyVuJgjmdrPbtW9e5SkAGj4QqBQ0iNzu4TtH57rWByRPm1F2RjAX4sdkPC-Fo8GpOaZSqAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDbkBoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-YnRwOi8vMHg5NTRhYTMuaWNvbi9oeDI3NWMxMTg2MTc2MTBlNjViYTU3MmFjMGE2MjFkZGQxMzI1NTI0MmIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0VUSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-QKC-QJ_ArkCe_kCeKoweEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3NzbhoDe-NT8hbPfjNjkQH9YQxULmoMAQkXP6HB2LBNNO23wbuQHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwNwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPf49bg5YnRwOi8vMHg5Ny5ic2MvMHhBYUZjOEVlYUVFOGQ5QzhiRDMyNjJDQ0UzRDczRTU2RGVFM0ZCNzc2uD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwN4hUb2tlbkJTSAC4bvhsALhp-GezMHg3MGU3ODlkMmY1ZDQ2OWVhMzBlMDUyNWRiZmRkNTUxNWQ2ZWFkMzBkAAAAAAAAAAAAqmh4Mjc1YzExODYxNzYxMGU2NWJhNTcyYWMwYTYyMWRkZDEzMjU1MjQyYsfGg0VUSAoAAAAAAAAAAAAAggC1oFGCfMQGfrJEAwF5anutReQpjUCEibxWVOjL1hMp5LWJAKA8bJvKziim1NtCb8keX3oEvFIKzhW2ihxz6DFE82bPRgIA";
+        byte[] _msg = Base64.getUrlDecoder().decode(msg.trim().getBytes());
+        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ONE, msg);
+    }
+
+
+    @Test
+    public void relayMessageDecode() throws IOException {
+        var msg = Files.readString(Path.of("relaymessage"));
+        System.out.println(msg);
+        byte[] _msg = Base64.getUrlDecoder().decode(msg.trim().getBytes());
+        var relayMessage = RelayMessage.fromBytes(_msg);
+        var receiptProof = relayMessage.getReceiptProofs()[0];
+    }
+
+}

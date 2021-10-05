@@ -17,9 +17,9 @@ contract DataValidator is IDataValidator, Initializable {
     using MessageDecoder for string;
     using MessageDecoder for Types.EventLog;
     using Verifier for Types.ReceiptProof;
- using String for uint256;
+    using String for uint256;
     bytes[] internal msgs;
-  event Debug(uint256 index,string _msg);
+
     function initialize() public initializer {}
 
     function validateReceipt(
@@ -32,9 +32,8 @@ contract DataValidator is IDataValidator, Initializable {
         uint256 nextSeq = _seq + 1;
         Types.Receipt memory receipt;
         Types.MessageEvent memory messageEvent;
-        emit Debug(0,"inside validate receipt hash");
-        Types.ReceiptProof[] memory receiptProofs =
-            _serializedMsg.decodeReceiptProofs();
+        Types.ReceiptProof[] memory receiptProofs = _serializedMsg
+            .decodeReceiptProofs();
         (, string memory contractAddr) = _prev.splitBTPAddress();
         if (msgs.length > 0) delete msgs;
         for (uint256 i = 0; i < receiptProofs.length; i++) {
@@ -44,18 +43,19 @@ contract DataValidator is IDataValidator, Initializable {
                     continue;
                 messageEvent = receipt.eventLogs[j].toMessageEvent();
                 if (bytes(messageEvent.nextBmc).length != 0) {
-                    if (messageEvent.seq > nextSeq)
+                    if (messageEvent.seq > nextSeq) {
+                        //string memory concat1 = string("BMVRevertInvalidSequenceHigher, messageeventseq").concat(messageEvent.seq.toString()).concat(", nextseq").concat(nextSeq.toString());
                         revert("BMVRevertInvalidSequenceHigher");
-                    else if (messageEvent.seq < nextSeq)
+                    } else if (messageEvent.seq < nextSeq) {
+                        //string memory concat1 = string("BMVRevertInvalidSequence, messageeventseq").concat(messageEvent.seq.toString()).concat(", nextseq").concat(nextSeq.toString());
                         revert("BMVRevertInvalidSequence");
-                    else if (messageEvent.nextBmc.compareTo(_bmc)) {
+                    } else if (messageEvent.nextBmc.compareTo(_bmc)) {
                         msgs.push(messageEvent.message);
                         nextSeq += 1;
                     }
                 }
             }
         }
-        emit Debug(0,"done validate receipt hash");
         return msgs;
     }
 }

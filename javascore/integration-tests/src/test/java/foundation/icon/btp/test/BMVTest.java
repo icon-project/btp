@@ -1,19 +1,17 @@
 package foundation.icon.btp.test;
 
+import foundation.icon.btp.bmv.BTPMessageVerifier;
 import foundation.icon.btp.bmv.lib.*;
-import foundation.icon.btp.bmv.*;
-import foundation.icon.btp.bmv.types.*;
-import foundation.icon.btp.bmv.lib.mpt.MPTException;
-import foundation.icon.btp.bmv.lib.mpt.MerklePatriciaTree;
+import foundation.icon.btp.bmv.lib.mpt.*;
 import foundation.icon.btp.bmv.lib.mta.MTAException;
 import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
 import foundation.icon.btp.bmv.types.BlockHeader;
 import foundation.icon.btp.bmv.types.Votes;
+import foundation.icon.btp.bmv.types.*;
 import foundation.icon.ee.io.DataWriter;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.Wallet;
-import foundation.icon.icx.data.Bytes;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
@@ -21,19 +19,17 @@ import foundation.icon.icx.transport.jsonrpc.RpcValue;
 import foundation.icon.test.common.*;
 import foundation.icon.test.score.Score;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
-import score.ByteArrayObjectWriter;
-import score.Context;
+import org.junit.jupiter.api.*;
 import scorex.util.Base64;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.List;
 
 import static foundation.icon.test.common.Env.LOG;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(Constants.TAG_JAVA_SCORE)
@@ -140,15 +136,13 @@ public class BMVTest extends TestBase {
                         foundation.icon.btp.bmv.Test.class,
                         HexConverter.class,
                         scorex.util.Arrays.class,
-                Base64.class},
+                        Base64.class},
                 args);
 
         LOG.info("Deployed BMV address " + score.getAddress());
         LOG.infoExiting();
         return score;
     }
-
-
 
 
     public static Score deployBMV(TransactionHandler txHandler, Wallet owner)
@@ -158,12 +152,10 @@ public class BMVTest extends TestBase {
         RpcObject args = new RpcObject.Builder()
                 .put("bmc", new RpcValue(currentBMCAdd))
                 .put("network", new RpcValue(prevBMCnet))//for sample
-                .put("validators", new RpcValue(encodedValidators))
                 .put("offset", new RpcValue(Integer.toString(offset)))
                 .put("rootSize", new RpcValue(Integer.toString(rootSize)))
                 .put("cacheSize", new RpcValue(Integer.toString(cacheSize)))
                 .put("isAllowNewerWitness", new RpcValue(isAllowNewerWitness))
-                .put("lastBlockHash", new RpcValue(lastBlockHash))
                 .build();
 
         Score score = txHandler.deploy(owner, new Class[]{
@@ -187,10 +179,22 @@ public class BMVTest extends TestBase {
                         MerklePatriciaTree.class,
                         Votes.class,
                         foundation.icon.btp.bmv.types.ValidatorList.class,
-                TypeDecoder.class,
+                        TypeDecoder.class,
+                        BMVStatus.class,
                         HexConverter.class,
                         scorex.util.Arrays.class,
-                        scorex.util.ArrayList.class, Base64.class},
+                        scorex.util.ArrayList.class,
+                        scorex.util.HashMap.class,
+                        TrieNode.class,
+                        Value.class,
+                        Base64.class,
+                        ArrayList.class,
+                        scorex.util.AbstractCollection.class,
+                        Nibbles.class,
+                        ArraysUtil.class,
+                        BytesUtil.class,
+                        Pair.class,
+                        Trie.class},
                 args);
 
         LOG.info("Deployed BMV address " + score.getAddress());
@@ -205,7 +209,7 @@ public class BMVTest extends TestBase {
     @Test
     public void scenario1() throws IOException, ResultTimeoutException {
         //header bytes sample value from verify.js poc:108 "headerEncoded" var
-        byte[] headerBytes= Hex.decode("f901f7a0762577e92f95731a13473cc53e02fdd689963d993bb5e154b284fa4803e89142a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0997a1add7987e3d4e4498fa04fb343411676b44e4f229c8764ba8007d515a22fa0ce8bc9f9a3bb622d7eb3c2506f6e00a9f0d01d2ae19f2c02b5f39bdb7cb1c717a0d5fb9fafd6b0c3d46d6c9e08d9947a70e95400dd0bf21467ea3d3f17ce77651bb90100010000020000000000000002000800000000000000000000008000800000000000000000800000000000000000000200000000000000000000000000002000000000000000000000000000080000000000000080000000000000000000000000200000000000000040000000840000000020000000800000000000100000000000000000100000000000000000000008000000000000000000000008001000000200000000080000040040000000000000000000000000001000000000000000002000020000000000000000000000000000000000000800000040000000000000100000000000000000010000000000000000000000000000000000000000008038836691b78305177c8460c09b7b80a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
+        byte[] headerBytes = Hex.decode("f901f7a0762577e92f95731a13473cc53e02fdd689963d993bb5e154b284fa4803e89142a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0997a1add7987e3d4e4498fa04fb343411676b44e4f229c8764ba8007d515a22fa0ce8bc9f9a3bb622d7eb3c2506f6e00a9f0d01d2ae19f2c02b5f39bdb7cb1c717a0d5fb9fafd6b0c3d46d6c9e08d9947a70e95400dd0bf21467ea3d3f17ce77651bb90100010000020000000000000002000800000000000000000000008000800000000000000000800000000000000000000200000000000000000000000000002000000000000000000000000000080000000000000080000000000000000000000000200000000000000040000000840000000020000000800000000000100000000000000000100000000000000000000008000000000000000000000008001000000200000000080000040040000000000000000000000000001000000000000000002000020000000000000000000000000000000000000800000040000000000000100000000000000000010000000000000000000000000000000000000000008038836691b78305177c8460c09b7b80a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
 
         //witness got from poc verify.js:47 "witness" of transactionProof
         byte[] witness = Hex.decode("f9024b378504a817c8008347e7c4948cd1d5d16caf488efc057e4fc3add7c11b01d9b080b901e4e995e3de00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000014000000000000000000000000053f1aaac3db0557bd6413da6ade72e53d45b77ab00000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000362736300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008546f6b656e425348000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a307835343332364232616436413741663733453066384538613434373845313343323643423832393439000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003455448000000000000000000000000000000000000000000000000000000000025a01d1d49798a10c7abb230fcbaedb48867a2e3f690c0671d8841451fb4d7e8c10aa0528cf1e4ea354ab2d01dde65c724a22d3807d6b9b77fad41700ad53a7d4914e2");
@@ -228,7 +232,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write( headerBytes);
+        blockUpdateWriter.write(headerBytes);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -236,7 +240,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         blockProofWrtr.write(witness); // block witness
@@ -318,7 +322,7 @@ public class BMVTest extends TestBase {
 
     @Order(4)
     @Test
-    public void scenario4()  throws IOException, ResultTimeoutException {
+    public void scenario4() throws IOException, ResultTimeoutException {
         KeyWallet bmvCallerBMC = wallets[0];
 
         String invlidCurrentBMCBTPAdd = "btp://" + currentBMCNet + "/" + wallets[1].getAddress().toString();
@@ -360,7 +364,6 @@ public class BMVTest extends TestBase {
     }
 
 
-
     @Order(6)
     @Test
     public void scenario6() throws IOException, ResultTimeoutException {
@@ -375,7 +378,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.writeNullity(true); //block header
         blockProofWrtr.writeNullity(true); // block witness
@@ -429,7 +432,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write( headerBytes);
+        blockUpdateWriter.write(headerBytes);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -438,7 +441,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         blockProofWrtr.write(witness); // block witness
@@ -493,7 +496,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write( headerBytes);
+        blockUpdateWriter.write(headerBytes);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -502,7 +505,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         blockProofWrtr.write(witness); // block witness
@@ -552,7 +555,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         blockProofWrtr.writeNullity(true); // block witness
@@ -606,7 +609,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         blockProofWrtr.write(witness); // block witness
@@ -660,7 +663,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes); //block header
         DataWriter blockWitnessWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
@@ -715,7 +718,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write( headerBytes58);
+        blockUpdateWriter.write(headerBytes58);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -723,7 +726,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes58); //block header
         blockProofWrtr.write(witness); // block witness
@@ -773,7 +776,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write( headerBytes59);
+        blockUpdateWriter.write(headerBytes59);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -781,7 +784,7 @@ public class BMVTest extends TestBase {
         relayMsgWriter.writeFooter();
 
         //blockProof
-        DataWriter blockProofWrtr =  foundation.icon.test.common.Codec.rlp.newWriter();
+        DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
         blockProofWrtr.write(headerBytes59); //block header
         blockProofWrtr.write(witness); // block witness

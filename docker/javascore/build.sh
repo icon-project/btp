@@ -17,6 +17,9 @@ build_image() {
     docker cp javascore-dist:/dist/bmv-optimized.jar ${DIST_DIR}
     docker cp javascore-dist:/dist/bsh-optimized.jar ${DIST_DIR}
     docker cp javascore-dist:/dist/irc2-token-optimized.jar ${DIST_DIR}
+
+    docker cp javascore-dist:/dist/irc31-0.1.0-optimized.jar ${DIST_DIR}
+    docker cp javascore-dist:/dist/nativecoin-0.1.0-optimized.jar ${DIST_DIR}
 }
 
 build_image "$@"

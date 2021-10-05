@@ -37,7 +37,7 @@ public class ServiceHandler {
     private static final int RESPONSE_UNKNOWN_ = 3;
     private static final int RC_OK = 0;
     private static final int RC_ERR = 1;
-    private static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(100);
+    private static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(10000);
     private final DictDB<BigInteger, byte[]> pendingDb = Context.newDictDB("pending", byte[].class);
     private final VarDB<BigInteger> serialNo = Context.newVarDB("serialNo", BigInteger.class);
     private final DictDB<String, String> tokenAddrDb = Context.newDictDB("token_addr", String.class);
@@ -112,6 +112,7 @@ public class ServiceHandler {
     @External
     public void register(String name, String symbol, BigInteger decimals, BigInteger feeNumerator, Address address) {
         onlyOwner();
+        //TODO:check fee numberator condition greater then 1 & less than denominator
         if (tokenAddrDb.get(name) != null) {
             Context.revert(ErrorCodes.BSH_TOKEN_EXISTS, "Token with same name exists already.");
         }

@@ -87,8 +87,8 @@ public class BTPMessageVerifier {
         for (ReceiptProof receiptProof : relayMessage.getReceiptProofs()) {
             Receipt receipt = receiptProof.prove(receiptRootHash);
             for (ReceiptEventLog eventLog : receipt.getLogs()) {
-                //TODO: check better way, now the event log doesnt have the prefix
-                if (!prevBMCAddress.getContract().equalsIgnoreCase(eventLog.getAddress())) {
+                //TODO: check better way, now the event log address doesnt have the prefix
+                if (!prevBMCAddress.getContract().equalsIgnoreCase("0x" + HexConverter.bytesToHex(eventLog.getAddress()))) {
                     continue;
                 }
                 //skip : if the 0th of the topic(which has the method signature) doesnt match the signature of keccak(Message(string,uint256,bytes))
@@ -96,7 +96,8 @@ public class BTPMessageVerifier {
                     continue;
                 }
                 //TODO: check why _next value is indexed? and remove later
-                EventDataBTPMessage messageEvent = EventDataBTPMessage.fromBytes(eventLog.getTopics().get(1), eventLog.getData());
+                EventDataBTPMessage messageEvent = EventDataBTPMessage.fromBytes(eventLog.getData());
+                //TODO: remove seq comment , just for testing e2e
                 if (messageEvent.getSeq().compareTo(nextSeq) != 0) {
                     Context.revert(BMVErrorCodes.INVALID_SEQ_NUMBER, "Invalid sequence No:" + messageEvent.getSeq() + ", Expected: " + nextSeq);
                 } else {
@@ -117,14 +118,14 @@ public class BTPMessageVerifier {
      * get status of BMV
      */
     @External(readonly = true)
-    public String getStatus() {
+    public BMVStatus getStatus() {
         MerkleTreeAccumulator mta = this.mta.get();
         BMVStatus status = new BMVStatus();
         long lastHeight = mta.getHeight();
         status.setHeight(lastHeight);
         status.setLast_height(this.lastHeight.get().longValue());
         status.setOffset(mta.getOffset());
-        return status.toString();
+        return status;
     }
 
     private void canBMCAccess(BTPAddress currBMCAddress, BTPAddress prevAddress) {
@@ -173,7 +174,6 @@ public class BTPMessageVerifier {
         List<Object> result = new ArrayList<>();
         result.add(receiptRoot);
         result.add(lastHeight);
-
         this.mta.set(mta);
         return result;
     }

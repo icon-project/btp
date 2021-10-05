@@ -70,6 +70,7 @@ library MerkleTreeAccumulator {
 
     function setOffset(MTA storage mta, uint256 offset) internal {
         mta.offset = offset;
+        //TODO: NOTE: comment here if needed to update MTA manually for testing
         if (mta.height == 0 && mta.offset > 0) mta.height = mta.offset;
     }
 

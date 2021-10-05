@@ -27,6 +27,9 @@ RUN cp ${JAVASCORE_SRC}/bsh/build/libs/bsh-optimized.jar ${DIST_DIR}
 RUN cp ${JAVASCORE_SRC}/bmv/build/libs/bmv-optimized.jar ${DIST_DIR}
 RUN cp ${JAVASCORE_SRC}/bmc/bmc-0.1.0-optimized.jar ${DIST_DIR}/bmc-optimized.jar
 
+RUN cp ${JAVASCORE_SRC}/irc31-0.1.0-optimized.jar ${DIST_DIR}
+RUN cp ${JAVASCORE_SRC}/nativecoin-0.1.0-optimized.jar ${DIST_DIR}
+
 RUN git clone https://github.com/icon-project/java-score-examples.git
 WORKDIR /goloop/java-score-examples
 RUN gradle irc2-token:clean
