@@ -377,6 +377,22 @@ type DispatchInfo struct {
 	PaysFee Pays
 }
 
+// Scale decode for EthereumLog
+func (di *DispatchInfo) Decode(decoder scale.Decoder) error {
+	err := decoder.Decode(&di.Weight)
+	if err != nil {
+		return err
+	}
+
+	err = decoder.Decode(&di.Class)
+	if err != nil {
+		return err
+	}
+
+	err = decoder.Decode(&di.PaysFee)
+	return err
+}
+
 // DispatchClass is a generalized group of dispatch types. This is only distinguishing normal, user-triggered
 // transactions (`Normal`) and anything beyond which serves a higher purpose to the system (`Operational`).
 type DispatchClass struct {
@@ -1704,7 +1720,6 @@ type EventParachainStakingNominationIncreased struct {
 	Collator      AccountID
 	OldNomination Balance
 	Bool          bool
-	NewNomination Balance
 	Topics        []types.Hash
 }
 type EventParachainStakingNominatorLeft struct {
