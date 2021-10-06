@@ -21,15 +21,16 @@ const (
 	txMaxDataSize                    = 524288 //512 * 1024 // 512kB
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
-	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
+	defaultMaxBlockUpdatesPerSegment = 15
 	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
 var RetrableRelayReSendReExp = regexp.MustCompile(``)
 
 type praSenderOptions struct {
-	GasLimit uint64 `json:"gasLimit"`
+	GasLimit           uint64 `json:"gasLimit"`
+	MaxBlockPerMessage uint64 `json:"maxBlockPerMessage"`
 }
 
 var (
@@ -57,7 +58,7 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 
 	rmp := &RelayMessageParam{
 		Prev: prev,
-		Msg:  base64.URLEncoding.EncodeToString(b),
+		Msg:  string(b[:]),
 	}
 
 	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
@@ -405,7 +406,11 @@ func (s *Sender) isOverSizeLimit(size int) bool {
 }
 
 func (s *Sender) isOverBlocksLimit(blockupdates int) bool {
-	return blockupdates >= MaxBlockUpdatesPerSegment
+	maxBu := defaultMaxBlockUpdatesPerSegment
+	if s.opt.MaxBlockPerMessage > 0 {
+		maxBu = int(s.opt.MaxBlockPerMessage)
+	}
+	return blockupdates >= maxBu
 }
 
 func (s *Sender) parseTransactionError(from EvmAddress, tx *EvmTransaction, blockNumber *big.Int) error {

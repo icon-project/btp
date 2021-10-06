@@ -207,7 +207,7 @@ contract BMV is IBMV, Initializable {
     ) external override returns (bytes[] memory) {
         checkAccessible(_bmc, _prev);
 
-        bytes memory _serializedMsg = _msg.decode();
+        bytes memory _serializedMsg = bytes(_msg);
         Types.RelayMessage memory relayMsg =
             _serializedMsg.decodeRelayMessage();
 
