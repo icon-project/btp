@@ -60,6 +60,27 @@ type Weight = types.Weight
 type DispatchError = types.DispatchError
 type OptionBytes = types.OptionBytes
 type BlockNumber = types.U32
+type Null = types.Null
+
+type NominatorAdded struct {
+	AddedToTop    Balance
+	AddedToBottom Null
+}
+
+func (na *NominatorAdded) Decode(decoder scale.Decoder) error {
+	b, err := decoder.ReadOneByte()
+	switch b {
+	case 0:
+		att := Balance{}
+		err = decoder.Decode(&att)
+		na.AddedToTop = att
+	case 1:
+		na.AddedToBottom = types.NewNull()
+	default:
+		return fmt.Errorf("unknown NominatorAdded enum: %v", b)
+	}
+	return err
+}
 
 func (ea *EthereumAccountId) Hex() string {
 	return fmt.Sprintf("%#x", *ea)
@@ -375,22 +396,6 @@ type DispatchInfo struct {
 	Class DispatchClass
 	// PaysFee indicates whether this transaction pays fees
 	PaysFee Pays
-}
-
-// Scale decode for EthereumLog
-func (di *DispatchInfo) Decode(decoder scale.Decoder) error {
-	err := decoder.Decode(&di.Weight)
-	if err != nil {
-		return err
-	}
-
-	err = decoder.Decode(&di.Class)
-	if err != nil {
-		return err
-	}
-
-	err = decoder.Decode(&di.PaysFee)
-	return err
 }
 
 // DispatchClass is a generalized group of dispatch types. This is only distinguishing normal, user-triggered
@@ -1698,12 +1703,12 @@ type EventParachainStakingNewRound struct {
 	Topics                    []types.Hash
 }
 type EventParachainStakingNomination struct {
-	Phase                      types.Phase
-	Nominator                  AccountID
-	AmountLocked               Balance
-	Collator                   AccountID
-	NewTotalAmtBackingCollator Balance
-	Topics                     []types.Hash
+	Phase                     types.Phase
+	Nominator                 AccountID
+	AmountLocked              Balance
+	Collator                  AccountID
+	NominatorPositionWithData NominatorAdded
+	Topics                    []types.Hash
 }
 type EventParachainStakingNominationDecreased struct {
 	Phase         types.Phase

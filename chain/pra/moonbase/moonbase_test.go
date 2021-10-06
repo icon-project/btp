@@ -12,6 +12,7 @@ import (
 )
 
 func TestMoonbaseEventRecord(t *testing.T) {
+	t.Skip("Manual only")
 	api, err := gsrpc.NewSubstrateAPI("wss://wss.testnet.moonbeam.network")
 	require.NoError(t, err)
 
@@ -23,7 +24,10 @@ func TestMoonbaseEventRecord(t *testing.T) {
 	// TODO add all event on chain
 	tests := []test{
 		{blockNumber: 906099, moduleEventNames: []string{
-			"System_ExtrinsicSuccess",
+			"ParachainStaking_NominationIncreased",
+		}},
+		{blockNumber: 906886, moduleEventNames: []string{
+			"ParachainStaking_Nomination",
 		}},
 	}
 
