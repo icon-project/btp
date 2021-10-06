@@ -22,7 +22,7 @@ const (
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	DefaultRetryContractCallInterval = 3 * time.Second
-	defaultMaxBlockUpdatesPerSegment = 15
+	defaultMaxBlockUpdatesPerSegment = 11       // this is for Moonbase alpha testnet
 	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
