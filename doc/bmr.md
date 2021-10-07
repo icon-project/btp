@@ -11,13 +11,15 @@
 * [ICON Enterprise Edition](iconee.md)
 * [Polkadot/Kusama Parachain with Frontier Support](frontier.md)
   * Moonbeam/Moonriver
-  <!-- * Astar(Plasm)/Shiden --> TBD
 
 ## General
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
 * [Keystore](keystore.md)
 * [PoC ICON-ICON Tutorial](tutorial.md)
 
+## Overall architecture
+
+TODO
 ## Quick start
 
 If you already installed docker and docker-compose and want to take a quick view.   
