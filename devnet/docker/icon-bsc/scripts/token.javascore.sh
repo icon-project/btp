@@ -1,6 +1,7 @@
 #!/bin/sh
 ######################################## javascore service methods - start ######################################
 source utils.sh
+source rpc.sh
 # Parts of this code is adapted from https://github.com/icon-project/btp/blob/goloop2moonbeam/testnet/goloop2moonbeam/scripts
 deploy_javascore_bmc() {
   echo "deploying javascore BMC"
@@ -10,6 +11,7 @@ deploy_javascore_bmc() {
     --param _net=$(cat net.btp.icon) | jq -r . >tx.bmc.icon
   extract_scoreAddress tx.bmc.icon bmc.icon
   echo "btp://$(cat net.btp.icon)/$(cat bmc.icon)" >btp.icon
+  create_contracts_address_json "javascore" "bmc" $(cat bmc.icon)
 }
 
 deploy_javascore_bmv() {
@@ -28,6 +30,7 @@ deploy_javascore_bmv() {
     --param isAllowNewerWitness=0x1 |
     jq -r . >tx.bmv.icon
   extract_scoreAddress tx.bmv.icon bmv.icon
+  create_contracts_address_json "javascore" "bmv" $(cat bmv.icon)
   echo "BMV deployment success"
 }
 
@@ -38,6 +41,7 @@ deploy_javascore_bsh() {
     --content_type application/java \
     --param _bmc=$(cat bmc.icon) | jq -r . >tx.token_bsh.icon
   extract_scoreAddress tx.token_bsh.icon token_bsh.icon
+  create_contracts_address_json "javascore" "TokenBSH" $(cat token_bsh.icon)
 }
 
 deploy_javascore_irc2() {
@@ -50,6 +54,7 @@ deploy_javascore_irc2() {
     --param _initialSupply=${TOKEN_SUPPLY} \
     --param _decimals=${TOKEN_DECIMALS} | jq -r . >tx.irc2_token.icon
   extract_scoreAddress tx.irc2_token.icon irc2_token.icon
+  create_contracts_address_json "javascore" "IRC2" $(cat irc2_token.icon)
 }
 
 bmc_javascore_addVerifier() {
@@ -180,9 +185,21 @@ irc2_javascore_balance() {
     return 1
   fi
   local EOA=$(rpceoa $1)
-  goloop rpc call --to $(cat irc2_token.icon) \
+  balance=$(goloop rpc call --to $(cat irc2_token.icon) \
     --method balanceOf \
-    --param _owner=$EOA
+    --param _owner=$EOA | jq -r .)
+  balance=$(hex2int $balance)
+  balance=$(wei2coin $balance)
+  echo "Balance: $balance (ICX)"
+}
+
+check_alice_balance_after() {
+  echo "$1. Checking Alice's balance..."
+  sleep 20
+
+  cd $CONFIG_DIR
+  balance=$(irc2_javascore_balance alice.ks.json)
+  echo $balance
 }
 
 irc2_javascore_transfer() {
@@ -202,6 +219,13 @@ irc2_javascore_transfer() {
       --param _value=$VAL | jq -r .
   )
   ensure_txresult $TX
+}
+
+token_icon_fundBSH() {
+  echo "funding BSH with 100ETH tokens"
+  weiAmount=$(coin2wei 100)
+  echo "Wei Amount: $weiAmount"
+  irc2_javascore_transfer "$weiAmount"
 }
 
 rpceoa() {

@@ -10,7 +10,7 @@ module.exports = async function (callback) {
     switch (argv["method"]) {
       case "registerToken":
         console.log("registerToken", argv.name)
-        await bshProxy.register(argv.name, argv.symbol, 18, 1, argv.addr)
+        await bshProxy.register(argv.name, argv.symbol, 18, 100, argv.addr)
         console.log(await bshProxy.tokenNames())
         break;
       case "fundBSH":
@@ -23,8 +23,22 @@ module.exports = async function (callback) {
         var balance = await bep20tkn.balanceOf(argv.addr)
         //var balance=web3.utils.fromWei(await bep20tkn.balanceOf(argv.addr),"ether")
         //console.log("Balance:" + balance);
-        var bal=await web3.utils.fromWei(balance,"ether")
-        console.log("Balance: "+bal)
+        var bal = await web3.utils.fromWei(balance, "ether")
+        console.log("Balance: " + bal)
+        break;
+      case "approve":
+        console.log("Approving BSH to use Bob's tokens")
+        var balance = await bep20tkn.approve(argv.addr, web3.utils.toWei("" + argv.amount, 'ether'))
+        break;
+      case "transfer":
+        console.log("Init BTP transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
+        let tx = await bshProxy.transfer("ETH", web3.utils.toWei("" + argv.amount, 'ether'), argv.to)
+        console.log(tx)
+        break;
+      case "calculateTransferFee":
+        let result = await bshProxy.calculateTransferFee(bep20tkn.address, web3.utils.toWei("" + argv.amount, 'ether'))
+        console.log("amount:" + result.value)
+        console.log("fee:" + result.fee)
         break;
       default:
         console.error("Bad input for method, ", argv)

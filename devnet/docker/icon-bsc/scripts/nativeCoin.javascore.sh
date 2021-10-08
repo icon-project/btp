@@ -13,6 +13,7 @@ deploy_javascore_irc31() {
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/irc31-0.1.0-optimized.jar \
     --content_type application/java | jq -r . >tx.irc31.icon
   extract_scoreAddress tx.irc31.icon irc31.icon
+  create_contracts_address_json "javascore" "IRC31" $(cat irc31.icon)
 }
 
 deploy_javascore_nativeCoin_BSH() {
@@ -24,6 +25,7 @@ deploy_javascore_nativeCoin_BSH() {
     --param _irc31=$(cat irc31.icon) \
     --param _name=ICX | jq -r . >tx.nativebsh.icon
   extract_scoreAddress tx.nativebsh.icon nativebsh.icon
+  create_contracts_address_json "javascore" "NativeBSH" $(cat nativebsh.icon)
 }
 
 bmc_javascore_addNativeService() {

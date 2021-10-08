@@ -57,7 +57,8 @@ provision() {
     bmc_solidity_addNativeService
     nativeBSH_solidity_register
 
-    token_fundBSH
+    token_bsc_fundBSH
+    token_icon_fundBSH
 
     bmc_javascore_addVerifier
     bmc_javascore_addLink
