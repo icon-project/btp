@@ -22,6 +22,7 @@ const (
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
 	MaxBlockUpdatesPerSegment        = 3
+	MaxEventsPerSegment              = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
 	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
@@ -153,20 +154,9 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			}
 
 			size += len(ep.Proof)
-			if s.isOverSizeLimit(size) {
+			if s.isOverSizeLimit(size) || msg.numberOfEvent > MaxEventsPerSegment {
 				if i == 0 && j == 0 && len(msg.BlockUpdates) == 0 {
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit %v", i)
-				}
-
-				// TODO: need a confirmation
-				// I'm not sure why this EventProofs is missing
-				// at here this https://github.com/icon-project/btp/blob/3babaa101cc0ff469e7d769b450485fa7af14757/cmd/btpsimple/module/icon/sender.go#L162
-
-				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
-					return nil, err
-				} else {
-					s.log.Tracef("Segment: at %d ReceiptProofs[%d]: %x", rp.Height, i, b)
-					msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 				}
 
 				segment := &chain.Segment{
@@ -241,6 +231,9 @@ func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 		return err
 	}
 	segment.TransactionParam, err = s.newTransactionParam(p.Prev, msg)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
