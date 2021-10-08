@@ -15,6 +15,9 @@ RUN truffle version
 #install yarn
 RUN yarn --version
 
+#install eth-cli 
+RUN yarn global add eth-cli
+
 # install btpsimple cli
 COPY --from=btpsimple . .
 ENV PATH $PATH:/btpsimple/bin
@@ -40,6 +43,7 @@ COPY ./scripts/*.js /btpsimple/js/
 
 RUN chmod +x /provision.sh
 RUN chmod +x /entrypoint.sh
+RUN chmod +x /btpsimple/bin/wait-for-it.sh
 
 WORKDIR /btpsimple/config
 ENTRYPOINT ["entrypoint.sh"]

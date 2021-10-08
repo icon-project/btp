@@ -79,7 +79,7 @@ contract('BSC BSH Proxy Contract Management tests', (accounts) => {
     });
 
     it('Scenario 7: update FeeRatio  - by owner - success', async () => {
-        var new_fee = 2;
+        var new_fee = 200;
         await bshProxy.setFeeRatio(new_fee);
     });
 
@@ -92,7 +92,7 @@ contract('BSC BSH Proxy Contract Management tests', (accounts) => {
     });
 
     it('Scenario 9:update FeeRatio - Fee Numerator is higher than Fee Denominator - Revert', async () => {
-        var new_fee = 10000;
+        var new_fee = 11000;
         await truffleAssert.reverts(
             bshProxy.setFeeRatio(new_fee),
             "InvalidSetting"
@@ -191,9 +191,10 @@ contract('Sending ERC20 to ICON blockchain', function () {
     var _net = '0x03.icon';
     var tokenName = 'ETH'
     var symbol = 'ETH'
-    var fees = 1
+    var fees = 100
     var decimals = 18
-    var transferAmount = 100;
+    var amount = web3.utils.toBN(10);
+    var transferAmount = web3.utils.toWei(amount, "ether");
     var _bmcICON = 'btp://0x03.icon/0x1234567812345678';
     let bshProxy, bshImpl, token;
     before(async () => {
@@ -248,6 +249,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
 
     it("Scenario 5: All requirements are qualified and BSH initiates Transfer start - Success", async () => {
         var _to = 'btp://0x03.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd';
+        let bshBalBefore = await token.balanceOf(bshProxy.address);
         var balanceBefore = await bshProxy.getBalanceOf(accounts[0], tokenName)
         await token.approve(bshProxy.address, transferAmount);
         var txn = await bshProxy.transfer(tokenName, transferAmount, _to)
@@ -255,15 +257,19 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var balanceafter = await bshProxy.getBalanceOf(accounts[0], tokenName)
         let bshBal = await token.balanceOf(bshProxy.address);
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
+        /*console.log("Balance of" + bshProxy.address + " before the transfer:" + bshBalBefore);
+        console.log(""+amountAndFee.value);
+        console.log(""+amountAndFee.fee);
         console.log("Balance of" + bshProxy.address + " after the transfer:" + bshBal);
-        //console.log( web3.utils.hexToNumber(balanceafter._lockedBalance))
+        console.log( web3.utils.fromWei(balanceafter._lockedBalance,"ether")) 
+        console.log(balanceafter._lockedBalance.toString()) 
+        console.log(balanceBefore._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString())  */
         assert(
-            web3.utils.hexToNumber(balanceafter._lockedBalance) ==
-            web3.utils.hexToNumber(balanceBefore._lockedBalance) + (transferAmount - amountAndFee.fee),
+            balanceafter._lockedBalance.toString() ==
+            balanceBefore._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString(),
             "Initiate transfer failed"
         );
     });
-
     it("Scenario 6:All requirements are qualified and BSH receives a failed message - Success", async () => {
         var _code = 1;
         var _msg = 'Transfer failed'
@@ -274,8 +280,8 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
         //Since the balance is returned back to the token Holder due to failure
         assert(
-            web3.utils.hexToNumber(balanceAfter[1]) + (transferAmount - amountAndFee.fee) ==
-            web3.utils.hexToNumber(balanceBefore[1]), "Error response Handler failed "
+            balanceAfter[1].add(transferAmount).sub(amountAndFee.fee).toString() ==
+            balanceBefore[1].toString(), "Error response Handler failed "
         );
     });
 
@@ -290,18 +296,17 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
         //Reason: the amount is burned from the tokenBSH and locked balance is reduced for the set amount
         assert(
-            web3.utils.hexToNumber(balanceAfter[1]) + (transferAmount - amountAndFee.fee) ==
-            web3.utils.hexToNumber(balanceBefore[1]),
+            balanceAfter[1].add(transferAmount).sub(amountAndFee.fee).toString() ==
+            balanceBefore[1].toString(),
             "Error response Handler failed "
         );
         var accumulatedFees = await bshProxy.getAccumulatedFees();
         assert(
-            accumulatedFees[0].value ==
-            web3.utils.hexToNumber(amountAndFee.fee),
+            accumulatedFees[0].value.toString() ==
+            amountAndFee.fee.toString(),
             "The Accumulated fee is not equal to the calculated fees from transfer amount");
     });
 });
-
 
 contract('Receiving ERC20 from ICON blockchain', function () {
     var btp_network = '0x97.bsc';
@@ -309,7 +314,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
     var _net = '0x03.icon';
     var tokenName = 'ETH'
     var symbol = 'ETH'
-    var fees = 1
+    var fees = 100
     var decimals = 18
     var transferAmount = 100;
     var _bmcICON = 'btp://0x03.icon/0x1234567812345678';
@@ -347,9 +352,6 @@ contract('Receiving ERC20 from ICON blockchain', function () {
 
     });
 
-
-
-
     it('Scenario 2:Receive Request Token Mint - Invalid Token Name - Failure', async () => {
         var _from = '0x12345678';
         var mockOutputToAssert = await bmc.buildBTPRespMessage(bmcBtpAdd, _bmcICON, _svc, 0, RC_ERR, 'Unregistered Token');
@@ -363,10 +365,9 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         );
     });
 
-
     it('Scenario 3:Receive Request Token Mint - Insufficient funds with BSH - Failure', async () => {
         var _from = '0x12345678';
-        var _value = 1000000000;
+        var _value = "10000000000000000000"
         await bshProxy.register(tokenName, symbol, decimals, fees, token.address);
         var mockOutputToAssert = await bmc.buildBTPRespMessage(bmcBtpAdd, _bmcICON, _svc, 0, RC_ERR, 'ERC20: transfer amount exceeds balance');
         var output = await bmc.handleTransferReq(
@@ -378,27 +379,29 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         );
     });
 
-
     it("Scenario 4: All requirements are qualified - Success", async () => {
         var _from = '0x12345678';
-        //set initial bsh balance       
-
+        //set initial bsh balance
+        transferAmount = "10000000000000000000"
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
+        console.log("fees" + amountAndFee.fee);
         var balanceBefore = await token.balanceOf(accounts[1]);
         var amount = transferAmount - amountAndFee.fee;
 
         await token.transfer(bshProxy.address, transferAmount);
         var bshBalance = await token.balanceOf(bshProxy.address);
-        console.log("bshBalance" + web3.utils.hexToNumber(bshBalance))
+        //console.log("bshBalance" + web3.utils.hexToNumber(bshBalance))
 
         await bmc.handleTransferReq(
-            _from, accounts[1], _net, _svc, tokenName, amount
+            _from, accounts[1], _net, _svc, tokenName, "" + amount
         );
 
         var balanceAfter = await token.balanceOf(accounts[1])
-        console.log("Balance Before" + web3.utils.hexToNumber(balanceBefore));
-        console.log("Balance After" + web3.utils.hexToNumber(balanceAfter));
-        console.log(amountAndFee);
+        //console.log("Balance Before" + web3.utils.hexToNumber(balanceBefore));
+        //console.log("Balance After" + web3.utils.hexToNumber(balanceAfter));
+        //console.log("amount" + amount);
+        console.log("Balance After in eth" + await web3.utils.fromWei(balanceAfter, "ether"));
+        //console.log(amountAndFee);
         assert(
             web3.utils.hexToNumber(balanceAfter) ==
             web3.utils.hexToNumber(balanceBefore) + amount,
@@ -406,7 +409,6 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         );
     });
 });
-
 
 //TODO: fee aggregation tests
 //withdraw/ refund test

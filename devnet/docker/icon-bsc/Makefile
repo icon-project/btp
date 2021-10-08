@@ -26,3 +26,6 @@ transfer_eth:
 
 transfer_icx:
 	docker-compose exec btp-icon sh /btpsimple/bin/transfer_icx.sh
+
+bsc_transfer_eth:
+	docker-compose exec btp-icon sh /btpsimple/bin/transfer_eth_bsc.sh
