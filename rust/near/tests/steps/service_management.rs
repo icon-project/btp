@@ -169,5 +169,6 @@ pub static BSH_SERVICE_REMOVED_FROM_SERVICES: fn(Context) = |context: Context| {
 //TODO: Error Handling
 pub static BSH_SHOULD_THROW_REQUESTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BSH_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |context: Context| context;
+pub static BSH_SHOULD_THROW_ALREADY_EXIST_ERRROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_INVALIDADDRESS_ERROR: fn(Context) -> Context =
     |context: Context| context;

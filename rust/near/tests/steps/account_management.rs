@@ -26,4 +26,5 @@ pub static BOBS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Conte
     create_account(&bob);
     context.accounts_mut().add("bob",&bob);
     context
-}
+};
+
