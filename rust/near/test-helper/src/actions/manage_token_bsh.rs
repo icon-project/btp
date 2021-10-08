@@ -55,7 +55,6 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "mint", method_params).unwrap();
         context
     }
-
     pub fn get_coin_names(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "get_conin_names");
         context

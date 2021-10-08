@@ -29,6 +29,6 @@ mod message_management;
 
 pub use message_management::*;
 
-mod token_management;
+mod token_bsh_management;
 
-pub use token_management::*;
+pub use token_bsh_management::*;
