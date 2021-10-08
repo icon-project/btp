@@ -515,7 +515,13 @@ truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbas
     rawLogs: []
   },
   logs: []
-}
+}****
+```
+
+```bash
+PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
+NEXTLINK_BTP_NATIVECOIN_NAME="ICX" \
+truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh  
 ```
 
 ### JAVAScore
