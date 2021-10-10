@@ -68,8 +68,14 @@ where
 
 pub type SerializedBtpMessages = Vec<BtpMessage<SerializedMessage>>;
 
-#[derive(Clone)]
-pub struct SerializedMessage {}
+#[derive(Clone, BorshDeserialize, BorshSerialize)]
+pub struct SerializedMessage(Vec<u8>);
+
+impl SerializedMessage {
+    pub fn new(data: Vec<u8>) -> Self {
+        Self(data)
+    }
+}
 
 impl Message for SerializedMessage {}
 

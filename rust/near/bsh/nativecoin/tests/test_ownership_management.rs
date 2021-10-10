@@ -1,15 +1,18 @@
-use bmc::BtpMessageCenter;
+use nativecoin_service::NativeCoinService;
 use near_sdk::{testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
+use libraries::types::{NativeCoin, Token};
+mod token;
+use token::*;
 
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
     VMContext {
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
-        predecessor_account_id: signer_account_id.to_string(),
+        predecessor_account_id: alice().to_string(),
         input,
         block_index: 0,
         block_timestamp: 0,
@@ -29,7 +32,12 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn add_owner_new_owner_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.add_owner(carol());
 
@@ -41,21 +49,31 @@ fn add_owner_new_owner_pass() {
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertAlreadyExistsOwner")]
-fn add_owner_exisinting_owner_fail() {
+#[should_panic(expected = "BSHRevertAlreadyExistsOwner")]
+fn add_owner_existing_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.add_owner(alice());
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertNotExistsPermission")]
+#[should_panic(expected = "BSHRevertNotExistsPermission")]
 fn add_owner_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
     testing_env!(context(chuck()));
     contract.add_owner(carol());
 }
@@ -64,7 +82,12 @@ fn add_owner_permission_fail() {
 fn remove_owner_existing_owner_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.add_owner(carol());
     contract.add_owner(charlie());
@@ -78,11 +101,16 @@ fn remove_owner_existing_owner_pass() {
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertNotExistsPermission")]
+#[should_panic(expected = "BSHRevertNotExistsPermission")]
 fn remove_owner_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.add_owner(carol());
 
@@ -91,21 +119,31 @@ fn remove_owner_permission_fail() {
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertLastOwner")]
+#[should_panic(expected = "BSHRevertLastOwner")]
 fn remove_owner_last_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.remove_owner(alice());
 }
 
 #[test]
-#[should_panic(expected = "BMCRevertNotExistsOwner")]
-fn remove_owner_non_exisitng_owner_fail() {
+#[should_panic(expected = "BSHRevertNotExistsOwner")]
+fn remove_owner_non_existing_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+    );
 
     contract.remove_owner(carol());
 }

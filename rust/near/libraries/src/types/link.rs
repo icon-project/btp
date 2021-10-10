@@ -59,14 +59,6 @@ impl Link {
         self.delay_limit = delay_limit;
     }
 
-    pub fn verifier() {
-        unimplemented!();
-    }
-
-    pub fn verifier_mut(&mut self) {
-        unimplemented!();
-    }
-
     pub fn relays_mut(&mut self) -> &mut Relays {
         self.relays.as_mut()
     }

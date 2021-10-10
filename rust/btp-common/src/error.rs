@@ -36,6 +36,67 @@ pub mod errors {
     }
 
     #[derive(Debug, Clone)]
+    pub enum BshError {
+        Unknown,
+        LastOwner,
+        OwnerExist,
+        OwnerNotExist,
+        PermissionNotExist,
+        NotMinimumDeposit,
+        TokenExist,
+        TokenNotExist { message: String },
+        Failure,
+        Reverted,
+        NotBmc,
+        InvalidService,
+        DecodeFailed { message: String },
+        InvalidSetting,
+        InvalidCount { message: String }
+    }
+
+    impl fmt::Display for BshError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+            let label = "BSHRevert";
+            match self {
+                BshError::TokenNotExist { message } => {
+                    write!(f, "{}{}: {}", label, "NotExistsToken", message)
+                },
+                BshError::LastOwner => {
+                    write!(f, "{}{}", label, "LastOwner")
+                },
+                BshError::OwnerExist => {
+                    write!(f, "{}{}", label, "AlreadyExistsOwner")
+                },
+                BshError::OwnerNotExist => {
+                    write!(f, "{}{}", label, "NotExistsOwner")
+                },
+                BshError::PermissionNotExist => {
+                    write!(f, "{}{}", label, "NotExistsPermission")
+                },
+                BshError::NotMinimumDeposit => {
+                    write!(f, "{}{}", label, "NotMinimumDeposit")
+                },
+                BshError::NotBmc => {
+                    write!(f, "{}{}", label, "NotBMC")
+                },
+                BshError::InvalidService => {
+                    write!(f, "{}{}", label, "InvalidSvc")
+                },
+                BshError::DecodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "DecodeError", message)
+                },
+                BshError::InvalidSetting => {
+                    write!(f, "{}{}", label, "InvalidSetting")
+                },
+                BshError::InvalidCount { message } => {
+                    write!(f, "{}{} for {}", label, "InvalidCount", message)
+                }
+                _ => todo!()
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
     pub enum BmcError {
         DecodeFailed { message: String },
         EncodeFailed { message: String },

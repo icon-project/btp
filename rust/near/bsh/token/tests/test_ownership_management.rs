@@ -1,4 +1,4 @@
-use bmc::BtpMessageCenter;
+use token_service::TokenService;
 use near_sdk::{testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
@@ -9,7 +9,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
-        predecessor_account_id: signer_account_id.to_string(),
+        predecessor_account_id: alice().to_string(),
         input,
         block_index: 0,
         block_timestamp: 0,
@@ -29,7 +29,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn add_owner_new_owner_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.add_owner(carol());
 
@@ -45,7 +45,7 @@ fn add_owner_new_owner_pass() {
 fn add_owner_exisinting_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.add_owner(alice());
 }
@@ -55,7 +55,7 @@ fn add_owner_exisinting_owner_fail() {
 fn add_owner_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
     testing_env!(context(chuck()));
     contract.add_owner(carol());
 }
@@ -64,7 +64,7 @@ fn add_owner_permission_fail() {
 fn remove_owner_existing_owner_pass() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.add_owner(carol());
     contract.add_owner(charlie());
@@ -82,7 +82,7 @@ fn remove_owner_existing_owner_pass() {
 fn remove_owner_permission_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.add_owner(carol());
 
@@ -95,7 +95,7 @@ fn remove_owner_permission_fail() {
 fn remove_owner_last_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.remove_owner(alice());
 }
@@ -105,7 +105,7 @@ fn remove_owner_last_owner_fail() {
 fn remove_owner_non_exisitng_owner_fail() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = TokenService::new("0x1.near".into());
 
     contract.remove_owner(carol());
 }

@@ -27,7 +27,7 @@ mod estimate;
 mod external;
 use external::*;
 
-const INTERNAL_SERVICE: &str = "bmc";
+const SERVICE: &str = "bmc";
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -46,25 +46,18 @@ pub struct BtpMessageCenter {
 impl BtpMessageCenter {
     #[init]
     pub fn new(network: String) -> Self {
+        require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
-        let bsh = Bsh::new();
-        let bmv = Bmv::new();
-        let links = Links::new();
-        let routes = Routes::new();
-        let connections = Connections::new();
-        let btp_address =
-            BTPAddress::new(format!("btp://{}/{}", network, env::current_account_id()));
-        let event = BmcEvent::new();
         owners.add(&env::current_account_id());
         Self {
-            btp_address,
+            btp_address: BTPAddress::new(format!("btp://{}/{}", network, env::current_account_id())),
             owners,
-            bsh,
-            bmv,
-            links,
-            routes,
-            connections,
-            event,
+            bsh: Bsh::new(),
+            bmv: Bmv::new(),
+            links: Links::new(),
+            routes: Routes::new(),
+            connections: Connections::new(),
+            event: BmcEvent::new(),
         }
     }
 
@@ -77,7 +70,7 @@ impl BtpMessageCenter {
     /// Check whether signer account id is an owner
     fn assert_have_permission(&self) {
         require!(
-            self.owners.contains(&env::signer_account_id()),
+            self.owners.contains(&env::predecessor_account_id()),
             format!("{}", BmcError::PermissionNotExist)
         );
     }
@@ -144,7 +137,7 @@ impl BtpMessageCenter {
 
     fn assert_sender_is_authorized_service(&self, service: &str) {
         require!(
-            self.bsh.services.get(service) == Some(&env::signer_account_id()),
+            self.bsh.services.get(service) == Some(&env::predecessor_account_id()),
             format!("{}", BmcError::PermissionNotExist)
         );
     }
@@ -285,8 +278,8 @@ impl BtpMessageCenter {
                     fee_aggregator.clone(),
                     service.clone(),
                     account_id.clone(),
-                    0,
-                    Gas::from(estimate::GATHER_FEE),
+                    estimate::NO_DEPOSIT,
+                    estimate::GATHER_FEE,
                 );
             }
         });
@@ -637,7 +630,7 @@ impl BtpMessageCenter {
         return if self.btp_address.network_address() == message.destination().network_address() {
             self.increment_link_rx_seq(source);
             let outcome = match message.service().as_str() {
-                INTERNAL_SERVICE => {
+                SERVICE => {
                     self.handle_internal_service_message(source, message.clone().try_into())
                 }
                 _ => self.handle_external_service_message(source, message),
@@ -689,24 +682,24 @@ impl BtpMessageCenter {
     ) -> bool {
         self.increment_link_rx_seq(source);
         self.send_message(source, &message.destination(),message.to_owned());
-        true
+        false
     }
 
     #[cfg(not(feature = "testable"))]
-    fn send_message(&mut self, source: &BTPAddress, message: BtpMessage<SerializedMessage>) {
-        if let Some(next) = self.resolve_route(message.destination()) {
+    fn send_message(&mut self, source: &BTPAddress, destination: &BTPAddress, message: BtpMessage<SerializedMessage>) {
+        if let Some(next) = self.resolve_route(destination) {
             bmc_contract::emit_message(
                 next,
                 message,
                 env::current_account_id(),
-                0,
-                Gas::from(estimate::SEND_MESSAGE),
+                estimate::NO_DEPOSIT,
+                estimate::SEND_MESSAGE,
             );
         } else {
             self.send_error(
                 source,
                 &BtpException::Bmc(BmcError::Unreachable {
-                    destination: message.destination().to_string(),
+                    destination: destination.to_string(),
                 }),
                 message,
             );
@@ -726,7 +719,7 @@ impl BtpMessageCenter {
             self.send_error(
                 previous,
                 &BtpException::Bmc(BmcError::Unreachable {
-                    destination: message.destination().to_string(),
+                    destination: destination.to_string(),
                 }),
                 message,
             );

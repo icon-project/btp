@@ -1,4 +1,5 @@
 mod native_coin_service;
+pub use native_coin_service::*;
 mod token_service;
 pub mod bmc_service;
 pub use bmc_service::*;

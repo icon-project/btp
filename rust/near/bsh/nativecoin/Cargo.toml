@@ -1,0 +1,29 @@
+[package]
+name = "nativecoin-service"
+version = "0.1.0"
+authors = ["Icon Foundation<foo@icon.foundation>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+testable = []
+
+[dependencies]
+btp-common = { path = "../../../btp-common" }
+libraries = { path = "../../libraries" }
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
+base-service = { path="../base" }
+tiny-keccak = { version = "2.0", features = ["fips202"] }
+
+[dev-dependencies]
+lazy_static = "1.4.0"
+
+[[test]]
+name = "test_ownership_management"
+path = "tests/test_ownership_management.rs"
+
+[[test]]
+name = "test_token_transfer"
+path = "tests/test_token_transfer.rs"

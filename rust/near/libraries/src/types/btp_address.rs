@@ -12,6 +12,8 @@ use std::fmt::{self, Error, Formatter};
 use std::iter::FromIterator;
 use std::str;
 
+pub type Network = String;
+
 pub trait Account {
     fn account_id(&self) -> AccountId;
 }

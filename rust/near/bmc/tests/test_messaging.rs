@@ -14,7 +14,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
-        predecessor_account_id: alice().to_string(),
+        predecessor_account_id: signer_account_id.to_string(),
         input,
         block_index: 0,
         block_timestamp: 0,
