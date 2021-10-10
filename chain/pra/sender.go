@@ -21,15 +21,16 @@ const (
 	txMaxDataSize                    = 524288 //512 * 1024 // 512kB
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
-	MaxBlockUpdatesPerSegment        = 3
 	DefaultRetryContractCallInterval = 3 * time.Second
+	defaultMaxBlockUpdatesPerSegment = 11       // this is for Moonbase alpha testnet
 	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
 var RetrableRelayReSendReExp = regexp.MustCompile(``)
 
 type praSenderOptions struct {
-	GasLimit uint64 `json:"gasLimit"`
+	GasLimit           uint64 `json:"gasLimit"`
+	MaxBlockPerMessage uint64 `json:"maxBlockPerMessage"`
 }
 
 var (
@@ -61,8 +62,6 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 	}
 
 	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
-	s.log.Tracef("newTransactionParam Base64EncodedRLPEncodedRelayMessage: %s\n", rmp.Msg)
-
 	return rmp, nil
 }
 
@@ -113,30 +112,23 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 		msg.numberOfBlockUpdate += 1
 	}
 
-	lbu := &chain.BlockUpdate{}
-	if rm.BlockProof != nil {
-		if bp, err := codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
-			return nil, err
-		} else {
-			lbu.Proof = bp
-			lbu.Height = rm.BlockProof.BlockWitness.Height
-		}
-	} else {
-		lbu = rm.BlockUpdates[len(rm.BlockUpdates)-1]
+	var bp []byte
+	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
+		return nil, err
 	}
 
-	if s.isOverSizeLimit(len(lbu.Proof)) {
-		return nil, ErrInvalidBlockUpdateProofSize
+	if s.isOverSizeLimit(len(bp)) {
+		return nil, fmt.Errorf("invalid BlockProof size")
 	}
 
 	for i, rp := range rm.ReceiptProofs {
 		if s.isOverSizeLimit(len(rp.Proof)) {
 			return nil, ErrInvalidReceiptProofSize
 		}
-		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
-			size += len(lbu.Proof)
-			msg.BlockProof = lbu.Proof
-			msg.height = lbu.Height
+		if len(msg.BlockUpdates) == 0 {
+			size += len(bp)
+			msg.BlockProof = bp
+			msg.height = rm.BlockProof.BlockWitness.Height
 			s.log.Tracef("Segment: at %d BlockProof: %x", msg.height, msg.BlockProof)
 		}
 
@@ -182,7 +174,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
-					BlockProof:    lbu.Proof,
+					BlockProof:    bp,
 					ReceiptProofs: make([][]byte, 0),
 				}
 
@@ -194,7 +186,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 
 				size = len(ep.Proof)
 				size += len(rp.Proof)
-				size += len(lbu.Proof)
+				size += len(bp)
 			}
 
 			trp.EventProofs = append(trp.EventProofs, ep)
@@ -405,7 +397,11 @@ func (s *Sender) isOverSizeLimit(size int) bool {
 }
 
 func (s *Sender) isOverBlocksLimit(blockupdates int) bool {
-	return blockupdates >= MaxBlockUpdatesPerSegment
+	maxBu := defaultMaxBlockUpdatesPerSegment
+	if s.opt.MaxBlockPerMessage > 0 {
+		maxBu = int(s.opt.MaxBlockPerMessage)
+	}
+	return blockupdates >= maxBu
 }
 
 func (s *Sender) parseTransactionError(from EvmAddress, tx *EvmTransaction, blockNumber *big.Int) error {

@@ -161,32 +161,24 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 		msg.numberOfBlockUpdate += 1
 	}
 
-	lbu := &chain.BlockUpdate{}
-	if rm.BlockProof != nil {
-		if bp, err := codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
-			return nil, err
-		} else {
-			// BlockUpdate.Proof is different from RelayMessage.BlockProof
-			lbu.Proof = bp
-			lbu.Height = rm.BlockProof.BlockWitness.Height
-		}
-	} else {
-		lbu = rm.BlockUpdates[len(rm.BlockUpdates)-1]
+	var bp []byte
+	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
+		return nil, err
 	}
 
-	if s.isOverSizeLimit(len(lbu.Proof)) {
-		return nil, ErrInvalidBlockUpdateProofSize
+	if s.isOverSizeLimit(len(bp)) {
+		return nil, fmt.Errorf("invalid BlockProof size")
 	}
 
 	for i, rp := range rm.ReceiptProofs {
 		if s.isOverSizeLimit(len(rp.Proof)) {
 			return nil, ErrInvalidReceiptProofSize
 		}
-		if len(msg.BlockUpdates) == 0 && len(msg.BlockProof) == 0 {
-			size += len(lbu.Proof)
-			// BlockUpdate.Proof is different from RelayMessage.BlockProof
-			msg.BlockProof = lbu.Proof
-			msg.height = lbu.Height
+		if len(msg.BlockUpdates) == 0 {
+			size += len(bp)
+			msg.BlockProof = bp
+			msg.height = rm.BlockProof.BlockWitness.Height
+			s.l.Tracef("Segment: at %d BlockProof: %x", msg.height, msg.BlockProof)
 		}
 
 		size += len(rp.Proof)
@@ -232,8 +224,8 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 
 				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
+					BlockProof:    bp,
 					ReceiptProofs: make([][]byte, 0),
-					BlockProof:    lbu.Proof,
 				}
 
 				trp = &ReceiptProof{
@@ -244,7 +236,7 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 
 				size = len(ep.Proof)
 				size += len(rp.Proof)
-				size += len(lbu.Proof)
+				size += len(bp)
 			}
 
 			trp.EventProofs = append(trp.EventProofs, ep)
