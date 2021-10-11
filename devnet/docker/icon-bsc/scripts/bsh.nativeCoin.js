@@ -13,8 +13,13 @@ module.exports = async function (callback) {
       case "getBalanceOf":
         var balance = await bshCore.getBalanceOf(argv.addr, argv.name);
         //console.log("balance of user:" + argv.addr + " = " + balance._usableBalance);
-        var bal=await web3.utils.fromWei(balance._usableBalance,"ether")
+        var bal = await web3.utils.fromWei(balance._usableBalance, "ether")
         console.log(bal)
+        break;
+      case "transferNativeCoin":
+        console.log("Init BTP native transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
+        let tx = await bshCore.transferNativeCoin(argv.to, { value: web3.utils.toWei("" + argv.amount, 'ether') })
+        console.log(tx)
         break;
       default:
         console.error("Bad input for method, ", argv)

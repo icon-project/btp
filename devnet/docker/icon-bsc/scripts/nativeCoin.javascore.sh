@@ -43,7 +43,7 @@ nativeBSH_javascore_register() {
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat nativebsh.icon) \
     --method register \
-    --param _name=DEV | jq -r . >tx.register.nativebsh.icon
+    --param _name=BNB | jq -r . >tx.register.nativebsh.icon
   ensure_txresult tx.register.nativebsh.icon
 }
 
@@ -98,6 +98,32 @@ get_alice_balance() {
   balance=$(hex2int $balance)
   balance=$(wei2coin $balance)
   echo "Alice's balance: $balance (ICX)"
+}
+
+get_alice_native_balance() {
+  cd $CONFIG_DIR
+
+  local EOA=$(rpceoa alice.ks.json)
+  coinId=$(goloop rpc call --to $(cat nativebsh.icon) \
+    --method coinId \
+    --param _coinName=$1 | jq -r)
+  #echo "Alice coin_id: $coinId"
+
+  balance=$(goloop rpc call --to $(cat irc31.icon) \
+    --method balanceOf \
+    --param _owner=$EOA --param _id=$coinId | jq -r)
+
+  balance=$(hex2int $balance)
+  balance=$(wei2coin $balance)
+  echo "Alice Balance: $balance ($1)"
+}
+
+check_alice_native_balance_with_wait() {
+  echo "$1. Checking Alice's balance..."
+  sleep 20
+
+  balance=$(get_alice_native_balance $1)
+  echo $balance
 }
 
 goloop_lastblock() {
