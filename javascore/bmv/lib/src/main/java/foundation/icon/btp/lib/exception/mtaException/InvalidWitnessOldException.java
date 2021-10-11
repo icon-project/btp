@@ -1,4 +1,4 @@
-package foundation.icon.btp.lib.exception.mta;
+package foundation.icon.btp.lib.exception.mtaException;
 
 @SuppressWarnings("serial")
 public class InvalidWitnessOldException extends MTAException {

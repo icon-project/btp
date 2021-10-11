@@ -1,7 +1,5 @@
 package foundation.icon.btp.lib.votes;
 
-import java.math.BigInteger;
-
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
 import score.ObjectReader;

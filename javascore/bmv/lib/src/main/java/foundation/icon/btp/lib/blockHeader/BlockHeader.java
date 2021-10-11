@@ -1,13 +1,8 @@
-package foundation.icon.btp.lib.blockheader;
-
-import java.util.List;
+package foundation.icon.btp.lib.blockHeader;
 
 import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
 import foundation.icon.btp.lib.utils.Hash;
-
-import score.Context;
-import score.ObjectReader;
 
 public class BlockHeader {
     private final byte[] hash;

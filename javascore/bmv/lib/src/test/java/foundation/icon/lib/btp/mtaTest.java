@@ -1,10 +1,10 @@
-package foundation.icon.btp.lib.mta;
+package foundation.icon.lib.btp;
 
-import java.util.Arrays;
 import java.util.List;
 
-import foundation.icon.btp.lib.exception.mta.MTAException;
+import foundation.icon.btp.lib.exception.mtaException.*;
 import foundation.icon.btp.lib.mta.MerkleTreeAccumulator;
+import foundation.icon.btp.lib.mta.MTAStatus;
 import foundation.icon.btp.lib.utils.HexConverter;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.TestMethodOrder;
-import score.Context;
 import scorex.util.ArrayList;
 
 import java.security.MessageDigest;
@@ -24,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doReturn;
 
 @TestMethodOrder(OrderAnnotation.class)

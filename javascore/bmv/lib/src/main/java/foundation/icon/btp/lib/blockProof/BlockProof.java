@@ -1,9 +1,9 @@
-package foundation.icon.btp.lib.blockproof;
+package foundation.icon.btp.lib.blockProof;
 
 import java.util.List;
 
 import foundation.icon.btp.lib.ErrorCode;
-import foundation.icon.btp.lib.blockheader.BlockHeader;
+import foundation.icon.btp.lib.blockHeader.BlockHeader;
 import foundation.icon.btp.lib.mta.SerializableMTA;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 

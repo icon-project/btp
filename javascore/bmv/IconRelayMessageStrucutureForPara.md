@@ -75,7 +75,6 @@ StateProof {
   key: bytes
   # get from api, https://polkadot.js.org/docs/substrate/rpc#getreadproofkeys-vecstoragekey-at-blockhash-readproof
   # data of MPT node (branch node, leaf node) to prove that storage, from top to bottom
-  # result from api may not in top to bottom order, relay must reorder that
   proofs: [bytes]
 }
 
@@ -110,9 +109,9 @@ RelayChainData {
 # message from Relay
 RelayMessage {
   # optional, for BMV to synchronize block from srouce chain
-  # list of RLP encode of BlockUpdate
+  # list of RLP encode of ParaBlockUpdate
   # If it is omitted, an EMPTY_HEADER (0xC0) will be attached
-  blockUpdates: [bytes],
+  paraBlockUpdates: [bytes],
 
   # optional, in case of event in previous updated block is missing, it used to prove that block included in source chain
   # RLP endcode of BlockProof
@@ -123,7 +122,7 @@ RelayMessage {
   # proofs to prove that state storage in merkle patricia trie
   # a list of RLP encode of StateProof
   # This field also can be omitted. If so, 0xC0 will be attached
-  stateProof: bytes
+  stateProof: [bytes]
 }
 
 _msg = urlsafe_b64decode(RLP_ENCODE(RelayMessage)) # message from relayer to BMC

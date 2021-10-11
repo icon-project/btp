@@ -34,7 +34,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'foundation.icon.btp.bmv.sovereignchain.BMV'
+    mainClassName = 'foundation.icon.btp.bmv.sovereignChain.BMV'
     archivesBaseName = 'SovereignChain-BMV'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

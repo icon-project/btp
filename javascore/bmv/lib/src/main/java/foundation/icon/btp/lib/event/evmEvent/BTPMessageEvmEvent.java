@@ -1,14 +1,9 @@
-package foundation.icon.btp.lib.event.evmevent;
+package foundation.icon.btp.lib.event.evmEvent;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
 
 import foundation.icon.btp.lib.utils.AbiDecoder;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
-
-import score.Context;
-import scorex.util.ArrayList;
 
 public class BTPMessageEvmEvent {
     private final String next;

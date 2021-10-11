@@ -1,7 +1,6 @@
-package foundation.icon.btp.bmv.sovereignchain;
+package foundation.icon.btp.bmv.sovereignChain;
 
 import foundation.icon.btp.lib.BMVStatus;
-import foundation.icon.btp.lib.mta.MTAStatus;
 
 import score.Address;
 

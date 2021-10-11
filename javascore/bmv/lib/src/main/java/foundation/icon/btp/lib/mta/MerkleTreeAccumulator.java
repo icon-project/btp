@@ -1,16 +1,10 @@
 package foundation.icon.btp.lib.mta;
 
 import java.util.List;
-
-import foundation.icon.btp.lib.utils.Arrays;
-import foundation.icon.btp.lib.utils.HexConverter;
-import foundation.icon.btp.lib.exception.mta.MTAException;
-import foundation.icon.btp.lib.exception.mta.InvalidWitnessNewerException;
-import foundation.icon.btp.lib.exception.mta.InvalidWitnessOldException;
-
 import scorex.util.ArrayList;
-
 import score.Context;
+
+import foundation.icon.btp.lib.exception.mtaException.*;
 
 public class MerkleTreeAccumulator {
     private long height;

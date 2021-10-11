@@ -1,33 +1,19 @@
-package foundation.icon.btp.lib.mpt;
-
-import java.util.Arrays;
+package foundation.icon.lib.btp;
 
 import foundation.icon.btp.lib.mpt.Nibbles;
 import foundation.icon.btp.lib.utils.HexConverter;
+import foundation.icon.btp.lib.mpt.*;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.TestMethodOrder;
-import score.Context;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import scorex.util.ArrayList;
 
-import org.junit.jupiter.api.Disabled;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.times;
 
 // @Disabled
 @TestMethodOrder(OrderAnnotation.class)

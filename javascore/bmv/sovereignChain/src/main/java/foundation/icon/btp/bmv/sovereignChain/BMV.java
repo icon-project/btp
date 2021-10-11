@@ -1,4 +1,4 @@
-package foundation.icon.btp.bmv.sovereignchain;
+package foundation.icon.btp.bmv.sovereignChain;
 
 import score.Address;
 import score.Context;
@@ -10,16 +10,17 @@ import scorex.util.Base64;
 import scorex.util.ArrayList;
 
 import score.annotation.External;
-
+import foundation.icon.btp.lib.ErrorCode;
+import foundation.icon.btp.lib.blockHeader.BlockHeader;
+import foundation.icon.btp.lib.blockProof.BlockProof;
+import foundation.icon.btp.lib.btpAddress.BTPAddress;
+import foundation.icon.btp.lib.event.evmEvent.BTPMessageEvmEvent;
+import foundation.icon.btp.bmv.sovereignChain.lib.Constant;
+import foundation.icon.btp.bmv.sovereignChain.lib.blockUpdate.BlockUpdate;
+import foundation.icon.btp.bmv.sovereignChain.lib.relayMessage.RelayMessage;
+import foundation.icon.btp.lib.stateProof.StateProof;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BlockVerifyResult;
-import foundation.icon.btp.lib.sovereignchain.Constant;
-import foundation.icon.btp.lib.ErrorCode;
-import foundation.icon.btp.lib.event.evmevent.BTPMessageEvmEvent;
-import foundation.icon.btp.lib.blockproof.BlockProof;
-import foundation.icon.btp.lib.blockheader.BlockHeader;
-import foundation.icon.btp.lib.sovereignchain.blockupdate.BlockUpdate;
-import foundation.icon.btp.lib.btpaddress.BTPAddress;
 import foundation.icon.btp.lib.event.EVMLogEvent;
 import foundation.icon.btp.lib.event.EventRecord;
 import foundation.icon.btp.lib.event.NewAuthoritiesEvent;
@@ -28,10 +29,6 @@ import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 import foundation.icon.btp.lib.mta.MTAStatus;
 import foundation.icon.btp.lib.mta.SerializableMTA;
 
-import foundation.icon.btp.lib.mpt.*;
-
-import foundation.icon.btp.lib.sovereignchain.relaymessage.RelayMessage;
-import foundation.icon.btp.lib.stateproof.StateProof;
 import foundation.icon.btp.lib.utils.HexConverter;
 import foundation.icon.btp.lib.validators.Validators;
 

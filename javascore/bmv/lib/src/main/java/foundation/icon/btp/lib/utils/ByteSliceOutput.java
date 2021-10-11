@@ -1,9 +1,5 @@
 package foundation.icon.btp.lib.utils;
 
-import java.util.Arrays;
-
-import score.Context;
-
 public class ByteSliceOutput {
     private byte[] arr;
     private int size;

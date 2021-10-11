@@ -1,8 +1,5 @@
 package foundation.icon.btp.lib;
 
-import foundation.icon.btp.lib.utils.HexConverter;
-import score.Context;
-
 public class ErrorCode {
     public static final int BMV_ERROR = 25;
     public static final int INVALID_MPT = 26;

@@ -1,8 +1,8 @@
-package foundation.icon.btp.lib.parachain.relaychaindata;
+package foundation.icon.btp.bmv.sovereignChain.lib.relayMessage;
 
-import foundation.icon.btp.lib.blockproof.BlockProof;
-import foundation.icon.btp.lib.parachain.blockupdate.*;
-import foundation.icon.btp.lib.stateproof.StateProof;
+import foundation.icon.btp.lib.blockProof.BlockProof;
+import foundation.icon.btp.bmv.sovereignChain.lib.blockUpdate.BlockUpdate;
+import foundation.icon.btp.lib.stateProof.StateProof;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
 import java.util.List;
@@ -12,26 +12,24 @@ import scorex.util.ArrayList;
 import score.Context;
 import score.ObjectReader;
 
-public class RelayChainData {
-    private final List<RelayBlockUpdate> blockUpdates = new ArrayList<RelayBlockUpdate>(16);
+public class RelayMessage {
+    private final List<BlockUpdate> blockUpdates = new ArrayList<BlockUpdate>(16);
     private BlockProof blockProof;
     private final List<StateProof> stateProofs = new ArrayList<StateProof>(10);
 
-    public RelayChainData(byte[] serialized) throws RelayMessageRLPException {
+    public RelayMessage(byte[] serialized) throws RelayMessageRLPException {
         ObjectReader r = Context.newByteArrayObjectReader("RLPn", serialized);
         r.beginList();
 
-        // decode list of RelayBlockUpdate
         if (r.hasNext()) {
             r.beginList();
             while (r.hasNext()) {
                 byte[] encodedBlockUpdate = r.readByteArray();
-                blockUpdates.add(RelayBlockUpdate.fromBytes(encodedBlockUpdate));
+                blockUpdates.add(BlockUpdate.fromBytes(encodedBlockUpdate));
             }
             r.end();
         }
 
-        // decode Parachain block proof
         if (r.hasNext()) {
             byte[] blockProofEncoded = r.readNullable(byte[].class);
             this.blockProof = (blockProofEncoded != null && blockProofEncoded.length > 0) ? BlockProof.fromBytes(blockProofEncoded) : null;
@@ -39,7 +37,6 @@ public class RelayChainData {
             this.blockProof = null;
         }
 
-        // decode Parachain state proofs
         if (r.hasNext()) {
             r.beginList();
             while (r.hasNext()) {
@@ -52,7 +49,7 @@ public class RelayChainData {
         r.end();
     }
 
-    public List<RelayBlockUpdate> getBlockUpdate() {
+    public List<BlockUpdate> getBlockUpdate() {
         return this.blockUpdates;
     }
 
@@ -64,11 +61,11 @@ public class RelayChainData {
         return this.stateProofs;
     }
 
-    public static RelayChainData fromBytes(byte[] serialized) throws RelayMessageRLPException {
+    public static RelayMessage fromBytes(byte[] serialized) throws RelayMessageRLPException {
         try {
-            return new RelayChainData(serialized);
+            return new RelayMessage(serialized);
         } catch (IllegalStateException | UnsupportedOperationException | IllegalArgumentException e) {
-            throw new RelayMessageRLPException("RelayChainData: ", e.toString());
+            throw new RelayMessageRLPException("RelayMessage", e.toString());
         }
     }
 }

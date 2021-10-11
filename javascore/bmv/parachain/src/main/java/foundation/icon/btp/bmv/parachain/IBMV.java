@@ -1,7 +1,6 @@
 package foundation.icon.btp.bmv.parachain;
 
 import foundation.icon.btp.lib.BMVStatus;
-import foundation.icon.btp.lib.mta.MTAStatus;
 
 import java.util.List;
 import java.math.BigInteger;

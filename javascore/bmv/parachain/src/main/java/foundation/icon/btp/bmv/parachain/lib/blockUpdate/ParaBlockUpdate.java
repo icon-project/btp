@@ -1,15 +1,10 @@
-package foundation.icon.btp.lib.parachain.blockupdate;
+package foundation.icon.btp.bmv.parachain.lib.blockUpdate;
 
-import foundation.icon.btp.lib.ErrorCode;
+import foundation.icon.btp.lib.blockHeader.BlockHeader;
+import foundation.icon.btp.bmv.parachain.lib.relayChainData.RelayChainData;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
-import foundation.icon.btp.lib.blockheader.BlockHeader;
-import foundation.icon.btp.lib.parachain.relaychaindata.RelayChainData;
-
 import score.Context;
 import score.ObjectReader;
-
-import java.math.BigInteger;
-import java.util.List;
 
 public class ParaBlockUpdate {
     private final BlockHeader blockHeader;

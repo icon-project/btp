@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package com.iconloop.score.bmv;
-
-import foundation.icon.btp.lib.BMVStatus;
+package foundation.icon.btp.bmv;
 
 import com.iconloop.testsvc.Account;
 import com.iconloop.testsvc.Score;
 import com.iconloop.testsvc.ServiceManager;
 import com.iconloop.testsvc.TestBase;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import score.Context;
-import score.Address;
-
-import java.nio.charset.Charset;
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BMVTest extends TestBase {
     private static final ServiceManager sm = getServiceManager();

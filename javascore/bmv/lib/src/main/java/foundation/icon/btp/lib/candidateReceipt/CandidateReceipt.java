@@ -1,7 +1,4 @@
-package foundation.icon.btp.lib.candidatereceipt;
-
-import score.Context;
-import scorex.util.ArrayList;
+package foundation.icon.btp.lib.candidateReceipt;
 
 import foundation.icon.btp.lib.utils.ByteSliceInput;
 

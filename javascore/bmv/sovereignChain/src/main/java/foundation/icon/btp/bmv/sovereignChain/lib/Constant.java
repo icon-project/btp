@@ -1,4 +1,4 @@
-package foundation.icon.btp.lib.parachain;
+package foundation.icon.btp.bmv.sovereignChain.lib;
 
 import foundation.icon.btp.lib.utils.HexConverter;
 

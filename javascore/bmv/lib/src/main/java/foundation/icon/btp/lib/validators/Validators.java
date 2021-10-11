@@ -1,11 +1,8 @@
 package foundation.icon.btp.lib.validators;
 
 import java.util.List;
-
-import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
-
 import scorex.util.ArrayList;
 
 public class Validators {

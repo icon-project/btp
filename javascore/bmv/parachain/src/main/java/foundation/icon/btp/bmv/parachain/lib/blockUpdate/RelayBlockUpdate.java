@@ -1,9 +1,9 @@
-package foundation.icon.btp.lib.sovereignchain.blockupdate;
+package foundation.icon.btp.bmv.parachain.lib.blockUpdate;
 
 import foundation.icon.btp.lib.ErrorCode;
+import foundation.icon.btp.lib.blockHeader.BlockHeader;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 import foundation.icon.btp.lib.votes.Votes;
-import foundation.icon.btp.lib.blockheader.BlockHeader;
 
 import score.Context;
 import score.ObjectReader;
@@ -11,19 +11,23 @@ import score.ObjectReader;
 import java.math.BigInteger;
 import java.util.List;
 
-public class BlockUpdate {
+public class RelayBlockUpdate {
     private final BlockHeader blockHeader;
     private final Votes votes;
 
-    public BlockUpdate(byte[] serialized) throws RelayMessageRLPException {
+    public RelayBlockUpdate(byte[] serialized) throws RelayMessageRLPException {
         ObjectReader rlpReader = Context.newByteArrayObjectReader("RLPn", serialized);
         rlpReader.beginList();
+
+        // decode Para block header
         byte[] encodedHeader = rlpReader.readByteArray();
         if (encodedHeader != null && encodedHeader.length > 0) {
             this.blockHeader = new BlockHeader(encodedHeader);
         } else {
             this.blockHeader = null;
         }
+
+        // decode list of validator's votes
         byte[] encodedVotes = rlpReader.readNullable(byte[].class);
         if (encodedVotes != null && encodedVotes.length > 0) {
             this.votes = Votes.fromBytes(encodedVotes);
@@ -49,11 +53,11 @@ public class BlockUpdate {
         this.votes.verify(this.blockHeader.getNumber(), this.blockHeader.getHash(), validators, currentSetId);
     }
 
-    public static BlockUpdate fromBytes(byte[] serialized) throws RelayMessageRLPException {
+    public static RelayBlockUpdate fromBytes(byte[] serialized) throws RelayMessageRLPException {
         try {
-            return new BlockUpdate(serialized);
+            return new RelayBlockUpdate(serialized);
         } catch (IllegalStateException | UnsupportedOperationException | IllegalArgumentException e) {
-            throw new RelayMessageRLPException("BlockUpdate ", e.toString());
+            throw new RelayMessageRLPException("RelayBlockUpdate ", e.toString());
         }
     }
 }

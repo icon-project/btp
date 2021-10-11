@@ -1,9 +1,6 @@
 package foundation.icon.btp.lib.scale;
 
-import score.Context;
-
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import foundation.icon.btp.lib.utils.ByteSliceInput;
 

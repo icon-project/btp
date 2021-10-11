@@ -4,7 +4,6 @@ import java.util.List;
 
 import score.ObjectReader;
 import score.ObjectWriter;
-import score.Context;
 import scorex.util.ArrayList;
 
 public class SerializableMTA extends MerkleTreeAccumulator {

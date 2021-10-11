@@ -1,8 +1,4 @@
-package foundation.icon.btp.lib.btpaddress;
-
-import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
+package foundation.icon.btp.lib.btpAddress;
 
 public class BTPAddress {
     private String protocol;

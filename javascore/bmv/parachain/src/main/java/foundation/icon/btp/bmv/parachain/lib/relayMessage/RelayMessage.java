@@ -1,8 +1,8 @@
-package foundation.icon.btp.lib.parachain.relaymessage;
+package foundation.icon.btp.bmv.parachain.lib.relayMessage;
 
-import foundation.icon.btp.lib.blockproof.BlockProof;
-import foundation.icon.btp.lib.parachain.blockupdate.*;
-import foundation.icon.btp.lib.stateproof.StateProof;
+import foundation.icon.btp.lib.blockProof.BlockProof;
+import foundation.icon.btp.bmv.parachain.lib.blockUpdate.*;
+import foundation.icon.btp.lib.stateProof.StateProof;
 import foundation.icon.btp.lib.exception.RelayMessageRLPException;
 
 import java.util.List;

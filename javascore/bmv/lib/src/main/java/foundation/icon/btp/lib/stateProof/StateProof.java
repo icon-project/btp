@@ -1,6 +1,4 @@
-package foundation.icon.btp.lib.stateproof;
-
-import java.util.List;
+package foundation.icon.btp.lib.stateProof;
 
 import foundation.icon.btp.lib.mpt.MPTNode;
 import foundation.icon.btp.lib.mpt.MerklePatriciaTree;

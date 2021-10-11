@@ -1,14 +1,8 @@
 package foundation.icon.btp.lib.event;
 
-import java.math.BigInteger;
-import java.util.List;
-
 import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
-import foundation.icon.btp.lib.candidatereceipt.CandidateReceipt;
-
-import score.Context;
-import scorex.util.ArrayList;
+import foundation.icon.btp.lib.candidateReceipt.CandidateReceipt;
 
 public class CandidateIncludedEvent {
     private CandidateReceipt candidateReceipt;

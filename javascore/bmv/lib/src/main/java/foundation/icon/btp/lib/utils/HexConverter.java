@@ -1,9 +1,5 @@
 package foundation.icon.btp.lib.utils;
 
-import java.util.Arrays;
-
-import score.Context;
-
 public class HexConverter {
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 

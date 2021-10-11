@@ -1,9 +1,5 @@
 package foundation.icon.btp.lib.mpt;
 
-import java.util.List;
-
-import score.Context;
-
 import scorex.util.ArrayList;
 
 public class MerklePatriciaTree {
