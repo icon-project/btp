@@ -1,5 +1,28 @@
 #!/bin/sh
-geth --datadir node1 \
+set -e
+
+if [ ! -d $BSC_DATADIR/geth/chaindata ]; then
+    echo "$0: creating $BSC_DATADIR"
+    mkdir -p "$BSC_DATADIR"
+    chmod 700 "$BSC_DATADIR"
+    echo "$0: initiating blockchain"
+    cp -rf $BSC_HOME/keystore $BSC_DATADIR/keystore
+    geth --datadir "$BSC_DATADIR" init $BSC_HOME/genesis.json
+fi
+
+echo "$0: setting data directory to $BSC_DATADIR"
+
+# allow exiting using CTRL + C
+exit_func() {
+    echo "Exiting..."
+    exit 1
+}
+
+trap exit_func SIGTERM SIGINT
+
+# 150 is an arbitrary choice, which seems good enough
+#stty cols 150
+exec geth --datadir node1 \
     --syncmode 'full' \
     --port 30310 \
     --rpc --rpcaddr 0.0.0.0 \
