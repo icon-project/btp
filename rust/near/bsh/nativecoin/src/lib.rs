@@ -5,26 +5,29 @@ use std::fmt::format;
 use base_service::BaseService;
 use btp_common::btp_address::Address;
 use btp_common::errors::{BshError, BtpException, Exception};
-use libraries::types::{Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId};
+use libraries::types::{
+    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId, TokenName,
+};
 use libraries::{
     types::messages::BtpMessage, types::messages::NativeCoinServiceMessage,
     types::messages::NativeCoinServiceType, types::messages::SerializedMessage, types::Balances,
-    types::MultiTokenResolver, types::NativeCoin, types::Network, types::Owners, types::Token,
-    types::Tokens, types::Transfer,
+    types::MultiTokenCore, types::MultiTokenResolver, types::NativeCoin, types::Network,
+    types::Owners, types::Token, types::Tokens, types::Transfer,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde_json::Value;
-use near_sdk::AccountId;
-use near_sdk::Balance;
+use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
     env,
     json_types::{Base64VecU8, U128, U64},
     log, near_bindgen, require, serde_json, Gas, PanicOnDefault, Promise, PromiseResult,
 };
+use near_sdk::{Balance, PromiseOrValue};
 use std::convert::TryInto;
 use tiny_keccak::{Hasher, Sha3};
 mod external;
 use external::*;
+mod estimate;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -55,7 +58,7 @@ impl NativeCoinService {
         let mut balances = Balances::new();
         balances.add(env::current_account_id(), native_coin.to_owned());
         tokens.add(
-            Self::hash_token_id(native_coin.name(), native_coin.network()),
+            Self::hash_token_id(native_coin.name()),
             native_coin.to_owned(),
         );
         Self {
@@ -80,6 +83,18 @@ impl NativeCoinService {
             env::predecessor_account_id() == *self.base_service.bmc(),
             format!("{}", BshError::NotBmc)
         )
+    }
+
+    fn assert_token_id_len_match_amount_len(&self, token_ids: &Vec<TokenId>, amounts: &Vec<U128>) {
+        require!(
+            token_ids.len() == amounts.len(),
+            format!(
+                "{}",
+                BshError::InvalidCount {
+                    message: "Token Ids and amounts".to_string()
+                }
+            ),
+        );
     }
 
     fn assert_transfer_amounts_len_match_returned_amount_len(
@@ -127,6 +142,13 @@ impl NativeCoinService {
         );
     }
 
+    fn assert_have_sufficient_balance(&self, amount: u128) {
+        require!(
+            env::account_balance() > amount,
+            format!("{}", BshError::NotMinimumBalance { account: env::current_account_id().to_string() })
+        ); 
+    }
+
     fn asser_minimum_fixed_fee(&self, amount: Balance) {
         require!(
             amount > 0,
@@ -139,11 +161,14 @@ impl NativeCoinService {
         account: &AccountId,
         token: &Token<NativeCoin>,
         amount: u128,
+        fees: Option<u128>,
     ) {
-        // TODO:
-        if let Some(balance) = self.balances.get(account.clone(), token.clone()) {
+        let amount = amount
+            .checked_add(fees.unwrap_or_default())
+            .expect("Overflow Occured");
+        if let Some(balance) = self.balances.get(&account, &token) {
             require!(
-                balance.deposit() > amount, // Include Fees and fixed charges
+                balance.deposit() > amount,
                 format!("{}", BshError::NotMinimumDeposit).as_str()
             );
         } else {
@@ -151,38 +176,11 @@ impl NativeCoinService {
         }
     }
 
-    fn assert_have_sufficient_external_transfer_deposit(
-        &self,
-        account: &AccountId,
-        token: &Token<NativeCoin>,
-        amount: u128,
-    ) {
-        // TODO:
-        if let Some(balance) = self.balances.get(account.clone(), token.clone()) {
-            require!(
-                balance.deposit() > amount, // Include Fees and fixed charges
-                format!("{}", BshError::NotMinimumDeposit)
-            );
-        } else {
-            env::panic_str(format!("{}", BshError::NotMinimumDeposit).as_str());
-        }
-    }
-
-    fn assert_have_sufficient_withdrawable_deposit(
-        &self,
-        account: &AccountId,
-        token: &Token<NativeCoin>,
-        amount: u128,
-    ) {
-        // TODO:
-        if let Some(balance) = self.balances.get(account.clone(), token.clone()) {
-            require!(
-                balance.deposit() > amount,
-                format!("{}", BshError::NotMinimumDeposit)
-            );
-        } else {
-            env::panic_str(format!("{}", BshError::NotMinimumDeposit).as_str());
-        }
+    fn assert_sender_is_not_receiver(&self, sender_id: &AccountId, receiver_id: &AccountId) {
+        require!(
+            sender_id != receiver_id,
+            format!("{}", BshError::SameSenderReceiver)
+        );
     }
 
     fn assert_owner_exists(&self, account: &AccountId) {
@@ -204,10 +202,31 @@ impl NativeCoinService {
     }
 
     fn assert_token_does_not_exists(&self, token: &Token<NativeCoin>) {
-        let token = self
-            .tokens
-            .get(&Self::hash_token_id(token.name(), token.network()));
+        let token = self.tokens.get(&Self::hash_token_id(token.name()));
         require!(token.is_none(), format!("{}", BshError::TokenExist))
+    }
+
+    fn assert_tokens_exists(&self, token_ids: &Vec<TokenId>) {
+        let mut unregistered_tokens: Vec<TokenId> = vec![];
+        token_ids.iter().for_each(|token_id| {
+            if !self.tokens.contains(&token_id) {
+                unregistered_tokens.push(token_id.to_owned())
+            }
+        });
+
+        require!(
+            unregistered_tokens.len() == 0,
+            format!(
+                "{}",
+                BshError::TokenNotExist {
+                    message: unregistered_tokens
+                        .iter()
+                        .map(|token_id| format!("{:x?}", token_id))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                }
+            ),
+        );
     }
 
     // * * * * * * * * * * * * * * * * *
@@ -216,11 +235,10 @@ impl NativeCoinService {
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
 
-    fn hash_token_id(token_name: &String, network: &String) -> TokenId {
+    fn hash_token_id(token_name: &String) -> TokenId {
         let mut sha3 = Sha3::v256();
         let mut output = [0u8; 32];
         sha3.update(token_name.as_bytes());
-        sha3.update(network.as_bytes());
         sha3.finalize(&mut output);
         output.to_vec()
     }
@@ -258,12 +276,11 @@ impl NativeCoinService {
         self.assert_have_permission();
         let mut token = self
             .tokens
-            .get(&Self::hash_token_id(&self.native_coin_name, &self.network))
+            .get(&Self::hash_token_id(&self.native_coin_name))
             .unwrap();
         self.assert_valid_fee_ratio(fee_numerator, &token);
         token.fee_numerator_mut().clone_from(&&fee_numerator);
-        self.tokens
-            .add(Self::hash_token_id(token.name(), token.network()), token);
+        self.tokens.add(Self::hash_token_id(token.name()), token);
     }
 
     pub fn set_fixed_fee(&mut self, fixed_fee: u128) {
@@ -275,10 +292,8 @@ impl NativeCoinService {
     pub fn register(&mut self, token: Token<NativeCoin>) {
         self.assert_have_permission();
         self.assert_token_does_not_exists(&token);
-        self.tokens.add(
-            Self::hash_token_id(token.name(), token.network()),
-            token.clone(),
-        );
+        self.tokens
+            .add(Self::hash_token_id(token.name()), token.clone());
         self.balances.add(env::current_account_id(), token);
     }
 
@@ -290,10 +305,10 @@ impl NativeCoinService {
 
         let token = self
             .tokens
-            .get(&Self::hash_token_id(&self.native_coin_name, &self.network))
+            .get(&Self::hash_token_id(&self.native_coin_name))
             .unwrap();
 
-        if let Some(mut balance) = self.balances.get(account.clone(), token.clone()) {
+        if let Some(mut balance) = self.balances.get(&account, &token) {
             self.process_deposit(amount, &mut balance);
             self.balances.set(account, token, balance);
         } else {
@@ -303,41 +318,19 @@ impl NativeCoinService {
         }
     }
 
-    pub fn balance_of(
-        &self,
-        account: AccountId,
-        coin_id: Base64VecU8, // coin_name: String,
-                              // coin_network: String
-    ) -> Option<AccountBalance> {
-        let token = self.tokens.get(&coin_id.clone().into()).expect(
-            format!(
-                "{}",
-                BshError::TokenNotExist {
-                    message: serde_json::to_string(&coin_id).unwrap_or_default()
-                }
-            )
-            .as_str(),
-        );
-        self.balances.get(account.clone(), token.clone())
-    }
-
-    // pub fn balance_of_batch(){} //TODO:
-
     pub fn accumulated_fees(&self) -> Vec<AccumulatedAssetFees> {
         self.tokens
             .to_vec()
             .iter()
             .map(|token| {
+                let token = self.tokens.get(&Self::hash_token_id(&token.name)).unwrap();
                 let balance = self
-                    .balance_of(
-                        env::current_account_id(),
-                        Self::hash_token_id(&token.name, &token.network).into(),
-                    )
+                    .balances
+                    .get(&env::current_account_id(), &token)
                     .unwrap();
-
                 AccumulatedAssetFees {
-                    name: token.name.clone(),
-                    network: token.network.clone(),
+                    name: token.name().clone(),
+                    network: token.network().clone(),
                     accumulated_fees: balance.refundable().fees(),
                 }
             })
@@ -361,16 +354,11 @@ impl NativeCoinService {
             .as_str(),
         );
 
-        self.assert_have_sufficient_external_transfer_deposit(
-            &source_account,
-            &token,
-            amount.into(),
-        );
+        let fees = 0_u128; // TODO
 
-        let mut balance = self
-            .balances
-            .get(source_account.clone(), token.clone())
-            .unwrap();
+        self.assert_have_sufficient_deposit(&source_account, &token, amount.into(), Some(fees));
+
+        let mut balance = self.balances.get(&source_account, &token).unwrap();
         let fees = self.process_external_transfer_fees(&mut balance, &token, amount.into());
         self.process_external_transfer(&mut balance, amount.into());
 
@@ -378,7 +366,7 @@ impl NativeCoinService {
             source: source_account.clone().into(),
             destination: destination.account_id().into(),
             assets: vec![Asset::new(
-                Self::hash_token_id(&token.name(), &token.network()),
+                token.name().clone(),
                 balance.refundable().deposit(),
                 fees,
             )],
@@ -391,46 +379,59 @@ impl NativeCoinService {
 
     // pub fn external_transfer_batch(){} //TODO:
 
-    pub fn internal_transfer(
+    fn internal_transfer(
         &mut self,
-        coin_id: Base64VecU8,
-        // coin_name: String,
-        // coin_network: String,
-        amount: U128,
-        account: AccountId,
+        sender_id: &AccountId,
+        receiver_id: &AccountId,
+        token: &Token<NativeCoin>,
+        amount: u128,
     ) {
-        let source_account = env::predecessor_account_id();
-        let token = self.tokens.get(&coin_id.clone().into()).expect(
-            format!(
-                "{}",
-                BshError::TokenNotExist {
-                    message: serde_json::to_string(&coin_id).unwrap_or_default()
-                }
-            )
-            .as_str(),
-        );
-        self.assert_have_sufficient_deposit(&source_account, &token, amount.into());
-        let mut source_balance = self
-            .balances
-            .get(source_account.clone(), token.clone())
-            .unwrap();
-        if let Some(mut destination_balance) = self.balances.get(account.clone(), token.clone()) {
-            source_balance.deposit_mut().sub(amount.into());
-            destination_balance.deposit_mut().add(amount.into());
-            self.balances
-                .set(source_account, token.clone(), source_balance);
-            self.balances
-                .set(account, token.clone(), destination_balance);
-        } else {
-            source_balance.deposit_mut().sub(amount.into());
-            let mut destination_balance = AccountBalance::default();
-            destination_balance.deposit_mut().add(amount.into());
-            // TODO: Calculate Deposit
-            self.balances
-                .set(source_account, token.clone(), source_balance);
-            self.balances
-                .set(account, token.clone(), destination_balance);
-        }
+        // let token = self.tokens.get(&token_id).expect(
+        //     format!(
+        //         "{}",
+        //         BshError::TokenNotExist {
+        //             message: serde_json::to_string(&token_id).unwrap_or_default()
+        //         }
+        //     )
+        //     .as_str(),
+        // );
+        self.assert_sender_is_not_receiver(sender_id, receiver_id);
+        self.assert_have_sufficient_deposit(sender_id, token, amount, None);
+
+        let mut sender_balance = self.balances.get(sender_id, token).unwrap();
+        sender_balance.deposit_mut().sub(amount);
+
+        let receiver_balance = match self.balances.get(&receiver_id, &token) {
+            Some(mut balance) => {
+                balance.deposit_mut().add(amount);
+                balance
+            }
+            None => {
+                let mut balance = AccountBalance::default();
+                let storage_deposit = 0_u128; // TODO: Calculate storage deposit
+                let amount = amount - storage_deposit;
+                balance.deposit_mut().add(amount);
+                balance
+            }
+        };
+
+        self.balances
+            .set(sender_id.to_owned(), token.clone(), sender_balance);
+        self.balances
+            .set(receiver_id.to_owned(), token.clone(), receiver_balance);
+    }
+
+    fn internal_transfer_batch(
+        &mut self,
+        sender_id: &AccountId,
+        receiver_id: &AccountId,
+        token_ids: &Vec<TokenId>,
+        amounts: &Vec<U128>,
+    ) {
+        token_ids.iter().enumerate().for_each(|(index, token_id)| {
+            let token = self.tokens.get(&token_id).unwrap();
+            self.internal_transfer(sender_id, receiver_id, &token, amounts[index].into())
+        });
     }
 
     fn process_deposit(&mut self, amount: u128, balance: &mut AccountBalance) {
@@ -485,109 +486,298 @@ impl NativeCoinService {
     }
 
     #[payable]
-    pub fn withdraw(&mut self) {
+    pub fn withdraw(&mut self, amount: U128) {
+        // To Prevent Spam
+        assert_one_yocto();
+
+        let amount: u128 = amount.into();
         let account = env::predecessor_account_id();
         let token = self
             .tokens
-            .get(&Self::hash_token_id(&self.native_coin_name, &self.network))
+            .get(&Self::hash_token_id(&self.native_coin_name))
             .unwrap();
-        self.assert_have_sufficient_withdrawable_deposit(&account, &token, 1);
-        let mut balance = self.balances.get(account.clone(), token.clone()).unwrap();
-        let amount = balance.deposit();
+
+        // Check if user is having requested amount including the yocto just deposited
+        self.assert_have_sufficient_deposit(&account, &token, 1 +  amount, None);
+        
+        // Check if current account have sufficient balance
+        self.assert_have_sufficient_balance(1 + amount);
+
+        let mut balance = self.balances.get(&account, &token).unwrap();
+
+        // Refund back the yocto deposited
+        let amount = amount + 1;
+
         balance.deposit_mut().sub(amount);
+
+        self.balances.set(account.clone(), token, balance);
+
+        // Confirm: Should this be validate if transfered?
+        // As we can expect the user account to be present and withdrawing the requested the amount
         Promise::new(account).transfer(amount);
     }
 
     fn handle_coin_transfer(
         &mut self,
         message_source: &BTPAddress,
-        source_account: &String,
-        destination_account: &String,
+        sender_id: &String,
+        receiver_id: &String,
         assets: &Vec<Asset>,
     ) -> Result<(), BshError> {
+        let receiver_id = AccountId::try_from(receiver_id.to_owned()).map_err(|error| {
+            BshError::InvalidAddress {
+                message: error.to_string(),
+            }
+        })?;
+
+        // TODO: Reduce to single time hashing
+
         // Validate is all the assets are registered
-        let mut unregistered_tokens: Vec<TokenId> = vec![];
+        let mut unregistered_tokens: Vec<TokenName> = vec![];
         assets.iter().for_each(|asset| {
-            if !self.tokens.contains(&asset.token_id()) {
-                unregistered_tokens.push(asset.token_id().to_owned())
+            if !self.tokens.contains(&Self::hash_token_id(asset.token())) {
+                unregistered_tokens.push(asset.token().to_owned())
             }
         });
         if unregistered_tokens.len() > 0 {
             return Err(BshError::TokenNotExist {
-                message: unregistered_tokens
-                    .iter()
-                    .map(|token_id| format!("{:x?}", token_id))
-                    .collect::<Vec<String>>()
-                    .join(", "),
+                message: unregistered_tokens.join(", "),
             });
         }
 
         // Validate if all assets are from genuine source
         let mut valid_assets: Vec<Token<NativeCoin>> = Vec::new();
         assets.iter().for_each(|asset| {
-
+            let token = self
+                .tokens
+                .get(&Self::hash_token_id(asset.token()))
+                .unwrap();
+            if token.network() == &message_source.network_address().unwrap()
+                || token.network() == &self.network
+            {
+                valid_assets.push(token);
+            }
         });
 
-        assets.iter().for_each(|asset| {
-            let token = self.tokens.get(asset.token_id()).unwrap();
-            //if 
-            // Mint
-            self.mint(token, asset.amount());
-            // Transfer
+        if valid_assets.len() != assets.len() {
+            return Err(BshError::Reverted {
+                message: "Illegal Token Detected".to_string(),
+            });
+        }
 
+        assets.iter().enumerate().for_each(|(index, asset)| {
+            let token = valid_assets.get(index).unwrap();
+            if token.network() != &self.network {
+                self.mint(token, asset.amount());
+            }
+
+            #[cfg(feature = "testable")]
+            self.internal_transfer(
+                &env::current_account_id(),
+                &receiver_id,
+                &token,
+                asset.amount(),
+            );
+
+            #[cfg(not(feature = "testable"))]
+            ext_self::mt_transfer(
+                receiver_id.clone(),
+                Self::hash_token_id(asset.token()),
+                U128::from(asset.amount()),
+                None,
+                env::current_account_id(),
+                estimate::ONE_YOCTO,
+                estimate::GAS_FOR_MT_TRANSFER,
+            );
         });
         Ok(())
     }
 
-    fn mint(&mut self, token: Token<NativeCoin>, amount: u128) {
+    fn mint(&mut self, token: &Token<NativeCoin>, amount: u128) {
         // TODO: Add to supply
         let mut balance = self
             .balances
-            .get(env::current_account_id(), token.clone())
+            .get(&env::current_account_id(), &token)
             .unwrap();
         balance.deposit_mut().add(amount);
-        self.balances.set(env::current_account_id(), token, balance);
+        self.balances
+            .set(env::current_account_id(), token.clone(), balance);
     }
 
     fn refund_balance_amount(
-        &self,
+        &mut self,
         index: usize,
-        returned_amount: &U128,
-        token_ids: Vec<TokenId>,
+        amounts: &Vec<U128>,
+        returned_amount: u128,
+        token_ids: &Vec<TokenId>,
+        sender_id: &AccountId,
+        receiver_id: &AccountId,
     ) -> U128 {
-        let returned_amount: u128 = returned_amount.clone().into();
         if returned_amount == 0 {
             return U128::from(0);
         }
-        let mut unregistered_tokens: Vec<TokenId> = vec![];
-        token_ids.iter().for_each(|asset| {
-            if !self.tokens.contains(&token_ids[index]) {
-                unregistered_tokens.push(token_ids[index].to_owned())
-            }
-        });
+        let unused_amount = std::cmp::min(amounts[index].into(), returned_amount);
+        let token = self.tokens.get(&token_ids[index]).unwrap();
 
-        require!(
-            unregistered_tokens.len() == 0,
-            format!(
-                "{}",
-                BshError::TokenNotExist {
-                    message: unregistered_tokens
-                    .iter()
-                    .map(|token_id| format!("{:x?}", token_id))
-                    .collect::<Vec<String>>()
-                    .join(", "),
-                }
-            ),
-        );
+        let mut receiver_balance = self
+            .balances
+            .get(receiver_id, &token)
+            .expect("Token receiver no longer exists");
+
+        if receiver_balance.deposit() > 0 {
+            let refund_amount = std::cmp::min(receiver_balance.deposit(), unused_amount); // TODO: Rewalk
+            receiver_balance.deposit_mut().sub(refund_amount);
+            self.balances
+                .set(receiver_id.clone(), token.clone(), receiver_balance);
+
+            if let Some(mut sender_balance) = self.balances.get(sender_id, &token) {
+                sender_balance.deposit_mut().add(refund_amount);
+                self.balances
+                    .set(sender_id.clone(), token.clone(), sender_balance);
+                let amount: u128 = amounts[index].into();
+                return U128::from(amount - refund_amount);
+            }
+        }
 
         U128::from(0)
     }
-    // fn mt_transfer(){}
-    // fn mt_transfer_call(){}
-    //
-    // Mint
-    // Burn
-    // Vault
+}
+
+#[near_bindgen]
+impl MultiTokenCore for NativeCoinService {
+    #[payable]
+    fn mt_transfer(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        amount: U128,
+        _memo: Option<String>,
+    ) {
+        assert_one_yocto();
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+
+        let sender_id = env::predecessor_account_id();
+        let token = self.tokens.get(&token_id).unwrap();
+
+        self.internal_transfer(&sender_id, &receiver_id, &token, amount.into());
+    }
+
+    #[payable]
+    fn mt_transfer_call(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        amount: U128,
+        _memo: Option<String>,
+        msg: String,
+    ) -> PromiseOrValue<U128> {
+        assert_one_yocto();
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+
+        let sender_id = env::predecessor_account_id();
+        let token = self.tokens.get(&token_id).unwrap();
+
+        self.internal_transfer(&sender_id, &receiver_id, &token, amount.into());
+
+        ext_receiver::mt_on_transfer(
+            sender_id.clone(),
+            vec![token_id.clone()],
+            vec![amount],
+            msg,
+            receiver_id.clone(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_MT_TRANSFER_CALL,
+        )
+        .then(ext_self::mt_resolve_transfer(
+            sender_id,
+            receiver_id,
+            vec![token_id],
+            vec![amount],
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_RESOLVE_TRANSFER,
+        ))
+        .into()
+    }
+
+    #[payable]
+    fn mt_batch_transfer(
+        &mut self,
+        receiver_id: AccountId,
+        token_ids: Vec<TokenId>,
+        amounts: Vec<U128>,
+        _memo: Option<String>,
+    ) {
+        assert_one_yocto();
+        self.assert_tokens_exists(&token_ids);
+        self.assert_token_id_len_match_amount_len(&token_ids, &amounts);
+
+        let sender_id = env::predecessor_account_id();
+        self.internal_transfer_batch(&sender_id, &receiver_id, &token_ids, &amounts);
+    }
+
+    #[payable]
+    fn mt_batch_transfer_call(
+        &mut self,
+        receiver_id: AccountId,
+        token_ids: Vec<TokenId>,
+        amounts: Vec<U128>,
+        memo: Option<String>,
+        msg: String,
+    ) -> PromiseOrValue<Vec<U128>> {
+        assert_one_yocto();
+        self.assert_tokens_exists(&token_ids);
+        self.assert_token_id_len_match_amount_len(&token_ids, &amounts);
+
+        let sender_id = env::predecessor_account_id();
+        self.internal_transfer_batch(&sender_id, &receiver_id, &token_ids, &amounts);
+
+        // TODO make this efficient and calculate gas
+        ext_receiver::mt_on_transfer(
+            sender_id.clone(),
+            token_ids.clone(),
+            amounts.clone(),
+            msg,
+            receiver_id.clone(),
+            estimate::NO_DEPOSIT,
+            Gas(25_000_000_000_000),
+        )
+        .then(ext_self::mt_resolve_transfer(
+            sender_id,
+            receiver_id,
+            token_ids,
+            amounts,
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            Gas(5_000_000_000_000), //GAS_FOR_RESOLVE_TRANSFER,
+        ))
+        .into()
+    }
+
+    fn balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        let token = self.tokens.get(&token_id).unwrap();
+        let balance = self
+            .balances
+            .get(&owner_id, &token)
+            .expect(format!("{}", BshError::AccountNotExist).as_str());
+        balance.deposit().into()
+    }
+
+    fn balance_of_batch(&self, owner_id: AccountId, token_ids: Vec<TokenId>) -> Vec<U128> {
+        token_ids
+            .iter()
+            .map(|token_id| self.balance_of(owner_id.clone(), token_id.clone()))
+            .collect()
+    }
+
+    fn total_supply(&self, token_id: TokenId) -> U128 {
+        todo!();
+    }
+
+    fn total_supply_batch(&self, token_ids: Vec<TokenId>) -> Vec<U128> {
+        todo!();
+    }
 }
 
 #[near_bindgen]
@@ -600,26 +790,37 @@ impl MultiTokenResolver for NativeCoinService {
         token_ids: Vec<libraries::types::TokenId>,
         amounts: Vec<U128>,
     ) -> Vec<U128> {
+        self.assert_tokens_exists(&token_ids);
+
         let returned_amounts: Vec<U128> = match env::promise_result(0) {
             PromiseResult::NotReady => env::abort(),
             PromiseResult::Successful(value) => {
-                if let Ok(returned_amount) = near_sdk::serde_json::from_slice::<Vec<U128>>(&value) {
+                if let Ok(returned_amounts) = near_sdk::serde_json::from_slice::<Vec<U128>>(&value)
+                {
                     self.assert_transfer_amounts_len_match_returned_amount_len(
                         &amounts,
-                        &returned_amount,
+                        &returned_amounts,
                     );
-                    returned_amount
+                    returned_amounts
                 } else {
                     amounts.clone()
                 }
             }
             PromiseResult::Failed => amounts.clone(),
         };
+
         returned_amounts
             .iter()
             .enumerate()
             .map(|(index, returned_amount)| {
-                self.refund_balance_amount(index, returned_amount, token_ids.clone())
+                self.refund_balance_amount(
+                    index,
+                    &amounts,
+                    returned_amount.to_owned().into(),
+                    &token_ids,
+                    &sender_id,
+                    &receiver_id,
+                )
             })
             .collect()
     }

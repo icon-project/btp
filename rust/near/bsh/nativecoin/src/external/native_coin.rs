@@ -3,10 +3,8 @@ use libraries::types::TokenId;
 use near_sdk::json_types::U128;
 use near_sdk::{ext_contract, AccountId};
 
-#[ext_contract(native_coin_service_contract)]
+#[ext_contract(ext_self)]
 pub trait NativeCoinServiceContract {
-    fn internal_transfer(fee_aggregator: BTPAddress, service: String);
-
     fn mt_transfer(
         &mut self,
         receiver_id: AccountId,

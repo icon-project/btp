@@ -43,21 +43,28 @@ pub mod errors {
         OwnerNotExist,
         PermissionNotExist,
         NotMinimumDeposit,
+        NotMinimumBalance { account: String },
         TokenExist,
         TokenNotExist { message: String },
         Failure,
-        Reverted,
+        Reverted { message: String },
         NotBmc,
         InvalidService,
         DecodeFailed { message: String },
         InvalidSetting,
-        InvalidCount { message: String }
+        InvalidCount { message: String },
+        InvalidAddress { message: String },
+        SameSenderReceiver,
+        AccountNotExist
     }
 
     impl fmt::Display for BshError {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
             let label = "BSHRevert";
             match self {
+                BshError::Reverted { message } => {
+                    write!(f, "{}{}: {}", label, "Reverted", message)
+                },
                 BshError::TokenNotExist { message } => {
                     write!(f, "{}{}: {}", label, "NotExistsToken", message)
                 },
@@ -88,8 +95,20 @@ pub mod errors {
                 BshError::InvalidSetting => {
                     write!(f, "{}{}", label, "InvalidSetting")
                 },
+                BshError::InvalidAddress { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidAddress", message)
+                },
                 BshError::InvalidCount { message } => {
                     write!(f, "{}{} for {}", label, "InvalidCount", message)
+                }
+                BshError::SameSenderReceiver => {
+                    write!(f, "{}{}", label, "SameSenderReceiver")
+                },
+                BshError::AccountNotExist => {
+                    write!(f, "{}{}", label, "AccountNotExist")
+                },
+                BshError::NotMinimumBalance { account } => {
+                    write!(f, "{}{} for {}", label, "NotMinimumBalance", account)
                 }
                 _ => todo!()
             }

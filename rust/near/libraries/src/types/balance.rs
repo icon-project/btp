@@ -77,6 +77,7 @@ pub trait Transfer {
     fn div(&mut self, rhs: u128) -> &mut Self;
 }
 
+// TODO: Return result
 impl Transfer for Balance {
     fn add(&mut self, rhs: u128) -> &mut Self {
         self.clone_from(&&self.checked_add(rhs).unwrap());
@@ -132,12 +133,12 @@ impl Balances {
         ));
     }
 
-    pub fn get<T>(&self, account: AccountId, token: Token<T>) -> Option<AccountBalance>
+    pub fn get<T>(&self, account: &AccountId, token: &Token<T>) -> Option<AccountBalance>
     where
         T: TokenMetadata,
     {
         if let Some(balance) = self.0.get(&(
-            account,
+            account.clone(),
             token.metadata.name().to_owned(),
             token.metadata.network().to_owned(),
         )) {
