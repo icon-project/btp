@@ -12,7 +12,7 @@ deploy_solidity_nativeCoin_BSH() {
   yarn --prod
 
   BSH_COIN_URL=https://ethereum.org/en/ \
-    BSH_COIN_NAME=DEV \
+    BSH_COIN_NAME=BNB \
     BSH_COIN_FEE=100 \
     BSH_FIXED_FEE=50000 \
     BMC_PERIPHERY_ADDRESS=$(cat $CONFIG_DIR/bmc.periphery.bsc) \
@@ -34,6 +34,15 @@ nativeBSH_solidity_register() {
   cd $CONTRACTS_DIR/solidity/bsh
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.nativeCoin.js \
     --method register --name "ICX"
+}
+
+bsc_init_native_btp_transfer() {
+  ICON_NET=$(cat $CONFIG_DIR/net.btp.icon)
+  ALICE_ADDRESS=$(get_alice_address)
+  BTP_TO="btp://$ICON_NET/$ALICE_ADDRESS"
+  cd $CONTRACTS_DIR/solidity/bsh
+  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.nativeCoin.js \
+    --method transferNativeCoin --to $BTP_TO --amount $1
 }
 
 get_bob_ICX_balance() {

@@ -21,11 +21,14 @@ solidity:
 	make -C ../../../ dist-sol btpsimple-image
 	docker-compose up --remove-orphans -d binancesmartchain btp-icon
 
-transfer_eth:
+alice_transfer_eth:
 	docker-compose exec btp-icon sh /btpsimple/bin/transfer_eth.sh
 
-transfer_icx:
+alice_transfer_icx:
 	docker-compose exec btp-icon sh /btpsimple/bin/transfer_icx.sh
 
-bsc_transfer_eth:
+bob_transfer_eth:
 	docker-compose exec btp-icon sh /btpsimple/bin/transfer_eth_bsc.sh
+
+bob_transfer_bnb:
+	docker-compose exec btp-icon sh /btpsimple/bin/transfer_bnb_bsc.sh

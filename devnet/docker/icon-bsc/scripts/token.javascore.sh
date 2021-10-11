@@ -190,10 +190,10 @@ irc2_javascore_balance() {
     --param _owner=$EOA | jq -r .)
   balance=$(hex2int $balance)
   balance=$(wei2coin $balance)
-  echo "Balance: $balance (ICX)"
+  echo "Balance: $balance"
 }
 
-check_alice_balance_after() {
+check_alice_token_balance_with_wait() {
   echo "$1. Checking Alice's balance..."
   sleep 20
 
