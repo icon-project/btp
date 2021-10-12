@@ -17,19 +17,25 @@ import static foundation.icon.btp.Env.LOG;
 public class SampleMultiTokenScore extends Score {
     public final static BigInteger ID = BigInteger.valueOf(100);
     public final static String NAME = "MyIRC31SampleToken";
+    private BigInteger decimals;
 
-    public static SampleMultiTokenScore mustDeploy(TransactionHandler txHandler, Wallet wallet)
+    public static SampleMultiTokenScore mustDeploy(TransactionHandler txHandler, Wallet wallet, BigInteger decimals)
             throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "SampleMultiToken");
         Score score = txHandler.deploy(wallet, "SampleMultiToken.zip", null);
         LOG.info("scoreAddr = " + score.getAddress());
         LOG.infoExiting();
 
-        return new SampleMultiTokenScore(score);
+        return new SampleMultiTokenScore(score, decimals);
     }
 
-    public SampleMultiTokenScore(Score other) {
+    public SampleMultiTokenScore(Score other, BigInteger decimals) {
         super(other);
+        this.decimals = decimals;
+    }
+
+    public BigInteger unit() {
+        return BigInteger.TEN.pow(this.decimals.intValue());
     }
 
     public BigInteger balanceOf(Address owner, BigInteger id) throws IOException {
@@ -44,7 +50,7 @@ public class SampleMultiTokenScore extends Score {
         // mint a Token
         RpcObject params = new RpcObject.Builder()
                 .put("_id", new RpcValue(ID))
-                .put("_supply", new RpcValue(BigInteger.TEN.pow(18)))
+                .put("_supply", new RpcValue(BigInteger.TEN.pow(10).multiply(BigInteger.valueOf(10000))))
                 .put("_uri", new RpcValue("https://example.com"))
                 .build();
 
