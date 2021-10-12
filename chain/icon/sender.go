@@ -199,16 +199,6 @@ func (s *sender) iconSegment(rm *chain.RelayMessage, height int64) ([]*chain.Seg
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit %v", i)
 				}
 
-				// TODO: need a confirmation
-				// I'm not sure why this EventProofs is missing
-				// at here this https://github.com/icon-project/btp/blob/master/cmd/btpsimple/module/icon/sender.go#L162
-
-				if b, err := codec.RLP.MarshalToBytes(trp); err != nil {
-					return nil, err
-				} else {
-					msg.ReceiptProofs = append(msg.ReceiptProofs, b)
-				}
-
 				segment := &chain.Segment{
 					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
