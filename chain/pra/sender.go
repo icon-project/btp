@@ -79,7 +79,8 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 	size := 0
 	// When rm.BlockUpdates[len(rm.BlockUpdates)-1].Height <= s.bmcStatus.Verifier.Height
 	// using only rm.BlockProof
-	if rm.BlockUpdates[len(rm.BlockUpdates)-1].Height > height {
+	lastBlockIndex := len(rm.BlockUpdates) - 1
+	if rm.BlockUpdates[lastBlockIndex].Height > height {
 		for i, bu := range rm.BlockUpdates {
 			if bu.Height <= height {
 				continue
@@ -91,7 +92,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			size += buSize
 
 			// BlockUpdates should not empty in case the last bu.Height > Verifier.Height
-			if (s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate)) && i < len(rm.BlockUpdates) {
+			if (s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate)) && i < lastBlockIndex {
 				s.log.Tracef("Segment parachain blockupdates")
 				segment := &chain.Segment{
 					Height:              msg.height,
@@ -229,7 +230,7 @@ func (s *Sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) err
 		return err
 	}
 	segment.TransactionParam, err = s.newTransactionParam(p.Prev, msg)
-	return nil
+	return err
 }
 
 func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
