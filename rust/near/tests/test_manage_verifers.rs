@@ -74,7 +74,6 @@ mod manage_verifers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
-                .and(REMOVE_VERIFER_INOKED_BY_BMC_OWNER)
                 .when(REMOVE_VERIFER_INOKED_BY_BMC_OWNER)
                 .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
 
