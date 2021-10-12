@@ -26,8 +26,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
@@ -509,22 +507,22 @@ func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func())
 		Height: NewHexInt(height),
 	}
 	return s.c.MonitorBlock(br,
-		func(conn *websocket.Conn, v *BlockNotification) error {
+		func(conn *jsonrpc.RecConn, v *BlockNotification) error {
 			if h, err := v.Height.Value(); err != nil {
 				return err
 			} else {
 				return cb(h)
 			}
 		},
-		func(conn *websocket.Conn) {
+		func(conn *jsonrpc.RecConn) {
 			s.l.Debugf("MonitorLoop connected %s", conn.LocalAddr().String())
 			if scb != nil {
 				scb()
 			}
 		},
-		func(conn *websocket.Conn, err error) {
+		func(conn *jsonrpc.RecConn, err error) {
 			s.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
-			_ = conn.Close()
+			conn.CloseAndReconnect()
 		})
 }
 

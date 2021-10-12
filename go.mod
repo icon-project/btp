@@ -17,6 +17,7 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/haltingstate/secp256k1-go v0.0.0-20151224084235-572209b26df6
+	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/labstack/echo/v4 v4.1.10
 	github.com/mattn/go-runewidth v0.0.12 // indirect

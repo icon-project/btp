@@ -21,12 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
+	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mpt"
 )
@@ -238,7 +237,7 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 	r.evtLogRawFilter.next = []byte(s)
 	r.evtLogRawFilter.seq = common.NewHexInt(seq).Bytes()
 	return r.c.MonitorBlock(r.evtReq,
-		func(conn *websocket.Conn, v *BlockNotification) error {
+		func(conn *jsonrpc.RecConn, v *BlockNotification) error {
 			var err error
 			var bu *chain.BlockUpdate
 			var rps []*chain.ReceiptProof
@@ -254,15 +253,15 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 			}
 			return nil
 		},
-		func(conn *websocket.Conn) {
+		func(conn *jsonrpc.RecConn) {
 			r.l.Debugf("ReceiveLoop connected %s", conn.LocalAddr().String())
 			if scb != nil {
 				scb()
 			}
 		},
-		func(conn *websocket.Conn, err error) {
+		func(conn *jsonrpc.RecConn, err error) {
 			r.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
-			_ = conn.Close()
+			conn.CloseAndReconnect()
 		})
 }
 
