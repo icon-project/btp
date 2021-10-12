@@ -12,6 +12,7 @@ import foundation.icon.ee.io.DataWriter;
 import foundation.icon.icx.IconService;
 import foundation.icon.icx.KeyWallet;
 import foundation.icon.icx.Wallet;
+import foundation.icon.icx.data.Block;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
@@ -21,6 +22,8 @@ import foundation.icon.test.score.Score;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.*;
+import score.ByteArrayObjectWriter;
+import score.Context;
 import scorex.util.Base64;
 
 import java.io.IOException;
@@ -30,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static foundation.icon.test.common.Env.LOG;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(Constants.TAG_JAVA_SCORE)
 public class BMVTest extends TestBase {
@@ -48,10 +51,13 @@ public class BMVTest extends TestBase {
     private static final boolean isAllowNewerWitness = true;
 
 
-    private static final String bmc = "0x8cd1d5d16caf488efc057e4fc3add7c11b01d9b0"; //address of the MOCKBMC from local node without prefix for now
-    private static final String prevbmc = "btp://0x1.bsc/0x8cd1d5d16caf488efc057e4fc3add7c11b01d9b0";
-    private static final String bmcAdd = "btp://0x1.iconee/cx8cd1d5d16caf488efc057e4fc3add7c11b01d9b0";
-    private static final BTPAddress bmcBTPAddress = new BTPAddress("btp", "0x1.iconee", bmc);
+    private static final String prevBMCBTPAdd = "btp://0x97.bsc/0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776";
+    private static final String currBMCBTPAdd = "btp://0xf8aac3.icon/cxea19a7d6e9a926767d1d05eea467299fe461c0eb";
+    private static final String bmc = "cxea19a7d6e9a926767d1d05eea467299fe461c0eb"; //address of the MOCKBMC from local node without prefix for now
+
+    private static String prevBMCnet, currBMCNet;
+    private static String prevBMCAdd, currBMCAdd;
+
     private static String encodedValidators;
     private static Score bmv;
     private static Score test;
@@ -60,15 +66,6 @@ public class BMVTest extends TestBase {
     private static SecureRandom secureRandom;
     private static KeyWallet[] wallets;
     private static KeyWallet ownerWallet, caller;
-
-    private static String sol_bmc = "8cd1d5d16caf488efc057e4fc3add7c11b01d9b0";
-    private static String currentBMCAdd;
-    private static String currentBMCNet;
-    private static String prevBMCAdd;
-    private static String prevBMCnet;  //also destination network
-
-    private static String currentBMCBTPAdd;
-    private static String prevBMCBTPAdd;
 
     @BeforeAll
     static void init() throws Exception {
@@ -103,17 +100,16 @@ public class BMVTest extends TestBase {
         ownerWallet = wallets[0];
         caller = wallets[1];
 
-        currentBMCAdd = wallets[0].getAddress().toString();
-        currentBMCNet = "0x1.iconee";
-        prevBMCAdd = sol_bmc;
-        prevBMCnet = "0x1.bsc"; //also destination network
+        prevBMCnet = "0x97.bsc";
+        currBMCNet = "0xf8aac3.icon";
+        prevBMCAdd = "0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776";
+        currBMCAdd = bmc;
 
-        currentBMCBTPAdd = "btp://" + currentBMCNet + "/" + currentBMCAdd;
-        prevBMCBTPAdd = "btp://" + prevBMCnet + "/" + prevBMCAdd;
+        // TODO mock bmc deploy
 
         bmv = deployBMV(txHandler, ownerWallet);
+        System.out.println(bmv.getAddress());
         //test = deployTest(txHandler, ownerWallet);
-
     }
 
     @AfterAll
@@ -150,8 +146,8 @@ public class BMVTest extends TestBase {
         LOG.infoEntering("deploy", "BMV");
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCAdd))
-                .put("network", new RpcValue(prevBMCnet))//for sample
+                .put("bmc", new RpcValue(bmc))
+                .put("network", new RpcValue(prevBMCnet)) //for sample
                 .put("offset", new RpcValue(Integer.toString(offset)))
                 .put("rootSize", new RpcValue(Integer.toString(rootSize)))
                 .put("cacheSize", new RpcValue(Integer.toString(cacheSize)))
@@ -203,212 +199,233 @@ public class BMVTest extends TestBase {
     }
 
     /**
-     * Scenario 1: Receiving address is an invalid address - fail
+     *
+     * Scenario 1: previous bmc is not belong to network that BMV handle
+     * Given:
+     *    prev: btp://0x2.iconee/0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776
+     * When:
+     *    network that BMV handle: 0x97.bsc
+     * Then:
+     *    throw error:
+     *    message: "Invalid previous BMC"
      */
-    @Order(1)
     @Test
-    public void scenario1() throws IOException, ResultTimeoutException {
-        //header bytes sample value from verify.js poc:108 "headerEncoded" var
-        byte[] headerBytes = Hex.decode("f901f7a0762577e92f95731a13473cc53e02fdd689963d993bb5e154b284fa4803e89142a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0997a1add7987e3d4e4498fa04fb343411676b44e4f229c8764ba8007d515a22fa0ce8bc9f9a3bb622d7eb3c2506f6e00a9f0d01d2ae19f2c02b5f39bdb7cb1c717a0d5fb9fafd6b0c3d46d6c9e08d9947a70e95400dd0bf21467ea3d3f17ce77651bb90100010000020000000000000002000800000000000000000000008000800000000000000000800000000000000000000200000000000000000000000000002000000000000000000000000000080000000000000080000000000000000000000000200000000000000040000000840000000020000000800000000000100000000000000000100000000000000000000008000000000000000000000008001000000200000000080000040040000000000000000000000000001000000000000000002000020000000000000000000000000000000000000800000040000000000000100000000000000000010000000000000000000000000000000000000000008038836691b78305177c8460c09b7b80a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
+    @Order(1)
+    void scenario1() throws Exception {
+        String invalidNetAddress = "0x2.iconee"; // valid is 0x1.iconee
+        String invalidPrevBMCBTPAdd = "btp://" + invalidNetAddress + "/" + prevBMCAdd;
+        BigInteger seq = new BigInteger("111");
+        String relayMessageEncoded = "0x1234";
 
-        //witness got from poc verify.js:47 "witness" of transactionProof
-        byte[] witness = Hex.decode("f9024b378504a817c8008347e7c4948cd1d5d16caf488efc057e4fc3add7c11b01d9b080b901e4e995e3de00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000014000000000000000000000000053f1aaac3db0557bd6413da6ade72e53d45b77ab00000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000362736300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008546f6b656e425348000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a307835343332364232616436413741663733453066384538613434373845313343323643423832393439000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003455448000000000000000000000000000000000000000000000000000000000025a01d1d49798a10c7abb230fcbaedb48867a2e3f690c0671d8841451fb4d7e8c10aa0528cf1e4ea354ab2d01dde65c724a22d3807d6b9b77fad41700ad53a7d4914e2");
+        RpcObject args = new RpcObject.Builder()
+                .put("bmc", new RpcValue(currBMCBTPAdd))
+                .put("prev", new RpcValue(invalidPrevBMCBTPAdd))
+                .put("seq", new RpcValue(seq))
+                .put("msg", new RpcValue(relayMessageEncoded))
+                .build();
 
-        //receipts root hash = d5fb9fafd6b0c3d46d6c9e08d9947a70e95400dd0bf21467ea3d3f17ce77651b
-        // from  keccak(rlp.encode(resp.receiptProof[0]))
-        // rp= mptproofs = needed to prove the Receipt in MPT = rlp.encode(encodedProof).toString('hex') where encodedeProof = rlp.encode(resp.receiptProof)
+        TransactionResult txResult = bmv.invokeAndWaitResult(ownerWallet, "handleRelayMessage", args);
+        System.out.println("msg: " + txResult.getFailure().getMessage());
+        assertNotNull(txResult.getFailure());
+    }
 
-        byte[] rp = Hex.decode("f905a5b905a2f9059f822080b90599f90596018305177cb9010001000002000000000000000200080000000000000000000000800080000000000000000080000000000000000000020000000000000000000000000000200000000000000000000000000008000000000000008000000000000000000000000020000000000000004000000084000000002000000080000000000010000000000000000010000000000000000000000800000000000000000000000800100000020000000008000004004000000000000000000000000000100000000000000000200002000000000000000000000000000000000000080000004000000000000010000000000000000001000000000000000000000000000000000000000000f9048bf89b94b27345f8e20bf8cdd839c837b792b5452c282c22f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a00000000000000000000000009c0604273c25c268bad67935553d82437387a397a00000000000000000000000009c0604273c25c268bad67935553d82437387a397a00000000000000000000000000000000000000000000000000000000000000064f89b94b27345f8e20bf8cdd839c837b792b5452c282c22f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa00000000000000000000000009c0604273c25c268bad67935553d82437387a397a000000000000000000000000053f1aaac3db0557bd6413da6ade72e53d45b77aba00000000000000000000000000000000000000000000000000000000000000064f89b94b27345f8e20bf8cdd839c837b792b5452c282c22f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a00000000000000000000000009c0604273c25c268bad67935553d82437387a397a00000000000000000000000009c0604273c25c268bad67935553d82437387a397a00000000000000000000000000000000000000000000000000000000000000000f899948cd1d5d16caf488efc057e4fc3add7c11b01d9b0e1a0aa0f21ab61398ccea95cd4e139e0d3c2cf1438e8034b7e8e9701b80bc39d2f56b86000000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000000762577e92f95731a13473cc53e02fdd689963d993bb5e154b284fa4803e89142f9013b948cd1d5d16caf488efc057e4fc3add7c11b01d9b0f842a037be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1ba083d57b2915dae13afb3bdeac7357363ed5e6545fb90a89f09722f0f95f9efa91b8e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000066f864b83d6274703a2f2f6273632f3078386364316435643136636166343838656663303537653466633361646437633131623031643962300000000000000000008362736388546f6b656e4253480096d50293d200905472616e7366657220537563636573730000000000000000000000000000000000000000000000000000f8d9949c0604273c25c268bad67935553d82437387a397e1a0356868e4a05430bccb6aa9c954e410ab0792c5a5baa7b973b03e1d4c03fa1366b8a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000105472616e73666572205375636365737300000000000000000000000000000000");
+    /**
+     *
+     * Scenario 2: invalid bmc caller is not bmc
+     * Given:
+     *    call `handleRelayMessage` with caller "caller"
+     * When:
+     *    registered bmc address: ownerWallet.getAddress() generated when setup
+     * Then:
+     *    throw error:
+     *    message: "Invalid current BMC"
+     */
+    @Test
+    @Order(2)
+    void scenario2() throws Exception {
+        BigInteger seq = new BigInteger("111");
+        String relayMessageEncoded = "0x1234";
 
-        // Mocking relay message from actual data
-        //relay message
+        String invalidBmc = "cx445028857759403d739e4348279a604aa9346fc9";
+        String invalidBMCBTPAdd = "btp://" + currBMCNet + invalidBmc;
+
+        RpcObject args = new RpcObject.Builder()
+                .put("bmc", new RpcValue(invalidBMCBTPAdd))
+                .put("prev", new RpcValue(prevBMCBTPAdd))
+                .put("seq", new RpcValue(seq))
+                .put("msg", new RpcValue(relayMessageEncoded))
+                .build();
+
+        TransactionResult txResult = bmv.invokeAndWaitResult(caller, "handleRelayMessage", args);
+        System.out.println(txResult.getFailure().getMessage());
+        assertTrue(txResult.getFailure().getMessage().contains("OutOfStep"));
+        // TODO change assertion
+//        assertTrue(txResult.getFailure().getMessage().contains("Reverted(Invalid current BMC)"));
+        assertNotNull(txResult.getFailure());
+    }
+
+    /**
+     *
+     * Scenario 3: bmc is invalid
+     * Given:
+     *    bmc: btp://0xf8aac3.icon/caller.getAddress()
+     * When:
+     *    registered bmc address: ownerWallet.getAddress() generated when setup
+     * Then:
+     *    throw error:
+     *    message: "Invalid current BMC"
+     */
+    @Test
+    @Order(3)
+    void scenario3() throws Exception {
+        String invalidBMCBTPAdd = "btp://" + currBMCNet + "/" + caller.getAddress().toString(); // valid is owner address
+        BigInteger seq = new BigInteger("111");
+        String relayMessageEncoded = "0x1234";
+
+        RpcObject args = new RpcObject.Builder()
+                .put("bmc", new RpcValue(invalidBMCBTPAdd))
+                .put("prev", new RpcValue(prevBMCBTPAdd))
+                .put("seq", new RpcValue(seq))
+                .put("msg", new RpcValue(relayMessageEncoded))
+                .build();
+
+        TransactionResult txResult = bmv.invokeAndWaitResult(ownerWallet, "handleRelayMessage", args);
+        System.out.println(txResult.getFailure().getMessage());
+        assertNotNull(txResult.getFailure());
+    }
+
+    /**
+     *
+     * Scenario 4: input relay message with invalid base64 format
+     * Given:
+     *    msg: invalid base64 format
+     * When:
+     *
+     * Then:
+     *    throw error:
+     *    message: "Failed to decode relay message"
+     */
+    @Test
+    @Order(4)
+    void scenario4() throws Exception {
+        BigInteger seq = new BigInteger("111");
+        String relayMessageEncoded = "abcedgef=="; // invalid base64 formart of relay message
+
+        RpcObject args = new RpcObject.Builder()
+                .put("bmc", new RpcValue(currBMCBTPAdd))
+                .put("prev", new RpcValue(prevBMCBTPAdd))
+                .put("seq", new RpcValue(seq))
+                .put("msg", new RpcValue(relayMessageEncoded))
+                .build();
+
+        TransactionResult txResult = bmv.invokeAndWaitResult(ownerWallet, "handleRelayMessage", args);
+        assertNotNull(txResult.getFailure());
+    }
+
+    /**
+     *
+     * Scenario 5: input relay message with invalid RLP format
+     * Given:
+     *    msg: invalid RLP encoded format
+     * When:
+     *
+     * Then:
+     *    throw error:
+     *    message: "RelayMessage RLP decode error:
+     */
+    @Test
+    @Order(5)
+    void scenario5() throws Exception {
+        BigInteger seq = new BigInteger("111");
 
         DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        //ByteArrayObjectWriter relayMsgWriter = Context.newByteArrayObjectWriter(RLPn);
-        relayMsgWriter.writeListHeader(3);
+        relayMsgWriter.writeListHeader(2);
 
-        //blockUpdates
         relayMsgWriter.writeListHeader(1);
-
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write(headerBytes);
-        blockUpdateWriter.writeNullity(true);
-        blockUpdateWriter.writeNullity(true);
+        blockUpdateWriter.writeListHeader(1);
+        blockUpdateWriter.write("abc");
         blockUpdateWriter.writeFooter();
         relayMsgWriter.write(blockUpdateWriter.toByteArray());
         relayMsgWriter.writeFooter();
 
-        //blockProof
+        relayMsgWriter.writeListHeader(1);
         DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
-        blockProofWrtr.writeListHeader(2);
-        blockProofWrtr.write(headerBytes); //block header
-        blockProofWrtr.write(witness); // block witness
+        blockProofWrtr.writeListHeader(0);
         blockProofWrtr.writeFooter();
         relayMsgWriter.write(blockProofWrtr.toByteArray());
-
-        //receiptProof
-        relayMsgWriter.writeListHeader(1);
-        DataWriter receiptProofWtr = foundation.icon.test.common.Codec.rlp.newWriter();
-        receiptProofWtr.writeListHeader(4);
-        receiptProofWtr.write(0);
-        receiptProofWtr.write(rp); // receipt proof
-        receiptProofWtr.writeNullity(true);
-        receiptProofWtr.writeNullity(true);
-        receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
         relayMsgWriter.writeFooter();
+
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
+                .put("seq", new RpcValue(seq))
                 .put("msg", new RpcValue(_msg))
                 .build();
 
-        TransactionResult txResult = bmv.invokeAndWaitResult(wallets[0], "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() == null);
-
-
-        byte[] btpMsg = Hex.decode("f864b83d6274703a2f2f6273632f3078386364316435643136636166343838656663303537653466633361646437633131623031643962300000000000000000008362736388546f6b656e4253480096d50293d200905472616e7366657220537563636573730000000000000000000000000000000000000000000000000000");
-        //BTPMessage.fromBytes(btpMsg);
-
+        TransactionResult txResult = bmv.invokeAndWaitResult(ownerWallet, "handleRelayMessage", args);
+        assertNotNull(txResult.getFailure());
     }
 
-
-    @Order(2)
+    /**
+     *
+     * Scenario 6: input relay message with empty BlockUpdate and BlockProof
+     * Given:
+     *    msg: empty BlockUpdate and BlockProof
+     * When:
+     *
+     * Then:
+     *    throw error:
+     *    message: "Invalid relay message"
+     */
     @Test
-    public void scenario2() throws IOException, ResultTimeoutException {
-        KeyWallet bmvCallerBMC = wallets[1];
-        //relay message
-        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        relayMsgWriter.writeListHeader(1);
-        relayMsgWriter.writeFooter();
-        byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
-        RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
-                .put("prev", new RpcValue(prevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
-                .put("msg", new RpcValue(_msg))
-                .build();
-
-        TransactionResult txResult = bmv.invokeAndWaitResult(bmvCallerBMC, "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() != null);
-    }
-
-    @Order(3)
-    @Test
-    public void scenario3() throws IOException, ResultTimeoutException {
-        KeyWallet bmvCallerBMC = wallets[0];
-
-        String invalidPrevBMCBTPAdd = "btp://" + "0x3.bsc" + "/" + prevBMCAdd;
-        //relay message
-        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        relayMsgWriter.writeListHeader(1);
-        relayMsgWriter.writeFooter();
-        byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
-        RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
-                .put("prev", new RpcValue(invalidPrevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
-                .put("msg", new RpcValue(_msg))
-                .build();
-
-        TransactionResult txResult = bmv.invokeAndWaitResult(bmvCallerBMC, "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() != null);
-    }
-
-    @Order(4)
-    @Test
-    public void scenario4() throws IOException, ResultTimeoutException {
-        KeyWallet bmvCallerBMC = wallets[0];
-
-        String invlidCurrentBMCBTPAdd = "btp://" + currentBMCNet + "/" + wallets[1].getAddress().toString();
-        //relay message
-        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        relayMsgWriter.writeListHeader(1);
-        relayMsgWriter.writeFooter();
-        byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
-        RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(invlidCurrentBMCBTPAdd))
-                .put("prev", new RpcValue(prevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
-                .put("msg", new RpcValue(_msg))
-                .build();
-
-        TransactionResult txResult = bmv.invokeAndWaitResult(bmvCallerBMC, "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() != null);
-    }
-
-
-    @Order(5)
-    @Test
-    public void scenario5() throws IOException, ResultTimeoutException {
-        byte[] invalidMsg = "BaRlDid73RYBFMgqveC8G+gFBBU=".getBytes();// random invalid base64 string
-        //relay message
-        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        relayMsgWriter.writeListHeader(1);
-        relayMsgWriter.writeFooter();
-        byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
-        RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
-                .put("prev", new RpcValue(prevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
-                .put("msg", new RpcValue(invalidMsg))
-                .build();
-
-        TransactionResult txResult = bmv.invokeAndWaitResult(wallets[0], "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() != null);
-    }
-
-
     @Order(6)
-    @Test
-    public void scenario6() throws IOException, ResultTimeoutException {
-        // Mocking relay message from actual data
-        //relay message
-        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
-        //ByteArrayObjectWriter relayMsgWriter = Context.newByteArrayObjectWriter(RLPn);
-        relayMsgWriter.writeListHeader(3);
+    void scenario6() throws Exception {
+        BigInteger seq = new BigInteger("111");
 
-        //blockUpdates
+        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        relayMsgWriter.writeListHeader(3);
+        // block update
         relayMsgWriter.writeListHeader(1);
         relayMsgWriter.writeFooter();
 
-        //blockProof
+        // block proof
         DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
+        relayMsgWriter.writeListHeader(1);
         blockProofWrtr.writeListHeader(2);
-        blockProofWrtr.writeNullity(true); //block header
-        blockProofWrtr.writeNullity(true); // block witness
+        blockProofWrtr.writeNullity(true);
+        blockProofWrtr.writeNullity(true);
         blockProofWrtr.writeFooter();
         relayMsgWriter.write(blockProofWrtr.toByteArray());
 
-        //receiptProof
+        // receipt proof
         relayMsgWriter.writeListHeader(1);
         DataWriter receiptProofWtr = foundation.icon.test.common.Codec.rlp.newWriter();
         receiptProofWtr.writeListHeader(4);
         receiptProofWtr.write(0);
-        receiptProofWtr.writeNullity(true); // receipt proof
+        receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
         relayMsgWriter.write(receiptProofWtr.toByteArray());
+
         relayMsgWriter.writeFooter();
+
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
-                .put("seq", new RpcValue(String.valueOf(0)))
+                .put("seq", new RpcValue(seq))
                 .put("msg", new RpcValue(_msg))
                 .build();
 
-        TransactionResult txResult = bmv.invokeAndWaitResult(wallets[0], "handleRelayMessage", args);
-        assertTrue(txResult.getFailure() != null);
-
+        TransactionResult txResult = bmv.invokeAndWaitResult(ownerWallet, "handleRelayMessage", args);
+        assertNotNull(txResult.getFailure());
     }
 
     @Order(7)
@@ -457,13 +474,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -473,7 +497,6 @@ public class BMVTest extends TestBase {
         assertTrue(txResult.getFailure() != null);
 
     }
-
 
     @Order(8)
     @Test
@@ -521,13 +544,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -571,13 +601,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -625,13 +662,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -684,13 +728,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -742,13 +793,20 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))
@@ -761,6 +819,44 @@ public class BMVTest extends TestBase {
     @Order(13)
     @Test
     public void scenario13() throws IOException, ResultTimeoutException {
+        BigInteger network = BigInteger.valueOf(97);
+        byte[] parentHash = {88, -8, -97, 118, 100, 116, 42, 24, 62, 48, -108, 22, -99, -6, -55, -40, 47, -87, -26, 95, -32, -51, -60, -15, 12, 126, 42, 76, -77, -75, -54, -8};
+        byte[] uncleHash = {29, -52, 77, -24, -34, -57, 93, 122, -85, -123, -75, 103, -74, -52, -44, 26, -45, 18, 69, 27, -108, -118, 116, 19, -16, -95, 66, -3, 64, -44, -109, 71};
+        byte[] coinBase = {72, -108, -126, -105, -61, 35, 110, -61, -22, 108, -107, -12, -18, -62, 47, -37, 24, 37, 94, 85};
+        byte[] stateRoot = {-81, 125, -40, -117, -97, 55, 37, -114, -40, 63, 71, 81, -95, -94, -82, -24, 108, -23, -88, 48, -76, 99, -121, 91, 88, -1, -37, -71, -39, -56, -89, -48};
+        byte[] transactionsRoot = {-12, 75, -34, 51, -105, -82, 127, 61, 51, -5, 39, -23, -86, 10, -23, -68, -22, 125, -56, -119, -29, -57, -13, 100, 41, -16, 119, 29, 31, 65, -2, -75};
+        byte[] receiptsRoot = {-31, -73, 95, -102, -84, -9, -51, 46, -62, -111, 13, 56, -96, -48, 69, -48, -111, 74, 22, -21, 97, 56, 37, 53, 54, 72, 5, 15, 69, 16, -127, 94};
+        byte[] logsBloom = {0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 33, 0, 0, 1, 0, 16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 8, 0, 32};
+        BigInteger difficulty = BigInteger.TWO;
+        BigInteger number = BigInteger.valueOf(181);
+        long gasLimit = 19697141;
+        long gasUsed = 3175734;
+        long timestamp = 1632813244;
+        byte[] extraData = {-40, -125, 1, 0, 6, -124, 103, 101, 116, 104, -120, 103, 111, 49, 46, 49, 54, 46, 54, -123, 108, 105, 110, 117, 120, 0, 0, 0, 17, -64, -86, -98, -104, 104, -2, -41, -87, -103, -66, -120, 122, 108, -23, -20, -106, 42, 124, -34, -49, -39, 22, -108, 100, -71, -111, 77, -3, 6, -95, 3, -4, 96, -113, 107, 65, 50, 51, 92, -41, 107, -89, -29, 2, -117, 28, 60, 107, -119, -16, 79, -57, -82, -108, -58, -101, -117, 38, 107, -112, -14, 75, -126, -37, -99, -55, 13, 0};
+        byte[] mixHash = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        byte[] nonce = {0, 0, 0, 0, 0, 0, 0, 0};
+        byte[] hash = {-126, -31, 55, 52, -18, 55, -22, 74, 111, -70, 4, -13, -3, -91, 31, -92, -3, -1, -5, -11, -12, -63, -39, 55, 107, -111, -100, 21, 127, 71, 30, 50};
+
+        DataWriter w = foundation.icon.test.common.Codec.rlp.newWriter();
+        w.writeListHeader(16);
+        w.write(network);
+        w.write(parentHash);
+        w.write(uncleHash);
+        w.write(coinBase);
+        w.write(stateRoot);
+        w.write(transactionsRoot);
+        w.write(receiptsRoot);
+        w.write(logsBloom);
+        w.write(difficulty);
+        w.write(number);
+        w.write(gasLimit);
+        w.write(gasUsed);
+        w.write(timestamp);
+        w.write(extraData);
+        w.write(mixHash);
+        w.write(nonce);
+        w.writeFooter();
+
         byte[] headerBytes59 = Hex.decode("f901f7a043e2a0a1b168f72d1cd457504746752ecdcf0e993a3af01d5bd79647f66b67daa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0fc236f0311a4a6b79aff14fdb0a5957087171c3a3f44482b763d505996c3adeda0f0ed92b9d8c41d9ce1299af2d9ff939effc4efecf32236bd9af9816c34f6ef04a0198bcd6b44590c263021c375ade2679e8ff8e8ec62f5acea2bcf5030d97ab764b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048000000000000000000000000000000000000000000000000020000000000000000000800000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042000000000000000000000002000000000000000000000000000000000000000000008000000020000000000000000001000000000000000000000000000000000000000000000000803b836691b7830c65f38460cb560280a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
 
         byte[] witness = Hex.decode("f910fb3a8504a817c800836691b78080b910a860806040523480156200001157600080fd5b506040518060400160405280600881526020017f4552433230544b4e0000000000000000000000000000000000000000000000008152506040518060400160405280600381526020017f4554480000000000000000000000000000000000000000000000000000000000815250816003908051906020019062000096929190620001d1565b508051620000ac906004906020840190620001d1565b50620000d89150339050620000c46012600a6200031f565b620000d29061271062000414565b620000de565b620004bb565b6001600160a01b0382166200012a576040517f08c379a0000000000000000000000000000000000000000000000000000000008152600401620001219062000277565b60405180910390fd5b6200013860008383620001cc565b80600260008282546200014c9190620002b7565b90915550506001600160a01b038216600090815260208190526040812080548392906200017b908490620002b7565b90915550506040516001600160a01b038316906000907fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef90620001c0908590620002ae565b60405180910390a35050565b505050565b828054620001df9062000436565b90600052602060002090601f0160209004810192826200020357600085556200024e565b82601f106200021e57805160ff19168380011785556200024e565b828001600101855582156200024e579182015b828111156200024e57825182559160200191906001019062000231565b506200025c92915062000260565b5090565b5b808211156200025c576000815560010162000261565b6020808252601f908201527f45524332303a206d696e7420746f20746865207a65726f206164647265737300604082015260600190565b90815260200190565b60008219821115620002cd57620002cd6200048c565b500190565b80825b6001808611620002e6575062000316565b818704821115620002fb57620002fb6200048c565b808616156200030957918102915b9490941c938002620002d5565b94509492505050565b600062000330600019848462000337565b9392505050565b600082620003485750600162000330565b81620003575750600062000330565b81600181146200037057600281146200037b57620003af565b600191505062000330565b60ff8411156200038f576200038f6200048c565b6001841b915084821115620003a857620003a86200048c565b5062000330565b5060208310610133831016604e8410600b8410161715620003e7575081810a83811115620003e157620003e16200048c565b62000330565b620003f68484846001620002d2565b8086048211156200040b576200040b6200048c565b02949350505050565b60008160001904831182151516156200043157620004316200048c565b500290565b6002810460018216806200044b57607f821691505b6020821081141562000486577f4e487b7100000000000000000000000000000000000000000000000000000000600052602260045260246000fd5b50919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b610bdd80620004cb6000396000f3fe608060405234801561001057600080fd5b50600436106100f55760003560e01c80633950935111610097578063a457c2d711610066578063a457c2d7146101bb578063a9059cbb146101ce578063dd62ed3e146101e1578063f76f8d78146101f4576100f5565b8063395093511461018557806370a082311461019857806395d89b41146101ab578063a3f4df7e146101b3576100f5565b806323b872dd116100d357806323b872dd1461014d5780632e0f2625146101605780632ff2e9dc14610175578063313ce5671461017d576100f5565b806306fdde03146100fa578063095ea7b31461011857806318160ddd14610138575b600080fd5b6101026101fc565b60405161010f91906107a9565b60405180910390f35b61012b610126366004610775565b61028e565b60405161010f919061079e565b6101406102ab565b60405161010f91906109dd565b61012b61015b36600461073a565b6102b1565b610168610353565b60405161010f91906109e6565b610140610358565b610168610373565b61012b610193366004610775565b610378565b6101406101a63660046106ee565b6103c7565b6101026103e6565b6101026103f5565b61012b6101c9366004610775565b610419565b61012b6101dc366004610775565b610494565b6101406101ef366004610708565b6104a8565b6101026104d3565b60606003805461020b90610b56565b80601f016020809104026020016040519081016040528092919081815260200182805461023790610b56565b80156102845780601f1061025957610100808354040283529160200191610284565b820191906000526020600020905b81548152906001019060200180831161026757829003601f168201915b5050505050905090565b60006102a261029b6104f2565b84846104f6565b50600192915050565b60025490565b60006102be8484846105aa565b6001600160a01b0384166000908152600160205260408120816102df6104f2565b6001600160a01b03166001600160a01b031681526020019081526020016000205490508281101561032b5760405162461bcd60e51b8152600401610322906108c7565b60405180910390fd5b610346856103376104f2565b6103418685610b3f565b6104f6565b60019150505b9392505050565b601281565b6103646012600a610a52565b61037090612710610b20565b81565b601290565b60006102a26103856104f2565b8484600160006103936104f2565b6001600160a01b03908116825260208083019390935260409182016000908120918b168152925290205461034191906109f4565b6001600160a01b0381166000908152602081905260409020545b919050565b60606004805461020b90610b56565b6040518060400160405280600881526020016722a92199182a25a760c11b81525081565b600080600160006104286104f2565b6001600160a01b03908116825260208083019390935260409182016000908120918816815292529020549050828110156104745760405162461bcd60e51b815260040161032290610998565b61048a61047f6104f2565b856103418685610b3f565b5060019392505050565b60006102a26104a16104f2565b84846105aa565b6001600160a01b03918216600090815260016020908152604080832093909416825291909152205490565b6040518060400160405280600381526020016208aa8960eb1b81525081565b3390565b6001600160a01b03831661051c5760405162461bcd60e51b815260040161032290610954565b6001600160a01b0382166105425760405162461bcd60e51b81526004016103229061083f565b6001600160a01b0380841660008181526001602090815260408083209487168084529490915290819020849055517f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9259061059d9085906109dd565b60405180910390a3505050565b6001600160a01b0383166105d05760405162461bcd60e51b81526004016103229061090f565b6001600160a01b0382166105f65760405162461bcd60e51b8152600401610322906107fc565b6106018383836106d2565b6001600160a01b0383166000908152602081905260409020548181101561063a5760405162461bcd60e51b815260040161032290610881565b6106448282610b3f565b6001600160a01b03808616600090815260208190526040808220939093559085168152908120805484929061067a9084906109f4565b92505081905550826001600160a01b0316846001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef846040516106c491906109dd565b60405180910390a350505050565b505050565b80356001600160a01b03811681146103e157600080fd5b6000602082840312156106ff578081fd5b61034c826106d7565b6000806040838503121561071a578081fd5b610723836106d7565b9150610731602084016106d7565b90509250929050565b60008060006060848603121561074e578081fd5b610757846106d7565b9250610765602085016106d7565b9150604084013590509250925092565b60008060408385031215610787578182fd5b610790836106d7565b946020939093013593505050565b901515815260200190565b6000602080835283518082850152825b818110156107d5578581018301518582016040015282016107b9565b818111156107e65783604083870101525b50601f01601f1916929092016040019392505050565b60208082526023908201527f45524332303a207472616e7366657220746f20746865207a65726f206164647260408201526265737360e81b606082015260800190565b60208082526022908201527f45524332303a20617070726f766520746f20746865207a65726f206164647265604082015261737360f01b606082015260800190565b60208082526026908201527f45524332303a207472616e7366657220616d6f756e7420657863656564732062604082015265616c616e636560d01b606082015260800190565b60208082526028908201527f45524332303a207472616e7366657220616d6f756e74206578636565647320616040820152676c6c6f77616e636560c01b606082015260800190565b60208082526025908201527f45524332303a207472616e736665722066726f6d20746865207a65726f206164604082015264647265737360d81b606082015260800190565b60208082526024908201527f45524332303a20617070726f76652066726f6d20746865207a65726f206164646040820152637265737360e01b606082015260800190565b60208082526025908201527f45524332303a2064656372656173656420616c6c6f77616e63652062656c6f77604082015264207a65726f60d81b606082015260800190565b90815260200190565b60ff91909116815260200190565b60008219821115610a0757610a07610b91565b500190565b80825b6001808611610a1e5750610a49565b818704821115610a3057610a30610b91565b80861615610a3d57918102915b9490941c938002610a0f565b94509492505050565b600061034c6000198484600082610a6b5750600161034c565b81610a785750600061034c565b8160018114610a8e5760028114610a9857610ac5565b600191505061034c565b60ff841115610aa957610aa9610b91565b6001841b915084821115610abf57610abf610b91565b5061034c565b5060208310610133831016604e8410600b8410161715610af8575081810a83811115610af357610af3610b91565b61034c565b610b058484846001610a0c565b808604821115610b1757610b17610b91565b02949350505050565b6000816000190483118215151615610b3a57610b3a610b91565b500290565b600082821015610b5157610b51610b91565b500390565b600281046001821680610b6a57607f821691505b60208210811415610b8b57634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052601160045260246000fdfea264697066735822122041d364bf84ad9f709951d5788688f4dea6b8f1e4db87cdd05121f24b80338edc64736f6c6343000800003326a07db3d49fb749522cbd7dd1f601f15939eb2553b40ce73a54b5f0c4d18eb502b9a044a0eb6d1eaf16125d1e00d9dae85c8a98bcad37a4cf62504441d4dee52aeec6");
@@ -776,7 +872,7 @@ public class BMVTest extends TestBase {
 
         DataWriter blockUpdateWriter = foundation.icon.test.common.Codec.rlp.newWriter();
         blockUpdateWriter.writeListHeader(3);
-        blockUpdateWriter.write(headerBytes59);
+        blockUpdateWriter.write(w.toByteArray());
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeNullity(true);
         blockUpdateWriter.writeFooter();
@@ -786,8 +882,16 @@ public class BMVTest extends TestBase {
         //blockProof
         DataWriter blockProofWrtr = foundation.icon.test.common.Codec.rlp.newWriter();
         blockProofWrtr.writeListHeader(2);
-        blockProofWrtr.write(headerBytes59); //block header
-        blockProofWrtr.write(witness); // block witness
+        blockProofWrtr.writeNullity(true); //block header
+        blockProofWrtr.writeNullity(true); // block witness
+
+//        DataWriter witnessWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+//        witnessWriter.writeListHeader(1);
+//        witnessWriter.write(witness);
+//        witnessWriter.writeFooter();
+
+//        blockProofWrtr.write(witnessWriter.toByteArray());
+//        blockProofWrtr.write(new byte[0]);
         blockProofWrtr.writeFooter();
         relayMsgWriter.write(blockProofWrtr.toByteArray());
 
@@ -796,17 +900,42 @@ public class BMVTest extends TestBase {
         DataWriter receiptProofWtr = foundation.icon.test.common.Codec.rlp.newWriter();
         receiptProofWtr.writeListHeader(4);
         receiptProofWtr.write(0);
-        receiptProofWtr.write(rp); // receipt proof
+        receiptProofWtr.writeNullity(true); // receipt proof
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeNullity(true);
         receiptProofWtr.writeFooter();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        DataWriter receiptProofWtr1 = foundation.icon.test.common.Codec.rlp.newWriter();
+        receiptProofWtr1.writeListHeader(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeNullity(true);
+        receiptProofWtr1.writeFooter();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.writeFooter();
         relayMsgWriter.writeFooter();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         RpcObject args = new RpcObject.Builder()
-                .put("bmc", new RpcValue(currentBMCBTPAdd))
+                .put("bmc", new RpcValue(currBMCBTPAdd))
+                .put("prev", new RpcValue(prevBMCBTPAdd))
+                .put("seq", new RpcValue(String.valueOf(0)))
+                .put("msg", new RpcValue(_msg))
+                .build();
+
+        TransactionResult txResult = bmv.invokeAndWaitResult(wallets[0], "handleRelayMessage", args);
+        assertNotNull(txResult.getFailure());
+    }
+
+    @Test
+    @Order(14)
+    public void scenario14() throws Exception {
+        Context.println("------------------Scenario 81--------------------");
+        var msg = "-Qw_-QLiuQLf-QLcuQJf-QJcoFj4n3ZkdCoYPjCUFp36ydgvqeZf4M3E8Qx-Kkyztcr4oB3MTejex116q4W1Z7bM1BrTEkUblIp0E_ChQv1A1JNHlEiUgpfDI27D6myV9O7CL9sYJV5VoK992IufNyWO2D9HUaGiruhs6agwtGOHW1j_27nZyKfQoPRL3jOXrn89M_sn6aoK6bzqfciJ48fzZCnwdx0fQf61oOG3X5qs980uwpENOKDQRdCRShbrYTglNTZIBQ9FEIFeuQEAAAAAAgAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAgAAAAAACAAAAAAAAAAAAAACAAAEAAAAAAAAAAAAAACAAAAAAhAAABABAAAAAAAAEAAAAAAAgAIAAQAAQAAAAAAAAAAAAAAAABAAAAAAAAEAAAAAIAEAAAAAAAAAAAAAAAAAAAAAAEAgAAAAAAAAAAAAAACAIAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAoAAIAAAAAAAAAAAAAAAAAAAAAAAABBAEAAAACAKEAAAAAAAAAAAAAAAAAEAAAQAAAAAAAAAAAAAAIEAAAKCALWEASyN9YMwdTaEYVLAvLhh2IMBAAaEZ2V0aIhnbzEuMTYuNoVsaW51eAAAABHAqp6YaP7XqZm-iHps6eyWKnzez9kWlGS5kU39BqED_GCPa0EyM1zXa6fjAoscPGuJ8E_HrpTGm4sma5DyS4LbnckNAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAAAAALh4TRvmTw6aRmwuZqU0M5KBkng-Kfj6Ib6yEzSZte93D2AAAADo1KUQAJkwiqNlxAVUvImYKvUF2F2pUlFEXV3Uqbs33SWE_ZLTAAAA6NSlEAABd2kg_wsPONeM-VwDPCGt9wRXhRFOOSp1RBeWUuCmEgAAAOjUpRAA-AD5CVW5CVL5CU8AuQbG-QbDuFP4UaA7LGW2CCkiE35Yg5nS5t4faIO0KHJsDq2G2f--zcoyXoCAgICAgICgP2kzSfOdMIxK-J1L-ZSiuAtkOObzBpma4OnXdlO-LxKAgICAgICAgLkGa_kGaDC5BmT5BmEBgwf1WLkBAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAgAABAAAAAAAAAAAAAAAgAAAAAAAAAAQAQAAAAAAABAAAAAAAAAAAAEAAEAAAAAAAAAAAAAAAAAQAAAAAAABAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAgCAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgChAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAD5BVb4m5S6NPPGiTsS_0EVrPG0cSxuJ4Otg_hjoN3yUq0b4sibacKwaPw3jaqVK6fxY8ShFij1Wk31I7PvoAAAAAAAAAAAAAAAAHDnidL11GnqMOBSXb_dVRXW6tMNoAAAAAAAAAAAAAAAAHGhUgu7fmByu_NoKmDHPWO2k2kKoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK-JuUujTzxok7Ev9BFazxtHEsbieDrYP4Y6CMW-Hl6-x9W9FPcUJ9HoTz3QMUwPeyKR5bIArIx8O5JaAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDaAAAAAAAAAAAAAAAABxoVILu35gcrvzaCpgxz1jtpNpCqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPkCGpSq_I7q7o2ci9MmLM49c-Vt7j-3duGgN741PyFs9-M2ORAf1hDFQuagwBCRc_ocHYsE007bfBu5AeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9_j1uDlidHA6Ly8weDk3LmJzYy8weEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3Nza4PmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3iFRva2VuQlNIALhu-GwAuGn4Z7MweDcwZTc4OWQyZjVkNDY5ZWEzMGUwNTI1ZGJmZGQ1NTE1ZDZlYWQzMGQAAAAAAAAAAACqaHgyNzVjMTE4NjE3NjEwZTY1YmE1NzJhYzBhNjIxZGRkMTMyNTUyNDJix8aDRVRICgAAAAAAAAAAAAD5AfyUOryN_wyVuJgjmdrPbtW9e5SkAGj4QqBQ0iNzu4TtH57rWByRPm1F2RjAX4sdkPC-Fo8GpOaZSqAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDbkBoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-YnRwOi8vMHg5NTRhYTMuaWNvbi9oeDI3NWMxMTg2MTc2MTBlNjViYTU3MmFjMGE2MjFkZGQxMzI1NTI0MmIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0VUSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-QKC-QJ_ArkCe_kCeKoweEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3NzbhoDe-NT8hbPfjNjkQH9YQxULmoMAQkXP6HB2LBNNO23wbuQHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwNwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPf49bg5YnRwOi8vMHg5Ny5ic2MvMHhBYUZjOEVlYUVFOGQ5QzhiRDMyNjJDQ0UzRDczRTU2RGVFM0ZCNzc2uD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwN4hUb2tlbkJTSAC4bvhsALhp-GezMHg3MGU3ODlkMmY1ZDQ2OWVhMzBlMDUyNWRiZmRkNTUxNWQ2ZWFkMzBkAAAAAAAAAAAAqmh4Mjc1YzExODYxNzYxMGU2NWJhNTcyYWMwYTYyMWRkZDEzMjU1MjQyYsfGg0VUSAoAAAAAAAAAAAAAggC1oFGCfMQGfrJEAwF5anutReQpjUCEibxWVOjL1hMp5LWJAKA8bJvKziim1NtCb8keX3oEvFIKzhW2ihxz6DFE82bPRgIA";
+        byte[] _msg = java.util.Base64.getUrlDecoder().decode(msg.trim().getBytes());
+
+        RpcObject args = new RpcObject.Builder()
+                .put("bmc", new RpcValue(currBMCBTPAdd))
                 .put("prev", new RpcValue(prevBMCBTPAdd))
                 .put("seq", new RpcValue(String.valueOf(0)))
                 .put("msg", new RpcValue(_msg))

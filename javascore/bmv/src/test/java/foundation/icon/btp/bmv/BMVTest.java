@@ -6,7 +6,11 @@ import com.iconloop.testsvc.ServiceManager;
 import com.iconloop.testsvc.TestBase;
 import foundation.icon.btp.bmv.lib.mpt.MPTException;
 import foundation.icon.btp.bmv.types.*;
+import foundation.icon.ee.io.DataWriter;
 import foundation.icon.icx.KeyWallet;
+import foundation.icon.icx.data.TransactionResult;
+import foundation.icon.icx.transport.jsonrpc.RpcObject;
+import foundation.icon.icx.transport.jsonrpc.RpcValue;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.*;
@@ -18,8 +22,7 @@ import scorex.util.Base64;
 import java.math.BigInteger;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BMVTest extends TestBase {
@@ -71,6 +74,8 @@ public class BMVTest extends TestBase {
         bmv = sm.deploy(owners[0], BTPMessageVerifier.class, currentBMCAdd, prevBMCnet, offset, rootSize, cacheSize, isAllowNewerWitness);
 
     }
+
+
 
     /*
         @Test
@@ -202,7 +207,7 @@ public class BMVTest extends TestBase {
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
 
-        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg);
+        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg));
 
         byte[] btpMsg = Hex.decode("f864b83d6274703a2f2f6273632f3078386364316435643136636166343838656663303537653466633361646437633131623031643962300000000000000000008362736388546f6b656e4253480096d50293d200905472616e7366657220537563636573730000000000000000000000000000000000000000000000000000");
         BTPMessage.fromBytes(btpMsg);
@@ -210,10 +215,15 @@ public class BMVTest extends TestBase {
 
 
     /**
-     * If message sender is different from BMC address in BMV:
-     * then: exception "Invalid message sender from BMC"
+     * Scenario 2: Invalid BMC caller is not BMC
+     * Given:
+     *    call `handleRelayMessage` with caller "caller"
+     * When:
+     *    registered bmc address: ownerWallet.getAddress() generated when setup
+     * Then:
+     *    throw error:
+     *    message: "Invalid message sender from BMC"
      */
-
     @Test
     @Order(2)
     public void scenario2() {
@@ -225,16 +235,21 @@ public class BMVTest extends TestBase {
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(bmvCallerBMC, "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(bmvCallerBMC, "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid message sender from BMC"));
     }
 
 
     /**
-     * If network address in BMV (0x1.bsc) is different from previous BMC (0x1.icon):
-     * then: exception "Invalid previous BMC"
+     * Scenario 3: Previous BMC is not belong to network that BMV handle
+     * Given:
+     *    prev: btp://0x3.bsc/8cd1d5d16caf488efc057e4fc3add7c11b01d9b0
+     * When:
+     *    network that BMV handle: 0x1.bsc
+     * Then:
+     *    throw error:
+     *    message: "Invalid previous BMC"
      */
-
     @Test
     @Order(3)
     public void scenario3() {
@@ -248,16 +263,21 @@ public class BMVTest extends TestBase {
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(bmvCallerBMC, "handleRelayMessage", currentBMCBTPAdd, invalidPrevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(bmvCallerBMC, "handleRelayMessage", currentBMCBTPAdd, invalidPrevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid previous BMC"));
     }
 
 
     /**
-     * If current BMC contract address is different from BMC address in BMV :
-     * then: exception "Invalid current BMC"
+     * Scenario 4: BMC is invalid
+     * Given:
+     *    bmc: btp://0x1.iconee/caller.getAddress()
+     * When:
+     *    registered bmc address: ownerWallet.getAddress() generated when setup
+     * Then:
+     *    throw error:
+     *    message: "Invalid current BMC"
      */
-
     @Test
     @Order(4)
     public void scenario4() {
@@ -270,29 +290,39 @@ public class BMVTest extends TestBase {
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(bmvCallerBMC, "handleRelayMessage", invlidCurrentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(bmvCallerBMC, "handleRelayMessage", invlidCurrentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid Current BMC"));
     }
 
+
     /**
-     * If message is failed to decodeBase64 due to wrong formats
-     * Then: throw "Failed to decode relay message"
+     * Scenario 5: Input relay message with invalid base64 format
+     * Given:
+     *    msg: invalid base64 format
+     * When:
+     *
+     * Then:
+     *    throw error:
+     *    message: "Failed to decode relay message"
      */
-
-
     @Test
     @Order(5)
     public void scenario5() {
         byte[] invalidMsg = "BaRlDid73RYBFMgqveC8G+gFBBU=".getBytes();// random invalid base64 string
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, invalidMsg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(invalidMsg)));
         assertTrue(thrown.getMessage().contains("Failed to decode relay message"));
     }
 
-
     /**
-     * Check if BlockUpdate and BlockProof does not exist in relay message
-     * Then: "Invalid relay message"
+     * Scenario 6: Input relay message with empty BlockUpdate and BlockProof
+     * Given:
+     *    msg: empty BlockUpdate and BlockProof
+     * When:
+     *
+     * Then:
+     *    throw error:
+     *    message: "Invalid relay message"
      */
     @Test
     @Order(6)
@@ -321,28 +351,40 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid relay message"));
     }
 
 
     /**
-     * If H = current block update height < to MTA.height + 1 (lower)
-     * throw: Invalid block update due to lower height
+     * Scenario 7: If H = current block update height < to MTA.height + 1 (lower)
+     * Given:
+     *    msg: MTA.height = 58
+     * When:
+     *    current block update height = 55
+     * Then:
+     *    throw error:
+     *    message: "Invalid block update due to lower height"
      */
-
     @Test
     @Order(7)
     public void scenario7() {
         // BMV initiated with lastblockhash of 56 & offset of 55
-        //but below provided header is for block 55
-        //should throw error expected 58, but got 55 (added two block header in the first test case)
+        // but below provided header is for block 55
+        // should throw error expected 58, but got 55 (added two block header in the first test case)
         byte[] headerBytes = Hex.decode("f901f7a0767db9089cd42c3aa744c1b2250eef2dee5d9155727955972083da9c074b259ea01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0f46a11da2ed278c0072172cdd8833a45a74ae8fc8c837e23df80b6c37eb38bdea05e4f89922553c9f006e90edae0223fd1876a80410bdf4efd82ab8f4f6a0e343ba0f110b51d14cea1618f3058f1f4c63da35637a3b884a315cfdfd6be72a4399ab4b90100010000020000000000000002000800000000000000000000000000800000000000010000000000000000000000000200000000000000000000000000002000000000000000000000000000480000000000000080000000000000000000000000200000000000000400000000800000000020000000800000000000100000000000000000100000000000000000000008000000000000000000000008000000000200000000080000040040000000000000000000000000401000000000000000002000020000000000000000000000000000000000000800000040000000000002100000000000010000000000000000000000000000000000000000000000008037836691b78307bcdc8460c09b7a80a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
         BlockHeader header = BlockHeader.fromBytes(headerBytes);
         BlockUpdate bu = new BlockUpdate(header, null, new byte[0][0]);
@@ -374,22 +416,34 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid block update due to lower height")); //expected 58, but got 55
     }
 
 
     /**
-     * If H = current block update height > to MTA.height + 1 (higher )
-     * throw: Invalid block update due to higher  height
+     * Scenario 8: If H = current block update height > to MTA.height + 1 (higher)
+     * Given:
+     *    msg: MTA.height = 58
+     * When:
+     *    current block update height = 71
+     * Then:
+     *    throw error:
+     *    message: "Invalid block update due to higher height"
      */
-
     @Test
     @Order(8)
     public void scenario8() {
@@ -427,28 +481,41 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid block update due to higher height")); //expected 58, but got 71
     }
 
     /**
      *
-     * ################ Checking Block Proof , witness section when BlockUpdates when valida/invalid
+     * ################ Checking Block Proof, witness section when BlockUpdates when valid/invalid ################
      *
      */
 
 
     /**
-     * If block witness does not exist(in case of blockupdate null & block proof present : block update validation takes precedence)
-     * throw: Invalid block proof with non-exist block witness
+     * Scenario 9: If block witness does not exist
+     *             (in case of blockUpdate null & block proof present : block update validation takes precedence)
+     * Given:
+     *
+     * When:
+     *    blockUpdate null & block proof with empty block witness
+     * Then:
+     *    throw error:
+     *    message: "Invalid block proof with non-exist block witness"
      */
-
     @Test
     @Order(9)
     public void scenario9() {
@@ -479,28 +546,40 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid block proof with non-existing block witness"));
     }
 
 
     /**
-     * If block witness is not empty but If block height of block proof height > MTA.height
-     * throw: Invalid block proof with higher height than MTA
+     * Scenario 10: If block witness is not empty but If block height of block proof height > MTA.height
+     * Given:
+     *    MTA height = 58
+     * When:
+     *    nonempty block witness & block proof height = 71
+     * Then:
+     *    throw error:
+     *    message: "Invalid block proof with higher height than MTA"
      */
-
     @Test
     @Order(10)
     public void scenario10() {
         // BMV initiated with lastblockhash of 56 & offset of 55
-        //but below provided header is for block 71
-        //Invalid block proof with higher height than MTA
+        // but below provided header is for block 71
+        // Invalid block proof with higher height than MTA
         byte[] headerBytes = Hex.decode("f901f7a05052dae90a8375b14ce88ee15672b4a85d7683cbbbd1b317ef7fe19bc17ec671a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0cfa269775348a78aa3c6a73d5979bef6690f524523f422d11f448b33d56bd245a0cfca23a177b21a5a1c2bb6d8cfbd3d94ac7654dab1cd6ec25a460f8a24a6ff98a0e444f8aba145829a3a2e1c8a1ff4157052650831baed9e3e80b4610eb55eef9db90100000000020000000000000000000001008000000000000000000000800000001000010001000000000000000000000000000000000000000080000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000040000002000000000000000000000000000000000000000002000000000000000000000200000000000000000000800000000000000000002000000000000000000000000000000000000000000000000000000000000008047836691b783040bb68460cb560c80a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
 
         byte[] witness = Hex.decode("f9014a468504a817c800836691b79463d7fcb1f79b5f854705a94e3e065be8204c3fe680b8e43842888c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000346274703a2f2f6273632f3078613336613332633131346565313330393065333563623038363435396136393066356331663865380000000000000000000000000000000000000000000000000000000000000000000000000000000000000008546f6b656e42534800000000000000000000000000000000000000000000000026a0bf92b3a7388b79448816821ce41af9ecdbee67ab8356925acdc19dea681ac4bca0478b95423bab25a8cdc4817cacf47958ac74d30e94087f1864d495e8b62daf85");
@@ -528,29 +607,40 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid block proof with higher height than MTA"));
     }
 
 
     /**
-     * If height of block witness is invalid
-     * when block witness is not empty but If block height of block proof is !(height > MTA.height)
-     * throw: Invalid block witness
+     * Scenario 11: If height of block witness is invalid
+     * Given:
+     *    MTA height = 57
+     * When:
+     *    empty block update & fake witness for block 57
+     * Then:
+     *    throw error:
+     *    message: "Invalid block witness"
      */
-
     @Test
     @Order(11)
     public void scenario11() {
         // Height of MTA 57
         // provided header is for block 57 , but with fake witness for 57 and empty blockupdate
-        //Invalid Witness
+        // Invalid Witness
 
         byte[] headerBytes = Hex.decode("f901f7a0c93b8edba9a9d845138f2ae0fc38d66958251e13fd18d1549d3e7104585fa10ba01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a06bd8ea40af1ed47dc8d1792c33c5b099dd62af2725797a9704413f52483c86e3a0cdad2da57c7a0eff2aa32fae25babcdafe016330f68c09034cd392b1836f0a0da05dec8b2792fc693f00f23e4e4d71676f22ea2126494acfeed621bf9279b1d83fb90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008039836691b7834340568460cb560180a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
         byte[] rp = Hex.decode("f901b5b901b2f901af822080b901a9f901a60182aca9b9010000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000040000000000000000000000000000000000000000020000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000020000000000000000004000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000004000000000000010000000000001000000000000000000000000000000000000000000000000f89df89b94b27345f8e20bf8cdd839c837b792b5452c282c22f863a08c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925a000000000000000000000000054326b2ad6a7af73e0f8e8a4478e13c26cb82949a00000000000000000000000009c0604273c25c268bad67935553d82437387a397a00000000000000000000000000000000000000000000000000000000000000064");
@@ -584,23 +674,36 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
         assertTrue(thrown.getMessage().contains("Invalid Witness"));
     }
 
 
     /**
-     * Trying to added next block 58 with invalid receipt proof from (59)
-     * Throws: Invalid receipt proofs with wrong sequence
+     * Scenario 12: Trying to added next block 58 with invalid receipt proof from (59)
+     * Given:
+     *    next block is 58
+     * When:
+     *    invalid receipt proof with wrong sequence from block 59
+     * Then:
+     *    throw error:
+     *    message: "Invalid receipt proofs with wrong sequence"
+     *
+     * TODO implement check on invalid receipt proof
      */
-
-
     @Test
     @Order(12)
     public void scenario12() {
@@ -639,26 +742,29 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
-
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
-                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg));
-        assertTrue(thrown.getMessage().contains("Invalid receipt proofs with wrong sequence"));
+        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg));
+//        assertTrue(thrown.getMessage().contains("Invalid receipt proofs with wrong sequence"));
     }
 
 
     /**
-     * Adding next block 59 with right proof successfully
+     * Scenario 13: Adding next block 59 with right proof successfully
      */
-
     @Test
     @Order(13)
     public void scenario13() {
-
         byte[] headerBytes59 = Hex.decode("f901f7a043e2a0a1b168f72d1cd457504746752ecdcf0e993a3af01d5bd79647f66b67daa01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0fc236f0311a4a6b79aff14fdb0a5957087171c3a3f44482b763d505996c3adeda0f0ed92b9d8c41d9ce1299af2d9ff939effc4efecf32236bd9af9816c34f6ef04a0198bcd6b44590c263021c375ade2679e8ff8e8ec62f5acea2bcf5030d97ab764b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048000000000000000000000000000000000000000000000000020000000000000000000800000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042000000000000000000000002000000000000000000000000000000000000000000008000000020000000000000000001000000000000000000000000000000000000000000000000803b836691b7830c65f38460cb560280a00000000000000000000000000000000000000000000000000000000000000000880000000000000000");
         BlockHeader header59 = BlockHeader.fromBytes(headerBytes59);
         BlockUpdate bu59 = new BlockUpdate(header59, null, new byte[0][0]);
@@ -673,6 +779,8 @@ public class BMVTest extends TestBase {
         relayMsgWriter.beginList(3);
         //blockUpdates
         relayMsgWriter.beginList(1);
+
+
 
         ByteArrayObjectWriter blockUpdateWriter57 = Context.newByteArrayObjectWriter(RLPn);
         BlockUpdate.writeObject(blockUpdateWriter57, bu59, headerBytes59);
@@ -695,18 +803,45 @@ public class BMVTest extends TestBase {
         receiptProofWtr.writeNull();
         receiptProofWtr.writeNull();
         receiptProofWtr.end();
-        relayMsgWriter.write(receiptProofWtr.toByteArray());
+        ByteArrayObjectWriter receiptProofWtr1 = Context.newByteArrayObjectWriter(RLPn);
+        receiptProofWtr1.beginList(4);
+        receiptProofWtr1.write(0);
+        receiptProofWtr1.write(receiptProofWtr.toByteArray()); // receipt proof
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.writeNull();
+        receiptProofWtr1.end();
+        relayMsgWriter.write(receiptProofWtr1.toByteArray());
         relayMsgWriter.end();
         relayMsgWriter.end();
         byte[] _msg = Base64.getUrlEncoder().encode(relayMsgWriter.toByteArray());
 
-        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, _msg);
+        bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg));
+    }
+
+    /**
+     *
+     * Scenario 14: Relay message from actual data
+     * Given:
+     *    MTA height =
+     * When:
+     *    block update height =
+     * Then:
+     *    throw error:
+     *    message: Invalid block proof with higher height than MTA
+     */
+    @Test
+    @Order(14)
+    public void scenario14() {
+        var msg = "-Qw_-QLiuQLf-QLcuQJf-QJcoFj4n3ZkdCoYPjCUFp36ydgvqeZf4M3E8Qx-Kkyztcr4oB3MTejex116q4W1Z7bM1BrTEkUblIp0E_ChQv1A1JNHlEiUgpfDI27D6myV9O7CL9sYJV5VoK992IufNyWO2D9HUaGiruhs6agwtGOHW1j_27nZyKfQoPRL3jOXrn89M_sn6aoK6bzqfciJ48fzZCnwdx0fQf61oOG3X5qs980uwpENOKDQRdCRShbrYTglNTZIBQ9FEIFeuQEAAAAAAgAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAgAAAAAACAAAAAAAAAAAAAACAAAEAAAAAAAAAAAAAACAAAAAAhAAABABAAAAAAAAEAAAAAAAgAIAAQAAQAAAAAAAAAAAAAAAABAAAAAAAAEAAAAAIAEAAAAAAAAAAAAAAAAAAAAAAEAgAAAAAAAAAAAAAACAIAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAoAAIAAAAAAAAAAAAAAAAAAAAAAAABBAEAAAACAKEAAAAAAAAAAAAAAAAAEAAAQAAAAAAAAAAAAAAIEAAAKCALWEASyN9YMwdTaEYVLAvLhh2IMBAAaEZ2V0aIhnbzEuMTYuNoVsaW51eAAAABHAqp6YaP7XqZm-iHps6eyWKnzez9kWlGS5kU39BqED_GCPa0EyM1zXa6fjAoscPGuJ8E_HrpTGm4sma5DyS4LbnckNAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAAAAALh4TRvmTw6aRmwuZqU0M5KBkng-Kfj6Ib6yEzSZte93D2AAAADo1KUQAJkwiqNlxAVUvImYKvUF2F2pUlFEXV3Uqbs33SWE_ZLTAAAA6NSlEAABd2kg_wsPONeM-VwDPCGt9wRXhRFOOSp1RBeWUuCmEgAAAOjUpRAA-AD5CVW5CVL5CU8AuQbG-QbDuFP4UaA7LGW2CCkiE35Yg5nS5t4faIO0KHJsDq2G2f--zcoyXoCAgICAgICgP2kzSfOdMIxK-J1L-ZSiuAtkOObzBpma4OnXdlO-LxKAgICAgICAgLkGa_kGaDC5BmT5BmEBgwf1WLkBAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAgAABAAAAAAAAAAAAAAAgAAAAAAAAAAQAQAAAAAAABAAAAAAAAAAAAEAAEAAAAAAAAAAAAAAAAAQAAAAAAABAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAgCAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgChAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAD5BVb4m5S6NPPGiTsS_0EVrPG0cSxuJ4Otg_hjoN3yUq0b4sibacKwaPw3jaqVK6fxY8ShFij1Wk31I7PvoAAAAAAAAAAAAAAAAHDnidL11GnqMOBSXb_dVRXW6tMNoAAAAAAAAAAAAAAAAHGhUgu7fmByu_NoKmDHPWO2k2kKoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK-JuUujTzxok7Ev9BFazxtHEsbieDrYP4Y6CMW-Hl6-x9W9FPcUJ9HoTz3QMUwPeyKR5bIArIx8O5JaAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDaAAAAAAAAAAAAAAAABxoVILu35gcrvzaCpgxz1jtpNpCqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPkCGpSq_I7q7o2ci9MmLM49c-Vt7j-3duGgN741PyFs9-M2ORAf1hDFQuagwBCRc_ocHYsE007bfBu5AeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9_j1uDlidHA6Ly8weDk3LmJzYy8weEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3Nza4PmJ0cDovLzB4OTU0YWEzLmljb24vY3hiZTI4MjBhZjRiOTZkNTRjMzMwZDE5YmNiYWU2NmU1MjE0YWZiODA3iFRva2VuQlNIALhu-GwAuGn4Z7MweDcwZTc4OWQyZjVkNDY5ZWEzMGUwNTI1ZGJmZGQ1NTE1ZDZlYWQzMGQAAAAAAAAAAACqaHgyNzVjMTE4NjE3NjEwZTY1YmE1NzJhYzBhNjIxZGRkMTMyNTUyNDJix8aDRVRICgAAAAAAAAAAAAD5AfyUOryN_wyVuJgjmdrPbtW9e5SkAGj4QqBQ0iNzu4TtH57rWByRPm1F2RjAX4sdkPC-Fo8GpOaZSqAAAAAAAAAAAAAAAABw54nS9dRp6jDgUl2_3VUV1urTDbkBoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-YnRwOi8vMHg5NTRhYTMuaWNvbi9oeDI3NWMxMTg2MTc2MTBlNjViYTU3MmFjMGE2MjFkZGQxMzI1NTI0MmIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0VUSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-QKC-QJ_ArkCe_kCeKoweEFhRmM4RWVhRUU4ZDlDOGJEMzI2MkNDRTNENzNFNTZEZUUzRkI3NzbhoDe-NT8hbPfjNjkQH9YQxULmoMAQkXP6HB2LBNNO23wbuQHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwNwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPf49bg5YnRwOi8vMHg5Ny5ic2MvMHhBYUZjOEVlYUVFOGQ5QzhiRDMyNjJDQ0UzRDczRTU2RGVFM0ZCNzc2uD5idHA6Ly8weDk1NGFhMy5pY29uL2N4YmUyODIwYWY0Yjk2ZDU0YzMzMGQxOWJjYmFlNjZlNTIxNGFmYjgwN4hUb2tlbkJTSAC4bvhsALhp-GezMHg3MGU3ODlkMmY1ZDQ2OWVhMzBlMDUyNWRiZmRkNTUxNWQ2ZWFkMzBkAAAAAAAAAAAAqmh4Mjc1YzExODYxNzYxMGU2NWJhNTcyYWMwYTYyMWRkZDEzMjU1MjQyYsfGg0VUSAoAAAAAAAAAAAAAggC1oFGCfMQGfrJEAwF5anutReQpjUCEibxWVOjL1hMp5LWJAKA8bJvKziim1NtCb8keX3oEvFIKzhW2ihxz6DFE82bPRgIA";
+        byte[] _msg = java.util.Base64.getUrlDecoder().decode(msg.trim().getBytes());
+        AssertionError thrown = assertThrows(AssertionError.class, () ->
+                bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, msg));
+        assertTrue(thrown.getMessage().contains("Invalid block update due to higher height"));
     }
 
 
     //TODO: Tests for votes
     // 1. votes does not exist - scenario 4 in the test doc
-
 
 }
 

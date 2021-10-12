@@ -16,7 +16,7 @@ ARG KEYSTORE_PASS
 RUN echo ${KEYSTORE_PASS} > .secret
 
 COPY ./entrypoint ${BSC_HOME}
-COPY ./start.sh ${BSC_HOME}
+#COPY ./start.sh ${BSC_HOME}
 
 EXPOSE 8545
 EXPOSE 8656
