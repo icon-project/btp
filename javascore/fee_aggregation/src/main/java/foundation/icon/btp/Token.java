@@ -6,11 +6,13 @@ import score.ObjectWriter;
 
 import java.math.BigInteger;
 import java.util.Map;
+import score.Context;
 
 public class Token {
     private static final BigInteger BIGINT_NO_EXISTED_IN_TOKEN_ID = BigInteger.ZERO;
     private String name;
     private Address address;
+    private BigInteger decimals;
     /**
      *  Default value is BIGINT_NO_EXISTED_IN_TOKEN_ID, mean this token not exist tokenId
      */
@@ -21,12 +23,29 @@ public class Token {
         this.address = _address;
         this.tokenId = BIGINT_NO_EXISTED_IN_TOKEN_ID;
     }
-    public Token(String _name, Address _address, BigInteger _tokenId) {
+    public Token(String _name, Address _address, BigInteger _tokenId, BigInteger _decimals) {
         if (_tokenId != null) {
             this.tokenId = _tokenId;
         }
+        this.decimals = _decimals;
         this.name = _name;
         this.address = _address;
+    }
+
+    public BigInteger getDecimals() {
+        if (this.decimals != null) {
+            return this.decimals;
+        }
+        return (BigInteger) Context.call(this.address, "decimals");
+    }
+
+    public BigInteger getUnit() {
+        int tokenDecimals = this.getDecimals().intValue();
+        String unitString = "1";
+        for (int i = 0 ; i < tokenDecimals; i++) {
+            unitString = unitString + "0";
+        }
+        return new BigInteger(unitString);
     }
 
     public String name() {
@@ -50,6 +69,7 @@ public class Token {
         w.write(t.name);
         w.write(t.address);
         w.writeNullable(t.tokenId);
+        w.writeNullable(t.decimals);
         w.end();
     }
 
@@ -58,7 +78,9 @@ public class Token {
         Token t = new Token(
                 r.readString(),
                 r.readAddress(),
-                r.readNullable(BigInteger.class));
+                r.readNullable(BigInteger.class),
+                r.readNullable(BigInteger.class)
+                );
         r.end();
         return t;
     }

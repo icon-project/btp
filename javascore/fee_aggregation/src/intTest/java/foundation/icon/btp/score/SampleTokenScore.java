@@ -33,14 +33,15 @@ import java.util.Arrays;
 import static foundation.icon.btp.Env.LOG;
 
 public class SampleTokenScore extends Score {
-    public final static String NAME = "MySampleToken";
+    private String name;
+    private BigInteger decimals;
 
-    public static SampleTokenScore mustDeploy(TransactionHandler txHandler, Wallet wallet,
+    public static SampleTokenScore mustDeploy(TransactionHandler txHandler, Wallet wallet, String name,
                                               BigInteger decimals, BigInteger initialSupply)
             throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "SampleToken");
         RpcObject params = new RpcObject.Builder()
-                .put("_name", new RpcValue(NAME))
+                .put("_name", new RpcValue(name))
                 .put("_symbol", new RpcValue("MST"))
                 .put("_decimals", new RpcValue(decimals))
                 .put("_initialSupply", new RpcValue(initialSupply))
@@ -48,11 +49,21 @@ public class SampleTokenScore extends Score {
         Score score = txHandler.deploy(wallet, "sample-token-0.2.0-optimized.jar", params);
         LOG.info("scoreAddr = " + score.getAddress());
         LOG.infoExiting();
-        return new SampleTokenScore(score);
+        return new SampleTokenScore(score, name, decimals);
     }
 
-    public SampleTokenScore(Score other) {
+    public SampleTokenScore(Score other, String name, BigInteger decimals) {
         super(other);
+        this.name = name;
+        this.decimals = decimals;
+    }
+
+    public String name() {
+        return this.name;
+    }
+
+    public BigInteger unit() {
+        return BigInteger.TEN.pow(this.decimals.intValue());
     }
 
     public BigInteger balanceOf(Address owner) throws IOException {
