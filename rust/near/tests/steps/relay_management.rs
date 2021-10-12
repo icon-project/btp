@@ -125,7 +125,7 @@ pub static ADD_RELAY_WITH_NON_EXISTING_LINK_INVOKED_BY_BMC_OWNER: fn(Context) ->
 
 pub static LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
-        "add_realy",
+        "remove_realy",
         json!({
             "link": "BTPADDRESS",
             "relay": "relayaddress"
@@ -136,7 +136,7 @@ pub static LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context
 
 pub static NONEXISTING_LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
-        "add_realy",
+        "remove_realy",
         json!({
             "link": "NONEXISTING_LINK",
             "relay": "relayaddress"
