@@ -1,9 +1,7 @@
 const assert = require('chai').assert;
-const URLSafeBase64 = require('urlsafe-base64');
-const rlp = require('rlp');
 const truffleAssert = require('truffle-assertions');
 
-let testMpt = artifacts.require('testLibMPT');
+let testMpt = artifacts.require('TestLibMPT');
 
 contract('MPT library unit tests', async () => {
     let testLibMpt;
