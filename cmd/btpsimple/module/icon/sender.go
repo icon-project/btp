@@ -35,10 +35,11 @@ import (
 
 const (
 	txMaxDataSize                 = 524288 //512 * 1024 // 512kB
-	txOverheadScale               = 0.37    //base64 encoding overhead 0.36, rlp and other fields 0.01
+	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
+	DefaultStepLimit              = 13610920010
 )
 
 type sender struct {
@@ -84,6 +85,9 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 			Params: rmp,
 		},
 	}
+	if s.opt.StepLimit == 0 {
+		p.StepLimit = NewHexInt(DefaultStepLimit)
+	}
 	return p, nil
 }
 
@@ -108,7 +112,7 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 		size += buSize
 		if s.isOverLimit(size) {
 			segment := &module.Segment{
-				Height: msg.height,
+				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
 			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
@@ -161,10 +165,10 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 				}
 				//
 				segment := &module.Segment{
-					Height: msg.height,
+					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-					EventSequence: msg.eventSequence,
-					NumberOfEvent: msg.numberOfEvent,
+					EventSequence:       msg.eventSequence,
+					NumberOfEvent:       msg.numberOfEvent,
 				}
 				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 					return nil, err
@@ -198,10 +202,10 @@ func (s *sender) Segment(rm *module.RelayMessage, height int64) ([]*module.Segme
 	}
 	//
 	segment := &module.Segment{
-		Height: msg.height,
+		Height:              msg.height,
 		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		EventSequence: msg.eventSequence,
-		NumberOfEvent: msg.numberOfEvent,
+		EventSequence:       msg.eventSequence,
+		NumberOfEvent:       msg.numberOfEvent,
 	}
 	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 		return nil, err
