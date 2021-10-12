@@ -55,6 +55,27 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "mint", method_params).unwrap();
         context
     }
+
+    pub fn update_bsh_periphery(&self, context: Context) -> Context {
+        invoke_call!(self, context, "update_bsh_periphery", method_params).unwrap();
+        context
+    }
+
+    pub fn set_fee_ratio(&self, context: Context) -> {
+        invoke_call!(self, context, "set_fee_ratio", method_params).unwrap();
+        context
+    }
+
+    pub fn set_fixed_fee(&self, context: Context) -> {
+        invoke_call!(self, context, "set_fixed_fee", method_params).unwrap();
+        context
+    }
+
+    pub fn update_uri(&self, context: Context) -> Context {
+        invoke_call!(self, context, "update_uri", method_params).unwrap();
+        context
+    }
+
     pub fn get_coin_names(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "get_conin_names");
         context

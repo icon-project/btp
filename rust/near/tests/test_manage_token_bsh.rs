@@ -118,5 +118,68 @@ mod manage_verifers {
             .then(ONWERS_ARE_QURIED_IN_BSH)
             .and(REMOVE_ONWER_SHOULD_NOT_BE_PRESENT)
         }
+
+        #[runner::test(sandbox)]
+        async fn update_bsh_periphery_as_authorized_success(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(UPDATE_BSH_PERIPHERY_INVOKED_BY_BSH_OWNER)
+            .then(BSH_PERIPHERY_ADDRESS_SHOULD_BE_UPDATED)
+        }
+
+        #[runner::test(sandbox)]
+        async fn update_bsh_periphery_as_unauthorized_fail(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(UPDATE_BSH_PERIPHERY_INVOKED_BY_NON_BSH_OWNER)
+            .then(BSH_SHOULD_THROW_UNAUTHORIZED_ERROR)
+        }
+
+        #[runner::test(sandbox)]
+        async fn update_uri_as_authorized_success(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(UPDATE_URI_INVOKED_BY_BSH_OWNER)
+            .then(BSH_TOKEN_URI_IS_UPDATED)
+        }
+
+        #[runner::test(sandbox)]
+        async fn update_uri_as_unauthorized_fail(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(UPDATE_URI_INVOKED_BY_NON_BSH_OWNER)
+            .then(BSH_SHOULD_THROW_UNAUTHORIZED_ERROR)
+        }
+
+        #[runner::test(sandbox)]
+        async fn set_fee_ratio_as_authorized_success(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(SET_FEE_RATIO_INVOKED_BY_BSH_OWNER)
+            .then(FEE_NUMERATOR_IS_UPDATED)
+        }
+
+        #[runner::test(sandbox)]
+        async fn set_fee_ratio_as_unauthorized_fail(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(SET_FEE_RATIO_INVOKED_BY_NON_BSH_OWNER)
+            .then(BSH_SHOULD_THROW_UNAUTHORIZED_ERROR)        }
+
+        #[runner::test(sandbox)]
+        async fn set_fixed_fee_as_authorized_success(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(SET_FIXED_FEE_INVOKED_BY_BSH_OWNER)
+            .then(FIXED_FEE_IS_UPDATED)
+        }
+
+        #[runner::test(sandbox)]
+        async fn set_fixed_fee_as_unauthorized_fail(){
+            Kitten::given(NEW_CONTEXT)
+            .and(BSH_CONTRACT_IS_DEPLOYED)
+            .when(SET_FIXED_FEE_INVOKED_BY_NON_BSH_OWNER)
+            .then(BSH_SHOULD_THROW_UNAUTHORIZED_ERROR)
+        }
     }
 }

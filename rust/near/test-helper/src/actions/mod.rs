@@ -9,7 +9,7 @@ mod manage_services;
 mod manage_verifiers;
 mod manage_links;
 mod manage_message;
-mod manage_tokens;
+mod manage_token_bsh;
 mod setup;
 
 pub use setup::create_account;
