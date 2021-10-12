@@ -47,6 +47,8 @@ const (
 
 var (
 	tendermintLightClientContractAddr = common.HexToAddress("0x0000000000000000000000000000000000001003")
+	BlockRetryInterval                = time.Second * 3
+	BlockRetryLimit                   = 5
 )
 
 type Wallet interface {
@@ -61,6 +63,7 @@ type Client struct {
 	rpcClient             *rpc.Client
 	chainID               *big.Int
 	tendermintLightClient *systemcontracts.Tendermintlightclient
+	stop                  <-chan bool
 }
 
 func toBlockNumArg(number *big.Int) string {
@@ -207,7 +210,55 @@ func (c *Client) GetConsensusState(height *big.Int) (ConsensusStates, error) {
 }
 
 func (c *Client) MonitorBlock(p *BlockRequest, cb func(b *BlockNotification) error) error {
-	return c.Monitor(cb)
+	return c.Poll(p, cb)
+}
+
+func (c *Client) Poll(p *BlockRequest, cb func(b *BlockNotification) error) error {
+	go func() {
+		current := p.Height
+		var retry = BlockRetryLimit
+		for {
+			select {
+			case <-c.stop:
+				return
+			default:
+				// Exhausted all error retries
+				if retry == 0 {
+					c.log.Error("Polling failed, retries exceeded")
+					//l.sysErr <- ErrFatalPolling
+					return
+				}
+
+				latestHeader, err := c.ethClient.HeaderByNumber(context.Background(), current) // c.GetHeaderByHeight(current)
+				if err != nil {
+					c.log.Error("Unable to get latest block ", current, err)
+					retry--
+					<-time.After(BlockRetryInterval)
+					continue
+				}
+
+				if latestHeader.Number.Cmp(current) < 0 {
+					c.log.Debug("Block not ready, will retry", "target:", current, "latest:", latestHeader.Number)
+					<-time.After(BlockRetryInterval)
+					continue
+				}
+
+				v := &BlockNotification{
+					Height: current,
+					Hash:   latestHeader.Hash(),
+					Header: latestHeader,
+				}
+
+				if err := cb(v); err != nil {
+					return
+				}
+
+				current.Add(current, big.NewInt(1))
+				retry = BlockRetryLimit
+			}
+		}
+	}()
+	return nil
 }
 
 func (c *Client) Monitor(cb func(b *BlockNotification) error) error {
