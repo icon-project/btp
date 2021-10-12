@@ -39,8 +39,6 @@ import (
 const (
 	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
-	DefaultKeepAliveInterval                   = 10 * time.Second
-	DefaultPingWait                            = 3 * time.Second
 )
 
 type Wallet interface {
@@ -50,7 +48,7 @@ type Wallet interface {
 
 type Client struct {
 	*jsonrpc.Client
-	conns map[string]*websocket.Conn
+	conns map[string]*jsonrpc.RecConn
 	l     log.Logger
 	mtx   sync.Mutex
 }
@@ -227,9 +225,9 @@ func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
 	return result, nil
 }
 
-func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *websocket.Conn, v *BlockNotification) error, scb func(conn *websocket.Conn), errCb func(*websocket.Conn, error)) error {
+func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *jsonrpc.RecConn, v *BlockNotification) error, scb func(conn *jsonrpc.RecConn), errCb func(*jsonrpc.RecConn, error)) error {
 	resp := &BlockNotification{}
-	return c.Monitor("/block", p, resp, func(conn *websocket.Conn, v interface{}) {
+	return c.Monitor("/block", p, resp, func(conn *jsonrpc.RecConn, v interface{}) {
 		switch t := v.(type) {
 		case *BlockNotification:
 			if err := cb(conn, t); err != nil {
@@ -251,9 +249,9 @@ func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *websocket.Conn, v *
 	})
 }
 
-func (c *Client) MonitorEvent(p *EventRequest, cb func(conn *websocket.Conn, v *EventNotification) error, errCb func(*websocket.Conn, error)) error {
+func (c *Client) MonitorEvent(p *EventRequest, cb func(conn *jsonrpc.RecConn, v *EventNotification) error, errCb func(*jsonrpc.RecConn, error)) error {
 	resp := &EventNotification{}
-	return c.Monitor("/event", p, resp, func(conn *websocket.Conn, v interface{}) {
+	return c.Monitor("/event", p, resp, func(conn *jsonrpc.RecConn, v interface{}) {
 		switch t := v.(type) {
 		case *EventNotification:
 			if err := cb(conn, t); err != nil {
@@ -286,7 +284,7 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr interface{}, cb wsReadCa
 	return c.wsReadJSONLoop(conn, respPtr, cb)
 }
 
-func (c *Client) CloseMonitor(conn *websocket.Conn) {
+func (c *Client) CloseMonitor(conn *jsonrpc.RecConn) {
 	c.l.Debugf("CloseMonitor %s", conn.LocalAddr().String())
 	c.wsClose(conn)
 }
@@ -298,9 +296,9 @@ func (c *Client) CloseAllMonitor() {
 	}
 }
 
-type wsReadCallback func(*websocket.Conn, interface{})
+type wsReadCallback func(*jsonrpc.RecConn, interface{})
 
-func (c *Client) _addWsConn(conn *websocket.Conn) {
+func (c *Client) _addWsConn(conn *jsonrpc.RecConn) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -308,7 +306,7 @@ func (c *Client) _addWsConn(conn *websocket.Conn) {
 	c.conns[la] = conn
 }
 
-func (c *Client) _removeWsConn(conn *websocket.Conn) {
+func (c *Client) _removeWsConn(conn *jsonrpc.RecConn) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -319,36 +317,10 @@ func (c *Client) _removeWsConn(conn *websocket.Conn) {
 	}
 }
 
-type wsConnectError struct {
-	error
-	httpResp *http.Response
-}
-
-func (c *Client) keepAlive(conn *websocket.Conn) {
-	go func() {
-		ticker := time.NewTicker(DefaultKeepAliveInterval)
-		defer ticker.Stop()
-
-		for {
-			<-ticker.C
-			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(DefaultPingWait)); err != nil {
-				c.l.Warnf("fail to WriteControl err: %v", err)
-				return
-			}
-		}
-	}()
-}
-
-func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*websocket.Conn, error) {
+func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*jsonrpc.RecConn, error) {
 	wsEndpoint := strings.Replace(c.Endpoint, "http", "ws", 1)
-	conn, httpResp, err := websocket.DefaultDialer.Dial(wsEndpoint+reqUrl, reqHeader)
-	if err != nil {
-		wsErr := wsConnectError{error: err}
-		wsErr.httpResp = httpResp
-		return nil, wsErr
-	}
-
-	c.keepAlive(conn)
+	conn := &jsonrpc.RecConn{}
+	conn.Dial(wsEndpoint+reqUrl, reqHeader)
 	c._addWsConn(conn)
 	return conn, nil
 }
@@ -358,7 +330,7 @@ type wsRequestError struct {
 	wsResp *WSResponse
 }
 
-func (c *Client) wsRequest(conn *websocket.Conn, reqPtr interface{}) error {
+func (c *Client) wsRequest(conn *jsonrpc.RecConn, reqPtr interface{}) error {
 	if reqPtr == nil {
 		log.Panicf("reqPtr cannot be nil")
 	}
@@ -380,17 +352,16 @@ func (c *Client) wsRequest(conn *websocket.Conn, reqPtr interface{}) error {
 	return nil
 }
 
-func (c *Client) wsClose(conn *websocket.Conn) {
+func (c *Client) wsClose(conn *jsonrpc.RecConn) {
 	c._removeWsConn(conn)
 	if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
 		c.l.Debugf("fail to WriteMessage CloseNormalClosure err:%+v", err)
 	}
-	if err := conn.Close(); err != nil {
-		c.l.Debugf("fail to Close err:%+v", err)
-	}
+
+	conn.Close()
 }
 
-func (c *Client) wsRead(conn *websocket.Conn, respPtr interface{}) error {
+func (c *Client) wsRead(conn *jsonrpc.RecConn, respPtr interface{}) error {
 	mt, r, err := conn.NextReader()
 	if err != nil {
 		return err
@@ -401,7 +372,7 @@ func (c *Client) wsRead(conn *websocket.Conn, respPtr interface{}) error {
 	return json.NewDecoder(r).Decode(respPtr)
 }
 
-func (c *Client) wsReadJSONLoop(conn *websocket.Conn, respPtr interface{}, cb wsReadCallback) error {
+func (c *Client) wsReadJSONLoop(conn *jsonrpc.RecConn, respPtr interface{}, cb wsReadCallback) error {
 	elem := reflect.ValueOf(respPtr).Elem()
 	for {
 		v := reflect.New(elem.Type())
@@ -427,7 +398,7 @@ func NewClient(uri string, l log.Logger) *Client {
 	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
 	c := &Client{
 		Client: jsonrpc.NewJsonRpcClient(&http.Client{Transport: tr}, uri),
-		conns:  make(map[string]*websocket.Conn),
+		conns:  make(map[string]*jsonrpc.RecConn),
 		l:      l,
 	}
 	opts := IconOptions{}

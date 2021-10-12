@@ -109,7 +109,7 @@ func TestSenderSegment(t *testing.T) {
 	})
 
 	t.Run("should be segmented by over BlockProof size", func(t *testing.T) {
-		blocks := MaxBlockUpdatesPerSegment - 1
+		blocks := defaultMaxBlockUpdatesPerSegment - 1
 
 		rm := &chain.RelayMessage{}
 		for i := 1; i <= blocks; i++ {
@@ -129,7 +129,7 @@ func TestSenderSegment(t *testing.T) {
 	})
 
 	t.Run("should be segmented by over BlockUpdates", func(t *testing.T) {
-		blocks := MaxBlockUpdatesPerSegment + 1
+		blocks := defaultMaxBlockUpdatesPerSegment + 1
 		limit := txSizeLimit / (blocks + 1)
 
 		rm := &chain.RelayMessage{}
