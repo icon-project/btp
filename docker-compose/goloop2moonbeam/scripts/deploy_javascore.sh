@@ -1,5 +1,6 @@
 #!/bin/sh
 ICON_RECEIVER_FEE_ADDRESS=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
+ICON_BAND_PROTOCOL_ADDRESS=hxb6b5791be0b5ef67063b3c10b840fb81514db2fd
 
 deploy_javascore_bmc() {
     echo "deploying javascore bmc"
@@ -130,6 +131,7 @@ deploy_javascore_FeeAggregation() {
 
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/fee-aggregation-system-1.0-optimized.jar \
         --param _cps_address=$ICON_RECEIVER_FEE_ADDRESS \
+        --param _band_protocol_address=$ICON_BAND_PROTOCOL_ADDRESS \
         --content_type application/java | jq -r . > tx.icon.deploy_feeAggregation
 
     extract_scoreAddress tx.icon.deploy_feeAggregation feeAggregation.icon
