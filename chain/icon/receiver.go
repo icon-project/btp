@@ -133,7 +133,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 						bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) &&
 						bytes.Equal(el.Indexed[EventIndexSequence], r.evtLogRawFilter.seq) {
 						r.isFoundOffsetBySeq = true
-						r.l.Debugf("onCatchUp found offset sequence %d at %d event on block %d", r.evtLogRawFilter.seq, j, v.Height)
+						r.l.Debugf("onCatchUp found offset sequence %d at %d event on block %x", r.evtLogRawFilter.seq, j, v.Height)
 						if (j + 1) < len(p.Events) {
 							nextEp = j + 1
 							break EpLoop
