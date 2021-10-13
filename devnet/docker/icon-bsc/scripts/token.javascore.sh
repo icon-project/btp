@@ -16,9 +16,9 @@ deploy_javascore_bmc() {
 
 deploy_javascore_bmv() {
   echo "deploying javascore BMV"
-  #eth_blocknumber >/btpsimple/config/offset.bsc
+  eth_blocknumber >/btpsimple/config/offset.bsc
   #TODO: check how to efficiently pass block
-  echo 200 >/btpsimple/config/offset.bsc
+  #echo 200 >/btpsimple/config/offset.bsc
   cd $CONFIG_DIR
   goloop rpc sendtx deploy $CONTRACTS_DIR/javascore/bmv-optimized.jar \
     --content_type application/java \
