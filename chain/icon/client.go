@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -305,7 +304,7 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr, reconReqPtr interface{}
 		}
 
 		if firstCbCalled {
-			if err := c.wsRead(conn, ptr); err != nil {
+			if err := conn.ReadJSON(ptr); err != nil {
 				c.l.Debugf("Monitor c.conns[%s] ReadJSON err:%+v", conn.Id, err)
 				continue
 			}
@@ -399,17 +398,6 @@ func (c *Client) wsClose(conn *jsonrpc.RecConn) {
 	}
 
 	conn.Close()
-}
-
-func (c *Client) wsRead(conn *jsonrpc.RecConn, respPtr interface{}) error {
-	mt, r, err := conn.NextReader()
-	if err != nil {
-		return err
-	}
-	if mt == websocket.CloseMessage {
-		return io.EOF
-	}
-	return json.NewDecoder(r).Decode(respPtr)
 }
 
 func NewClient(uri string, l log.Logger) *Client {
