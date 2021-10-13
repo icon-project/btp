@@ -231,8 +231,8 @@ public class ServiceHandler {
                 Context.revert(ErrorCodes.BSH_TOKEN_NOT_REGISTERED, "Unregistered Token");
             }
             // send response message for `req_token_transfer`
-            byte[] res = createMessage(RESPONSE_HANDLE_SERVICE, code);
-            Context.call(bmcDb.get(), "sendMessage", from, _svc, serialNo.get(), msg);
+            byte[] res = createMessage(RESPONSE_HANDLE_SERVICE, code, "Transfer Success");
+            Context.call(bmcDb.get(), "sendMessage", from, svc, sn, res);
         } else if (actionType == RESPONSE_HANDLE_SERVICE) {
             if (!hasPending(sn) && !hasPendingFees(sn)) {
                 Context.revert(ErrorCodes.BSH_INVALID_SERIALNO, "Invalid Serial Number");
@@ -391,21 +391,28 @@ public class ServiceHandler {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
         if (type == REQUEST_TOKEN_TRANSFER) {
             writer.beginList(2);
-            writer.write(REQUEST_TOKEN_TRANSFER);//ActionType
+            writer.write(REQUEST_TOKEN_TRANSFER);//ServiceType
             //TODO: error chanhe the ta to write as bytes to make it compatible with bsh decode in solidity:: check if this works
             ByteArrayObjectWriter writerTa = Context.newByteArrayObjectWriter(RLPn);
             TransferAsset _ta = new TransferAsset((String) args[0], (String) args[1], (List<Asset>) args[2]);
             TransferAsset.writeObject(writerTa, _ta);
-            writer.write(writerTa.toByteArray());
+            writer.write(writerTa.toByteArray());//data
             writer.end();
         } else if (type == RESPONSE_HANDLE_SERVICE) {
             writer.beginList(2);
-            writer.write(RESPONSE_HANDLE_SERVICE);//ActionType
-            writer.write((int) args[0]);//Code
+            writer.write(RESPONSE_HANDLE_SERVICE);//ServiceType
+
+            ByteArrayObjectWriter writerResponse = Context.newByteArrayObjectWriter(RLPn);
+            writerResponse.beginList(2);
+            writerResponse.write((int) args[0]);//Code
+            writerResponse.write((String) args[1]);//Message
+            writerResponse.end();
+
+            writer.write(writerResponse.toByteArray()); //data
             writer.end();
         } else if (type == RESPONSE_UNKNOWN_) {
             writer.beginList(1);
-            writer.write(RESPONSE_UNKNOWN_);//ActionType
+            writer.write(RESPONSE_UNKNOWN_);//ServiceType
             writer.end();
         }
         return writer.toByteArray();

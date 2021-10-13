@@ -21,7 +21,16 @@ public class BMCMock {
 
     @External
     public void sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg) {
-
+        Address addr = bshServices.get(_svc);
+        if (addr == null) {
+            Context.revert("BSH doesnt exist");
+        }
+        if (!Context.getCaller().equals(addr)) {
+            Context.revert("unauthorized");
+        }
+        if (_sn.compareTo(BigInteger.ZERO) < 1) {
+            Context.revert("invalid sn");
+        }
     }
 
     @External

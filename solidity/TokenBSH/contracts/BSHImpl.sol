@@ -266,7 +266,7 @@ contract BSHImpl is IBSHImpl, Initializable {
                 _ta.encodeTransferAsset()
             )
             .encodeServiceMessage();
-
+        serialNo++;
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 
         /* requests[serialNo] = Types.TransferAssets(
@@ -282,7 +282,6 @@ contract BSHImpl is IBSHImpl, Initializable {
         }
 
         numOfPendingRequests++;
-        emit TransferStart(_from, _to, serialNo, _assets);
-        serialNo++;
+        emit TransferStart(_from, _to, serialNo, _assets);        
     }
 }
