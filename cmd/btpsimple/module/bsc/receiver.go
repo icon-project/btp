@@ -65,7 +65,8 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 		return nil, err
 	}
 
-	if !bytes.Equal(v.Header.Hash().Bytes(), crypto.Keccak256(bu.Header)) {
+	encodedHeader, _ := rlp.EncodeToBytes(v.Header)
+	if !bytes.Equal(v.Header.Hash().Bytes(), crypto.Keccak256(encodedHeader)) {
 		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
 

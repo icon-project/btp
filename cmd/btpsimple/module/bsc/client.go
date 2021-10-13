@@ -250,7 +250,7 @@ func (c *Client) Poll(p *BlockRequest, cb func(b *BlockNotification) error) erro
 				}
 
 				if err := cb(v); err != nil {
-					return
+					c.log.Errorf(err.Error())
 				}
 
 				current.Add(current, big.NewInt(1))
