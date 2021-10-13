@@ -4,9 +4,9 @@
 package jsonrpc
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -18,16 +18,13 @@ import (
 	"github.com/jpillora/backoff"
 )
 
-var (
-	// ErrNotConnected is returned when the application read/writes
-	// a message and the connection is closed
-	ErrNotConnected = errors.New("websocket: not connected")
-	// ErrClosedForever is returned when the connection was closed forever.
-	ErrClosedForever = errors.New("websocket: closed forever")
-)
+// ErrNotConnected is returned when the application read/writes
+// a message and the connection is closed
+var ErrNotConnected = errors.New("websocket: not connected")
 
 // The RecConn type represents a Reconnecting WebSocket connection.
 type RecConn struct {
+	Id string
 	// RecIntvlMin specifies the initial reconnecting interval,
 	// default to 2 seconds
 	RecIntvlMin time.Duration
@@ -53,15 +50,13 @@ type RecConn struct {
 	// NonVerbose suppress connecting/reconnecting messages.
 	NonVerbose bool
 
-	isConnected   bool
-	closedForever bool
-	mu            sync.RWMutex
-	url           string
-	reqHeader     http.Header
-	httpResp      *http.Response
-	dialErr       error
-	dialer        *websocket.Dialer
-	ctx           context.Context
+	isConnected bool
+	mu          sync.RWMutex
+	url         string
+	reqHeader   http.Header
+	httpResp    *http.Response
+	dialErr     error
+	dialer      *websocket.Dialer
 
 	*websocket.Conn
 }
@@ -73,19 +68,19 @@ func (rc *RecConn) CloseAndReconnect() {
 }
 
 // setIsConnected sets state for isConnected
+func (rc *RecConn) setId() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+
+	rc.Id = fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond))
+}
+
+// setIsConnected sets state for isConnected
 func (rc *RecConn) setIsConnected(state bool) {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 
 	rc.isConnected = state
-}
-
-// setClosedForever sets state for closedForever
-func (rc *RecConn) setClosedForever(state bool) {
-	rc.mu.Lock()
-	defer rc.mu.Unlock()
-
-	rc.closedForever = state
 }
 
 func (rc *RecConn) getConn() *websocket.Conn {
@@ -107,30 +102,15 @@ func (rc *RecConn) Close() {
 	rc.setIsConnected(false)
 }
 
-// CloseForever closes the underlying network connection without
-// sending or waiting for a close frame and will prevent any further reconnects.
-func (rc *RecConn) CloseForever() {
-	rc.setClosedForever(true)
-	rc.Close()
-}
-
 // ReadMessage is a helper method for getting a reader
 // using NextReader and reading from that reader to a buffer.
 //
 // If the connection is closed ErrNotConnected is returned
 func (rc *RecConn) ReadMessage() (messageType int, message []byte, err error) {
-	if rc.IsClosedForever() {
-		err = ErrClosedForever
-		return
-	}
 	err = ErrNotConnected
 	if rc.IsConnected() {
 		messageType, message, err = rc.Conn.ReadMessage()
 		if err != nil {
-			if rc.IsClosedForever() {
-				err = ErrClosedForever
-				return
-			}
 			rc.CloseAndReconnect()
 		}
 	}
@@ -143,18 +123,12 @@ func (rc *RecConn) ReadMessage() (messageType int, message []byte, err error) {
 //
 // If the connection is closed ErrNotConnected is returned
 func (rc *RecConn) WriteMessage(messageType int, data []byte) error {
-	if rc.IsClosedForever() {
-		return ErrClosedForever
-	}
 	err := ErrNotConnected
 	if rc.IsConnected() {
 		rc.mu.Lock()
 		err = rc.Conn.WriteMessage(messageType, data)
 		rc.mu.Unlock()
 		if err != nil {
-			if rc.IsClosedForever() {
-				return ErrClosedForever
-			}
 			rc.CloseAndReconnect()
 		}
 	}
@@ -169,18 +143,12 @@ func (rc *RecConn) WriteMessage(messageType int, data []byte) error {
 //
 // If the connection is closed ErrNotConnected is returned
 func (rc *RecConn) WriteJSON(v interface{}) error {
-	if rc.IsClosedForever() {
-		return ErrClosedForever
-	}
 	err := ErrNotConnected
 	if rc.IsConnected() {
 		rc.mu.Lock()
 		err = rc.Conn.WriteJSON(v)
 		rc.mu.Unlock()
 		if err != nil {
-			if rc.IsClosedForever() {
-				return ErrClosedForever
-			}
 			rc.CloseAndReconnect()
 		}
 	}
@@ -196,16 +164,10 @@ func (rc *RecConn) WriteJSON(v interface{}) error {
 //
 // If the connection is closed ErrNotConnected is returned
 func (rc *RecConn) ReadJSON(v interface{}) error {
-	if rc.IsClosedForever() {
-		return ErrClosedForever
-	}
 	err := ErrNotConnected
 	if rc.IsConnected() {
 		err = rc.Conn.ReadJSON(v)
 		if err != nil {
-			if rc.IsClosedForever() {
-				return ErrClosedForever
-			}
 			rc.CloseAndReconnect()
 		}
 	}
@@ -327,17 +289,12 @@ func (rc *RecConn) SetTLSClientConfig(tlsClientConfig *tls.Config) {
 	rc.TLSClientConfig = tlsClientConfig
 }
 
-// Dial creates a new client connection by calling DialContext with a background context.
-func (rc *RecConn) Dial(urlStr string, reqHeader http.Header) {
-	rc.DialContext(context.Background(), urlStr, reqHeader)
-}
-
-// DialContext creates a new client connection.
+// Dial creates a new client connection.
 // The URL url specifies the host and request URI. Use requestHeader to specify
 // the origin (Origin), subprotocols (Sec-WebSocket-Protocol) and cookies
 // (Cookie). Use GetHTTPResponse() method for the response.Header to get
 // the selected subprotocol (Sec-WebSocket-Protocol) and cookies (Set-Cookie).
-func (rc *RecConn) DialContext(ctx context.Context, urlStr string, reqHeader http.Header) {
+func (rc *RecConn) Dial(urlStr string, reqHeader http.Header) {
 	urlStr, err := rc.parseURL(urlStr)
 
 	if err != nil {
@@ -345,7 +302,7 @@ func (rc *RecConn) DialContext(ctx context.Context, urlStr string, reqHeader htt
 	}
 
 	// Config
-	rc.ctx = ctx
+	rc.setId()
 	rc.setURL(urlStr)
 	rc.setReqHeader(reqHeader)
 	rc.setDefaultRecIntvlMin()
@@ -437,9 +394,6 @@ func (rc *RecConn) keepAlive() {
 
 			<-ticker.C
 			if time.Since(keepAliveResponse.getLastResponse()) > rc.getKeepAliveTimeout() {
-				if rc.IsClosedForever() {
-					log.Println(ErrClosedForever)
-				}
 				rc.CloseAndReconnect()
 				return
 			}
@@ -453,7 +407,7 @@ func (rc *RecConn) connect() {
 
 	for {
 		nextItvl := b.Duration()
-		wsConn, httpResp, err := rc.dialer.DialContext(rc.ctx, rc.url, rc.reqHeader)
+		wsConn, httpResp, err := rc.dialer.Dial(rc.url, rc.reqHeader)
 
 		rc.mu.Lock()
 		rc.Conn = wsConn
@@ -480,15 +434,6 @@ func (rc *RecConn) connect() {
 				rc.keepAlive()
 			}
 
-			return
-		}
-
-		if rc.ctx.Err() != nil {
-			if !rc.getNonVerbose() {
-				log.Println(err)
-				log.Println("Dial: context canceled.")
-			}
-			rc.setClosedForever(true)
 			return
 		}
 
@@ -526,12 +471,4 @@ func (rc *RecConn) IsConnected() bool {
 	defer rc.mu.RUnlock()
 
 	return rc.isConnected
-}
-
-// IsClosedForever returns if the connection was closed forever.
-func (rc *RecConn) IsClosedForever() bool {
-	rc.mu.RLock()
-	defer rc.mu.RUnlock()
-
-	return rc.closedForever
 }

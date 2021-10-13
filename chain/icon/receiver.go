@@ -133,7 +133,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 						bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) &&
 						bytes.Equal(el.Indexed[EventIndexSequence], r.evtLogRawFilter.seq) {
 						r.isFoundOffsetBySeq = true
-						r.l.Debugln("onCatchUp found offset sequence", j, v)
+						r.l.Debugf("onCatchUp found offset sequence %d at %d event on block %d", r.evtLogRawFilter.seq, j, v.Height)
 						if (j + 1) < len(p.Events) {
 							nextEp = j + 1
 							break EpLoop
@@ -254,13 +254,13 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 			return nil
 		},
 		func(conn *jsonrpc.RecConn) {
-			r.l.Debugf("ReceiveLoop connected %s", conn.LocalAddr().String())
+			r.l.Debugf("ReceiveLoop connected %s", conn.Id)
 			if scb != nil {
 				scb()
 			}
 		},
 		func(conn *jsonrpc.RecConn, err error) {
-			r.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
+			r.l.Debugf("onError %s err:%+v", conn.Id, err)
 			conn.CloseAndReconnect()
 		})
 }
