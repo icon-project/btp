@@ -515,13 +515,13 @@ func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func())
 			}
 		},
 		func(conn *jsonrpc.RecConn) {
-			s.l.Debugf("MonitorLoop connected %s", conn.LocalAddr().String())
+			s.l.Debugf("MonitorLoop connected %s", conn.Id)
 			if scb != nil {
 				scb()
 			}
 		},
 		func(conn *jsonrpc.RecConn, err error) {
-			s.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
+			s.l.Debugf("onError %s err:%+v", conn.Id, err)
 			conn.CloseAndReconnect()
 		})
 }

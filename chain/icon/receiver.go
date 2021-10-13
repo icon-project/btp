@@ -254,13 +254,13 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 			return nil
 		},
 		func(conn *jsonrpc.RecConn) {
-			r.l.Debugf("ReceiveLoop connected %s", conn.LocalAddr().String())
+			r.l.Debugf("ReceiveLoop connected %s", conn.Id)
 			if scb != nil {
 				scb()
 			}
 		},
 		func(conn *jsonrpc.RecConn, err error) {
-			r.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
+			r.l.Debugf("onError %s err:%+v", conn.Id, err)
 			conn.CloseAndReconnect()
 		})
 }

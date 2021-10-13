@@ -228,14 +228,18 @@ func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
 
 func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *jsonrpc.RecConn, v *BlockNotification) error, scb func(conn *jsonrpc.RecConn), errCb func(*jsonrpc.RecConn, error)) error {
 	resp := &BlockNotification{}
-	return c.Monitor("/block", p, resp, func(conn *jsonrpc.RecConn, v interface{}) {
+	reconP := p
+
+	return c.Monitor("/block", p, resp, reconP, func(conn *jsonrpc.RecConn, v interface{}) {
 		switch t := v.(type) {
 		case *BlockNotification:
+			h, _ := t.Height.Int()
+			reconP.Height = NewHexInt(int64(h + 1))
 			if err := cb(conn, t); err != nil {
 				c.l.Debugf("MonitorBlock callback return err:%+v", err)
 			}
 		case WSEvent:
-			c.l.Debugf("MonitorBlock WSEvent %s %+v", conn.LocalAddr().String(), t)
+			c.l.Debugf("MonitorBlock WSEvent %s %+v", conn.Id, t)
 			switch t {
 			case WSEventInit:
 				if scb != nil {
@@ -252,7 +256,7 @@ func (c *Client) MonitorBlock(p *BlockRequest, cb func(conn *jsonrpc.RecConn, v 
 
 func (c *Client) MonitorEvent(p *EventRequest, cb func(conn *jsonrpc.RecConn, v *EventNotification) error, errCb func(*jsonrpc.RecConn, error)) error {
 	resp := &EventNotification{}
-	return c.Monitor("/event", p, resp, func(conn *jsonrpc.RecConn, v interface{}) {
+	return c.Monitor("/event", p, resp, nil, func(conn *jsonrpc.RecConn, v interface{}) {
 		switch t := v.(type) {
 		case *EventNotification:
 			if err := cb(conn, t); err != nil {
@@ -266,7 +270,7 @@ func (c *Client) MonitorEvent(p *EventRequest, cb func(conn *jsonrpc.RecConn, v 
 	})
 }
 
-func (c *Client) Monitor(reqUrl string, reqPtr, respPtr interface{}, cb wsReadCallback) error {
+func (c *Client) Monitor(reqUrl string, reqPtr, respPtr, reconReqPtr interface{}, cb wsReadCallback) error {
 	if cb == nil {
 		return fmt.Errorf("callback function cannot be nil")
 	}
@@ -275,24 +279,57 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr interface{}, cb wsReadCa
 		return chain.ErrConnectFail
 	}
 	defer func() {
-		c.l.Debugf("Monitor finish %s", conn.LocalAddr().String())
+		c.l.Debugf("Monitor finish %s", conn.Id)
 		c.wsClose(conn)
 	}()
 	if err = c.wsRequest(conn, reqPtr); err != nil {
 		return err
 	}
+	firstCbCalled := false
 	cb(conn, WSEventInit)
-	return c.wsReadJSONLoop(conn, respPtr, cb)
+	firstCbCalled = true
+	elem := reflect.ValueOf(respPtr).Elem()
+	for {
+		v := reflect.New(elem.Type())
+		ptr := v.Interface()
+		if _, ok := c.conns[conn.Id]; !ok {
+			c.l.Debugf("Monitor c.conns[%s] is nil", conn.Id)
+			return nil
+		}
+
+		if !conn.IsConnected() {
+			c.l.Debugf("Monitor c.conns[%s] not connected", conn.Id)
+			firstCbCalled = false
+			time.Sleep(conn.RecIntvlMin)
+			continue
+		}
+
+		if firstCbCalled {
+			if err := c.wsRead(conn, ptr); err != nil {
+				c.l.Debugf("Monitor c.conns[%s] ReadJSON err:%+v", conn.Id, err)
+				continue
+			}
+			cb(conn, ptr)
+		} else {
+			c.l.Debugf("Monitor c.conns[%s] reconnecting", conn.Id)
+			if err = c.wsRequest(conn, reconReqPtr); err != nil {
+				c.l.Debugf("Monitor c.conns[%s] reconnect err:%+v", conn.Id, err)
+				return err
+			}
+			cb(conn, WSEventInit)
+			firstCbCalled = true
+		}
+	}
 }
 
 func (c *Client) CloseMonitor(conn *jsonrpc.RecConn) {
-	c.l.Debugf("CloseMonitor %s", conn.LocalAddr().String())
+	c.l.Debugf("CloseMonitor %s", conn.Id)
 	c.wsClose(conn)
 }
 
 func (c *Client) CloseAllMonitor() {
 	for _, conn := range c.conns {
-		c.l.Debugf("CloseAllMonitor %s", conn.LocalAddr().String())
+		c.l.Debugf("CloseAllMonitor %s", conn.Id)
 		c.wsClose(conn)
 	}
 }
@@ -303,7 +340,7 @@ func (c *Client) _addWsConn(conn *jsonrpc.RecConn) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	la := conn.LocalAddr().String()
+	la := conn.Id
 	c.conns[la] = conn
 }
 
@@ -311,7 +348,7 @@ func (c *Client) _removeWsConn(conn *jsonrpc.RecConn) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	la := conn.LocalAddr().String()
+	la := conn.Id
 	_, ok := c.conns[la]
 	if ok {
 		delete(c.conns, la)
@@ -373,26 +410,6 @@ func (c *Client) wsRead(conn *jsonrpc.RecConn, respPtr interface{}) error {
 		return io.EOF
 	}
 	return json.NewDecoder(r).Decode(respPtr)
-}
-
-func (c *Client) wsReadJSONLoop(conn *jsonrpc.RecConn, respPtr interface{}, cb wsReadCallback) error {
-	elem := reflect.ValueOf(respPtr).Elem()
-	for {
-		v := reflect.New(elem.Type())
-		ptr := v.Interface()
-		if _, ok := c.conns[conn.LocalAddr().String()]; !ok {
-			c.l.Debugf("wsReadJSONLoop c.conns[%s] is nil", conn.LocalAddr().String())
-			return nil
-		}
-		if err := c.wsRead(conn, ptr); err != nil {
-			c.l.Debugf("wsReadJSONLoop c.conns[%s] ReadJSON err:%+v", conn.LocalAddr().String(), err)
-			if cErr, ok := err.(*websocket.CloseError); !ok || cErr.Code != websocket.CloseNormalClosure {
-				cb(conn, err)
-			}
-			return err
-		}
-		cb(conn, ptr)
-	}
 }
 
 func NewClient(uri string, l log.Logger) *Client {
