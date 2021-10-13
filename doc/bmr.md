@@ -162,6 +162,14 @@ make run-test-scenario
       ]
       ```
 
+* Build btpsimple executable:
+
+```bash
+make
+# or
+make **btpsimple**
+```
+
 * To create a configuration file
   ```bash
     # Make sure btpsimple executable exist
