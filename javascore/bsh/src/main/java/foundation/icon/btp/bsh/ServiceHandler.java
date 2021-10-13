@@ -182,7 +182,7 @@ public class ServiceHandler {
         BigInteger sn = generateSerialNumber();
         List<Asset> assets = new ArrayList<Asset>();
         assets.add(new Asset(tokenName, value, fee));
-        byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, sender.toString(), to, assets);
+        byte[] msg = createMessage(REQUEST_TOKEN_TRANSFER, sender.toString(), _to.getContract(), assets);
         putPending(sn, msg);
         Context.println("################# BMC.SendMessage initiated");
         Context.call(bmcDb.get(), "sendMessage", _to.getNet(), _svc, serialNo.get(), msg);

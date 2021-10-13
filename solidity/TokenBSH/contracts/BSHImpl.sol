@@ -126,6 +126,10 @@ contract BSHImpl is IBSHImpl, Initializable {
                 _status = RC_OK;
                 return;
             } catch Error(string memory _err) {
+                /**
+                 * @dev Uncomment revert to debug errors
+                 */
+                //revert(_err);
                 _statusMsg = _err;
                 _status = RC_ERR;
             }
@@ -160,15 +164,15 @@ contract BSHImpl is IBSHImpl, Initializable {
         external
     {
         require(msg.sender == address(this), "Unauthorized");
-        string memory _toNetwork;
-        string memory _toAddress;
-        //string memory _toAddress = transferAssets.to;
+        //string memory _toNetwork;
+        //string memory _toAddress;
+        string memory _toAddress = transferAssets.to;
         //TODO: check the to address format is it btp address or just account?
-        (_toNetwork, _toAddress) = transferAssets.to.splitBTPAddress();
+        //(_toNetwork, _toAddress) = transferAssets.to.splitBTPAddress();
+
         try this.checkParseAddress(_toAddress) {} catch {
             revert("Invalid Address");
         }
-
         Types.Asset[] memory _asset = transferAssets.asset;
         for (uint256 i = 0; i < _asset.length; i++) {
             // Check if the _toAddress is invalid

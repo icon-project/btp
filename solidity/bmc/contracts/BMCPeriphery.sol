@@ -110,34 +110,33 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         string calldata _msg
     ) internal returns (bytes[] memory) {
         (string memory _net, ) = _prev.splitBTPAddress();
-        address _bmvAddr =
-            IBMCManagement(bmcManagement).getBmvServiceByNet(_net);
+        address _bmvAddr = IBMCManagement(bmcManagement).getBmvServiceByNet(
+            _net
+        );
 
         require(_bmvAddr != address(0), "BMCRevertNotExistsBMV");
         (uint256 _prevHeight, , ) = IBMV(_bmvAddr).getStatus();
 
         // decode and verify relay message
-        bytes[] memory serializedMsgs =
-            IBMV(_bmvAddr).handleRelayMessage(
-                bmcBtpAddress,
-                _prev,
-                IBMCManagement(bmcManagement).getLinkRxSeq(_prev),
-                _msg
-            );
+        bytes[] memory serializedMsgs = IBMV(_bmvAddr).handleRelayMessage(
+            bmcBtpAddress,
+            _prev,
+            IBMCManagement(bmcManagement).getLinkRxSeq(_prev),
+            _msg
+        );
 
         // rotate and check valid relay
         (uint256 _height, uint256 _lastHeight, ) = IBMV(_bmvAddr).getStatus();
-        address relay =
-            IBMCManagement(bmcManagement).rotateRelay(
-                _prev,
-                block.number,
-                _lastHeight,
-                serializedMsgs.length > 0
-            );
+        address relay = IBMCManagement(bmcManagement).rotateRelay(
+            _prev,
+            block.number,
+            _lastHeight,
+            serializedMsgs.length > 0
+        );
 
         if (relay == address(0)) {
-            address[] memory relays =
-                IBMCManagement(bmcManagement).getLinkRelays(_prev);
+            address[] memory relays = IBMCManagement(bmcManagement)
+                .getLinkRelays(_prev);
             bool check;
             for (uint256 i = 0; i < relays.length; i++)
                 if (msg.sender == relays[i]) {
@@ -211,8 +210,9 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 }
             } else if (_sm.serviceType.compareTo("Link")) {
                 string memory _to = _sm.payload.decodePropagateMessage();
-                Types.Link memory link =
-                    IBMCManagement(bmcManagement).getLink(_prev);
+                Types.Link memory link = IBMCManagement(bmcManagement).getLink(
+                    _prev
+                );
                 bool check;
                 if (link.isConnected) {
                     for (uint256 i = 0; i < link.reachable.length; i++)
@@ -231,8 +231,9 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 }
             } else if (_sm.serviceType.compareTo("Unlink")) {
                 string memory _to = _sm.payload.decodePropagateMessage();
-                Types.Link memory link =
-                    IBMCManagement(bmcManagement).getLink(_prev);
+                Types.Link memory link = IBMCManagement(bmcManagement).getLink(
+                    _prev
+                );
                 if (link.isConnected) {
                     for (uint256 i = 0; i < link.reachable.length; i++) {
                         if (_to.compareTo(link.reachable[i]))
@@ -270,6 +271,10 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                         _msg.message
                     )
                 {} catch Error(string memory _error) {
+                    /**
+                     * @dev Uncomment revert to debug errors
+                     */
+                    //revert(_error);
                     _sendError(_prev, _msg, BSH_ERR, _error);
                 }
             } else {
@@ -342,18 +347,15 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         string memory _errMsg
     ) internal {
         if (_message.sn > 0) {
-            bytes memory _serializedMsg =
-                Types
-                    .BMCMessage(
+            bytes memory _serializedMsg = Types
+                .BMCMessage(
                     bmcBtpAddress,
-                    _message
-                        .src,
-                    _message
-                        .svc,
+                    _message.src,
+                    _message.svc,
                     _message.sn * -1,
                     Types.Response(_errCode, _errMsg).encodeResponse()
                 )
-                    .encodeBMCMessage();
+                .encodeBMCMessage();
             _sendMessage(_prev, _serializedMsg);
         }
     }
@@ -387,12 +389,12 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         ) {
             revert("BMCRevertNotExistsBMV");
         }
-        (string memory _nextLink, string memory _dst) =
-            IBMCManagement(bmcManagement).resolveRoute(_to);
-        bytes memory _rlp =
-            Types
-                .BMCMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
-                .encodeBMCMessage();
+        (string memory _nextLink, string memory _dst) = IBMCManagement(
+            bmcManagement
+        ).resolveRoute(_to);
+        bytes memory _rlp = Types
+            .BMCMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
+            .encodeBMCMessage();
         _sendMessage(_nextLink, _rlp);
     }
 
@@ -411,20 +413,18 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     {
         Types.Link memory link = IBMCManagement(bmcManagement).getLink(_link);
         require(link.isConnected == true, "BMCRevertNotExistsLink");
-        Types.RelayStats[] memory _relays =
-            IBMCManagement(bmcManagement).getRelayStatusByLink(_link);
+        Types.RelayStats[] memory _relays = IBMCManagement(bmcManagement)
+            .getRelayStatusByLink(_link);
         (string memory _net, ) = _link.splitBTPAddress();
         uint256 _height;
         uint256 _offset;
         uint256 _lastHeight;
         (_height, _offset, _lastHeight) = IBMV(
             IBMCManagement(bmcManagement).getBmvServiceByNet(_net)
-        )
-            .getStatus();
-        uint256 _rotateTerm =
-            link.maxAggregation.getRotateTerm(
-                link.blockIntervalSrc.getScale(link.blockIntervalDst)
-            );
+        ).getStatus();
+        uint256 _rotateTerm = link.maxAggregation.getRotateTerm(
+            link.blockIntervalSrc.getScale(link.blockIntervalDst)
+        );
         return
             Types.LinkStats(
                 link.rxSeq,

@@ -51,14 +51,9 @@ public class RelayMessage {
 
         reader.beginList();
         var receiptProofs = new ArrayList<ReceiptProof>();
-        try {
-            reader.beginList();
-            while (reader.hasNext())
-                receiptProofs.add(ReceiptProof.fromBytes(reader.readByteArray()));
-            reader.end();
-        } catch (Exception ex) {
-            Context.println("RECEIPT PROOF PROBLEM");
-        }
+        while (reader.hasNext())
+            receiptProofs.add(ReceiptProof.fromBytes(reader.readByteArray()));
+        reader.end();
 
         return new RelayMessage(
                 blockProof,

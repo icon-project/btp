@@ -5,7 +5,7 @@ const BSHImpl = artifacts.require("BSHImpl");
 const BMC = artifacts.require("BMCMock");
 const ERC20TKN = artifacts.require("ERC20TKN");
 const truffleAssert = require('truffle-assertions');
-
+ 
 contract('BSC BSH Proxy Contract Management tests', (accounts) => {
     var btp_network = '0x97.bsc';
     var _svc = 'TokenBSH';
@@ -257,13 +257,13 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var balanceafter = await bshProxy.getBalanceOf(accounts[0], tokenName)
         let bshBal = await token.balanceOf(bshProxy.address);
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
-        /*console.log("Balance of" + bshProxy.address + " before the transfer:" + bshBalBefore);
-        console.log(""+amountAndFee.value);
-        console.log(""+amountAndFee.fee);
-        console.log("Balance of" + bshProxy.address + " after the transfer:" + bshBal);
-        console.log( web3.utils.fromWei(balanceafter._lockedBalance,"ether")) 
-        console.log(balanceafter._lockedBalance.toString()) 
-        console.log(balanceBefore._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString())  */
+        // console.log("Balance of" + bshProxy.address + " before the transfer:" + bshBalBefore);
+        // console.log(""+amountAndFee.value);
+        // console.log(""+amountAndFee.fee);
+        // console.log("Balance of" + bshProxy.address + " after the transfer:" + bshBal);
+        // console.log( web3.utils.fromWei(balanceafter._lockedBalance,"ether")) 
+        // console.log(balanceafter._lockedBalance.toString()) 
+        // console.log(balanceBefore._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString()) 
         assert(
             balanceafter._lockedBalance.toString() ==
             balanceBefore._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString(),
@@ -339,7 +339,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
 
     it("Scenario 1: Receiving address is an invalid address - fail", async () => {
         var _from = '0x12345678';
-        var _to = '0x1234567890123456789';
+        var _to = '0x1234567812345678';
         var mockOutputToAssert = await bmc.buildBTPRespMessage(bmcBtpAdd, _bmcICON, _svc, 0, RC_ERR, "Invalid Address")
         var output = await bmc.handleTransferReqStrAddr(
             _from, _to, _net, _svc, tokenName, transferAmount
@@ -384,27 +384,22 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         //set initial bsh balance
         transferAmount = "10000000000000000000"
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
-        console.log("fees" + amountAndFee.fee);
         var balanceBefore = await token.balanceOf(accounts[1]);
         var amount = transferAmount - amountAndFee.fee;
-
         await token.transfer(bshProxy.address, transferAmount);
         var bshBalance = await token.balanceOf(bshProxy.address);
-        //console.log("bshBalance" + web3.utils.hexToNumber(bshBalance))
 
         await bmc.handleTransferReq(
             _from, accounts[1], _net, _svc, tokenName, "" + amount
         );
 
         var balanceAfter = await token.balanceOf(accounts[1])
-        //console.log("Balance Before" + web3.utils.hexToNumber(balanceBefore));
-        //console.log("Balance After" + web3.utils.hexToNumber(balanceAfter));
-        //console.log("amount" + amount);
-        console.log("Balance After in eth" + await web3.utils.fromWei(balanceAfter, "ether"));
-        //console.log(amountAndFee);
+        // console.log("Balance Before" + balanceBefore.toString());
+        // console.log("Balance After" + balanceAfter.toString());
+        // console.log("Balance After in eth" + await web3.utils.fromWei(balanceAfter, "ether"));
         assert(
-            web3.utils.hexToNumber(balanceAfter) ==
-            web3.utils.hexToNumber(balanceBefore) + amount,
+            balanceAfter.toString() ==
+            balanceBefore.add(web3.utils.toBN(amount)).toString(),
             "Locked balance after is not greater than sent amount"
         );
     });

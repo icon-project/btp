@@ -1,6 +1,7 @@
 remove:
 	docker-compose down -v --remove-orphans
 	rm -rf work/*
+	rm -rf ../../../build/*
 	docker rmi -f icon-bsc_btp-icon
 	docker rm -f javascore-dist
 	docker rmi -f btpsimple
@@ -19,7 +20,7 @@ run:
 
 solidity:
 	make -C ../../../ dist-sol btpsimple-image
-	docker-compose up --remove-orphans -d binancesmartchain btp-icon
+	docker-compose up --remove-orphans -d binancesmartchain
 
 alice_transfer_eth:
 	docker-compose exec btp-icon sh /btpsimple/bin/transfer_eth.sh

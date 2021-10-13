@@ -52,7 +52,7 @@ get_bob_ICX_balance() {
 }
 
 get_Bob_ICX_Balance_with_wait() {
-  printf " Waiting for 30s to check Bob's Balance after BTP transfer before timeout \n"
+  printf "Checking Bob's Balance after BTP transfer \n"
   get_bob_ICX_balance
   BOB_INITIAL_BAL=$BOB_BALANCE
   COUNTER=30
