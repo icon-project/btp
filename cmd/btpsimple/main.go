@@ -67,7 +67,7 @@ func (c *Config) Wallet() (wallet.Wallet, error) {
 
 func (c *Config) resolvePassword() ([]byte, error) {
 	if c.KeySecret != "" {
-		return ioutil.ReadFile(c.KeySecret)
+		return ioutil.ReadFile(cfg.ResolveAbsolute(c.KeySecret))
 	} else {
 		if c.KeyStorePass == "" {
 			return []byte(DefaultKeyStorePass), nil
