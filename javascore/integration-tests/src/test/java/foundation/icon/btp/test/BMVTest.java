@@ -838,8 +838,7 @@ public class BMVTest extends TestBase {
         byte[] hash = {-126, -31, 55, 52, -18, 55, -22, 74, 111, -70, 4, -13, -3, -91, 31, -92, -3, -1, -5, -11, -12, -63, -39, 55, 107, -111, -100, 21, 127, 71, 30, 50};
 
         DataWriter w = foundation.icon.test.common.Codec.rlp.newWriter();
-        w.writeListHeader(16);
-        w.write(network);
+        w.writeListHeader(15);
         w.write(parentHash);
         w.write(uncleHash);
         w.write(coinBase);
