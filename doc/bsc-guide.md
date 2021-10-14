@@ -63,7 +63,7 @@ Note:
 
 - If running `make` after the above command still encounters several "missing go.sum entry", running `go mod tidy` will fix the errors, then proceed with `make`.
 
-BUILD & RUN:
+###BUILD & RUN:
 Follow Method 1 (Make build) or Method 2 (step-by-step build ) to start the network and run the provision
 
 ### Method 1(Using Make)
