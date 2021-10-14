@@ -46,13 +46,13 @@ for information on how to build bsc node docker image.
 
 ### Build BTP Relay
 
-### Get the code
+#### Get the code
 currently, lives in Web3 Labs branch
 ```
 git clone -b btp_web3labs https://github.com/icon-project/btp 
 ```
 
-### Build executables
+#### Build executables
 navigate to btp directory
 ```
 make
@@ -63,14 +63,38 @@ Note:
 
 - If running `make` after the above command still encounters several "missing go.sum entry", running `go mod tidy` will fix the errors, then proceed with `make`.
 
-### Build JavaScore Contracts
+BUILD & RUN:
+Follow Method 1 (Make build) or Method 2 (step-by-step build ) to start the network and run the provision
+### Method 1(Using Make)
+To build and run using the make commands, navigate to  `<btp repo>/devnet/docker/icon-bsc project` directory
+#### 1. Clean & remove artifacts
+To remove the build folder & work folder which contains previous artifacts, logs and all the provision images(dist-javascore, dist-sol, btpsimple-image)
+    
+    make remove
+
+#### 2. build docker images
+To build the provision images(dist-javascore, dist-sol, btpsimple-image)
+    
+    make build
+
+#### 3. Run network
+To start the network and run the provision
+    
+    make run
+
+Note:
+ - A successfull build should have four docker conatiners (goloop, binancesmartchaincontainer, btp-icon, btp-bsc) started and running.
+ - To try token transfer/ native token transfer examples on the btp network, please follow [token-transfer-guide.md](https://github.com/icon-project/btp/blob/btp_web3labs/doc/token-transfer-guide.md). Please wait for the entire provision to finish.
+
+### (or) Method 2 (Manual step-by-step build)
+#### Build JavaScore Contracts
 from btp directory, run
 ```
 make dist-javascore
 ```
 This will build dist contract jars for bmc, bmv, bsh and example irc2 token 
 
-### Build Solidity Contracts
+#### Build Solidity Contracts
 
 Build BSC BSH and BEP Token Service
 
@@ -81,14 +105,14 @@ This will prepare copy of bmc, bmv and TokenBSH solidity contracts
 
 Note: this step doesn't compile the contracts, this happens at later stage during the btp docker image setup
 
-### Build BTP Simple Docker Image
+#### Build BTP Simple Docker Image
 
 ```
 make btpsimple-image
 ```
 This will prepare copy of bmc, bmv and TokenBSH solidity contracts
 
-### Running BTP BSC Docker
+#### Running BTP BSC Docker
 
 From <btp repo>/devnet/docker/icon-bsc project directory
 
