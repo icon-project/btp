@@ -65,8 +65,9 @@ Note:
 
 BUILD & RUN:
 Follow Method 1 (Make build) or Method 2 (step-by-step build ) to start the network and run the provision
+
 ### Method 1(Using Make)
-To build and run using the make commands, navigate to  `<btp repo>/devnet/docker/icon-bsc project` directory
+To build and run using the make commands, navigate to  `<btp repo>/devnet/docker/icon-bsc` project directory
 #### 1. Clean & remove artifacts
 To remove the build folder & work folder which contains previous artifacts, logs and all the provision images(dist-javascore, dist-sol, btpsimple-image)
     
