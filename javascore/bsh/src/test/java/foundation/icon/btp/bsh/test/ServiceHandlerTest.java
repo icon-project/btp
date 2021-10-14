@@ -26,6 +26,7 @@ import foundation.icon.btp.bsh.types.Asset;
 import foundation.icon.btp.bsh.types.Balance;
 import foundation.icon.btp.bsh.types.TransferAsset;
 import foundation.icon.btp.irc2.IRC2Basic;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.*;
 import score.ByteArrayObjectWriter;
 import score.Context;
@@ -83,6 +84,17 @@ class ServiceHandlerTest extends TestBase {
         // setup spy
        /* bshSyp = (ServiceHandler) spy(bshScore.getInstance());
         bshScore.setInstance(bshSyp);*/
+    }
+
+    @Order(1)
+    @Test
+    public void handleBTPMessageFromHexBytesTest() {
+        String _from = "btp://0x97.bsc/0x7D66b33f2b2d2Cd565e5024E651B6c6bE491c493";
+        String _msg="F87B00B878F876B3307837306537383964326635643436396561333065303532356462666464353531356436656164333064000000000000000000AA687865353161653336663663666563393966373062346233663830626230613234373361326532613531D6D583455448880DBD2FC137A30000872386F26FC10000";
+        bmc.invoke(owners[0], "addService", _svc, bsh.getAddress());
+        bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress());
+        token.invoke(owners[0],"transfer",bsh.getAddress(),new BigInteger("100000000000000000000"),"transfer to Receiver".getBytes());
+        bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, Hex.decode(_msg));
     }
 
     /**
