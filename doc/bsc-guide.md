@@ -63,8 +63,8 @@ Note:
 
 - If running `make` after the above command still encounters several "missing go.sum entry", running `go mod tidy` will fix the errors, then proceed with `make`.
 
-###BUILD & RUN:
-Follow Method 1 (Make build) or Method 2 (step-by-step build ) to start the network and run the provision
+### BUILD & RUN:
+Follow Make build(Method 1) or step-by-step build (Method 2) to start the network and run the provision
 
 ### Method 1(Using Make)
 To build and run using the make commands, navigate to  `<btp repo>/devnet/docker/icon-bsc` project directory
