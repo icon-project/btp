@@ -86,7 +86,7 @@ Note:
  - A successfull build should have four docker conatiners (goloop, binancesmartchaincontainer, btp-icon, btp-bsc) started and running.
  - To try token transfer/ native token transfer examples on the btp network, please follow [token-transfer-guide.md](https://github.com/icon-project/btp/blob/btp_web3labs/doc/token-transfer-guide.md). Please wait for the entire provision to finish.
 
-### Method 2 (Manual step-by-step build)
+### (Or) Method 2 (Manual step-by-step build)
 #### Build JavaScore Contracts
 from btp directory, run
 ```
