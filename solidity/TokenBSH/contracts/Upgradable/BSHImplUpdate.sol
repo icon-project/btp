@@ -28,7 +28,6 @@ import "../Libraries/RLPEncodeStructLib.sol";
 import "../Libraries/RLPDecodeStructLib.sol";
 import "../Libraries/StringsLib.sol";
 import "../Libraries/ParseAddressLib.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -67,8 +66,6 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
         uint256 _code,
         string _response
     );
-
-    event debug(address addr, string name, uint256 val);
 
     modifier onlyBMC() {
         require(msg.sender == address(bmc), "Unauthorized");
@@ -127,7 +124,6 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
             Types.TransferAssets memory _ta = _sm.data.decodeTransferAsset();
             string memory _statusMsg;
             uint256 _status;
-
             try this.handleRequest(_ta) {
                 _statusMsg = "Transfer Success";
                 _status = RC_OK;
@@ -171,7 +167,6 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
         try this.checkParseAddress(_toAddress) {} catch {
             revert("Invalid Address");
         }
-
         Types.Asset[] memory _asset = transferAssets.asset;
         for (uint256 i = 0; i < _asset.length; i++) {
             // Check if the _toAddress is invalid
@@ -265,7 +260,7 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
                 _ta.encodeTransferAsset()
             )
             .encodeServiceMessage();
-
+        serialNo++;
         bmc.sendMessage(_toNetwork, serviceName, serialNo, serviceMessage);
 
         /* requests[serialNo] = Types.TransferAssets(
@@ -282,7 +277,6 @@ contract BSHImplUpdate is IBSHImpl, Initializable {
 
         numOfPendingRequests++;
         emit TransferStart(_from, _to, serialNo, _assets);
-        serialNo++;
     }
 
     function addToNewMap(string memory value) external {

@@ -10,7 +10,6 @@ public class ExtraDataTypeDecoder {
         this.data = data;
     }
 
-
     public static byte[] getBytes(int offset, int len) {
         byte[] bytes = slice(offset, len);
         return bytes;
@@ -21,8 +20,8 @@ public class ExtraDataTypeDecoder {
         byte[] bytes = slice(data.length - offset);
         return bytes;
     }
+    */
 
-*/
     public static byte[] slice(int offset, int len) {
         byte[] result = Arrays.copyOfRange(data, offset, len + offset);
         return result;

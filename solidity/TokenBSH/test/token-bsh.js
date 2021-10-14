@@ -5,7 +5,7 @@ const BSHImpl = artifacts.require("BSHImpl");
 const BMC = artifacts.require("BMCMock");
 const ERC20TKN = artifacts.require("ERC20TKN");
 const truffleAssert = require('truffle-assertions');
- 
+
 contract('BSC BSH Proxy Contract Management tests', (accounts) => {
     var btp_network = '0x97.bsc';
     var _svc = 'TokenBSH';
@@ -75,7 +75,7 @@ contract('BSC BSH Proxy Contract Management tests', (accounts) => {
         //TODO: Clear pending request
         var REPONSE_HANDLE_SERVICE = 2;
         var RC_OK = 0;
-        await bmc.response(REPONSE_HANDLE_SERVICE, _net, _svc, 0, RC_OK, "");
+        await bmc.response(REPONSE_HANDLE_SERVICE, _net, _svc, 1, RC_OK, "");
     });
 
     it('Scenario 7: update FeeRatio  - by owner - success', async () => {
@@ -275,7 +275,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         var _msg = 'Transfer failed'
         var _to = 'btp://0x03.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd';
         var balanceBefore = await bshProxy.getBalanceOf(accounts[0], tokenName)
-        await bmc.handleResponse(_net, _svc, 0, _code, _msg)
+        await bmc.handleResponse(_net, _svc, 1, _code, _msg)
         var balanceAfter = await bshProxy.getBalanceOf(accounts[0], tokenName)
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
         //Since the balance is returned back to the token Holder due to failure
@@ -291,7 +291,7 @@ contract('Sending ERC20 to ICON blockchain', function () {
         await token.approve(bshProxy.address, transferAmount);
         await bshProxy.transfer(tokenName, transferAmount, _to)
         var balanceBefore = await bshProxy.getBalanceOf(accounts[0], tokenName)
-        await bmc.handleResponse(_net, _svc, 1, _code, "Transfer Success")
+        await bmc.handleResponse(_net, _svc, 2, _code, "Transfer Success")
         var balanceAfter = await bshProxy.getBalanceOf(accounts[0], tokenName)
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
         //Reason: the amount is burned from the tokenBSH and locked balance is reduced for the set amount

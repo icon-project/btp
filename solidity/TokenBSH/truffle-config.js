@@ -52,5 +52,5 @@ module.exports = {
       }
     }
   },
-  plugins: ["truffle-contract-size"]
+  plugins: ["solidity-coverage"]
 };
