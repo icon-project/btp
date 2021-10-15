@@ -51,11 +51,31 @@ pub mod errors {
         NotBmc,
         InvalidService,
         DecodeFailed { message: String },
+        EncodeFailed { message: String },
         InvalidSetting,
         InvalidCount { message: String },
         InvalidAddress { message: String },
         SameSenderReceiver,
         AccountNotExist
+    }
+
+    impl Exception for BshError {
+        fn code(&self) -> u32 {
+            u32::from(self)
+        }
+        fn message(&self) -> String {
+            self.to_string()
+        }
+    }
+
+    impl From<&BshError> for u32 {
+        fn from(bsh_error: &BshError) -> Self {
+            match bsh_error {
+                BshError::Unknown => 0,
+                BshError::PermissionNotExist => 1,
+                _ => 0,
+            }
+        }
     }
 
     impl fmt::Display for BshError {
@@ -94,6 +114,9 @@ pub mod errors {
                 },
                 BshError::DecodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "DecodeError", message)
+                },
+                BshError::EncodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "EncodeError", message)
                 },
                 BshError::InvalidSetting => {
                     write!(f, "{}{}", label, "InvalidSetting")
