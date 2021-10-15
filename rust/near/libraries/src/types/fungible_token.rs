@@ -8,9 +8,8 @@ use near_sdk::AccountId;
 pub struct FungibleToken {
     name: String,
     symbol: String,
-    decimals: u128,
-    uri: AccountId,
     fee_numerator: u128,
+    uri: Option<AccountId>,
     denominator: u128,
     network: Network,
 }
@@ -19,18 +18,16 @@ impl FungibleToken {
     pub fn new(
         name: TokenName,
         symbol: String,
-        decimals: u128,
-        uri: AccountId,
         fee_numerator: u128,
+        uri: Option<AccountId>,
         denominator: u128,
         network: Network,
     ) -> FungibleToken {
         Self {
             name,
             symbol,
-            decimals,
-            uri,
             fee_numerator,
+            uri,
             denominator,
             network,
         }
@@ -46,6 +43,10 @@ impl TokenMetadata for FungibleToken {
         &self.network
     }
 
+    fn symbol(&self) -> &String {
+        &self.symbol
+    }
+    
     fn fee_numerator(&self) -> u128 {
         self.fee_numerator
     }

@@ -39,7 +39,7 @@ fn handle_serialized_btp_messages_service_message() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn handle_internal_service_message_init_pass() {
+fn handle_internal_service_message_init() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -76,7 +76,7 @@ fn handle_internal_service_message_init_pass() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn handle_internal_service_message_link_pass() {
+fn handle_internal_service_message_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -133,7 +133,7 @@ fn handle_internal_service_message_link_pass() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn handle_internal_service_message_unlink_pass() {
+fn handle_internal_service_message_unlink() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -190,7 +190,7 @@ fn deserialize_serialized_btp_messages_from_json(){
 
 #[test]
 #[cfg(feature = "testable")]
-fn handle_route_message_fail() {
+fn handle_route_message() {
     let btp_message = json!(["-QETuDlidHA6Ly8weDEuaWNvbi9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWK4TmJ0cDovLzB4MS5wcmEvODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNINibWMKuIH4f4RJbml0uHj4dvh0uDhidHA6Ly8weDEucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yrg4YnRwOi8vMHg1LnByYS9jeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWI"]);
     let serialized_btp_messages: SerializedBtpMessages = from_value(btp_message).unwrap();
     let context = |v: AccountId| (get_context(vec![], false, v));

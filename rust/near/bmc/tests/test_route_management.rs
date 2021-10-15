@@ -30,7 +30,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 }
 
 #[test]
-fn add_route_new_route_pass() {
+fn add_route_new_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -56,7 +56,7 @@ fn add_route_new_route_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertAlreadyExistsRoute")]
-fn add_route_existing_route_fail() {
+fn add_route_existing_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -72,7 +72,7 @@ fn add_route_existing_route_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsLink")]
-fn add_route_non_existing_link_fail() {
+fn add_route_non_existing_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -85,7 +85,7 @@ fn add_route_non_existing_link_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn add_route_permission_fail() {
+fn add_route_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -98,7 +98,7 @@ fn add_route_permission_fail() {
 }
 
 #[test]
-fn remove_route_pass() {
+fn remove_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -126,7 +126,7 @@ fn remove_route_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsRoute")]
-fn remove_route_non_existing_route_fail() {
+fn remove_route_non_existing_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -144,7 +144,7 @@ fn remove_route_non_existing_route_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn remove_route_permission_fail() {
+fn remove_route_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -201,7 +201,7 @@ fn get_routes() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn resolve_route_link_pass() {
+fn resolve_route_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -216,7 +216,7 @@ fn resolve_route_link_pass() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn resolve_route_link_reachable_pass() {
+fn resolve_route_link_reachable() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -248,7 +248,7 @@ fn resolve_route_link_reachable_pass() {
 
 #[test]
 #[cfg(feature = "testable")]
-fn resolve_route_route_pass() {
+fn resolve_route_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());

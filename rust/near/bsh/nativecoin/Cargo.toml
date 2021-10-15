@@ -27,3 +27,7 @@ path = "tests/test_ownership_management.rs"
 [[test]]
 name = "test_token_transfer"
 path = "tests/test_token_transfer.rs"
+
+[[test]]
+name = "test_token_management"
+path = "tests/test_token_management.rs"

@@ -1,4 +1,4 @@
-use super::{Network, TokenId, TokenName};
+use super::{Network, TokenName};
 use near_sdk::serde::{Deserialize, Serialize};
 use rlp::{self, Decodable, Encodable};
 
@@ -11,7 +11,11 @@ pub struct Asset {
 
 impl Asset {
     pub fn new(token: TokenName, amount: u128, fees: u128) -> Self {
-        Self { token, amount, fees }
+        Self {
+            token,
+            amount,
+            fees,
+        }
     }
 
     pub fn token(&self) -> &TokenName {
@@ -26,6 +30,7 @@ impl Asset {
 impl Encodable for Asset {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
         stream
+            .begin_list(3)
             .append(&self.token)
             .append(&self.amount)
             .append(&self.fees);

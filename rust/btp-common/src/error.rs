@@ -65,6 +65,9 @@ pub mod errors {
                 BshError::Reverted { message } => {
                     write!(f, "{}{}: {}", label, "Reverted", message)
                 },
+                BshError::TokenExist => {
+                    write!(f, "{}{}", label, "AlreadyExistsToken")
+                },
                 BshError::TokenNotExist { message } => {
                     write!(f, "{}{}: {}", label, "NotExistsToken", message)
                 },

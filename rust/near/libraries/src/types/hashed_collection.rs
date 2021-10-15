@@ -1,6 +1,6 @@
+use near_sdk::serde_json::Value;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::{collections::HashSet, ptr::hash};
-use near_sdk::serde_json::{json, Value};
 use std::iter::FromIterator;
 
 #[derive(Debug)]

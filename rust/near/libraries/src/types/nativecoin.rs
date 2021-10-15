@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::types::{token::TokenMetadata, btp_address::Network, TokenName};
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct NativeCoin {
     name: String,
@@ -37,6 +37,10 @@ impl TokenMetadata for NativeCoin {
 
     fn network(&self) -> &Network {
         &self.network
+    }
+
+    fn symbol(&self) -> &String {
+        &self.symbol
     }
 
     fn fee_numerator(&self) -> u128 {

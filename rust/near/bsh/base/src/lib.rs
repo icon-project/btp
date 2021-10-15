@@ -34,6 +34,14 @@ impl BaseService {
         &self.name
     }
 
+    pub fn serial_no(&self) -> u128 {
+        self.serial_no
+    }
+
+    pub fn request(&self, serial_no: u128) -> Option<SerializedMessage> {
+        self.requests.get(serial_no)
+    }
+
     pub fn send_service_message(
         &mut self,
         destination_network: String,

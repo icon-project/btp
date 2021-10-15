@@ -25,7 +25,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 }
 
 #[test]
-fn request_service_new_request_pass() {
+fn request_service_new_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -44,7 +44,7 @@ fn request_service_new_request_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertRequestPending")]
-fn request_service_existing_request_fail() {
+fn request_service_existing_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -61,7 +61,7 @@ fn request_service_existing_request_fail() {
 #[test]
 #[ignore] // As we are not able to pass in account id params unchecked
 #[should_panic(expected = "BMCRevertInvalidAddress")]
-fn request_service_invalid_address_fail() {
+fn request_service_invalid_address() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -73,7 +73,7 @@ fn request_service_invalid_address_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertAlreadyExistsBSH")]
-fn request_service_existing_service_fail() {
+fn request_service_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -93,7 +93,7 @@ fn request_service_existing_service_fail() {
 }
 
 #[test]
-fn get_requests_pass() {
+fn get_requests() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -110,7 +110,7 @@ fn get_requests_pass() {
 }
 
 #[test]
-fn approve_service_approve_pass() {
+fn approve_service_approve() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -131,7 +131,7 @@ fn approve_service_approve_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistRequest")]
-fn approve_service_non_existing_request_fail() {
+fn approve_service_non_existing_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -145,7 +145,7 @@ fn approve_service_non_existing_request_fail() {
 }
 
 #[test]
-fn approve_service_reject_pass() {
+fn approve_service_reject() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -163,7 +163,7 @@ fn approve_service_reject_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn approve_service_permission_fail() {
+fn approve_service_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -175,7 +175,7 @@ fn approve_service_permission_fail() {
 }
 
 #[test]
-fn remove_service_existing_service_pass() {
+fn remove_service_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -196,7 +196,7 @@ fn remove_service_existing_service_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn remove_service_permission_fail() {
+fn remove_service_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -214,7 +214,7 @@ fn remove_service_permission_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistBSH")]
-fn remove_service_non_existing_service_fail() {
+fn remove_service_non_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -231,7 +231,7 @@ fn remove_service_non_existing_service_fail() {
 }
 
 #[test]
-fn get_services_pass() {
+fn get_services() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());

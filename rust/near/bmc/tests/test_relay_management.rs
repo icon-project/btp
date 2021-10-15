@@ -27,7 +27,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 }
 
 #[test]
-fn add_relay_new_relay_pass() {
+fn add_relay_new_relay() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -49,7 +49,7 @@ fn add_relay_new_relay_pass() {
 }
 
 #[test]
-fn add_relays_new_relay_pass() {
+fn add_relays_new_relay() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -78,7 +78,7 @@ fn add_relays_new_relay_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertRelayExist")]
-fn add_relay_existing_relay_fail() {
+fn add_relay_existing_relay() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -102,7 +102,7 @@ fn add_relay_existing_relay_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsLink")]
-fn add_relay_non_existing_link_fail() {
+fn add_relay_non_existing_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -119,7 +119,7 @@ fn add_relay_non_existing_link_fail() {
 }
 
 #[test]
-fn get_relays_pass() {
+fn get_relays() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -148,7 +148,7 @@ fn get_relays_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn add_relays_permission_fail() {
+fn add_relays_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -169,7 +169,7 @@ fn add_relays_permission_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn add_relay_permission_fail() {
+fn add_relay_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -193,7 +193,7 @@ fn add_relay_permission_fail() {
 }
 
 #[test]
-fn remove_relay_existing_relay_pass() {
+fn remove_relay_existing_relay() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -219,7 +219,7 @@ fn remove_relay_existing_relay_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsLink")]
-fn remove_relay_non_existing_link_fail() {
+fn remove_relay_non_existing_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -233,7 +233,7 @@ fn remove_relay_non_existing_link_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn remove_relay_permission_fail() {
+fn remove_relay_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
@@ -259,7 +259,7 @@ fn remove_relay_permission_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistRelay")]
-fn remove_relay_non_existing_relay_fail() {
+fn remove_relay_non_existing_relay() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into());
