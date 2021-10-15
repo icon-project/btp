@@ -154,7 +154,7 @@ func main() {
 		logfile := rootVc.GetString("log_writer.filename")
 		cfg.FilePath = rootVc.GetString("config")
 		if cfg.FilePath != "" {
-			f, err := os.Open(cfg.FilePath)
+			f, err := os.Open(cfg.ResolveAbsolute(cfg.FilePath))
 			if err != nil {
 				return fmt.Errorf("fail to open config file=%s err=%+v", cfg.FilePath, err)
 			}

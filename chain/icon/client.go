@@ -312,8 +312,8 @@ func (c *Client) Monitor(reqUrl string, reqPtr, respPtr, reconReqPtr interface{}
 		} else {
 			c.l.Debugf("Monitor c.conns[%s] reconnecting", conn.Id)
 			if err = c.wsRequest(conn, reconReqPtr); err != nil {
-				c.l.Debugf("Monitor c.conns[%s] reconnect err:%+v", conn.Id, err)
-				return err
+				c.l.Debugf("Monitor c.conns[%s] request monitor err:%+v", conn.Id, err)
+				continue
 			}
 			cb(conn, WSEventInit)
 			firstCbCalled = true
