@@ -38,7 +38,7 @@ impl Relays {
         self
     }
 
-    pub fn set(&mut self, account_ids: &Vec<AccountId>) {
+    pub fn set(&mut self, account_ids: &[AccountId]) {
         self.clear();
 
         for account_id in account_ids {
@@ -47,7 +47,7 @@ impl Relays {
     }
 
     pub fn add(&mut self, account_id: &AccountId) {
-        self.0.insert(&account_id);
+        self.0.insert(account_id);
     }
 
     pub fn clear(&mut self) {
@@ -55,11 +55,11 @@ impl Relays {
     }
 
     pub fn contains(&self, account_id: &AccountId) -> bool {
-        self.0.contains(&account_id)
+        self.0.contains(account_id)
     }
 
     pub fn remove(&mut self, account_id: &AccountId) {
-        self.0.remove(&account_id);
+        self.0.remove(account_id);
     }
 
     pub fn to_vec(&self) -> Vec<AccountId> {

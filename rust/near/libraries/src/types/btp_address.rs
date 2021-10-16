@@ -26,10 +26,6 @@ impl BTPAddress {
     pub fn new(string: String) -> Self {
         Self(string)
     }
-
-    pub fn to_string(&self) -> String {
-        self.0.to_owned()
-    }
 }
 impl Address for BTPAddress {
     fn as_ref(&self) -> &String {
@@ -87,8 +83,8 @@ impl std::str::FromStr for BTPAddress {
 
 impl Decodable for BTPAddress {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        Ok(Self::try_from(rlp.as_val::<String>()?)
-            .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))?)
+        Self::try_from(rlp.as_val::<String>()?)
+            .map_err(|_| rlp::DecoderError::Custom("BTPAddress Decode Error"))
     }
 }
 

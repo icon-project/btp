@@ -11,35 +11,8 @@ use near_sdk::Balance;
 #[serde(crate = "near_sdk::serde")]
 pub struct AccountBalance {
     deposit: Balance,
-    refundable: HoldingBalance,
-    locked: HoldingBalance,
-}
-
-#[derive(
-    Debug, Default, BorshDeserialize, BorshSerialize, PartialEq, Eq, Clone, Serialize, Deserialize,
-)]
-#[serde(crate = "near_sdk::serde")]
-pub struct HoldingBalance {
-    deposit: Balance,
-    fees: Balance,
-}
-
-impl HoldingBalance {
-    pub fn deposit(&self) -> Balance {
-        self.deposit
-    }
-
-    pub fn deposit_mut(&mut self) -> &mut Balance {
-        &mut self.deposit
-    }
-
-    pub fn fees(&self) -> Balance {
-        self.fees
-    }
-
-    pub fn fees_mut(&mut self) -> &mut Balance {
-        &mut self.fees
-    }
+    refundable: Balance,
+    locked: Balance,
 }
 
 impl AccountBalance {
@@ -47,11 +20,11 @@ impl AccountBalance {
         self.deposit
     }
 
-    pub fn locked(&self) -> &HoldingBalance {
+    pub fn locked(&self) -> &Balance {
         &self.locked
     }
 
-    pub fn refundable(&self) -> &HoldingBalance {
+    pub fn refundable(&self) -> &Balance {
         &self.refundable
     }
 
@@ -59,11 +32,11 @@ impl AccountBalance {
         &mut self.deposit
     }
 
-    pub fn locked_mut(&mut self) -> &mut HoldingBalance {
+    pub fn locked_mut(&mut self) -> &mut Balance {
         &mut self.locked
     }
 
-    pub fn refundable_mut(&mut self) -> &mut HoldingBalance {
+    pub fn refundable_mut(&mut self) -> &mut Balance {
         &mut self.refundable
     }
 }
@@ -80,7 +53,7 @@ impl Transfer for Balance {
         self.clone_from(
             &&self
                 .checked_add(rhs)
-                .ok_or("overflow occured".to_string())?,
+                .ok_or_else(|| "overflow occured".to_string())?,
         );
         Ok(self)
     }
@@ -89,16 +62,16 @@ impl Transfer for Balance {
         self.clone_from(
             &&self
                 .checked_sub(rhs)
-                .ok_or("underflow occured".to_string())?,
+                .ok_or_else(|| "underflow occured".to_string())?,
         );
         Ok(self)
     }
 
     fn mul(&mut self, rhs: u128) -> Result<&mut Self, String> {
         self.clone_from(
-            &&self
+            &self
                 .checked_mul(rhs)
-                .ok_or("overflow occured".to_string())?,
+                .ok_or_else(|| "overflow occured".to_string())?,
         );
         Ok(self)
     }
@@ -107,7 +80,7 @@ impl Transfer for Balance {
         self.clone_from(
             &&self
                 .checked_div(rhs)
-                .ok_or("underflow occured".to_string())?,
+                .ok_or_else(|| "underflow occured".to_string())?,
         );
         Ok(self)
     }
@@ -355,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    fn locked_balance_deposit_add() {
+    fn locked_balance_add() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut balances = Balances::new();
@@ -370,7 +343,6 @@ mod tests {
 
         account_balance
             .locked_mut()
-            .deposit_mut()
             .add(1000)
             .unwrap();
 
@@ -384,11 +356,11 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.locked().deposit(), 1000);
+        assert_eq!(*result.locked(), 1000);
     }
 
     #[test]
-    fn locked_balance_deposit_sub() {
+    fn locked_balance_sub() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut balances = Balances::new();
@@ -404,7 +376,6 @@ mod tests {
 
         account_balance
             .locked_mut()
-            .deposit_mut()
             .add(1000)
             .unwrap();
 
@@ -418,13 +389,13 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.locked().deposit(), 1000);
+        assert_eq!(*result.locked(), 1000);
 
         let mut account_balance = balances
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance.locked_mut().deposit_mut().sub(1).unwrap();
+        account_balance.locked_mut().sub(1).unwrap();
 
         balances.set(
             &account,
@@ -436,89 +407,11 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.locked().deposit(), 999);
+        assert_eq!(*result.locked(), 999);
     }
 
     #[test]
-    fn locked_balance_fees_add() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut balances = Balances::new();
-        let account = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-
-        balances.add(&account, &"ABC Token".to_string().as_bytes().to_vec());
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance.locked_mut().fees_mut().add(1000).unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.locked().fees(), 1000);
-    }
-
-    #[test]
-    fn locked_balance_fees_sub() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut balances = Balances::new();
-        let account = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-
-        balances.add(&account, &"ABC Token".to_string().as_bytes().to_vec());
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance.locked_mut().fees_mut().add(1000).unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.locked().fees(), 1000);
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance.locked_mut().fees_mut().sub(1).unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.locked().fees(), 999);
-    }
-
-    #[test]
-    fn refundable_balance_deposit_add() {
+    fn refundable_balance_add() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut balances = Balances::new();
@@ -533,7 +426,6 @@ mod tests {
 
         account_balance
             .refundable_mut()
-            .deposit_mut()
             .add(1000)
             .unwrap();
 
@@ -547,11 +439,11 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.refundable().deposit(), 1000);
+        assert_eq!(*result.refundable(), 1000);
     }
 
     #[test]
-    fn refundable_balance_deposit_sub() {
+    fn refundable_balance_sub() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut balances = Balances::new();
@@ -567,7 +459,6 @@ mod tests {
 
         account_balance
             .refundable_mut()
-            .deposit_mut()
             .add(1000)
             .unwrap();
 
@@ -581,7 +472,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.refundable().deposit(), 1000);
+        assert_eq!(*result.refundable(), 1000);
 
         let mut account_balance = balances
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
@@ -589,7 +480,6 @@ mod tests {
 
         account_balance
             .refundable_mut()
-            .deposit_mut()
             .sub(1)
             .unwrap();
 
@@ -603,92 +493,6 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(result.refundable().deposit(), 999);
-    }
-
-    #[test]
-    fn refundable_balance_fees_add() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut balances = Balances::new();
-        let account = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-
-        balances.add(&account, &"ABC Token".to_string().as_bytes().to_vec());
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance
-            .refundable_mut()
-            .fees_mut()
-            .add(1000)
-            .unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.refundable().fees(), 1000);
-    }
-
-    #[test]
-    fn refundable_balance_fees_sub() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let mut balances = Balances::new();
-        let account = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-
-        balances.add(&account, &"ABC Token".to_string().as_bytes().to_vec());
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance
-            .refundable_mut()
-            .fees_mut()
-            .add(1000)
-            .unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.refundable().fees(), 1000);
-
-        let mut account_balance = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        account_balance.refundable_mut().fees_mut().sub(1).unwrap();
-
-        balances.set(
-            &account,
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            account_balance,
-        );
-
-        let result = balances
-            .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
-            .unwrap();
-
-        assert_eq!(result.refundable().fees(), 999);
+        assert_eq!(*result.refundable(), 999);
     }
 }

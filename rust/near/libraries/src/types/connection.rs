@@ -18,19 +18,19 @@ impl Connections {
     }
 
     pub fn add(&mut self, connection: &Connection, link: &BTPAddress) {
-        let mut list = self.0.get(&connection).unwrap_or_default();
+        let mut list = self.0.get(connection).unwrap_or_default();
         list.insert(link.to_owned());
         self.0.insert(&connection, &list);
     }
 
     pub fn remove(&mut self, connection: &Connection, link: &BTPAddress) {
-        let mut list = self.0.get(&connection).unwrap_or_default();
-        list.remove(&link);
+        let mut list = self.0.get(connection).unwrap_or_default();
+        list.remove(link);
 
         if list.is_empty() {
-            self.0.remove(&connection);
+            self.0.remove(connection);
         } else {
-            self.0.insert(&connection, &list);
+            self.0.insert(connection, &list);
         }
     }
 

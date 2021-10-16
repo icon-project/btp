@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 type TokenFee = u128;
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Clone, BorshDeserialize, BorshSerialize)]
 pub struct TokenFees(HashMap<TokenId, TokenFee>);
 
 impl TokenFees {
@@ -15,8 +15,8 @@ impl TokenFees {
         Self(HashMap::new())
     }
 
-    pub fn add(&mut self, token_id: TokenId) {
-        self.0.insert(token_id, u128::default());
+    pub fn add(&mut self, token_id: &TokenId) {
+        self.0.insert(token_id.clone(), u128::default());
     }
 
     pub fn remove(&mut self, token_id: &TokenId) {
@@ -30,7 +30,7 @@ impl TokenFees {
         None
     }
 
-    pub fn set(&mut self, token_id: TokenId, token_fee: TokenFee) {
-        self.0.insert(token_id, token_fee);
+    pub fn set(&mut self, token_id: &TokenId, token_fee: TokenFee) {
+        self.0.insert(token_id.clone(), token_fee);
     }
 }

@@ -1,8 +1,9 @@
 use super::{Network, TokenName};
 use near_sdk::serde::{Deserialize, Serialize};
 use rlp::{self, Decodable, Encodable};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, BorshDeserialize, BorshSerialize)]
 pub struct Asset {
     token: TokenName,
     amount: u128,
@@ -24,6 +25,10 @@ impl Asset {
 
     pub fn amount(&self) -> u128 {
         self.amount
+    }
+
+    pub fn fees(&self) -> u128 {
+        self.fees
     }
 }
 

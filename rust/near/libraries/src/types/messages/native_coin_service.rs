@@ -9,8 +9,8 @@ use std::convert::TryFrom;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum NativeCoinServiceType {
     RequestCoinTransfer {
-        source: String,
-        destination: String,
+        sender: String,
+        receiver: String,
         assets: Vec<Asset>,
     },
     RequestCoinRegister,
@@ -19,6 +19,7 @@ pub enum NativeCoinServiceType {
         message: String,
     },
     UnknownType,
+    UnhandledType,
 }
 
 impl Default for NativeCoinServiceType {
@@ -42,16 +43,24 @@ impl Encodable for NativeCoinServiceMessage {
         stream.begin_unbounded_list();
         match self.service_type() {
             &NativeCoinServiceType::RequestCoinTransfer {
-                ref source,
-                ref destination,
+                ref sender,
+                ref receiver,
                 ref assets,
             } => {
                 let mut params = rlp::RlpStream::new_list(3);
                 params
-                    .append::<String>(source)
-                    .append::<String>(destination)
+                    .append::<String>(sender)
+                    .append::<String>(receiver)
                     .append_list(assets);
                 stream.append::<u128>(&0).append(&params.out());
+            }
+            &NativeCoinServiceType::ResponseHandleService {
+                ref code,
+                ref message,
+            } => {
+                let mut params = rlp::RlpStream::new_list(2);
+                params.append::<u128>(code).append::<String>(message);
+                stream.append::<u128>(&2).append(&params.out());
             }
             _ => (),
         }
@@ -76,11 +85,16 @@ impl TryFrom<(u128, &Vec<u8>)> for NativeCoinServiceType {
         let payload = rlp::Rlp::new(payload as &[u8]);
         match index {
             0 => Ok(Self::RequestCoinTransfer {
-                source: payload.val_at(0)?,
-                destination: payload.val_at(1)?,
+                sender: payload.val_at(0)?,
+                receiver: payload.val_at(1)?,
                 assets: payload.list_at(2)?,
             }),
-            _ => Ok(Self::UnknownType),
+            2 => Ok(Self::ResponseHandleService {
+                code: payload.val_at(0)?,
+                message: payload.val_at(1)?,
+            }),
+            3 => Ok(Self::UnknownType),
+            _ => Ok(Self::UnhandledType)
         }
     }
 }
@@ -103,6 +117,19 @@ impl TryFrom<&Vec<u8>> for NativeCoinServiceMessage {
     }
 }
 
+impl TryFrom<SerializedMessage> for NativeCoinServiceMessage {
+    type Error = BshError;
+    fn try_from(value: SerializedMessage) -> Result<Self, Self::Error> {
+        Self::try_from(value.data())
+    }
+}
+
+impl From<NativeCoinServiceMessage> for Vec<u8> {
+    fn from(service_message: NativeCoinServiceMessage) -> Self {
+        rlp::encode(&service_message).to_vec()
+    }
+}
+
 impl TryFrom<BtpMessage<SerializedMessage>> for BtpMessage<NativeCoinServiceMessage> {
     type Error = BshError;
     fn try_from(value: BtpMessage<SerializedMessage>) -> Result<Self, Self::Error> {
@@ -113,6 +140,26 @@ impl TryFrom<BtpMessage<SerializedMessage>> for BtpMessage<NativeCoinServiceMess
             value.serial_no().clone(),
             value.payload().clone(),
             Some(NativeCoinServiceMessage::try_from(value.payload())?),
+        ))
+    }
+}
+
+impl TryFrom<&BtpMessage<NativeCoinServiceMessage>> for BtpMessage<SerializedMessage> {
+    type Error = BshError;
+    fn try_from(value: &BtpMessage<NativeCoinServiceMessage>) -> Result<Self, Self::Error> {
+        Ok(Self::new(
+            value.source().clone(),
+            value.destination().clone(),
+            value.service().clone(),
+            value.serial_no().clone(),
+            value
+                .message()
+                .clone()
+                .ok_or(BshError::EncodeFailed {
+                    message: "Encoding Failed".to_string(),
+                })?
+                .into(),
+            None,
         ))
     }
 }
@@ -164,9 +211,9 @@ mod tests {
             service_message,
             NativeCoinServiceMessage {
                 service_type: NativeCoinServiceType::RequestCoinTransfer {
-                    source: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
+                    sender: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                         .to_string(),
-                    destination: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                    receiver: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
                     assets: vec![Asset::new("NEAR".to_string(), 900, 99)]
                 },
             },
@@ -177,9 +224,9 @@ mod tests {
     fn serialize_transfer_request_message() {
         let service_message = NativeCoinServiceMessage {
             service_type: NativeCoinServiceType::RequestCoinTransfer {
-                source: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
+                sender: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                     .to_string(),
-                destination: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+                receiver: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
                 assets: vec![Asset::new("NEAR".to_string(), 900, 99)],
             },
         };

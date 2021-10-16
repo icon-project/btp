@@ -2,30 +2,61 @@ use crate::types::messages::SerializedMessage;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 
+use super::Asset;
+
+#[derive(Debug, Eq, PartialEq, BorshDeserialize, BorshSerialize)]
+pub struct Request {
+    sender: String,
+    receiver: String,
+    assets: Vec<Asset>,
+}
+
+impl Request {
+    pub fn new(sender: String, receiver: String, assets: Vec<Asset>) -> Self {
+        Self {
+            sender,
+            receiver,
+            assets,
+        }
+    }
+
+    pub fn sender(&self) -> &String {
+        &self.sender
+    }
+
+    pub fn receiver(&self) -> &String {
+        &self.receiver
+    }
+
+    pub fn assets(&self) -> &Vec<Asset> {
+        &self.assets
+    }
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Requests(UnorderedMap<u128, SerializedMessage>);
+pub struct Requests(UnorderedMap<i128, Request>);
 
 impl Requests {
     pub fn new() -> Self {
         Self(UnorderedMap::new(b"requests".to_vec()))
     }
 
-    pub fn add(&mut self, serial_no: u128, message: &SerializedMessage) {
-        self.0.insert(&serial_no, message);
+    pub fn add(&mut self, serial_no: i128, request: &Request) {
+        self.0.insert(&serial_no, request);
     }
 
-    pub fn remove(&mut self, serial_no: u128) {
+    pub fn remove(&mut self, serial_no: i128) {
         self.0.remove(&serial_no);
     }
 
-    pub fn get(&self, serial_no: u128) -> Option<SerializedMessage> {
-        if let Some(message) = self.0.get(&serial_no) {
-            return Some(message);
+    pub fn get(&self, serial_no: i128) -> Option<Request> {
+        if let Some(request) = self.0.get(&serial_no) {
+            return Some(request);
         }
         None
     }
 
-    pub fn contains(&self, serial_no: u128) -> bool {
+    pub fn contains(&self, serial_no: i128) -> bool {
         return self.0.get(&serial_no).is_some();
     }
 }
@@ -65,17 +96,14 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut requests = Requests::new();
-        let native_coin_message =
-            NativeCoinServiceMessage::new(NativeCoinServiceType::RequestCoinTransfer {
-                source: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .to_string(),
-                destination: "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667"
-                    .to_string(),
-                assets: vec![Asset::new("ABC".to_string(), 100, 1)],
-            });
-        requests.add(1, &(native_coin_message.clone().into()));
+        let request = Request::new(
+            "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
+            "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
+            vec![Asset::new("ABC".to_string(), 100, 1)],
+        );
+        requests.add(1, &request);
         let result = requests.get(1).unwrap();
-        assert_eq!(result, native_coin_message.into());
+        assert_eq!(result, request);
     }
 
     #[test]
@@ -83,18 +111,15 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut requests = Requests::new();
-        let native_coin_message =
-            NativeCoinServiceMessage::new(NativeCoinServiceType::RequestCoinTransfer {
-                source: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .to_string(),
-                destination: "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667"
-                    .to_string(),
-                assets: vec![Asset::new("ABC".to_string(), 100, 1)],
-            });
-        requests.add(1, &(native_coin_message.clone().into()));
-        requests.add(1, &(native_coin_message.clone().into()));
+        let request = Request::new(
+            "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
+            "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
+            vec![Asset::new("ABC".to_string(), 100, 1)],
+        );
+        requests.add(1, &request);
+        requests.add(1, &request);
         let result = requests.get(1).unwrap();
-        assert_eq!(result, native_coin_message.into());
+        assert_eq!(result, request);
     }
 
     #[test]
@@ -102,15 +127,12 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut requests = Requests::new();
-        let native_coin_message =
-            NativeCoinServiceMessage::new(NativeCoinServiceType::RequestCoinTransfer {
-                source: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .to_string(),
-                destination: "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667"
-                    .to_string(),
-                assets: vec![Asset::new("ABC".to_string(), 100, 1)],
-            });
-        requests.add(1, &(native_coin_message.clone().into()));
+        let request = Request::new(
+            "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
+            "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
+            vec![Asset::new("ABC".to_string(), 100, 1)],
+        );
+        requests.add(1, &request);
         requests.remove(1);
         let result = requests.get(1);
         assert_eq!(result, None);
