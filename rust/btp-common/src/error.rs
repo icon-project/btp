@@ -43,6 +43,8 @@ pub mod errors {
         OwnerNotExist,
         PermissionNotExist,
         NotMinimumDeposit,
+        NotMinimumRefundable,
+        NotMinimumAmount,
         NotMinimumBalance { account: String },
         TokenExist,
         TokenNotExist { message: String },
@@ -106,6 +108,9 @@ pub mod errors {
                 BshError::NotMinimumDeposit => {
                     write!(f, "{}{}", label, "NotMinimumDeposit")
                 },
+                BshError::NotMinimumRefundable => {
+                    write!(f, "{}{}", label, "NotMinimumRefundable")
+                },
                 BshError::NotBmc => {
                     write!(f, "{}{}", label, "NotBMC")
                 },
@@ -135,6 +140,9 @@ pub mod errors {
                 },
                 BshError::NotMinimumBalance { account } => {
                     write!(f, "{}{} for {}", label, "NotMinimumBalance", account)
+                },
+                BshError::NotMinimumAmount => {
+                    write!(f, "{}{}", label, "NotMinimumAmount")
                 }
                 _ => todo!()
             }
