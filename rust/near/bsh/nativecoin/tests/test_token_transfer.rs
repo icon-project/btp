@@ -88,7 +88,7 @@ fn withdraw_native_coin() {
 #[test]
 #[cfg(feature = "testable")]
 fn external_transfer() {
-    use libraries::types::Asset;
+    use libraries::types::{Asset, Request};
 
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
@@ -111,20 +111,19 @@ fn external_transfer() {
     let mut expected = AccountBalance::default();
 
     expected.deposit_mut().add(1).unwrap();
-    expected.locked_mut().deposit_mut().add(900).unwrap();
-    expected.locked_mut().fees_mut().add(99).unwrap();
+    expected.locked_mut().add(900).unwrap();
+    expected.locked_mut().add(99).unwrap();
 
     assert_eq!(result, Some(expected));
 
     let request = contract.last_request().unwrap();
-    let result = NativeCoinServiceMessage::try_from(request.data()).unwrap();
     assert_eq!(
-        result,
-        NativeCoinServiceMessage::new(NativeCoinServiceType::RequestCoinTransfer {
-            source: chuck().to_string(),
-            destination: destination.account_id().to_string(),
-            assets: vec![Asset::new(nativecoin.name().to_owned(), 900, 99)]
-        })
+        request,
+        Request::new(
+            chuck().to_string(),
+            destination.account_id().to_string(),
+            vec![Asset::new(nativecoin.name().to_owned(), 900, 99)]
+        )
     )
 }
 
@@ -221,8 +220,8 @@ fn external_transfer_batch() {
     let mut expected = AccountBalance::default();
 
     expected.deposit_mut().add(1).unwrap();
-    expected.locked_mut().deposit_mut().add(900).unwrap();
-    expected.locked_mut().fees_mut().add(99).unwrap();
+    expected.locked_mut().add(900).unwrap();
+    expected.locked_mut().add(99).unwrap();
 
     assert_eq!(result, Some(expected));
 }

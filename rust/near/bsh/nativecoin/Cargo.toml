@@ -31,3 +31,7 @@ path = "tests/test_token_transfer.rs"
 [[test]]
 name = "test_token_management"
 path = "tests/test_token_management.rs"
+
+[[test]]
+name = "test_handle_transfer_request"
+path = "tests/test_handle_transfer_request.rs"
