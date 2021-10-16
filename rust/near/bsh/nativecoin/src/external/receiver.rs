@@ -1,5 +1,5 @@
-use near_sdk::{ext_contract, AccountId};
-use libraries::types::{TokenId};
+use libraries::types::TokenId;
+use near_sdk::ext_contract;
 use near_sdk::json_types::U128;
 
 #[ext_contract(ext_receiver)]
