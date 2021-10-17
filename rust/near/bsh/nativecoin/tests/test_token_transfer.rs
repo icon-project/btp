@@ -428,6 +428,177 @@ fn handle_failure_response_native_coin_external_transfer() {
 }
 
 #[test]
+#[cfg(feature = "testable")]
+fn handle_failure_response_icx_coin_external_transfer() {
+    use libraries::types::AccumulatedAssetFees;
+
+    let context = |account_id: AccountId, deposit: u128| {
+        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0)
+    };
+    testing_env!(context(alice(), 0));
+    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let destination =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        nativecoin.clone(),
+    );
+
+    let icx_coin = <Token<NativeCoin>>::new(ICON_COIN.to_owned());
+    contract.register(icx_coin.clone());
+
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "nativecoin".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(NativeCoinServiceMessage::new(
+            NativeCoinServiceType::RequestCoinTransfer {
+                sender: destination.account_id().to_string(),
+                receiver: chuck().to_string(),
+                assets: vec![Asset::new(icx_coin.name().to_owned(), 900, 99)],
+            },
+        )),
+    );
+
+    testing_env!(context(bmc(), 0));
+    contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    testing_env!(context(chuck(), 0));
+    let coin_id = contract.coin_id(icx_coin.name().to_owned());
+
+    contract.transfer(coin_id, destination.clone(), U128::from(800));
+
+    let result = contract.account_balance(chuck(), contract.coin_id(icx_coin.name().to_owned()));
+    let mut expected = AccountBalance::default();
+    expected.deposit_mut().add(100).unwrap();
+    expected.locked_mut().add(800).unwrap();
+
+    assert_eq!(result, Some(expected));
+
+    let result = contract.balance_of(alice(), contract.coin_id(icx_coin.name().to_owned()));
+    assert_eq!(result, U128::from(0));
+
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "nativecoin".to_string(),
+        WrappedI128::new(contract.serial_no()),
+        vec![],
+        Some(NativeCoinServiceMessage::new(
+            NativeCoinServiceType::ResponseHandleService {
+                code: 1,
+                message: "Transfer Failed".to_string(),
+            },
+        )),
+    );
+
+    testing_env!(context(bmc(), 0));
+    contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    let result = contract.balance_of(alice(), contract.coin_id(icx_coin.name().to_owned()));
+    assert_eq!(result, U128::from(80));
+
+    let result = contract.account_balance(chuck(), contract.coin_id(icx_coin.name().to_owned()));
+    let mut expected = AccountBalance::default();
+    expected.deposit_mut().add(100).unwrap();
+    expected.refundable_mut().add(720).unwrap();
+
+    assert_eq!(result, Some(expected));
+    let accumulted_fees = contract.accumulated_fees();
+
+    assert_eq!(
+        accumulted_fees,
+        vec![
+            AccumulatedAssetFees {
+                name: nativecoin.name().to_string(),
+                network: nativecoin.network().to_string(),
+                accumulated_fees: 0
+            },
+            AccumulatedAssetFees {
+                name: icx_coin.name().to_string(),
+                network: icx_coin.network().to_string(),
+                accumulated_fees: 80
+            }
+        ]
+    );
+}
+
+#[test]
+#[cfg(feature = "testable")]
+fn reclaim_icx_coin() {
+    let context = |account_id: AccountId, deposit: u128| {
+        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0)
+    };
+    testing_env!(context(alice(), 0));
+    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let destination =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        nativecoin.clone(),
+    );
+
+    let icx_coin = <Token<NativeCoin>>::new(ICON_COIN.to_owned());
+    contract.register(icx_coin.clone());
+
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "nativecoin".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(NativeCoinServiceMessage::new(
+            NativeCoinServiceType::RequestCoinTransfer {
+                sender: destination.account_id().to_string(),
+                receiver: chuck().to_string(),
+                assets: vec![Asset::new(icx_coin.name().to_owned(), 900, 99)],
+            },
+        )),
+    );
+
+    testing_env!(context(bmc(), 0));
+    contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    testing_env!(context(chuck(), 0));
+    let coin_id = contract.coin_id(icx_coin.name().to_owned());
+
+    contract.transfer(coin_id.clone(), destination.clone(), U128::from(800));
+
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "nativecoin".to_string(),
+        WrappedI128::new(contract.serial_no()),
+        vec![],
+        Some(NativeCoinServiceMessage::new(
+            NativeCoinServiceType::ResponseHandleService {
+                code: 1,
+                message: "Transfer Failed".to_string(),
+            },
+        )),
+    );
+
+    testing_env!(context(bmc(), 0));
+    contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    testing_env!(context(chuck(), 0));
+    contract.reclaim(coin_id.clone(), U128::from(700));
+
+    let result = contract.account_balance(chuck(), coin_id.clone());
+    let mut expected = AccountBalance::default();
+    expected.deposit_mut().add(800).unwrap();
+    expected.refundable_mut().add(20).unwrap();
+    
+    assert_eq!(result, Some(expected));
+}
+
+#[test]
 #[should_panic(expected = "BSHRevertNotMinimumDeposit")]
 fn external_transfer_higher_amount() {
     let context = |account_id: AccountId, deposit: u128| {

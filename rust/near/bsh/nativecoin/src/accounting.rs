@@ -57,6 +57,8 @@ impl NativeCoinService {
         let mut balance = self.balances.get(&account, &coin_id).unwrap();
         balance.refundable_mut().sub(amount).unwrap();
         balance.deposit_mut().add(amount).unwrap();
+
+        self.balances.set(&account, &coin_id, balance);
     }
 
     pub fn locked_balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
