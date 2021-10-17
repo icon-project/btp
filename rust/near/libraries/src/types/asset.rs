@@ -52,7 +52,7 @@ impl Decodable for Asset {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AccumulatedAssetFees {
     pub name: TokenName,
     pub network: Network,

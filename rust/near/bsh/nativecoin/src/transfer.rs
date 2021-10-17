@@ -135,24 +135,6 @@ impl NativeCoinService {
         });
     }
 
-    pub fn verify_finalize_external_transfer(
-        &mut self,
-        sender_id: &AccountId,
-        assets: &Vec<Asset>,
-    ) -> Result<(), String> {
-        assets
-            .iter()
-            .map(|asset| -> Result<(), String> {
-                let token_id = Self::hash_token_id(asset.token());
-                let mut sender_balance = self.balances.get(&sender_id, &token_id).unwrap();
-                sender_balance
-                    .locked_mut()
-                    .sub(asset.amount() + asset.fees())?;
-                Ok(())
-            })
-            .collect()
-    }
-
     pub fn finalize_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<Asset>) {
         assets.iter().for_each(|asset| {
             let token_id = Self::hash_token_id(asset.token());
@@ -173,7 +155,7 @@ impl NativeCoinService {
                 .unwrap();
             current_account_balance
                 .deposit_mut()
-                .add(asset.amount())
+                .add(asset.amount() + asset.fees())
                 .unwrap();
 
             self.balances.set(
@@ -186,7 +168,7 @@ impl NativeCoinService {
             self.token_fees.set(&token_id, token_fee);
 
             if token.network() != &self.network {
-                self.burn(&token_id, asset.amount());
+                self.burn(&token_id, asset.amount(), &token);
             }
         });
     }
@@ -201,9 +183,21 @@ impl NativeCoinService {
                 .sub(asset.amount() + asset.fees())
                 .unwrap();
             sender_balance.refundable_mut().add(asset.amount()).unwrap();
+            self.balances.set(&sender_id, &token_id, sender_balance);
 
-            let mut current_account_balance = self.balances.get(&env::current_account_id(), &token_id).unwrap();
-            current_account_balance.deposit_mut().add(asset.fees()).unwrap();
+            let mut current_account_balance = self
+                .balances
+                .get(&env::current_account_id(), &token_id)
+                .unwrap();
+            current_account_balance
+                .deposit_mut()
+                .add(asset.fees())
+                .unwrap();
+            self.balances.set(
+                &env::current_account_id(),
+                &token_id,
+                current_account_balance,
+            );
 
             token_fee.add(asset.fees()).unwrap();
             self.token_fees.set(&token_id, token_fee);
@@ -283,7 +277,7 @@ impl NativeCoinService {
 
         tokens.iter().for_each(|(index, token_id, token)| {
             if token.network() != &self.network {
-                self.mint(token_id, assets[index.to_owned()].amount());
+                self.mint(token_id, assets[index.to_owned()].amount(), &token);
             }
 
             self.internal_transfer(
@@ -352,7 +346,7 @@ impl NativeCoinService {
             .expect("Token receiver no longer exists");
 
         if receiver_balance.deposit() > 0 {
-            let refund_amount = std::cmp::min(receiver_balance.deposit(), unused_amount); // TODO: Rewalk
+            let refund_amount = std::cmp::min(receiver_balance.deposit(), unused_amount); // TODO: Revisit
             receiver_balance.deposit_mut().sub(refund_amount).unwrap();
             self.balances
                 .set(&receiver_id.clone(), token_id, receiver_balance);

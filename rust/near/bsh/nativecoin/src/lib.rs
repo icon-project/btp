@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use btp_common::btp_address::Address;
 use btp_common::errors::{BshError};
+use libraries::types::messages::Message;
 use libraries::types::{
     Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId,
 };
@@ -12,6 +13,8 @@ use libraries::{
     types::Tokens, types::Transfer, types::Requests
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::LazyOption;
+use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde_json::{to_value, Value};
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -49,6 +52,9 @@ pub struct NativeCoinService {
     serial_no: i128,
     bmc: AccountId,
     name: String,
+
+    #[cfg(feature = "testable")]
+    pub message: LazyOption<Base64VecU8>,
 }
 
 #[near_bindgen]
@@ -66,8 +72,12 @@ impl NativeCoinService {
         let mut tokens = <Tokens<NativeCoin>>::new();
         let mut balances = Balances::new();
         let native_coin_id = Self::hash_token_id(native_coin.name());
+        
         balances.add(&env::current_account_id(), &native_coin_id);
         tokens.add(&native_coin_id, &native_coin);
+
+        let mut token_fees = TokenFees::new();
+        token_fees.add(&native_coin_id);
         Self {
             native_coin_name: native_coin.name().to_owned(),
             network,
@@ -75,11 +85,14 @@ impl NativeCoinService {
             tokens,
             balances,
             storage_balances: StorageBalances::new(),
-            token_fees: TokenFees::new(),
+            token_fees,
             serial_no: Default::default(),
             requests: Requests::new(),
             bmc,
-            name: service_name
+            name: service_name,
+
+            #[cfg(feature = "testable")]
+            message: LazyOption::new(b"message".to_vec(), None)
         }
     }
 
@@ -91,6 +104,12 @@ impl NativeCoinService {
         &self.name
     }
 
+    #[cfg(feature = "testable")]
+    pub fn serial_no(&self) -> i128 {
+        self.serial_no
+    }
+
+    #[cfg(not(feature = "testable"))]
     fn serial_no(&self) -> i128 {
         self.serial_no
     }

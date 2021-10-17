@@ -20,12 +20,12 @@ impl AccountBalance {
         self.deposit
     }
 
-    pub fn locked(&self) -> &Balance {
-        &self.locked
+    pub fn locked(&self) -> Balance {
+        self.locked
     }
 
-    pub fn refundable(&self) -> &Balance {
-        &self.refundable
+    pub fn refundable(&self) -> Balance {
+        self.refundable
     }
 
     pub fn deposit_mut(&mut self) -> &mut Balance {
@@ -356,7 +356,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.locked(), 1000);
+        assert_eq!(result.locked(), 1000);
     }
 
     #[test]
@@ -389,7 +389,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.locked(), 1000);
+        assert_eq!(result.locked(), 1000);
 
         let mut account_balance = balances
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
@@ -407,7 +407,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.locked(), 999);
+        assert_eq!(result.locked(), 999);
     }
 
     #[test]
@@ -439,7 +439,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.refundable(), 1000);
+        assert_eq!(result.refundable(), 1000);
     }
 
     #[test]
@@ -472,7 +472,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.refundable(), 1000);
+        assert_eq!(result.refundable(), 1000);
 
         let mut account_balance = balances
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
@@ -493,6 +493,6 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        assert_eq!(*result.refundable(), 999);
+        assert_eq!(result.refundable(), 999);
     }
 }

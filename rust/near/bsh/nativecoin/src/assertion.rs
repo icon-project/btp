@@ -79,7 +79,6 @@ impl NativeCoinService {
     }
 
     pub fn assert_have_sufficient_balance(&self, amount: u128) {
-        println!("{}", env::account_balance());
         require!(
             env::account_balance() > amount,
             format!(
@@ -117,7 +116,7 @@ impl NativeCoinService {
     ) {
         if let Some(balance) = self.balances.get(&account, &token_id) {
             require!(
-                balance.refundable() >= &amount,
+                balance.refundable() >= amount,
                 format!("{}", BshError::NotMinimumRefundable).as_str()
             );
         } else {

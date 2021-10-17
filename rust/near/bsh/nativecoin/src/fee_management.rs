@@ -24,6 +24,12 @@ impl NativeCoinService {
             })
             .collect()
     }
+
+    pub fn handle_fee_gathering(&mut self, fee_aggregator: BTPAddress, service: String) {
+        self.assert_predecessor_is_bmc();
+        self.assert_valid_service(&service);
+        self.transfer_fees(&fee_aggregator);
+    }
 }
 
 impl NativeCoinService {
@@ -35,11 +41,13 @@ impl NativeCoinService {
             .iter()
             .filter_map(|token| {
                 let token_id = Self::hash_token_id(&token.name);
-                if let Some(token_fee) = self.token_fees.clone().get(&token_id) {
+                let token_fee = self.token_fees.get(&token_id).unwrap().clone();
+
+                if token_fee > 0 {
                     self.token_fees.set(&token_id, 0);
-                    
+
                     Some(
-                        self.process_external_transfer(&token_id, &sender_id, *token_fee)
+                        self.process_external_transfer(&token_id, &sender_id, token_fee)
                             .unwrap(),
                     )
                 } else {

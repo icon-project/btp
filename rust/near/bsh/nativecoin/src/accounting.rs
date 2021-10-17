@@ -53,10 +53,28 @@ impl NativeCoinService {
         self.assert_have_minimum_amount(amount.into());
         self.assert_tokens_exists(&vec![coin_id.clone()]);
         self.assert_have_sufficient_refundable(&account, &coin_id, amount);
-        
+
         let mut balance = self.balances.get(&account, &coin_id).unwrap();
         balance.refundable_mut().sub(amount).unwrap();
         balance.deposit_mut().add(amount).unwrap();
+    }
+
+    pub fn locked_balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        let balance = self
+            .balances
+            .get(&owner_id, &token_id)
+            .expect(format!("{}", BshError::AccountNotExist).as_str());
+        balance.locked().into()
+    }
+
+    pub fn refundable_balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        let balance = self
+            .balances
+            .get(&owner_id, &token_id)
+            .expect(format!("{}", BshError::AccountNotExist).as_str());
+        balance.refundable().into()
     }
 
     #[cfg(feature = "testable")]

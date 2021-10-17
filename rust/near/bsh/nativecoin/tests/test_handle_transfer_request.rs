@@ -17,6 +17,7 @@ fn get_context(
     is_view: bool,
     signer_account_id: AccountId,
     attached_deposit: u128,
+    storage_usage: u64,
 ) -> VMContext {
     VMContext {
         current_account_id: alice().to_string(),
@@ -28,7 +29,7 @@ fn get_context(
         block_timestamp: 0,
         account_balance: 2,
         account_locked_balance: 0,
-        storage_usage: 0,
+        storage_usage,
         attached_deposit,
         prepaid_gas: 10u64.pow(18),
         random_seed: vec![0, 1, 2],
@@ -41,12 +42,14 @@ fn get_context(
 #[test]
 #[cfg(feature = "testable")]
 fn handle_transfer_mint_registered_icx() {
-    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    let context = |account_id: AccountId, deposit: u128| {
+        get_context(vec![], false, account_id, deposit, env::storage_usage())
+    };
     testing_env!(context(alice(), 0));
     let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
-        alice(),
+        bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
     );
@@ -72,6 +75,7 @@ fn handle_transfer_mint_registered_icx() {
         )),
     );
 
+    testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
     let result = contract

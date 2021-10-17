@@ -16,11 +16,8 @@ impl NativeCoinService {
         self.assert_valid_service(message.service());
         let outcome = self.handle_service_message(message.clone().try_into());
 
-        #[cfg(feature = "testable")]
-        outcome.clone().unwrap();
-
         if outcome.is_err() {
-            let error = outcome.unwrap_err();
+            let error = outcome.clone().unwrap_err();
             self.send_response(
                 message.serial_no(),
                 message.source(),
@@ -30,13 +27,16 @@ impl NativeCoinService {
                 }),
             );
         } else {
-            match outcome.unwrap() {
+            match outcome.clone().unwrap() {
                 Some(service_message) => {
                     self.send_response(message.serial_no(), message.source(), service_message);
                 }
                 None => (),
             }
         }
+
+        #[cfg(feature = "testable")]
+        outcome.clone().unwrap();
     }
 
     pub fn handle_btp_error(
@@ -49,13 +49,15 @@ impl NativeCoinService {
     ) {
         self.assert_predecessor_is_bmc();
         self.assert_valid_service(&service);
-        self.handle_response(&WrappedI128::new(serial_no), 1, &format!("[BTPError] source: {}, code: {} message: {}", source, code, message)).unwrap();
-    }
-
-    pub fn handle_fee_gathering(&mut self, fee_aggregator: BTPAddress, service: String) {
-        self.assert_predecessor_is_bmc();
-        self.assert_valid_service(&service);
-        self.transfer_fees(&fee_aggregator);
+        self.handle_response(
+            &WrappedI128::new(serial_no),
+            1,
+            &format!(
+                "[BTPError] source: {}, code: {} message: {}",
+                source, code, message
+            ),
+        )
+        .unwrap();
     }
 
     #[cfg(feature = "testable")]
@@ -109,6 +111,9 @@ impl NativeCoinService {
         assets: Vec<Asset>,
     ) {
         let serial_no = self.serial_no.checked_add(1).unwrap();
+        self.serial_no
+            .clone_from(&serial_no);
+        
         let message = NativeCoinServiceMessage::new(NativeCoinServiceType::RequestCoinTransfer {
             sender: sender_id.clone().into(),
             receiver: destination.account_id().into(),
@@ -123,7 +128,7 @@ impl NativeCoinService {
                 assets,
             ),
         );
-        self.send_service_message(destination.network_address().unwrap(), message.into());
+        self.send_message(serial_no, destination.network_address().unwrap(), message.into());
     }
 
     pub fn send_response(
@@ -132,8 +137,8 @@ impl NativeCoinService {
         destination: &BTPAddress,
         service_message: NativeCoinServiceMessage,
     ) {
-        self.send_service_response(
-            serial_no,
+        self.send_message(
+            *serial_no.get(),
             destination.network_address().unwrap(),
             service_message.into(),
         );
@@ -161,22 +166,22 @@ impl NativeCoinService {
         Ok(None)
     }
 
-    pub fn send_service_message(
+    pub fn send_message(
         &mut self,
+        serial_no: i128,
         destination_network: String,
         message: SerializedMessage,
     ) {
-        self.serial_no
-            .clone_from(&self.serial_no.checked_add(1).unwrap());
-        // TODO
-    }
+        ext_bmc::send_service_message(
+            serial_no,
+            destination_network,
+            message.clone(),
+            self.bmc.clone(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
+        );
 
-    pub fn send_service_response(
-        &mut self,
-        serial_no: &WrappedI128,
-        destination_network: String,
-        message: SerializedMessage,
-    ) {
-        // TODO
+        #[cfg(feature = "testable")]
+        self.message.set(&(message.data().clone().into()));
     }
 }

@@ -48,7 +48,7 @@ impl NativeCoinService {
 }
 
 impl NativeCoinService {
-    pub fn mint(&mut self, token_id: &TokenId, amount: u128) {
+    pub fn mint(&mut self, token_id: &TokenId, amount: u128, token: &Token<NativeCoin>) {
         // TODO: Add to supply
         let mut balance = self
             .balances
@@ -57,9 +57,11 @@ impl NativeCoinService {
         balance.deposit_mut().add(amount).unwrap();
         self.balances
             .set(&env::current_account_id(), token_id, balance);
+
+        log!("[Mint] {} {}", amount, token.symbol());
     }
 
-    pub fn burn(&mut self, token_id: &TokenId, amount: u128) {
+    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<NativeCoin>) {
         // TODO: Remove from supply
         let mut balance = self
             .balances
@@ -68,10 +70,11 @@ impl NativeCoinService {
         balance.deposit_mut().sub(amount).unwrap();
         self.balances
             .set(&env::current_account_id(), token_id, balance);
+        
+        log!("[Burn] {} {}", amount, token.symbol());
     }
 
     pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String>{
-        // TODO: Add to supply
         let mut balance = self
             .balances
             .get(&env::current_account_id(), token_id)
