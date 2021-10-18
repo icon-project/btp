@@ -15,12 +15,438 @@
  */
 package foundation.icon.btp.bmv;
 
-import foundation.icon.btp.bmv.types.BTPAddress;
+import foundation.icon.btp.bmv.lib.HexConverter;
+import foundation.icon.btp.bmv.types.*;
+import foundation.icon.ee.io.DataWriter;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
+import score.ByteArrayObjectWriter;
+import score.Context;
+
+import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MessageDecoderTests {
+
+    private static final byte[] parentHash = {88, -8, -97, 118, 100, 116, 42, 24, 62, 48, -108, 22, -99, -6, -55, -40, 47, -87, -26, 95, -32, -51, -60, -15, 12, 126, 42, 76, -77, -75, -54, -8};
+    private static final byte[] uncleHash = {29, -52, 77, -24, -34, -57, 93, 122, -85, -123, -75, 103, -74, -52, -44, 26, -45, 18, 69, 27, -108, -118, 116, 19, -16, -95, 66, -3, 64, -44, -109, 71};
+    private static final byte[] coinBase = {72, -108, -126, -105, -61, 35, 110, -61, -22, 108, -107, -12, -18, -62, 47, -37, 24, 37, 94, 85};
+    private static final byte[] stateRoot = {-81, 125, -40, -117, -97, 55, 37, -114, -40, 63, 71, 81, -95, -94, -82, -24, 108, -23, -88, 48, -76, 99, -121, 91, 88, -1, -37, -71, -39, -56, -89, -48};
+    private static final byte[] transactionsRoot = {-12, 75, -34, 51, -105, -82, 127, 61, 51, -5, 39, -23, -86, 10, -23, -68, -22, 125, -56, -119, -29, -57, -13, 100, 41, -16, 119, 29, 31, 65, -2, -75};
+    private static final byte[] receiptsRoot = {-31, -73, 95, -102, -84, -9, -51, 46, -62, -111, 13, 56, -96, -48, 69, -48, -111, 74, 22, -21, 97, 56, 37, 53, 54, 72, 5, 15, 69, 16, -127, 94};
+    private static final byte[] logsBloom = {0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 33, 0, 0, 1, 0, 16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 8, 0, 32};
+    private static final BigInteger difficulty = BigInteger.TWO;
+    private static final BigInteger number = BigInteger.valueOf(181);
+    private static final long gasLimit = 19697141;
+    private static final long gasUsed = 3175734;
+    private static final long timestamp = 1632813244;
+    private static final byte[] extraData = {-40, -125, 1, 0, 6, -124, 103, 101, 116, 104, -120, 103, 111, 49, 46, 49, 54, 46, 54, -123, 108, 105, 110, 117, 120, 0, 0, 0, 17, -64, -86, -98, -104, 104, -2, -41, -87, -103, -66, -120, 122, 108, -23, -20, -106, 42, 124, -34, -49, -39, 22, -108, 100, -71, -111, 77, -3, 6, -95, 3, -4, 96, -113, 107, 65, 50, 51, 92, -41, 107, -89, -29, 2, -117, 28, 60, 107, -119, -16, 79, -57, -82, -108, -58, -101, -117, 38, 107, -112, -14, 75, -126, -37, -99, -55, 13, 0};
+    private static final byte[] mixHash = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final byte[] nonce = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    private static final int height = 70;
+    private static final byte[] w1 = {4, -88, 23, -56, 0};
+    private static final byte[] w2 = {102, -111, -73};
+    private static final byte[] w3 = {99, -41, -4, -79, -9, -101, 95, -123, 71, 5, -87, 78, 62, 6, 91, -24, 32, 76, 63, -26};
+    private static final byte[] w4 = {};
+    private static final byte[] w5 = {56, 66, -120, -116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52};
+    private static final byte[] w6 = {-65, -110, -77, -89, 56, -117, 121, 68, -120, 22, -126, 28, -28, 26, -7, -20, -37, -18, 103, -85, -125, 86, -110, 90, -51, -63, -99, -22, 104, 26, -60, -68};
+    private static final byte[] w7 = {38};
+    private static final byte[] w8 = {71, -117, -107, 66, 59, -85, 37, -88, -51, -60, -127, 124, -84, -12, 121, 88, -84, 116, -45, 14, -108, 8, 127, 24, 100, -44, -107, -24, -74, 45, -81, -123};
+
+    private static final int index = 0;
+    private static final byte[] mptKey = {-128};
+    private static final byte[] address = {72, -108, -126, -105, -61, 35, 110, -61, -22, 108, -107, -12, -18, -62, 47, -37, 24, 37, 94, 85};
+    private static final byte[] topic = {88, -8, -97, 118, 100, 116, 42, 24, 62, 48, -108, 22, -99, -6, -55, -40, 47, -87, -26, 95, -32, -51, -60, -15, 12, 126, 42, 76, -77, -75, -54, -8};
+    private static final byte[] data = {-40, -125, 1, 0, 6, -124, 103, 101, 116, 104, -120, 103, 111, 49, 46, 49, 54, 46, 54, -123, 108, 105, 110, 117, 120, 0, 0, 0, 17, -64, -86, -98, -104, 104, -2, -41, -87, -103, -66, -120, 122, 108, -23, -20, -106, 42, 124, -34, -49, -39, 22, -108, 100, -71};
+    private static final byte[] mptProof1 = {0};
+    private static final byte[] mptProof2 = {-7, 1, -75, -71, 1, -78, -7, 1, -81, -126, 32, -128, -71, 1, -87, -7, 1, -90, 1, -126, -84, -87, -71, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final int eventProofIndex = 0;
+
+    /*  BlockHeader
+        BlockUpdate
+        BlockProof
+        BlockWitness
+        ReceiptProof
+        RelayMessage
+     */
+
+    @Test
+    public void testBlockHeader() {
+        DataWriter w = foundation.icon.test.common.Codec.rlp.newWriter();
+        w.writeListHeader(15);
+        w.write(parentHash);
+        w.write(uncleHash);
+        w.write(coinBase);
+        w.write(stateRoot);
+        w.write(transactionsRoot);
+        w.write(receiptsRoot);
+        w.write(logsBloom);
+        w.write(difficulty);
+        w.write(number);
+        w.write(gasLimit);
+        w.write(gasUsed);
+        w.write(timestamp);
+        w.write(extraData);
+        w.write(mixHash);
+        w.write(nonce);
+        w.writeFooter();
+
+        BlockHeader bh = BlockHeader.fromBytes(w.toByteArray());
+
+        assertEquals(BigInteger.valueOf(97), bh.getNetwork());
+        assertEquals(Hex.toHexString(parentHash), Hex.toHexString(bh.getParentHash()));
+        assertEquals(Hex.toHexString(uncleHash), Hex.toHexString(bh.getUncleHash()));
+        assertEquals(Hex.toHexString(coinBase), Hex.toHexString(bh.getCoinBase()));
+        assertEquals(Hex.toHexString(stateRoot), Hex.toHexString(bh.getStateRoot()));
+        assertEquals(Hex.toHexString(transactionsRoot), Hex.toHexString(bh.getTransactionsRoot()));
+        assertEquals(Hex.toHexString(receiptsRoot), Hex.toHexString(bh.getReceiptsRoot()));
+        assertEquals(Hex.toHexString(logsBloom), Hex.toHexString(bh.getLogsBloom()));
+        assertEquals(difficulty, bh.getDifficulty());
+        assertEquals(number, bh.getNumber());
+        assertEquals(gasLimit, bh.getGasLimit());
+        assertEquals(gasUsed, bh.getGasUsed());
+        assertEquals(timestamp, bh.getTimestamp());
+        assertEquals(Hex.toHexString(extraData), Hex.toHexString(bh.getExtraData()));
+        assertEquals(Hex.toHexString(mixHash), Hex.toHexString(bh.getMixHash()));
+        assertEquals(Hex.toHexString(nonce), Hex.toHexString(bh.getNonce()));
+    }
+
+    @Test
+    public void testBlockUpdate() {
+        DataWriter w = foundation.icon.test.common.Codec.rlp.newWriter();
+        w.writeListHeader(15);
+        w.write(parentHash);
+        w.write(uncleHash);
+        w.write(coinBase);
+        w.write(stateRoot);
+        w.write(transactionsRoot);
+        w.write(receiptsRoot);
+        w.write(logsBloom);
+        w.write(difficulty);
+        w.write(number);
+        w.write(gasLimit);
+        w.write(gasUsed);
+        w.write(timestamp);
+        w.write(extraData);
+        w.write(mixHash);
+        w.write(nonce);
+        w.writeFooter();
+
+        BlockHeader header = BlockHeader.fromBytes(w.toByteArray());
+
+        DataWriter wr = foundation.icon.test.common.Codec.rlp.newWriter();
+        wr.writeListHeader(16);
+        wr.write(BigInteger.valueOf(97));
+        wr.write(parentHash);
+        wr.write(uncleHash);
+        wr.write(coinBase);
+        wr.write(stateRoot);
+        wr.write(transactionsRoot);
+        wr.write(receiptsRoot);
+        wr.write(logsBloom);
+        wr.write(difficulty);
+        wr.write(number);
+        wr.write(gasLimit);
+        wr.write(gasUsed);
+        wr.write(timestamp);
+        wr.write(extraData);
+        wr.write(mixHash);
+        wr.write(nonce);
+        wr.writeFooter();
+
+        BlockUpdate bu = new BlockUpdate(header, null, new byte[0][0], null);;
+        assertBlockUpdate(wr, bu);
+    }
+
+    @Test
+    public void testBlockProof() {
+        DataWriter bhWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bhWriter.writeListHeader(15);
+        bhWriter.write(parentHash);
+        bhWriter.write(uncleHash);
+        bhWriter.write(coinBase);
+        bhWriter.write(stateRoot);
+        bhWriter.write(transactionsRoot);
+        bhWriter.write(receiptsRoot);
+        bhWriter.write(logsBloom);
+        bhWriter.write(difficulty);
+        bhWriter.write(number);
+        bhWriter.write(gasLimit);
+        bhWriter.write(gasUsed);
+        bhWriter.write(timestamp);
+        bhWriter.write(extraData);
+        bhWriter.write(mixHash);
+        bhWriter.write(nonce);
+        bhWriter.writeFooter();
+
+        DataWriter bwWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bwWriter.writeListHeader(2);
+        bwWriter.write(height);
+        bwWriter.write(w1);
+        bwWriter.write(w2);
+        bwWriter.write(w3);
+        bwWriter.write(w4);
+        bwWriter.write(w5);
+        bwWriter.write(w6);
+        bwWriter.write(w7);
+        bwWriter.write(w8);
+        bwWriter.writeFooter();
+
+        DataWriter bpWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bpWriter.writeListHeader(2);
+        bpWriter.write(bhWriter.toByteArray());
+        bpWriter.write(bwWriter.toByteArray());
+        bpWriter.writeFooter();
+
+        BlockProof bp = BlockProof.fromBytes(bpWriter.toByteArray());
+        assertBlockProof(bp);
+    }
+
+    @Test
+    public void testBlockWitness() {
+        int height = 70;
+        byte[] w1 = {4, -88, 23, -56, 0};
+        byte[] w2 = {102, -111, -73};
+        byte[] w3 = {99, -41, -4, -79, -9, -101, 95, -123, 71, 5, -87, 78, 62, 6, 91, -24, 32, 76, 63, -26};
+        byte[] w4 = {};
+        byte[] w5 = {56, 66, -120, -116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52};
+        byte[] w6 = {-65, -110, -77, -89, 56, -117, 121, 68, -120, 22, -126, 28, -28, 26, -7, -20, -37, -18, 103, -85, -125, 86, -110, 90, -51, -63, -99, -22, 104, 26, -60, -68};
+        byte[] w7 = {38};
+        byte[] w8 = {71, -117, -107, 66, 59, -85, 37, -88, -51, -60, -127, 124, -84, -12, 121, 88, -84, 116, -45, 14, -108, 8, 127, 24, 100, -44, -107, -24, -74, 45, -81, -123};
+
+        DataWriter writer = foundation.icon.test.common.Codec.rlp.newWriter();
+        writer.writeListHeader(2);
+        writer.write(height);
+        writer.write(w1);
+        writer.write(w2);
+        writer.write(w3);
+        writer.write(w4);
+        writer.write(w5);
+        writer.write(w6);
+        writer.write(w7);
+        writer.write(w8);
+        writer.writeFooter();
+
+        BlockWitness bw = BlockWitness.fromBytes(writer.toByteArray());
+        assertEquals(height, bw.getHeight());
+        assertEquals(Hex.toHexString(w1), Hex.toHexString(bw.getWitness().get(0)));
+        assertEquals(Hex.toHexString(w2), Hex.toHexString(bw.getWitness().get(1)));
+        assertEquals(Hex.toHexString(w3), Hex.toHexString(bw.getWitness().get(2)));
+        assertEquals(Hex.toHexString(w4), Hex.toHexString(bw.getWitness().get(3)));
+        assertEquals(Hex.toHexString(w5), Hex.toHexString(bw.getWitness().get(4)));
+        assertEquals(Hex.toHexString(w6), Hex.toHexString(bw.getWitness().get(5)));
+        assertEquals(Hex.toHexString(w7), Hex.toHexString(bw.getWitness().get(6)));
+        assertEquals(Hex.toHexString(w8), Hex.toHexString(bw.getWitness().get(7)));
+    }
+
+    @Test
+    public void testReceiptProof() {
+        DataWriter eventWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        eventWriter.writeListHeader(3);
+        eventWriter.write(address);
+        eventWriter.writeListHeader(1);
+        eventWriter.write(topic);
+        eventWriter.writeFooter();
+        eventWriter.write(data);
+        eventWriter.writeFooter();
+
+        byte[] proof = eventWriter.toByteArray();
+        int eventProofIndex = 0;
+        DataWriter eventProofWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        eventProofWriter.writeListHeader(2);
+        eventProofWriter.write(eventProofIndex);
+        eventProofWriter.write(proof);
+        eventProofWriter.writeFooter();
+
+        DataWriter mptProofWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        mptProofWriter.writeListHeader(2);
+        mptProofWriter.write(mptProof1);
+        mptProofWriter.write(mptProof2);
+        mptProofWriter.writeFooter();
+
+        DataWriter rpWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        rpWriter.writeListHeader(4);
+        rpWriter.write(index);
+        rpWriter.write(mptProofWriter.toByteArray());
+
+        rpWriter.writeListHeader(1);
+        rpWriter.writeListHeader(2);
+        rpWriter.write(eventProofIndex);
+        rpWriter.write(proof);
+        rpWriter.writeFooter();
+        rpWriter.writeFooter();
+        rpWriter.writeFooter();
+
+        ReceiptProof rp = ReceiptProof.fromBytes(rpWriter.toByteArray());
+        assertReceiptProof(proof, rp);
+    }
+
+    @Test
+    public void testRelayMessage() {
+        // block header
+        DataWriter bhWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bhWriter.writeListHeader(15);
+        bhWriter.write(parentHash);
+        bhWriter.write(uncleHash);
+        bhWriter.write(coinBase);
+        bhWriter.write(stateRoot);
+        bhWriter.write(transactionsRoot);
+        bhWriter.write(receiptsRoot);
+        bhWriter.write(logsBloom);
+        bhWriter.write(difficulty);
+        bhWriter.write(number);
+        bhWriter.write(gasLimit);
+        bhWriter.write(gasUsed);
+        bhWriter.write(timestamp);
+        bhWriter.write(extraData);
+        bhWriter.write(mixHash);
+        bhWriter.write(nonce);
+        bhWriter.writeFooter();
+
+        DataWriter wr = foundation.icon.test.common.Codec.rlp.newWriter();
+        wr.writeListHeader(16);
+        wr.write(BigInteger.valueOf(97));
+        wr.write(parentHash);
+        wr.write(uncleHash);
+        wr.write(coinBase);
+        wr.write(stateRoot);
+        wr.write(transactionsRoot);
+        wr.write(receiptsRoot);
+        wr.write(logsBloom);
+        wr.write(difficulty);
+        wr.write(number);
+        wr.write(gasLimit);
+        wr.write(gasUsed);
+        wr.write(timestamp);
+        wr.write(extraData);
+        wr.write(mixHash);
+        wr.write(nonce);
+        wr.writeFooter();
+
+        // block update
+        BlockHeader bh = BlockHeader.fromBytes(bhWriter.toByteArray());
+        ByteArrayObjectWriter buWriter = Context.newByteArrayObjectWriter("RLPn");
+        BlockUpdate bu = new BlockUpdate(bh, null, new byte[0][0], null);
+        BlockUpdate.writeObject(buWriter, bu, bhWriter.toByteArray());
+
+        // block proof
+        DataWriter bwWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bwWriter.writeListHeader(2);
+        bwWriter.write(height);
+        bwWriter.write(w1);
+        bwWriter.write(w2);
+        bwWriter.write(w3);
+        bwWriter.write(w4);
+        bwWriter.write(w5);
+        bwWriter.write(w6);
+        bwWriter.write(w7);
+        bwWriter.write(w8);
+        bwWriter.writeFooter();
+
+        DataWriter bpWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        bpWriter.writeListHeader(2);
+        bpWriter.write(bhWriter.toByteArray());
+        bpWriter.write(bwWriter.toByteArray());
+        bpWriter.writeFooter();
+
+        // receipt proof
+
+        DataWriter eventWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        eventWriter.writeListHeader(3);
+        eventWriter.write(address);
+        eventWriter.writeListHeader(1);
+        eventWriter.write(topic);
+        eventWriter.writeFooter();
+        eventWriter.write(data);
+        eventWriter.writeFooter();
+
+        byte[] proof = eventWriter.toByteArray();
+        DataWriter eventProofWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        eventProofWriter.writeListHeader(2);
+        eventProofWriter.write(eventProofIndex);
+        eventProofWriter.write(proof);
+        eventProofWriter.writeFooter();
+
+        byte[] mptProof1 = {0};
+        byte[] mptProof2 = {-7, 1, -75, -71, 1, -78, -7, 1, -81, -126, 32, -128, -71, 1, -87, -7, 1, -90, 1, -126, -84, -87, -71, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        DataWriter mptProofWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        mptProofWriter.writeListHeader(2);
+        mptProofWriter.write(mptProof1);
+        mptProofWriter.write(mptProof2);
+        mptProofWriter.writeFooter();
+
+        DataWriter rpWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        rpWriter.writeListHeader(4);
+        rpWriter.write(index);
+        rpWriter.write(mptProofWriter.toByteArray());
+
+        rpWriter.writeListHeader(1);
+        rpWriter.writeListHeader(2);
+        rpWriter.write(eventProofIndex);
+        rpWriter.write(proof);
+        rpWriter.writeFooter();
+        rpWriter.writeFooter();
+        rpWriter.writeFooter();
+
+        DataWriter relayMsgWriter = foundation.icon.test.common.Codec.rlp.newWriter();
+        relayMsgWriter.writeListHeader(3);
+        relayMsgWriter.writeListHeader(1);
+        relayMsgWriter.write(buWriter.toByteArray());
+        relayMsgWriter.writeFooter();
+        relayMsgWriter.write(bpWriter.toByteArray());
+        relayMsgWriter.writeListHeader(1);
+        relayMsgWriter.write(rpWriter.toByteArray());
+        relayMsgWriter.writeFooter();
+        relayMsgWriter.writeFooter();
+
+        RelayMessage relayMessage = RelayMessage.fromBytes(relayMsgWriter.toByteArray());
+
+        assertBlockUpdate(wr, relayMessage.getBlockUpdates()[0]);
+        assertBlockProof(relayMessage.getBlockProof());
+        assertReceiptProof(proof, relayMessage.getReceiptProofs()[0]);
+    }
+
+    private void assertBlockUpdate(DataWriter bhWriter, BlockUpdate bu) {
+        String blockHeaderEncoded = HexConverter.bytesToHex(bhWriter.toByteArray());
+
+        assertEquals(blockHeaderEncoded, HexConverter.bytesToHex(BlockHeader.toBytes(bu.getBlockHeader())));
+        assertEquals(bu.getVotes(), null);
+        assertEquals(null, bu.getVotes());
+        assertEquals(0, bu.getNextValidators().length);
+        assertEquals(null, bu.getEvmHeader());
+    }
+
+    private void assertBlockProof(BlockProof bp) {
+        assertEquals(height, bp.getBlockWitness().getHeight());
+        assertEquals(Hex.toHexString(w1), Hex.toHexString(bp.getBlockWitness().getWitness().get(0)));
+        assertEquals(Hex.toHexString(w2), Hex.toHexString(bp.getBlockWitness().getWitness().get(1)));
+        assertEquals(Hex.toHexString(w3), Hex.toHexString(bp.getBlockWitness().getWitness().get(2)));
+        assertEquals(Hex.toHexString(w4), Hex.toHexString(bp.getBlockWitness().getWitness().get(3)));
+        assertEquals(Hex.toHexString(w5), Hex.toHexString(bp.getBlockWitness().getWitness().get(4)));
+        assertEquals(Hex.toHexString(w6), Hex.toHexString(bp.getBlockWitness().getWitness().get(5)));
+        assertEquals(Hex.toHexString(w7), Hex.toHexString(bp.getBlockWitness().getWitness().get(6)));
+        assertEquals(Hex.toHexString(w8), Hex.toHexString(bp.getBlockWitness().getWitness().get(7)));
+    }
+    private void assertReceiptProof(byte[] proof, ReceiptProof rp) {
+        assertEquals(index, rp.getIndex());
+        assertEquals(Hex.toHexString(mptKey), Hex.toHexString(rp.getMptKey()));
+        // check event proofs
+        assertEquals(1, rp.getEventProofs().size());
+        assertEquals(eventProofIndex, rp.getEventProofs().get(0).getIndex());
+        assertEquals(Hex.toHexString(proof), Hex.toHexString(rp.getEventProofs().get(0).getProof()));
+        // check event logs
+        assertEquals(1, rp.getEvents().size());
+        assertEquals(Hex.toHexString(address), Hex.toHexString(rp.getEvents().get(0).getAddress()));
+        assertEquals(1, rp.getEvents().get(0).getTopics().size());
+        assertEquals(Hex.toHexString(topic), Hex.toHexString(rp.getEvents().get(0).getTopics().get(0)));
+        assertEquals(Hex.toHexString(data), Hex.toHexString(rp.getEvents().get(0).getData()));
+        // check mpt proofs
+        assertEquals(2, rp.getMptProofs().size());
+        assertEquals(Hex.toHexString(mptProof1), Hex.toHexString(rp.getMptProofs().get(0)));
+        assertEquals(Hex.toHexString(mptProof2), Hex.toHexString(rp.getMptProofs().get(1)));
+    }
 
     @Test
     public void testBTPAddress() {

@@ -60,8 +60,9 @@ public class BlockUpdate {
     }
 
     public static void writeObject(ObjectWriter w, BlockUpdate v, byte[] headerBytes) {
-        w.beginList(4);
+        w.beginList(5);
         w.write(headerBytes);
+        w.writeNull();
         w.writeNull();
         w.writeNull();
         w.writeNull();
