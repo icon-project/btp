@@ -38,7 +38,7 @@ COPY ./scripts/provision.sh /
 COPY bsc.ks.json /bsc.ks.json
 
 #RUN mkdir {BTPSIMPLE_SCRIPTS_DIR}
-COPY ./*.js /btpsimple/js/
+#COPY ./*.js /btpsimple/js/
 COPY ./scripts/*.js /btpsimple/js/
 
 RUN chmod +x /provision.sh
