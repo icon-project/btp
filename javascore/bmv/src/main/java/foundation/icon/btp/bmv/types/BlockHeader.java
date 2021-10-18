@@ -15,6 +15,8 @@
  */
 package foundation.icon.btp.bmv.types;
 
+import foundation.icon.btp.bmv.lib.ExtraDataTypeDecoder;
+import foundation.icon.btp.bmv.lib.HexConverter;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
@@ -84,7 +86,7 @@ public class BlockHeader {
         byte[] hash = Context.hash("keccak-256", bytes);
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, bytes);
         reader.beginList();
-        //TODO: uncomment later
+        //TODO: check if needed still after adding headerBytes field with has the eth rlp encoding
         //BigInteger network = reader.readBigInteger();
         byte[] parentHash = reader.readByteArray();
         byte[] uncleHash = reader.readByteArray();
@@ -147,16 +149,16 @@ public class BlockHeader {
     }
 
     //todo: commented out for testing in local now until we get proper bsc data
-    public boolean verifyValidatorSignature(byte[] blockHeader) {
-        /*try {
-            String coinbase = HexConverter.bytesToHex(this.getCoinBase());
-            ExtraDataTypeDecoder typeDecoder = new ExtraDataTypeDecoder(getExtraData());
-            byte[] modifiedExtraData = ExtraDataTypeDecoder.getBytes(0, this.getExtraData().length - 65);
+    public static boolean verifyValidatorSignature(byte[] evmHeader) {
+        try {
+            BlockHeader bh = BlockHeader.fromBytes(evmHeader);
+            String coinbase = HexConverter.bytesToHex(bh.getCoinBase());
+            ExtraDataTypeDecoder typeDecoder = new ExtraDataTypeDecoder(bh.getExtraData());
+            byte[] modifiedExtraData = ExtraDataTypeDecoder.getBytes(0, bh.getExtraData().length - 65);
             // epoch block: 32 bytes of extraVanity + N*{20 bytes of validator address} + 65 bytes of signature
-            // none epoch bloc: 32 bytes of extraVanity + 65 bytes of signature.
+            // non epoch block: 32 bytes of extraVanity + 65 bytes of signature.
             byte[] signature = ExtraDataTypeDecoder.getBytes(32, 65);
             //Context.println("signature: " + HexConverter.bytesToHex(signature));
-            BlockHeader bh = BlockHeader.fromBytes(blockHeader);
             bh.setExtraData(modifiedExtraData);
             byte[] modifiedHeaderBytes = BlockHeader.toBytes(bh);
             byte[] signedBH = Context.hash("keccak-256", modifiedHeaderBytes);
@@ -165,13 +167,12 @@ public class BlockHeader {
             //Context.println("PK: " + HexConverter.bytesToHex(publicKey));
             byte[] pkwithoutPrefix = new byte[64];
             System.arraycopy(publicKey, 1, pkwithoutPrefix, 0, publicKey.length - 1);
-            byte[] address = getAddressBytesFromKey(publicKey);
+            byte[] address = getAddressBytesFromKey(pkwithoutPrefix);
             //Context.println("address1: "+ HexConverter.bytesToHex(address));
             return Context.verifySignature("ecdsa-secp256k1", signedBH, signature, publicKey);
         } catch (Exception e) {
             return false;
-        }*/
-        return true;
+        }
     }
 
     public static byte[] getAddressBytesFromKey(byte[] pubKey) {

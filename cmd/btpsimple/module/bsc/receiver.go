@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -31,8 +32,9 @@ import (
 	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
 
-	"github.com/icon-project/btp/common/log"
 	"math/big"
+
+	"github.com/icon-project/btp/common/log"
 )
 
 const (
@@ -82,6 +84,7 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	update := &BlockUpdate{}
 	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*header)
 	update.Validators = r.consensusStates.NextValidatorSet
+	update.EvmHeader, _ = rlp.EncodeToBytes(v.Header)
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(update)
 	if err != nil {

@@ -30,14 +30,16 @@ public class BlockUpdate {
     private final Votes votes;
     private final byte[][] nextValidators;
     private ValidatorList nextValidatorList;
+    private final byte[] evmHeader; //Bytes of Block Header with ethereum rlp encoding for the signature verification
 
     public BlockUpdate(BlockHeader header,
                        Votes votes,
-                       byte[][] nextValidators) {
+                       byte[][] nextValidators, byte[] evmHeader) {
         this.blockHeader = header;
         this.votes = votes;
         this.nextValidators = nextValidators;
         this.nextValidatorList = ValidatorList.fromAddressBytes(nextValidators);
+        this.evmHeader = evmHeader;
     }
 
     public static BlockUpdate fromBytes(byte[] serialized) {
@@ -52,14 +54,15 @@ public class BlockUpdate {
         byte[][] nextValidators = null;
         if (reader.hasNext())
             nextValidators = readValidators(reader.readNullable(byte[].class));
-
+        byte[] evmHeader = reader.readNullable(byte[].class);
         reader.end();
-        return new BlockUpdate(blockHeader, votes, nextValidators);
+        return new BlockUpdate(blockHeader, votes, nextValidators, evmHeader);
     }
 
     public static void writeObject(ObjectWriter w, BlockUpdate v, byte[] headerBytes) {
-        w.beginList(3);
+        w.beginList(4);
         w.write(headerBytes);
+        w.writeNull();
         w.writeNull();
         w.writeNull();
         w.end();
@@ -87,6 +90,10 @@ public class BlockUpdate {
 
     public Votes getVotes() {
         return votes;
+    }
+
+    public byte[] getEvmHeader() {
+        return evmHeader;
     }
 
     public byte[][] getNextValidators() {

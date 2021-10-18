@@ -67,7 +67,7 @@ public class ClassDecoderUtil {
             nextValidators = decodeValidatorList(reader.readByteArray(), Codec.rlp);
 
         reader.readFooter();
-        return new BlockUpdate(blockHeader, null, nextValidators);
+        return new BlockUpdate(blockHeader, null, nextValidators, null);
     }
 
     public static BlockHeader decodeBlockHeader(byte[] bytes, Codec codec) {

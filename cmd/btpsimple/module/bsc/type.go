@@ -19,14 +19,15 @@ package bsc
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/icon-project/btp/cmd/btpsimple/module"
-	"math/big"
-	"strconv"
-	"strings"
 
 	"github.com/icon-project/btp/common/jsonrpc"
 )
@@ -162,6 +163,7 @@ type BlockNotification struct {
 type BlockUpdate struct {
 	BlockHeader []byte
 	Validators  []byte
+	EvmHeader   []byte
 }
 
 type RelayMessage struct {

@@ -110,7 +110,6 @@ public class BTPMessageVerifier {
         if (msgList.size() > 0) {
             this.lastHeight.set(lastHeight);
         }
-
         return msgList;
     }
 
@@ -149,7 +148,7 @@ public class BTPMessageVerifier {
         for (BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
             int nextHeight = (int) (mta.getHeight() + 1);
             if (BigInteger.valueOf(nextHeight).compareTo(blockUpdate.getBlockHeader().getNumber()) == 0) {
-                if (!blockUpdate.getBlockHeader().verifyValidatorSignature(BlockHeader.toBytes(blockUpdate.getBlockHeader()))) {
+                if (!BlockHeader.verifyValidatorSignature(blockUpdate.getEvmHeader())) {
                     Context.revert(BMVErrorCodes.INVALID_COINBASE_SIGNATURE, "Invalid validator signature");
                 }
                 mta.add(blockUpdate.getBlockHeader().getHash());
