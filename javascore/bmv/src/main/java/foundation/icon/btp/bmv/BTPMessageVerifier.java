@@ -148,7 +148,7 @@ public class BTPMessageVerifier {
         for (BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
             int nextHeight = (int) (mta.getHeight() + 1);
             if (BigInteger.valueOf(nextHeight).compareTo(blockUpdate.getBlockHeader().getNumber()) == 0) {
-                if (!BlockHeader.verifyValidatorSignature(blockUpdate.getEvmHeader())) {
+                if (!BlockHeader.verifyValidatorSignature(blockUpdate.getBlockHeader(),blockUpdate.getEvmHeader())) {
                     Context.revert(BMVErrorCodes.INVALID_COINBASE_SIGNATURE, "Invalid validator signature");
                 }
                 mta.add(blockUpdate.getBlockHeader().getHash());

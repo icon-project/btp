@@ -149,9 +149,9 @@ public class BlockHeader {
     }
 
     //todo: commented out for testing in local now until we get proper bsc data
-    public static boolean verifyValidatorSignature(byte[] evmHeader) {
+    public static boolean verifyValidatorSignature(BlockHeader bh, byte[] evmHeader) {
         try {
-            BlockHeader bh = BlockHeader.fromBytes(evmHeader);
+            //BlockHeader bh = BlockHeader.fromBytes(evmHeader);
             String coinbase = HexConverter.bytesToHex(bh.getCoinBase());
             ExtraDataTypeDecoder typeDecoder = new ExtraDataTypeDecoder(bh.getExtraData());
             byte[] modifiedExtraData = ExtraDataTypeDecoder.getBytes(0, bh.getExtraData().length - 65);
@@ -161,7 +161,7 @@ public class BlockHeader {
             //Context.println("signature: " + HexConverter.bytesToHex(signature));
             bh.setExtraData(modifiedExtraData);
             byte[] modifiedHeaderBytes = BlockHeader.toBytes(bh);
-            byte[] signedBH = Context.hash("keccak-256", modifiedHeaderBytes);
+            byte[] signedBH = Context.hash("keccak-256", evmHeader);
             //Context.println("signedContent: " + HexConverter.bytesToHex(signedBH));
             byte[] publicKey = Context.recoverKey("ecdsa-secp256k1", signedBH, signature, false);
             //Context.println("PK: " + HexConverter.bytesToHex(publicKey));

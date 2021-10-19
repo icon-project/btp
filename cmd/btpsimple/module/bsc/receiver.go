@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -84,7 +85,9 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	update := &BlockUpdate{}
 	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*header)
 	update.Validators = r.consensusStates.NextValidatorSet
-	update.EvmHeader, _ = rlp.EncodeToBytes(v.Header)
+	buf := new(bytes.Buffer)
+	encodeSigHeader(buf, v.Header)
+	update.EvmHeader = buf.Bytes()
 
 	bu.Proof, err = codec.RLP.MarshalToBytes(update)
 	if err != nil {
@@ -92,6 +95,31 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, er
 	}
 
 	return bu, nil
+}
+
+func encodeSigHeader(w io.Writer, header *types.Header) {
+	err := rlp.Encode(w, []interface{}{
+		big.NewInt(97),
+		header.ParentHash,
+		header.UncleHash,
+		header.Coinbase,
+		header.Root,
+		header.TxHash,
+		header.ReceiptHash,
+		header.Bloom,
+		header.Difficulty,
+		header.Number,
+		header.GasLimit,
+		header.GasUsed,
+		header.Time,
+		header.Extra[:len(header.Extra)-65], // Yes, this will panic if extra is too short
+		header.MixDigest,
+		header.Nonce,
+	})
+
+	if err != nil {
+		panic("can't encode: " + err.Error())
+	}
 }
 
 func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProof, error) {
