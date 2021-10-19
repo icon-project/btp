@@ -329,7 +329,7 @@ public class MessageDecoderTests {
         BlockHeader bh = BlockHeader.fromBytes(bhWriter.toByteArray());
         ByteArrayObjectWriter buWriter = Context.newByteArrayObjectWriter("RLPn");
         BlockUpdate bu = new BlockUpdate(bh, null, new byte[0][0], null);
-        BlockUpdate.writeObject(buWriter, bu, bhWriter.toByteArray());
+        BlockUpdate.writeObject(buWriter, bu, bhWriter.toByteArray(), bhWriter.toByteArray());
 
         // block proof
         DataWriter bwWriter = foundation.icon.test.common.Codec.rlp.newWriter();
@@ -415,9 +415,7 @@ public class MessageDecoderTests {
         assertEquals(bu.getVotes(), null);
         assertEquals(null, bu.getVotes());
         assertEquals(0, bu.getNextValidators().length);
-        assertEquals(null, bu.getEvmHeader());
     }
-
     private void assertBlockProof(BlockProof bp) {
         assertEquals(height, bp.getBlockWitness().getHeight());
         assertEquals(Hex.toHexString(w1), Hex.toHexString(bp.getBlockWitness().getWitness().get(0)));
