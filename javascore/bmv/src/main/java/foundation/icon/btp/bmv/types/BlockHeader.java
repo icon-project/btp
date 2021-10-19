@@ -168,7 +168,8 @@ public class BlockHeader {
             byte[] pkwithoutPrefix = new byte[64];
             System.arraycopy(publicKey, 1, pkwithoutPrefix, 0, publicKey.length - 1);
             byte[] address = getAddressBytesFromKey(pkwithoutPrefix);
-            //Context.println("address1: "+ HexConverter.bytesToHex(address));
+            Context.println("address1: " + HexConverter.bytesToHex(address));
+            Context.println("coinbase: " + HexConverter.bytesToHex(bh.getCoinBase()));
             return Context.verifySignature("ecdsa-secp256k1", signedBH, signature, publicKey);
         } catch (Exception e) {
             return false;
