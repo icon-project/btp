@@ -329,7 +329,7 @@ public class MessageDecoderTests {
         BlockHeader bh = BlockHeader.fromBytes(bhWriter.toByteArray());
         ByteArrayObjectWriter buWriter = Context.newByteArrayObjectWriter("RLPn");
         BlockUpdate bu = new BlockUpdate(bh, null, new byte[0][0], null);
-        BlockUpdate.writeObject(buWriter, bu, bhWriter.toByteArray(), bhWriter.toByteArray());
+        BlockUpdate.writeObject(buWriter, bu, bhWriter.toByteArray());
 
         // block proof
         DataWriter bwWriter = foundation.icon.test.common.Codec.rlp.newWriter();

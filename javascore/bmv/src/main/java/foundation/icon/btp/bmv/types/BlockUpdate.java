@@ -34,7 +34,8 @@ public class BlockUpdate {
 
     public BlockUpdate(BlockHeader header,
                        Votes votes,
-                       byte[][] nextValidators, byte[] evmHeader) {
+                       byte[][] nextValidators,
+                       byte[] evmHeader) {
         this.blockHeader = header;
         this.votes = votes;
         this.nextValidators = nextValidators;
