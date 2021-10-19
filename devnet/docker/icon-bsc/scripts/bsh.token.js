@@ -10,12 +10,14 @@ module.exports = async function (callback) {
     switch (argv["method"]) {
       case "registerToken":
         console.log("registerToken", argv.name)
-        await bshProxy.register(argv.name, argv.symbol, 18, 100, argv.addr)
-        console.log(await bshProxy.tokenNames())
+        tx = await bshProxy.register(argv.name, argv.symbol, 18, 100, argv.addr)
+        //console.log(await bshProxy.tokenNames())
+        console.log(tx)
         break;
       case "fundBSH":
         console.log("fundBSH", argv.addr)
-        await bep20tkn.transfer(argv.addr, web3.utils.toWei("100", 'ether'))
+        tx = await bep20tkn.transfer(argv.addr, web3.utils.toWei("100", 'ether'))
+        console.log(tx)
         var bal = await bep20tkn.balanceOf(argv.addr)
         console.log("BSH Balance" + bal)
         break;
@@ -32,7 +34,7 @@ module.exports = async function (callback) {
         break;
       case "transfer":
         console.log("Init BTP transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
-        let tx = await bshProxy.transfer("ETH", web3.utils.toWei("" + argv.amount, 'ether'), argv.to)
+        tx = await bshProxy.transfer("ETH", web3.utils.toWei("" + argv.amount, 'ether'), argv.to)
         console.log(tx)
         break;
       case "calculateTransferFee":

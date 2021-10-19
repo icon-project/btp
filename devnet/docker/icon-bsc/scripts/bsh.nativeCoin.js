@@ -7,8 +7,9 @@ module.exports = async function (callback) {
     switch (argv["method"]) {
       case "register":
         console.log("registerCoin", argv.name)
-        await bshCore.register(argv.name);
-        console.log(await bshCore.coinNames())
+        tx = await bshCore.register(argv.name);
+        //console.log(await bshCore.coinNames())
+        console.log(tx)
         break;
       case "getBalanceOf":
         var balance = await bshCore.getBalanceOf(argv.addr, argv.name);
@@ -18,7 +19,7 @@ module.exports = async function (callback) {
         break;
       case "transferNativeCoin":
         console.log("Init BTP native transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
-        let tx = await bshCore.transferNativeCoin(argv.to, { value: web3.utils.toWei("" + argv.amount, 'ether') })
+        tx = await bshCore.transferNativeCoin(argv.to, { value: web3.utils.toWei("" + argv.amount, 'ether') })
         console.log(tx)
         break;
       default:

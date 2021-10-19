@@ -8,26 +8,29 @@ module.exports = async function (callback) {
       case "addVerifier":
         console.log("Add verifier ", argv.net, argv.addr)
         tx = await bmcManagement.addVerifier(argv.net, argv.addr);
-        let verifiers = await bmcManagement.getVerifiers();
-        console.log(verifiers)
+        //let verifiers = await bmcManagement.getVerifiers();
+        console.log(tx)
         break;
       case "addLink":
         console.log("Add link ", argv.link)
         tx = await bmcManagement.addLink(argv.link);
-        console.log("links: ", await bmcManagement.getLinks())
+        console.log(tx)
         console.log("Set link")
-        await bmcManagement.setLink(argv.link, argv.blockInterval, argv.maxAggregation, argv.delayLimit);
+        tx = await bmcManagement.setLink(argv.link, argv.blockInterval, argv.maxAggregation, argv.delayLimit);
+        console.log(tx)
         break;
       case "addRelay":
         console.log("Add relay ", argv.link)
         let relays = [argv.addr]
-        await bmcManagement.addRelay(argv.link, relays)
-        console.log(await bmcManagement.getRelays(argv.link))
+        tx = await bmcManagement.addRelay(argv.link, relays)
+        //console.log(await bmcManagement.getRelays(argv.link))
+        console.log(tx)
         break;
       case "addService":
         console.log("Add Service ", argv.name)
-        await bmcManagement.addService(argv.name, argv.addr)
-        console.log(await bmcManagement.getServices())
+        tx = await bmcManagement.addService(argv.name, argv.addr)
+        //console.log(await bmcManagement.getServices())
+        console.log(tx)
         break;
       case "updateRxSeq":
         await bmcManagement.updateLinkRxSeq(argv.link, argv.value)

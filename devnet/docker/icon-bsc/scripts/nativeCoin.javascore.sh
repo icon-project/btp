@@ -34,8 +34,8 @@ bmc_javascore_addNativeService() {
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method addService \
     --param _svc=nativecoin \
-    --param _addr=$(cat nativebsh.icon) | jq -r . >tx.addNativeService.bmc.icon
-  ensure_txresult tx.addNativeService.bmc.icon
+    --param _addr=$(cat nativebsh.icon) | jq -r . >tx/addService.native.icon
+  ensure_txresult tx/addService.native.icon
 }
 
 nativeBSH_javascore_register() {
@@ -43,8 +43,8 @@ nativeBSH_javascore_register() {
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat nativebsh.icon) \
     --method register \
-    --param _name=BNB | jq -r . >tx.register.nativebsh.icon
-  ensure_txresult tx.register.nativebsh.icon
+    --param _name=BNB | jq -r . >tx/register.nativeCoin.icon
+  ensure_txresult tx/register.nativeCoin.icon
 }
 
 nativeBSH_javascore_setFeeRatio() {
@@ -52,8 +52,8 @@ nativeBSH_javascore_setFeeRatio() {
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat nativebsh.icon) \
     --method setFeeRatio \
-    --param _feeNumerator=100 | jq -r . >tx.setFeeRatio.nativebsh.icon
-  ensure_txresult tx.setFeeRatio.nativebsh.icon
+    --param _feeNumerator=100 | jq -r . >tx/setFeeRatio.nativebsh.icon
+  ensure_txresult tx/setFeeRatio.nativebsh.icon
 }
 
 irc31_javascore_addOwner() {
@@ -61,8 +61,8 @@ irc31_javascore_addOwner() {
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat irc31.icon) \
     --method addOwner \
-    --param _addr=$(cat nativebsh.icon) | jq -r . >tx.addOwner.irc31.icon
-  ensure_txresult tx.addOwner.irc31.icon
+    --param _addr=$(cat nativebsh.icon) | jq -r . >tx/addOwner.irc31.icon
+  ensure_txresult tx/addOwner.irc31.icon
 }
 
 deposit_ICX_for_Alice() {
@@ -71,8 +71,8 @@ deposit_ICX_for_Alice() {
   cd ${CONFIG_DIR}
   goloop rpc sendtx transfer \
     --to $(get_alice_address) \
-    --value $ICX_DEPOSIT_AMOUNT | jq -r . >tx.deposit.alice
-  ensure_txresult tx.deposit.alice
+    --value $ICX_DEPOSIT_AMOUNT | jq -r . >tx/deposit.alice
+  ensure_txresult tx/deposit.alice
 }
 
 transfer_ICX_from_Alice_to_Bob() {
@@ -89,8 +89,8 @@ transfer_ICX_from_Alice_to_Bob() {
     --to $(cat nativebsh.icon) --method transferNativeCoin \
     --param _to=btp://$BSC_BMC_NET/$(get_bob_address) --value $ICX_TRANSER_AMOUNT \
     --key_store alice.ks.json --key_secret alice.secret |
-    jq -r . >tx.Alice2Bob.transfer
-  ensure_txresult tx.Alice2Bob.transfer
+    jq -r . >tx/Alice2Bob.transfer
+  ensure_txresult tx/Alice2Bob.transfer
 }
 
 get_alice_balance() {

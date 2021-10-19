@@ -63,8 +63,8 @@ bmc_javascore_addVerifier() {
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method addVerifier \
     --param _net=$BSC_BMC_NET \
-    --param _addr=$(cat bmv.icon) | jq -r . >tx.addverifier.icon
-  ensure_txresult tx.addverifier.icon
+    --param _addr=$(cat bmv.icon) | jq -r . >tx/addVerifier.icon
+  ensure_txresult tx/addverifier.icon
   echo "Added verifier for $(cat bmv.icon)"
 }
 
@@ -79,8 +79,8 @@ bmc_javascore_addLink() {
   echo $LAST_HASH >$CONFIG_DIR/last.hash.icon
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method addLink \
-    --param _link=$(cat btp.bsc) | jq -r . >tx.addLink.icon
-  ensure_txresult tx.addLink.icon
+    --param _link=$(cat btp.bsc) | jq -r . >tx/addLink.icon
+  ensure_txresult tx/addLink.icon
   echo "Added Link $(cat btp.bsc)"
 
   echo "goloop_bmc_setLinkRotateTerm blockinterval = 3000"
@@ -89,16 +89,16 @@ bmc_javascore_addLink() {
     --param _link=$(cat btp.bsc) \
     --param _block_interval=0xBB8 \
     --param _max_agg=0x03 |
-    jq -r . >tx.setLinkRotateTerm.icon
-  ensure_txresult tx.setLinkRotateTerm.icon
+    jq -r . >tx/setLinkRotateTerm.icon
+  ensure_txresult tx/setLinkRotateTerm.icon
 
   echo "goloop_bmc_setLinkDelayLimit"
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method setLinkDelayLimit \
     --param _link=$(cat btp.bsc) \
     --param _value=3 |
-    jq -r . >tx.setLinkDelayLimit.icon
-  ensure_txresult tx.setLinkDelayLimit.icon
+    jq -r . >tx/setLinkDelayLimit.icon
+  ensure_txresult tx/setLinkDelayLimit.icon
 
   echo "finished goloop_bmc_addLink"
 }
@@ -110,12 +110,13 @@ bmc_javascore_addRelay() {
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method addRelay \
     --param _link=$(cat btp.bsc) \
-    --param _addr=${ICON_RELAY_USER} | jq -r . >tx.addLink.icon
-  ensure_txresult tx.addLink.icon
+    --param _addr=${ICON_RELAY_USER} | jq -r . >tx/addRelay.icon
+  ensure_txresult tx/addRelay.icon
   echo "Added Link $(cat btp.bsc)"
 }
 
 bsh_javascore_register() {
+  echo "Register ERC20 Token with BSH"
   cd $CONFIG_DIR
   FEE_NUMERATOR=0x64
   goloop rpc sendtx call --to $(cat token_bsh.icon) \
@@ -124,17 +125,18 @@ bsh_javascore_register() {
     --param symbol=${TOKEN_SYM} \
     --param feeNumerator=${FEE_NUMERATOR} \
     --param decimals=${TOKEN_DECIMALS} \
-    --param address=$(cat irc2_token.icon) | jq -r . >tx.register.icon
-  ensure_txresult tx.register.icon
+    --param address=$(cat irc2_token.icon) | jq -r . >tx/register.token.icon
+  ensure_txresult tx/register.token.icon
 }
 
 bmc_javascore_addService() {
+  echo "Adding Service Token BSH"
   cd $CONFIG_DIR
   goloop rpc sendtx call --to $(cat bmc.icon) \
     --method addService \
     --param _svc=${SVC_NAME} \
-    --param _addr=$(cat token_bsh.icon) | jq -r . >tx.addService.icon
-  ensure_txresult tx.addService.icon
+    --param _addr=$(cat token_bsh.icon) | jq -r . >tx/addService.icon
+  ensure_txresult tx/addService.icon
 }
 
 bmc_javascore_getServices() {
@@ -223,9 +225,12 @@ irc2_javascore_transfer() {
 
 token_icon_fundBSH() {
   echo "funding BSH with 100ETH tokens"
+  cd $CONFIG_DIR
   weiAmount=$(coin2wei 100)
   echo "Wei Amount: $weiAmount"
   irc2_javascore_transfer "$weiAmount"
+  #echo "$tx" >tx/fundBSH.icon
+  #ensure_txresult tx/fundBSH.icon
 }
 
 rpceoa() {

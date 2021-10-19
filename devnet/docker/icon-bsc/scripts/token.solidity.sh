@@ -52,39 +52,44 @@ deploy_solidity_tokenBSH_BEP20() {
 add_icon_verifier() {
   echo "adding icon verifier $(cat $CONFIG_DIR/bmv.bsc)"
   cd $CONTRACTS_DIR/solidity/bmc
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addVerifier --net $(cat $CONFIG_DIR/net.btp.icon) --addr $(cat $CONFIG_DIR/bmv.bsc)
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+    --method addVerifier --net $(cat $CONFIG_DIR/net.btp.icon) --addr $(cat $CONFIG_DIR/bmv.bsc))
+  echo "$tx" >$CONFIG_DIR/tx/addVerifier.bsc
 }
 
 add_icon_link() {
   echo "adding icon link $(cat $CONFIG_DIR/btp.icon)"
   cd $CONTRACTS_DIR/solidity/bmc
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 3000 --maxAggregation 2 --delayLimit 3
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+    --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 3000 --maxAggregation 3 --delayLimit 3)
+  echo "$tx" >$CONFIG_DIR/tx/addLink.bsc
 }
 
 add_icon_relay() {
   echo "adding icon link $(cat $CONFIG_DIR/bmv.bsc)"
   BSC_RELAY_USER=$(cat $CONFIG_DIR/bsc.ks.json | jq -r .address)
   cd $CONTRACTS_DIR/solidity/bmc
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr "0x${BSC_RELAY_USER}"
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+    --method addRelay --link $(cat $CONFIG_DIR/btp.icon) --addr "0x${BSC_RELAY_USER}")
+  echo "$tx" >$CONFIG_DIR/tx/addRelay.bsc
 }
 
 bsc_addService() {
   echo "adding ${SVC_NAME} service into BMC"
   cd $CONTRACTS_DIR/solidity/bmc
   BSH_IMPL_ADDRESS=$(cat $CONFIG_DIR/token_bsh.impl.bsc)
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addService --name $SVC_NAME --addr "$BSH_IMPL_ADDRESS"
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+    --method addService --name $SVC_NAME --addr "$BSH_IMPL_ADDRESS")
+  echo "$tx" >$CONFIG_DIR/tx/addService.bsc
 }
 
 bsc_registerToken() {
   echo "Registering ${TOKEN_NAME} into tokenBSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   BEP20_TKN_ADDRESS=$(cat $CONFIG_DIR/bep20_token.bsc)
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
-    --method registerToken --name $TOKEN_NAME --symbol $TOKEN_SYM --addr "$BEP20_TKN_ADDRESS"
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
+    --method registerToken --name $TOKEN_NAME --symbol $TOKEN_SYM --addr "$BEP20_TKN_ADDRESS")
+  echo "$tx" >$CONFIG_DIR/tx/register.token.bsc
 }
 
 bsc_updateRxSeq() {
@@ -96,8 +101,9 @@ bsc_updateRxSeq() {
 token_bsc_fundBSH() {
   echo "Funding solidity BSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
-    --method fundBSH --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount 99
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
+    --method fundBSH --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount 99)
+  echo "$tx" >$CONFIG_DIR/tx/fundBSH.bsc
 }
 
 token_approveTransfer() {

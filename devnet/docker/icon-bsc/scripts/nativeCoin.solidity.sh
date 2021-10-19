@@ -5,7 +5,7 @@ source utils.sh
 # Parts of this code is adapted from https://github.com/icon-project/btp/blob/goloop2moonbeam/testnet/goloop2moonbeam/scripts
 
 deploy_solidity_nativeCoin_BSH() {
-  echo "deploying solidity Token BSH"
+  echo "deploying solidity Native BSH"
   cd $CONTRACTS_DIR/solidity/bsh
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
@@ -25,15 +25,17 @@ deploy_solidity_nativeCoin_BSH() {
 bmc_solidity_addNativeService() {
   echo "adding ${SVC_NAME} service into BMC"
   cd $CONTRACTS_DIR/solidity/bmc
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addService --name nativecoin --addr "$BSH_PERIPHERY_ADDRESS"
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
+    --method addService --name nativecoin --addr "$BSH_PERIPHERY_ADDRESS")
+  echo "$tx" >$CONFIG_DIR/tx/addService.native.bsc
 }
 
 nativeBSH_solidity_register() {
   echo "Register Coin Name with NativeBSH"
   cd $CONTRACTS_DIR/solidity/bsh
-  truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.nativeCoin.js \
-    --method register --name "ICX"
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.nativeCoin.js \
+    --method register --name "ICX")
+  echo "$tx" >$CONFIG_DIR/tx/register.nativeCoin.bsc
 }
 
 bsc_init_native_btp_transfer() {

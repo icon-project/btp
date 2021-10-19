@@ -8,7 +8,7 @@ module.exports = async function (callback) {
     switch (argv["method"]) {
       case "setMTA":
         console.log("setMTA", argv.offset, argv.lasthash)
-        let tx = await bmv.setNewMTA(argv.offset, argv.lasthash)
+        tx = await bmv.setNewMTA(argv.offset, argv.lasthash)
         console.log(await bmv.getStatus())
         break;
       default:

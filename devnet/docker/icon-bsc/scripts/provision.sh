@@ -24,7 +24,7 @@ provision() {
     # shellcheck disable=SC2059
     printf $BSC_KEY_SECRET >"$BTPSIMPLE_CONFIG_DIR"/bsc.secret
     echo "$GOLOOP_RPC_NID.icon" >net.btp.icon
-
+    mkdir -p $BTPSIMPLE_CONFIG_DIR/tx
     eth_blocknumber >/btpsimple/config/offset.bsc
 
     source token.javascore.sh
