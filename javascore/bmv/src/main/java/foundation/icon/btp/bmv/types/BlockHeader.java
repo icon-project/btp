@@ -151,26 +151,18 @@ public class BlockHeader {
     //todo: commented out for testing in local now until we get proper bsc data
     public static boolean verifyValidatorSignature(BlockHeader bh, byte[] evmHeader) {
         try {
-            //BlockHeader bh = BlockHeader.fromBytes(evmHeader);
-            String coinbase = HexConverter.bytesToHex(bh.getCoinBase());
             ExtraDataTypeDecoder typeDecoder = new ExtraDataTypeDecoder(bh.getExtraData());
-            byte[] modifiedExtraData = ExtraDataTypeDecoder.getBytes(0, bh.getExtraData().length - 65);
             // epoch block: 32 bytes of extraVanity + N*{20 bytes of validator address} + 65 bytes of signature
             // non epoch block: 32 bytes of extraVanity + 65 bytes of signature.
             byte[] signature = ExtraDataTypeDecoder.getBytes(32, 65);
-            //Context.println("signature: " + HexConverter.bytesToHex(signature));
-            bh.setExtraData(modifiedExtraData);
-            byte[] modifiedHeaderBytes = BlockHeader.toBytes(bh);
             byte[] signedBH = Context.hash("keccak-256", evmHeader);
-            //Context.println("signedContent: " + HexConverter.bytesToHex(signedBH));
             byte[] publicKey = Context.recoverKey("ecdsa-secp256k1", signedBH, signature, false);
-            //Context.println("PK: " + HexConverter.bytesToHex(publicKey));
             byte[] pkwithoutPrefix = new byte[64];
             System.arraycopy(publicKey, 1, pkwithoutPrefix, 0, publicKey.length - 1);
             byte[] address = getAddressBytesFromKey(pkwithoutPrefix);
-            Context.println("address1: " + HexConverter.bytesToHex(address));
-            Context.println("coinbase: " + HexConverter.bytesToHex(bh.getCoinBase()));
-            return Context.verifySignature("ecdsa-secp256k1", signedBH, signature, publicKey);
+            //Context.println("address1: " + HexConverter.bytesToHex(address));
+            //Context.println("coinbase: " + HexConverter.bytesToHex(bh.getCoinBase()));
+            return HexConverter.bytesToHex(address).equalsIgnoreCase(HexConverter.bytesToHex(bh.getCoinBase()));
         } catch (Exception e) {
             return false;
         }
