@@ -175,8 +175,10 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 					segment.GetResultParam, ec)
 			}
 		} else {
-			s.l.Panicf("fail to GetResult GetResultParam:%v err:%+v",
-				segment.GetResultParam, err)
+			//TODO: commented temporarily to keep the relayer running
+			//s.l.Panicf("fail to GetResult GetResultParam:%v err:%+v",
+			//	segment.GetResultParam, err)
+			s.l.Debugf("fail to GetResult GetResultParam:%v err:%+v", segment.GetResultParam, err)
 		}
 	}
 }
