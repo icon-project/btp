@@ -13,7 +13,7 @@
     "muirGlacierBlock": 0,
     "parlia": {
       "period": 3,
-      "epoch": 200000
+      "epoch": 200
     }
   },
   "nonce": "0x0",
@@ -22,7 +22,7 @@
   "gasLimit": "0x2625a00",
   "difficulty": "0x1",
   "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "coinbase": "0x48948297C3236ec3eA6c95f4eEc22fDb18255E55",
+  "coinbase": "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE",
   "alloc": {
     "0x48948297C3236ec3eA6c95f4eEc22fDb18255E55": {
       "balance": "0x0"
