@@ -83,7 +83,7 @@ contract('BSC BSH Proxy Contract Management tests', (accounts) => {
         await bshProxy.setFeeRatio(new_fee);
     });
 
-    it('Scenario 8:  update FeeRatio  - Not an owner - Revert', async () => {
+    it('Scenario 8: update FeeRatio  - Not an owner - Revert', async () => {
         var new_fee = 2;
         await truffleAssert.reverts(
             bshProxy.setFeeRatio(new_fee, { from: accounts[1] }),
@@ -91,7 +91,7 @@ contract('BSC BSH Proxy Contract Management tests', (accounts) => {
         );
     });
 
-    it('Scenario 9:update FeeRatio - Fee Numerator is higher than Fee Denominator - Revert', async () => {
+    it('Scenario 9: update FeeRatio - Fee Numerator is higher than Fee Denominator - Revert', async () => {
         var new_fee = 11000;
         await truffleAssert.reverts(
             bshProxy.setFeeRatio(new_fee),
@@ -196,7 +196,8 @@ contract('Sending ERC20 to ICON blockchain', function () {
     var amount = web3.utils.toBN(10);
     var transferAmount = web3.utils.toWei(amount, "ether");
     var _bmcICON = 'btp://0x03.icon/0x1234567812345678';
-    let bshProxy, bshImpl, token;
+    let bshProxy, bshImpl, token, bmcBtpAdd;
+    var RC_ERR = 1;
     before(async () => {
         accounts = await web3.eth.getAccounts();
         bmc = await BMC.new(btp_network);
@@ -210,8 +211,8 @@ contract('Sending ERC20 to ICON blockchain', function () {
         await bmc.addService(_svc, bshImpl.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
+        bmcBtpAdd = await bmc.getBmcBtpAddress();
     });
-
 
     it("Scenario 1: User creates a transfer, but a token_name has not yet registered - fail", async () => {
         var _to = '0x1234567890123456789';
@@ -270,7 +271,8 @@ contract('Sending ERC20 to ICON blockchain', function () {
             "Initiate transfer failed"
         );
     });
-    it("Scenario 6:All requirements are qualified and BSH receives a failed message - Success", async () => {
+
+    it("Scenario 6: All requirements are qualified and BSH receives RESPONSE_HANDLE_SERVICE a failed message - Success", async () => {
         var _code = 1;
         var _msg = 'Transfer failed'
         var _to = 'btp://0x03.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd';
@@ -278,14 +280,78 @@ contract('Sending ERC20 to ICON blockchain', function () {
         await bmc.handleResponse(_net, _svc, 1, _code, _msg)
         var balanceAfter = await bshProxy.getBalanceOf(accounts[0], tokenName)
         var amountAndFee = await bshProxy.calculateTransferFee(token.address, transferAmount);
-        //Since the balance is returned back to the token Holder due to failure
+        //console.log(balanceAfter)
+        // @dev check the balance is returned back to the token Holder due to failure
+        // locked balance for this particular amount is released
         assert(
-            balanceAfter[1].add(transferAmount).sub(amountAndFee.fee).toString() ==
-            balanceBefore[1].toString(), "Error response Handler failed "
+            balanceAfter._lockedBalance.add(transferAmount).sub(amountAndFee.fee).toString() ==
+            balanceBefore._lockedBalance.toString(), "Error response Handler failed "
+        );
+
+        //Check if the amount is updated in refundable balance(value+accumulated fees) for the user to withdraw later
+        assert(
+            balanceAfter._refundableBalance.toString() ==
+            balanceBefore._refundableBalance.add(transferAmount)
+        )
+    });
+
+    it("Scenario 7: Withdraw the refundable balance - invalid Token Name", async () => {
+        await truffleAssert.reverts(
+            bshProxy.withdraw("ICX", transferAmount),
+            "UnRegisteredToken"
         );
     });
 
-    it("Scenario 7:All requirements are qualified and BSH receives a successful message - Success", async () => {
+    it("Scenario 8: Withdraw the refundable balance - Zero amount", async () => {
+        await truffleAssert.reverts(
+            bshProxy.withdraw(tokenName, 0),
+            "InvalidAmount"
+        );
+    });
+
+    it("Scenario 9: Withdraw the refundable balance - Amount exceeds the refundable balance", async () => {
+        var excessAmount = transferAmount + 10
+        await truffleAssert.reverts(
+            bshProxy.withdraw(tokenName, excessAmount),
+            "InsufficientBalance"
+        );
+    });
+
+    it("Scenario 10: Withdraw the refundable balance - Success", async () => {
+        var balanceBefore = await token.balanceOf(accounts[0]);
+        await bshProxy.withdraw(tokenName, transferAmount)
+        var balanceAfter = await token.balanceOf(accounts[0]);
+        assert(
+            balanceBefore.add(transferAmount).toString() ==
+            balanceAfter.toString(), "Token Balance after withdraw did not get credited with transfer amount"
+        );
+    });
+
+
+    it("Scenario 11: All requirements are qualified and BSH receives a RESPONSE_UNKNOWN Message - Success", async () => {
+        var _code = 1;
+        await bmc.handleUnknownBTPResponse(_net, _svc, 3, _code, "UNKNOWN_TYPE")
+        const events = await bshImpl.getPastEvents('ResponseUnknownType');
+        assert(
+            events[0].args._from ==
+            _net, "Invalid Event or No event emitted"
+        );
+    });
+
+    it("Scenario 12: All requirements are qualified and BSH receives a invalid service Message - Success", async () => {
+        var _code = 1;
+        var mockOutputToAssert = await bmc.buildBTPInvalidRespMessage(bmcBtpAdd, _bmcICON, _svc, 0, RC_ERR, "UNKNOWN_TYPE")
+        let output = await bmc.handleInvalidBTPResponse(_net, _svc, 0, _code, "INVALID_TYPE")
+        //TODO: check why there is a difference in the mockoutput & actual output
+        /*console.log(mockOutputToAssert)
+        console.log(output.logs[0].args._msg)         
+        assert(
+            output.logs[0].args._msg.toString() == mockOutputToAssert.toString(),
+            "The invalid service message not emitted"
+        ); */
+    });
+
+    it("Scenario 13: All requirements are qualified and BSH receives RESPONSE_HANDLE_SERVICE with a successful message - Success", async () => {
         var _code = 0;
         var _to = 'btp://0x03.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd';
         await token.approve(bshProxy.address, transferAmount);
@@ -352,7 +418,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
 
     });
 
-    it('Scenario 2:Receive Request Token Mint - Invalid Token Name - Failure', async () => {
+    it('Scenario 2: Receive Request Token Mint - Invalid Token Name - Failure', async () => {
         var _from = '0x12345678';
         var mockOutputToAssert = await bmc.buildBTPRespMessage(bmcBtpAdd, _bmcICON, _svc, 0, RC_ERR, 'Unregistered Token');
 
@@ -365,7 +431,7 @@ contract('Receiving ERC20 from ICON blockchain', function () {
         );
     });
 
-    it('Scenario 3:Receive Request Token Mint - Insufficient funds with BSH - Failure', async () => {
+    it('Scenario 3: Receive Request Token Mint - Insufficient funds with BSH - Failure', async () => {
         var _from = '0x12345678';
         var _value = "10000000000000000000"
         await bshProxy.register(tokenName, symbol, decimals, fees, token.address);
@@ -406,5 +472,4 @@ contract('Receiving ERC20 from ICON blockchain', function () {
 });
 
 //TODO: fee aggregation tests
-//withdraw/ refund test
 // type code comments

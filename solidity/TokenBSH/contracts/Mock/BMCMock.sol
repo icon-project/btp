@@ -127,6 +127,46 @@ contract BMCMock is BMC {
         );
     }
 
+    function handleUnknownBTPResponse(
+        string memory _net,
+        string memory _svc,
+        uint256 _sn,
+        uint256 _code,
+        string memory _msg
+    ) external {
+        sendBTPMessage(
+            _net,
+            _svc,
+            _sn,
+            Types
+                .ServiceMessage(
+                    Types.ServiceType.RESPONSE_UNKNOWN,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
+        );
+    }
+
+    function handleInvalidBTPResponse(
+        string memory _net,
+        string memory _svc,
+        uint256 _sn,
+        uint256 _code,
+        string memory _msg
+    ) external {
+        sendBTPMessage(
+            _net,
+            _svc,
+            0,
+            Types
+                .ServiceMessage(
+                    Types.ServiceType.RESPONSE_INVALID,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
+                .encodeServiceMessage()
+        );
+    }
+
     function response(
         Types.ServiceType _serviceType,
         string calldata _from,
@@ -166,6 +206,31 @@ contract BMCMock is BMC {
                     Types
                         .ServiceMessage(
                             Types.ServiceType.RESPONSE_HANDLE_SERVICE,
+                            Types.Response(_code, _msg).encodeResponse()
+                        )
+                        .encodeServiceMessage()
+                )
+                .encodeBMCMessage();
+    }
+
+    function buildBTPInvalidRespMessage(
+        string memory _from,
+        string memory _to,
+        string memory _svc,
+        int256 _sn,
+        uint256 _code,
+        string memory _msg
+    ) external view returns (bytes memory) {
+        return
+            Types
+                .BMCMessage(
+                    _from,
+                    _to,
+                    _svc,
+                    int256(0),
+                    Types
+                        .ServiceMessage(
+                            Types.ServiceType.RESPONSE_INVALID,
                             Types.Response(_code, _msg).encodeResponse()
                         )
                         .encodeServiceMessage()

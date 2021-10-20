@@ -252,7 +252,8 @@ library Types {
         REQUEST_TOKEN_TRANSFER,
         REQUEST_TOKEN_REGISTER,
         RESPONSE_HANDLE_SERVICE,
-        RESPONSE_UNKNOWN
+        RESPONSE_UNKNOWN,
+        RESPONSE_INVALID
     }
 
     struct TransferAssetsRecord {

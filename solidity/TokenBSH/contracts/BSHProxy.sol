@@ -228,10 +228,11 @@ contract BSHProxy is IBSHProxy, Initializable {
     }
 
     function withdraw(string calldata _tokenName, uint256 _value) external {
-        require(tokenAddr[_tokenName] != address(0), "Token not supported");
+        require(tokenAddr[_tokenName] != address(0), "UnRegisteredToken");
+        require(_value > 0, "InvalidAmount");
         require(
             balances[msg.sender][_tokenName].refundableBalance >= _value,
-            "Insufficient balance"
+            "InsufficientBalance"
         );
 
         balances[msg.sender][_tokenName].refundableBalance = balances[
