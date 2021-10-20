@@ -22,6 +22,8 @@ services:
     ports:
       - "8545:8545"
       - "8546:8546"
+    volumes:
+      - ./data/bsc/node1:/bsc/node1
 
   btp-icon:
     container_name: btp-icon
