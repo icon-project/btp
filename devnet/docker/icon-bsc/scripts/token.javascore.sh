@@ -64,7 +64,7 @@ bmc_javascore_addVerifier() {
     --method addVerifier \
     --param _net=$BSC_BMC_NET \
     --param _addr=$(cat bmv.icon) | jq -r . >tx/addVerifier.icon
-  ensure_txresult tx/addverifier.icon
+  ensure_txresult tx/addVerifier.icon
   echo "Added verifier for $(cat bmv.icon)"
 }
 
