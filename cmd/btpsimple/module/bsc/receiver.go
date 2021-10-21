@@ -234,7 +234,7 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb module.ReceiveCallbac
 	}
 	r.consensusStates, err = r.c.GetLatestConsensusState()
 	if err != nil {
-		r.log.Fatalf(err.Error())
+		r.log.Errorf(err.Error())
 	}
 	return r.c.MonitorBlock(br,
 		func(v *BlockNotification) error {
