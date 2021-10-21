@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
@@ -62,6 +63,8 @@ type sender struct {
 	evtReq             *BlockRequest
 	isFoundOffsetBySeq bool
 	cb                 module.ReceiveCallback
+
+	mutex sync.Mutex
 }
 
 func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*TransactionParam, error) {
@@ -219,6 +222,8 @@ func (s *sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) e
 }
 
 func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	p, ok := segment.TransactionParam.(*TransactionParam)
 	if !ok {
 		return nil, fmt.Errorf("casting failure")
@@ -231,6 +236,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	var tx *types.Transaction
 	tx, err = s.bmc.HandleRelayMessage(t, rmp.Prev, rmp.Messages)
 	if err != nil {
+		s.l.Errorf("handleRelayMessage: ", err.Error())
 		return nil, err
 	}
 	thp := &TransactionHashParam{}
