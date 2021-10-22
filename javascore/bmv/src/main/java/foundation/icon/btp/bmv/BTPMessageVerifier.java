@@ -17,6 +17,7 @@ package foundation.icon.btp.bmv;
 
 
 import foundation.icon.btp.bmv.lib.HexConverter;
+import foundation.icon.btp.bmv.lib.mpt.MPTException;
 import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
 import foundation.icon.btp.bmv.types.*;
 import score.Address;
@@ -85,7 +86,13 @@ public class BTPMessageVerifier {
         BigInteger lastHeight = (BigInteger) result.get(1);
         BigInteger nextSeq = seq.add(BigInteger.ONE);// nextSeq= seq + 1
         for (ReceiptProof receiptProof : relayMessage.getReceiptProofs()) {
-            Receipt receipt = receiptProof.prove(receiptRootHash);
+            Receipt receipt = null;
+            try {
+                receipt = receiptProof.prove(receiptRootHash);
+            } catch(MPTException ex) {
+                Context.revert(BMVErrorCodes.INVALID_RECEIPT_PROOFS, "ReceiptProof.prove: Invalid receipt proofs "
+                        + HexConverter.bytesToHex(receiptRootHash) + " " + msg);
+            }
             for (ReceiptEventLog eventLog : receipt.getLogs()) {
                 //TODO: check better way, now the event log address doesnt have the prefix
                 if (!prevBMCAddress.getContract().equalsIgnoreCase("0x" + HexConverter.bytesToHex(eventLog.getAddress()))) {

@@ -15,6 +15,8 @@
  */
 package foundation.icon.btp.bmv.types;
 
+import foundation.icon.btp.bmv.lib.HexConverter;
+import foundation.icon.btp.bmv.lib.mpt.MPTException;
 import foundation.icon.btp.bmv.lib.mpt.Trie;
 import score.ByteArrayObjectWriter;
 import score.Context;
@@ -123,17 +125,11 @@ public class ReceiptProof {
         return eventProofs;
     }
 
-    public Receipt prove(byte[] receiptRootHash) {
-        try {
-            //byte[] leaf = MerklePatriciaTree.prove(receiptRootHash, this.mptKey, this.mptProofs);
-            byte[] leaf = Trie.verifyProof(receiptRootHash, this.mptKey, this.mptProofs);
-            Receipt receipt = Receipt.fromBytes(leaf);
-            //receipt.setEventLogsWithProofs(eventProofs);//TODO: check this
-            return receipt;
-        } catch (Exception e) {
-            Context.revert(BMVErrorCodes.INVALID_RECEIPT_PROOFS, "Invalid receipt proofs with wrong sequence");
-            return null;
-        }
+    public Receipt prove(byte[] receiptRootHash) throws MPTException {
+        //byte[] leaf = MerklePatriciaTree.prove(receiptRootHash, this.mptKey, this.mptProofs);
+        byte[] leaf = Trie.verifyProof(receiptRootHash, this.mptKey, this.mptProofs);
+        //receipt.setEventLogsWithProofs(eventProofs);//TODO: check this
+        return Receipt.fromBytes(leaf);
     }
 
     public int getIndex() {
