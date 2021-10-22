@@ -61,7 +61,7 @@ add_icon_link() {
   echo "adding icon link $(cat $CONFIG_DIR/btp.icon)"
   cd $CONTRACTS_DIR/solidity/bmc
   tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bmc.js \
-    --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 3000 --maxAggregation 3 --delayLimit 3)
+    --method addLink --link $(cat $CONFIG_DIR/btp.icon) --blockInterval 3000 --maxAggregation 2 --delayLimit 3)
   echo "$tx" >$CONFIG_DIR/tx/addLink.bsc
 }
 

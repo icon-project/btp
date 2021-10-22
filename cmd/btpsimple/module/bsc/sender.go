@@ -20,13 +20,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 	"math/big"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/icon-project/btp/cmd/btpsimple/module/bsc/binding"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common"
@@ -73,8 +74,9 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 		return nil, err
 	}
 	rmp := BMCRelayMethodParams{
-		Prev:     prev,
-		Messages: base64.URLEncoding.EncodeToString(b),
+		Prev: prev,
+		//Messages: base64.URLEncoding.EncodeToString(b),
+		Messages: string(b[:]),
 	}
 	p := &TransactionParam{
 		Params: rmp,
@@ -241,6 +243,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	}
 	thp := &TransactionHashParam{}
 	thp.Hash = tx.Hash()
+	//s.l.Debugf("HandleRelayMessage tx hash:%s, prev %s, msg: %s", thp.Hash, rmp.Prev, base64.URLEncoding.EncodeToString([]byte(rmp.Messages)))
 	return thp, nil
 }
 
