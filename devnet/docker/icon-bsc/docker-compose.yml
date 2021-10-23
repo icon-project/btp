@@ -43,7 +43,7 @@ services:
       - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
       - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
       - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.bsc
-      - BTPSIMPLE_DST_ENDPOINT=ws://binancesmartchain:8546
+      - BTPSIMPLE_DST_ENDPOINT=http://binancesmartchain:8545
       - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
       - BTPSIMPLE_KEY_STORE=/btpsimple/config/bsc.ks.json
       - BTPSIMPLE_KEY_SECRET=/btpsimple/config/bsc.secret
@@ -70,7 +70,7 @@ services:
       - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
       - BTPSIMPLE_CONFIG=/btpsimple/config/bsc.config.json
       - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.bsc
-      - BTPSIMPLE_SRC_ENDPOINT=ws://binancesmartchain:8546
+      - BTPSIMPLE_SRC_ENDPOINT=http://binancesmartchain:8545
       - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
       - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
       - BTPSIMPLE_OFFSET=/btpsimple/config/offset.bsc

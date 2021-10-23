@@ -7,7 +7,7 @@ deploy_solidity_bmc() {
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
   yarn --prod
-
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
   BMC_PRA_NET=$BSC_BMC_NET \
     truffle migrate --network bscDocker --compile-all
 
@@ -20,7 +20,7 @@ deploy_solidity_bmv() {
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
   yarn --prod
-
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
   BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.periphery.bsc) \
   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
   BMV_ICON_ENCODED_VALIDATORS=0xd69500275c118617610e65ba572ac0a621ddd13255242b \
@@ -40,7 +40,7 @@ deploy_solidity_tokenBSH_BEP20() {
   #npm install --legacy-peer-deps
   yarn --prod
   SVC_NAME=TokenBSH
-
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
   BSH_TOKEN_FEE=1 \
     BMC_PERIPHERY_ADDRESS=$BMC_ADDRESS \
     BSH_SERVICE=$SVC_NAME \

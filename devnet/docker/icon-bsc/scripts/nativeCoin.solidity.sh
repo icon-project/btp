@@ -10,7 +10,7 @@ deploy_solidity_nativeCoin_BSH() {
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
   yarn --prod
-
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
   BSH_COIN_URL=https://ethereum.org/en/ \
     BSH_COIN_NAME=BNB \
     BSH_COIN_FEE=100 \
