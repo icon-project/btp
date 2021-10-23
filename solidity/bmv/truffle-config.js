@@ -28,7 +28,7 @@ module.exports = {
       bscLocal: {
           provider: () => new HDWalletProvider({
               privateKeys: privKeys,
-              providerOrUrl: "ws://localhost:8546",
+              providerOrUrl: "BSC_RPC_URI",
               chainId: 97,
           }),
           network_id: '97',

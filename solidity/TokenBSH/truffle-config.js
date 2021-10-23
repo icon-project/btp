@@ -30,7 +30,7 @@ module.exports = {
     bscDocker: {
       provider: () => new HDWalletProvider({
         privateKeys: privKeys,
-        providerOrUrl: "http://binancesmartchain:8545",
+        providerOrUrl: "BSC_RPC_URI",
       }),
       network_id: '97',
     },

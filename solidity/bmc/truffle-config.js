@@ -7,6 +7,8 @@ var privKeys = [
     "0xfd52d799e21ad6d35a4e0c1679fd82eecbe3e3ccfdeceb8a1eed3a742423f688"
 ]
 
+//const BSC_RPC_URI = "ws://binancesmartchain:8546"
+
 module.exports = {
   networks: {
       development: {
@@ -27,7 +29,7 @@ module.exports = {
       bscDocker: {
           provider: () => new HDWalletProvider({
               privateKeys: privKeys,
-              providerOrUrl: "ws://binancesmartchain:8546",
+              providerOrUrl: "BSC_RPC_URI",
               chainId: 97,
           }),
           network_id: '97'
