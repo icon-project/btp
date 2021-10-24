@@ -56,8 +56,11 @@ public class MPTTest {
     public void trieBasicTest() throws MPTException {
         Trie trie = new Trie();
         trie.put(new byte[]{'a'}, new byte[]{'b'});
+        System.out.println(trie.findPath(new byte[]{'a'}).getNodes());
         trie.put(new byte[]{'c'}, new byte[]{'d'});
         trie.put(new byte[]{'b'}, new byte[]{'v'});
+        System.out.println(trie.findPath(new byte[]{'a'}).getNodes());
+        System.out.println(new String(trie.findPath(new byte[]{'b'}).getNodes().get(2).getValue()));
         assertEquals("9935F35F16F1EADC0481399D5D72AD3583F67656542FFD4FABDFE96D8F014436", HexConverter.bytesToHex(trie.getRoot()));
         //trie.put(new byte[]{'m'}, new byte[]{'n'});
         //System.out.println(HexConverter.bytesToHex(trie.getRoot()));
@@ -85,7 +88,7 @@ public class MPTTest {
         assertTrue(TrieNode.decode(bytes) instanceof TrieNode.BranchNode);
     }
 
-    //@Test
+    @Test
     public void testTrieMissingKey() throws MPTException {
         Trie trie = new Trie();
         Exception exception = assertThrows(MPTException.class, () -> {
@@ -110,13 +113,12 @@ public class MPTTest {
         assertEquals("tree", new String(value));
     }
 
+    @Test
     public void testSimpleEmbeddedExtension() throws MPTException {
         Trie trie = new Trie();
         trie.put("a".getBytes(), "a".getBytes());
         trie.put("b".getBytes(), "b".getBytes());
         trie.put("c".getBytes(), "c".getBytes());
-        //trie.put("testKeyY".getBytes(), "testValueY".getBytes()); incorrect hash root - bug
-        //assertEquals("9FA02BB50B982D0E34810468680D1366FB1B0C2CF9F61AE8509B7999DC8904FB", HexConverter.bytesToHex(trie.getRoot()));
 
         var proof = Trie.createProof(trie, "a".getBytes());
         var value = Trie.verifyProof(trie.getRoot(), "a".getBytes(), proof);
@@ -156,7 +158,7 @@ public class MPTTest {
 
     @Test
     public void trieFromProofsTest() throws MPTException {
-        List<byte[]> encodedProof = new ArrayList<>();
+       List<byte[]> encodedProof = new ArrayList<>();
        byte[] root = HexConverter.hexStringToByteArray("fe2b38c1f594b5c8cd4173c9baf34fdee48a487bc0550783bcaaa5e0403b2d98");
        encodedProof.add(HexConverter.hexStringToByteArray("f901cf822080b901c9f901c6a0b5e5c57f738b1874e7c9a693db757dc3106fe69009e127199842f80a447ab91382cd1bb9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000020010000000000000000000020000000000000000000000000000000000000020000000000040000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000040002000000000000000000000000000000000000000000000000000000000000000000000f89df89b947c5a0ce9267ed19b22f8cae653f198e3e8daf098f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000019f484f4320c8fb11d0238b2b03c16fec905527a000000000000000000000000083335e0c01afac5e02ff201ba0f5979ebc4aa93fa000000000000000000000000000000000000000000000000340aad21b3b700000"));
        byte[] enc = Trie.verifyProof(root, new byte[]{-128}, encodedProof);
