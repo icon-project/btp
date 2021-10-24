@@ -49,23 +49,11 @@ public class ReceiptProof {
         //Index
         int index = reader.readInt();
 
-        ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter(RLPn);
-        //TODO: change later: see how to accommodate '0x0' from not failing the prove
         //mptKey
-        byte[] mptKey = new byte[0];
-        if (index != 0) {
-            writer.beginList(1);
-            writer.write(index);
-            writer.end();
-            mptKey = writer.toByteArray();
-        } else {
-            writer.beginList(1);
-            writer.write(new byte[0]);
-            writer.end();
-            byte[] src = writer.toByteArray();
-            mptKey = new byte[1];
-            System.arraycopy(src, 1, mptKey, 0, 1);
-        }
+        byte[] mptKey = new byte[]{-128};
+
+        if(index > 0)
+           mptKey = new byte[]{(byte)index};
 
         List<byte[]> mptProofs = new ArrayList<>();
         //mptProofs.add(reader.readNullable(byte[].class));
