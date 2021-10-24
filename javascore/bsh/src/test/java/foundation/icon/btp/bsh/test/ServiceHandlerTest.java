@@ -86,13 +86,13 @@ class ServiceHandlerTest extends TestBase {
         bshScore.setInstance(bshSyp);*/
     }
 
-    @Order(1)
+    @Order(20)
     @Test
     public void handleBTPMessageFromHexBytesTest() {
         String _from = "btp://0x97.bsc/0x7D66b33f2b2d2Cd565e5024E651B6c6bE491c493";
         String _msg="F87B00B878F876B3307837306537383964326635643436396561333065303532356462666464353531356436656164333064000000000000000000AA687865353161653336663663666563393966373062346233663830626230613234373361326532613531D6D583455448880DBD2FC137A30000872386F26FC10000";
         bmc.invoke(owners[0], "addService", _svc, bsh.getAddress());
-        bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress());
+//        bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress());
         token.invoke(owners[0],"transfer",bsh.getAddress(),new BigInteger("100000000000000000000"),"transfer to Receiver".getBytes());
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, Hex.decode(_msg));
     }
@@ -102,7 +102,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(1)
     @Test
-    public void scenario1() {
+    public void should_throwError_when_invalidAddress() {
         String _from = "0x12345678";
         String _to = "0x1234567890123456789";
         bmc.invoke(owners[0], "addService", _svc, bsh.getAddress());
@@ -117,7 +117,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(2)
     @Test
-    public void scenario2() {
+    public void should_throwError_when_tokenNotRegistered() {
         String _to = owners[0].getAddress().toString();
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to)
@@ -131,7 +131,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(3)
     @Test
-    public void scenario3() {
+    public void should_throwError_when_tokenHasNoPermission() {
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[1], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress()));
         assertTrue(thrown.getMessage().contains("No Permission"));
@@ -142,7 +142,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(4)
     @Test
-    public void scenario4() {
+    public void should_registerToken_when_tokenHasPermission() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress());
     }
@@ -153,7 +153,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(5)
     @Test
-    public void scenario5() {
+    public void should_throwError_when_tokenAlreadyRegistered() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress()));
@@ -166,7 +166,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(6)
     @Test
-    public void scenario6() {
+    public void should_throwError_when_notEnoughBalance() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to)
@@ -177,11 +177,11 @@ class ServiceHandlerTest extends TestBase {
 
 
     /**
-     * Scenario #:  Invalid amount specified(transfer amount = 0) - fail
+     * Scenario 7:  Invalid amount specified(transfer amount = 0) - fail
      */
     @Order(7)
     @Test
-    public void scenario7() {
+    public void should_throwError_when_invalidAmountSpecified() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, BigInteger.ZERO, _to)
@@ -191,22 +191,22 @@ class ServiceHandlerTest extends TestBase {
     }
 
     /**
-     * Secnario#: Transfer IRC2 tokens from Token contract to BSH via fallback - success
+     * Scenario 8: Transfer IRC2 tokens from Token contract to BSH via fallback - success
      */
     @Order(8)
     @Test
-    public void scenario8() {
+    public void should_transferTokens_via_fallback() {
         token.invoke(owners[0], "transfer", bsh.getAddress(), transferAmount, new byte[0]);
         //TODO: assert the balance after
     }
 
 
     /**
-     * Scenario #:  User transfers to an invalid BTP address - fail
+     * Scenario 9: User transfers to an invalid BTP address - fail
      */
     @Order(9)
     @Test
-    public void scenario9() {
+    public void should_throwError_when_invalidBTPAddress() {
         String _to = "btp://0x1.bsc:0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         //bsh.invoke(owners[0],"transfer", tokenName, transferAmount,_to);
         assertThrows(AssertionError.class, () ->
@@ -216,11 +216,11 @@ class ServiceHandlerTest extends TestBase {
 
 
     /**
-     * Scenario #:   All requirements are qualified and BSH initiates Transfer start - Success
+     * Scenario 10: All requirements are qualified and BSH initiates Transfer start - Success
      */
     @Order(10)
     @Test
-    public void scenario10() {
+    public void should_initiateTransfer_when_requirementsValid() {
         String _to = "btp://0x1.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to);
@@ -230,11 +230,11 @@ class ServiceHandlerTest extends TestBase {
 
 
     /**
-     * Scenario #:  All requirements are qualified and BSH receives a failed message - Success
+     * Scenario 11: All requirements are qualified and BSH receives a failed message - Success
      */
     @Order(11)
     @Test
-    public void scenario11() {
+    public void should_handleBTPMessage_when_BSHReceivesFailedMessage() {
         String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, handleBTPResponseBtpMsg(1, "Transfer Failed"));
@@ -244,11 +244,11 @@ class ServiceHandlerTest extends TestBase {
 
 
     /**
-     * Scenario #:  AAll requirements are qualified and BSH receives a successful message - Success
+     * Scenario 12: All requirements are qualified and BSH receives a successful message - Success
      */
     @Order(12)
     @Test
-    public void scenario12() {
+    public void should_handleBTPMessage_when_BSHReceivesSuccessMessage() {
         String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         String _to = "btp://0x1.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
@@ -263,37 +263,37 @@ class ServiceHandlerTest extends TestBase {
 
 
     /**
-     * Scenario #:  All requirements are qualified handleBTPMessage mints balance for the user- Success
+     * Scenario 13: All requirements are qualified handleBTPMessage mints balance for the user - Success
      */
     @Test
     @Order(13)
-    public void scenario13() {
+    public void should_handleBTPMessage_when_requirementsValidAndBSHMintsBalance() {
         String _from = "btp://0x97.bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         //Balance balanceBefore = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         BigInteger balanceBefore = (BigInteger) token.call("balanceOf", owners[0].getAddress());
-        bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ZERO, handleBTPRequestBtpMsg(_from, owners[0].getAddress().toString()));
+        bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, handleBTPRequestBtpMsg(_from, owners[0].getAddress().toString()));
         //Balance balanceAfter = (Balance) bsh.call("getBalance", owners[0].getAddress(), tokenName);
         BigInteger balanceAfter = (BigInteger) token.call("balanceOf", owners[0].getAddress());
         assertEquals(balanceBefore.add(transferAmount), balanceAfter);
     }
 
     /**
-     * scenario #: Add remove owner - min owner - should fail
+     * Scenario 1: Add 'remove owner' - min owner - should fail
      */
     @Test
     @Order(14)
-    public void scenario14() {
+    public void should_throwError_when_removeOwnerMinOwner() {
         assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[0], "removeOwner", owners[0].getAddress())
         );
     }
 
     /**
-     * scenario #: Add add owner - without permission - should fail
+     * Scenario 2: Add 'add owner' - without permission - should fail
      */
     @Test
     @Order(15)
-    public void scenario15() {
+    public void should_throwError_when_addOwnerWithoutPermission() {
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bsh.invoke(owners[1], "addOwner", owners[1].getAddress())
         );
@@ -301,26 +301,26 @@ class ServiceHandlerTest extends TestBase {
     }
 
     /**
-     * scenario #: Add add owner - with permission - success
+     * Scenario 3: Add 'add owner' - with permission - success
      */
     @Test
     @Order(16)
-    public void scenario16() {
+    public void should_addOwner_when_withPermission() {
         bsh.invoke(owners[0], "addOwner", owners[1].getAddress());
     }
 
     /**
-     * Scenario #:  Register Token with permission new owner - Success
+     * Scenario 4: Register Token with permission new owner - Success
      */
     @Order(17)
     @Test
-    public void scenario17() {
+    public void should_registerToken_when_withPermissionNewOwner() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         bsh.invoke(owners[1], "register", "BNB", "BNB", BigInteger.valueOf(decimals), fees, token.getAddress());
     }
 
     /**
-     * Scenario #:  Handle Accumulated Fees - Failure
+     * Scenario #: Handle Accumulated Fees - Failure
      */
     @Order(18)
     @Test
@@ -338,7 +338,7 @@ class ServiceHandlerTest extends TestBase {
     }
 
     /**
-     * Scenario #:  Handle Accumulated Fees - Success
+     * Scenario #: Handle Accumulated Fees - Success
      */
     @Order(19)
     @Test

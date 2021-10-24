@@ -23,6 +23,7 @@ import foundation.icon.btp.bmv.types.*;
 import score.Address;
 import score.Context;
 import score.VarDB;
+import score.annotation.EventLog;
 import score.annotation.External;
 import scorex.util.ArrayList;
 import scorex.util.Base64;
@@ -65,10 +66,12 @@ public class BTPMessageVerifier {
     @External
     public List<byte[]> handleRelayMessage(String bmc, String prev, BigInteger seq, String msg) {
         byte[] messageEventSignature = HexConverter.hexStringToByteArray("37be353f216cf7e33639101fd610c542e6a0c0109173fa1c1d8b04d34edb7c1b"); // kekak256("Message(string,uint256,bytes)");
+        RelayMessageHandlingStarted(seq, msg);
         List<byte[]> msgList = new ArrayList<>();
         BTPAddress currBMCAddress = BTPAddress.fromString(bmc);
         BTPAddress prevBMCAddress = BTPAddress.fromString(prev);
         canBMCAccess(currBMCAddress, prevBMCAddress);
+        BMCAccessed(bmc, prev, seq);
         byte[] _msg = null;
         try {
             _msg = Base64.getUrlDecoder().decode(msg.getBytes());
@@ -76,6 +79,7 @@ public class BTPMessageVerifier {
             Context.revert(BMVErrorCodes.INVALID_RELAY_MSG, "Failed to decode relay message");
         }
         RelayMessage relayMessage = RelayMessage.fromBytes(_msg);
+        RelayMessageExtracted(seq, msg);
         if (relayMessage.getBlockUpdates().length == 0
                 && (relayMessage.getBlockProof() == null
                 || (relayMessage.getBlockProof() != null && relayMessage.getBlockProof().getBlockHeader() == null))) {
@@ -83,6 +87,7 @@ public class BTPMessageVerifier {
         }
         List<Object> result = lastReceiptRootHash(relayMessage);
         byte[] receiptRootHash = (byte[]) result.get(0);
+        LastReceiptRootHashReceived(HexConverter.bytesToHex(receiptRootHash), seq, msg);
         BigInteger lastHeight = (BigInteger) result.get(1);
         BigInteger nextSeq = seq.add(BigInteger.ONE);// nextSeq= seq + 1
         for (ReceiptProof receiptProof : relayMessage.getReceiptProofs()) {
@@ -93,6 +98,7 @@ public class BTPMessageVerifier {
                 Context.revert(BMVErrorCodes.INVALID_RECEIPT_PROOFS, "ReceiptProof.prove: Invalid receipt proofs "
                         + HexConverter.bytesToHex(receiptRootHash) + " " + msg);
             }
+            LastReceiptRootHashIsProven(seq, msg);
             for (ReceiptEventLog eventLog : receipt.getLogs()) {
                 //TODO: check better way, now the event log address doesnt have the prefix
                 if (!prevBMCAddress.getContract().equalsIgnoreCase("0x" + HexConverter.bytesToHex(eventLog.getAddress()))) {
@@ -113,10 +119,13 @@ public class BTPMessageVerifier {
                     nextSeq = nextSeq.add(BigInteger.ONE);
                 }
             }
+            ReceiptEventLogsValidated(seq, msg);
         }
         if (msgList.size() > 0) {
             this.lastHeight.set(lastHeight);
         }
+
+        RelayMessageHandled(seq, msg);
         return msgList;
     }
 
@@ -154,6 +163,7 @@ public class BTPMessageVerifier {
         MerkleTreeAccumulator mta = this.mta.get();
         for (BlockUpdate blockUpdate : relayMessage.getBlockUpdates()) {
             int nextHeight = (int) (mta.getHeight() + 1);
+//            BlockUpdateHeightValidatingStarted(nextHeight, blockUpdate.getBlockHeader().getNumber());
             if (BigInteger.valueOf(nextHeight).compareTo(blockUpdate.getBlockHeader().getNumber()) == 0) {
                 if (!BlockHeader.verifyValidatorSignature(blockUpdate.getBlockHeader(),blockUpdate.getEvmHeader())) {
                     Context.revert(BMVErrorCodes.INVALID_COINBASE_SIGNATURE, "Invalid validator signature");
@@ -167,6 +177,7 @@ public class BTPMessageVerifier {
             } else {
                 Context.revert(BMVErrorCodes.INVALID_BLOCK_UPDATE_HEIGHT_LOW, "Invalid block update due to lower height");
             }
+//            BlockUpdateHeightValidatingFinished(nextHeight, blockUpdate.getBlockHeader().getNumber());
         }
         BlockProof blockProof = relayMessage.getBlockProof();
         if (blockProof != null) {
@@ -177,17 +188,52 @@ public class BTPMessageVerifier {
         if (receiptRoot == null) {
             Context.revert(BMVErrorCodes.INVALID_RECEIPT_PROOFS, "Invalid receipt proofs with wrong sequence");
         }
+//        ReceiptProofValidated(HexConverter.bytesToHex(receiptRoot));
         List<Object> result = new ArrayList<>();
         result.add(receiptRoot);
         result.add(lastHeight);
         this.mta.set(mta);
         return result;
     }
-/*
+
+    /*
     @External(readonly = true)
     public BigInteger getLastHeight() {
         return this.lastHeight.get();
     }*/
+
+
+
+    @EventLog
+    protected void RelayMessageHandlingStarted(BigInteger seq, String msg) {}
+
+    @EventLog
+    protected void BMCAccessed(String currBMCAddress, String prevBMCAddress, BigInteger seq) {}
+
+    @EventLog
+    protected void RelayMessageExtracted(BigInteger seq, String msg) {}
+
+    @EventLog
+    protected void LastReceiptRootHashReceived(String receiptRootHash, BigInteger seq, String msg) {}
+
+    @EventLog
+    protected void LastReceiptRootHashIsProven(BigInteger seq, String msg) {}
+
+    @EventLog
+    protected void ReceiptEventLogsValidated(BigInteger seq, String msg) {}
+
+    @EventLog
+    protected void RelayMessageHandled(BigInteger seq, String msg) {}
+//
+//    @EventLog
+//    protected void BlockUpdateHeightValidatingStarted(int nextHeight, BigInteger blockUpdateHeight) {}
+//
+//    @EventLog
+//    protected void BlockUpdateHeightValidatingFinished(int nextHeight, BigInteger blockUpdateHeight) {}
+//
+//    @EventLog
+//    protected void ReceiptProofValidated(String receiptRoot) {}
+
 }
 
 

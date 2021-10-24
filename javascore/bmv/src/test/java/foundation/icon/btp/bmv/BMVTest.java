@@ -695,7 +695,7 @@ public class BMVTest extends TestBase {
 
         AssertionError thrown = assertThrows(AssertionError.class, () ->
                 bmv.invoke(owners[0], "handleRelayMessage", currentBMCBTPAdd, prevBMCBTPAdd, BigInteger.ZERO, new String(_msg)));
-        assertTrue(thrown.getMessage().contains("Invalid receipt proofs with wrong sequence"));
+        assertTrue(thrown.getMessage().contains("Invalid receipt proofs"));
     }
 
     /**

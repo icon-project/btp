@@ -79,7 +79,7 @@ public class RelayMessageTest extends TestBase {
         //BlockHeader.verifyValidatorSignature(Hex.decode(headerBytes));
     }
 
-    @Test
+//    @Test
     public void relayMessageDecode() throws IOException {
         var msg = Files.readString(Path.of("relaymessage"));
         System.out.println(msg);
