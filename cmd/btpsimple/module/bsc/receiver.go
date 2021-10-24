@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -130,9 +131,18 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 		return nil, err
 	}
 
+	if len(block.Transactions()) == 0 {
+		return rps, nil
+	}
+
 	receipts, err := r.c.GetBlockReceipts(block)
 	if err != nil {
 		return nil, err
+	}
+
+	if block.GasUsed() == 0 {
+		r.log.Println("Block %s has 0 gas", block.Number(), len(block.Transactions()))
+		return rps, nil
 	}
 
 	srcContractAddress := HexToAddress(r.src.ContractAddress())
@@ -166,8 +176,8 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 		}
 
 		if len(rp.Events) > 0 {
-			r.log.Debugf("newReceiptProofs: %d", v.Height)
 			key, err := rlp.EncodeToBytes(receipt.TransactionIndex)
+			r.log.Debugf("newReceiptProofs: height:%d hash:%s key:%d", v.Height, block.ReceiptHash(), key)
 			proofs, err := receiptProof(receiptTrie, key)
 			if err != nil {
 				return nil, err
@@ -180,7 +190,6 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 			rps = append(rps, rp)
 		}
 	}
-
 	return rps, nil
 }
 
@@ -218,6 +227,7 @@ func receiptProof(receiptTrie *trie.Trie, key []byte) ([][]byte, error) {
 	}
 	proofs := make([][]byte, 0)
 	for _, node := range proofSet.NodeList() {
+		fmt.Println(hexutil.Encode(node))
 		proofs = append(proofs, node)
 	}
 	return proofs, nil
