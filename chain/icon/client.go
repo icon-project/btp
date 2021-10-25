@@ -38,7 +38,6 @@ import (
 const (
 	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
-	defaultKeepAliveInterval                   = 10 * time.Second
 )
 
 type Wallet interface {
@@ -356,9 +355,7 @@ func (c *Client) _removeWsConn(conn *jsonrpc.RecConn) {
 
 func (c *Client) wsConnect(reqUrl string, reqHeader http.Header) (*jsonrpc.RecConn, error) {
 	wsEndpoint := strings.Replace(c.Endpoint, "http", "ws", 1)
-	conn := &jsonrpc.RecConn{
-		KeepAliveTimeout: defaultKeepAliveInterval,
-	}
+	conn := &jsonrpc.RecConn{}
 	conn.Dial(wsEndpoint+reqUrl, reqHeader)
 	c._addWsConn(conn)
 	return conn, nil
