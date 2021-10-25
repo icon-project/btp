@@ -6,8 +6,6 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
-	"github.com/icon-project/btp/chain/pra/frontier"
-	"github.com/icon-project/btp/chain/pra/relaychain"
 	scalecodec "github.com/itering/scale.go"
 )
 
@@ -108,9 +106,9 @@ func (sme SignedMessageEnum) Encode(encoder scale.Encoder) error {
 	return nil
 }
 
-func NewEventParaInclusionCandidateIncluded(decodedEvent map[string]interface{}) relaychain.EventParasInclusionCandidateIncluded {
+func NewEventParaInclusionCandidateIncluded(decodedEvent map[string]interface{}) EventParasInclusionCandidateIncluded {
 	eventParamsVal := reflect.ValueOf(decodedEvent["params"])
-	event := relaychain.EventParasInclusionCandidateIncluded{}
+	event := EventParasInclusionCandidateIncluded{}
 	if eventParamsVal.Kind() == reflect.Slice {
 		firstEventParam, ok := eventParamsVal.Index(0).Interface().(scalecodec.EventParam)
 		if !ok {
@@ -125,8 +123,8 @@ func NewEventParaInclusionCandidateIncluded(decodedEvent map[string]interface{})
 		candidateReceipt := CandidateReceipt{}
 		json.Unmarshal(b, &candidateReceipt)
 
-		event.CandidateReceipt = relaychain.CandidateReceipt{
-			Descriptor: relaychain.CandidateDescriptor{
+		event.CandidateReceipt = CandidateReceiptRaw{
+			Descriptor: CandidateDescriptorRaw{
 				ParaId:   candidateReceipt.Descriptor.ParaId,
 				ParaHead: NewSubstrateHashFromHexString(candidateReceipt.Descriptor.ParaHead),
 			},
@@ -136,9 +134,9 @@ func NewEventParaInclusionCandidateIncluded(decodedEvent map[string]interface{})
 	return event
 }
 
-func NewEventEVMLog(decodedEvent map[string]interface{}) frontier.EventEVMLog {
+func NewEventEVMLog(decodedEvent map[string]interface{}) EventEVMLog {
 	eventParamsVal := reflect.ValueOf(decodedEvent["params"])
-	event := frontier.EventEVMLog{}
+	event := EventEVMLog{}
 	if eventParamsVal.Kind() == reflect.Slice {
 		firstEventParam, ok := eventParamsVal.Index(0).Interface().(scalecodec.EventParam)
 		if !ok {

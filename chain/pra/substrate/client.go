@@ -21,11 +21,9 @@ import (
 )
 
 const (
-	Westend   = "westend"
-	Kusama    = "kusama"
-	Polkadot  = "polkadot"
-	Moonriver = "moonriver"
-	Moonbase  = "moonbase"
+	Westend  = "westend"
+	Kusama   = "kusama"
+	Polkadot = "polkadot"
 )
 
 type SubstrateAPI struct {

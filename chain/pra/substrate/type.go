@@ -1,6 +1,8 @@
 package substrate
 
 import (
+	"strings"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 )
 
@@ -129,10 +131,52 @@ type ParasInclusionCandidateIncludedParams struct {
 	GroupIndex       GroupIndex
 }
 
+type CandidateDescriptorRaw struct {
+	ParaId                      types.U32
+	RelayParent                 SubstrateHash
+	Collator                    types.AccountID
+	PersistedValidationDataHash SubstrateHash
+	PovHash                     SubstrateHash
+	ErasureRoot                 SubstrateHash
+	Signature                   Signature
+	ParaHead                    SubstrateHash
+	ValidationCodeHash          SubstrateHash
+}
+
+type CandidateReceiptRaw struct {
+	Descriptor      CandidateDescriptorRaw
+	CommitmentsHash SubstrateHash
+}
+
+type EventParasInclusionCandidateIncluded struct {
+	Phase            Phase
+	CandidateReceipt CandidateReceiptRaw
+	HeadData         HeadData
+	CoreIndex        CoreIndex
+	GroupIndex       GroupIndex
+	Topics           []SubstrateHash
+}
+
 type EthereumLog struct {
 	Address string   `json:"address"`
 	Topics  []string `json:"topics"`
 	Data    string   `json:"data"`
+}
+
+type EthereumLogRaw struct {
+	Address types.H160
+	Topics  []types.H256
+	Data    []byte
+}
+
+type EventEVMLog struct {
+	Phase  types.Phase
+	Log    EthereumLogRaw
+	Topics []types.Hash
+}
+
+func (eel *EventEVMLog) CompareAddressCaseInsensitive(address string) bool {
+	return strings.EqualFold(eel.Log.Address.Hex(), address)
 }
 
 type EVMLogParams struct {

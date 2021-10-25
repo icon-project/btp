@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/pra/frontier"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/config"
@@ -102,9 +101,9 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 	return bu, nil
 }
 
-func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]frontier.EventEVMLog, error) {
+func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]substrate.EventEVMLog, error) {
 	events, err := r.c.subClient.GetSystemEvents(hash, "EVM", "Log")
-	evmLogEvents := make([]frontier.EventEVMLog, 0)
+	evmLogEvents := make([]substrate.EventEVMLog, 0)
 	for _, event := range events {
 		evmLogEvents = append(evmLogEvents, substrate.NewEventEVMLog(event))
 	}
