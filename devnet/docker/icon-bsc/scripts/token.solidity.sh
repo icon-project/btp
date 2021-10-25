@@ -7,7 +7,7 @@ deploy_solidity_bmc() {
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
   yarn --prod
-  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i truffle-config.js
   BMC_PRA_NET=$BSC_BMC_NET \
     truffle migrate --network bscDocker --compile-all
 
@@ -20,7 +20,7 @@ deploy_solidity_bmv() {
   rm -rf contracts/test build .openzeppelin
   #npm install --legacy-peer-deps
   yarn --prod
-  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i truffle-config.js
   BMC_CONTRACT_ADDRESS=$(cat $CONFIG_DIR/bmc.periphery.bsc) \
   BMV_ICON_NET=$(cat $CONFIG_DIR/net.btp.icon) \
   BMV_ICON_ENCODED_VALIDATORS=0xd69500275c118617610e65ba572ac0a621ddd13255242b \
@@ -40,7 +40,7 @@ deploy_solidity_tokenBSH_BEP20() {
   #npm install --legacy-peer-deps
   yarn --prod
   SVC_NAME=TokenBSH
-  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i  truffle-config.js
+  sed "s|BSC_RPC_URI|$BSC_RPC_URI|" -i truffle-config.js
   BSH_TOKEN_FEE=1 \
     BMC_PERIPHERY_ADDRESS=$BMC_ADDRESS \
     BSH_SERVICE=$SVC_NAME \
@@ -106,10 +106,18 @@ token_bsc_fundBSH() {
   echo "$tx" >$CONFIG_DIR/tx/fundBSH.bsc
 }
 
+deposit_token_for_bob() {
+  echo "Funding BOB"
+  cd $CONTRACTS_DIR/solidity/TokenBSH
+  tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
+    --method fundBOB --addr $(get_bob_address) --amount $1)
+  echo "$tx" >$CONFIG_DIR/fundBOB.bsc
+}
+
 token_approveTransfer() {
   cd $CONTRACTS_DIR/solidity/TokenBSH
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
-    --method approve --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount $1
+    --method approve --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount $1 --from "$(get_bob_address)"
 }
 
 bsc_init_btp_transfer() {
@@ -118,7 +126,7 @@ bsc_init_btp_transfer() {
   BTP_TO="btp://$ICON_NET/$ALICE_ADDRESS"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
-    --method transfer --to $BTP_TO --amount $1
+    --method transfer --to $BTP_TO --amount $1 --from "$(get_bob_address)"
 }
 
 calculateTransferFee() {
@@ -129,7 +137,7 @@ calculateTransferFee() {
 
 get_Bob_Token_Balance() {
   cd $CONTRACTS_DIR/solidity/TokenBSH
-  BSC_USER=0x$(cat $CONFIG_DIR/bsc.ks.json | jq -r .address)
+  BSC_USER=$(get_bob_address)
   BOB_BALANCE=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
     --method getBalance --addr $BSC_USER)
 }

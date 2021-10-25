@@ -1,12 +1,20 @@
 #!/bin/sh
 
+create_ensure_bob_account() {
+  cd ${CONFIG_DIR}
+  if [ ! -f bob.btp.address ]; then
+    eth address:random >bob.ks.json
+    echo "btp://$BSC_NID/$(get_bob_address)" >bob.btp.address
+  fi
+}
+
 get_alice_address() {
   cat $CONFIG_DIR/alice.ks.json | jq -r .address
 }
 
 get_bob_address() {
   #cat $CONFIG_DIR/bsc.ks.json | jq -r .address
-  echo 0x$(cat $CONFIG_DIR/bsc.ks.json | jq -r .address)
+  echo 0x$(cat $CONFIG_DIR/bob.ks.json | jq -r .address)
 }
 
 hex2int() {
