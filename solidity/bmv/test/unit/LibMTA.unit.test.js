@@ -4,7 +4,7 @@ const assert = require('chai').assert;
 const truffleAssert = require('truffle-assertions');
 const { sha3_256 } = require('js-sha3')
 
-let testMta = artifacts.require('testLibMTA');
+let testMta = artifacts.require('TestLibMTA');
 
 const nullHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
 

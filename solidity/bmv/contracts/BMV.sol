@@ -207,9 +207,8 @@ contract BMV is IBMV, Initializable {
     ) external override returns (bytes[] memory) {
         checkAccessible(_bmc, _prev);
 
-        bytes memory _serializedMsg = _msg.decode();
         Types.RelayMessage memory relayMsg =
-            _serializedMsg.decodeRelayMessage();
+            bytes(_msg).decodeRelayMessage();
 
         require(
             relayMsg.blockUpdates.length != 0 || !relayMsg.isBPEmpty,
@@ -224,7 +223,7 @@ contract BMV is IBMV, Initializable {
                 _bmc,
                 _prev,
                 _seq,
-                _serializedMsg,
+                bytes(_msg),
                 _receiptHash
             );
 

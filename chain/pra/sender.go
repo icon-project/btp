@@ -58,7 +58,7 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 
 	rmp := &RelayMessageParam{
 		Prev: prev,
-		Msg:  base64.URLEncoding.EncodeToString(b),
+		Msg:  string(b[:]),
 	}
 
 	s.log.Tracef("newTransactionParam RLPEncodedRelayMessage: %x\n", b)
