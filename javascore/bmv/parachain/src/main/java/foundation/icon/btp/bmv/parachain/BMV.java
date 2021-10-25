@@ -408,20 +408,20 @@ public class BMV implements IBMV {
             Context.revert(ErrorCode.BMV_ERROR, "parent para block hash does not match, parent: " + HexConverter.bytesToHex(currentBlockHeader.getParentHash()) + " current: " + HexConverter.bytesToHex(currentMTA.lastBlockHash()));
           }
 
-          if (i == blockUpdates.size() - 1) { // last blockUpdate of parachain must has the same hash with ParaHead in CandidateIncludedEvent data
-            RelayChainData relayChainData = blockUpdates.get(i).getRelayChainData();
-            if (relayChainData == null) {
-              Context.revert(ErrorCode.BMV_ERROR, "Missing relay chain data");
-            }
-            BlockVerifyResult relayBlockVerifyResult = this.verifyRelayChainBlock(relayChainData);
-            byte[] lastIncludedParaChainBlockHash = this.verifyRelayChainState(relayChainData.getStateProof(), relayBlockVerifyResult);
-            if (lastIncludedParaChainBlockHash == null) {
-              Context.revert(ErrorCode.BMV_ERROR, "can not find parachain data in relay chain data");
-            }
-            if (!Arrays.equals(blockUpdates.get(i).getBlockHeader().getHash(), lastIncludedParaChainBlockHash)) {
-              Context.revert(ErrorCode.BMV_ERROR, "block hash does not match with relay chain, para block hash: " + HexConverter.bytesToHex(blockUpdates.get(i).getBlockHeader().getHash()) + " relay inclusion: " + HexConverter.bytesToHex(lastIncludedParaChainBlockHash));
-            }
-          }
+          // if (i == blockUpdates.size() - 1) { // last blockUpdate of parachain must has the same hash with ParaHead in CandidateIncludedEvent data
+          //   RelayChainData relayChainData = blockUpdates.get(i).getRelayChainData();
+          //   if (relayChainData == null) {
+          //     Context.revert(ErrorCode.BMV_ERROR, "Missing relay chain data");
+          //   }
+          //   BlockVerifyResult relayBlockVerifyResult = this.verifyRelayChainBlock(relayChainData);
+          //   byte[] lastIncludedParaChainBlockHash = this.verifyRelayChainState(relayChainData.getStateProof(), relayBlockVerifyResult);
+          //   if (lastIncludedParaChainBlockHash == null) {
+          //     Context.revert(ErrorCode.BMV_ERROR, "can not find parachain data in relay chain data");
+          //   }
+          //   if (!Arrays.equals(blockUpdates.get(i).getBlockHeader().getHash(), lastIncludedParaChainBlockHash)) {
+          //     Context.revert(ErrorCode.BMV_ERROR, "block hash does not match with relay chain, para block hash: " + HexConverter.bytesToHex(blockUpdates.get(i).getBlockHeader().getHash()) + " relay inclusion: " + HexConverter.bytesToHex(lastIncludedParaChainBlockHash));
+          //   }
+          // }
           
           currentMTA.add(currentBlockHeader.getHash());
           lastHeight = nextHeight;
