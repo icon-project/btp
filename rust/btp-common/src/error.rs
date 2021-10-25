@@ -58,7 +58,8 @@ pub mod errors {
         InvalidCount { message: String },
         InvalidAddress { message: String },
         SameSenderReceiver,
-        AccountNotExist
+        AccountNotExist,
+        TokenNotRegistered
     }
 
     impl Exception for BshError {
@@ -143,6 +144,9 @@ pub mod errors {
                 },
                 BshError::NotMinimumAmount => {
                     write!(f, "{}{}", label, "NotMinimumAmount")
+                }
+                BshError::TokenNotRegistered => {
+                    write!(f, "{}{}", label, "TokenNotRegistered")
                 }
                 _ => todo!()
             }

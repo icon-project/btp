@@ -1,4 +1,3 @@
-use crate::types::messages::SerializedMessage;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 
@@ -65,7 +64,6 @@ impl Requests {
 mod tests {
     use super::*;
     use crate::types::{
-        messages::{NativeCoinServiceMessage, NativeCoinServiceType},
         Asset,
     };
     use near_sdk::{testing_env, VMContext};

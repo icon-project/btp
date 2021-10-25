@@ -6,8 +6,8 @@ use libraries::types::{
     Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId,
 };
 use libraries::{
-    types::messages::BtpMessage, types::messages::NativeCoinServiceMessage,
-    types::messages::NativeCoinServiceType, types::messages::SerializedMessage, types::Balances,
+    types::messages::BtpMessage, types::messages::TokenServiceMessage,
+    types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
     types::MultiTokenCore, types::MultiTokenResolver, types::NativeCoin, types::Network,
     types::Owners, types::StorageBalances, types::Token, types::TokenFees,
     types::Tokens, types::Transfer, types::Requests

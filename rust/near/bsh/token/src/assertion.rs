@@ -1,6 +1,6 @@
 use super::*;
 
-impl NativeCoinService {
+impl TokenService {
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * Internal Validations  * *
@@ -42,7 +42,7 @@ impl NativeCoinService {
         );
     }
 
-    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<NativeCoin>) {
+    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<FungibleToken>) {
         require!(
             fee_numerator <= token.denominator(),
             format!("{}", BshError::InvalidSetting),
@@ -142,7 +142,7 @@ impl NativeCoinService {
         require!(self.owners.len() > 1, format!("{}", BshError::LastOwner));
     }
 
-    pub fn assert_token_does_not_exists(&self, token: &Token<NativeCoin>) {
+    pub fn assert_token_does_not_exists(&self, token: &Token<FungibleToken>) {
         let token = self.tokens.get(&Self::hash_token_id(token.name()));
         require!(token.is_none(), format!("{}", BshError::TokenExist))
     }
@@ -168,5 +168,15 @@ impl NativeCoinService {
                 }
             ),
         );
+    }
+
+    pub fn assert_token_registered(&self, token_account: &AccountId) {
+        require!(
+            self.registered_tokens.contains(token_account),
+            format!(
+                "{}",
+                BshError::TokenNotRegistered
+            )
+        )
     }
 }

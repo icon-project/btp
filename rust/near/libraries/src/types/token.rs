@@ -13,6 +13,7 @@ pub trait TokenMetadata {
     fn fee_numerator(&self) -> u128;
     fn fee_numerator_mut(&mut self) -> &u128;
     fn denominator(&self) -> u128;
+    fn metadata(&self) -> &Self;
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
@@ -50,6 +51,10 @@ impl<T: TokenMetadata> Token<T>  {
 
     pub fn denominator(&self) -> u128 {
         self.metadata.denominator()
+    }
+
+    pub fn metadata(&self) -> &T {
+        &self.metadata
     }
 }
 

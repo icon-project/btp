@@ -1,14 +1,14 @@
 use super::*;
 
 #[near_bindgen]
-impl NativeCoinService {
-    pub fn transfer(&mut self, coin_id: TokenId, destination: BTPAddress, amount: U128) {
+impl TokenService {
+    pub fn transfer(&mut self, token_id: TokenId, destination: BTPAddress, amount: U128) {
         let sender_id = env::predecessor_account_id();
         self.assert_have_minimum_amount(amount.into());
-        self.assert_tokens_exists(&vec![coin_id.clone()]);
+        self.assert_tokens_exists(&vec![token_id.clone()]);
 
         let asset = self
-            .process_external_transfer(&coin_id, &sender_id, amount.into())
+            .process_external_transfer(&token_id, &sender_id, amount.into())
             .unwrap();
 
         self.send_request(sender_id, destination, vec![asset]);
@@ -16,19 +16,19 @@ impl NativeCoinService {
 
     pub fn transfer_batch(
         &mut self,
-        coin_ids: Vec<TokenId>,
+        token_ids: Vec<TokenId>,
         destination: BTPAddress,
         amounts: Vec<U128>,
     ) {
         let sender_id = env::predecessor_account_id();
-        self.assert_tokens_exists(&coin_ids);
+        self.assert_tokens_exists(&token_ids);
 
-        let assets = coin_ids
+        let assets = token_ids
             .iter()
             .enumerate()
-            .map(|(index, coin_id)| {
+            .map(|(index, token_id)| {
                 self.assert_have_minimum_amount(amounts[index].into());
-                self.process_external_transfer(coin_id, &sender_id, amounts[index].into())
+                self.process_external_transfer(token_id, &sender_id, amounts[index].into())
                     .unwrap()
             })
             .collect::<Vec<Asset>>();
@@ -37,20 +37,20 @@ impl NativeCoinService {
     }
 }
 
-impl NativeCoinService {
+impl TokenService {
     pub fn process_external_transfer(
         &mut self,
-        coin_id: &TokenId,
+        token_id: &TokenId,
         sender_id: &AccountId,
         mut amount: u128,
     ) -> Result<Asset, String> {
-        let token = self.tokens.get(&coin_id).unwrap();
+        let token = self.tokens.get(&token_id).unwrap();
         let fees = Self::calculate_token_transfer_fee(&token, amount)?;
 
-        self.assert_have_sufficient_deposit(&sender_id, &coin_id, amount, Some(fees));
+        self.assert_have_sufficient_deposit(&sender_id, &token_id, amount, Some(fees));
 
         amount.sub(fees)?;
-        let mut balance = self.balances.get(&sender_id, &coin_id).unwrap();
+        let mut balance = self.balances.get(&sender_id, &token_id).unwrap();
 
         // Handle Fees
         balance.locked_mut().add(fees)?;
@@ -60,7 +60,7 @@ impl NativeCoinService {
         balance.deposit_mut().sub(amount)?;
         balance.locked_mut().add(amount)?;
 
-        self.balances.set(&sender_id, &coin_id, balance);
+        self.balances.set(&sender_id, &token_id, balance);
 
         Ok(Asset::new(token.name().clone(), amount, fees))
     }
@@ -204,7 +204,7 @@ impl NativeCoinService {
         });
     }
 
-    pub fn handle_coin_transfer(
+    pub fn handle_token_transfer(
         &mut self,
         message_source: &BTPAddress,
         receiver_id: &String,
@@ -259,7 +259,7 @@ impl NativeCoinService {
                     false
                 };
             })
-            .collect::<Vec<(usize, TokenId, Token<NativeCoin>)>>();
+            .collect::<Vec<(usize, TokenId, Token<FungibleToken>)>>();
 
         if invalid_tokens.len() > 0 {
             return Err(BshError::Reverted {
@@ -271,7 +271,7 @@ impl NativeCoinService {
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
         if transferable.is_err() {
             return Err(BshError::Reverted {
-                message: format!("Coins not transferable: {}", transferable.unwrap_err()),
+                message: format!("Tokens not transferable: {}", transferable.unwrap_err()),
             });
         }
 
@@ -300,7 +300,7 @@ impl NativeCoinService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<NativeCoin>)>,
+        tokens: &Vec<(usize, TokenId, Token<FungibleToken>)>,
         assets: &Vec<Asset>,
     ) -> Result<(), String> {
         tokens

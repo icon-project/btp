@@ -54,4 +54,8 @@ impl TokenMetadata for NativeCoin {
     fn denominator(&self) -> u128 {
         self.denominator
     }
+
+    fn metadata(&self) -> &Self {
+        self
+    }
 }

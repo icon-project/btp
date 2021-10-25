@@ -160,9 +160,9 @@ pub trait MultiTokenCore {
     fn total_supply_batch(&self, token_ids: Vec<TokenId>) -> Vec<U128>;
 }
 
-pub trait MultiTokenMetadataProvider {
-    fn mt_metadata(&self, token_id: TokenId) -> Box<dyn TokenMetadata>;
-}
+// pub trait MultiTokenMetadataProvider {
+//     fn mt_metadata(&self, token_id: TokenId) -> Box<dyn TokenMetadata>;
+// }
 
 /// Used when MultiTokens are transferred using `mt_transfer_call`. This is the method that's called after `mt_on_transfer`. This trait is implemented on the MultiToken contract.
 pub trait MultiTokenResolver {

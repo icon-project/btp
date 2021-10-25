@@ -20,6 +20,10 @@ pub fn chuck() -> AccountId {
     "chuck.near".parse::<AccountId>().unwrap()
 }
 
-pub fn verifier() -> AccountId {
-    "verifier.near".parse::<AccountId>().unwrap()
+pub fn bmc() -> AccountId {
+    "bmc.near".parse::<AccountId>().unwrap()
+}
+
+pub fn wnear() -> AccountId {
+    "wnear.near".parse::<AccountId>().unwrap()
 }

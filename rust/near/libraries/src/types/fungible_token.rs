@@ -18,8 +18,8 @@ impl FungibleToken {
     pub fn new(
         name: TokenName,
         symbol: String,
-        fee_numerator: u128,
         uri: Option<AccountId>,
+        fee_numerator: u128,
         denominator: u128,
         network: Network,
     ) -> FungibleToken {
@@ -31,6 +31,16 @@ impl FungibleToken {
             denominator,
             network,
         }
+    }
+}
+
+impl FungibleToken {
+    pub fn uri(&self) -> &Option<AccountId> {
+        &self.uri
+    }
+
+    pub fn uri_deref(&self) -> Option<AccountId> {
+        self.uri.clone()
     }
 }
 
@@ -57,5 +67,9 @@ impl TokenMetadata for FungibleToken {
 
     fn denominator(&self) -> u128 {
         self.denominator
+    }
+
+    fn metadata(&self) -> &Self {
+        self
     }
 }

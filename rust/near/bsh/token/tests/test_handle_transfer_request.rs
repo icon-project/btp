@@ -1,15 +1,13 @@
-use nativecoin_service::NativeCoinService;
-use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
-use std::{collections::HashSet, convert::TryInto};
+use near_sdk::{env, testing_env, AccountId, VMContext};
+use std::convert::TryInto;
+use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, Asset, BTPAddress, MultiTokenCore, NativeCoin, Token, Transfer,
-    WrappedI128,
+    Account, Asset, BTPAddress, FungibleToken, Token, WrappedI128,
 };
 mod token;
-use std::convert::TryFrom;
 use token::*;
 
 fn get_context(
@@ -46,31 +44,28 @@ fn handle_transfer_mint_registered_icx() {
         get_context(vec![], false, account_id, deposit, env::storage_usage())
     };
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
-    let mut contract = NativeCoinService::new(
-        "nativecoin".to_string(),
-        bmc(),
-        "0x1.near".into(),
-        nativecoin.clone(),
-    );
+    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
 
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let icx_coin = <Token<NativeCoin>>::new(ICON_COIN.to_owned());
-    contract.register(icx_coin.clone());
+    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let token_id = contract.token_id(baln.name().to_owned());
+
+    testing_env!(context(alice(), 0));
+    contract.register(baln.clone());
 
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
         BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
-        "nativecoin".to_string(),
+        "TokenBSH".to_string(),
         WrappedI128::new(1),
         vec![],
         Some(TokenServiceMessage::new(
             TokenServiceType::RequestTokenTransfer {
                 sender: chuck().to_string(),
                 receiver: destination.account_id().to_string(),
-                assets: vec![Asset::new(icx_coin.name().to_owned(), 900, 99)],
+                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
@@ -79,10 +74,7 @@ fn handle_transfer_mint_registered_icx() {
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
     let result = contract
-        .account_balance(
-            destination.account_id(),
-            contract.coin_id(icx_coin.name().to_owned()),
-        )
+        .account_balance(destination.account_id(), token_id.clone())
         .unwrap();
     assert_eq!(result.deposit(), 900);
 }
