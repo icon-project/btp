@@ -177,11 +177,11 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
 		if bu, err = r.newParaBlockUpdate(v); err != nil {
-			return err
+			return errors.Wrap(err, "ReceiveLoop: newParaBlockUpdate")
 		}
 
 		if sp, err = r.newReceiptProofs(v); err != nil {
-			return err
+			return errors.Wrap(err, "ReceiveLoop: newReceiptProofs")
 		} else if r.isFoundMessageEventByOffset {
 			cb(bu, sp)
 		} else {
@@ -189,7 +189,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "ReceiveLoop parachain, got err")
+		return errors.Wrap(err, "ReceiveLoop: parachain, got err")
 	}
 
 	return nil

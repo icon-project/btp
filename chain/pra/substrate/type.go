@@ -194,7 +194,6 @@ type SubstrateClient interface {
 	GetBlockHashLatest() (SubstrateHash, error)
 	GetSpecName() string
 	GetReadProof(key SubstrateStorageKey, blockHash SubstrateHash) (SubstrateReadProof, error)
-	CreateStorageKey(meta *SubstrateMetaData, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error)
 	GetJustificationsAndUnknownHeaders(blockNumber SubstrateBlockNumber) (*GrandpaJustification, []SubstrateHeader, error)
 	GetGrandpaCurrentSetId(blockHash SubstrateHash) (SetId, error)
 	GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error)

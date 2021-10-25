@@ -13,7 +13,7 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/common/go-ethereum/rpc"
 	"github.com/icon-project/btp/common/log"
-	module "github.com/icon-project/btp/common/utils"
+	utils "github.com/icon-project/btp/common/utils"
 	scale "github.com/itering/scale.go"
 	"github.com/itering/scale.go/source"
 	scaletypes "github.com/itering/scale.go/types"
@@ -53,18 +53,18 @@ func (c *SubstrateAPI) Init() {
 		log.Errorf("Init: metadaDecoderProcess fail %v", err)
 	}
 
-	c.eventDecoder = scale.EventsDecoder{}
-	c.scaleDecoderOption = scaletypes.ScaleDecoderOption{Metadata: &m.Metadata}
-
 	runtimeVersion, err := c.GetRuntimeVersionLatest()
 	if err != nil {
 		c.log.Panicf("Init: can't fetch RuntimeVersionLatest")
 	}
 
-	modulePath, err := module.GetModulePath("github.com/itering/scale.go", "v1.1.23")
+	modulePath, err := utils.GetModulePath("github.com/itering/scale.go", "v1.1.23")
 	if err != nil {
 		c.log.Panicf("Init: can't fetch scale module")
 	}
+
+	c.eventDecoder = scale.EventsDecoder{}
+	c.scaleDecoderOption = scaletypes.ScaleDecoderOption{Metadata: &m.Metadata, Spec: int(runtimeVersion.SpecVersion)}
 
 	typesDefinition, err := ioutil.ReadFile(path.Join(modulePath, "network/"+runtimeVersion.SpecName+".json"))
 	if err != nil {
@@ -105,26 +105,6 @@ func (c *SubstrateAPI) getRuntimeVersion(blockHash *SubstrateHash) (*RuntimeVers
 		return nil, err
 	}
 	return &runtimeVersion, err
-}
-
-func (c *SubstrateAPI) GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error) {
-	return c.getMetadata(&blockHash)
-}
-
-func (c *SubstrateAPI) GetMetadataLatest() *SubstrateMetaData {
-	metadata, _ := c.getMetadata(nil)
-	return metadata
-}
-
-func (c *SubstrateAPI) getMetadata(blockHash *SubstrateHash) (*SubstrateMetaData, error) {
-	res, err := c.getMetadataRaw(blockHash)
-	if err != nil {
-		return nil, err
-	}
-
-	var metadata SubstrateMetaData
-	err = types.DecodeFromHexString(res, &metadata)
-	return &metadata, err
 }
 
 func (c *SubstrateAPI) GetMetadataRawLatest() string {
@@ -263,32 +243,16 @@ func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash)
 	return res, err
 }
 
-func (c *SubstrateAPI) CreateStorageKey(meta *SubstrateMetaData, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
-	key, err := types.CreateStorageKey(meta, prefix, method, arg, arg2)
-	if err != nil {
-		return nil, err
-	}
-
-	return SubstrateStorageKey(key), nil
-}
-
 func (c *SubstrateAPI) GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error) {
-	meta := c.GetMetadataLatest()
-	key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return SubstrateStorageKey(key), nil
+	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "System", "Events")
+
+	return NewStorageKey(key.EncodeKey), nil
 }
 
 func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U64, error) {
-	meta := c.GetMetadataLatest()
-	key, err := types.CreateStorageKey(meta, "Grandpa", "CurrentSetId", nil, nil)
-	if err != nil {
-		return 0, err
-	}
+	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "Grandpa", "CurrentSetId")
 
-	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	storageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
 	if err != nil {
 		return 0, err
 	}
@@ -346,13 +310,9 @@ func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.Bloc
 }
 
 func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedValidationData, error) {
-	meta := c.GetMetadataLatest()
-	key, err := types.CreateStorageKey(meta, "ParachainSystem", "ValidationData", nil, nil)
-	if err != nil {
-		return nil, err
-	}
+	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "ParachainSystem", "ValidationData")
 
-	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	storageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -364,18 +324,14 @@ func (c *SubstrateAPI) GetValidationData(blockHash SubstrateHash) (*PersistedVal
 }
 
 func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
-	meta := c.GetMetadataLatest()
-	key, err := types.CreateStorageKey(meta, "ParachainInfo", "ParachainId", nil, nil)
-	if err != nil {
-		return nil, err
-	}
+	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "ParachainInfo", "ParachainId")
 
 	blockHash, err := c.GetBlockHashLatest()
 	if err != nil {
 		return nil, err
 	}
 
-	storageRaw, err := c.GetStorageRaw(key, blockHash)
+	storageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
 	if err != nil {
 		return nil, err
 	}

@@ -107,4 +107,30 @@ func TestClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, events, 3)
 	})
+
+	t.Run("should return 55 EVM_Log in moonriver", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://wss.moonriver.moonbeam.network")
+		require.NoError(t, err)
+		c.Init()
+		blockHash, err := c.GetBlockHash(786623)
+		require.NoError(t, err)
+
+		events, err := c.GetSystemEvents(blockHash, "EVM", "Log")
+		assert.NoError(t, err)
+		assert.Len(t, events, 55)
+	})
+
+	t.Run("should getEvmLogs in moonbase", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://wss.testnet.moonbeam.network")
+		require.NoError(t, err)
+		c.Init()
+		blockHash, err := c.GetBlockHash(1026643)
+		require.NoError(t, err)
+
+		events, err := c.GetSystemEvents(blockHash, "EVM", "Log")
+		assert.NoError(t, err)
+		assert.Len(t, events, 4)
+	})
 }
