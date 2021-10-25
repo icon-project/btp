@@ -165,13 +165,13 @@ func (_m *MockSubstrateClient) GetGrandpaCurrentSetId(blockHash types.Hash) (typ
 	return r0, r1
 }
 
-// GetHeader provides a mock function with given fields: hash
-func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error) {
-	ret := _m.Called(hash)
+// GetHeader provides a mock function with given fields: blockHash
+func (_m *MockSubstrateClient) GetHeader(blockHash types.Hash) (*types.Header, error) {
+	ret := _m.Called(blockHash)
 
 	var r0 *types.Header
 	if rf, ok := ret.Get(0).(func(types.Hash) *types.Header); ok {
-		r0 = rf(hash)
+		r0 = rf(blockHash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Header)
@@ -180,7 +180,7 @@ func (_m *MockSubstrateClient) GetHeader(hash types.Hash) (*types.Header, error)
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
-		r1 = rf(hash)
+		r1 = rf(blockHash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -241,45 +241,6 @@ func (_m *MockSubstrateClient) GetJustificationsAndUnknownHeaders(blockNumber ty
 	}
 
 	return r0, r1, r2
-}
-
-// GetMetadata provides a mock function with given fields: blockHash
-func (_m *MockSubstrateClient) GetMetadata(blockHash types.Hash) (*types.Metadata, error) {
-	ret := _m.Called(blockHash)
-
-	var r0 *types.Metadata
-	if rf, ok := ret.Get(0).(func(types.Hash) *types.Metadata); ok {
-		r0 = rf(blockHash)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Metadata)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
-		r1 = rf(blockHash)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetMetadataLatest provides a mock function with given fields:
-func (_m *MockSubstrateClient) GetMetadataLatest() *types.Metadata {
-	ret := _m.Called()
-
-	var r0 *types.Metadata
-	if rf, ok := ret.Get(0).(func() *types.Metadata); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Metadata)
-		}
-	}
-
-	return r0
 }
 
 // GetParachainId provides a mock function with given fields:
@@ -386,6 +347,29 @@ func (_m *MockSubstrateClient) GetSystemEventStorageKey(blockhash types.Hash) (t
 	return r0, r1
 }
 
+// GetSystemEvents provides a mock function with given fields: blockHash, section, method
+func (_m *MockSubstrateClient) GetSystemEvents(blockHash types.Hash, section string, method string) ([]map[string]interface{}, error) {
+	ret := _m.Called(blockHash, section, method)
+
+	var r0 []map[string]interface{}
+	if rf, ok := ret.Get(0).(func(types.Hash, string, string) []map[string]interface{}); ok {
+		r0 = rf(blockHash, section, method)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]map[string]interface{})
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Hash, string, string) error); ok {
+		r1 = rf(blockHash, section, method)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetValidationData provides a mock function with given fields: blockHash
 func (_m *MockSubstrateClient) GetValidationData(blockHash types.Hash) (*PersistedValidationData, error) {
 	ret := _m.Called(blockHash)
@@ -407,6 +391,11 @@ func (_m *MockSubstrateClient) GetValidationData(blockHash types.Hash) (*Persist
 	}
 
 	return r0, r1
+}
+
+// Init provides a mock function with given fields:
+func (_m *MockSubstrateClient) Init() {
+	_m.Called()
 }
 
 // SubcribeFinalizedHeadAt provides a mock function with given fields: height, cb

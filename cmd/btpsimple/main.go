@@ -26,7 +26,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/icon-project/btp/btp"
 	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/crypto"
@@ -114,7 +116,7 @@ func main() {
 
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
-	//rootVc.Debug()
+	// rootVc.Debug()
 	//
 	rootPFlags := rootCmd.PersistentFlags()
 	rootPFlags.String("base_dir", "", "Base directory for data")
@@ -147,12 +149,16 @@ func main() {
 	rootPFlags.Int("log_writer.maxbackups", 0, "Maximum number of backups")
 	rootPFlags.Bool("log_writer.localtime", false, "Use localtime on rotated log file instead of UTC")
 	rootPFlags.Bool("log_writer.compress", false, "Use gzip on rotated log file")
+	//
+	rootPFlags.String("sentry.dsn", "", "Sentry DSN for monitor bug and alerts")
+	rootPFlags.String("sentry.env", "", "Sentry environment to distinguish between stages")
 	cli.BindPFlags(rootVc, rootPFlags)
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		baseDir := rootVc.GetString("base_dir")
 		logfile := rootVc.GetString("log_writer.filename")
 		cfg.FilePath = rootVc.GetString("config")
+		sentryDsn := rootVc.GetString("sentry.dsn")
 		if cfg.FilePath != "" {
 			f, err := os.Open(cfg.ResolveAbsolute(cfg.FilePath))
 			if err != nil {
@@ -179,6 +185,11 @@ func main() {
 		if logfile != "" {
 			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
 		}
+
+		if sentryDsn != "" {
+			sentryInit()
+		}
+
 		return nil
 	}
 
@@ -188,6 +199,9 @@ func main() {
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Printf("%+v", err)
+		if rootVc.GetString("sentry.dsn") != "" {
+			sentry.Flush(2 * time.Second)
+		}
 		os.Exit(1)
 	}
 }
@@ -248,4 +262,20 @@ func setLogger(cfg *Config, w wallet.Wallet, modLevels map[string]string) log.Lo
 
 func profiling() {
 	http.ListenAndServe(":6060", nil)
+}
+
+func sentryInit() {
+	err := sentry.Init(sentry.ClientOptions{
+		// Either set your DSN here or set the SENTRY_DSN environment variable.
+		Dsn: rootVc.GetString("sentry.dsn"),
+		// Either set environment and release here or set the SENTRY_ENVIRONMENT
+		// and SENTRY_RELEASE environment variables.
+		Environment: rootVc.GetString("sentry.env"),
+		Release:     build,
+		DebugWriter: log.GlobalLogger().Writer(),
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
 }
