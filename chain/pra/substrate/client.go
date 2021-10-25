@@ -13,7 +13,7 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/common/go-ethereum/rpc"
 	"github.com/icon-project/btp/common/log"
-	"github.com/icon-project/btp/common/module"
+	module "github.com/icon-project/btp/common/utils"
 	scale "github.com/itering/scale.go"
 	"github.com/itering/scale.go/source"
 	scaletypes "github.com/itering/scale.go/types"
