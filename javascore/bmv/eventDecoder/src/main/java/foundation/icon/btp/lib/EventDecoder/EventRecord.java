@@ -1,4 +1,4 @@
-package foundation.icon.btp.lib.eventdecoder;
+package foundation.icon.btp.lib.EventDecoder;
 import java.util.List;
 import java.util.Map;
 import scorex.util.HashMap;

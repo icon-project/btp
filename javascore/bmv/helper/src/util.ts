@@ -39,25 +39,55 @@ export function convertLEtoBE(input) {
 }
 
 export function findEventIndex(relayMetaData, moduleName, eventName) {
-  let newAuthoritiesEventIndex = [];
+  let eventIndex = [];
 
+  const relayMetaDataJson = relayMetaData.toJSON();
+
+  let foundModule
   // @ts-ignore
-  const grandpaModule = relayMetaData
-    .toJSON()
-    .metadata.v13.modules.find((module) => module.name == moduleName);
-  if (!grandpaModule) {
-    throw new Error("can not find " + moduleName + " module in metadata");
+  if (relayMetaDataJson.metadata.v12 || relayMetaDataJson.metadata.v13) {
+    const modules = (relayMetaDataJson.metadata.v12 || relayMetaDataJson.metadata.v13).modules
+    foundModule = modules.find((module) => module.name == moduleName);
+
+    if (!foundModule) {
+      throw new Error('can not find module ' + moduleName);
+    }
+
+    eventIndex.push(foundModule.index);
+    const secondIndex = foundModule.events.findIndex(
+      (e) => e.name === eventName
+    );
+    if (secondIndex < 0) {
+      throw new Error("can not find " + eventName + " event in module " + moduleName);
+    }
+    // @ts-ignore
+    eventIndex.push(secondIndex);
+    return eventIndex;
+  } else if (relayMetaDataJson.metadata.v14) {
+    const modules = relayMetaDataJson.metadata.v14.pallets;
+    foundModule = modules.find((module) => module.name == moduleName);
+
+    if (!foundModule) {
+      throw new Error('can not find module ' + moduleName);
+    }
+
+    eventIndex.push(foundModule.index);
+    if (!foundModule.events) {
+      throw new Error('Module ' + moduleName + ' has no event');
+    }
+
+    const eventTypes = relayMetaDataJson.metadata.v14.lookup.types[foundModule.events.type];
+    const secondIndex = eventTypes.type.def.variant.variants.findIndex(
+      (e) => e.name === eventName
+    );
+    if (secondIndex < 0) {
+      throw new Error("can not find " + eventName + " event in module " + moduleName);
+    }
+    // @ts-ignore
+    eventIndex.push(secondIndex);
+    return eventIndex;
   }
-  newAuthoritiesEventIndex.push(grandpaModule.index);
-  const secondIndex = grandpaModule.events.findIndex(
-    (e) => e.name === eventName
-  );
-  if (secondIndex < 0) {
-    throw new Error("can not find " + eventName + " event");
-  }
-  // @ts-ignore
-  newAuthoritiesEventIndex.push(secondIndex);
-  return newAuthoritiesEventIndex;
+   throw new Error('unsupport metadata version');
 }
 
 export async function deployScore(
@@ -96,7 +126,7 @@ export async function deployScore(
   const transactionId = await iconService
     .sendTransaction(signedTransaction)
     .execute();
-  await sleep(4000);
+  await sleep(5000);
   const transactionResult = await iconService
     .getTransactionResult(transactionId)
     .execute();

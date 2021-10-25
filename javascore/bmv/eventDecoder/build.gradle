@@ -18,6 +18,8 @@ configurations {
     intTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
+apply from: 'generateEventDecoderCode.gradle'
+
 dependencies {
     implementation 'com.github.sink772:javaee-scorex:0.5.2'
     implementation project(':lib')
@@ -34,7 +36,7 @@ dependencies {
 }
 
 optimizedJar {
-    mainClassName = 'foundation.icon.btp.eventdecoder.EventDecoderScore'
+    mainClassName = 'foundation.icon.btp.eventDecoder.EventDecoderScore'
     // archivesBaseName = 'EventDecoderScore'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -95,120 +97,15 @@ task deleteGeneratedEventDecoderFiles(type: Delete) {
     delete fileTree("""${projectDir}/src/main/java/foundation/icon/btp/lib/EventDecoder/""") {
             include '**/EventDecoder.java'
     }
+    delete fileTree("""${projectDir}/src/main/java/foundation/icon/btp/lib/EventDecoder/""") {
+            include '**/TypeDecoder.java'
+    }
 }
 
 tasks.register('loadMetaData') {
     dependsOn deleteGeneratedEventDecoderFiles
     doLast {
-        def accountIdSize = 32;
-        if (project.hasProperty('accountIdSize')) {
-            accountIdSize = project.ext.accountIdSize
-        }
-        if (!project.hasProperty('metaDataFilePath')) {
-            throw new Exception("missing metadata file path")
-        }
-
-        new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/Base").mkdirs()
-        def inputFile = new File(project.ext.metaDataFilePath)
-        def json = new groovy.json.JsonSlurper().parseText(inputFile.text)
-        def modules = json.metadata.v12 != null ? json.metadata.v12.modules : json.metadata.v13.modules
-        def geratingEventDecoderCode =
-"""package foundation.icon.btp.lib.eventdecoder;
-
-import foundation.icon.btp.lib.utils.ByteSliceInput;
-
-public class EventDecoder extends EventDecoderBase {
-    public static byte[] decodeEvent(byte mainIndex, byte subIndex, ByteSliceInput input) {
-        SizeDecoder.accountIdSize = ${accountIdSize};
-        switch (mainIndex) {
-"""
-        modules.each { item -> 
-            if (item.events != null && item.events.size() != 0) { 
-                def geratingModuleEventDecoderCode =
-"""package foundation.icon.btp.lib.eventdecoder;
-
-import foundation.icon.btp.lib.utils.ByteSliceInput;
-
-public class ${item.name}Event extends ${item.name}EventBase {
-    public static byte[] decodeEvent(byte subIndex, ByteSliceInput input) {
-        switch (subIndex) {
-"""
-                def geratingModuleEventDecoderBaseCode =
-"""package foundation.icon.btp.lib.eventdecoder;
-
-import foundation.icon.btp.lib.utils.ByteSliceInput;
-
-public class ${item.name}EventBase {
-"""
-                def subIndex = 0;
-                item.events.each { event -> 
-                    geratingModuleEventDecoderCode += 
-"""            case (byte)(${subIndex}):
-                return ${event.name[0].toLowerCase() + event.name.substring(1)}(input);
-"""
-                    geratingModuleEventDecoderBaseCode +=
-"""    public static byte[] ${event.name[0].toLowerCase() + event.name.substring(1)}(ByteSliceInput input) {
-"""
-                    if (event.args != null && event.args.size() > 0) {
-                        geratingModuleEventDecoderBaseCode += 
-"""       int size = 0;
-"""
-                        event.args.each { arg -> 
-                            def functionName = arg
-                            if (functionName.startsWith("Option<") || functionName.startsWith("Vec<")) {
-                                functionName = functionName.replace('<', '_')
-                                functionName = functionName.replace('(', '_')
-                                functionName = functionName.replace(')', '')
-                                functionName = functionName.replace('>', '')
-                                functionName = functionName.replace(',', '_')
-                                functionName = functionName.replace('__', '_')
-                            }
-                            geratingModuleEventDecoderBaseCode += 
-"""       size += SizeDecoder.${functionName}(input, size);
-"""
-                        }
-
-                        geratingModuleEventDecoderBaseCode += 
-"""       return input.take(size);
-"""
-                    } else {
-                        geratingModuleEventDecoderBaseCode += 
-"""       return null;
-"""
-                    }
-                    subIndex++
-                    geratingModuleEventDecoderBaseCode += 
-"""    }
-
-"""
-                }
-                geratingModuleEventDecoderBaseCode += 
-"""}
-"""
-                geratingModuleEventDecoderCode +=
-"""        }
-        return null;
-    }
-}
-"""
-                geratingEventDecoderCode +=
-"""           case (byte)(${item.index}):
-                return ${item.name}Event.decodeEvent(subIndex, input);
-"""
-
-                new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/${item.name}Event.java").text = geratingModuleEventDecoderCode
-
-                new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/Base/${item.name}EventBase.java").text = geratingModuleEventDecoderBaseCode
-        }
-    }
-
-        geratingEventDecoderCode +=
-"""        }
-        return null;
-    }
-}
-"""
-        new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/EventDecoder.java").text = geratingEventDecoderCode
+        handleGenerateEventDecoderCode()
     }
 }
 

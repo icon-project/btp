@@ -1,16 +1,12 @@
-package foundation.icon.btp.eventdecoder.edgeware;
+package foundation.icon.btp.eventDecoder;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import foundation.icon.btp.lib.utils.HexConverter;
-import foundation.icon.btp.lib.eventdecoder.*;
+import foundation.icon.btp.lib.EventDecoder.*;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class SizeDecoderTest {
     @Test

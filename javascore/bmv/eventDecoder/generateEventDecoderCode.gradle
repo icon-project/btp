@@ -1,0 +1,371 @@
+project.ext.handleGenerateEventDecoderCode = { -> 
+    def accountIdSize = 32;
+    if (project.hasProperty('accountIdSize')) {
+        accountIdSize = project.ext.accountIdSize
+    }
+    if (!project.hasProperty('metaDataFilePath')) {
+        throw new Exception("missing metadata file path")
+    }
+
+    new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/Base").mkdirs()
+    def inputFile = new File(project.ext.metaDataFilePath)
+    def json = new groovy.json.JsonSlurper().parseText(inputFile.text)
+    if (json.metadata.v12 || json.metadata.v13) {
+        generateV12V13(json, accountIdSize)
+    } else if (json.metadata.v14) {
+        generateV14(json)
+    } else {
+        throw new Exception("unsupport metadata version");
+    }
+}
+
+project.ext.generateV12V13 = { json, accountIdSize -> 
+    def modules = json.metadata.v12 != null ? json.metadata.v12.modules : json.metadata.v13.modules
+    def geratingEventDecoderCode =
+"""package foundation.icon.btp.lib.EventDecoder;
+
+import foundation.icon.btp.lib.utils.ByteSliceInput;
+
+public class EventDecoder extends EventDecoderBase {
+    public static byte[] decodeEvent(byte mainIndex, byte subIndex, ByteSliceInput input) {
+        SizeDecoder.accountIdSize = ${accountIdSize};
+        switch (mainIndex) {
+"""
+    modules.each { item -> 
+        if (item.events != null && item.events.size() != 0) { 
+            def geratingModuleEventDecoderCode =
+"""package foundation.icon.btp.lib.EventDecoder;
+
+import foundation.icon.btp.lib.utils.ByteSliceInput;
+
+public class ${item.name}Event extends ${item.name}EventBase {
+    public static byte[] decodeEvent(byte subIndex, ByteSliceInput input) {
+        switch (subIndex) {
+"""
+    def geratingModuleEventDecoderBaseCode =
+"""package foundation.icon.btp.lib.EventDecoder;
+
+import foundation.icon.btp.lib.utils.ByteSliceInput;
+
+public class ${item.name}EventBase {
+"""
+    def subIndex = 0;
+    item.events.each { event -> 
+        geratingModuleEventDecoderCode += 
+"""            case (byte)(${subIndex}):
+                return ${event.name[0].toLowerCase() + event.name.substring(1)}(input);
+"""
+    geratingModuleEventDecoderBaseCode +=
+"""    public static byte[] ${event.name[0].toLowerCase() + event.name.substring(1)}(ByteSliceInput input) {
+"""
+    if (event.args != null && event.args.size() > 0) {
+        geratingModuleEventDecoderBaseCode += 
+"""       int size = 0;
+"""
+    event.args.each { arg -> 
+        def functionName = arg
+        if (functionName.startsWith("Option<") || functionName.startsWith("Vec<")) {
+            functionName = functionName.replace('<', '_')
+            functionName = functionName.replace('(', '_')
+            functionName = functionName.replace(')', '')
+            functionName = functionName.replace('>', '')
+            functionName = functionName.replace(',', '_')
+            functionName = functionName.replace('__', '_')
+        }
+
+        if (functionName.startsWith("[")) {
+            functionName = functionName.replace('[', '_')
+            functionName = functionName.replace(';', '_')
+            functionName = functionName.replace(']', '_')
+        }
+        geratingModuleEventDecoderBaseCode += 
+"""       size += SizeDecoder.${functionName}(input, size);
+"""
+        }
+
+        geratingModuleEventDecoderBaseCode += 
+"""       return input.take(size);
+"""
+    } else {
+        geratingModuleEventDecoderBaseCode += 
+"""       return null;
+"""
+                    }
+                    subIndex++
+                    geratingModuleEventDecoderBaseCode += 
+"""    }
+
+"""
+                }
+                geratingModuleEventDecoderBaseCode += 
+"""}
+"""
+                geratingModuleEventDecoderCode +=
+"""        }
+        return null;
+    }
+}
+"""
+                geratingEventDecoderCode +=
+"""           case (byte)(${item.index}):
+                return ${item.name}Event.decodeEvent(subIndex, input);
+"""
+
+                new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/${item.name}Event.java").text = geratingModuleEventDecoderCode
+
+                new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/Module/Base/${item.name}EventBase.java").text = geratingModuleEventDecoderBaseCode
+        }
+    }
+
+        geratingEventDecoderCode +=
+"""        }
+        return null;
+    }
+}
+"""
+        new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/EventDecoder.java").text = geratingEventDecoderCode
+}
+
+project.ext.generateV14 = { json -> 
+    generateTypeDecoderV14(json)
+    generateV14EventDecoder(json)
+}
+
+project.ext.generateV14EventDecoder = { json -> 
+    def modules = json.metadata.v14.pallets
+    def types = json.metadata.v14.lookup.types
+    def geratingEventDecoderCode =
+"""package foundation.icon.btp.lib.EventDecoder;
+
+import foundation.icon.btp.lib.utils.ByteSliceInput;
+
+public class EventDecoder extends EventDecoderBase {
+    public static byte[] decodeEvent(byte mainIndex, byte subIndex, ByteSliceInput input) {
+        int eventSize = 0;
+        switch (mainIndex) {
+"""
+    modules.each { item -> 
+        if (item.events != null && item.events.type != null) { 
+                geratingEventDecoderCode +=
+"""           case (byte)(${item.index}):
+                eventSize = TypeDecoder.decodeType${item.events.type}(input, -1);
+                break;
+"""
+        }
+    }
+
+        geratingEventDecoderCode +=
+"""        }
+        if (eventSize > 0) {
+            return input.take(eventSize - 1);
+        } else {
+            return input.take(eventSize);
+        }
+    }
+}
+"""
+        new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/EventDecoder.java").text = geratingEventDecoderCode
+}
+
+project.ext.generateTypeDecoderV14 = { json -> 
+    def types = json.metadata.v14.lookup.types
+    def geratingTypeDecoderCode =
+"""package foundation.icon.btp.lib.EventDecoder;
+
+import foundation.icon.btp.lib.utils.ByteSliceInput;
+import foundation.icon.btp.lib.scale.ScaleReader;
+
+public class TypeDecoder {
+"""
+    types.each { typeObject -> 
+        def type = typeObject.type
+        geratingTypeDecoderCode +=
+"""
+    public static int decodeType${typeObject.id}(ByteSliceInput input, int offset) {
+"""
+        if (type.def.primitive) {
+            switch (type.def.primitive) {
+                case "U8":
+                case "Bool":
+                case "Char":
+                    geratingTypeDecoderCode +=
+"""        return 1;
+    }
+"""
+                break;
+                case "U16":
+                    geratingTypeDecoderCode +=
+"""        return 2;
+    }
+"""
+                break;
+                case "U32":
+                    geratingTypeDecoderCode +=
+"""        return 4;
+    }
+"""
+                break;
+                case "U64":
+                    geratingTypeDecoderCode +=
+"""        return 8;
+    }
+"""
+                break;
+                case "U128":
+                    geratingTypeDecoderCode +=
+"""        return 16;
+    }
+"""
+                break;
+                case "Str":
+                    geratingTypeDecoderCode +=
+"""        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int itemSize = ScaleReader.readUintCompactSize(input);
+        int size = input.getOffset() - startPoint - offset;
+        
+        size += itemSize;
+        input.seek(startPoint);
+        return size;
+    }
+"""
+            }
+        }
+
+        if (type.def.tuple != null) {
+            geratingTypeDecoderCode +=
+"""        int size = 0;
+"""
+            type.def.tuple.each { typeIndex ->
+            geratingTypeDecoderCode +=
+"""        size += TypeDecoder.decodeType${typeIndex}(input, offset + size);
+"""
+            }
+            geratingTypeDecoderCode +=
+"""        return size;
+    }
+"""
+        }
+
+        if (type.def.array) {
+            geratingTypeDecoderCode +=
+"""        int size = 0;
+
+        for(int i=0; i < ${type.def.array.len}; i++) {
+            size += TypeDecoder.decodeType${type.def.array.type}(input, offset + size);
+        }
+        return size;
+    }
+"""
+        }
+
+        if (type.def.sequence) {
+            geratingTypeDecoderCode +=
+"""        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int itemSize = ScaleReader.readUintCompactSize(input);
+        int size = input.getOffset() - startPoint - offset;
+        input.seek(startPoint);
+
+        for(int i=0; i < itemSize; i++) {
+            size += TypeDecoder.decodeType${type.def.sequence.type}(input, offset + size);
+        }
+        return size;
+    }
+"""
+        }
+
+        if (type.def.bitSequence) {
+            geratingTypeDecoderCode +=
+"""        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int itemSize = ScaleReader.readUintCompactSize(input);
+        int size = input.getOffset() - startPoint - offset;
+        input.seek(startPoint);
+
+        for(int i=0; i < itemSize; i++) {
+            size += TypeDecoder.decodeType${type.def.bitSequence.bitStoreType}(input, offset + size);
+        }
+        return size;
+    }
+"""
+        }
+
+        if (type.def.variant) {
+            geratingTypeDecoderCode +=
+"""        int startPoint = input.getOffset();
+        input.seek(startPoint + offset);
+        int size = 1;
+        int enumIndex = input.takeUByte();
+        input.seek(startPoint);
+        switch (enumIndex) {
+"""
+            type.def.variant.variants.each { variant ->
+                geratingTypeDecoderCode +=
+"""            case ${variant.index}:
+"""
+                variant.fields.each { field ->
+                    geratingTypeDecoderCode +=
+"""                size += TypeDecoder.decodeType${field.type}(input, offset + size);
+"""
+                }
+                geratingTypeDecoderCode +=
+"""                break;
+"""
+            }
+            geratingTypeDecoderCode +=
+"""        }
+        return size;
+    }
+"""
+        }
+
+        if (type.def.composite) {
+            geratingTypeDecoderCode +=
+"""        int size = 0;
+"""
+            type.def.composite.fields.each { field ->
+                geratingTypeDecoderCode +=
+"""
+        size += TypeDecoder.decodeType${field.type}(input, offset + size);
+"""
+            }
+
+            geratingTypeDecoderCode +=
+"""
+        return size;
+    }
+"""
+        }
+
+        if (type.def.compact) {
+            def compactType = types[type.def.compact.type];
+            if (compactType.type.def.primitive == "U128") {
+                geratingTypeDecoderCode +=
+"""        return 16;
+    }
+"""
+            } else {
+                geratingTypeDecoderCode +=
+"""        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int itemSize = ScaleReader.readUintCompactSize(input);
+        int size = input.getOffset() - startPoint - offset;
+        input.seek(startPoint);
+        return size;
+    }
+"""
+            }
+        }
+    }
+
+    geratingTypeDecoderCode +=
+"""
+}
+"""
+    new File(projectDir, "/src/main/java/foundation/icon/btp/lib/EventDecoder/TypeDecoder.java").text = geratingTypeDecoderCode
+}

@@ -1,16 +1,14 @@
-package foundation.icon.btp.eventdecoder;
+package foundation.icon.btp.eventDecoder;
 
 import scorex.util.ArrayList;
 
 import score.annotation.External;
-import foundation.icon.btp.lib.eventdecoder.EventRecord;
-import foundation.icon.btp.lib.eventdecoder.EventDecoder;
+import foundation.icon.btp.lib.EventDecoder.EventDecoder;
 import foundation.icon.btp.lib.scale.ScaleReader;
 import foundation.icon.btp.lib.utils.ByteSliceInput;
 
 import java.util.List;
 import java.util.Map;
-import score.Context;
 
 public class EventDecoderScore {
   public EventDecoderScore() {}

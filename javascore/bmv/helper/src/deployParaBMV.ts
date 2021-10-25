@@ -83,7 +83,7 @@ async function main() {
   fs.writeFileSync("./relayMetaData.json", JSON.stringify(relayMetaData, null, 2));
 
   const newAuthoritiesEventIndex = findEventIndex(relayMetaData, "Grandpa", "NewAuthorities");
-  const candidateIncludedEventIndex = findEventIndex(relayMetaData, "ParasInclusion", "CandidateIncluded");
+  const candidateIncludedEventIndex = findEventIndex(relayMetaData, "ParaInclusion", "CandidateIncluded");
 
   console.log(" Build event decoder for relay chain...");
   await buildEventDecoder(path.resolve("./relayMetaData.json"));

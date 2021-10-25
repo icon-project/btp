@@ -75,7 +75,7 @@ async function main() {
     fs.writeFileSync("./relayMetaData.json", JSON.stringify(relayMetaData, null, 2));
 
     const newAuthoritiesEventIndex = findEventIndex(relayMetaData, "Grandpa", "NewAuthorities");
-    const candidateIncludedEventIndex = findEventIndex(relayMetaData, "ParasInclusion", "CandidateIncluded");
+    const candidateIncludedEventIndex = findEventIndex(relayMetaData, "ParaInclusion", "CandidateIncluded");
 
     /*
      * get meta data of para chain

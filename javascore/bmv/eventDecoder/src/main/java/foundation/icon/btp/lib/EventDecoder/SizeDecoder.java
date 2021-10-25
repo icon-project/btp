@@ -1,4 +1,4 @@
-package foundation.icon.btp.lib.eventdecoder;
+package foundation.icon.btp.lib.EventDecoder;
 
 import java.math.BigInteger;
 
@@ -436,6 +436,45 @@ public class SizeDecoder {
         }
     }
 
+    public static int MultiAsset(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+        input.seek(startPoint + offset);
+
+        int multiAssetEnum = input.takeUByte();
+        switch (multiAssetEnum) {
+            case 4:
+            case 5:
+                ScaleReader.readBytes(input);
+                break;
+            case 6:
+            case 7:
+                decodeMultiLocation(input);
+                break;
+            case 8:
+                ScaleReader.readBytes(input);
+                ScaleReader.readCompacBigInteger(input);
+                break;
+            case 9:
+                ScaleReader.readBytes(input);
+                decodeAssetInstance(input);
+                break;
+            case 10:
+                decodeMultiLocation(input);
+                ScaleReader.readCompacBigInteger(input);
+                break;
+            case 11:
+                decodeMultiLocation(input);
+                decodeAssetInstance(input);
+                break;
+            default:
+                break;
+        }
+        int endPoint = input.getOffset();
+
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
+    }
+
     public static void decodeXcmOrder(ByteSliceInput input) {
         int xcmOrderEnum = input.takeUByte();
         switch (xcmOrderEnum) {
@@ -591,6 +630,28 @@ public class SizeDecoder {
         }
     }
 
+    public static int XcmError(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int xcmErrorEnum = input.takeUByte();
+        switch (xcmErrorEnum) {
+            case 11:
+                decodeMultiLocation(input);
+                decodeXcm(input);
+                break;
+            case 17:
+                input.take(8);
+                break;
+            default:
+                break;
+        }
+
+        int endPoint = input.getOffset();
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
+    }
+
     public static int Outcome(ByteSliceInput input, int offset) {
         int startPoint = input.getOffset();
 
@@ -633,6 +694,57 @@ public class SizeDecoder {
 
     public static int AuctionIndex(ByteSliceInput input, int offset) {
         return 4;
+    }
+
+    public static int OverweightIndex(ByteSliceInput input, int offset) {
+        return 8;
+    }
+
+    public static int AssetType(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int assetTypeEnum = input.takeUByte();
+        if (assetTypeEnum == 0) {
+            decodeMultiLocation(input);
+        }
+
+        int endPoint = input.getOffset();
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
+    }
+
+    public static int AssetRegistrarMetadata(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int nameSize = ScaleReader.readUintCompactSize(input);
+        input.take(nameSize); // name
+        int symbolSize = ScaleReader.readUintCompactSize(input);
+        input.take(symbolSize); // symbol
+        input.take(2); // decimals and is_fronzen
+
+        int endPoint = input.getOffset();
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
+    }
+
+    public static int u128(ByteSliceInput input, int offset) {
+        return 16;
+    }
+
+    public static int Option_Hash(ByteSliceInput input, int offset) {
+        int startPoint = input.getOffset();
+
+        input.seek(startPoint + offset);
+        int isHasHash = input.takeUByte();
+        if (isHasHash > 0) {
+            input.take(32);
+        }
+
+        int endPoint = input.getOffset();
+        input.seek(startPoint);
+        return endPoint - startPoint - offset;
     }
 
     public static int Bytes(ByteSliceInput input, int offset) {
@@ -857,5 +969,9 @@ public class SizeDecoder {
 
         input.seek(startPoint);
         return size;
+    }
+
+    public static int _u8_8_(ByteSliceInput input, int offset) {
+        return 8;
     }
 }
