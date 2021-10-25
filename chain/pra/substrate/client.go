@@ -2,16 +2,22 @@ package substrate
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
+	"reflect"
 	"runtime"
 	"sort"
-	"sync"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v3/client"
-	"github.com/centrifuge/go-substrate-rpc-client/v3/rpc"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
 	"github.com/gammazero/workerpool"
+	"github.com/icon-project/btp/common/go-ethereum/rpc"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/btp/common/module"
+	scale "github.com/itering/scale.go"
+	"github.com/itering/scale.go/source"
+	scaletypes "github.com/itering/scale.go/types"
+	"github.com/itering/scale.go/utiles"
 )
 
 const (
@@ -23,85 +29,197 @@ const (
 )
 
 type SubstrateAPI struct {
-	client.Client
-	RPC      *rpc.RPC
-	metadata *SubstrateMetaData
-	metaLock sync.RWMutex // Lock metadata for updates, allows concurrent reads
-	// parachainId               SubstrateParachainId
-	specName                  string
+	*rpc.Client
 	keepSubscribeFinalizeHead chan bool
 	blockInterval             time.Duration
+	eventDecoder              scale.EventsDecoder
+	scaleDecoderOption        scaletypes.ScaleDecoderOption
 	log                       log.Logger
 }
 
 func NewSubstrateClient(url string) (*SubstrateAPI, error) {
-	cl, err := client.Connect(url)
-	if err != nil {
-		return nil, err
-	}
-
-	newRPC, err := rpc.NewRPC(cl)
-	if err != nil {
-		return nil, err
-	}
-
-	metadata, err := newRPC.State.GetMetadataLatest()
-	if err != nil {
-		return nil, err
-	}
-
-	rtv, err := newRPC.State.GetRuntimeVersionLatest()
-	if err != nil {
-		return nil, err
-	}
-
+	cl, err := rpc.Dial(url)
 	return &SubstrateAPI{
-		RPC:                       newRPC,
-		metadata:                  metadata,
 		Client:                    cl,
 		keepSubscribeFinalizeHead: make(chan bool),
-		specName:                  rtv.SpecName,
 		blockInterval:             time.Second * 3,
-	}, nil
+		log:                       log.New(),
+	}, err
+}
+
+func (c *SubstrateAPI) Init() {
+	metadataRaw := c.GetMetadataRawLatest()
+	m := scale.MetadataDecoder{}
+	m.Init(utiles.HexToBytes(metadataRaw))
+	if err := m.Process(); err != nil {
+		log.Errorf("Init: metadaDecoderProcess fail %v", err)
+	}
+
+	c.eventDecoder = scale.EventsDecoder{}
+	c.scaleDecoderOption = scaletypes.ScaleDecoderOption{Metadata: &m.Metadata}
+
+	runtimeVersion, err := c.GetRuntimeVersionLatest()
+	if err != nil {
+		c.log.Panicf("Init: can't fetch RuntimeVersionLatest")
+	}
+
+	modulePath, err := module.GetModulePath("github.com/itering/scale.go", "v1.1.23")
+	if err != nil {
+		c.log.Panicf("Init: can't fetch scale module")
+	}
+
+	typesDefinition, err := ioutil.ReadFile(path.Join(modulePath, "network/"+runtimeVersion.SpecName+".json"))
+	if err != nil {
+		c.log.Panicf("Init: can't fetch scale type %s", runtimeVersion.SpecName)
+	}
+
+	scaletypes.RegCustomTypes(source.LoadTypeRegistry(typesDefinition))
+}
+
+func (c *SubstrateAPI) callWithBlockHash(target interface{}, method string, blockHash *SubstrateHash, args ...interface{}) error {
+	if blockHash == nil {
+		err := c.Call(target, method, args...)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	hexHash, err := types.Hex(*blockHash)
+	if err != nil {
+		return err
+	}
+	hargs := append(args, hexHash)
+	err = c.Call(target, method, hargs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *SubstrateAPI) GetRuntimeVersionLatest() (*RuntimeVersion, error) {
+	return c.getRuntimeVersion(nil)
+}
+
+func (c *SubstrateAPI) getRuntimeVersion(blockHash *SubstrateHash) (*RuntimeVersion, error) {
+	var runtimeVersion RuntimeVersion
+	err := c.callWithBlockHash(&runtimeVersion, "state_getRuntimeVersion", blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimeVersion, err
 }
 
 func (c *SubstrateAPI) GetMetadata(blockHash SubstrateHash) (*SubstrateMetaData, error) {
-	return c.RPC.State.GetMetadata(blockHash)
+	return c.getMetadata(&blockHash)
 }
 
 func (c *SubstrateAPI) GetMetadataLatest() *SubstrateMetaData {
-	c.metaLock.RLock()
-	metadata := c.metadata
-	c.metaLock.RUnlock()
+	metadata, _ := c.getMetadata(nil)
 	return metadata
 }
 
-func (c *SubstrateAPI) GetFinalizedHead() (types.Hash, error) {
-	return c.RPC.Chain.GetFinalizedHead()
+func (c *SubstrateAPI) getMetadata(blockHash *SubstrateHash) (*SubstrateMetaData, error) {
+	res, err := c.getMetadataRaw(blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata SubstrateMetaData
+	err = types.DecodeFromHexString(res, &metadata)
+	return &metadata, err
+}
+
+func (c *SubstrateAPI) GetMetadataRawLatest() string {
+	res, _ := c.getMetadataRaw(nil)
+	return res
+}
+
+func (c *SubstrateAPI) getMetadataRaw(blockHash *SubstrateHash) (string, error) {
+	var res string
+	err := c.callWithBlockHash(&res, "state_getMetadata", blockHash)
+	if err != nil {
+		return "", err
+	}
+
+	return res, err
+}
+
+func (c *SubstrateAPI) GetFinalizedHead() (SubstrateHash, error) {
+	var res string
+
+	err := c.Call(&res, "chain_getFinalizedHead")
+	if err != nil {
+		return SubstrateHash{}, err
+	}
+
+	return types.NewHashFromHexString(res)
 }
 
 func (c *SubstrateAPI) GetHeader(blockHash SubstrateHash) (*SubstrateHeader, error) {
-	return c.RPC.Chain.GetHeader(blockHash)
+	return c.getHeader(&blockHash)
 }
 
 func (c *SubstrateAPI) GetHeaderLatest() (*types.Header, error) {
-	return c.RPC.Chain.GetHeaderLatest()
+	return c.getHeader(nil)
+}
+
+func (c *SubstrateAPI) getHeader(blockHash *SubstrateHash) (*types.Header, error) {
+	var Header types.Header
+	err := c.callWithBlockHash(&Header, "chain_getHeader", blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return &Header, err
 }
 
 func (c *SubstrateAPI) GetBlockHash(blockNumber uint64) (SubstrateHash, error) {
-	return c.RPC.Chain.GetBlockHash(blockNumber)
-}
-
-func (c *SubstrateAPI) GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error) {
-	return c.RPC.State.GetStorageRaw(key, blockHash)
+	return c.getBlockHash(&blockNumber)
 }
 
 func (c *SubstrateAPI) GetBlockHashLatest() (SubstrateHash, error) {
-	return c.RPC.Chain.GetBlockHashLatest()
+	return c.getBlockHash(nil)
+}
+
+func (c *SubstrateAPI) getBlockHash(blockNumber *uint64) (SubstrateHash, error) {
+	var res string
+	var err error
+
+	if blockNumber == nil {
+		err = c.Call(&res, "chain_getBlockHash")
+	} else {
+		err = c.Call(&res, "chain_getBlockHash", *blockNumber)
+	}
+
+	if err != nil {
+		return SubstrateHash{}, err
+	}
+
+	return types.NewHashFromHexString(res)
+}
+
+func (c *SubstrateAPI) GetStorageRaw(key SubstrateStorageKey, blockHash SubstrateHash) (*SubstrateStorageDataRaw, error) {
+	return c.getStorageRaw(key, &blockHash)
+}
+
+func (c *SubstrateAPI) getStorageRaw(key types.StorageKey, blockHash *SubstrateHash) (*types.StorageDataRaw, error) {
+	var res string
+	err := c.callWithBlockHash(&res, "state_getStorage", blockHash, key.Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	bz, err := types.HexDecodeString(res)
+	if err != nil {
+		return nil, err
+	}
+
+	data := types.NewStorageDataRaw(bz)
+	return &data, nil
 }
 
 func (c *SubstrateAPI) GetSpecName() string {
-	return c.specName
+	rtv, _ := c.GetRuntimeVersionLatest()
+	return rtv.SpecName
 }
 
 func (c *SubstrateAPI) GetHeaderByBlockNumber(blockNumber SubstrateBlockNumber) (*SubstrateHeader, error) {
@@ -147,7 +265,7 @@ func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash)
 	return res, err
 }
 
-func (c *SubstrateAPI) CreateStorageKey(meta *types.Metadata, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
+func (c *SubstrateAPI) CreateStorageKey(meta *SubstrateMetaData, prefix, method string, arg []byte, arg2 []byte) (SubstrateStorageKey, error) {
 	key, err := types.CreateStorageKey(meta, prefix, method, arg, arg2)
 	if err != nil {
 		return nil, err
@@ -270,6 +388,32 @@ func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
 	return &pid, err
 }
 
+func (c *SubstrateAPI) GetSystemEvents(blockHash SubstrateHash, section string, method string) ([]map[string]interface{}, error) {
+	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "System", "Events")
+	systemEventsStorageRaw, _ := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
+
+	c.eventDecoder.Init(scaletypes.ScaleBytes{Data: *systemEventsStorageRaw}, &c.scaleDecoderOption)
+	c.eventDecoder.Process()
+	eventsVal := reflect.ValueOf(c.eventDecoder.Value)
+
+	returnEvents := make([]map[string]interface{}, 0)
+	for i := 0; i < eventsVal.Len(); i++ {
+		mapVal := reflect.ValueOf(eventsVal.Index(i).Interface())
+		eventId := mapVal.MapIndex(reflect.ValueOf("event_id")).Interface().(string)
+		moduleId := mapVal.MapIndex(reflect.ValueOf("module_id")).Interface().(string)
+
+		if eventId == method && moduleId == section {
+			eventMap, ok := mapVal.Interface().(map[string]interface{})
+			if !ok {
+				c.log.Panicf("GetSystemEvents: event can't decodable")
+			}
+			returnEvents = append(returnEvents, eventMap)
+		}
+	}
+
+	return returnEvents, nil
+}
+
 func (c *SubstrateAPI) SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error {
 	current := height
 
@@ -306,6 +450,8 @@ func (c *SubstrateAPI) SubcribeFinalizedHeadAt(height uint64, cb func(*Substrate
 
 				cb(&currentHash)
 			}
+
+			current++
 		}
 	}
 }

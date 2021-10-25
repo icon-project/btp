@@ -47,6 +47,8 @@ func NewClient(url string, bmcContractAddress string, l log.Logger) *Client {
 		l.Fatalf("failed to create Parachain Client err:%v", err.Error())
 	}
 
+	subClient.Init()
+
 	c := &Client{
 		subClient:         subClient,
 		log:               l,
@@ -108,15 +110,6 @@ func (c *Client) GetTransactionByHash(txhash string) (*EvmTransaction, bool, err
 func (c *Client) CloseAllMonitor() error {
 	close(c.stopMonitorSignal)
 	return nil
-}
-
-func (c *Client) CreateSystemEventsStorageKey(hash substrate.SubstrateHash) (substrate.SubstrateStorageKey, error) {
-	meta, err := c.subClient.GetMetadata(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
 }
 
 func (c *Client) lastFinalizedHeader() (*substrate.SubstrateHeader, error) {

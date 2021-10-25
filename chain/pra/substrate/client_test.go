@@ -94,4 +94,17 @@ func TestClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, setId)
 	})
+
+	t.Run("should return 3 ParaInclusion_CandidateIncluded events", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://kusama-rpc.polkadot.io")
+		require.NoError(t, err)
+
+		blockHash, err := c.GetBlockHash(8654865)
+		require.NoError(t, err)
+
+		events, err := c.GetSystemEvents(blockHash, "ParaInclusion", "CandidateIncluded")
+		assert.NoError(t, err)
+		assert.Len(t, events, 3)
+	})
 }

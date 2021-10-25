@@ -2,12 +2,9 @@ package pra
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/frontier"
-	"github.com/icon-project/btp/chain/pra/moonbase"
-	"github.com/icon-project/btp/chain/pra/moonriver"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/config"
@@ -105,37 +102,19 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 	return bu, nil
 }
 
-func (r *Receiver) getEvmLogEvents(v *BlockNotification) ([]frontier.EventEVMLog, error) {
-	meta, err := r.c.subClient.GetMetadata(v.Hash)
-	if err != nil {
-		return nil, err
+func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]frontier.EventEVMLog, error) {
+	events, err := r.c.subClient.GetSystemEvents(hash, "EVM", "Log")
+	evmLogEvents := make([]frontier.EventEVMLog, 0)
+	for _, event := range events {
+		evmLogEvents = append(evmLogEvents, substrate.NewEventEVMLog(event))
 	}
 
-	key, err := r.c.subClient.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	sdr, err := r.c.subClient.GetStorageRaw(key, v.Hash)
-	if err != nil {
-		return nil, err
-	}
-
-	spec := r.c.subClient.GetSpecName()
-	switch spec {
-	case substrate.Moonriver:
-		return moonriver.NewMoonRiverEventRecord(sdr, meta).EVM_Log, nil
-	case substrate.Moonbase:
-		return moonbase.NewMoonbaseEventRecord(sdr, meta).EVM_Log, nil
-
-	default:
-		return nil, fmt.Errorf("not supported relay spec %s", spec)
-	}
+	return evmLogEvents, err
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
 	rps := make([]*chain.ReceiptProof, 0)
-	els, err := r.getEvmLogEvents(v)
+	els, err := r.getEvmLogEvents(v.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +146,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 		// only get ReceiptProof that has right Events
 		if len(rp.Events) > 0 {
 			r.l.Debugf("newReceiptProofs: build StateProof %d", v.Height)
-			key, err := r.c.CreateSystemEventsStorageKey(v.Hash)
+			key, err := r.c.subClient.GetSystemEventStorageKey(v.Hash)
 			if err != nil {
 				return nil, err
 			}

@@ -1,8 +1,14 @@
 package substrate
 
 import (
+	"encoding/json"
+	"reflect"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/icon-project/btp/chain/pra/frontier"
+	"github.com/icon-project/btp/chain/pra/relaychain"
+	scalecodec "github.com/itering/scale.go"
 )
 
 func (gsp *GrandpaSignedPrecommit) Decode(decoder scale.Decoder) error {
@@ -102,6 +108,61 @@ func (sme SignedMessageEnum) Encode(encoder scale.Encoder) error {
 	return nil
 }
 
+func NewEventParaInclusionCandidateIncluded(decodedEvent map[string]interface{}) relaychain.EventParasInclusionCandidateIncluded {
+	eventParamsVal := reflect.ValueOf(decodedEvent["params"])
+	event := relaychain.EventParasInclusionCandidateIncluded{}
+	if eventParamsVal.Kind() == reflect.Slice {
+		firstEventParam, ok := eventParamsVal.Index(0).Interface().(scalecodec.EventParam)
+		if !ok {
+			panic("NewEventParaInclusionCandidateIncluded: not an scalecodec processed event")
+		}
+
+		b, err := json.Marshal(firstEventParam.Value)
+		if err != nil {
+			panic("NewEventParaInclusionCandidateIncluded: not an valid json")
+		}
+
+		candidateReceipt := CandidateReceipt{}
+		json.Unmarshal(b, &candidateReceipt)
+
+		event.CandidateReceipt = relaychain.CandidateReceipt{
+			Descriptor: relaychain.CandidateDescriptor{
+				ParaId:   candidateReceipt.Descriptor.ParaId,
+				ParaHead: NewSubstrateHashFromHexString(candidateReceipt.Descriptor.ParaHead),
+			},
+		}
+	}
+
+	return event
+}
+
+func NewEventEVMLog(decodedEvent map[string]interface{}) frontier.EventEVMLog {
+	eventParamsVal := reflect.ValueOf(decodedEvent["params"])
+	event := frontier.EventEVMLog{}
+	if eventParamsVal.Kind() == reflect.Slice {
+		firstEventParam, ok := eventParamsVal.Index(0).Interface().(scalecodec.EventParam)
+		if !ok {
+			panic("NewEventEVMLog: not an scalecodec processed event")
+		}
+
+		b, err := json.Marshal(firstEventParam.Value)
+		if err != nil {
+			panic("NewEventParaInclusionCandidateIncluded: not an valid json")
+		}
+
+		evmLog := EthereumLog{}
+		json.Unmarshal(b, &evmLog)
+		for _, topic := range evmLog.Topics {
+			event.Log.Topics = append(event.Log.Topics, types.NewH256(types.MustHexDecodeString(topic)))
+		}
+
+		event.Log.Address = types.NewH160(types.MustHexDecodeString(evmLog.Address))
+		event.Log.Data = types.MustHexDecodeString(evmLog.Data)
+	}
+
+	return event
+}
+
 func NewSubstrateHashFromHexString(s string) SubstrateHash {
 	hash, err := types.NewHashFromHexString(s)
 	if err != nil {
@@ -134,4 +195,9 @@ func NewEncodedVoteMessage(vm VoteMessage) ([]byte, error) {
 
 func NewEncodedSubstrateHeader(header SubstrateHeader) ([]byte, error) {
 	return types.EncodeToBytes(header)
+}
+
+func NewStorageKey(hex string) SubstrateStorageKey {
+	byte, _ := types.HexDecodeString(hex)
+	return types.NewStorageKey(byte)
 }

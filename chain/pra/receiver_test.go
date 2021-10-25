@@ -180,3 +180,47 @@ func TestReceiver_ReceiveLoop(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestReceiver_GetEvmLogs(t *testing.T) {
+	t.Run("should getEvmLogs in moonriver", func(t *testing.T) {
+		subClient, err := substrate.NewSubstrateClient("wss://wss.moonriver.moonbeam.network")
+		require.NoError(t, err)
+		subClient.Init()
+
+		r := &Receiver{
+			l: log.New(),
+			c: &Client{
+				subClient:         subClient,
+				stopMonitorSignal: make(chan bool),
+			},
+		}
+
+		blockHash, err := r.c.subClient.GetBlockHash(786623)
+		require.NoError(t, err)
+
+		events, err := r.getEvmLogEvents(blockHash)
+		assert.NoError(t, err)
+		assert.Len(t, events, 55)
+	})
+
+	t.Run("should getEvmLogs in moonbase", func(t *testing.T) {
+		subClient, err := substrate.NewSubstrateClient("wss://wss.testnet.moonbeam.network")
+		require.NoError(t, err)
+		subClient.Init()
+
+		r := &Receiver{
+			l: log.New(),
+			c: &Client{
+				subClient:         subClient,
+				stopMonitorSignal: make(chan bool),
+			},
+		}
+
+		blockHash, err := r.c.subClient.GetBlockHash(1026643)
+		require.NoError(t, err)
+
+		events, err := r.getEvmLogEvents(blockHash)
+		assert.NoError(t, err)
+		assert.Len(t, events, 4)
+	})
+}

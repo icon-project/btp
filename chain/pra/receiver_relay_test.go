@@ -252,26 +252,44 @@ func TestRelayReceiver(t *testing.T) {
 	// 	assert.Len(t, fullhds, 1)
 	// })
 
-	// 	t.Run("should N+1 blockheader when call pullBlockheader at UnknownHeaders N", func(t *testing.T) {
-	// 		t.Skip("Manual testing only")
+	// t.Run("should N+1 blockheader when call pullBlockheader at UnknownHeaders N", func(t *testing.T) {
+	// 	t.Skip("Manual testing only")
 
-	// 		substrateClient, err := substrate.NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network")
-	// 		require.NoError(t, err)
+	// 	substrateClient, err := substrate.NewSubstrateClient("https://rpc-relay.testnet.moonbeam.network")
+	// 	require.NoError(t, err)
 
-	// 		r := relayReceiver{
-	// 			c:   substrateClient,
-	// 			log: log.New(),
-	// 		}
+	// 	r := relayReceiver{
+	// 		c:   substrateClient,
+	// 		log: log.New(),
+	// 	}
 
-	// 		gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(1091000)
-	// 		require.NoError(t, err)
-	// 		require.NotNil(t, gj)
-	// 		require.Equal(t, 908, len(hds))
+	// 	gj, hds, err := r.c.GetJustificationsAndUnknownHeaders(1091000)
+	// 	require.NoError(t, err)
+	// 	require.NotNil(t, gj)
+	// 	require.Equal(t, 908, len(hds))
 
-	// 		fullhds, err := r.pullBlockHeaders(gj, hds)
-	// 		assert.NoError(t, err)
-	// 		assert.NotNil(t, fullhds)
-	// 		assert.Equal(t, 909, len(fullhds))
-	// 		assert.EqualValues(t, 1091908, fullhds[len(fullhds)-1].Number)
-	// 	})
+	// 	fullhds, err := r.pullBlockHeaders(gj, hds)
+	// 	assert.NoError(t, err)
+	// 	assert.NotNil(t, fullhds)
+	// 	assert.Equal(t, 909, len(fullhds))
+	// 	assert.EqualValues(t, 1091908, fullhds[len(fullhds)-1].Number)
+	// })
+
+	t.Run("should getParasInclusionCandidateIncluded events", func(t *testing.T) {
+		t.Skip("Manual testing only")
+		substrateClient, err := substrate.NewSubstrateClient("wss://kusama.api.onfinality.io/public-ws")
+		require.NoError(t, err)
+
+		r := relayReceiver{
+			c:   substrateClient,
+			log: log.New(),
+		}
+
+		blockHash, err := r.c.GetBlockHash(9765080)
+		require.NoError(t, err)
+
+		events, err := r.getParasInclusionCandidateIncluded(blockHash)
+		require.NoError(t, err)
+		assert.Len(t, events, 5)
+	})
 }

@@ -25,6 +25,8 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	if err != nil {
 		log.Panic("fail to connect to relay endpoint %v", err)
 	}
+
+	rC.c.Init()
 	rC.bmvC = icon.NewPraBmvClient(opt.DstEndpoint, opt.PraBmvAddress.ContractAddress(), log)
 	rC.bmvStatus = rC.bmvC.GetPraBmvStatus()
 	rC.prepareDatabase(int64(opt.RelayOffSet), opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
@@ -174,7 +176,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 		// Update expectMta for next message
 		r.expectMtaHeight = uint64(gj.Commit.TargetNumber)
 
-		eventGrandpaNewAuthorities, err := r.getGrandpaNewAuthorities(gj.Commit.TargetHash)
+		eventGrandpaNewAuthorities, err := r.c.GetSystemEvents(gj.Commit.TargetHash, "Grandpa", "NewAuthorities")
 		if err != nil {
 			return nil, err
 		}
