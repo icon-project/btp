@@ -16,7 +16,6 @@
 package foundation.icon.btp.test;
 
 import foundation.icon.btp.bmv.BTPMessageVerifier;
-import foundation.icon.btp.bmv.lib.mpt.MerklePatriciaTree;
 import foundation.icon.btp.bmv.lib.mta.MerkleTreeAccumulator;
 import foundation.icon.btp.bmv.types.BlockHeader;
 import foundation.icon.btp.bmv.types.ValidatorList;
@@ -114,7 +113,6 @@ class BMVBasicTest extends TestBase {
                         Votes.class,
                         RelayMessage.class,
                         MerkleTreeAccumulator.class,
-                        MerklePatriciaTree.class,
                         Receipt.class},
                 args);
 

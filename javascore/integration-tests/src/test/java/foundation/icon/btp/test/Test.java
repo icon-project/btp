@@ -96,7 +96,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
                     .build();
 
             Score score = txHandler.deploy(owner, new Class[]{
-                            foundation.icon.btp.bmv.Test.class,
+//                            foundation.icon.btp.bmv.Test.class,
                             HexConverter.class,
                             scorex.util.Arrays.class,
                             Base64.class},

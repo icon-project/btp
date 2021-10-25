@@ -324,7 +324,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(18)
     @Test
-    public void scenario18() {
+    public void should_fail_when_handleAccumulatedFees() {
         String _fa = "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         List<Map<String, BigInteger>> _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
         BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(10000));
@@ -342,7 +342,7 @@ class ServiceHandlerTest extends TestBase {
      */
     @Order(19)
     @Test
-    public void scenario19() {
+    public void should_success_when_handleAccumulatedFeed() {
         String _fa = "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b";
         List<Map<String, BigInteger>> _assets = (List<Map<String, BigInteger>>) bsh.call("getAccumulatedFees");
         BigInteger _fees = transferAmount.multiply(fees).divide(BigInteger.valueOf(10000));

@@ -120,25 +120,25 @@ public class BMVTest extends TestBase {
     }
 
 
-    public static Score deployTest(TransactionHandler txHandler, Wallet owner)
-            throws ResultTimeoutException, TransactionFailureException, IOException {
-        LOG.infoEntering("deploy", "Test");
-
-        RpcObject args = new RpcObject.Builder()
-                .put("base64", new RpcValue(encodedValidators.getBytes()))
-                .build();
-
-        Score score = txHandler.deploy(owner, new Class[]{
-                        foundation.icon.btp.bmv.Test.class,
-                        HexConverter.class,
-                        scorex.util.Arrays.class,
-                        Base64.class},
-                args);
-
-        LOG.info("Deployed BMV address " + score.getAddress());
-        LOG.infoExiting();
-        return score;
-    }
+//    public static Score deployTest(TransactionHandler txHandler, Wallet owner)
+//            throws ResultTimeoutException, TransactionFailureException, IOException {
+//        LOG.infoEntering("deploy", "Test");
+//
+//        RpcObject args = new RpcObject.Builder()
+//                .put("base64", new RpcValue(encodedValidators.getBytes()))
+//                .build();
+//
+//        Score score = txHandler.deploy(owner, new Class[]{
+//                        foundation.icon.btp.bmv.Test.class,
+//                        HexConverter.class,
+//                        scorex.util.Arrays.class,
+//                        Base64.class},
+//                args);
+//
+//        LOG.info("Deployed BMV address " + score.getAddress());
+//        LOG.infoExiting();
+//        return score;
+//    }
 
 
     public static Score deployBMV(TransactionHandler txHandler, Wallet owner)
@@ -172,7 +172,6 @@ public class BMVTest extends TestBase {
                         Receipt.class,
                         ReceiptEventLog.class,
                         MerkleTreeAccumulator.class,
-                        MerklePatriciaTree.class,
                         Votes.class,
                         foundation.icon.btp.bmv.types.ValidatorList.class,
                         TypeDecoder.class,
