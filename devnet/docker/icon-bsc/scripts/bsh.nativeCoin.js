@@ -1,7 +1,7 @@
 const BSHCore = artifacts.require("BSHCore");
 module.exports = async function (callback) {
   try {
-    var argv = require('minimist')(process.argv.slice(2), { string: 'addr' });
+    var argv = require('minimist')(process.argv.slice(2), { string: ['addr', 'from'] });
     const bshCore = await BSHCore.deployed();
     let tx;
     switch (argv["method"]) {
@@ -19,7 +19,7 @@ module.exports = async function (callback) {
         break;
       case "transferNativeCoin":
         console.log("Init BTP native transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
-        tx = await bshCore.transferNativeCoin(argv.to, { value: web3.utils.toWei("" + argv.amount, 'ether') })
+        tx = await bshCore.transferNativeCoin(argv.to, { from: argv.from, value: web3.utils.toWei("" + argv.amount, 'ether') })
         console.log(tx)
         break;
       default:

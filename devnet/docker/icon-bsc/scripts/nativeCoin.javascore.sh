@@ -115,15 +115,31 @@ get_alice_native_balance() {
 
   balance=$(hex2int $balance)
   balance=$(wei2coin $balance)
-  echo "Alice Balance: $balance ($1)"
+  echo "$balance ($1)"
 }
 
 check_alice_native_balance_with_wait() {
-  echo "$1. Checking Alice's balance..."
-  sleep 20
+  echo "Checking Alice's balance..."
 
-  balance=$(get_alice_native_balance $1)
-  echo $balance
+  cd $CONFIG_DIR
+  ALICE_INITIAL_BAL=$(get_alice_native_balance $1)
+  COUNTER=30
+  while true; do
+    printf "."
+    if [ $COUNTER -le 0 ]; then
+      printf "\nError: timed out while getting Alice's Balance: Balance unchanged\n"
+      echo $ALICE_CURR_BAL
+      exit 1
+    fi
+    sleep 3
+    COUNTER=$(expr $COUNTER - 3)
+    ALICE_CURR_BAL=$(get_alice_native_balance $1)
+    if [ "$ALICE_CURR_BAL" != "$ALICE_INITIAL_BAL" ]; then
+      printf "\nBTP Transfer Successfull! \n"
+      break
+    fi
+  done
+  echo "Alice's Balance after BTP transfer: $ALICE_CURR_BAL"
 }
 
 goloop_lastblock() {

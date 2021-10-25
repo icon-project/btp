@@ -36,6 +36,7 @@ COPY ./scripts/*.sh /btpsimple/bin/
 COPY ./entrypoint.sh /
 COPY ./scripts/provision.sh /
 COPY bsc.ks.json /bsc.ks.json
+COPY bob.ks.json /bob.ks.json
 
 #RUN mkdir {BTPSIMPLE_SCRIPTS_DIR}
 #COPY ./*.js /btpsimple/js/

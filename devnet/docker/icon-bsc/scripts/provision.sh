@@ -21,6 +21,7 @@ provision() {
     echo "start provisioning..."
 
     cp /bsc.ks.json "$BTPSIMPLE_CONFIG_DIR"/bsc.ks.json
+    cp /bob.ks.json "$BTPSIMPLE_CONFIG_DIR"/bob.ks.json
     # shellcheck disable=SC2059
     printf $BSC_KEY_SECRET >"$BTPSIMPLE_CONFIG_DIR"/bsc.secret
     echo "$GOLOOP_RPC_NID.icon" >net.btp.icon

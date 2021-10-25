@@ -3,7 +3,7 @@ const BEP20TKN = artifacts.require('BEP20TKN');
 var fs = require('fs');
 module.exports = async function (callback) {
   try {
-    var argv = require('minimist')(process.argv.slice(2), { string: 'addr' });
+    var argv = require('minimist')(process.argv.slice(2), { string: ['addr', 'from'] });
     const bshProxy = await BSHProxy.deployed();
     const bep20tkn = await BEP20TKN.deployed();
     let tx;
@@ -21,6 +21,13 @@ module.exports = async function (callback) {
         var bal = await bep20tkn.balanceOf(argv.addr)
         console.log("BSH Balance" + bal)
         break;
+      case "fundBOB":
+        console.log("fundBOB", argv.addr)
+        tx = await bep20tkn.transfer(argv.addr, web3.utils.toWei("" + argv.amount, 'ether'))
+        console.log(tx)
+        var bal = await bep20tkn.balanceOf(argv.addr)
+        console.log("BOB Balance" + bal)
+        break;
       case "getBalance":
         var balance = await bep20tkn.balanceOf(argv.addr)
         //var balance=web3.utils.fromWei(await bep20tkn.balanceOf(argv.addr),"ether")
@@ -30,11 +37,11 @@ module.exports = async function (callback) {
         break;
       case "approve":
         console.log("Approving BSH to use Bob's tokens")
-        var balance = await bep20tkn.approve(argv.addr, web3.utils.toWei("" + argv.amount, 'ether'))
+        var balance = await bep20tkn.approve(argv.addr, web3.utils.toWei("" + argv.amount, 'ether'), { from: argv.from })
         break;
       case "transfer":
         console.log("Init BTP transfer of " + web3.utils.toWei("" + argv.amount, 'ether') + " wei to " + argv.to)
-        tx = await bshProxy.transfer("ETH", web3.utils.toWei("" + argv.amount, 'ether'), argv.to)
+        tx = await bshProxy.transfer("ETH", web3.utils.toWei("" + argv.amount, 'ether'), argv.to, { from: argv.from })
         console.log(tx)
         break;
       case "calculateTransferFee":

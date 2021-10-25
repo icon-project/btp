@@ -196,12 +196,26 @@ irc2_javascore_balance() {
 }
 
 check_alice_token_balance_with_wait() {
-  echo "$1. Checking Alice's balance..."
-  sleep 20
-
+  echo "Checking Alice's balance..."
   cd $CONFIG_DIR
-  balance=$(irc2_javascore_balance alice.ks.json)
-  echo $balance
+  ALICE_INITIAL_BAL=$(irc2_javascore_balance alice.ks.json)
+  COUNTER=30
+  while true; do
+    printf "."
+    if [ $COUNTER -le 0 ]; then
+      printf "\nError: timed out while getting Alice's Balance: Balance unchanged\n"
+      echo $ALICE_CURR_BAL
+      exit 1
+    fi
+    sleep 3
+    COUNTER=$(expr $COUNTER - 3)
+    ALICE_CURR_BAL=$(irc2_javascore_balance alice.ks.json)
+    if [ "$ALICE_CURR_BAL" != "$ALICE_INITIAL_BAL" ]; then
+      printf "\nBTP Transfer Successfull! \n"
+      break
+    fi
+  done
+  echo "Alice's Balance after BTP transfer: $ALICE_CURR_BAL ETH"
 }
 
 irc2_javascore_transfer() {
