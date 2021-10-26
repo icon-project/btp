@@ -123,7 +123,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should getEvmLogs in moonbase", func(t *testing.T) {
-		// t.Skip("Manual run only")
+		t.Skip("Manual run only")
 		c, err := NewSubstrateClient("wss://wss.testnet.moonbeam.network")
 		require.NoError(t, err)
 		c.Init()

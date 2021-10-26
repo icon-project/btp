@@ -2,6 +2,7 @@ package pra
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -11,10 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/pra/binding"
+	"github.com/icon-project/btp/chain/pra/mocks"
 	"github.com/icon-project/btp/chain/pra/substrate"
 	"github.com/icon-project/btp/common/log"
 	scalecodec "github.com/itering/scale.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,86 +41,86 @@ func readBlockInfoFromAssets(path string, bi *blockinfo) error {
 }
 
 func TestReceiver_ReceiveLoop(t *testing.T) {
-	// t.Run("should monitor from the given height", func(t *testing.T) {
-	// 	subClient := &substrate.MockSubstrateClient{}
-	// 	r := &Receiver{
-	// 		l: log.New(),
-	// 		c: &Client{
-	// 			subClient:         subClient,
-	// 			stopMonitorSignal: make(chan bool),
-	// 		},
-	// 	}
+	t.Run("should monitor from the given height", func(t *testing.T) {
+		subClient := &substrate.MockSubstrateClient{}
+		r := &Receiver{
+			l: log.New(),
+			c: &Client{
+				subClient:         subClient,
+				stopMonitorSignal: make(chan bool),
+			},
+		}
 
-	// 	bi := &blockinfo{}
-	// 	require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_243221.json", bi))
+		bi := &blockinfo{}
+		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_243221.json", bi))
 
-	// 	subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
-	// 	subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Twice()
-	// 	subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
-	// 	subClient.On("GetSystemEvents", bi.Hash, "EVM", "Log").Return(make([]map[string]interface{}, 0), nil).Once()
+		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
+		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Twice()
+		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
+		subClient.On("GetSystemEvents", bi.Hash, "EVM", "Log").Return(make([]map[string]interface{}, 0), nil).Once()
 
-	// 	err := r.ReceiveLoop(243221, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
-	// 		assert.EqualValues(t, bu.Height, 243221)
-	// 		assert.Equal(t, bi.Hash.Hex(), fmt.Sprintf("0x%x", bu.BlockHash))
-	// 		assert.Equal(t,
-	// 			fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
-	// 			fmt.Sprintf("0x%x", bu.Header),
-	// 		)
-	// 		assert.Equal(t, "0xf90141b9013b4b6ca5b74e19d4bc04280edf20a53a4ebe1402cbb2ef7ed9a1611fb8411a33ca56d80e006415ef11020701d83ae5456ccecb3685eb39acc6b52d3e481214d8f1aa6b5465e347562ba9c7c993862047e1d6f020c25ab4139676afbf7170c254e2f36cefe70c046e6d62738060eed538a43e6738f4c560c5d950be96c72ad591f0c16f564c003b5c7b895c0e0466726f6e890101f7b9c5fb3f5b72f937ed511b173e5a39b9fb3ffaa1cc4dd024a4c7c36c7da8610847fec28647d5f0806548f385257170d76cf6e890f7467ef33b36dcc5b9be1b15d0fdb267aa2fce057cc81a0e2397f5a32ffd8637753f7d0c0c0b7289b002dc3f056e6d627301019a1b7069e8aa71015a15925595589999890dba42cb87dae2b5aabfee791bad47d380392c626eef34701ea3a95d7dd4fc891759cb375991aacbc1ee3663742289c2f800",
-	// 			fmt.Sprintf("0x%x", bu.Proof),
-	// 		)
-	// 		r.StopReceiveLoop()
-	// 		subClient.AssertExpectations(t)
-	// 	}, func() {})
+		err := r.ReceiveLoop(243221, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
+			assert.EqualValues(t, bu.Height, 243221)
+			assert.Equal(t, bi.Hash.Hex(), fmt.Sprintf("0x%x", bu.BlockHash))
+			assert.Equal(t,
+				fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
+				fmt.Sprintf("0x%x", bu.Header),
+			)
+			assert.Equal(t, "0xf90141b9013b4b6ca5b74e19d4bc04280edf20a53a4ebe1402cbb2ef7ed9a1611fb8411a33ca56d80e006415ef11020701d83ae5456ccecb3685eb39acc6b52d3e481214d8f1aa6b5465e347562ba9c7c993862047e1d6f020c25ab4139676afbf7170c254e2f36cefe70c046e6d62738060eed538a43e6738f4c560c5d950be96c72ad591f0c16f564c003b5c7b895c0e0466726f6e890101f7b9c5fb3f5b72f937ed511b173e5a39b9fb3ffaa1cc4dd024a4c7c36c7da8610847fec28647d5f0806548f385257170d76cf6e890f7467ef33b36dcc5b9be1b15d0fdb267aa2fce057cc81a0e2397f5a32ffd8637753f7d0c0c0b7289b002dc3f056e6d627301019a1b7069e8aa71015a15925595589999890dba42cb87dae2b5aabfee791bad47d380392c626eef34701ea3a95d7dd4fc891759cb375991aacbc1ee3663742289c2f800",
+				fmt.Sprintf("0x%x", bu.Proof),
+			)
+			r.StopReceiveLoop()
+			subClient.AssertExpectations(t)
+		}, func() {})
 
-	// 	assert.NoError(t, err)
-	// })
+		assert.NoError(t, err)
+	})
 
-	// t.Run("should call bmc.parseMessage N times when Parachain emits N events of EVMLog", func(t *testing.T) {
-	// 	subClient := &substrate.MockSubstrateClient{}
-	// 	bmcContract := &mocks.BMCContract{}
-	// 	r := &Receiver{
-	// 		l: log.New(),
-	// 		c: &Client{
-	// 			subClient:         subClient,
-	// 			stopMonitorSignal: make(chan bool),
-	// 			bmc:               bmcContract,
-	// 		},
-	// 		src: chain.BtpAddress("btp://0x507.pra/0x64b22d2b8c3ca311a0c2de34bf799f8101c89362"),
-	// 	}
+	t.Run("should call bmc.parseMessage N times when Parachain emits N events of EVMLog", func(t *testing.T) {
+		subClient := &substrate.MockSubstrateClient{}
+		bmcContract := &mocks.BMCContract{}
+		r := &Receiver{
+			l: log.New(),
+			c: &Client{
+				subClient:         subClient,
+				stopMonitorSignal: make(chan bool),
+				bmc:               bmcContract,
+			},
+			src: chain.BtpAddress("btp://0x507.pra/0x64b22d2b8c3ca311a0c2de34bf799f8101c89362"),
+		}
 
-	// 	bi := &blockinfo{}
-	// 	require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_315553.json", bi))
+		bi := &blockinfo{}
+		require.NoError(t, readBlockInfoFromAssets("assets/moonbase_blockinfo_315553.json", bi))
 
-	// 	subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
-	// 	subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
-	// 	subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
-	// 	subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
-	// 	subClient.On("GetSystemEvents", bi.Hash, "EVM", "Log").Return([]map[string]interface{}{
-	// 		{"event_id": "Log", "event_idx": 3, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "0000000000000000000000000000000000000000000000000000000060ec0616", "topics": []string{"0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271", "0x00000000000000000000000000000000000000000000000000000000000005f1", "0x0000000000000000000000006ffa2707ea1fe81c8dafa755e74f4961333b75fa"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
-	// 		{"event_id": "Log", "event_idx": 4, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "", "topics": []string{"0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c", "0x000000000000000000000000000000000000000000000000000000075cd0d636", "0x00000000000000000000000000000000000000000000000000000000000005f1", "0x0000000000000000000000006ffa2707ea1fe81c8dafa755e74f4961333b75fa"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
-	// 		{"event_id": "Log", "event_idx": 5, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "0000000000000000000000000000000000000000000000000000000060ec0616", "topics": []string{"0x0559884fd3a460db3073b7fc896cc77986f16e378210ded43186175bf646fc5f", "0x000000000000000000000000000000000000000000000000000000075cd0d636", "0x00000000000000000000000000000000000000000000000000000000000005f1"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
-	// 		{"event_id": "Log", "event_idx": 6, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "", "topics": []string{"0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f", "0x000000000000000000000000000000000000000000000002b5e3af16a8772360"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
-	// 	}, nil).Once()
-	// 	// 4 EVM_Logs event
-	// 	bmcContract.On("ParseMessage", mock.AnythingOfType("types.Log")).Return(nil, errors.New("abi: could not locate named method or event")).Times(4)
-	// 	err := r.ReceiveLoop(315553, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
-	// 		assert.EqualValues(t, bu.Height, 315553)
-	// 		assert.Equal(t, bi.Hash.Hex(), fmt.Sprintf("0x%x", bu.BlockHash))
-	// 		assert.Equal(t,
-	// 			fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
-	// 			fmt.Sprintf("0x%x", bu.Header),
-	// 		)
-	// 		assert.Equal(t, "0xf90181b9017bf1e8f0653422859dea6705ec5d86015a3c9f4c7c03eccbcb4bf858682956fb2886421300932c9abc4e9966ecf08dd3a5aa7087b448a88e54d18b3caebdbb2559c3f8744b25385e8e912f3965b85334a4524a6e15b21fb3c1b355d9e64df395b856a635970c046e6d6273802485ca9e9427894cb1864d725977e3c168171daf22bacf64c7ad5e0674c331730466726f6e890201e93015e1d2195ae2d73004a790db2e4bf394e40f14df3e0a2edd9dff0930e8a910ef0e6bfa9d8bb055f94e873f1df551b42df11d2cb053811279a1101e9c03fcf9cfa1b41ba3027ac3bbda9af6685440e8d89f12c7aca5987b334e91dbbaa4aa9356cb1e07577d7374463ec88709ce945f280b072b89f4bc8c0e70abf4b9b267c090d9ec032f7d7121f9bc2b2a8b9a6a06fd7f434cbebb963d6cfcb2e4206d2f43056e6d627301019cb74fccc8c86d67b5766b1c035e16ed4de18ecd091d4dd8724185eb28dbd1612983e904aafb984f05bd27443b6f8a56fbea955e208718d02e52eb28d0e62e89c2f800",
-	// 			fmt.Sprintf("0x%x", bu.Proof),
-	// 		)
-	// 		r.StopReceiveLoop()
-	// 		subClient.AssertExpectations(t)
-	// 		bmcContract.AssertNumberOfCalls(t, "ParseMessage", 4)
-	// 	}, func() {})
+		subClient.On("GetFinalizedHead").Return(bi.Hash, nil).Once()
+		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
+		subClient.On("GetBlockHash", uint64(bi.BlockNumber)).Return(bi.Hash, nil).Once()
+		subClient.On("GetHeader", bi.Hash).Return(&bi.Header, nil).Once()
+		subClient.On("GetSystemEvents", bi.Hash, "EVM", "Log").Return([]map[string]interface{}{
+			{"event_id": "Log", "event_idx": 3, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "0000000000000000000000000000000000000000000000000000000060ec0616", "topics": []string{"0x0109fc6f55cf40689f02fbaad7af7fe7bbac8a3d2186600afc7d3e10cac60271", "0x00000000000000000000000000000000000000000000000000000000000005f1", "0x0000000000000000000000006ffa2707ea1fe81c8dafa755e74f4961333b75fa"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
+			{"event_id": "Log", "event_idx": 4, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "", "topics": []string{"0x92e98423f8adac6e64d0608e519fd1cefb861498385c6dee70d58fc926ddc68c", "0x000000000000000000000000000000000000000000000000000000075cd0d636", "0x00000000000000000000000000000000000000000000000000000000000005f1", "0x0000000000000000000000006ffa2707ea1fe81c8dafa755e74f4961333b75fa"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
+			{"event_id": "Log", "event_idx": 5, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "0000000000000000000000000000000000000000000000000000000060ec0616", "topics": []string{"0x0559884fd3a460db3073b7fc896cc77986f16e378210ded43186175bf646fc5f", "0x000000000000000000000000000000000000000000000000000000075cd0d636", "0x00000000000000000000000000000000000000000000000000000000000005f1"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
+			{"event_id": "Log", "event_idx": 6, "extrinsic_idx": 3, "module_id": "EVM", "params": []scalecodec.EventParam{{Type: "Log", Value: map[string]interface{}{"address": "0x64b22d2b8c3ca311a0c2de34bf799f8101c89362", "data": "", "topics": []string{"0xfe25c73e3b9089fac37d55c4c7efcba6f04af04cebd2fc4d6d7dbb07e1e5234f", "0x000000000000000000000000000000000000000000000002b5e3af16a8772360"}}}}, "phase": 0, "topic": []string{}, "type": "0a00"},
+		}, nil).Once()
+		// 4 EVM_Logs event
+		bmcContract.On("ParseMessage", mock.AnythingOfType("types.Log")).Return(nil, errors.New("abi: could not locate named method or event")).Times(4)
+		err := r.ReceiveLoop(315553, 1, func(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
+			assert.EqualValues(t, bu.Height, 315553)
+			assert.Equal(t, bi.Hash.Hex(), fmt.Sprintf("0x%x", bu.BlockHash))
+			assert.Equal(t,
+				fmt.Sprintf("0x%x", bi.ScaleEncodedHeader),
+				fmt.Sprintf("0x%x", bu.Header),
+			)
+			assert.Equal(t, "0xf90181b9017bf1e8f0653422859dea6705ec5d86015a3c9f4c7c03eccbcb4bf858682956fb2886421300932c9abc4e9966ecf08dd3a5aa7087b448a88e54d18b3caebdbb2559c3f8744b25385e8e912f3965b85334a4524a6e15b21fb3c1b355d9e64df395b856a635970c046e6d6273802485ca9e9427894cb1864d725977e3c168171daf22bacf64c7ad5e0674c331730466726f6e890201e93015e1d2195ae2d73004a790db2e4bf394e40f14df3e0a2edd9dff0930e8a910ef0e6bfa9d8bb055f94e873f1df551b42df11d2cb053811279a1101e9c03fcf9cfa1b41ba3027ac3bbda9af6685440e8d89f12c7aca5987b334e91dbbaa4aa9356cb1e07577d7374463ec88709ce945f280b072b89f4bc8c0e70abf4b9b267c090d9ec032f7d7121f9bc2b2a8b9a6a06fd7f434cbebb963d6cfcb2e4206d2f43056e6d627301019cb74fccc8c86d67b5766b1c035e16ed4de18ecd091d4dd8724185eb28dbd1612983e904aafb984f05bd27443b6f8a56fbea955e208718d02e52eb28d0e62e89c2f800",
+				fmt.Sprintf("0x%x", bu.Proof),
+			)
+			r.StopReceiveLoop()
+			subClient.AssertExpectations(t)
+			bmcContract.AssertNumberOfCalls(t, "ParseMessage", 4)
+		}, func() {})
 
-	// 	assert.NoError(t, err)
-	// })
+		assert.NoError(t, err)
+	})
 
 	t.Run("should build StateProof when EVM Log events contains BMC SendMessage Event", func(t *testing.T) {
 		subClient := &substrate.MockSubstrateClient{}
