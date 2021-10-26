@@ -425,14 +425,15 @@ func (b *BTP) updateMTA(bu *chain.BlockUpdate) {
 
 // updateResult updates TransactionResult of the segment
 func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err error) {
-	b.wp.Submit(func() {
 
+	b.wp.Submit(func() {
 		segment.TransactionResult, err = b.sender.GetResult(segment.GetResultParam)
 		if err != nil {
 			if ec, ok := errors.CoderOf(err); ok {
 				b.log.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
 				switch ec.ErrorCode() {
 				case chain.BMVRevertInvalidSequence, chain.BMVRevertInvalidBlockUpdateLower:
+					// FIXME this can cause BMR run with error for very longtime and still cost transaction fee
 					for i := 0; i < len(rm.Segments); i++ {
 						if rm.Segments[i] == segment {
 							rm.RemoveSegment(i)

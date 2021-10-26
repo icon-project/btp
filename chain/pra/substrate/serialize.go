@@ -150,12 +150,10 @@ func NewEventEVMLog(decodedEvent map[string]interface{}) EventEVMLog {
 
 		evmLog := EthereumLog{}
 		json.Unmarshal(b, &evmLog)
-		for _, topic := range evmLog.Topics {
-			event.Log.Topics = append(event.Log.Topics, types.NewH256(types.MustHexDecodeString(topic)))
-		}
 
-		event.Log.Address = types.NewH160(types.MustHexDecodeString(evmLog.Address))
-		event.Log.Data = types.MustHexDecodeString(evmLog.Data)
+		event.Log.Topics = append(event.Log.Topics, evmLog.Topics...)
+		event.Log.Address = evmLog.Address
+		event.Log.Data = evmLog.Data
 	}
 
 	return event
