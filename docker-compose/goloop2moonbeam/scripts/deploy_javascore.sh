@@ -94,7 +94,7 @@ deploy_javascore_bmv() {
         --param encodedValidators=$encodedValidators \
         --param evmEventIndex=0x0a00 \
         --param newAuthoritiesEventIndex=0x0a00 \
-        --param candidateIncludedEventIndex=0x0a00
+        --param candidateIncludedEventIndex=0x0a00 \
         | jq -r . > tx.icon.deploy_bmv
 
     extract_scoreAddress tx.icon.deploy_bmv bmv.icon
