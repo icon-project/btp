@@ -29,7 +29,7 @@ contract MockBMC {
         address _bmvAddr,
         string calldata _prev,
         uint256 _seq,
-        string calldata _msg
+        bytes memory _msg
     ) public returns (bytes[] memory) {
         bmv = IBMV(_bmvAddr);
         return bmv.handleRelayMessage(btpAddr, _prev, _seq, _msg);

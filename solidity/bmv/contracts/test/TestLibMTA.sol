@@ -16,11 +16,7 @@ contract TestLibMTA {
         mta.initFromSerialized(serializedData);
     }
 
-    function getMTA()
-        public
-        view
-        returns (MerkleTreeAccumulator.MTA memory)
-    {
+    function getMTA() public view returns (MerkleTreeAccumulator.MTA memory) {
         return mta;
     }
 

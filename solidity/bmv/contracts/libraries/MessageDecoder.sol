@@ -67,7 +67,7 @@ library MessageDecoder {
                     subList[0].toBytes().bytesToBytes32(),
                     subList[1].toBytes().bytesToBytes32(),
                     subList[2].toBytes().bytesToBytes32(),
-                    subList.length == 4 ? subList[3].toBytes(): bytes("")
+                    subList.length == 4 ? subList[3].toBytes() : bytes("")
                 ),
                 isResultEmpty
             );
@@ -131,15 +131,13 @@ library MessageDecoder {
         returns (Types.EventProof memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        RLPDecode.RLPItem[] memory data =
-            ls[1].toBytes().toRlpItem().toList();
+        RLPDecode.RLPItem[] memory data = ls[1].toBytes().toRlpItem().toList();
 
         bytes[] memory mptProofs = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
             mptProofs[i] = data[i].toBytes();
         }
-        return
-            Types.EventProof(ls[0].toUint(), ls[0].toRlpBytes(), mptProofs);
+        return Types.EventProof(ls[0].toUint(), ls[0].toRlpBytes(), mptProofs);
     }
 
     function decodeBlockUpdate(bytes memory _rlp)
@@ -174,13 +172,7 @@ library MessageDecoder {
             }
         }
         return
-            Types.BlockUpdate(
-                _bh,
-                _v,
-                _validators,
-                _rlpBytes,
-                _validatorsHash
-            );
+            Types.BlockUpdate(_bh, _v, _validators, _rlpBytes, _validatorsHash);
     }
 
     function decodeReceiptProof(bytes memory _rlp)

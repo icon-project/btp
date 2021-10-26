@@ -155,25 +155,17 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
-        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, base64Msg);
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
+        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, baseMsg);
         const status = await bmv.getStatus();
         assert.isNotEmpty(status, 'invalid status');
         assert.equal(status[0], initOffset + 1, 'incorrect current MTA height');
@@ -184,7 +176,7 @@ contract('BMV integration tests', async () => {
     it('Handle relay message - Scenario 1: Revert if previous BMC is invalid', async () => {
         const invalidBtpAddr = 'btp://0x4.icon/cx7a0c2dd9751e592ac4fbd6c70bd5ec574ebf198a'
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, invalidBtpAddr, 0, 'base64Msg'),
+            bmc.testHandleRelayMessage.call(bmv.address, invalidBtpAddr, 0, '0x'),
             'BMVRevert: Invalid previous BMC'
         );
     });
@@ -192,7 +184,7 @@ contract('BMV integration tests', async () => {
     it('Handle relay message - Scenario 2: Revert if BMV receives Relay Message not from authorized BMC', async () => {
         const bmcBtpAddr = await bmc.btpAddr();
         await truffleAssert.reverts(
-            bmv.handleRelayMessage.call(bmcBtpAddr, prevBtpAddr, 0, 'base64Msg'),
+            bmv.handleRelayMessage.call(bmcBtpAddr, prevBtpAddr, 0, '0x'),
             'BMVRevert: Invalid BMC'
         );
     });
@@ -200,7 +192,7 @@ contract('BMV integration tests', async () => {
     it('Handle relay message - Scenario 3: Revert if BMC’s address, retrieved from provided BTP address, does not match an address of connected BMC', async () => {
         const bmc2 = await MockBMC.new(praNet);
         await truffleAssert.reverts(
-            bmc2.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, 'base64Msg'),
+            bmc2.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, '0x'),
             'BMVRevert: Invalid BMC'
         );
     });
@@ -277,25 +269,17 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
-        const res = await bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg);
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
+        const res = await bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg);
         for (let i = 0; i < btpMsgs.length; i++)
             assert.equal(btpMsgs[i], res[i], 'incorrect service messages');
     });
@@ -311,26 +295,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevert: Invalid relay message'
         );
     });
@@ -405,26 +381,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdate: Invalid block hash'
         );
     });
@@ -499,26 +467,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdateHigher'
         );
     });
@@ -593,26 +553,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdateLower'
         );
     });
@@ -676,26 +628,18 @@ contract('BMV integration tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-        
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         // add block #21172 to MTA
-        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, base64Msg);
+        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, baseMsg);
 
         // verify missing event from the old block added to MTA
         let oldBlockHeader = convertEthRlpToIconRlp(
@@ -754,25 +698,17 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
-        const res = await bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg);
+        baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
+        const res = await bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg);
 
         for (let i = 0; i < btpMsgs.length; i++)
             assert.equal(btpMsgs[i], res[i], 'incorrect service messages');
@@ -837,26 +773,18 @@ contract('BMV integration tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-        
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         // add block #21172 to MTA
-        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, base64Msg);
+        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, baseMsg);
 
         // verify missing event from the old block added to MTA
         let oldBlockHeader = convertEthRlpToIconRlp(
@@ -913,26 +841,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockWitness'
         );
     });
@@ -996,26 +916,18 @@ contract('BMV integration tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-        
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         // add block #21172 to MTA
-        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, base64Msg);
+        await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, baseMsg);
 
         // verify missing event from the old block added to MTA
         let oldBlockHeader = convertEthRlpToIconRlp(
@@ -1072,26 +984,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockProofHigher'
         );
     });
@@ -1168,26 +1072,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'MPTException: Mismatch hash'
         );
     });
@@ -1264,26 +1160,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'MPTException: Mismatch nibbles on leaf'
         );
     });
@@ -1378,27 +1266,19 @@ contract('BMV integration tests', async () => {
         const receiptProofs = [
             receiptProof
         ];
-        
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
 
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdate: Not exists next validators'
         );
     });
@@ -1496,26 +1376,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdate: Invalid next validator hash'
         );
     });
@@ -1582,26 +1454,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidBlockUpdate: Not exists votes'
         );
     });
@@ -1699,26 +1563,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidVotes: Invalid signature'
         );
     });
@@ -1799,26 +1655,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidVotes: Duplicated votes'
         );
     });
@@ -1917,26 +1765,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 0, baseMsg),
             'BMVRevertInvalidVotes: Require votes > 2/3'
         );
     });
@@ -2013,26 +1853,18 @@ contract('BMV integration tests', async () => {
             receiptProof
         ];
         
-        let base64Msg = urlSafeBase64.encode(
-            Buffer.from(
-                convertEthRlpToIconRlp(
-                    rlp.encode(
-                        [
-                            blockUpdates,
-                            blockProof,
-                            receiptProofs
-                        ]
-                    ),
-                    false
-                ),
-                'hex'
-            )
-        )
-        
-        base64Msg = _.padEnd(base64Msg, base64Msg.length + (4 - base64Msg.length % 4) % 4, '=');
-
+        let baseMsg = '0x' + convertEthRlpToIconRlp(
+            rlp.encode(
+                [
+                    blockUpdates,
+                    blockProof,
+                    receiptProofs
+                ]
+            ),
+            false
+        );
         await truffleAssert.reverts(
-            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 3, base64Msg),
+            bmc.testHandleRelayMessage.call(bmv.address, prevBtpAddr, 3, baseMsg),
             'BMVRevertInvalidSequence'
         );
     });

@@ -166,7 +166,7 @@ contract BMVV2 is IBMV, Initializable {
         string memory _bmc,
         string memory _prev,
         uint256 _seq,
-        string calldata /* _msg */
+        bytes memory /* _msg */
     ) external override returns (bytes[] memory) {
         bytes[] memory msgs = new bytes[](2);
         msgs[0] = IDataValidator(subBmvAddr).validateReceipt(

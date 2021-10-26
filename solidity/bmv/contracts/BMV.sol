@@ -203,13 +203,10 @@ contract BMV is IBMV, Initializable {
         string memory _bmc,
         string memory _prev,
         uint256 _seq,
-        string calldata _msg
+        bytes memory _msg
     ) external override returns (bytes[] memory) {
         checkAccessible(_bmc, _prev);
-
-        Types.RelayMessage memory relayMsg =
-            bytes(_msg).decodeRelayMessage();
-
+        Types.RelayMessage memory relayMsg = _msg.decodeRelayMessage();
         require(
             relayMsg.blockUpdates.length != 0 || !relayMsg.isBPEmpty,
             "BMVRevert: Invalid relay message"
@@ -223,7 +220,7 @@ contract BMV is IBMV, Initializable {
                 _bmc,
                 _prev,
                 _seq,
-                bytes(_msg),
+                _msg,
                 _receiptHash
             );
 
