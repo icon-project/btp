@@ -13,6 +13,10 @@ const rlp = require('rlp');
 
 const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
+let convertEthRlpToIconRlp = (buff, prefix=true) => {
+    return ((prefix) ? '0x': '') + buff.toString('hex').replace(/c1c0/g, 'f800');
+};
+
 contract('BMC tests', (accounts) => {
     describe('BMC Basic Unit Tests', () => {
         let bmcManagement, bmcPeriphery, bmv1, bmv2, bmv3, bmv4;
@@ -658,11 +662,7 @@ contract('BMC tests', (accounts) => {
                 '0x01', // rlp encode of signed int
                 'message'
             ]);
-            
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            await truffleAssert.reverts(bmcPeriphery.handleRelayMessage.call(link, relayMsg), 'BMCRevertUnauthorized: invalid relay');
+            await truffleAssert.reverts(bmcPeriphery.handleRelayMessage.call(link, btpMsg), 'BMCRevertUnauthorized: invalid relay');
     
             let bmcLink = await bmcManagement.getLink('btp://1234.iconee/0x1234');
             assert.equal(bmcLink.rxSeq, 0, 'failed to update rxSeq');
@@ -679,11 +679,8 @@ contract('BMC tests', (accounts) => {
                 '0x01',
                 'message'
             ]);
-            
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
     
-            await truffleAssert.reverts(bmcPeriphery.handleRelayMessage.call(link, 'base64EncodeRelayMessage'), 'BMCRevertUnauthorized: not registered relay');
+            await truffleAssert.reverts(bmcPeriphery.handleRelayMessage.call(link, btpMsg), 'BMCRevertUnauthorized: not registered relay');
             
             let bmcLink = await bmcManagement.getLink('btp://1234.iconee/0x1234');
             assert.equal(bmcLink.rxSeq, 0, 'failed to update rxSeq');
@@ -706,10 +703,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(transferCoin)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let res = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let res = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             assert.isNotEmpty(res);
             let bmcLink = await bmcManagement.getLink('btp://1234.iconee/0x1234');
             assert.equal(bmcLink.rxSeq, 1, 'failed to update rxSeq');
@@ -733,7 +727,7 @@ contract('BMC tests', (accounts) => {
 
             const bmcBtpAddr = await bmcPeriphery.getBmcBtpAddress();
 
-            const encodedSendingBtpMsg = '0x' + rlp.encode([
+            const encodedSendingBtpMsg = '0x' +rlp.encode([
                 bmcBtpAddr,
                 link,
                 'bmc',
@@ -760,11 +754,8 @@ contract('BMC tests', (accounts) => {
                 ])
             ]);
 
-            let relayMsg = URLSafeBase64.encode(encodedReceivedBtpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-
             await bmcManagement.addRelay(link, relays);
-            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[2]});
+            await bmcPeriphery.handleRelayMessage(link, encodedReceivedBtpMsg, {from: accounts[2]});
 
             const linkInfo = await bmcManagement.getLink(link);
             assert.isEmpty(linkInfo.reachable);
@@ -786,17 +777,14 @@ contract('BMC tests', (accounts) => {
                 ])
             ]);
 
-            let relayMsg = URLSafeBase64.encode(encodedReceivedBtpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-
-            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            await bmcPeriphery.handleRelayMessage(link, encodedReceivedBtpMsg, {from: accounts[3]});
 
             const linkInfo = await bmcManagement.getLink(link);
             assert.isEmpty(linkInfo.reachable);
 
             const btpAddress = 'btp://1234.eth/' + web3.utils.randomHex(20);
     
-            relayMsg = rlp.encode([
+            btpMsg = rlp.encode([
                 link,
                 bmcBtpAddr,
                 'bmc',
@@ -809,17 +797,14 @@ contract('BMC tests', (accounts) => {
                 ])
             ]);
     
-            relayMsg = URLSafeBase64.encode(relayMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[4]});
+            await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[4]});
     
             let bmcLink = await bmcManagement.getLink(link);
             assert.equal(bmcLink.reachable[0], btpAddress, 'invalid reachable btp address');
             assert.equal(bmcLink.rxSeq, 2, 'failed to update rxSeq');
             assert.equal(bmcLink.txSeq, 1, 'invalid txSeq');
     
-            relayMsg = rlp.encode([
+            btpMsg = rlp.encode([
                 link,
                 bmcBtpAddr,
                 'bmc',
@@ -832,10 +817,7 @@ contract('BMC tests', (accounts) => {
                 ])
             ]);
     
-            relayMsg = URLSafeBase64.encode(relayMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[5]});
+            await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[5]});
     
             bmcLink = await bmcManagement.getLink(link);
             assert.isEmpty(bmcLink.reachable, 'failed to remove link');
@@ -861,11 +843,8 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(internalMsg)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
             await truffleAssert.reverts(
-                bmcPeriphery.handleRelayMessage.call(link, relayMsg, {from: accounts[3]}),
+                bmcPeriphery.handleRelayMessage.call(link, btpMsg, {from: accounts[3]}),
                 'BMCRevert: not exists internal handler'
             );
         });
@@ -888,10 +867,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(internalMsg)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            const tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            const tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             let bmcMessage;
             await truffleAssert.eventEmitted(tx, 'Message', (ev) => {
                 bmcMessage = rlp.decode(ev._msg);
@@ -938,10 +914,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(transferCoin)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            const tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[4]});
+            const tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[4]});
     
             await truffleAssert.eventEmitted(tx, 'Message', (ev) => {
                 return ev._next === destBtpAddress && ev._seq.toNumber() === 2 && ev._msg.toString() === '0x' + btpMsg.toString('hex');
@@ -971,10 +944,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(transferCoin)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let res = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let res = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             assert.isNotEmpty(res);
         });
     
@@ -994,10 +964,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(transferCoin)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             let bmcMessage;
             await truffleAssert.eventEmitted(tx, 'Message', (ev) => {
                 bmcMessage = rlp.decode(ev._msg);
@@ -1031,10 +998,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(errResponse)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let res = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let res = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             assert.isNotEmpty(res);
         });
     
@@ -1052,10 +1016,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(errResponse)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             await truffleAssert.eventEmitted(tx, 'ErrorOnBTPError', (ev) => {
                 return ev[0] === 'Token' && ev[1].toNumber() === 1000 &&
                     ev[2].toNumber() === 0 && ev[3].toString() === 'Invalid service' &&
@@ -1077,10 +1038,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(errResponse)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, {from: accounts[3]});
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, {from: accounts[3]});
             await truffleAssert.eventEmitted(tx, 'ErrorOnBTPError', (ev) => {
                 return ev[0] === 'Token' && ev[1].toNumber() === 100 &&
                     ev[2].toNumber() === 12 && ev[3].toString() === 'Invalid service' &&
@@ -1097,10 +1055,7 @@ contract('BMC tests', (accounts) => {
                 'invalid rlp of service message'
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, { from: accounts[3] });
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, { from: accounts[3] });
             let bmcMessage;
             await truffleAssert.eventEmitted(tx, 'Message', (ev) => {
                 bmcMessage = rlp.decode(ev._msg);
@@ -1134,10 +1089,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(serviceMsg)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, { from: accounts[3] });
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, { from: accounts[3] });
             let bmcMessage;
             await truffleAssert.eventEmitted(tx, 'Message', (ev) => {
                 bmcMessage = rlp.decode(ev._msg);
@@ -1176,10 +1128,7 @@ contract('BMC tests', (accounts) => {
                 rlp.encode(serviceMsg)
             ]);
     
-            let relayMsg = URLSafeBase64.encode(btpMsg);
-            relayMsg = relayMsg.padEnd(relayMsg.length + (4 - relayMsg.length % 4) % 4, '=');
-    
-            let tx = await bmcPeriphery.handleRelayMessage(link, relayMsg, { from: accounts[3] });
+            let tx = await bmcPeriphery.handleRelayMessage(link, btpMsg, { from: accounts[3] });
             assert.isNotEmpty(tx);
         });
     });

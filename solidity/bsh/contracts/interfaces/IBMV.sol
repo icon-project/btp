@@ -57,6 +57,6 @@ interface IBMV {
         string calldata _bmc,
         string calldata _prev,
         uint256 _seq,
-        string calldata _msg
+        bytes calldata _msg
     ) external returns (bytes[] memory serializedMessages);
 }

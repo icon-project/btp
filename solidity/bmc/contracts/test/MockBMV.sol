@@ -88,10 +88,10 @@ contract MockBMV is IBMV {
         string memory,
         string memory,
         uint256,
-        string calldata _msg
+        bytes calldata _msg
     ) external pure override returns (bytes[] memory) {
         bytes[] memory btpMsgs = new bytes[](1);
-        btpMsgs[0] = _msg.decode();
+        btpMsgs[0] = _msg;
         return btpMsgs;
     }
 
