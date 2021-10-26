@@ -71,7 +71,7 @@ public class BTPMessageVerifier {
         BTPAddress currBMCAddress = BTPAddress.fromString(bmc);
         BTPAddress prevBMCAddress = BTPAddress.fromString(prev);
         canBMCAccess(currBMCAddress, prevBMCAddress);
-        BMCAccessed(bmc, prev, seq);
+        BMCAccessed(seq, msg);
         byte[] _msg = null;
         try {
             _msg = Base64.getUrlDecoder().decode(msg.getBytes());
@@ -207,7 +207,7 @@ public class BTPMessageVerifier {
     protected void HandleRelayMessageStarted(BigInteger seq, String msg) {}
 
     @EventLog
-    protected void BMCAccessed(String currBMCAddress, String prevBMCAddress, BigInteger seq) {}
+    protected void BMCAccessed(BigInteger seq, String msg) {}
 
     @EventLog
     protected void RelayMessageExtracted(BigInteger seq, String msg) {}
