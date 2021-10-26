@@ -283,7 +283,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 			if txr.Status == 0 {
 				//TODO: handle mapError here
-				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %v", thp.Hash(), thp.Param.Prev, thp.Param.Msg)
+				s.log.Errorf("failed to send message on %v with params _prev: %v _msg: %x", thp.Hash(), thp.Param.Prev, thp.Param.Msg)
 				return nil, s.parseTransactionError(thp.From, thp.Tx, txr.BlockNumber)
 			}
 

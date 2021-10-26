@@ -44,7 +44,6 @@ require (
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/sys v0.0.0-20211020064051-0ec99a608a1b // indirect
 	gopkg.in/ini.v1 v1.51.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
