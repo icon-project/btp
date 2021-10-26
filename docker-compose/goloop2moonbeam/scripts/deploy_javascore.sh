@@ -82,16 +82,19 @@ deploy_javascore_bmv() {
         --param paraMtaOffset=$paraMtaOffset \
         --param bmc=$(cat bmc.icon) \
         --param net=$(cat net.btp.moonbeam) \
-        --param mtaRootSize=0x8 \
-        --param mtaCacheSize=0x8 \
+        --param mtaRootSize=0x10 \
+        --param mtaCacheSize=0x10 \
         --param mtaIsAllowNewerWitness=0x1 \
         --param relayLastBlockHash=$relayLastBlockHash \
         --param paraLastBlockHash=$paraLastBlockHash \
-        --param encodedValidators=$encodedValidators \
         --param relayEventDecoderAddress=$(cat kusamaDecoder.icon) \
         --param paraEventDecoderAddress=$(cat moonriverDecoder.icon) \
         --param relayCurrentSetId=$relayCurrentSetId \
         --param paraChainId=0x0 \
+        --param encodedValidators=$encodedValidators \
+        --param evmEventIndex=0x0a00 \
+        --param newAuthoritiesEventIndex=0x0a00 \
+        --param candidateIncludedEventIndex=0x0a00
         | jq -r . > tx.icon.deploy_bmv
 
     extract_scoreAddress tx.icon.deploy_bmv bmv.icon

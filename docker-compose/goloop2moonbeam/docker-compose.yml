@@ -20,7 +20,7 @@ services:
         build:
             context: ./moonbeam
             args:     
-                MOONBEAM_VERSION: v0.9.6
+                MOONBEAM_VERSION: v0.13.2-upgrade-hotfix
         logging:
             driver: none
         volumes:
