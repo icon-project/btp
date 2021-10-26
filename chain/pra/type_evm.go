@@ -28,7 +28,7 @@ func NewEvmLog(e substrate.EventEVMLog) EvmLog {
 	return EvmLog{
 		Address: EvmHexToAddress(e.Log.Address),
 		Topics:  topics,
-		Data:    []byte(e.Log.Data),
+		Data:    common.Hex2Bytes(e.Log.Data),
 	}
 }
 

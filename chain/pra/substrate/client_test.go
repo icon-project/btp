@@ -1,6 +1,7 @@
 package substrate
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -122,15 +123,30 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("should getEvmLogs in moonbase", func(t *testing.T) {
-		t.Skip("Manual run only")
+		// t.Skip("Manual run only")
 		c, err := NewSubstrateClient("wss://wss.testnet.moonbeam.network")
 		require.NoError(t, err)
 		c.Init()
-		blockHash, err := c.GetBlockHash(1026643)
+		blockHash, err := c.GetBlockHash(814054)
 		require.NoError(t, err)
 
 		events, err := c.GetSystemEvents(blockHash, "EVM", "Log")
 		assert.NoError(t, err)
 		assert.Len(t, events, 4)
+		b, _ := json.Marshal(events)
+		t.Log(string(b))
+	})
+
+	t.Run("should get system storage key", func(t *testing.T) {
+		t.Skip("Manual run only")
+		c, err := NewSubstrateClient("wss://wss.moonriver.moonbeam.network")
+		require.NoError(t, err)
+		c.Init()
+		blockHash, err := c.GetBlockHash(786623)
+		require.NoError(t, err)
+
+		key, err := c.GetSystemEventStorageKey(blockHash)
+		assert.NoError(t, err)
+		assert.NotNil(t, key)
 	})
 }
