@@ -122,7 +122,6 @@ class BMVBasicTest extends TestBase {
                         Receipt.class,
                         ReceiptEventLog.class,
                         MerkleTreeAccumulator.class,
-                        MerklePatriciaTree.class,
                         Votes.class,
                         foundation.icon.btp.bmv.types.ValidatorList.class,
                         TypeDecoder.class,
