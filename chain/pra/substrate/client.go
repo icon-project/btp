@@ -2,8 +2,6 @@ package substrate
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path"
 	"reflect"
 	"runtime"
 	"sort"
@@ -13,17 +11,10 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/icon-project/btp/common/go-ethereum/rpc"
 	"github.com/icon-project/btp/common/log"
-	utils "github.com/icon-project/btp/common/utils"
 	scale "github.com/itering/scale.go"
 	"github.com/itering/scale.go/source"
 	scaletypes "github.com/itering/scale.go/types"
 	"github.com/itering/scale.go/utiles"
-)
-
-const (
-	Westend  = "westend"
-	Kusama   = "kusama"
-	Polkadot = "polkadot"
 )
 
 type SubstrateAPI struct {
@@ -58,7 +49,6 @@ func (c *SubstrateAPI) Init() {
 		c.log.Panicf("Init: can't fetch RuntimeVersionLatest")
 	}
 
-	modulePath, err := utils.GetModulePath("github.com/itering/scale.go", "v1.1.23")
 	if err != nil {
 		c.log.Panicf("Init: can't fetch scale module")
 	}
@@ -66,10 +56,11 @@ func (c *SubstrateAPI) Init() {
 	c.eventDecoder = scale.EventsDecoder{}
 	c.scaleDecoderOption = scaletypes.ScaleDecoderOption{Metadata: &m.Metadata, Spec: int(runtimeVersion.SpecVersion)}
 
-	typesDefinition, err := ioutil.ReadFile(path.Join(modulePath, "network/"+runtimeVersion.SpecName+".json"))
-	if err != nil {
+	if typesDefinitionMap[runtimeVersion.SpecName] == "" {
 		c.log.Panicf("Init: can't fetch scale type %s", runtimeVersion.SpecName)
 	}
+
+	typesDefinition := []byte(typesDefinitionMap[runtimeVersion.SpecName])
 
 	scaletypes.RegCustomTypes(source.LoadTypeRegistry(typesDefinition))
 }
@@ -288,7 +279,7 @@ func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.Bloc
 
 	spec := c.GetSpecName()
 
-	if spec == Kusama || spec == Polkadot {
+	if spec == "kusama" || spec == "polkadot" {
 		fp := &FinalityProof{}
 		err = types.DecodeFromHexString(finalityProofHexstring, fp)
 
@@ -297,7 +288,7 @@ func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.Bloc
 		}
 	}
 
-	if spec == Westend {
+	if spec == "westend" {
 		fp := &WestendFinalityProof{}
 		err = types.DecodeFromHexString(finalityProofHexstring, fp)
 

@@ -248,7 +248,7 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	// TODO fetch with runtime.GOMAXPROCS(runtime.NumCPU()) hashes per call
 	// sort these hashses, and add to MTA one by one
 	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
-		r.log.Tracef("newParaFinalityProof: sync localRelayMtaHeight %d with remoteRelayMtaHeight", localRelayMtaHeight, r.bmvStatus.RelayMtaHeight)
+		r.log.Tracef("newParaFinalityProof: sync localRelayMtaHeight %d with remoteRelayMtaHeight %d", localRelayMtaHeight, r.bmvStatus.RelayMtaHeight)
 		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
 			relayHash, _ := r.c.GetBlockHash(uint64(i))
 			r.updateMta(uint64(i), relayHash)
