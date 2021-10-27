@@ -172,7 +172,6 @@ public class BMVTest extends TestBase {
                         Receipt.class,
                         ReceiptEventLog.class,
                         MerkleTreeAccumulator.class,
-                        MerklePatriciaTree.class,
                         Votes.class,
                         foundation.icon.btp.bmv.types.ValidatorList.class,
                         TypeDecoder.class,
@@ -183,14 +182,15 @@ public class BMVTest extends TestBase {
                         scorex.util.HashMap.class,
                         TrieNode.class,
                         Value.class,
-                        Base64.class,
+                        scorex.util.Base64.class,
                         ArrayList.class,
                         scorex.util.AbstractCollection.class,
                         Nibbles.class,
                         ArraysUtil.class,
                         BytesUtil.class,
                         Pair.class,
-                        Trie.class},
+                        Trie.class,
+                        ExtraDataTypeDecoder.class},
                 args);
 
         LOG.info("Deployed BMV address " + score.getAddress());
