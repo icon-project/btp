@@ -71,7 +71,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         external
         override
     {
-        bytes[] memory serializedMsgs = decodeMsgAndValidateRelay(_prev, bytes(_msg));
+        bytes[] memory serializedMsgs = decodeMsgAndValidateRelay(_prev, _msg);
 
         // dispatch BTP Messages
         Types.BMCMessage memory _message;
@@ -107,7 +107,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
 
     function decodeMsgAndValidateRelay(
         string calldata _prev,
-        bytes calldata _msg
+        string calldata _msg
     ) internal returns (bytes[] memory) {
         (string memory _net, ) = _prev.splitBTPAddress();
         address _bmvAddr =
@@ -122,7 +122,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 bmcBtpAddress,
                 _prev,
                 IBMCManagement(bmcManagement).getLinkRxSeq(_prev),
-                _msg
+                bytes(_msg)
             );
 
         // rotate and check valid relay

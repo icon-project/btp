@@ -163,7 +163,7 @@ contract('BMV unit tests', async () => {
         ];
         
 
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -173,7 +173,6 @@ contract('BMV unit tests', async () => {
             ),
             false
         );
-
         await bmc.testHandleRelayMessage(bmv.address, prevBtpAddr, 0, baseMsg);
         const status = await bmv.getStatus();
         assert.isNotEmpty(status, 'invalid status');
@@ -278,7 +277,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -304,7 +303,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -391,7 +390,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -477,7 +476,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
     
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -563,7 +562,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
  
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -638,7 +637,7 @@ contract('BMV unit tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -708,7 +707,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        baseMsg = '0x' + convertEthRlpToIconRlp(
+        baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -783,7 +782,7 @@ contract('BMV unit tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -851,7 +850,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        baseMsg = '0x' + convertEthRlpToIconRlp(
+        baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -926,7 +925,7 @@ contract('BMV unit tests', async () => {
         
         let receiptProofs = []; // receipt proofs is empty
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -994,7 +993,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        baseMsg = '0x' + convertEthRlpToIconRlp(
+        baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -1126,7 +1125,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -1218,7 +1217,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,
@@ -1306,7 +1305,7 @@ contract('BMV unit tests', async () => {
             receiptProof
         ];
         
-        let baseMsg = '0x' + convertEthRlpToIconRlp(
+        let baseMsg = convertEthRlpToIconRlp(
             rlp.encode(
                 [
                     blockUpdates,

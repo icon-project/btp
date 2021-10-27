@@ -199,6 +199,7 @@ contract BMV is IBMV, Initializable {
         @param _msg serialized bytes of Relay Message
         @return serializedMessages List of serialized bytes of a BTP Message
      */
+
     function handleRelayMessage(
         string memory _bmc,
         string memory _prev,

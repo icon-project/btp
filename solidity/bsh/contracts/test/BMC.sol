@@ -92,7 +92,7 @@ contract BMC is IBMCPeriphery {
         return bmcAddress;
     }
 
-    function handleRelayMessage(string calldata _prev, bytes calldata _msg)
+    function handleRelayMessage(string calldata _prev, string calldata _msg)
         external
         override
     {}
