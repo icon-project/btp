@@ -67,11 +67,11 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
        @param _prev    BTP Address of the BMC generates the message
        @param _msg     base64 encoded string of serialized bytes of Relay Message refer RelayMessage structure
      */
-    function handleRelayMessage(string calldata _prev, bytes calldata _msg)
+    function handleRelayMessage(string calldata _prev, string calldata _msg)
         external
         override
     {
-        bytes[] memory serializedMsgs = decodeMsgAndValidateRelay(_prev, _msg);
+        bytes[] memory serializedMsgs = decodeMsgAndValidateRelay(_prev, bytes(_msg));
         string memory _net;
 
         // dispatch BTP Messages
