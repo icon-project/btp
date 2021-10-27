@@ -9,7 +9,7 @@
 ## Integrated blockchain
 * [ICON](icon.md)
 * [ICON Enterprise Edition](iconee.md)
-* [Polkadot/Kusama Parachain with Frontier Support](frontier.md)
+* [Polkadot/Kusama Parachain with Frontier Support](polkadot_parachain_with_frontier.md)
   * Moonbeam/Moonriver
 
 ## General
@@ -34,7 +34,7 @@ After starting docker successfully. Now you can make a test by simply run this c
 make run-test-scenario
 ```
 
-## Simple run
+## Simple run with Moonbeam developmnent node
 
 * Example assumptions
   * ICON endpoint is `http://goloop:9080/api/v3/icon`
