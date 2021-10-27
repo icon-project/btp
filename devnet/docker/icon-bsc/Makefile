@@ -1,11 +1,12 @@
 remove:
-	docker-compose down -v --remove-orphans
-	rm -rf work/*
-	rm -rf ../../../build/*
+	docker-compose down -v --remove-orphans	
 	docker rmi -f icon-bsc_btp-icon
 	docker rm -f javascore-dist
 	docker rmi -f btpsimple
 	docker rmi -f btp/javascore
+	rm -rf work/*
+	rm -rf ../../../build/*
+	rm -rf ./data/bsc/node1
 	
 clean:
 	docker-compose down -v --remove-orphans
@@ -13,6 +14,7 @@ clean:
 
 build:
 	make -C ../../../ dist-javascore dist-sol btpsimple-image
+	mkdir -p ./data/bsc/node1
 	docker-compose build
 
 run:
