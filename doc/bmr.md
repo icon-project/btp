@@ -194,6 +194,10 @@ make **btpsimple**
   bin/btpsimple start --config path/to/config/dst.config.json
   ```
 
+## Run with Moonbeam Public Network and RelayChain
+
+TODO
+
 ## Run in docker container
 
 TODO
@@ -204,3 +208,7 @@ TODO
 
 ## Testing
 
+```bash
+# Test all short mode, with log, without cache
+go test -v -count=1 -short ./...  
+```
