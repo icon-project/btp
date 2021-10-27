@@ -21,15 +21,15 @@ type receiverOptions struct {
 }
 
 type Receiver struct {
-	c                           *Client
-	relayReceiver               relayReceiver
-	src                         chain.BtpAddress
-	dst                         chain.BtpAddress
-	l                           log.Logger
-	opt                         receiverOptions
-	parachainId                 substrate.SubstrateParachainId
-	rxSeq                       uint64
-	isFoundMessageEventByOffset bool
+	c                       *Client
+	relayReceiver           relayReceiver
+	src                     chain.BtpAddress
+	dst                     chain.BtpAddress
+	l                       log.Logger
+	opt                     receiverOptions
+	parachainId             substrate.SubstrateParachainId
+	rxSeq                   uint64
+	foundNextEventFromRxSeq bool
 }
 
 func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger, cfgAbsBaseDir string, dstEndpoint string) chain.Receiver {
@@ -136,8 +136,8 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				})
 
 				r.l.Debugf("newReceiptProofs: newEvent Seq %d", rp.Events[len(rp.Events)-1].Sequence)
-				if bmcMsg.Seq.Int64() == int64(r.rxSeq) {
-					r.isFoundMessageEventByOffset = true
+				if bmcMsg.Seq.Int64() == int64(r.rxSeq+1) {
+					r.foundNextEventFromRxSeq = true
 				}
 			}
 		}
@@ -167,7 +167,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback, scb func()) error {
 	if seq < 1 {
-		r.isFoundMessageEventByOffset = true
+		r.foundNextEventFromRxSeq = true
 	}
 
 	r.rxSeq = uint64(seq)
@@ -182,7 +182,7 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 
 		if sp, err = r.newReceiptProofs(v); err != nil {
 			return errors.Wrap(err, "ReceiveLoop: newReceiptProofs")
-		} else if r.isFoundMessageEventByOffset {
+		} else if r.foundNextEventFromRxSeq {
 			cb(bu, sp)
 		} else {
 			cb(bu, nil)
