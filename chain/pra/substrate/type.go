@@ -163,24 +163,14 @@ type EthereumLog struct {
 	Data    string   `json:"data"`
 }
 
-type EthereumLogRaw struct {
-	Address types.H160
-	Topics  []types.H256
-	Data    []byte
-}
-
 type EventEVMLog struct {
-	Phase  types.Phase
-	Log    EthereumLogRaw
-	Topics []types.Hash
+	Phase  string
+	Log    EthereumLog `json:"log"`
+	Topics []string
 }
 
 func (eel *EventEVMLog) CompareAddressCaseInsensitive(address string) bool {
-	return strings.EqualFold(eel.Log.Address.Hex(), address)
-}
-
-type EVMLogParams struct {
-	Log EthereumLog `json:"log"`
+	return strings.EqualFold(eel.Log.Address, address)
 }
 
 type SubstrateClient interface {

@@ -22,13 +22,13 @@ func NewEvmLog(e substrate.EventEVMLog) EvmLog {
 	topics := []EvmHash{}
 
 	for _, t := range e.Log.Topics {
-		topics = append(topics, EvmHexToHash(t.Hex()))
+		topics = append(topics, EvmHexToHash(t))
 	}
 
 	return EvmLog{
-		Address: EvmAddress(e.Log.Address),
+		Address: EvmHexToAddress(e.Log.Address),
 		Topics:  topics,
-		Data:    []byte(e.Log.Data),
+		Data:    common.Hex2Bytes(e.Log.Data),
 	}
 }
 

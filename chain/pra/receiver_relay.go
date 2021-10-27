@@ -232,7 +232,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationData, paraChainId substrate.SubstrateParachainId, paraHead substrate.SubstrateHash, paraHeight uint64) ([][]byte, error) {
 	r.bmvStatus = r.bmvC.GetPraBmvStatus()
 	if paraHeight <= uint64(r.bmvStatus.ParaMtaHeight) {
-		r.log.Tracef("newParaFinalityProof: paraHeight smaller than paraMtaHeght")
+		r.log.Tracef("newParaFinalityProof: paraHeight smaller than paraMtaHeight %d", r.bmvStatus.ParaMtaHeight)
 		return nil, nil
 	}
 
