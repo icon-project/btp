@@ -1,7 +1,6 @@
 package substrate
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,8 +132,6 @@ func TestClient(t *testing.T) {
 		events, err := c.GetSystemEvents(blockHash, "EVM", "Log")
 		assert.NoError(t, err)
 		assert.Len(t, events, 4)
-		b, _ := json.Marshal(events)
-		t.Log(string(b))
 	})
 
 	t.Run("should get system storage key", func(t *testing.T) {
