@@ -8,18 +8,6 @@ LABEL MAINTAINER="t_arch@iconloop.com"
 ARG VERSION
 LABEL BTPSIMPLE_VERSION="$VERSION"
 
-ARG USER_ID
-ARG GROUP_ID
-
-#Add User id & group from the host machine to the container
-RUN addgroup -g $GROUP_ID user
-RUN adduser --disabled-password --gecos '' --uid $USER_ID -G user user
-RUN mkdir -p /etc/sudoers.d/
-RUN echo "$USER_ID ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USER_ID} \
-        && chmod 0440 /etc/sudoers.d/$USER_ID
-
-USER user
-
 # install
 COPY dist/bin/btpsimple /btpsimple/bin/btpsimple
 ENV PATH $PATH:/btpsimple/bin
@@ -42,6 +30,5 @@ ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
 
 COPY ./entrypoint /btpsimple
 
-#RUN chmod +x entrypoint
-
+RUN chmod +x entrypoint
 ENTRYPOINT ["/btpsimple/entrypoint"]

@@ -1,31 +1,24 @@
-UID=$(shell id -u)
-GID=$(shell id -g)
-
 remove:
-	USER_ID=$(UID) GROUP_ID=$(GID) docker-compose down -v --remove-orphans
+	docker-compose down -v --remove-orphans	
 	docker rmi -f icon-bsc_btp-icon
 	docker rm -f javascore-dist
 	docker rmi -f btpsimple
 	docker rmi -f btp/javascore
-	rm -rf ./data
-	rm -rf ./work
-	rm -rf ../../../build/*	
+	rm -rf work/*
+	rm -rf ../../../build/*
+	rm -rf ./data/bsc/node1
 	
 clean:
 	docker-compose down -v --remove-orphans
 	rm -rf work/*
 
 build:
+	make -C ../../../ dist-javascore dist-sol btpsimple-image
 	mkdir -p ./data/bsc/node1
-	mkdir -p ./work
-	make -C ../../../ dist-javascore dist-sol btpsimple-image	
-	docker-compose build  --build-arg USER_ID=$(UID) --build-arg GROUP_ID=$(GID)
+	docker-compose build
 
 run:
 	docker-compose up --remove-orphans -d
-
-run-bsc:
-	docker-compose up --remove-orphans -d binancesmartchain
 
 solidity:
 	make -C ../../../ dist-sol btpsimple-image

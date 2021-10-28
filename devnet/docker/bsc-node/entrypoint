@@ -4,7 +4,7 @@ set -e
 if [ ! -d $BSC_DATADIR/geth/chaindata ]; then
     echo "$0: creating $BSC_DATADIR"
     mkdir -p "$BSC_DATADIR"
-    #chmod 700 "$BSC_DATADIR"
+    chmod 700 "$BSC_DATADIR"
     echo "$0: initiating blockchain"
     cp -rf $BSC_HOME/keystore $BSC_DATADIR/keystore
     geth --datadir "$BSC_DATADIR" init $BSC_HOME/genesis.json
