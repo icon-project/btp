@@ -41,7 +41,9 @@ Terminologies
   - Send BTP Relay Message
 
 ### Blockchain specifics
+
 * [ICON](doc/icon.md)
+* [Polkadot parachain with frontier](doc/polkadot_parachain_with_frontier.md)
 
 ## BTP Project
 
@@ -99,7 +101,13 @@ Terminologies
 
 #### Java SCORE of Parachain
 
-TODO
+| Directory                | Description  |
+|:--------------------|:-------|
+| /javascore/bmv/parachain | Implement of BMV smart contract for moonbeam parachain |
+| /javascore/bmv/sovereignChain | Implement of BMV smart contract for edgeware parachain |
+| /javascore/bmv/eventDecoder | Implement of event decoder for substrate chain |
+| /javascore/bmv/helper | Script to get parachain initialize parameters and deploy contract |
+| /javascore/lib | BTP interface and common codes for Java SCORE |
 
 #### Solidity of ICON
 

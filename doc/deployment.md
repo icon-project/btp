@@ -650,7 +650,202 @@ truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx11a5a7510b128e0ab1654
 ```
 ### JAVAScore
 
-TODO
+#### Deploy BMC
+
+```
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/bmc/build/libs/bmc-0.1.0-optimized.jar \
+    --key_store godWallet.json --key_password gochain \
+    --nid 66 --step_limit 13610920001 \
+    --content_type application/java \
+    --param _net="0x42.icon"
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x3d9eb499c6744447033dad678d6e0d2f01542d227b56647c67b061a107b20a14
+```
+
+#### Deploy CPS
+
+```
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/fee_aggregation/CPFTreasury.zip \
+    --key_store godWallet.json --key_password gochain \
+    --nid 66 --step_limit 13610920001 \
+    --content_type application/zip
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x998ddf8593155f1790f7cec11483616503807adc5dcd974b799b092eebc54b6c
+```
+
+#### Deploy Fee Aggregator
+
+```
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/fee_aggregation/build/libs/fee-aggregation-system-1.0-optimized.jar --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719 --content_type application/java --param _cps_address=cx2cfe2207351afac374150fbd64540c3f797b4ce7 --param _band_protocol_address=cx2cfe2207351afac374150fbd64540c3f797b4ce7
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x6e3dc5e88c0f3992ef9531299eeb97bec52bd96da1f7475d63f7bc4aed897847
+```
+
+#### Set Fee Aggregator address to BMC contract
+```
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method setFeeAggregator --param _addr=cx37465423027f2dd3cc961d8b37a6ad04ddb17138 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xbca569ad3a21f0e9d5b42412b8873452f8ec1f16dd3774df81c527179fb7c4ef
+```
+
+#### Deploy Event Decoder and Para BMV
+
+```bash
+cd btp/javascore/bmv/helper
+yarn deployParaBMV
+```
+
+- Update `.env` file:
+
+```
+BMC_ADDRESS=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3
+DST_NET_ADDRESS=0x507.pra
+# wss://wss-relay.testnet.moonbeam.network 
+RELAY_ENDPOINT=wss://wss-relay.testnet.moonbeam.network 
+# wss://moonbase.moonbeam.elara.patract.io 
+PARA_ENDPOINT=wss://wss.testnet.moonbeam.network
+
+RELAY_CHAIN_OFFSET=2214750
+PARA_CHAIN_OFFSET=1047648
+MTA_ROOT_SIZE=16
+MTA_CACHE_SIZE=16
+MTA_IS_ALLOW_WITNESS=true
+
+ICON_ENDPOINT=https://btp.net.solidwallet.io/api/v3
+ICON_KEYSTORE_PATH=/Users/leclevietnam/mwork/btp/javascore/bmv/godWallet.json
+ICON_KEYSTORE_PASSWORD=gochain
+ICON_NID=66
+```
+
+- Run script to deploy event decoder and BMV:
+
+```
+$ yarn deployParaBMV
+
+yarn run v1.22.10
+warning package.json: No license field
+$ yarn ts-node src/deployParaBMV.ts
+warning package.json: No license field
+$ /Users/leclevietnam/mwork/btp/javascore/bmv/helper/node_modules/.bin/ts-node src/deployParaBMV.ts
+2021-10-28 13:48:00        METADATA: Unknown types found, no types for AssetRegistrarMetadata, AssetType, AuthorId, BlockV0, Collator2, CollatorSnapshot, CurrencyId, ExitQ, InflationInfo, Nominator2, NominatorAdded, OrderedSet, ParachainBondConfig, RegistrationInfo, RelayChainAccountId, RewardInfo, RoundInfo, VestingBlockNumber
+ Relay genesis hash:  0xe1ea3ab1d46ba8f4898b6b4b9c54ffc05282d299f89e84bd0fd08067758c9443
+ Relay chain name:  "Moonbase Relay Testnet"
+ Para genesis hash:  0x91bc6e169807aaa54802737e1c504b2577d4fafedd5a02c10293b1cd60e39527
+ Para chain name:  "Moonbase Alpha"
+ Get metadata of relay chain...
+ Build event decoder for relay chain...
+ Deploy relay chain event decoder...
+------ transactionId:  0x10a294d5bfd654bef930cd09ca42302376e3e6ae3220c4e7be4db71c82c01e4d
+ Get metadata of para chain...
+ Build event decoder for para chain...
+ Deploy para chain event decoder...
+------ transactionId:  0x81743bd67cef1d6848911c4bf58db47f8b3e39232a646246e170a486ac315b3e
+ Build para chain BMV...
+ Deploy para chain BMV...
+------ transactionId:  0x6122c412df795945fca8b638fd6588fb686273e6f8735da2d679eb39773fc690
+
+                --------------------- DONE ----------------------
+- Relay event decoder score address:         cx2e0ba47b2df8fc78af75001e1eb06732ea71dfde
+- Para event decoder score address:          cx447ee0788b359e571a283f415a820b1977bf0713
+- Para chain bmv score address:    cxb358e6a851909bd3215e1ee42cd79f0a676b65cc
+```
+
+#### Set Para BMV to BMC contract:
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method addVerifier --param _net=0x507.pra --param _addr=cxb358e6a851909bd3215e1ee42cd79f0a676b65cc --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xf52cce4260af2b92210ddaa9d8035e95d7a2e440ffc8f921fdb651fdf1f3f064
+```
+
+#### Add parachain link to BMC:
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method addLink --param _link=btp://0x507.pra/0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x58c83e52228eef9f0fe9b3059b0f04b8361d3c7c65a1aa4dadaf07a5ffb2671a
+```
+
+#### Config parachain link of BMC:
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method setLinkRotateTerm --param _link=btp://0x507.pra/0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356 --param _block_interval=12 --param _max_agg=10 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x1b7c9b73bf066bdaac269713a1084723f8407c0a0f3a87eae2a78a64b4516749
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method setLinkDelayLimit --param _link=btp://0x507.pra/0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356 --param _value=2 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x2cb56e3a91ecc43c4268fc1eab50859b09daefd2656b4c741ec4c11a6eece00e
+```
+
+#### add relay address to parachain link of BMC:
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method addRelay --param _link=btp://0x507.pra/0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356 --param _addr=hx2dbd4f999f0e6b3c017c029d569dd86950c23104 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdabca08cf388c374bf61e05dd32a2d6bde0f37e2d1225a447a144662ecc73b13
+```
+
+#### Deploy IRC31 token contract:
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy javascore/javaee-tokens/build/libs/irc31-0.1.0-optimized.jar --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719 --content_type application/java
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xbfb1c886274b972534d9cccd3e5b07f5ab6258428400d5de4e5b39232fa00236
+```
+
+#### Deploy BSH
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/nativecoin-0.1.0-optimized.jar \
+    --key_store godWallet.json --key_password gochain \
+    --nid 0x42 --step_limit 3519157719 \
+    --content_type application/java \
+    --param _irc31=cxc1e92e175e1e5f98edf62b192ae051caae994a97 \
+    --param _bmc=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
+    --param _name=ICX
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
+```
+
+#### Register coin names to BSH
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method register --param _name=DEV --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xa6cacdc4a8783f62dd981999f3ab7c08340618c8f01e8f5c84369e15c72831d9
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method register --param _name=BTC --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x41845171790b40df01dd2838e39569020ff24498034ac5c54eaeb28e33488d39
+```
+
+#### Set BSH fee ratio
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method setFeeRatio --param _feeNumerator=1000 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xddfb4763b746b44b8ec4540824425dc2b6dcf760b4630f5f3a2611e4de82690b
+```
+
+#### Add BSH service to BMC
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 --method addService --param _svc=nativecoin --param _addr=cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x9ba88bbb9907cf1fe29ff2b50706c97d6fd08d09ea6394138444c8d34b40dd3d
+```
+
+#### Add BSH address to owner of IRC31 contract
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cxc1e92e175e1e5f98edf62b192ae051caae994a97 --method addOwner \
+      --key_store godWallet.json --key_password gochain \
+      --nid 0x42 --step_limit 3519157719 \
+      --param _addr=cx047d8cd08015a75deab90ef5f9e0f6878d5563bd
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x3f2ec91804204a9e3e3faa5f40b4674b72b217257eb389b4ccc13c703ef5f5f7
+```
 
 ### Transfer ICX to DEV
 
@@ -716,4 +911,11 @@ truffle(moonbase)> {
   logs: []
 }
 
+```
+### Transfer ICX to Moonbeam Parachain
+
+```
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method transferNativeCoin --param _to=btp://0x507.pra/0xD07d078373bE60dd10e35f352559ef1f25029DAf --value 1000000000000000000 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x815271f1c27ebefa1936c282a998571ee5810221123058b37ab453435d9d92f0
 ```
