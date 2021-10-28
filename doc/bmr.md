@@ -6,6 +6,20 @@
 * Monitor BTP events  
 * Gather proofs for the events
 
+BTP use a trustless verification method to prove a transaction origin and destination. Firstly, origin network will use [pbft](#practical-byzantine-fault-tolerance-pbft) algorithm to finalize the given block, at the precommits, the neccessary amount of validator/block producer signature will be on BlockHeader. If the amount is sufficient, the BlockHeader is considered as finalized by the origin network. From the verified BlockHeader, a field of State/Receipt/Storage hash contains the Merkle Proof root of events, using this field we can have a prove the validity of BTP event.
+
+```
+RelayMessage
+    BlockUpdates -> BlockHeader + Votes
+    BlockProofs -> BlockHeader + MTA witness
+    ReceiptProofs -> Events contains (BTPMessage) + StateRoot in BlockHeader
+```
+
+### Practical byzantine fault tolerance (pbft)
+
+- Votes: how validators/block producers confirm the finality of a block at PreCommit stage. Reference to thesis (https://www.microsoft.com/en-us/research/wp-content/uploads/2017/01/thesis-mcastro.pdf) thes
+- Depends on each chain implementation, for ICON please check [icon doc](icon.md), for Polkadot parachain with Frontier support please check [parachain doc](polkadot_parachain_with_frontier.md)
+
 ## Integrated blockchain
 * [ICON](icon.md)
 * [ICON Enterprise Edition](iconee.md)
@@ -16,10 +30,10 @@
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
 * [Keystore](keystore.md)
 * [PoC ICON-ICON Tutorial](tutorial.md)
-
 ## Overall architecture
 
-TODO
+![Diagram](./img/bmr_overall_architecture.drawio.svg)
+
 ## Quick start
 
 If you already installed docker and docker-compose and want to take a quick view.   
