@@ -46,5 +46,8 @@ RUN chmod +x /provision.sh
 RUN chmod +x /entrypoint.sh
 RUN chmod +x /btpsimple/bin/wait-for-it.sh
 
+#user - userid & group  available in sudoers list in the btpsimple base image
+RUN chown -R user ${BTPSIMPLE_BASE_DIR}
 WORKDIR /btpsimple/config
+USER user
 ENTRYPOINT ["entrypoint.sh"]

@@ -44,9 +44,13 @@ build_image() {
     cd ${BUILD_DIR}
 
     echo "Building image ${TAG}"
+    USER_ID=$(id -u)
+    GROUP_ID=$(id -g)
     docker build \
         --build-arg BASE_IMAGE="${BASE_IMAGE:-alpine:${ALPINE_VERSION}}" \
         --build-arg VERSION="${BIN_VERSION}" \
+        --build-arg USER_ID="${USER_ID}" \
+        --build-arg GROUP_ID="${GROUP_ID}" \
         --tag ${TAG} .
     local result=$?
 

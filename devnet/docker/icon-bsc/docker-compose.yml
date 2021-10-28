@@ -7,6 +7,8 @@ services:
       args:
         BTPSIMPLE_VERSION: latest
         GOLOOP_IMAGE: goloop:latest
+        USER_ID: ${USER_ID}
+        GROUP_ID: ${GROUP_ID}
     ports:
       - "9080:9080"
     volumes:
@@ -29,6 +31,9 @@ services:
     container_name: btp-icon
     build:
       context: .
+      args:
+        USER_ID: ${USER_ID}
+        GROUP_ID: ${GROUP_ID}
     volumes:
       - ./work:/btpsimple/config
       - ./work:/btpsimple/data
@@ -58,6 +63,7 @@ services:
   btp-bsc:
     container_name: btp-bsc
     image: btpsimple:latest
+    user: user
     volumes:
       - ./work:/btpsimple/config
       - ./work:/btpsimple/data
