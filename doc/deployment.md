@@ -45,6 +45,8 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bmc
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 BMC_BTP_NET="0x507.pra" \
 truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
+
+### Output
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 
 Compiling your contracts...
@@ -65,87 +67,87 @@ Starting migrations...
 
    Deploying 'BMCManagement'
    -------------------------
-   > transaction hash:    0x3b70b66444835aa3b2f95f52cf4309302a2b770a37e756c19a1fc37c20b33e42
-   > Blocks: 5            Seconds: 72
-   > contract address:    0x241678456eDf8700B8546e2B8f1111cfC7454434
-   > block number:        1041103
-   > block timestamp:     1635316512
+   > transaction hash:    0xb7b6461bb87f0818aa5a62af82a0783542837923547be174df053a2c4077577d
+   > Blocks: 2            Seconds: 18
+   > contract address:    0x8efAe8b69095b6467859496624ea31468142A2D8
+   > block number:        1047640
+   > block timestamp:     1635402936
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.439356922469765665
+   > balance:             763.373698834469765665
    > gas used:            5036796 (0x4cdafc)
-   > gas price:           1 gwei
+   > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.005036796 ETH
+   > total cost:          0.010073592 ETH
 
 
    Deploying 'ProxyAdmin'
    ----------------------
-   > transaction hash:    0x1bcb6bd2f0fb3dff70fe023fbce4de29ccb812d492d4059bc01bc36b87c0086c
-   > Blocks: 27           Seconds: 425
-   > contract address:    0x7C1aCb94154483FD02954A669C15da46E7Df1994
-   > block number:        1041131
-   > block timestamp:     1635316950
+   > transaction hash:    0x45db47377061fbd9a1d36801cb22a06617147800a0f0af4b79025235d35d4758
+   > Blocks: 2            Seconds: 16
+   > contract address:    0xf070CDa0F732562e25402e6b31cE37817C43ED26
+   > block number:        1047642
+   > block timestamp:     1635402960
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.438874202469765665
+   > balance:             763.372733394469765665
    > gas used:            482720 (0x75da0)
-   > gas price:           1 gwei
+   > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.00048272 ETH
+   > total cost:          0.00096544 ETH
 
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0x924159796c4b99e295e8e78ee9c0838c95923ffd932bbeae2881231b6c158a7c
-   > Blocks: 6            Seconds: 92
-   > contract address:    0x95AAd731c97B93f92a205311687469769BC0Ec53
-   > block number:        1041138
-   > block timestamp:     1635317058
+   > transaction hash:    0x5fa1efe21821b3c5048fd4543609379be19fbdfa9be4dfcb3464fb16cb793e82
+   > Blocks: 2            Seconds: 16
+   > contract address:    0xb3aD0707F494393A7d922F14A412E3518eD0B6bc
+   > block number:        1047644
+   > block timestamp:     1635402984
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.438214497469765665
-   > gas used:            659705 (0xa10f9)
-   > gas price:           1 gwei
+   > balance:             763.371413960469765665
+   > gas used:            659717 (0xa1105)
+   > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.000659705 ETH
+   > total cost:          0.001319434 ETH
 
 
    Deploying 'BMCPeriphery'
    ------------------------
-   > transaction hash:    0xd6df2350c6140c4042e7e5741f9572b1731f74f76adc2d6285be0bb994426903
-   > Blocks: 20           Seconds: 261
-   > contract address:    0xE6c9A0e1593de940A81a719529ED793f349D55cE
-   > block number:        1041158
-   > block timestamp:     1635317328
+   > transaction hash:    0x1dcb9f5d00f3b7782c19b6c0a2c042cd6c80472ad37c16687e81815673b8ac3b
+   > Blocks: 1            Seconds: 12
+   > contract address:    0x4394a448c7032C93C3d7dDcde65Ef21c72804272
+   > block number:        1047646
+   > block timestamp:     1635403008
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.433549867469765665
+   > balance:             763.362084700469765665
    > gas used:            4664630 (0x472d36)
-   > gas price:           1 gwei
+   > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.00466463 ETH
+   > total cost:          0.00932926 ETH
 
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0xece8046174286068ee877ae715d6fdd01a3ec4fef5692787cf0b0d010a352042
-   > Blocks: 5            Seconds: 52
-   > contract address:    0x6047341C88B9A45957E9Ad68439cA941D464c706
-   > block number:        1041164
-   > block timestamp:     1635317400
+   > transaction hash:    0x257611de4463ee1efd51ba2d9398bfc5c224b8fb8867d1a0452ea1f9c93eff2f
+   > Blocks: 1            Seconds: 12
+   > contract address:    0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356
+   > block number:        1047648
+   > block timestamp:     1635403032
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.432808668469765665
-   > gas used:            741199 (0xb4f4f)
-   > gas price:           1 gwei
+   > balance:             763.360601754469765665
+   > gas used:            741473 (0xb5061)
+   > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.000741199 ETH
+   > total cost:          0.001482946 ETH
 
    > Saving artifacts
    -------------------------------------
-   > Total cost:          0.01158505 ETH
+   > Total cost:         0.023170672 ETH
 
 
 Summary
 =======
 > Total deployments:   5
-> Final cost:          0.01158505 ETH
+> Final cost:          0.023170672 ETH
 
 
 ```
@@ -155,11 +157,12 @@ Summary
 ```bash
 truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
-truffle(moonbase)> let bmcP = await BMCPeriphery.deployed()
-bmundefined
-truffle(moonbase)> bmcP.address
-'0x6047341C88B9A45957E9Ad68439cA941D464c706'
+truffle(moonbase)> let bmcPer = await BMCPeriphery.deployed()
+undefined
+truffle(moonbase)> bmcPer.address
+'0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356'
 truffle(moonbase)> .exit
+
 ```
 ### Deploy NativeCoin BSH
 
@@ -172,14 +175,14 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bsh
 # @params:
 # - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
 # This address is queried after deploying BMC contracts
-# For example: BMC_PERIPHERY_ADDRESS = 0x5CC307268a1393AB9A764A20DACE848AB8275c46
+# For example: BMC_PERIPHERY_ADDRESS = 0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356
 # - BSH_COIN_NAME: a native coin name of Moonbase Alpha Testnet Network - DEV
 # - BSH_COIN_FEE: a charging fee ratio of each request, e.g. 100/10000 = 1%
 # - BSH_SERVICE: a service name of BSH contract, e.g. 'CoinTransfer'
 # This service name is unique in one network. And it must be registered to BMC contract to activate
 # BMC contract checks its service name whether it's already existed
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-BMC_PERIPHERY_ADDRESS="0x6047341C88B9A45957E9Ad68439cA941D464c706" \
+BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
 BSH_COIN_URL="https://moonbeam.network/" \
 BSH_SERVICE="nativecoin" \
 BSH_COIN_NAME="DEV" \
@@ -188,6 +191,7 @@ BSH_FIXED_FEE="500000" \
 truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 
 ### Output
+truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 
 Compiling your contracts...
@@ -208,13 +212,13 @@ Starting migrations...
 
    Deploying 'BSHCore'
    -------------------
-   > transaction hash:    0x8c7dba484873a17d6f40e2a2accb837ea28b4f64653cab9b838505ebd910321a
+   > transaction hash:    0x7f809e38445fc33c0a6f98b8ddd0575de35dd3ff1b4325540d8069c8ff5f26c5
    > Blocks: 2            Seconds: 16
-   > contract address:    0xBdeBcF714c299A10308fdbCfE6cEaff785110D0E
-   > block number:        1041264
-   > block timestamp:     1635318768
+   > contract address:    0xde4C26226BD6258Cc699CE9E88cc798C21B4b94D
+   > block number:        1047668
+   > block timestamp:     1635403302
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.395349962469765665
+   > balance:             763.351025576469765665
    > gas used:            4740289 (0x4854c1)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -223,13 +227,13 @@ Starting migrations...
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0xa5f58e39767f28e68044fec5b8f4ad511b2e688d30b98c89d065990bc8a73bd1
-   > Blocks: 2            Seconds: 28
-   > contract address:    0x378DFcf210F93E2d6E1ef5C0d357Be5E6478581E
-   > block number:        1041267
-   > block timestamp:     1635318810
+   > transaction hash:    0x06de84189e02f396c89cd59175652b2216c9f0c0d3146f6610baeb0305ff1700
+   > Blocks: 2            Seconds: 24
+   > contract address:    0x2a17B6814a172419a5E84d7B746aBEb95a84E76B
+   > block number:        1047671
+   > block timestamp:     1635403338
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.393571172469765665
+   > balance:             763.349246786469765665
    > gas used:            889395 (0xd9233)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -238,13 +242,13 @@ Starting migrations...
 
    Deploying 'BSHPeriphery'
    ------------------------
-   > transaction hash:    0x2c7b55e4b6b120df701cef7e516f690355c8747b7483c98c88f92808fee9f35b
-   > Blocks: 2            Seconds: 28
-   > contract address:    0x759F7953825f3EF26Dc2E121b57Fd5b61654751E
-   > block number:        1041270
-   > block timestamp:     1635318852
+   > transaction hash:    0x09400aa94dbb7e16ab0aaccde2b835906b47e579962abc647b283429cf42eec6
+   > Blocks: 2            Seconds: 20
+   > contract address:    0x909174976471750601cBA5BcBEe24465B6D32C2d
+   > block number:        1047673
+   > block timestamp:     1635403368
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.386057532469765665
+   > balance:             763.341733146469765665
    > gas used:            3756820 (0x395314)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -253,13 +257,13 @@ Starting migrations...
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0x09b1c18a82e59b659143fb64d556c7296c9e12a26c060295da08a715bcd29b22
-   > Blocks: 1            Seconds: 12
-   > contract address:    0x0077e7c6e32201081359d7dB8976139037935332
-   > block number:        1041273
-   > block timestamp:     1635318888
+   > transaction hash:    0x72b9aa4a36b1a843618d49ecc2fb4b26a89899bf93469c4dce93454a170dd4e1
+   > Blocks: 2            Seconds: 32
+   > contract address:    0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754
+   > block number:        1047675
+   > block timestamp:     1635403410
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.384729718469765665
+   > balance:             763.340405332469765665
    > gas used:            663907 (0xa2163)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -275,6 +279,7 @@ Summary
 > Total deployments:   4
 > Final cost:          0.020100822 ETH
 
+
 ```
 
 ### Get BSH Periphery proxy address
@@ -285,15 +290,15 @@ truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 truffle(moonbase)> let bshP = await BSHPeriphery.deployed()
 undefined
 truffle(moonbase)> bshP.address
-'0x0077e7c6e32201081359d7dB8976139037935332'
+'0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754'
 truffle(moonbase)> .exit
 ```
 
 
 ### Deloy BMV
 
-For example the next BTP address is: `btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9`
-And the offset is: `5121400`
+For example the next BTP address is: `btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3`
+And the offset is: `5167618`
 
 ```bash
 yarn install --production --cwd $SOLIDITY_DIST_DIR/bmv
@@ -307,27 +312,29 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bmv
 # For example: BMC_PERIPHERY_ADDRESS = 0x6047341C88B9A45957E9Ad68439cA941D464c706
 # - BMV_ICON_NET: Chain ID and name of a network that BMV is going to verify BTP Message
 # - BMV_ICON_INIT_OFFSET: a block height when ICON-BMC was deployed
-# - BMV_ICON_LASTBLOCK_HASH: a hash of the above block
 # - BMV_ICON_ENCODED_VALIDATORS: a result of ICON JSON-RPC method `icx_getDataByHash` with the input is
 # PreviousBlockHeader.NextValidatorHash. So, to get this param for block N, you must get BlockHeader of N - 1
 # User can execute to ge the result : 
 #
 # make iconvalidators
 # 
-# GOLOOP_RPC_URI="https://btp.net.solidwallet.io/api/v3/icon_dex" bin/iconvalidators build 5121400
-#
+# GOLOOP_RPC_URI="https://btp.net.solidwallet.io/api/v3/icon_dex" bin/iconvalidators build 5167618
+# 
+# - BMV_ICON_LASTBLOCK_HASH: a hash of the above block
+# GOLOOP_RPC_URI="https://btp.net.solidwallet.io/api/v3/icon_dex" goloop rpc blockbyheight 5167618 | jq -r '.block_hash'
+# Remember adding 0x 
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-BMC_PERIPHERY_ADDRESS="0x6047341C88B9A45957E9Ad68439cA941D464c706" \
+BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
 BMV_ICON_NET="0x42.icon" \
 BMV_ICON_ENCODED_VALIDATORS="0xf8589500edeb1b82b94d548ec440df553f522144ca83fb8d9500d63c4c73b623e97f67407d687af4efcfe486a51595007882dace25ff7e947d3a25178a2a1162874cfddc95000458d8b6f649a9e005963dc9a72669c89ed52d85" \
-BMV_ICON_INIT_OFFSET="5121400" \
-BMV_ICON_INIT_ROOTSSIZE="10" \
-BMV_ICON_INIT_CACHESIZE="10" \
-BMV_ICON_LASTBLOCK_HASH="0x5ca410405ec96b8d30706eeaed16b709ae8fd98d4e4c1e787bb0599f5050bf8c" \
+BMV_ICON_INIT_OFFSET="5167618" \
+BMV_ICON_INIT_ROOTSSIZE="12" \
+BMV_ICON_INIT_CACHESIZE="12" \
+BMV_ICON_LASTBLOCK_HASH="0x2b666571f5bb83147d6a000326a88d0a35c9e2c7f25a88b7dfbc7325ba8ee927" \
 truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmv
 
 ### Output
-> Warning: possible unsupported (undocumented in help) command line option: --working_directory
+> Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 
 Compiling your contracts...
 ===========================
@@ -347,13 +354,13 @@ Starting migrations...
 
    Deploying 'DataValidator'
    -------------------------
-   > transaction hash:    0x23259df49f6021d0049e763670452254730dfb596acead6974bed6e808dee6fb
-   > Blocks: 2            Seconds: 16
-   > contract address:    0x1D36993A37818215D019B6C3E4f1c86e7b69b9C7
-   > block number:        1041207
-   > block timestamp:     1635317994
+   > transaction hash:    0x77b237b9ae256630356431b086db0ac0e628f23abead3de3c0934a6605158426
+   > Blocks: 2            Seconds: 21
+   > contract address:    0xE8F00eA24C53C1990bd365Ad41b1C70eE62676cc
+   > block number:        1047697
+   > block timestamp:     1635403686
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.428520040469765665
+   > balance:             763.336069806469765665
    > gas used:            2120414 (0x205ade)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -362,13 +369,13 @@ Starting migrations...
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0xd0c6566f8b168cacb71ad4b96b3eea533c4f68c8e8c48d0ac6cb7d79e131e3ef
-   > Blocks: 2            Seconds: 29
-   > contract address:    0xE5A9cf37D23D781e458AF4ADd6901Bc9a4819EDb
-   > block number:        1041219
-   > block timestamp:     1635318144
+   > transaction hash:    0xc33701b3c3cc24ce8e700e056e28631cf7140214f1cfa61c69576765418e9191
+   > Blocks: 1            Seconds: 12
+   > contract address:    0x8ceD43FDF0Fe705E10965637e40b7b3F084E3c40
+   > block number:        1047699
+   > block timestamp:     1635403710
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.417367332469765665
+   > balance:             763.334834690469765665
    > gas used:            617558 (0x96c56)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -377,13 +384,13 @@ Starting migrations...
 
    Deploying 'BMV'
    ---------------
-   > transaction hash:    0xa39258f623f4ae8aa9719598737aef083a986d84834664aa8ba6c0e5ec1c8ab9
-   > Blocks: 2            Seconds: 18
-   > contract address:    0x91316D2E058b2d34E3c45Ee117BE798A97A5202c
-   > block number:        1041221
-   > block timestamp:     1635318180
+   > transaction hash:    0x7114ebec49ac1463b29a12b6c4b533b0a40cf8c65e0f3da6eb97563a9d8b4c9b
+   > Blocks: 4            Seconds: 48
+   > contract address:    0xbAc7d8f664c6E5CeDf9fe3335A40CB08d1100871
+   > block number:        1047704
+   > block timestamp:     1635403770
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.408684856469765665
+   > balance:             763.326152214469765665
    > gas used:            4341238 (0x423df6)
    > gas price:           2 gwei
    > value sent:          0 ETH
@@ -392,28 +399,27 @@ Starting migrations...
 
    Deploying 'TransparentUpgradeableProxy'
    ---------------------------------------
-   > transaction hash:    0x212edf8b030c8f2317d74c83f3efa16a86ce75a9d047de494b4b3a61242ee93b
-   > Blocks: 1            Seconds: 20
-   > contract address:    0xD5002Ff9197e27dE02E88FF65e11656e9DccabAA
-   > block number:        1041224
-   > block timestamp:     1635318228
+   > transaction hash:    0xf715d23dd0dea30a82b5b10c526207f0033166d0f4e8369a837ba9ff294b8d3c
+   > Blocks: 3            Seconds: 28
+   > contract address:    0x7D25dc35670873E90bcCa0096FAEbeE576911F52
+   > block number:        1047707
+   > block timestamp:     1635403806
    > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
-   > balance:             833.406432734469765665
-   > gas used:            1126061 (0x112ead)
+   > balance:             763.323900116469765665
+   > gas used:            1126049 (0x112ea1)
    > gas price:           2 gwei
    > value sent:          0 ETH
-   > total cost:          0.002252122 ETH
+   > total cost:          0.002252098 ETH
 
    > Saving artifacts
    -------------------------------------
-   > Total cost:         0.012169714 ETH
+   > Total cost:         0.016410518 ETH
 
 
 Summary
 =======
-> Total deployments:   3
-> Final cost:          0.012169714 ETH
-
+> Total deployments:   4
+> Final cost:          0.016410518 ETH
 
 ```
 
@@ -425,16 +431,17 @@ truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmv
 truffle(moonbase)> let bmv = await BMV.deployed()
 undefined
 truffle(moonbase)> bmv.address
-'0xD5002Ff9197e27dE02E88FF65e11656e9DccabAA'
+'0x7D25dc35670873E90bcCa0096FAEbeE576911F52'
 truffle(moonbase)> .exit
 ```
 
 ### Configure Contracts
 
 ```bash
+# - CURRENTLINK_BMV_ADDRESS: from Get BMV address from proxy
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 NEXTLINK_BTP_NET="0x42.icon" \
-CURRENTLINK_BMV_ADDRESS="0xD5002Ff9197e27dE02E88FF65e11656e9DccabAA" \
+CURRENTLINK_BMV_ADDRESS="0x7D25dc35670873E90bcCa0096FAEbeE576911F52" \
 truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_verifier.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
 
 ### Output
@@ -442,19 +449,19 @@ truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_verifier.js --network moonbase -
 Using network 'moonbase'.
 
 {
-  tx: '0x8358e48a09505e47224126dbc1dd02bde9787a69fceb6ea40710594af1275f62',
+  tx: '0x816de0f01d6817de82bd68c0e254086ed2d58599fcc5583bb051cd8a0b76a9aa',
   receipt: {
-    blockHash: '0x9dfb86c3faea8936937c81250b05c981884e0739f71fd3cd2759add147a631d4',
-    blockNumber: 1041240,
+    blockHash: '0xd06a77b0d11b89ce36e3ac6345da9fae780bf9f4d3cea500312a54782887a5ee',
+    blockNumber: 1047716,
     contractAddress: null,
-    cumulativeGasUsed: 91134,
+    cumulativeGasUsed: 91146,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
-    gasUsed: 91134,
+    gasUsed: 91146,
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0x8358e48a09505e47224126dbc1dd02bde9787a69fceb6ea40710594af1275f62',
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0x816de0f01d6817de82bd68c0e254086ed2d58599fcc5583bb051cd8a0b76a9aa',
     transactionIndex: 0,
     rawLogs: []
   },
@@ -462,17 +469,22 @@ Using network 'moonbase'.
 }
 ```
 
-For example the next BTP address is: `btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9`
-And the offset is: `5121400`
+For example the next BTP address is: `btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3`
+And the offset is: `5167618`
+And deployer repair the keystore with address `126ad520629a0152b749af26d5fd342cb67ac6ce`
 
 ```bash
 # Deploy on what relay you want to add
+# - NEXTLINK_BTP_ADDRESS: the BMC address from 0x42.icon network
+# - NEXTLINK_BLOCK_INTERVAL: the block interval from the deploy network
+# - NEXTLINK_ROTATION_MAX_AGGERATION: the max period of BMR rotation algorithm to 
+# - NEXTLINK_ROTATION_DELAY_LIMIT: expect delay in sending transactions RelayMessage
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-NEXTLINK_BTP_ADDRESS="btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9" \
+NEXTLINK_BTP_ADDRESS="btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3" \
 NEXTLINK_BLOCK_INTERVAL=12 \
 NEXTLINK_ROTATION_MAX_AGGERATION=10 \
 NEXTLINK_ROTATION_DELAY_LIMIT=3 \
-RELAY_ADDRESSES="0x1e9eb23057adf446777c7fab1a6c565cb8977ab5" \
+RELAY_ADDRESSES="0x126ad520629a0152b749af26d5fd342cb67ac6ce" \
 truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_link_set_link_add_relay.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
 
 ### Output
@@ -480,29 +492,29 @@ truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_link_set_link_add_relay.js --net
 Using network 'moonbase'.
 
 {
-  tx: '0x2977c6306e35520b9bea9e75c5416cdcaae3f0833961e9097fe3dec3a1ca7ac9',
+  tx: '0x3a17d026cadeefc4c33853aa5d546ef8d88bcbb949baeb519e33c0647d33867e',
   receipt: {
-    blockHash: '0x4dd19d38b9fb373e5fea7c0a7c5e69220482952bddf6177888b23f7eaea58d4f',
-    blockNumber: 1041246,
+    blockHash: '0xbd7497080cce34cf6d9fba69ac7e2222cc37fa600ac1bd5b85a9e6d885dc5ae9',
+    blockNumber: 1047729,
     contractAddress: null,
-    cumulativeGasUsed: 677711,
+    cumulativeGasUsed: 457359,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
     gasUsed: 436359,
     logs: [],
-    logsBloom: '0x00000002000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000001000000001000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    logsBloom: '0x00000002000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000200000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0x2977c6306e35520b9bea9e75c5416cdcaae3f0833961e9097fe3dec3a1ca7ac9',
-    transactionIndex: 2,
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0x3a17d026cadeefc4c33853aa5d546ef8d88bcbb949baeb519e33c0647d33867e',
+    transactionIndex: 1,
     rawLogs: [ [Object] ]
   },
   logs: []
 }
 {
-  tx: '0xe99b43a7622fc2d5646e582f9b1bac2ba324e545d346859a169115ad7995693b',
+  tx: '0xaa1f9cb7097dddffc205fc60ed0599b4e2fab3eae184f4dabf583940a1773510',
   receipt: {
-    blockHash: '0xab9b1c3f0ce833b01aa1a2f4067ca110609e0ada9ce8dab7cfd2b74e7ef19ad9',
-    blockNumber: 1041247,
+    blockHash: '0x032a2c81f570a6a62c2205de1421ff3c0a78b2cda3d024f0dda05ab18db2de98',
+    blockNumber: 1047733,
     contractAddress: null,
     cumulativeGasUsed: 179122,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
@@ -510,18 +522,18 @@ Using network 'moonbase'.
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0xe99b43a7622fc2d5646e582f9b1bac2ba324e545d346859a169115ad7995693b',
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0xaa1f9cb7097dddffc205fc60ed0599b4e2fab3eae184f4dabf583940a1773510',
     transactionIndex: 0,
     rawLogs: []
   },
   logs: []
 }
 {
-  tx: '0x876c161ae5b2ac55b39a001fdcc6348e02eaa58910712675fd6d13a0645e7b55',
+  tx: '0x87913e2186b32407e259025fdacf7534fffc772358c3ff11fe4b1fbc897c704e',
   receipt: {
-    blockHash: '0x59a26a5ea87653a6f0a2ba35707cc83b0c03d8ad9ddec653d15d9fa3f9a71db2',
-    blockNumber: 1041249,
+    blockHash: '0xe7ed1ec83d7fa93fc6b7c5d796eebfc9c024880f30817b237af7009f07010955',
+    blockNumber: 1047745,
     contractAddress: null,
     cumulativeGasUsed: 94482,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
@@ -529,8 +541,8 @@ Using network 'moonbase'.
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0x876c161ae5b2ac55b39a001fdcc6348e02eaa58910712675fd6d13a0645e7b55',
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0x87913e2186b32407e259025fdacf7534fffc772358c3ff11fe4b1fbc897c704e',
     transactionIndex: 0,
     rawLogs: []
   },
@@ -541,7 +553,7 @@ Using network 'moonbase'.
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 CURRENTLINK_BSH_SERVICENAME="nativecoin" \
-CURRENTLINK_BSH_ADDRESS="0x0077e7c6e32201081359d7dB8976139037935332" \
+CURRENTLINK_BSH_ADDRESS="0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754" \
 truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
 
 ### Output
@@ -549,10 +561,10 @@ truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbas
 Using network 'moonbase'.
 
 {
-  tx: '0xe6272c79c97401820ad4ca9d2352b574873f623e39c5bcd250cb98ddeb5062c0',
+  tx: '0xc1f4a4806bf29f9fb34d4e6e5d12f279b0676fb556fde24142c21aa7b1b71bb3',
   receipt: {
-    blockHash: '0x19285245bebeedb35ea42d904f897ce30fc5e113e1a53e907ae528e1d63a5587',
-    blockNumber: 1041285,
+    blockHash: '0x8521521ca0ee82dc09f5080f0c8f0a330c2acad84ceef129f873a5c0e11017c3',
+    blockNumber: 1047753,
     contractAddress: null,
     cumulativeGasUsed: 112049,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
@@ -560,8 +572,8 @@ Using network 'moonbase'.
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0xe6272c79c97401820ad4ca9d2352b574873f623e39c5bcd250cb98ddeb5062c0',
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0xc1f4a4806bf29f9fb34d4e6e5d12f279b0676fb556fde24142c21aa7b1b71bb3',
     transactionIndex: 1,
     rawLogs: []
   },
@@ -580,20 +592,20 @@ truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase 
 Using network 'moonbase'.
 
 {
-  tx: '0xe60709b5820004b104e802f241e2d096b58f726679f61717f23d0b4f1488406a',
+  tx: '0x1abea0a03be823bd172c04b4b68dc1d9b8ed45db43b4c12ef262eac1cb6f66bb',
   receipt: {
-    blockHash: '0x0e2bff43b2138568e2d67c567ed90777408787e140954b356072dfc126151444',
-    blockNumber: 1041289,
+    blockHash: '0x457271a8b995bd270b8db2c6b71409f89149ec9f016a8c289262896859faa7e4',
+    blockNumber: 1047758,
     contractAddress: null,
-    cumulativeGasUsed: 311949,
+    cumulativeGasUsed: 70597,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
     gasUsed: 70597,
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x378dfcf210f93e2d6e1ef5c0d357be5e6478581e',
-    transactionHash: '0xe60709b5820004b104e802f241e2d096b58f726679f61717f23d0b4f1488406a',
-    transactionIndex: 2,
+    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
+    transactionHash: '0x1abea0a03be823bd172c04b4b68dc1d9b8ed45db43b4c12ef262eac1cb6f66bb',
+    transactionIndex: 0,
     rawLogs: []
   },
   logs: []
@@ -612,36 +624,29 @@ PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" truffle console --network moonbase --working_
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 truffle(moonbase)> let bmcM = await BMCManagement.deployed()
 undefined
-truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9")
-[
-  '0x126AD520629a0152b749Af26d5fd342Cb67Ac6CE',
-  '0x1e9EB23057adf446777c7FAB1A6c565cB8977Ab5'
-]
-truffle(moonbase)> await bmcM.addRelay("btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9", ["0x126ad520629a0152b749af26d5fd342cb67ac6ce", "0x723af972757df56573ab116bfdac775420f844a2"])
+truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3")
+truffle(moonbase)> await bmcM.addRelay("btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3", ["0x126ad520629a0152b749af26d5fd342cb67ac6ce"])
 {
-  tx: '0xf40332405bc4c697f0e7411c22e9679746f87bfea231c21c40df339d8a681fb1',
+  tx: '0x87913e2186b32407e259025fdacf7534fffc772358c3ff11fe4b1fbc897c704e',
   receipt: {
-    blockHash: '0xd8b2476fa69f46b956d1fe20738a31558d9a428ba33729a5ec2c1b631889d01d',
-    blockNumber: 1041862,
+    blockHash: '0xe7ed1ec83d7fa93fc6b7c5d796eebfc9c024880f30817b237af7009f07010955',
+    blockNumber: 1047745,
     contractAddress: null,
-    cumulativeGasUsed: 2401865,
+    cumulativeGasUsed: 94482,
     from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
-    gasUsed: 42814,
+    gasUsed: 94482,
     logs: [],
     logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x95aad731c97b93f92a205311687469769bc0ec53',
-    transactionHash: '0xf40332405bc4c697f0e7411c22e9679746f87bfea231c21c40df339d8a681fb1',
-    transactionIndex: 2,
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0x87913e2186b32407e259025fdacf7534fffc772358c3ff11fe4b1fbc897c704e',
+    transactionIndex: 0,
     rawLogs: []
   },
   logs: []
 }
-truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx924f8f84efd1fde23356da451ed226590bca81c9")
-[
-  '0x126AD520629a0152b749Af26d5fd342Cb67Ac6CE',
-  '0x723af972757Df56573Ab116Bfdac775420F844a2'
-]
+truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3")
+[ '0x126AD520629a0152b749Af26d5fd342Cb67Ac6CE' ]
 ```
 ### JAVAScore
 
@@ -656,55 +661,55 @@ truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 > Warning: possible unsupported (undocumented in help) command line option: --working_directory
 truffle(moonbase)> let bshCore = await BSHCore.deployed()
 undefined
-> await bshCore.setApprovalForAll(bshCore.address, true, {from: accounts[0]})
+truffle(moonbase)> await bshCore.setApprovalForAll(bshCore.address, true, {from: accounts[0]})
 {
-  tx: '0x2b3010a60b52559b642a6635740c301a18ab60e3fb69140a5fb7b701d636e86a',
+  tx: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
   receipt: {
-    blockHash: '0xbb12024299ee5179172e2845cf149096001789ab3e72494322e676f494a0b13d',
-    blockNumber: 1041594,
+    blockHash: '0x814fea05ae02c7d8cfcefe8028ad7780d64a5cf05f7d6046bcc7cfd5e7001151',
+    blockNumber: 1047774,
     contractAddress: null,
-    cumulativeGasUsed: 5164682,
+    cumulativeGasUsed: 48353,
     from: '0xd07d078373be60dd10e35f352559ef1f25029daf',
     gasUsed: 48353,
     logs: [ [Object] ],
-    logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000002000000000000000000000000c00000000000000000000000000000000000100000000000000000140010000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000200800000000000000000000000000000000000000000000000000000000',
+    logsBloom: '0x00000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000400000000000000000000000000010000000100000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000025000000000000000000200800000000000000000000000000000000000000000000000000000000',
     status: true,
-    to: '0x378dfcf210f93e2d6e1ef5c0d357be5e6478581e',
-    transactionHash: '0x2b3010a60b52559b642a6635740c301a18ab60e3fb69140a5fb7b701d636e86a',
-    transactionIndex: 2,
+    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
+    transactionHash: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
+    transactionIndex: 0,
     rawLogs: [ [Object] ]
   },
   logs: [
     {
-      address: '0x378DFcf210F93E2d6E1ef5C0d357Be5E6478581E',
-      blockHash: '0xbb12024299ee5179172e2845cf149096001789ab3e72494322e676f494a0b13d',
-      blockNumber: 1041594,
+      address: '0x2a17B6814a172419a5E84d7B746aBEb95a84E76B',
+      blockHash: '0x814fea05ae02c7d8cfcefe8028ad7780d64a5cf05f7d6046bcc7cfd5e7001151',
+      blockNumber: 1047774,
       logIndex: 0,
       removed: false,
-      transactionHash: '0x2b3010a60b52559b642a6635740c301a18ab60e3fb69140a5fb7b701d636e86a',
-      transactionIndex: 2,
+      transactionHash: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
+      transactionIndex: 0,
       transactionLogIndex: '0x0',
-      id: 'log_2dea5542',
+      id: 'log_38adde4c',
       event: 'ApprovalForAll',
       args: [Result]
     }
   ]
 }
 > truffle(moonbase)> await bshCore.transferNativeCoin("btp://0x42.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd", {value: 1000000000000000000})
-{
-  tx: '0x325cd38c6da51d37a1ffa0ae26bf6d6f630cbfbce08263c0fba6ca4affb8211a',
+truffle(moonbase)> {
+  tx: '0xa61ae9e879d1b5e559e24032f4b9a7adc818ec5698e3bca754ca19da246c73e8',
   receipt: {
-    blockHash: '0xe57a94a654ef7177aaa3abed69e90aeed105888ae130e71c8d927f60a859b751',
-    blockNumber: 1041611,
+    blockHash: '0xdb7e464bdc03cce547232956cc46395115269acd104226b3a5987fd7dce63ce6',
+    blockNumber: 1047779,
     contractAddress: null,
     cumulativeGasUsed: 528972,
     from: '0xd07d078373be60dd10e35f352559ef1f25029daf',
     gasUsed: 528972,
     logs: [],
-    logsBloom: '0x00000002000000000000000000000000000000000000000000000000000000000001000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000041000000000400000000000000000000000000000000040100000000000000000040000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000001000000001000200000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000',
+    logsBloom: '0x00000002000000400000010000000000000000000400000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000040000000000400000000000000000000000000000000000100000000000000000040000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000200000000000000000000000000020000000000000000000000000000000000200000000000000000000008000000000000000000000000000000000000000',
     status: true,
-    to: '0x378dfcf210f93e2d6e1ef5c0d357be5e6478581e',
-    transactionHash: '0x325cd38c6da51d37a1ffa0ae26bf6d6f630cbfbce08263c0fba6ca4affb8211a',
+    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
+    transactionHash: '0xa61ae9e879d1b5e559e24032f4b9a7adc818ec5698e3bca754ca19da246c73e8',
     transactionIndex: 0,
     rawLogs: [ [Object], [Object] ]
   },
