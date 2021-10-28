@@ -6,16 +6,33 @@
 * Monitor BTP events  
 * Gather proofs for the events
 
+BTP use a trustless verification method to prove a transaction origin and destination. Firstly, origin network will use [pbft](#practical-byzantine-fault-tolerance-pbft) algorithm to finalize the given block, at the precommits, the neccessary amount of validator/block producer signature will be on BlockHeader. If the amount is sufficient, the BlockHeader is considered as finalized by the origin network. From the verified BlockHeader, a field of State/Receipt/Storage hash contains the Merkle Proof root of events, using this field we can have a prove the validity of BTP event.
+
+```
+RelayMessage
+    BlockUpdates -> BlockHeader + Votes
+    BlockProofs -> BlockHeader + MTA witness
+    ReceiptProofs -> Events contains (BTPMessage) + StateRoot in BlockHeader
+```
+
+### Practical byzantine fault tolerance (pbft)
+
+- Votes: how validators/block producers confirm the finality of a block at PreCommit stage. Reference to thesis (https://www.microsoft.com/en-us/research/wp-content/uploads/2017/01/thesis-mcastro.pdf) thes
+- Depends on each chain implementation, for ICON please check [icon doc](icon.md), for Polkadot parachain with Frontier support please check [parachain doc](polkadot_parachain_with_frontier.md)
+
 ## Integrated blockchain
 * [ICON](icon.md)
 * [ICON Enterprise Edition](iconee.md)
-* [Polkadot Parachain With Frontier Support](frontier.md)
-  * Moonriver
+* [Polkadot/Kusama Parachain with Frontier Support](polkadot_parachain_with_frontier.md)
+  * Moonbeam/Moonriver
 
 ## General
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
 * [Keystore](keystore.md)
 * [PoC ICON-ICON Tutorial](tutorial.md)
+## Overall architecture
+
+![Diagram](./img/bmr_overall_architecture.drawio.svg)
 
 ## Quick start
 
@@ -31,7 +48,7 @@ After starting docker successfully. Now you can make a test by simply run this c
 make run-test-scenario
 ```
 
-## Simple run
+## Simple run with Moonbeam developmnent node
 
 * Example assumptions
   * ICON endpoint is `http://goloop:9080/api/v3/icon`
@@ -159,6 +176,14 @@ make run-test-scenario
       ]
       ```
 
+* Build btpsimple executable:
+
+```bash
+make
+# or
+make **btpsimple**
+```
+
 * To create a configuration file
   ```bash
     # Make sure btpsimple executable exist
@@ -182,9 +207,22 @@ make run-test-scenario
   ```bash
   bin/btpsimple start --config path/to/config/dst.config.json
   ```
+
+## Run with Moonbeam Public Network and RelayChain
+
+TODO
+
+## Run in docker container
+
+TODO
+
 ## Management
 * [btpsimple command line](btpsimple_cli.md)
 {"mode":"full","isActive":false}
 
 ## Testing
 
+```bash
+# Test all short mode, with log, without cache
+go test -v -count=1 -short ./...  
+```

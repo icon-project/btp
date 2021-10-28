@@ -381,6 +381,8 @@ func (s *sender) relayByFragments(p *TransactionParam, dataSize int) (chain.GetR
 		nuFragments += 1
 	}
 
+	// Index will be negative for the first index, and 0 for the last index
+	// Ex: 4 indexes -> -3 2 1 0
 	s.l.Debugf("relayByFragments: fragments: %d size: %d", nuFragments, fragmentStringSize)
 	for i := 0; i < len(msg); i += fragmentStringSize {
 		end := i + fragmentStringSize
@@ -415,6 +417,9 @@ func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 		return nil, fmt.Errorf("casting failure")
 	}
 
+	// Each Segmentation is a valid RelayMessage, the smallest RelayMessage contains 1 BlockUpdate or 1 ReceiptProof
+	// However, if a RelayMessage contains 1 BlockUpdate and 1 ReceiptProof has data size is over the transaction max data size
+	// We must split this message into Fragmentations and send by handleFragment
 	dataSize := countBytesOfCompactJSON(p.Data)
 	if dataSize > txMaxDataSize {
 		return s.relayByFragments(p, dataSize)
