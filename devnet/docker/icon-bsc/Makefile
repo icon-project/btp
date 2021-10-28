@@ -17,6 +17,9 @@ build:
 	mkdir -p ./data/bsc/node1
 	docker-compose build
 
+run-bsc:
+	docker-compose up --remove-orphans -d binancesmartchain
+
 run:
 	docker-compose up --remove-orphans -d
 
