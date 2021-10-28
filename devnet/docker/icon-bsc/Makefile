@@ -23,6 +23,13 @@ run-bsc:
 run:
 	docker-compose up --remove-orphans -d
 
+build-testnet:
+	make -C ../../../ dist-javascore dist-sol btpsimple-image
+	docker-compose -f docker-compose.testnet.yml build
+
+run-testnet:
+	docker-compose -f docker-compose.testnet.yml up --remove-orphans -d
+
 solidity:
 	make -C ../../../ dist-sol btpsimple-image
 	docker-compose up --remove-orphans -d binancesmartchain

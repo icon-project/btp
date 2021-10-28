@@ -1,0 +1,78 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  goloop:
+    container_name: goloop
+    build:
+      context: ../goloop
+      args:
+        BTPSIMPLE_VERSION: latest
+        GOLOOP_IMAGE: goloop:latest
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./work:/goloop/config
+      - ./work:/goloop/data
+    environment:
+      - GOLOOP_NODE_DIR=/goloop/data/goloop
+      - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
+
+  btp-icon:
+    networks:
+      - bsc_network
+    container_name: btp-icon
+    build:
+      context: .
+    volumes:
+      - ./work:/btpsimple/config
+      - ./work:/btpsimple/data
+      #- ./work/contracts:/btpsimple/contracts
+    command: btpsimple start --config /btpsimple/config/icon.config.json
+    depends_on:
+      - goloop
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
+      - BTPSIMPLE_CONFIG=/btpsimple/config/icon.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.bsc
+      - BTPSIMPLE_DST_ENDPOINT={BSC_RPC_URI}
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/bsc.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/bsc.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btp.log
+     # - binance_smart_chain
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /btpsimple/config/provision"]
+      interval: 5s
+      timeout: 5s
+      retries: 300
+
+  btp-bsc:
+    networks:
+      - bsc_network
+    container_name: btp-bsc
+    image: btpsimple:latest
+    volumes:
+      - ./work:/btpsimple/config
+      - ./work:/btpsimple/data
+      #- ./work/contracts:/btpsimple/contracts
+    command: btpsimple start --config /btpsimple/config/bsc.config.json
+    depends_on:
+      btp-icon:
+        condition: service_healthy
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btp_icon_bsc
+      - BTPSIMPLE_CONFIG=/btpsimple/config/bsc.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.bsc
+      - BTPSIMPLE_SRC_ENDPOINT={BSC_RPC_URI}
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.bsc
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/goloop.keystore.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/goloop.keysecret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btp-bsc.log
+
+networks:
+  bsc_network:
+    external:
+      name: bsc-docker_default

@@ -129,7 +129,51 @@ docker-compose up -d
 If all successful, this should start docker network containing provisioned
 goloop, binance smart chain and BSC ICON BTP relayer.
 
-## Testnet
+## Setup Testnet
+
+There is official BSC testnet, as alternative we will setup a dedicated private BSC testnet on one of the cloud providers
+
+* AWS, GCD or similiar
+* OS: Ubuntu 20.x/TLS or Debian
+* Minimum configuration: CPU with 2+ cores, 4GB RAM, 30GB (enough for private)
+8 MBit/sec download Internet service
+  
+### Setup private BSC
+
+#### Get and build BSC docker
+
+```
+git clone https://github.com/web3labs/bsc-docker.git
+
+cd bsc-docker
+
+# Build all docker images
+make build-simple
+
+# Generate genesis.json, validators & bootstrap cluster data
+# Once finished, all cluster bootstrap data are generated at ./storage
+make bootstrap-simple
+
+# Start cluster
+make start-simple
+```
+
+##### Build and run BTP testnet docker
+
+This can be done on local dev machine or another cloud VM:
+
+1. Edit `env.variables.sh` and `docker-compose.testnet.yml` and update `BSC_RPC_URI` to point BSC IP address
+endpoint, e.g. `http://35.214.59.124:8545`
+
+```
+cd ~/btp/devnet/docker/icon-bsc
+
+# Build docker-compose
+make build-testnet
+
+# Run
+make run-testnet
+```
 
 The current testnet setup is using unofficial BSC testnet hosted by Web3 Labs. 
 
