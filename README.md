@@ -64,6 +64,7 @@ Terminologies
 | /common | Common codes (golang) |
 | /doc | Documents |
 | /docker | Docker related resources |
+| /docker-compose | Setup of local network for running e2e of BTP |
 | /`<env>` | Root of implement of BTP smart contracts, `<env>` is name of smart contract execution environment |
 | /`<env>`/bmc | Implement of BMC smart contract |
 | /`<env>`/bmv | Root of implement of BMV smart contract |

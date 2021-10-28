@@ -294,6 +294,10 @@ truffle(moonbase)> let bshP = await BSHPeriphery.deployed()
 undefined
 truffle(moonbase)> bshP.address
 '0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754'
+truffle(moonbase)> let bshCore = await BSHCore.deployed()
+undefined
+truffle(moonbase)> bshCore.address
+'0x2a17B6814a172419a5E84d7B746aBEb95a84E76B'
 truffle(moonbase)> .exit
 ```
 
@@ -586,7 +590,7 @@ Using network 'moonbase'.
 
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-NEXTLINK_BTP_NATIVECOIN_NAME="ICX" \
+NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh  
 
 ## Output
@@ -614,6 +618,37 @@ Using network 'moonbase'.
   logs: []
 }
 [ 'DEV', 'ICX' ]
+```
+
+Register BTC
+
+```
+PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
+NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
+> Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
+Using network 'moonbase'.
+
+{
+  tx: '0xa5397a30220fb2fab7f52b844c5ccec707afe5049336dce59e64228359449aeb',
+  receipt: {
+    blockHash: '0xb371b5edb22242a7656a454ef1cf5f4308e432d6a6b383b26c67a8cc15f2480f',
+    blockNumber: 1048430,
+    contractAddress: null,
+    cumulativeGasUsed: 133597,
+    from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
+    gasUsed: 70597,
+    logs: [],
+    logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    status: true,
+    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
+    transactionHash: '0xa5397a30220fb2fab7f52b844c5ccec707afe5049336dce59e64228359449aeb',
+    transactionIndex: 3,
+    rawLogs: []
+  },
+  logs: []
+}
+[ 'DEV', 'ICX', 'BTC' ]
 ```
 
 #### Add another relay
