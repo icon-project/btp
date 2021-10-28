@@ -1,4 +1,5 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+const web3 = require("web3")
 
 const privKeys = (process.env.PRIVATE_KEYS) ? process.env.PRIVATE_KEYS.split(',') : 
   [
@@ -37,6 +38,8 @@ module.exports = {
       }),
       network_id: 1287,
       networkCheckTimeout: 100000,
+      // Make deploy faster for deployment
+      gasPrice: web3.utils.toWei("2", "Gwei"),
     },
     moonriver: {
       provider: () => new HDWalletProvider({
