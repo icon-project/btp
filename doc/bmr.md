@@ -30,24 +30,10 @@ RelayMessage
 * [Build Guide](build.md): please notice that for BMR, we only need to build executables
 * [Keystore](keystore.md)
 * [PoC ICON-ICON Tutorial](tutorial.md)
+
 ## Overall architecture
 
 ![Diagram](./img/bmr_overall_architecture.drawio.svg)
-
-## Quick start
-
-If you already installed docker and docker-compose and want to take a quick view.   
-Just run:
-```bash
-make run-docker
-```
-
-In docker environment, We have issolated a simple case of relaying between 2 relayers.
-After starting docker successfully. Now you can make a test by simply run this command:
-```bash
-make run-test-scenario
-```
-
 ## Simple run with Moonbeam developmnent node
 
 * Example assumptions
@@ -210,15 +196,13 @@ make **btpsimple**
 
 ## Run with Moonbeam Public Network and RelayChain
 
-TODO
 
 ## Run in docker container
 
-TODO
+TODO wait for docker implementation
 
 ## Management
 * [btpsimple command line](btpsimple_cli.md)
-{"mode":"full","isActive":false}
 
 ## Testing
 

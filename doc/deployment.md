@@ -5,7 +5,6 @@
 Please check your installation with [build](build.md) prerequisities and make sure running these deployments on a computer/server have a stable network condition
 
 ## Solidity
-
 ### Prepare environment for deployment
 
 Notes: This deployment will require user, to use raw text private key as environment variable, make sure you don't let any party access to process manager while deployment process is running. And clear up the shell history after deployment
@@ -152,7 +151,7 @@ Summary
 
 ```
 
-### Get BMC Periphery proxy address
+### Get BMC proxy addresses
 
 ```bash
 truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
@@ -161,6 +160,10 @@ truffle(moonbase)> let bmcPer = await BMCPeriphery.deployed()
 undefined
 truffle(moonbase)> bmcPer.address
 '0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356'
+truffle(moonbase)> let bmcM = await BMCManagement.deployed()
+undefined
+truffle(moonbase)> bmcM.address
+'0xb3aD0707F494393A7d922F14A412E3518eD0B6bc'
 truffle(moonbase)> .exit
 
 ```
