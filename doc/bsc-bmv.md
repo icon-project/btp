@@ -23,6 +23,8 @@ For more details on BSC consensus, please refer to the [whitepaper](https://gith
 1. Decode RelayMessage and extract the blockheader hash at a given height
 2. Verify the block header hash using the stored Merkle Tree Accumulator
     - Check if block height is the same as MTA next height
+    - Add block to MTA, update lastHeight & receiptRoot with blockUpdate header data
+    - Check if block proof and witness are not empty, update lastHeight & receiptRoot with blockProof header data
 3. Verify the validator set against provided `SealedHeader`
     - Verify the coinbase signature
 4. Verify Receipt Proofs and extract valid receipt which includes the Event Log for the message transfer
@@ -137,9 +139,9 @@ Code to decode BlockProof implemented in [BlockProof.java](https://github.com/ic
 ### ReceiptProof:
 | Name           |      Type      |  Description                           |
 |----------------|:--------------:|:---------------------------------------|
-| index          |    int         | ...                                    |
-| mptKey         |    bytes       | ...                                    |
-| eventProofs    | list of bytes  | ...                                    |
+| index          |    int         | receipt proof index                    |
+| mptKey         |    bytes       | receipt proof key in Trie              |
+| eventProofs    | list of bytes  | list of RLP encoded of EventProof      |
 | events         | list of bytes  | list of RLP encoded of ReceiptEventLog |
-| mptProofs      | list of bytes  | ...                                    |
+| mptProofs      | list of bytes  | list of proof bytes                    |
 Code to decode ReceiptProof implemented in [ReceiptProof.java](https://github.com/icon-project/btp/blob/btp_web3labs/javascore/bmv/src/main/java/foundation/icon/btp/bmv/types/ReceiptProof.java)
