@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
@@ -137,6 +138,13 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 						if (j + 1) < len(p.Events) {
 							nextEp = j + 1
 							break EpLoop
+						}
+					} else {
+						rxSeq := common.NewHexInt(0).SetBytes(r.evtLogRawFilter.seq)
+						txSeq := common.NewHexInt(0).SetBytes(el.Indexed[EventIndexSequence])
+
+						if txSeq.Cmp(rxSeq.Add(rxSeq, big.NewInt(1))) > 0 {
+							r.l.Panicf("newReceiptProofs: BTPMessage skipped with rxSeq %s, txSeq %s", rxSeq.String(), txSeq.String())
 						}
 					}
 				}
