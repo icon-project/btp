@@ -158,12 +158,16 @@ make bootstrap-simple
 make start-simple
 ```
 
-##### Build and run BTP testnet docker
+#### Build and run BTP testnet docker
 
 This can be done on local dev machine or another cloud VM:
 
 1. Edit `env.variables.sh` and `docker-compose.testnet.yml` and update `BSC_RPC_URI` to point BSC IP address
-endpoint, e.g. `http://35.214.59.124:8545`
+endpoint.
+   
+e.g. `http://35.214.59.124:8545`
+    
+2. Build and run docker
 
 ```
 cd ~/btp/devnet/docker/icon-bsc
