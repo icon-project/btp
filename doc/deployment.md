@@ -30,6 +30,21 @@ export SOLIDITY_DIST_DIR=${PWD}/build/contracts/solidity
 If you have error while deployment, just rerun the truffle migrate command. And, after you finished deployments please save the `.openzeppelin` folder, this is neccessary to keep the address of implementations/proxies/proxyadmin contracts.
 
 
+### Notify
+
+When you use truffle console and got the problem like, you could to only use abi interface with the contract
+
+```
+truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
+> Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
+truffle(moonbase)> let bmcPer = await BMCPeriphery.deployed()
+Uncaught:
+Error: BMCPeriphery has not been deployed to detected network (network/artifact mismatch)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+truffle(moonbase)> bmcPer = await BMCPeriphery.at("0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356")
+undefined
+```
+
 ### Deploy BMC
 
 ```bash
@@ -691,6 +706,191 @@ truffle(moonbase)> await bmcM.addRelay("btp://0x42.icon/cx11a5a7510b128e0ab16546
 truffle(moonbase)> await bmcM.getRelays("btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3")
 [ '0x126AD520629a0152b749Af26d5fd342Cb67Ac6CE' ]
 ```
+
+### Redeploy new BMV
+
+For example the next BTP address is: `btp://0x42.icon/cx11a5a7510b128e0ab16546e1493e38b2d7e299c3`
+And the offset is: `5174702`. Why `5174702`? Because the next BTPMessage is on `5174703`, so we have to redeploy new BMV with the offset smaller than the next BTPMessage to prevent the system fails.
+
+```bash
+yarn install --production --cwd $SOLIDITY_DIST_DIR/bmv
+rm -rf $SOLIDITY_DIST_DIR/bmv/build
+
+truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bmv
+
+# @params
+# - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
+# This address is queried after **deploying** BMC contracts
+# For example: BMC_PERIPHERY_ADDRESS = 0x6047341C88B9A45957E9Ad68439cA941D464c706
+# - BMV_ICON_NET: Chain ID and name of a network that BMV is going to verify BTP Message
+# - BMV_ICON_INIT_OFFSET: a block height when ICON-BMC was deployed
+# - BMV_ICON_ENCODED_VALIDATORS: a result of ICON JSON-RPC method `icx_getDataByHash` with the input is
+# PreviousBlockHeader.NextValidatorHash. So, to get this param for block N, you must get BlockHeader of N - 1
+# User can execute to ge the result : 
+#
+# make iconvalidators
+# 
+# GOLOOP_RPC_URI="https://btp.net.solidwallet.io/api/v3/icon_dex" bin/iconvalidators build 5167618
+# 
+# - BMV_ICON_LASTBLOCK_HASH: a hash of the above block
+# GOLOOP_RPC_URI="https://btp.net.solidwallet.io/api/v3/icon_dex" goloop rpc blockbyheight 5167618 | jq -r '.block_hash'
+# Remember adding 0x 
+PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
+BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
+BMV_ICON_NET="0x42.icon" \
+BMV_ICON_ENCODED_VALIDATORS="0xf8589500edeb1b82b94d548ec440df553f522144ca83fb8d9500d63c4c73b623e97f67407d687af4efcfe486a51595007882dace25ff7e947d3a25178a2a1162874cfddc95000458d8b6f649a9e005963dc9a72669c89ed52d85" \
+BMV_ICON_INIT_OFFSET="5174702" \
+BMV_ICON_INIT_ROOTSSIZE="12" \
+BMV_ICON_INIT_CACHESIZE="12" \
+BMV_ICON_LASTBLOCK_HASH="0xcdaf4a7ad9fb77bac8e9c6cf296233c3cfba789ffbb4f2fb3412a3266951e7be" \
+truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmv
+
+### Output
+> Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
+
+Compiling your contracts...
+===========================
+> Everything is up to date, there is nothing to compile.
+
+
+
+Starting migrations...
+======================
+> Network name:    'moonbase'
+> Network id:      1287
+> Block gas limit: 15000000 (0xe4e1c0)
+
+
+1_deploy_bmv.js
+===============
+
+   Deploying 'DataValidator'
+   -------------------------
+   > transaction hash:    0xa309cfc09dab73e63c602d40218fe43ce26e17b1b5ebc5316d9cda16bd5e5261
+   > Blocks: 3            Seconds: 44
+   > contract address:    0xa6a147af24D6416B3CC8E91372af1eaf477c0E4f
+   > block number:        1054138
+   > block timestamp:     1635495480
+   > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
+   > balance:             313.319527535469765665
+   > gas used:            2120414 (0x205ade)
+   > gas price:           1 gwei
+   > value sent:          0 ETH
+   > total cost:          0.002120414 ETH
+
+
+   Deploying 'ProxyAdmin'
+   ----------------------
+   > transaction hash:    0x4205479afe06571c7495479cfddd64ea5d17d82eb606e312bbc9ff38a7b5b03a
+   > Blocks: 13           Seconds: 192
+   > contract address:    0x1EccC74336c47f4f696Ffd210E4884C1F480bB94
+   > block number:        1054152
+   > block timestamp:     1635495684
+   > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
+   > balance:             313.319044815469765665
+   > gas used:            482720 (0x75da0)
+   > gas price:           1 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00048272 ETH
+
+
+   Deploying 'TransparentUpgradeableProxy'
+   ---------------------------------------
+   > transaction hash:    0x2a35d39fb9e36071fc7d1f02761b0a9c9842877b5a211c874ff3f0c78d895f6a
+   > Blocks: 3            Seconds: 37
+   > contract address:    0xD20d590dd12fF328d836D0F87D30464c20bF8f20
+   > block number:        1054155
+   > block timestamp:     1635495726
+   > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
+   > balance:             313.318427257469765665
+   > gas used:            617558 (0x96c56)
+   > gas price:           1 gwei
+   > value sent:          0 ETH
+   > total cost:          0.000617558 ETH
+
+
+   Deploying 'BMV'
+   ---------------
+   > transaction hash:    0x00ae73c60709dc17aeb704c5eb8f7ae907cfacb0d444c6427292c9673b0e7090
+   > Blocks: 2            Seconds: 32
+   > contract address:    0x192db7A8AE41A712314eD8ab7d16910C16A3B72E
+   > block number:        1054158
+   > block timestamp:     1635495762
+   > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
+   > balance:             313.314086019469765665
+   > gas used:            4341238 (0x423df6)
+   > gas price:           1 gwei
+   > value sent:          0 ETH
+   > total cost:          0.004341238 ETH
+
+
+   Deploying 'TransparentUpgradeableProxy'
+   ---------------------------------------
+   > transaction hash:    0x0a1c3a18ce5f57467496b155431b44e8b0d9e11986371a9c453d0fd8abe734da
+   > Blocks: 19           Seconds: 244
+   > contract address:    0x22cFb9cb119DCBfBEBae735ece2AbC3b9e40be81
+   > block number:        1054177
+   > block timestamp:     1635496020
+   > account:             0x4bb718Cb404787BF97bB012Bb08096602fb9544B
+   > balance:             313.312959958469765665
+   > gas used:            1126061 (0x112ead)
+   > gas price:           1 gwei
+   > value sent:          0 ETH
+   > total cost:          0.001126061 ETH
+
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.008687991 ETH
+
+
+Summary
+=======
+> Total deployments:   5
+> Final cost:          0.008687991 ETH
+```
+
+- Extract BMV address
+
+```bash
+truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmv
+> Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
+truffle(moonbase)> let bmv = await BMV.deployed()
+undefined
+truffle(moonbase)> bmv.address
+'0x22cFb9cb119DCBfBEBae735ece2AbC3b9e40be81'
+truffle(moonbase)> .exit
+```
+
+- Add new verifier - BMV
+
+```bash
+PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
+truffle(moonbase)> let bmcM = await BMCManagement.at("0xb3aD0707F494393A7d922F14A412E3518eD0B6bc")
+undefined
+truffle(moonbase)> bmcM.removeVerifier("0x42.icon")
+truffle(moonbase)> bmcM.addVerifier("0x42.icon", "0x22cFb9cb119DCBfBEBae735ece2AbC3b9e40be81")
+{
+  tx: '0x78e99c900a286ec74743381d2934ed75b7e6e8f2a8f2dcb363d051c57114317e',
+  receipt: {
+    blockHash: '0x337047c156d1242726b30046f7c25e89ae0e859f517ab0c8d905b9703418669f',
+    blockNumber: 1054203,
+    contractAddress: null,
+    cumulativeGasUsed: 1018760,
+    from: '0x4bb718cb404787bf97bb012bb08096602fb9544b',
+    gasUsed: 91146,
+    logs: [],
+    logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    status: true,
+    to: '0xb3ad0707f494393a7d922f14a412e3518ed0b6bc',
+    transactionHash: '0x78e99c900a286ec74743381d2934ed75b7e6e8f2a8f2dcb363d051c57114317e',
+    transactionIndex: 32,
+    rawLogs: []
+  },
+  logs: []
+}
+truffle(moonbase)> .exit
+```
+
 ### JAVAScore
 
 #### Deploy BMC
