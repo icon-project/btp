@@ -72,7 +72,10 @@ deploy_javascore_bmv() {
     paraLastBlockHash=$(echo "$tmp" | jq -r .paraLastBlockHash)
     encodedValidators=$(echo "$tmp" | jq -r .encodedValidators)
     relayCurrentSetId=$(echo "$tmp" | jq -r .relayCurrentSetId)
-    # paraChainId=$(echo "$tmp" | jq -r .paraChainId)
+    evmEventIndex=$(echo "$tmp" | jq -r .evmEventIndex) \
+    newAuthoritiesEventIndex=$(echo "$tmp" | jq -r .newAuthoritiesEventIndex) \
+    candidateIncludedEventIndex=$(echo "$tmp" | jq -r .candidateIncludedEventIndex)
+    # paraChainId=$(echo "$tmp" | jq -r .paraChainId) # # Currently deployment of moonbeam is dev the default is 0x0, not relates to Kusama
 
     echo "parachain height:$paraMtaOffset block_hash:$paraLastBlockHash"
 
@@ -90,11 +93,12 @@ deploy_javascore_bmv() {
         --param relayEventDecoderAddress=$(cat kusamaDecoder.icon) \
         --param paraEventDecoderAddress=$(cat moonriverDecoder.icon) \
         --param relayCurrentSetId=$relayCurrentSetId \
+        # Currently deployment of moonbeam is dev the default is 0x0, not relates to Kusama
         --param paraChainId=0x0 \
         --param encodedValidators=$encodedValidators \
-        --param evmEventIndex=0x0a00 \
-        --param newAuthoritiesEventIndex=0x0a00 \
-        --param candidateIncludedEventIndex=0x0a00 \
+        --param evmEventIndex=$evmEventIndex \
+        --param newAuthoritiesEventIndex=$newAuthoritiesEventIndex \
+        --param candidateIncludedEventIndex=$candidateIncludedEventIndex \
         | jq -r . > tx.icon.deploy_bmv
 
     extract_scoreAddress tx.icon.deploy_bmv bmv.icon
