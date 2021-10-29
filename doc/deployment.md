@@ -25,11 +25,16 @@ make dist-sol
 export SOLIDITY_DIST_DIR=${PWD}/build/contracts/solidity
 ```
 
+### WARNING
+
+If you have error while deployment, just rerun the truffle migrate command. And, after you finished deployments please save the `.openzeppelin` folder, this is neccessary to keep the address of implementations/proxies/proxyadmin contracts.
+
+
 ### Deploy BMC
 
 ```bash
 yarn install --production --cwd $SOLIDITY_DIST_DIR/bmc
-rm -rf $SOLIDITY_DIST_DIR/bmc/.openzeppelin $SOLIDITY_DIST_DIR/bmc/build
+rm -rf $SOLIDITY_DIST_DIR/bmc/build
 
 truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bmc
 
@@ -171,7 +176,7 @@ truffle(moonbase)> .exit
 
 ```bash
 yarn install --production --cwd $SOLIDITY_DIST_DIR/bsh
-rm -rf $SOLIDITY_DIST_DIR/bsh/.openzeppelin $SOLIDITY_DIST_DIR/bsh/build
+rm -rf $SOLIDITY_DIST_DIR/bsh/build
 
 truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bsh
 
@@ -309,7 +314,7 @@ And the offset is: `5167618`
 
 ```bash
 yarn install --production --cwd $SOLIDITY_DIST_DIR/bmv
-rm -rf $SOLIDITY_DIST_DIR/bmv/.openzeppelin $SOLIDITY_DIST_DIR/bmv/build
+rm -rf $SOLIDITY_DIST_DIR/bmv/build
 
 truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bmv
 
