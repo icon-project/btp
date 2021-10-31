@@ -93,7 +93,6 @@ deploy_javascore_bmv() {
         --param relayEventDecoderAddress=$(cat kusamaDecoder.icon) \
         --param paraEventDecoderAddress=$(cat moonriverDecoder.icon) \
         --param relayCurrentSetId=$relayCurrentSetId \
-        # Currently deployment of moonbeam is dev the default is 0x0, not relates to Kusama
         --param paraChainId=0x0 \
         --param encodedValidators=$encodedValidators \
         --param evmEventIndex=$evmEventIndex \
