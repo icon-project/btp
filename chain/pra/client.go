@@ -28,7 +28,7 @@ type EthClient interface {
 }
 
 type BMCContract interface {
-	HandleRelayMessage(opts *bind.TransactOpts, _prev string, _msg string) (*EvmTransaction, error)
+	HandleRelayMessage(opts *bind.TransactOpts, _prev string, _msg []byte) (*EvmTransaction, error)
 	ParseMessage(log EvmLog) (*binding.BMCMessage, error)
 	GetStatus(opts *bind.CallOpts, _link string) (binding.TypesLinkStats, error)
 }

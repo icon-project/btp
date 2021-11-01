@@ -249,7 +249,7 @@ func (s *Sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	tries := 0
 CALL_CONTRACT:
 	tries++
-	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, p.Msg)
+	tx, err := s.c.bmc.HandleRelayMessage(txOpts, p.Prev, []byte(p.Msg))
 	if err != nil {
 		if RetrableRelayReSendReExp.MatchString(err.Error()) && tries < DefaultRetryContractCall {
 			s.log.Tracef("Relay: retry with Relay err:%+v", err)
