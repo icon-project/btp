@@ -16,7 +16,7 @@ interface IBMCPeriphery {
         @param _prev    BTP Address of the BMC generates the message
         @param _msg     base64 encoded string of serialized bytes of Relay Message refer RelayMessage structure
      */
-    function handleRelayMessage(string calldata _prev, bytes calldata _msg)
+    function handleRelayMessage(string calldata _prev, string calldata _msg)
         external;
 
     /**
