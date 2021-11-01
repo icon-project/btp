@@ -261,6 +261,7 @@
                 " - 1 storage write.",
                 " - Base Weight: 1.405 µs",
                 " - 1 write to HEAP_PAGES",
+                " - 1 digest item",
                 " # </weight>"
               ]
             },
@@ -277,8 +278,10 @@
                 "",
                 " # <weight>",
                 " - `O(C + S)` where `C` length of `code` and `S` complexity of `can_set_code`",
+                " - 1 call to `can_set_code`: `O(S)` (calls `sp_io::misc::runtime_version` which is",
+                "   expensive).",
                 " - 1 storage write (codec `O(C)`).",
-                " - 1 call to `can_set_code`: `O(S)` (calls `sp_io::misc::runtime_version` which is expensive).",
+                " - 1 digest item.",
                 " - 1 event.",
                 " The weight of this function is dependent on the runtime, but generally this is very expensive.",
                 " We will treat this as a full block.",
@@ -299,6 +302,7 @@
                 " # <weight>",
                 " - `O(C)` where `C` length of `code`",
                 " - 1 storage write (codec `O(C)`).",
+                " - 1 digest item.",
                 " - 1 event.",
                 " The weight of this function is dependent on the runtime. We will treat this as a full block.",
                 " # </weight>"
@@ -499,7 +503,7 @@
             {
               "name": "Version",
               "type": "RuntimeVersion",
-              "value": "0x206d6f6f6e62617365206d6f6f6e62617365030000009e0000000000000034d2bc9897eed08f1503000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f02000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d02000000ea93e3f16f3d69620100000002000000",
+              "value": "0x206d6f6f6e62617365206d6f6f6e6261736503000000200300000000000034d2bc9897eed08f1503000000df6acb689907609b0300000037e397fc7c91f5e40100000040fe3ad401f8959a05000000f78b278be53f454c02000000ab3c0572291feb8b01000000bc9d89904f5b923f01000000bd78255d4feeea1f01000000a33d43f58731ad8401000000582211f65bb14b890100000037c8bb1350a9a2a8010000001fba3ffbb7e07e8d02000000ea93e3f16f3d69620100000002000000",
               "docs": [
                 " Get the chain's current version."
               ]
@@ -572,7 +576,8 @@
                 "",
                 " May be called from any origin.",
                 "",
-                " - `calls`: The calls to be dispatched from the same origin.",
+                " - `calls`: The calls to be dispatched from the same origin. The number of call must not",
+                "   exceed the constant: `batched_calls_limit` (available in constant metadata).",
                 "",
                 " If origin is root then call are dispatch without checking origin filter. (This includes",
                 " bypassing `frame_system::Config::BaseCallFilter`).",
@@ -630,7 +635,8 @@
                 "",
                 " May be called from any origin.",
                 "",
-                " - `calls`: The calls to be dispatched from the same origin.",
+                " - `calls`: The calls to be dispatched from the same origin. The number of call must not",
+                "   exceed the constant: `batched_calls_limit` (available in constant metadata).",
                 "",
                 " If origin is root then call are dispatch without checking origin filter. (This includes",
                 " bypassing `frame_system::Config::BaseCallFilter`).",
@@ -659,10 +665,33 @@
               "docs": [
                 " Batch of dispatches completed fully with no error."
               ]
+            },
+            {
+              "name": "ItemCompleted",
+              "args": [],
+              "docs": [
+                " A single item within a Batch of dispatches has completed with no error."
+              ]
             }
           ],
-          "constants": [],
-          "errors": [],
+          "constants": [
+            {
+              "name": "batched_calls_limit",
+              "type": "u32",
+              "value": "0x05540000",
+              "docs": [
+                " The limit on the number of batched calls."
+              ]
+            }
+          ],
+          "errors": [
+            {
+              "name": "TooManyCalls",
+              "docs": [
+                " Too many calls batched."
+              ]
+            }
+          ],
           "index": 1
         },
         {
@@ -1082,6 +1111,23 @@
               "value": "0x00000000000000000000000000000000",
               "docs": [
                 " The minimum amount required to keep an account open."
+              ]
+            },
+            {
+              "name": "MaxLocks",
+              "type": "u32",
+              "value": "0x32000000",
+              "docs": [
+                " The maximum number of locks that should exist on an account.",
+                " Not strictly enforced, but used for weight estimation."
+              ]
+            },
+            {
+              "name": "MaxReserves",
+              "type": "u32",
+              "value": "0x32000000",
+              "docs": [
+                " The maximum number of named reserves that can exist on an account."
               ]
             }
           ],
@@ -1772,7 +1818,7 @@
             {
               "name": "TransactionByteFee",
               "type": "BalanceOf",
-              "value": "0x00407a10f35a00000000000000000000",
+              "value": "0x00a0724e180900000000000000000000",
               "docs": [
                 " The fee to be paid for making a transaction; the per-byte portion."
               ]
@@ -2122,7 +2168,7 @@
                 "name": "CurrentBlock",
                 "modifier": "Optional",
                 "type": {
-                  "plain": "EthBlock"
+                  "plain": "BlockV0"
                 },
                 "fallback": "0x00",
                 "docs": [
@@ -2150,6 +2196,20 @@
                 "docs": [
                   " The current transaction statuses."
                 ]
+              },
+              {
+                "name": "BlockHash",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Twox64Concat",
+                    "key": "U256",
+                    "value": "H256",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "docs": []
               }
             ]
           },
@@ -2182,7 +2242,20 @@
             }
           ],
           "constants": [],
-          "errors": [],
+          "errors": [
+            {
+              "name": "InvalidSignature",
+              "docs": [
+                " Signature is invalid."
+              ]
+            },
+            {
+              "name": "PreLogExists",
+              "docs": [
+                " Pre-log is present, therefore transact is not allowed."
+              ]
+            }
+          ],
           "index": 11
         },
         {
@@ -2235,13 +2308,13 @@
                 ]
               },
               {
-                "name": "NominatorState",
+                "name": "NominatorState2",
                 "modifier": "Optional",
                 "type": {
                   "map": {
                     "hasher": "Twox64Concat",
                     "key": "AccountId",
-                    "value": "Nominator",
+                    "value": "Nominator2",
                     "linked": false
                   }
                 },
@@ -2300,14 +2373,14 @@
                 ]
               },
               {
-                "name": "ExitQueue",
+                "name": "ExitQueue2",
                 "modifier": "Default",
                 "type": {
-                  "plain": "OrderedSet"
+                  "plain": "ExitQ"
                 },
-                "fallback": "0x00",
+                "fallback": "0x00000000",
                 "docs": [
-                  " A queue of collators awaiting exit `BondDuration` delay after request"
+                  " A queue of collators and nominators awaiting exit"
                 ]
               },
               {
@@ -2506,7 +2579,7 @@
               "docs": [
                 " Request to leave the set of candidates. If successful, the account is immediately",
                 " removed from the candidate pool to prevent selection as a collator, but unbonding is",
-                " executed with a delay of `BondDuration` rounds."
+                " executed with a delay of `T::LeaveCandidates` rounds."
               ]
             },
             {
@@ -2581,7 +2654,8 @@
                 }
               ],
               "docs": [
-                " Leave the set of nominators and, by implication, revoke all ongoing nominations"
+                " Request to leave the set of nominators. If successful, the nominator is scheduled",
+                " to exit"
               ]
             },
             {
@@ -2593,7 +2667,8 @@
                 }
               ],
               "docs": [
-                " Revoke an existing nomination"
+                " Request to revoke an existing nomination. If successful, the nomination is scheduled",
+                " to exit"
               ]
             },
             {
@@ -2730,8 +2805,7 @@
                 "AccountId",
                 "AccountId",
                 "BalanceOf",
-                "bool",
-                "BalanceOf"
+                "bool"
               ],
               "docs": []
             },
@@ -2741,10 +2815,32 @@
                 "AccountId",
                 "AccountId",
                 "BalanceOf",
-                "bool",
-                "BalanceOf"
+                "bool"
               ],
               "docs": []
+            },
+            {
+              "name": "NominatorExitScheduled",
+              "args": [
+                "RoundIndex",
+                "AccountId",
+                "RoundIndex"
+              ],
+              "docs": [
+                " Round, Nominator, Scheduled Exit"
+              ]
+            },
+            {
+              "name": "NominationRevocationScheduled",
+              "args": [
+                "RoundIndex",
+                "AccountId",
+                "AccountId",
+                "RoundIndex"
+              ],
+              "docs": [
+                " Round, Nominator, Collator, Scheduled Exit"
+              ]
             },
             {
               "name": "NominatorLeft",
@@ -2765,7 +2861,7 @@
                 "NominatorAdded"
               ],
               "docs": [
-                " Nominator, Amount Locked, Collator, Nominator Position with New Total Backing if in Top"
+                " Nominator, Amount Locked, Collator, Nominator Position with New Total Counted if in Top"
               ]
             },
             {
@@ -2881,14 +2977,147 @@
               ]
             }
           ],
-          "constants": [],
+          "constants": [
+            {
+              "name": "MinBlocksPerRound",
+              "type": "u32",
+              "value": "0x0a000000",
+              "docs": [
+                " Minimum number of blocks per round"
+              ]
+            },
+            {
+              "name": "DefaultBlocksPerRound",
+              "type": "u32",
+              "value": "0x2c010000",
+              "docs": [
+                " Default number of blocks per round at genesis"
+              ]
+            },
+            {
+              "name": "LeaveCandidatesDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "docs": [
+                " Number of rounds that collators remain bonded before exit request is executed"
+              ]
+            },
+            {
+              "name": "LeaveNominatorsDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "docs": [
+                " Number of rounds that nominators remain bonded before exit request is executed"
+              ]
+            },
+            {
+              "name": "RevokeNominationDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "docs": [
+                " Number of rounds that nominations remain bonded before revocation request is executed"
+              ]
+            },
+            {
+              "name": "RewardPaymentDelay",
+              "type": "RoundIndex",
+              "value": "0x02000000",
+              "docs": [
+                " Number of rounds after which block authors are rewarded"
+              ]
+            },
+            {
+              "name": "MinSelectedCandidates",
+              "type": "u32",
+              "value": "0x08000000",
+              "docs": [
+                " Minimum number of selected candidates every round"
+              ]
+            },
+            {
+              "name": "MaxNominatorsPerCollator",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " Maximum nominators counted per collator"
+              ]
+            },
+            {
+              "name": "MaxCollatorsPerNominator",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " Maximum collators per nominator"
+              ]
+            },
+            {
+              "name": "DefaultCollatorCommission",
+              "type": "Perbill",
+              "value": "0x00c2eb0b",
+              "docs": [
+                " Default commission due to collators, set at genesis"
+              ]
+            },
+            {
+              "name": "DefaultParachainBondReservePercent",
+              "type": "Percent",
+              "value": "0x1e",
+              "docs": [
+                " Default percent of inflation set aside for parachain bond account"
+              ]
+            },
+            {
+              "name": "MinCollatorStk",
+              "type": "BalanceOf",
+              "value": "0x0000a0dec5adc9353600000000000000",
+              "docs": [
+                " Minimum stake required for any account to be in `SelectedCandidates` for the round"
+              ]
+            },
+            {
+              "name": "MinCollatorCandidateStk",
+              "type": "BalanceOf",
+              "value": "0x0000a0dec5adc9353600000000000000",
+              "docs": [
+                " Minimum stake required for any account to be a collator candidate"
+              ]
+            },
+            {
+              "name": "MinNomination",
+              "type": "BalanceOf",
+              "value": "0x0000f444829163450000000000000000",
+              "docs": [
+                " Minimum stake for any registered on-chain account to nominate"
+              ]
+            },
+            {
+              "name": "MinNominatorStk",
+              "type": "BalanceOf",
+              "value": "0x0000f444829163450000000000000000",
+              "docs": [
+                " Minimum stake for any registered on-chain account to become a nominator"
+              ]
+            }
+          ],
           "errors": [
             {
               "name": "NominatorDNE",
               "docs": []
             },
             {
+              "name": "NominatorDNEinTopNorBottom",
+              "docs": []
+            },
+            {
+              "name": "NominatorDNEInNominatorSet",
+              "docs": []
+            },
+            {
               "name": "CandidateDNE",
+              "docs": []
+            },
+            {
+              "name": "NominationDNE",
               "docs": []
             },
             {
@@ -2920,11 +3149,23 @@
               "docs": []
             },
             {
-              "name": "AlreadyLeaving",
+              "name": "NominatorAlreadyLeaving",
               "docs": []
             },
             {
-              "name": "CannotActivateIfLeaving",
+              "name": "NominationAlreadyRevoked",
+              "docs": []
+            },
+            {
+              "name": "CandidateAlreadyLeaving",
+              "docs": []
+            },
+            {
+              "name": "CannotActBecauseLeaving",
+              "docs": []
+            },
+            {
+              "name": "CannotActBecauseRevoking",
               "docs": []
             },
             {
@@ -2933,10 +3174,6 @@
             },
             {
               "name": "AlreadyNominatedCollator",
-              "docs": []
-            },
-            {
-              "name": "NominationDNE",
               "docs": []
             },
             {
@@ -3199,7 +3436,7 @@
                 " Schedule a named task after a delay.",
                 "",
                 " # <weight>",
-                " Same as [`schedule_named`].",
+                " Same as [`schedule_named`](Self::schedule_named).",
                 " # </weight>"
               ]
             }
@@ -3237,7 +3474,26 @@
               ]
             }
           ],
-          "constants": [],
+          "constants": [
+            {
+              "name": "MaximumWeight",
+              "type": "Weight",
+              "value": "0x00e6bd4f57000000",
+              "docs": [
+                " The maximum weight that may be scheduled per block for any dispatchables of less priority",
+                " than `schedule::HARD_DEADLINE`."
+              ]
+            },
+            {
+              "name": "MaxScheduledPerBlock",
+              "type": "u32",
+              "value": "0x32000000",
+              "docs": [
+                " The maximum number of scheduled calls in the queue for a single block.",
+                " Not strictly enforced, but used for weight estimation."
+              ]
+            }
+          ],
           "errors": [
             {
               "name": "FailedToSchedule",
@@ -4117,10 +4373,10 @@
               "name": "Executed",
               "args": [
                 "ReferendumIndex",
-                "bool"
+                "DispatchResult"
               ],
               "docs": [
-                " A proposal has been enacted. \\[ref_index, is_ok\\]"
+                " A proposal has been enacted. \\[ref_index, result\\]"
               ]
             },
             {
@@ -4212,15 +4468,6 @@
               ]
             },
             {
-              "name": "Unlocked",
-              "args": [
-                "AccountId"
-              ],
-              "docs": [
-                " An \\[account\\] has been unlocked successfully."
-              ]
-            },
-            {
               "name": "Blacklisted",
               "args": [
                 "Hash"
@@ -4268,6 +4515,16 @@
               ]
             },
             {
+              "name": "InstantAllowed",
+              "type": "bool",
+              "value": "0x01",
+              "docs": [
+                " Indicator for whether an emergency origin is even allowed to happen. Some chains may want",
+                " to set this permanently to `false`, others may want to condition it on things such as",
+                " an upgrade having happened recently."
+              ]
+            },
+            {
               "name": "FastTrackVotingPeriod",
               "type": "BlockNumber",
               "value": "0xb0040000",
@@ -4301,6 +4558,14 @@
                 " Also used to compute weight, an overly big value can",
                 " lead to extrinsic with very big weight: see `delegate` for instance."
               ]
+            },
+            {
+              "name": "MaxProposals",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " The maximum number of public proposals that can exist at any time."
+              ]
             }
           ],
           "errors": [
@@ -4314,12 +4579,6 @@
               "name": "ProposalMissing",
               "docs": [
                 " Proposal does not exist"
-              ]
-            },
-            {
-              "name": "BadIndex",
-              "docs": [
-                " Unknown index"
               ]
             },
             {
@@ -4362,12 +4621,6 @@
               "name": "AlreadyVetoed",
               "docs": [
                 " Identity may not veto a proposal twice"
-              ]
-            },
-            {
-              "name": "NotDelegated",
-              "docs": [
-                " Not delegated"
               ]
             },
             {
@@ -4416,18 +4669,6 @@
               "name": "NoneWaiting",
               "docs": [
                 " No proposals waiting"
-              ]
-            },
-            {
-              "name": "NotLocked",
-              "docs": [
-                " The target account does not have a lock."
-              ]
-            },
-            {
-              "name": "NotExpired",
-              "docs": [
-                " The lock on the account to be unlocked has not yet expired."
               ]
             },
             {
@@ -4489,12 +4730,6 @@
               "name": "MaxVotesReached",
               "docs": [
                 " Maximum number of votes reached."
-              ]
-            },
-            {
-              "name": "InvalidWitness",
-              "docs": [
-                " The provided witness data is wrong."
               ]
             },
             {
@@ -5644,7 +5879,15 @@
               "type": "PalletId",
               "value": "0x70632f7472737279",
               "docs": [
-                " The treasury's module id, used for deriving its sovereign account ID."
+                " The treasury's pallet id, used for deriving its sovereign account ID."
+              ]
+            },
+            {
+              "name": "MaxApprovals",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " The maximum number of approvals that can wait in the spending queue."
               ]
             }
           ],
@@ -5833,22 +6076,22 @@
                 "name": "InitRelayBlock",
                 "modifier": "Default",
                 "type": {
-                  "plain": "BlockNumber"
+                  "plain": "VestingBlockNumber"
                 },
                 "fallback": "0x00000000",
                 "docs": [
-                  " Relay block height at the initialization of the pallet"
+                  " Vesting block height at the initialization of the pallet"
                 ]
               },
               {
                 "name": "EndRelayBlock",
                 "modifier": "Default",
                 "type": {
-                  "plain": "BlockNumber"
+                  "plain": "VestingBlockNumber"
                 },
                 "fallback": "0x00000000",
                 "docs": [
-                  " Relay block height at the initialization of the pallet"
+                  " Vesting block height at the initialization of the pallet"
                 ]
               },
               {
@@ -5896,15 +6139,33 @@
               "docs": [
                 " Associate a native rewards_destination identity with a crowdloan contribution.",
                 "",
-                " This is an unsigned call because the caller may not have any funds to pay fees with.",
-                " This is inspired by Polkadot's claims pallet:",
-                " https://github.com/paritytech/polkadot/blob/master/runtime/common/src/claims.rs",
+                " The caller needs to provide the unassociated relay account and a proof to succeed",
+                " with the association",
+                " The proof is nothing but a signature over the reward_address using the relay keys"
+              ]
+            },
+            {
+              "name": "change_association_with_relay_keys",
+              "args": [
+                {
+                  "name": "reward_account",
+                  "type": "AccountId"
+                },
+                {
+                  "name": "previous_account",
+                  "type": "AccountId"
+                },
+                {
+                  "name": "proofs",
+                  "type": "Vec<(RelayChainAccountId,MultiSignature)>"
+                }
+              ],
+              "docs": [
+                " Change reward account by submitting proofs from relay accounts",
                 "",
-                " The contributor needs to issue an additional addmemo transaction if it wants to receive",
-                " the reward in a parachain native account. For the moment I will leave this function here",
-                " just in case the contributor forgot to add such a memo field. Whenever we can read the",
-                " state of the relay chain, we should first check whether that memo field exists in the",
-                " contribution"
+                " The number of valid proofs needs to be bigger than 'RewardAddressRelayVoteThreshold'",
+                " The account to be changed needs to be submitted as 'previous_account'",
+                " Origin must be RewardAddressChangeOrigin"
               ]
             },
             {
@@ -5923,7 +6184,7 @@
                 }
               ],
               "docs": [
-                " Update reward address. To determine whether its something we want to keep"
+                " Update reward address, proving that the caller owns the current native key"
               ]
             },
             {
@@ -5931,13 +6192,13 @@
               "args": [
                 {
                   "name": "lease_ending_block",
-                  "type": "BlockNumber"
+                  "type": "VestingBlockNumber"
                 }
               ],
               "docs": [
                 " This extrinsic completes the initialization if some checks are fullfiled. These checks are:",
                 "  -The reward contribution money matches the crowdloan pot",
-                "  -The end relay block is higher than the init relay block",
+                "  -The end vesting block is higher than the init vesting block",
                 "  -The initialization has not complete yet"
               ]
             },
@@ -5951,8 +6212,8 @@
               ],
               "docs": [
                 " Initialize the reward distribution storage. It shortcuts whenever an error is found",
-                " We can change this behavior to check this beforehand if we prefer",
-                " We check that the number of contributors inserted is less than T::MaxInitContributors::get()"
+                " This does not enforce any checks other than making sure we dont go over funds",
+                " complete_initialization should perform any additional"
               ]
             }
           ],
@@ -6035,8 +6296,17 @@
             {
               "name": "MaxInitContributors",
               "type": "u32",
-              "value": "0xe8030000",
+              "value": "0xf4010000",
               "docs": []
+            },
+            {
+              "name": "RewardAddressRelayVoteThreshold",
+              "type": "Perbill",
+              "value": "0x00ca9a3b",
+              "docs": [
+                " A fraction representing the percentage of proofs",
+                " that need to be presented to change a reward address through the relay keys"
+              ]
             }
           ],
           "errors": [
@@ -6108,7 +6378,7 @@
             {
               "name": "RewardsDoNotMatchFund",
               "docs": [
-                " Reward vec has already been initialized"
+                " Rewards should match funds of the pallet"
               ]
             },
             {
@@ -6121,6 +6391,18 @@
               "name": "VestingPeriodNonValid",
               "docs": [
                 " Provided vesting period is not valid"
+              ]
+            },
+            {
+              "name": "NonContributedAddressProvided",
+              "docs": [
+                " User provided a signature from a non-contributor relay account"
+              ]
+            },
+            {
+              "name": "InsufficientNumberOfValidProofs",
+              "docs": [
+                " User submitted an unsifficient number of proofs to change the reward address"
               ]
             }
           ],
@@ -6136,7 +6418,7 @@
                 "modifier": "Optional",
                 "type": {
                   "map": {
-                    "hasher": "Twox64Concat",
+                    "hasher": "Blake2_128Concat",
                     "key": "AuthorId",
                     "value": "RegistrationInfo",
                     "linked": false
@@ -6801,6 +7083,2818 @@
             }
           ],
           "index": 22
+        },
+        {
+          "name": "MaintenanceMode",
+          "storage": {
+            "prefix": "MaintenanceMode",
+            "items": [
+              {
+                "name": "MaintenanceMode",
+                "modifier": "Default",
+                "type": {
+                  "plain": "bool"
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Whether the site is in maintenance mode"
+                ]
+              }
+            ]
+          },
+          "calls": [
+            {
+              "name": "enter_maintenance_mode",
+              "args": [],
+              "docs": [
+                " Place the chain in maintenance mode",
+                "",
+                " Weight cost is:",
+                " * One DB read to ensure we're not already in maintenance mode",
+                " * Two DB writes - 1 for the mode and 1 for the event"
+              ]
+            },
+            {
+              "name": "resume_normal_operation",
+              "args": [],
+              "docs": [
+                " Return the chain to normal operating mode",
+                "",
+                " Weight cost is:",
+                " * One DB read to ensure we're in maintenance mode",
+                " * Two DB writes - 1 for the mode and 1 for the event"
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "EnteredMaintenanceMode",
+              "args": [],
+              "docs": [
+                " The chain was put into Maintenance Mode"
+              ]
+            },
+            {
+              "name": "NormalOperationResumed",
+              "args": [],
+              "docs": [
+                " The chain returned to its normal operating state"
+              ]
+            }
+          ],
+          "constants": [],
+          "errors": [
+            {
+              "name": "AlreadyInMaintenanceMode",
+              "docs": [
+                " The chain cannot enter maintenance mode because it is already in maintenance mode"
+              ]
+            },
+            {
+              "name": "NotInMaintenanceMode",
+              "docs": [
+                " The chain cannot resume normal operation because it is not in maintenance mode"
+              ]
+            }
+          ],
+          "index": 23
+        },
+        {
+          "name": "Identity",
+          "storage": {
+            "prefix": "Identity",
+            "items": [
+              {
+                "name": "IdentityOf",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Twox64Concat",
+                    "key": "AccountId",
+                    "value": "Registration",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Information that is pertinent to identify the entity behind an account.",
+                  "",
+                  " TWOX-NOTE: OK ― `AccountId` is a secure hash."
+                ]
+              },
+              {
+                "name": "SuperOf",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AccountId",
+                    "value": "(AccountId,Data)",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The super-identity of an alternative \"sub\" identity together with its name, within that",
+                  " context. If the account is not some other account's sub-identity, then just `None`."
+                ]
+              },
+              {
+                "name": "SubsOf",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Twox64Concat",
+                    "key": "AccountId",
+                    "value": "(BalanceOf,Vec<AccountId>)",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x0000000000000000000000000000000000",
+                "docs": [
+                  " Alternative \"sub\" identities of this account.",
+                  "",
+                  " The first item is the deposit, the second is a vector of the accounts.",
+                  "",
+                  " TWOX-NOTE: OK ― `AccountId` is a secure hash."
+                ]
+              },
+              {
+                "name": "Registrars",
+                "modifier": "Default",
+                "type": {
+                  "plain": "Vec<Option<RegistrarInfo>>"
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The set of registrars. Not expected to get very big as can only be added through a",
+                  " special origin (likely a council motion).",
+                  "",
+                  " The index into this can be cast to `RegistrarIndex` to get a valid value."
+                ]
+              }
+            ]
+          },
+          "calls": [
+            {
+              "name": "add_registrar",
+              "args": [
+                {
+                  "name": "account",
+                  "type": "AccountId"
+                }
+              ],
+              "docs": [
+                " Add a registrar to the system.",
+                "",
+                " The dispatch origin for this call must be `T::RegistrarOrigin`.",
+                "",
+                " - `account`: the account of the registrar.",
+                "",
+                " Emits `RegistrarAdded` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R)` where `R` registrar-count (governance-bounded and code-bounded).",
+                " - One storage mutation (codec `O(R)`).",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "set_identity",
+              "args": [
+                {
+                  "name": "info",
+                  "type": "IdentityInfo"
+                }
+              ],
+              "docs": [
+                " Set an account's identity information and reserve the appropriate deposit.",
+                "",
+                " If the account already has identity information, the deposit is taken as part payment",
+                " for the new deposit.",
+                "",
+                " The dispatch origin for this call must be _Signed_.",
+                "",
+                " - `info`: The identity information.",
+                "",
+                " Emits `IdentitySet` if successful.",
+                "",
+                " # <weight>",
+                " - `O(X + X' + R)`",
+                "   - where `X` additional-field-count (deposit-bounded and code-bounded)",
+                "   - where `R` judgements-count (registrar-count-bounded)",
+                " - One balance reserve operation.",
+                " - One storage mutation (codec-read `O(X' + R)`, codec-write `O(X + R)`).",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "set_subs",
+              "args": [
+                {
+                  "name": "subs",
+                  "type": "Vec<(AccountId,Data)>"
+                }
+              ],
+              "docs": [
+                " Set the sub-accounts of the sender.",
+                "",
+                " Payment: Any aggregate balance reserved by previous `set_subs` calls will be returned",
+                " and an amount `SubAccountDeposit` will be reserved for each item in `subs`.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " identity.",
+                "",
+                " - `subs`: The identity's (new) sub-accounts.",
+                "",
+                " # <weight>",
+                " - `O(P + S)`",
+                "   - where `P` old-subs-count (hard- and deposit-bounded).",
+                "   - where `S` subs-count (hard- and deposit-bounded).",
+                " - At most one balance operations.",
+                " - DB:",
+                "   - `P + S` storage mutations (codec complexity `O(1)`)",
+                "   - One storage read (codec complexity `O(P)`).",
+                "   - One storage write (codec complexity `O(S)`).",
+                "   - One storage-exists (`IdentityOf::contains_key`).",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "clear_identity",
+              "args": [],
+              "docs": [
+                " Clear an account's identity info and all sub-accounts and return all deposits.",
+                "",
+                " Payment: All reserved balances on the account are returned.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " identity.",
+                "",
+                " Emits `IdentityCleared` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R + S + X)`",
+                "   - where `R` registrar-count (governance-bounded).",
+                "   - where `S` subs-count (hard- and deposit-bounded).",
+                "   - where `X` additional-field-count (deposit-bounded and code-bounded).",
+                " - One balance-unreserve operation.",
+                " - `2` storage reads and `S + 2` storage deletions.",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "request_judgement",
+              "args": [
+                {
+                  "name": "reg_index",
+                  "type": "Compact<RegistrarIndex>"
+                },
+                {
+                  "name": "max_fee",
+                  "type": "Compact<BalanceOf>"
+                }
+              ],
+              "docs": [
+                " Request a judgement from a registrar.",
+                "",
+                " Payment: At most `max_fee` will be reserved for payment to the registrar if judgement",
+                " given.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a",
+                " registered identity.",
+                "",
+                " - `reg_index`: The index of the registrar whose judgement is requested.",
+                " - `max_fee`: The maximum fee that may be paid. This should just be auto-populated as:",
+                "",
+                " ```nocompile",
+                " Self::registrars().get(reg_index).unwrap().fee",
+                " ```",
+                "",
+                " Emits `JudgementRequested` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R + X)`.",
+                " - One balance-reserve operation.",
+                " - Storage: 1 read `O(R)`, 1 mutate `O(X + R)`.",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "cancel_request",
+              "args": [
+                {
+                  "name": "reg_index",
+                  "type": "RegistrarIndex"
+                }
+              ],
+              "docs": [
+                " Cancel a previous request.",
+                "",
+                " Payment: A previously reserved deposit is returned on success.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a",
+                " registered identity.",
+                "",
+                " - `reg_index`: The index of the registrar whose judgement is no longer requested.",
+                "",
+                " Emits `JudgementUnrequested` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R + X)`.",
+                " - One balance-reserve operation.",
+                " - One storage mutation `O(R + X)`.",
+                " - One event",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "set_fee",
+              "args": [
+                {
+                  "name": "index",
+                  "type": "Compact<RegistrarIndex>"
+                },
+                {
+                  "name": "fee",
+                  "type": "Compact<BalanceOf>"
+                }
+              ],
+              "docs": [
+                " Set the fee required for a judgement to be requested from a registrar.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must be the account",
+                " of the registrar whose index is `index`.",
+                "",
+                " - `index`: the index of the registrar whose fee is to be set.",
+                " - `fee`: the new fee.",
+                "",
+                " # <weight>",
+                " - `O(R)`.",
+                " - One storage mutation `O(R)`.",
+                " - Benchmark: 7.315 + R * 0.329 µs (min squares analysis)",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "set_account_id",
+              "args": [
+                {
+                  "name": "index",
+                  "type": "Compact<RegistrarIndex>"
+                },
+                {
+                  "name": "new",
+                  "type": "AccountId"
+                }
+              ],
+              "docs": [
+                " Change the account associated with a registrar.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must be the account",
+                " of the registrar whose index is `index`.",
+                "",
+                " - `index`: the index of the registrar whose fee is to be set.",
+                " - `new`: the new account ID.",
+                "",
+                " # <weight>",
+                " - `O(R)`.",
+                " - One storage mutation `O(R)`.",
+                " - Benchmark: 8.823 + R * 0.32 µs (min squares analysis)",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "set_fields",
+              "args": [
+                {
+                  "name": "index",
+                  "type": "Compact<RegistrarIndex>"
+                },
+                {
+                  "name": "fields",
+                  "type": "IdentityFields"
+                }
+              ],
+              "docs": [
+                " Set the field information for a registrar.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must be the account",
+                " of the registrar whose index is `index`.",
+                "",
+                " - `index`: the index of the registrar whose fee is to be set.",
+                " - `fields`: the fields that the registrar concerns themselves with.",
+                "",
+                " # <weight>",
+                " - `O(R)`.",
+                " - One storage mutation `O(R)`.",
+                " - Benchmark: 7.464 + R * 0.325 µs (min squares analysis)",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "provide_judgement",
+              "args": [
+                {
+                  "name": "reg_index",
+                  "type": "Compact<RegistrarIndex>"
+                },
+                {
+                  "name": "target",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "judgement",
+                  "type": "IdentityJudgement"
+                }
+              ],
+              "docs": [
+                " Provide a judgement for an account's identity.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must be the account",
+                " of the registrar whose index is `reg_index`.",
+                "",
+                " - `reg_index`: the index of the registrar whose judgement is being made.",
+                " - `target`: the account whose identity the judgement is upon. This must be an account",
+                "   with a registered identity.",
+                " - `judgement`: the judgement of the registrar of index `reg_index` about `target`.",
+                "",
+                " Emits `JudgementGiven` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R + X)`.",
+                " - One balance-transfer operation.",
+                " - Up to one account-lookup operation.",
+                " - Storage: 1 read `O(R)`, 1 mutate `O(R + X)`.",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "kill_identity",
+              "args": [
+                {
+                  "name": "target",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Remove an account's identity and sub-account information and slash the deposits.",
+                "",
+                " Payment: Reserved balances from `set_subs` and `set_identity` are slashed and handled by",
+                " `Slash`. Verification request deposits are not returned; they should be cancelled",
+                " manually using `cancel_request`.",
+                "",
+                " The dispatch origin for this call must match `T::ForceOrigin`.",
+                "",
+                " - `target`: the account whose identity the judgement is upon. This must be an account",
+                "   with a registered identity.",
+                "",
+                " Emits `IdentityKilled` if successful.",
+                "",
+                " # <weight>",
+                " - `O(R + S + X)`.",
+                " - One balance-reserve operation.",
+                " - `S + 2` storage mutations.",
+                " - One event.",
+                " # </weight>"
+              ]
+            },
+            {
+              "name": "add_sub",
+              "args": [
+                {
+                  "name": "sub",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "data",
+                  "type": "Data"
+                }
+              ],
+              "docs": [
+                " Add the given account to the sender's subs.",
+                "",
+                " Payment: Balance reserved by a previous `set_subs` call for one sub will be repatriated",
+                " to the sender.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " sub identity of `sub`."
+              ]
+            },
+            {
+              "name": "rename_sub",
+              "args": [
+                {
+                  "name": "sub",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "data",
+                  "type": "Data"
+                }
+              ],
+              "docs": [
+                " Alter the associated name of the given sub-account.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " sub identity of `sub`."
+              ]
+            },
+            {
+              "name": "remove_sub",
+              "args": [
+                {
+                  "name": "sub",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Remove the given account from the sender's subs.",
+                "",
+                " Payment: Balance reserved by a previous `set_subs` call for one sub will be repatriated",
+                " to the sender.",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " sub identity of `sub`."
+              ]
+            },
+            {
+              "name": "quit_sub",
+              "args": [],
+              "docs": [
+                " Remove the sender as a sub-account.",
+                "",
+                " Payment: Balance reserved by a previous `set_subs` call for one sub will be repatriated",
+                " to the sender (*not* the original depositor).",
+                "",
+                " The dispatch origin for this call must be _Signed_ and the sender must have a registered",
+                " super-identity.",
+                "",
+                " NOTE: This should not normally be used, but is provided in the case that the non-",
+                " controller of an account is maliciously registered as a sub-account."
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "IdentitySet",
+              "args": [
+                "AccountId"
+              ],
+              "docs": [
+                " A name was set or reset (which will remove all judgements). \\[who\\]"
+              ]
+            },
+            {
+              "name": "IdentityCleared",
+              "args": [
+                "AccountId",
+                "Balance"
+              ],
+              "docs": [
+                " A name was cleared, and the given balance returned. \\[who, deposit\\]"
+              ]
+            },
+            {
+              "name": "IdentityKilled",
+              "args": [
+                "AccountId",
+                "Balance"
+              ],
+              "docs": [
+                " A name was removed and the given balance slashed. \\[who, deposit\\]"
+              ]
+            },
+            {
+              "name": "JudgementRequested",
+              "args": [
+                "AccountId",
+                "RegistrarIndex"
+              ],
+              "docs": [
+                " A judgement was asked from a registrar. \\[who, registrar_index\\]"
+              ]
+            },
+            {
+              "name": "JudgementUnrequested",
+              "args": [
+                "AccountId",
+                "RegistrarIndex"
+              ],
+              "docs": [
+                " A judgement request was retracted. \\[who, registrar_index\\]"
+              ]
+            },
+            {
+              "name": "JudgementGiven",
+              "args": [
+                "AccountId",
+                "RegistrarIndex"
+              ],
+              "docs": [
+                " A judgement was given by a registrar. \\[target, registrar_index\\]"
+              ]
+            },
+            {
+              "name": "RegistrarAdded",
+              "args": [
+                "RegistrarIndex"
+              ],
+              "docs": [
+                " A registrar was added. \\[registrar_index\\]"
+              ]
+            },
+            {
+              "name": "SubIdentityAdded",
+              "args": [
+                "AccountId",
+                "AccountId",
+                "Balance"
+              ],
+              "docs": [
+                " A sub-identity was added to an identity and the deposit paid. \\[sub, main, deposit\\]"
+              ]
+            },
+            {
+              "name": "SubIdentityRemoved",
+              "args": [
+                "AccountId",
+                "AccountId",
+                "Balance"
+              ],
+              "docs": [
+                " A sub-identity was removed from an identity and the deposit freed.",
+                " \\[sub, main, deposit\\]"
+              ]
+            },
+            {
+              "name": "SubIdentityRevoked",
+              "args": [
+                "AccountId",
+                "AccountId",
+                "Balance"
+              ],
+              "docs": [
+                " A sub-identity was cleared, and the given deposit repatriated from the",
+                " main identity account to the sub-identity account. \\[sub, main, deposit\\]"
+              ]
+            }
+          ],
+          "constants": [
+            {
+              "name": "BasicDeposit",
+              "type": "BalanceOf",
+              "value": "0x00809842aa5f3c0e0000000000000000",
+              "docs": [
+                " The amount held on deposit for a registered identity"
+              ]
+            },
+            {
+              "name": "FieldDeposit",
+              "type": "BalanceOf",
+              "value": "0x0080843faa7217000000000000000000",
+              "docs": [
+                " The amount held on deposit per additional field for a registered identity."
+              ]
+            },
+            {
+              "name": "SubAccountDeposit",
+              "type": "BalanceOf",
+              "value": "0x0040b310068bf30d0000000000000000",
+              "docs": [
+                " The amount held on deposit for a registered subaccount. This should account for the fact",
+                " that one storage item's value will increase by the size of an account ID, and there will be",
+                " another trie item whose value is the size of an account ID plus 32 bytes."
+              ]
+            },
+            {
+              "name": "MaxSubAccounts",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " The maximum number of sub-accounts allowed per identified account."
+              ]
+            },
+            {
+              "name": "MaxAdditionalFields",
+              "type": "u32",
+              "value": "0x64000000",
+              "docs": [
+                " Maximum number of additional fields that may be stored in an ID. Needed to bound the I/O",
+                " required to access an identity, but can be pretty high."
+              ]
+            },
+            {
+              "name": "MaxRegistrars",
+              "type": "u32",
+              "value": "0x14000000",
+              "docs": [
+                " Maxmimum number of registrars allowed in the system. Needed to bound the complexity",
+                " of, e.g., updating judgements."
+              ]
+            }
+          ],
+          "errors": [
+            {
+              "name": "TooManySubAccounts",
+              "docs": [
+                " Too many subs-accounts."
+              ]
+            },
+            {
+              "name": "NotFound",
+              "docs": [
+                " Account isn't found."
+              ]
+            },
+            {
+              "name": "NotNamed",
+              "docs": [
+                " Account isn't named."
+              ]
+            },
+            {
+              "name": "EmptyIndex",
+              "docs": [
+                " Empty index."
+              ]
+            },
+            {
+              "name": "FeeChanged",
+              "docs": [
+                " Fee is changed."
+              ]
+            },
+            {
+              "name": "NoIdentity",
+              "docs": [
+                " No identity found."
+              ]
+            },
+            {
+              "name": "StickyJudgement",
+              "docs": [
+                " Sticky judgement."
+              ]
+            },
+            {
+              "name": "JudgementGiven",
+              "docs": [
+                " Judgement given."
+              ]
+            },
+            {
+              "name": "InvalidJudgement",
+              "docs": [
+                " Invalid judgement."
+              ]
+            },
+            {
+              "name": "InvalidIndex",
+              "docs": [
+                " The index is invalid."
+              ]
+            },
+            {
+              "name": "InvalidTarget",
+              "docs": [
+                " The target is invalid."
+              ]
+            },
+            {
+              "name": "TooManyFields",
+              "docs": [
+                " Too many additional fields."
+              ]
+            },
+            {
+              "name": "TooManyRegistrars",
+              "docs": [
+                " Maximum amount of registrars reached. Cannot add any more."
+              ]
+            },
+            {
+              "name": "AlreadyClaimed",
+              "docs": [
+                " Account ID is already named."
+              ]
+            },
+            {
+              "name": "NotSub",
+              "docs": [
+                " Sender is not a sub-account."
+              ]
+            },
+            {
+              "name": "NotOwned",
+              "docs": [
+                " Sub-account isn't owned by sender."
+              ]
+            }
+          ],
+          "index": 24
+        },
+        {
+          "name": "XcmpQueue",
+          "storage": {
+            "prefix": "XcmpQueue",
+            "items": [
+              {
+                "name": "InboundXcmpStatus",
+                "modifier": "Default",
+                "type": {
+                  "plain": "Vec<(ParaId,InboundStatus,Vec<(RelayBlockNumber,XcmpMessageFormat)>)>"
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Status of the inbound XCMP channels."
+                ]
+              },
+              {
+                "name": "InboundXcmpMessages",
+                "modifier": "Default",
+                "type": {
+                  "doubleMap": {
+                    "hasher": "Blake2_128Concat",
+                    "key1": "ParaId",
+                    "key2": "RelayBlockNumber",
+                    "value": "Bytes",
+                    "key2Hasher": "Twox64Concat"
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Inbound aggregate XCMP messages. It can only be one per ParaId/block."
+                ]
+              },
+              {
+                "name": "OutboundXcmpStatus",
+                "modifier": "Default",
+                "type": {
+                  "plain": "Vec<(ParaId,OutboundStatus,bool,u16,u16)>"
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The non-empty XCMP channels in order of becoming non-empty, and the index of the first",
+                  " and last outbound message. If the two indices are equal, then it indicates an empty",
+                  " queue and there must be a non-`Ok` `OutboundStatus`. We assume queues grow no greater",
+                  " than 65535 items. Queue indices for normal messages begin at one; zero is reserved in",
+                  " case of the need to send a high-priority signal message this block.",
+                  " The bool is true if there is a signal message waiting to be sent."
+                ]
+              },
+              {
+                "name": "OutboundXcmpMessages",
+                "modifier": "Default",
+                "type": {
+                  "doubleMap": {
+                    "hasher": "Blake2_128Concat",
+                    "key1": "ParaId",
+                    "key2": "u16",
+                    "value": "Bytes",
+                    "key2Hasher": "Twox64Concat"
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The messages outbound in a given XCMP channel."
+                ]
+              },
+              {
+                "name": "SignalMessages",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "ParaId",
+                    "value": "Bytes",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Any signal messages waiting to be sent."
+                ]
+              },
+              {
+                "name": "QueueConfig",
+                "modifier": "Default",
+                "type": {
+                  "plain": "QueueConfigData"
+                },
+                "fallback": "0x020000000500000001000000a0860100000000000200000000000000",
+                "docs": [
+                  " The configuration which controls the dynamics of the outbound queue."
+                ]
+              }
+            ]
+          },
+          "calls": [],
+          "events": [
+            {
+              "name": "Success",
+              "args": [
+                "Option<Hash>"
+              ],
+              "docs": [
+                " Some XCM was executed ok."
+              ]
+            },
+            {
+              "name": "Fail",
+              "args": [
+                "Option<Hash>",
+                "XcmError"
+              ],
+              "docs": [
+                " Some XCM failed."
+              ]
+            },
+            {
+              "name": "BadVersion",
+              "args": [
+                "Option<Hash>"
+              ],
+              "docs": [
+                " Bad XCM version used."
+              ]
+            },
+            {
+              "name": "BadFormat",
+              "args": [
+                "Option<Hash>"
+              ],
+              "docs": [
+                " Bad XCM format used."
+              ]
+            },
+            {
+              "name": "UpwardMessageSent",
+              "args": [
+                "Option<Hash>"
+              ],
+              "docs": [
+                " An upward message was sent to the relay chain."
+              ]
+            },
+            {
+              "name": "XcmpMessageSent",
+              "args": [
+                "Option<Hash>"
+              ],
+              "docs": [
+                " An HRMP message was sent to a sibling parachain."
+              ]
+            }
+          ],
+          "constants": [],
+          "errors": [
+            {
+              "name": "FailedToSend",
+              "docs": [
+                " Failed to send XCM message."
+              ]
+            },
+            {
+              "name": "BadXcmOrigin",
+              "docs": [
+                " Bad XCM origin."
+              ]
+            },
+            {
+              "name": "BadXcm",
+              "docs": [
+                " Bad XCM data."
+              ]
+            }
+          ],
+          "index": 25
+        },
+        {
+          "name": "CumulusXcm",
+          "storage": null,
+          "calls": null,
+          "events": [
+            {
+              "name": "InvalidFormat",
+              "args": [
+                "[u8;8]"
+              ],
+              "docs": [
+                " Downward message is invalid XCM.",
+                " \\[ id \\]"
+              ]
+            },
+            {
+              "name": "UnsupportedVersion",
+              "args": [
+                "[u8;8]"
+              ],
+              "docs": [
+                " Downward message is unsupported version of XCM.",
+                " \\[ id \\]"
+              ]
+            },
+            {
+              "name": "ExecutedDownward",
+              "args": [
+                "[u8;8]",
+                "Outcome"
+              ],
+              "docs": [
+                " Downward message executed with the given outcome.",
+                " \\[ id, outcome \\]"
+              ]
+            }
+          ],
+          "constants": [],
+          "errors": [],
+          "index": 26
+        },
+        {
+          "name": "DmpQueue",
+          "storage": {
+            "prefix": "DmpQueue",
+            "items": [
+              {
+                "name": "Configuration",
+                "modifier": "Default",
+                "type": {
+                  "plain": "ConfigData"
+                },
+                "fallback": "0x00e40b5402000000",
+                "docs": [
+                  " The configuration."
+                ]
+              },
+              {
+                "name": "PageIndex",
+                "modifier": "Default",
+                "type": {
+                  "plain": "PageIndexData"
+                },
+                "fallback": "0x00000000000000000000000000000000",
+                "docs": [
+                  " The page index."
+                ]
+              },
+              {
+                "name": "Pages",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "PageCounter",
+                    "value": "Vec<(RelayBlockNumber,Bytes)>",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The queue pages."
+                ]
+              },
+              {
+                "name": "Overweight",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "OverweightIndex",
+                    "value": "(RelayBlockNumber,Bytes)",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " The overweight messages."
+                ]
+              }
+            ]
+          },
+          "calls": [
+            {
+              "name": "service_overweight",
+              "args": [
+                {
+                  "name": "index",
+                  "type": "OverweightIndex"
+                },
+                {
+                  "name": "weight_limit",
+                  "type": "Weight"
+                }
+              ],
+              "docs": [
+                " Service a single overweight message.",
+                "",
+                " - `origin`: Must pass `ExecuteOverweightOrigin`.",
+                " - `index`: The index of the overweight message to service.",
+                " - `weight_limit`: The amount of weight that message execution may take.",
+                "",
+                " Errors:",
+                " - `Unknown`: Message of `index` is unknown.",
+                " - `OverLimit`: Message execution may use greater than `weight_limit`.",
+                "",
+                " Events:",
+                " - `OverweightServiced`: On success."
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "InvalidFormat",
+              "args": [
+                "MessageId"
+              ],
+              "docs": [
+                " Downward message is invalid XCM.",
+                " \\[ id \\]"
+              ]
+            },
+            {
+              "name": "UnsupportedVersion",
+              "args": [
+                "MessageId"
+              ],
+              "docs": [
+                " Downward message is unsupported version of XCM.",
+                " \\[ id \\]"
+              ]
+            },
+            {
+              "name": "ExecutedDownward",
+              "args": [
+                "MessageId",
+                "Outcome"
+              ],
+              "docs": [
+                " Downward message executed with the given outcome.",
+                " \\[ id, outcome \\]"
+              ]
+            },
+            {
+              "name": "WeightExhausted",
+              "args": [
+                "MessageId",
+                "Weight",
+                "Weight"
+              ],
+              "docs": [
+                " The weight limit for handling downward messages was reached.",
+                " \\[ id, remaining, required \\]"
+              ]
+            },
+            {
+              "name": "OverweightEnqueued",
+              "args": [
+                "MessageId",
+                "OverweightIndex",
+                "Weight"
+              ],
+              "docs": [
+                " Downward message is overweight and was placed in the overweight queue.",
+                " \\[ id, index, required \\]"
+              ]
+            },
+            {
+              "name": "OverweightServiced",
+              "args": [
+                "OverweightIndex",
+                "Weight"
+              ],
+              "docs": [
+                " Downward message from the overweight queue was executed.",
+                " \\[ index, used \\]"
+              ]
+            }
+          ],
+          "constants": [],
+          "errors": [
+            {
+              "name": "Unknown",
+              "docs": [
+                " The message index given is unknown."
+              ]
+            },
+            {
+              "name": "OverLimit",
+              "docs": [
+                " The amount of weight given is possibly not enough for executing the message."
+              ]
+            }
+          ],
+          "index": 27
+        },
+        {
+          "name": "PolkadotXcm",
+          "storage": null,
+          "calls": null,
+          "events": [
+            {
+              "name": "Attempted",
+              "args": [
+                "Outcome"
+              ],
+              "docs": []
+            },
+            {
+              "name": "Sent",
+              "args": [
+                "MultiLocation",
+                "MultiLocation",
+                "Xcm"
+              ],
+              "docs": []
+            }
+          ],
+          "constants": [],
+          "errors": [
+            {
+              "name": "Unreachable",
+              "docs": []
+            },
+            {
+              "name": "SendFailure",
+              "docs": []
+            },
+            {
+              "name": "Filtered",
+              "docs": [
+                " The message execution fails the filter."
+              ]
+            },
+            {
+              "name": "UnweighableMessage",
+              "docs": [
+                " The message's weight could not be determined."
+              ]
+            },
+            {
+              "name": "Empty",
+              "docs": [
+                " The assets to be sent are empty."
+              ]
+            },
+            {
+              "name": "CannotReanchor",
+              "docs": [
+                " Could not re-anchor the assets to declare the fees for the destination chain."
+              ]
+            },
+            {
+              "name": "TooManyAssets",
+              "docs": [
+                " Too many assets have been attempted for transfer."
+              ]
+            },
+            {
+              "name": "InvalidOrigin",
+              "docs": [
+                " Origin is invalid for sending."
+              ]
+            },
+            {
+              "name": "BadVersion",
+              "docs": [
+                " The version of the `Versioned` value used is not able to be interpreted."
+              ]
+            }
+          ],
+          "index": 28
+        },
+        {
+          "name": "Assets",
+          "storage": {
+            "prefix": "Assets",
+            "items": [
+              {
+                "name": "Asset",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AssetId",
+                    "value": "AssetDetails",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Details of an asset."
+                ]
+              },
+              {
+                "name": "Account",
+                "modifier": "Default",
+                "type": {
+                  "doubleMap": {
+                    "hasher": "Blake2_128Concat",
+                    "key1": "AssetId",
+                    "key2": "AccountId",
+                    "value": "AssetBalance",
+                    "key2Hasher": "Blake2_128Concat"
+                  }
+                },
+                "fallback": "0x000000000000000000000000000000000000",
+                "docs": [
+                  " The number of units of assets held by any given account."
+                ]
+              },
+              {
+                "name": "Approvals",
+                "modifier": "Optional",
+                "type": {
+                  "nMap": {
+                    "keyVec": [
+                      "AssetId",
+                      "AccountId",
+                      "AccountId"
+                    ],
+                    "hashers": [
+                      "Blake2_128Concat",
+                      "Blake2_128Concat",
+                      "Blake2_128Concat"
+                    ],
+                    "value": "AssetApproval"
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Approved balance transfers. First balance is the amount approved for transfer. Second",
+                  " is the amount of `T::Currency` reserved for storing this.",
+                  " First key is the asset ID, second key is the owner and third key is the delegate."
+                ]
+              },
+              {
+                "name": "Metadata",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AssetId",
+                    "value": "AssetMetadata",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x0000000000000000000000000000000000000000",
+                "docs": [
+                  " Metadata of an asset."
+                ]
+              }
+            ]
+          },
+          "calls": [
+            {
+              "name": "create",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "admin",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "min_balance",
+                  "type": "TAssetBalance"
+                }
+              ],
+              "docs": [
+                " Issue a new class of fungible assets from a public origin.",
+                "",
+                " This new asset class has no assets initially and its owner is the origin.",
+                "",
+                " The origin must be Signed and the sender must have sufficient funds free.",
+                "",
+                " Funds of sender are reserved by `AssetDeposit`.",
+                "",
+                " Parameters:",
+                " - `id`: The identifier of the new asset. This must not be currently in use to identify",
+                " an existing asset.",
+                " - `admin`: The admin of this class of assets. The admin is the initial address of each",
+                " member of the asset class's admin team.",
+                " - `min_balance`: The minimum balance of this new asset that any single account must",
+                " have. If an account's balance is reduced below this, then it collapses to zero.",
+                "",
+                " Emits `Created` event when successful.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "force_create",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "owner",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "is_sufficient",
+                  "type": "bool"
+                },
+                {
+                  "name": "min_balance",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Issue a new class of fungible assets from a privileged origin.",
+                "",
+                " This new asset class has no assets initially.",
+                "",
+                " The origin must conform to `ForceOrigin`.",
+                "",
+                " Unlike `create`, no funds are reserved.",
+                "",
+                " - `id`: The identifier of the new asset. This must not be currently in use to identify",
+                " an existing asset.",
+                " - `owner`: The owner of this class of assets. The owner has full superuser permissions",
+                " over this asset, but may later change and configure the permissions using `transfer_ownership`",
+                " and `set_team`.",
+                " - `min_balance`: The minimum balance of this new asset that any single account must",
+                " have. If an account's balance is reduced below this, then it collapses to zero.",
+                "",
+                " Emits `ForceCreated` event when successful.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "destroy",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "witness",
+                  "type": "AssetDestroyWitness"
+                }
+              ],
+              "docs": [
+                " Destroy a class of fungible assets.",
+                "",
+                " The origin must conform to `ForceOrigin` or must be Signed and the sender must be the",
+                " owner of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be destroyed. This must identify an existing",
+                " asset.",
+                "",
+                " Emits `Destroyed` event when successful.",
+                "",
+                " NOTE: It can be helpful to first freeze an asset before destroying it so that you",
+                " can provide accurate witness information and prevent users from manipulating state",
+                " in a way that can make it harder to destroy.",
+                "",
+                " Weight: `O(c + p + a)` where:",
+                " - `c = (witness.accounts - witness.sufficients)`",
+                " - `s = witness.sufficients`",
+                " - `a = witness.approvals`"
+              ]
+            },
+            {
+              "name": "mint",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "beneficiary",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Mint assets of a particular class.",
+                "",
+                " The origin must be Signed and the sender must be the Issuer of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to have some amount minted.",
+                " - `beneficiary`: The account to be credited with the minted assets.",
+                " - `amount`: The amount of the asset to be minted.",
+                "",
+                " Emits `Issued` event when successful.",
+                "",
+                " Weight: `O(1)`",
+                " Modes: Pre-existing balance of `beneficiary`; Account pre-existence of `beneficiary`."
+              ]
+            },
+            {
+              "name": "burn",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "who",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Reduce the balance of `who` by as much as possible up to `amount` assets of `id`.",
+                "",
+                " Origin must be Signed and the sender should be the Manager of the asset `id`.",
+                "",
+                " Bails with `BalanceZero` if the `who` is already dead.",
+                "",
+                " - `id`: The identifier of the asset to have some amount burned.",
+                " - `who`: The account to be debited from.",
+                " - `amount`: The maximum amount by which `who`'s balance should be reduced.",
+                "",
+                " Emits `Burned` with the actual amount burned. If this takes the balance to below the",
+                " minimum for the asset, then the amount burned is increased to take it to zero.",
+                "",
+                " Weight: `O(1)`",
+                " Modes: Post-existence of `who`; Pre & post Zombie-status of `who`."
+              ]
+            },
+            {
+              "name": "transfer",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "target",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Move some assets from the sender account to another.",
+                "",
+                " Origin must be Signed.",
+                "",
+                " - `id`: The identifier of the asset to have some amount transferred.",
+                " - `target`: The account to be credited.",
+                " - `amount`: The amount by which the sender's balance of assets should be reduced and",
+                " `target`'s balance increased. The amount actually transferred may be slightly greater in",
+                " the case that the transfer would otherwise take the sender balance above zero but below",
+                " the minimum balance. Must be greater than zero.",
+                "",
+                " Emits `Transferred` with the actual amount transferred. If this takes the source balance",
+                " to below the minimum for the asset, then the amount transferred is increased to take it",
+                " to zero.",
+                "",
+                " Weight: `O(1)`",
+                " Modes: Pre-existence of `target`; Post-existence of sender; Account pre-existence of",
+                " `target`."
+              ]
+            },
+            {
+              "name": "transfer_keep_alive",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "target",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Move some assets from the sender account to another, keeping the sender account alive.",
+                "",
+                " Origin must be Signed.",
+                "",
+                " - `id`: The identifier of the asset to have some amount transferred.",
+                " - `target`: The account to be credited.",
+                " - `amount`: The amount by which the sender's balance of assets should be reduced and",
+                " `target`'s balance increased. The amount actually transferred may be slightly greater in",
+                " the case that the transfer would otherwise take the sender balance above zero but below",
+                " the minimum balance. Must be greater than zero.",
+                "",
+                " Emits `Transferred` with the actual amount transferred. If this takes the source balance",
+                " to below the minimum for the asset, then the amount transferred is increased to take it",
+                " to zero.",
+                "",
+                " Weight: `O(1)`",
+                " Modes: Pre-existence of `target`; Post-existence of sender; Account pre-existence of",
+                " `target`."
+              ]
+            },
+            {
+              "name": "force_transfer",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "source",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "dest",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Move some assets from one account to another.",
+                "",
+                " Origin must be Signed and the sender should be the Admin of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to have some amount transferred.",
+                " - `source`: The account to be debited.",
+                " - `dest`: The account to be credited.",
+                " - `amount`: The amount by which the `source`'s balance of assets should be reduced and",
+                " `dest`'s balance increased. The amount actually transferred may be slightly greater in",
+                " the case that the transfer would otherwise take the `source` balance above zero but",
+                " below the minimum balance. Must be greater than zero.",
+                "",
+                " Emits `Transferred` with the actual amount transferred. If this takes the source balance",
+                " to below the minimum for the asset, then the amount transferred is increased to take it",
+                " to zero.",
+                "",
+                " Weight: `O(1)`",
+                " Modes: Pre-existence of `dest`; Post-existence of `source`; Account pre-existence of",
+                " `dest`."
+              ]
+            },
+            {
+              "name": "freeze",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "who",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Disallow further unprivileged transfers from an account.",
+                "",
+                " Origin must be Signed and the sender should be the Freezer of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be frozen.",
+                " - `who`: The account to be frozen.",
+                "",
+                " Emits `Frozen`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "thaw",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "who",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Allow unprivileged transfers from an account again.",
+                "",
+                " Origin must be Signed and the sender should be the Admin of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be frozen.",
+                " - `who`: The account to be unfrozen.",
+                "",
+                " Emits `Thawed`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "freeze_asset",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                }
+              ],
+              "docs": [
+                " Disallow further unprivileged transfers for the asset class.",
+                "",
+                " Origin must be Signed and the sender should be the Freezer of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be frozen.",
+                "",
+                " Emits `Frozen`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "thaw_asset",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                }
+              ],
+              "docs": [
+                " Allow unprivileged transfers for the asset again.",
+                "",
+                " Origin must be Signed and the sender should be the Admin of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be thawed.",
+                "",
+                " Emits `Thawed`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "transfer_ownership",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "owner",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Change the Owner of an asset.",
+                "",
+                " Origin must be Signed and the sender should be the Owner of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `owner`: The new Owner of this asset.",
+                "",
+                " Emits `OwnerChanged`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "set_team",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "issuer",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "admin",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "freezer",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Change the Issuer, Admin and Freezer of an asset.",
+                "",
+                " Origin must be Signed and the sender should be the Owner of the asset `id`.",
+                "",
+                " - `id`: The identifier of the asset to be frozen.",
+                " - `issuer`: The new Issuer of this asset.",
+                " - `admin`: The new Admin of this asset.",
+                " - `freezer`: The new Freezer of this asset.",
+                "",
+                " Emits `TeamChanged`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "set_metadata",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "name",
+                  "type": "Bytes"
+                },
+                {
+                  "name": "symbol",
+                  "type": "Bytes"
+                },
+                {
+                  "name": "decimals",
+                  "type": "u8"
+                }
+              ],
+              "docs": [
+                " Set the metadata for an asset.",
+                "",
+                " Origin must be Signed and the sender should be the Owner of the asset `id`.",
+                "",
+                " Funds of sender are reserved according to the formula:",
+                " `MetadataDepositBase + MetadataDepositPerByte * (name.len + symbol.len)` taking into",
+                " account any already reserved funds.",
+                "",
+                " - `id`: The identifier of the asset to update.",
+                " - `name`: The user friendly name of this asset. Limited in length by `StringLimit`.",
+                " - `symbol`: The exchange symbol for this asset. Limited in length by `StringLimit`.",
+                " - `decimals`: The number of decimals this asset uses to represent one unit.",
+                "",
+                " Emits `MetadataSet`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "clear_metadata",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                }
+              ],
+              "docs": [
+                " Clear the metadata for an asset.",
+                "",
+                " Origin must be Signed and the sender should be the Owner of the asset `id`.",
+                "",
+                " Any deposit is freed for the asset owner.",
+                "",
+                " - `id`: The identifier of the asset to clear.",
+                "",
+                " Emits `MetadataCleared`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "force_set_metadata",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "name",
+                  "type": "Bytes"
+                },
+                {
+                  "name": "symbol",
+                  "type": "Bytes"
+                },
+                {
+                  "name": "decimals",
+                  "type": "u8"
+                },
+                {
+                  "name": "is_frozen",
+                  "type": "bool"
+                }
+              ],
+              "docs": [
+                " Force the metadata for an asset to some value.",
+                "",
+                " Origin must be ForceOrigin.",
+                "",
+                " Any deposit is left alone.",
+                "",
+                " - `id`: The identifier of the asset to update.",
+                " - `name`: The user friendly name of this asset. Limited in length by `StringLimit`.",
+                " - `symbol`: The exchange symbol for this asset. Limited in length by `StringLimit`.",
+                " - `decimals`: The number of decimals this asset uses to represent one unit.",
+                "",
+                " Emits `MetadataSet`.",
+                "",
+                " Weight: `O(N + S)` where N and S are the length of the name and symbol respectively."
+              ]
+            },
+            {
+              "name": "force_clear_metadata",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                }
+              ],
+              "docs": [
+                " Clear the metadata for an asset.",
+                "",
+                " Origin must be ForceOrigin.",
+                "",
+                " Any deposit is returned.",
+                "",
+                " - `id`: The identifier of the asset to clear.",
+                "",
+                " Emits `MetadataCleared`.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "force_asset_status",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "owner",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "issuer",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "admin",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "freezer",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "min_balance",
+                  "type": "Compact<TAssetBalance>"
+                },
+                {
+                  "name": "is_sufficient",
+                  "type": "bool"
+                },
+                {
+                  "name": "is_frozen",
+                  "type": "bool"
+                }
+              ],
+              "docs": [
+                " Alter the attributes of a given asset.",
+                "",
+                " Origin must be `ForceOrigin`.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `owner`: The new Owner of this asset.",
+                " - `issuer`: The new Issuer of this asset.",
+                " - `admin`: The new Admin of this asset.",
+                " - `freezer`: The new Freezer of this asset.",
+                " - `min_balance`: The minimum balance of this new asset that any single account must",
+                " have. If an account's balance is reduced below this, then it collapses to zero.",
+                " - `is_sufficient`: Whether a non-zero balance of this asset is deposit of sufficient",
+                " value to account for the state bloat associated with its balance storage. If set to",
+                " `true`, then non-zero balances may be stored without a `consumer` reference (and thus",
+                " an ED in the Balances pallet or whatever else is used to control user-account state",
+                " growth).",
+                " - `is_frozen`: Whether this asset class is frozen except for permissioned/admin",
+                " instructions.",
+                "",
+                " Emits `AssetStatusChanged` with the identity of the asset.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "approve_transfer",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "delegate",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Approve an amount of asset for transfer by a delegated third-party account.",
+                "",
+                " Origin must be Signed.",
+                "",
+                " Ensures that `ApprovalDeposit` worth of `Currency` is reserved from signing account",
+                " for the purpose of holding the approval. If some non-zero amount of assets is already",
+                " approved from signing account to `delegate`, then it is topped up or unreserved to",
+                " meet the right value.",
+                "",
+                " NOTE: The signing account does not need to own `amount` of assets at the point of",
+                " making this call.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `delegate`: The account to delegate permission to transfer asset.",
+                " - `amount`: The amount of asset that may be transferred by `delegate`. If there is",
+                " already an approval in place, then this acts additively.",
+                "",
+                " Emits `ApprovedTransfer` on success.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "cancel_approval",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "delegate",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Cancel all of some asset approved for delegated transfer by a third-party account.",
+                "",
+                " Origin must be Signed and there must be an approval in place between signer and",
+                " `delegate`.",
+                "",
+                " Unreserves any deposit previously reserved by `approve_transfer` for the approval.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `delegate`: The account delegated permission to transfer asset.",
+                "",
+                " Emits `ApprovalCancelled` on success.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "force_cancel_approval",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "owner",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "delegate",
+                  "type": "LookupSource"
+                }
+              ],
+              "docs": [
+                " Cancel all of some asset approved for delegated transfer by a third-party account.",
+                "",
+                " Origin must be either ForceOrigin or Signed origin with the signer being the Admin",
+                " account of the asset `id`.",
+                "",
+                " Unreserves any deposit previously reserved by `approve_transfer` for the approval.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `delegate`: The account delegated permission to transfer asset.",
+                "",
+                " Emits `ApprovalCancelled` on success.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            },
+            {
+              "name": "transfer_approved",
+              "args": [
+                {
+                  "name": "id",
+                  "type": "Compact<AssetId>"
+                },
+                {
+                  "name": "owner",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "destination",
+                  "type": "LookupSource"
+                },
+                {
+                  "name": "amount",
+                  "type": "Compact<TAssetBalance>"
+                }
+              ],
+              "docs": [
+                " Transfer some asset balance from a previously delegated account to some third-party",
+                " account.",
+                "",
+                " Origin must be Signed and there must be an approval in place by the `owner` to the",
+                " signer.",
+                "",
+                " If the entire amount approved for transfer is transferred, then any deposit previously",
+                " reserved by `approve_transfer` is unreserved.",
+                "",
+                " - `id`: The identifier of the asset.",
+                " - `owner`: The account which previously approved for a transfer of at least `amount` and",
+                " from which the asset balance will be withdrawn.",
+                " - `destination`: The account to which the asset balance of `amount` will be transferred.",
+                " - `amount`: The amount of assets to transfer.",
+                "",
+                " Emits `TransferredApproved` on success.",
+                "",
+                " Weight: `O(1)`"
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "Created",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId"
+              ],
+              "docs": [
+                " Some asset class was created. \\[asset_id, creator, owner\\]"
+              ]
+            },
+            {
+              "name": "Issued",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "TAssetBalance"
+              ],
+              "docs": [
+                " Some assets were issued. \\[asset_id, owner, total_supply\\]"
+              ]
+            },
+            {
+              "name": "Transferred",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId",
+                "TAssetBalance"
+              ],
+              "docs": [
+                " Some assets were transferred. \\[asset_id, from, to, amount\\]"
+              ]
+            },
+            {
+              "name": "Burned",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "TAssetBalance"
+              ],
+              "docs": [
+                " Some assets were destroyed. \\[asset_id, owner, balance\\]"
+              ]
+            },
+            {
+              "name": "TeamChanged",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId",
+                "AccountId"
+              ],
+              "docs": [
+                " The management team changed \\[asset_id, issuer, admin, freezer\\]"
+              ]
+            },
+            {
+              "name": "OwnerChanged",
+              "args": [
+                "AssetId",
+                "AccountId"
+              ],
+              "docs": [
+                " The owner changed \\[asset_id, owner\\]"
+              ]
+            },
+            {
+              "name": "Frozen",
+              "args": [
+                "AssetId",
+                "AccountId"
+              ],
+              "docs": [
+                " Some account `who` was frozen. \\[asset_id, who\\]"
+              ]
+            },
+            {
+              "name": "Thawed",
+              "args": [
+                "AssetId",
+                "AccountId"
+              ],
+              "docs": [
+                " Some account `who` was thawed. \\[asset_id, who\\]"
+              ]
+            },
+            {
+              "name": "AssetFrozen",
+              "args": [
+                "AssetId"
+              ],
+              "docs": [
+                " Some asset `asset_id` was frozen. \\[asset_id\\]"
+              ]
+            },
+            {
+              "name": "AssetThawed",
+              "args": [
+                "AssetId"
+              ],
+              "docs": [
+                " Some asset `asset_id` was thawed. \\[asset_id\\]"
+              ]
+            },
+            {
+              "name": "Destroyed",
+              "args": [
+                "AssetId"
+              ],
+              "docs": [
+                " An asset class was destroyed."
+              ]
+            },
+            {
+              "name": "ForceCreated",
+              "args": [
+                "AssetId",
+                "AccountId"
+              ],
+              "docs": [
+                " Some asset class was force-created. \\[asset_id, owner\\]"
+              ]
+            },
+            {
+              "name": "MetadataSet",
+              "args": [
+                "AssetId",
+                "Bytes",
+                "Bytes",
+                "u8",
+                "bool"
+              ],
+              "docs": [
+                " New metadata has been set for an asset. \\[asset_id, name, symbol, decimals, is_frozen\\]"
+              ]
+            },
+            {
+              "name": "MetadataCleared",
+              "args": [
+                "AssetId"
+              ],
+              "docs": [
+                " Metadata has been cleared for an asset. \\[asset_id\\]"
+              ]
+            },
+            {
+              "name": "ApprovedTransfer",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId",
+                "TAssetBalance"
+              ],
+              "docs": [
+                " (Additional) funds have been approved for transfer to a destination account.",
+                " \\[asset_id, source, delegate, amount\\]"
+              ]
+            },
+            {
+              "name": "ApprovalCancelled",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId"
+              ],
+              "docs": [
+                " An approval for account `delegate` was cancelled by `owner`.",
+                " \\[id, owner, delegate\\]"
+              ]
+            },
+            {
+              "name": "TransferredApproved",
+              "args": [
+                "AssetId",
+                "AccountId",
+                "AccountId",
+                "AccountId",
+                "TAssetBalance"
+              ],
+              "docs": [
+                " An `amount` was transferred in its entirety from `owner` to `destination` by",
+                " the approved `delegate`.",
+                " \\[id, owner, delegate, destination\\]"
+              ]
+            },
+            {
+              "name": "AssetStatusChanged",
+              "args": [
+                "AssetId"
+              ],
+              "docs": [
+                " An asset has had its attributes changed by the `Force` origin.",
+                " \\[id\\]"
+              ]
+            }
+          ],
+          "constants": [
+            {
+              "name": "AssetDeposit",
+              "type": "DepositBalanceOf",
+              "value": "0x00000000000000000000000000000000",
+              "docs": [
+                " The basic amount of funds that must be reserved for an asset."
+              ]
+            },
+            {
+              "name": "MetadataDepositBase",
+              "type": "DepositBalanceOf",
+              "value": "0x00000000000000000000000000000000",
+              "docs": [
+                " The basic amount of funds that must be reserved when adding metadata to your asset."
+              ]
+            },
+            {
+              "name": "MetadataDepositPerByte",
+              "type": "DepositBalanceOf",
+              "value": "0x00000000000000000000000000000000",
+              "docs": [
+                " The additional funds that must be reserved for the number of bytes you store in your",
+                " metadata."
+              ]
+            },
+            {
+              "name": "ApprovalDeposit",
+              "type": "DepositBalanceOf",
+              "value": "0x00000000000000000000000000000000",
+              "docs": [
+                " The amount of funds that must be reserved when creating a new approval."
+              ]
+            },
+            {
+              "name": "StringLimit",
+              "type": "u32",
+              "value": "0x32000000",
+              "docs": [
+                " The maximum length of a name or symbol stored on-chain."
+              ]
+            }
+          ],
+          "errors": [
+            {
+              "name": "BalanceLow",
+              "docs": [
+                " Account balance must be greater than or equal to the transfer amount."
+              ]
+            },
+            {
+              "name": "BalanceZero",
+              "docs": [
+                " Balance should be non-zero."
+              ]
+            },
+            {
+              "name": "NoPermission",
+              "docs": [
+                " The signing account has no permission to do the operation."
+              ]
+            },
+            {
+              "name": "Unknown",
+              "docs": [
+                " The given asset ID is unknown."
+              ]
+            },
+            {
+              "name": "Frozen",
+              "docs": [
+                " The origin account is frozen."
+              ]
+            },
+            {
+              "name": "InUse",
+              "docs": [
+                " The asset ID is already taken."
+              ]
+            },
+            {
+              "name": "BadWitness",
+              "docs": [
+                " Invalid witness data given."
+              ]
+            },
+            {
+              "name": "MinBalanceZero",
+              "docs": [
+                " Minimum balance should be non-zero."
+              ]
+            },
+            {
+              "name": "NoProvider",
+              "docs": [
+                " No provider reference exists to allow a non-zero balance of a non-self-sufficient asset."
+              ]
+            },
+            {
+              "name": "BadMetadata",
+              "docs": [
+                " Invalid metadata given."
+              ]
+            },
+            {
+              "name": "Unapproved",
+              "docs": [
+                " No approval exists that would allow the transfer."
+              ]
+            },
+            {
+              "name": "WouldDie",
+              "docs": [
+                " The source account would not survive the transfer and it needs to stay alive."
+              ]
+            }
+          ],
+          "index": 29
+        },
+        {
+          "name": "XTokens",
+          "storage": {
+            "prefix": "XTokens",
+            "items": []
+          },
+          "calls": [
+            {
+              "name": "transfer",
+              "args": [
+                {
+                  "name": "currency_id",
+                  "type": "CurrencyId"
+                },
+                {
+                  "name": "amount",
+                  "type": "Balance"
+                },
+                {
+                  "name": "dest",
+                  "type": "MultiLocation"
+                },
+                {
+                  "name": "dest_weight",
+                  "type": "Weight"
+                }
+              ],
+              "docs": [
+                " Transfer native currencies.",
+                "",
+                " `dest_weight` is the weight for XCM execution on the dest chain, and",
+                " it would be charged from the transferred assets. If set below",
+                " requirements, the execution may fail and assets wouldn't be",
+                " received.",
+                "",
+                " It's a no-op if any error on local XCM execution or message sending.",
+                " Note sending assets out per se doesn't guarantee they would be",
+                " received. Receiving depends on if the XCM message could be delivered",
+                " by the network, and if the receiving chain would handle",
+                " messages correctly."
+              ]
+            },
+            {
+              "name": "transfer_multiasset",
+              "args": [
+                {
+                  "name": "asset",
+                  "type": "MultiAsset"
+                },
+                {
+                  "name": "dest",
+                  "type": "MultiLocation"
+                },
+                {
+                  "name": "dest_weight",
+                  "type": "Weight"
+                }
+              ],
+              "docs": [
+                " Transfer `MultiAsset`.",
+                "",
+                " `dest_weight` is the weight for XCM execution on the dest chain, and",
+                " it would be charged from the transferred assets. If set below",
+                " requirements, the execution may fail and assets wouldn't be",
+                " received.",
+                "",
+                " It's a no-op if any error on local XCM execution or message sending.",
+                " Note sending assets out per se doesn't guarantee they would be",
+                " received. Receiving depends on if the XCM message could be delivered",
+                " by the network, and if the receiving chain would handle",
+                " messages correctly."
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "Transferred",
+              "args": [
+                "AccountId",
+                "CurrencyId",
+                "Balance",
+                "MultiLocation"
+              ],
+              "docs": [
+                " Transferred. \\[sender, currency_id, amount, dest\\]"
+              ]
+            },
+            {
+              "name": "TransferredMultiAsset",
+              "args": [
+                "AccountId",
+                "MultiAsset",
+                "MultiLocation"
+              ],
+              "docs": [
+                " Transferred `MultiAsset`. \\[sender, asset, dest\\]"
+              ]
+            }
+          ],
+          "constants": [
+            {
+              "name": "SelfLocation",
+              "type": "MultiLocation",
+              "value": "0x01010000",
+              "docs": [
+                " Self chain location."
+              ]
+            },
+            {
+              "name": "BaseXcmWeight",
+              "type": "Weight",
+              "value": "0x00e1f50500000000",
+              "docs": [
+                " Base XCM weight.",
+                "",
+                " The actually weight for an XCM message is `T::BaseXcmWeight +",
+                " T::Weigher::weight(&msg)`."
+              ]
+            }
+          ],
+          "errors": [
+            {
+              "name": "AssetHasNoReserve",
+              "docs": [
+                " Asset has no reserve location."
+              ]
+            },
+            {
+              "name": "NotCrossChainTransfer",
+              "docs": [
+                " Not cross-chain transfer."
+              ]
+            },
+            {
+              "name": "InvalidDest",
+              "docs": [
+                " Invalid transfer destination."
+              ]
+            },
+            {
+              "name": "NotCrossChainTransferableCurrency",
+              "docs": [
+                " Currency is not cross-chain transferable."
+              ]
+            },
+            {
+              "name": "UnweighableMessage",
+              "docs": [
+                " The message's weight could not be determined."
+              ]
+            },
+            {
+              "name": "XcmExecutionFailed",
+              "docs": [
+                " XCM execution failed."
+              ]
+            },
+            {
+              "name": "CannotReanchor",
+              "docs": [
+                " Could not re-anchor the assets to declare the fees for the",
+                " destination chain."
+              ]
+            },
+            {
+              "name": "InvalidAncestry",
+              "docs": [
+                " Could not get ancestry of asset reserve location."
+              ]
+            },
+            {
+              "name": "NotFungible",
+              "docs": [
+                " Not fungible asset."
+              ]
+            }
+          ],
+          "index": 30
+        },
+        {
+          "name": "AssetManager",
+          "storage": {
+            "prefix": "AssetManager",
+            "items": [
+              {
+                "name": "AssetIdType",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AssetId",
+                    "value": "AssetType",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " Stores the asset TYPE"
+                ]
+              },
+              {
+                "name": "AssetIdUnitsPerSecond",
+                "modifier": "Optional",
+                "type": {
+                  "map": {
+                    "hasher": "Blake2_128Concat",
+                    "key": "AssetId",
+                    "value": "u128",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": []
+              }
+            ]
+          },
+          "calls": [
+            {
+              "name": "register_asset",
+              "args": [
+                {
+                  "name": "asset",
+                  "type": "AssetType"
+                },
+                {
+                  "name": "metadata",
+                  "type": "AssetRegistrarMetadata"
+                },
+                {
+                  "name": "min_amount",
+                  "type": "Balance"
+                }
+              ],
+              "docs": [
+                " Register new asset with the asset manager"
+              ]
+            },
+            {
+              "name": "set_asset_units_per_second",
+              "args": [
+                {
+                  "name": "asset_id",
+                  "type": "AssetId"
+                },
+                {
+                  "name": "units_per_second",
+                  "type": "u128"
+                }
+              ],
+              "docs": [
+                " Change the amount of units we are charging per execution second for a given AssetId"
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "AssetRegistered",
+              "args": [
+                "AssetId",
+                "AssetType",
+                "AssetRegistrarMetadata"
+              ],
+              "docs": []
+            },
+            {
+              "name": "UnitsPerSecondChanged",
+              "args": [
+                "AssetId",
+                "u128"
+              ],
+              "docs": []
+            }
+          ],
+          "constants": [],
+          "errors": [
+            {
+              "name": "ErrorCreatingAsset",
+              "docs": []
+            },
+            {
+              "name": "AssetAlreadyExists",
+              "docs": []
+            },
+            {
+              "name": "AssetDoesNotExist",
+              "docs": []
+            }
+          ],
+          "index": 31
+        },
+        {
+          "name": "Migrations",
+          "storage": {
+            "prefix": "Migrations",
+            "items": [
+              {
+                "name": "FullyUpgraded",
+                "modifier": "Default",
+                "type": {
+                  "plain": "bool"
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " True if all required migrations have completed"
+                ]
+              },
+              {
+                "name": "MigrationState",
+                "modifier": "Default",
+                "type": {
+                  "map": {
+                    "hasher": "Twox64Concat",
+                    "key": "Bytes",
+                    "value": "bool",
+                    "linked": false
+                  }
+                },
+                "fallback": "0x00",
+                "docs": [
+                  " MigrationState tracks the progress of a migration.",
+                  " Maps name (Vec<u8>) -> whether or not migration has been completed (bool)"
+                ]
+              }
+            ]
+          },
+          "calls": null,
+          "events": [
+            {
+              "name": "RuntimeUpgradeStarted",
+              "args": [],
+              "docs": []
+            },
+            {
+              "name": "RuntimeUpgradeCompleted",
+              "args": [
+                "Weight"
+              ],
+              "docs": []
+            },
+            {
+              "name": "MigrationStarted",
+              "args": [
+                "Bytes"
+              ],
+              "docs": []
+            },
+            {
+              "name": "MigrationCompleted",
+              "args": [
+                "Bytes",
+                "Weight"
+              ],
+              "docs": []
+            }
+          ],
+          "constants": [],
+          "errors": [],
+          "index": 32
         }
       ],
       "extrinsic": {
