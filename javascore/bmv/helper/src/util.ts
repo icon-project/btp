@@ -35,7 +35,7 @@ export function convertLEtoBE(input) {
     }
   }
 
-  return "0x" + result.replace(/^0+/, "");
+  return "0x" + result;
 }
 
 export function findEventIndex(relayMetaData, moduleName, eventName) {
