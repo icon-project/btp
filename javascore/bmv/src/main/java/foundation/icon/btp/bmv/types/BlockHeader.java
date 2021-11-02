@@ -154,7 +154,7 @@ public class BlockHeader {
             ExtraDataTypeDecoder typeDecoder = new ExtraDataTypeDecoder(bh.getExtraData());
             // epoch block: 32 bytes of extraVanity + N*{20 bytes of validator address} + 65 bytes of signature
             // non epoch block: 32 bytes of extraVanity + 65 bytes of signature.
-            byte[] signature = ExtraDataTypeDecoder.getBytes(32, 65);
+            byte[] signature = ExtraDataTypeDecoder.getBytes(bh.getExtraData().length-65, 65);
             byte[] signedBH = Context.hash("keccak-256", evmHeader);
             byte[] publicKey = Context.recoverKey("ecdsa-secp256k1", signedBH, signature, false);
             byte[] pkwithoutPrefix = new byte[64];
