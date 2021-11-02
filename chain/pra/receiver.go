@@ -129,20 +129,15 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			}
 
 			if bmcMsg, err := r.c.bmc.ParseMessage(NewEvmLog(e)); err == nil {
-				sequence := bmcMsg.Seq.Int64()
 				rp.Events = append(rp.Events, &chain.Event{
 					Message:  bmcMsg.Msg,
 					Next:     chain.BtpAddress(bmcMsg.Next),
-					Sequence: sequence,
+					Sequence: bmcMsg.Seq.Int64(),
 				})
 
 				r.l.Debugf("newReceiptProofs: newEvent Seq %d", rp.Events[len(rp.Events)-1].Sequence)
-				if sequence == int64(r.rxSeq+1) {
+				if bmcMsg.Seq.Int64() == int64(r.rxSeq+1) {
 					r.foundNextEventFromRxSeq = true
-				}
-
-				if sequence > int64(r.rxSeq+1) {
-					r.l.Panicf("newReceiptProofs: BTPMessage skipped with rxSeq %d, txSeq %d", r.rxSeq, sequence)
 				}
 			}
 		}
