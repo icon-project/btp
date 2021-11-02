@@ -57,7 +57,7 @@ get_Bob_ICX_Balance_with_wait() {
   printf "Checking Bob's Balance after BTP transfer \n"
   get_bob_ICX_balance
   BOB_INITIAL_BAL=$BOB_BALANCE
-  COUNTER=30
+  COUNTER=60
   while true; do
     printf "."
     if [ $COUNTER -le 0 ]; then
@@ -81,7 +81,7 @@ generate_native_metadata() {
   option=$1
   case "$option" in
   BSH)
-    echo "################### Generating Token BSH & BEP20  Solidity metadata ###################"
+    echo "################### Generating Native BSH Solidity metadata ###################"
 
     BSH_PERIPHERY_ADDRESS=$(jq -r '.networks[] | .address' build/contracts/BSHPeriphery.json)
     jq -r '.networks[] | .address' build/contracts/BSHCore.json >$CONFIG_DIR/bsh.core.bsc

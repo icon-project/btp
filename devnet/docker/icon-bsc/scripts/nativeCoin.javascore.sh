@@ -123,7 +123,7 @@ check_alice_native_balance_with_wait() {
 
   cd $CONFIG_DIR
   ALICE_INITIAL_BAL=$(get_alice_native_balance $1)
-  COUNTER=30
+  COUNTER=60
   while true; do
     printf "."
     if [ $COUNTER -le 0 ]; then

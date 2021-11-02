@@ -199,7 +199,7 @@ check_alice_token_balance_with_wait() {
   echo "Checking Alice's balance..."
   cd $CONFIG_DIR
   ALICE_INITIAL_BAL=$(irc2_javascore_balance alice.ks.json)
-  COUNTER=30
+  COUNTER=60
   while true; do
     printf "."
     if [ $COUNTER -le 0 ]; then

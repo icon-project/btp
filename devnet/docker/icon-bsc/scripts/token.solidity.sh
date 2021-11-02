@@ -146,7 +146,7 @@ get_Bob_Token_Balance_with_wait() {
   echo "Checking Bob's Balance after BTP transfer:"
   get_Bob_Token_Balance
   BOB_INITIAL_BAL=$BOB_BALANCE
-  COUNTER=30
+  COUNTER=60
   while true; do
     printf "."
     if [ $COUNTER -le 0 ]; then
