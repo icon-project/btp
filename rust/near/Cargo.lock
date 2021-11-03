@@ -695,25 +695,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
-name = "bsh-periphery"
-version = "0.1.0"
-dependencies = [
- "btp-common",
- "libraries",
- "near-sdk 3.1.0",
-]
-
-[[package]]
-name = "bsh-token"
-version = "0.1.0"
-dependencies = [
- "bsh-periphery",
- "btp-common",
- "libraries",
- "near-sdk 3.1.0",
-]
-
-[[package]]
 name = "btp-common"
 version = "0.1.0"
 dependencies = [
@@ -2485,8 +2466,6 @@ name = "near-btp"
 version = "0.1.0"
 dependencies = [
  "bmc",
- "bsh-periphery",
- "bsh-token",
  "kitten",
  "lazy_static",
  "libraries",
