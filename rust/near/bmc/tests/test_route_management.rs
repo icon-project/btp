@@ -33,7 +33,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn add_route_new_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination =
@@ -59,7 +59,7 @@ fn add_route_new_route() {
 fn add_route_existing_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination =
@@ -75,7 +75,7 @@ fn add_route_existing_route() {
 fn add_route_non_existing_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination =
@@ -88,7 +88,7 @@ fn add_route_non_existing_link() {
 fn add_route_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination =
@@ -101,7 +101,7 @@ fn add_route_permission() {
 fn remove_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination_1 =
@@ -129,7 +129,7 @@ fn remove_route() {
 fn remove_route_non_existing_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination_1 =
@@ -147,7 +147,7 @@ fn remove_route_non_existing_route() {
 fn remove_route_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination =
@@ -163,7 +163,7 @@ fn remove_route_permission() {
 fn get_routes() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination_1 =
@@ -204,7 +204,7 @@ fn get_routes() {
 fn resolve_route_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -219,7 +219,7 @@ fn resolve_route_link() {
 fn resolve_route_link_reachable() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -251,7 +251,7 @@ fn resolve_route_link_reachable() {
 fn resolve_route_route() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link_1 =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let destination_1 =

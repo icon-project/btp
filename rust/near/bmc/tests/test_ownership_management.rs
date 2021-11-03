@@ -29,7 +29,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn add_owner_new_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
 
@@ -45,7 +45,7 @@ fn add_owner_new_owner() {
 fn add_owner_exisinting_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(alice());
 }
@@ -55,7 +55,7 @@ fn add_owner_exisinting_owner() {
 fn add_owner_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     testing_env!(context(chuck()));
     contract.add_owner(carol());
 }
@@ -64,7 +64,7 @@ fn add_owner_permission() {
 fn remove_owner_existing_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
     contract.add_owner(charlie());
@@ -82,7 +82,7 @@ fn remove_owner_existing_owner() {
 fn remove_owner_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
 
@@ -95,7 +95,7 @@ fn remove_owner_permission() {
 fn remove_owner_last_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.remove_owner(alice());
 }
@@ -105,7 +105,7 @@ fn remove_owner_last_owner() {
 fn remove_owner_non_exisitng_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.remove_owner(carol());
 }

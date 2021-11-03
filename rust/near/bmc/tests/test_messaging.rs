@@ -34,7 +34,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn handle_serialized_btp_messages_service_message() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn handle_serialized_btp_messages_service_message() {
 fn handle_internal_service_message_init() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -79,10 +79,10 @@ fn handle_internal_service_message_init() {
 fn handle_internal_service_message_link() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());
@@ -136,7 +136,7 @@ fn handle_internal_service_message_link() {
 fn handle_internal_service_message_unlink() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
     let link =
@@ -195,7 +195,7 @@ fn handle_route_message() {
     let serialized_btp_messages: SerializedBtpMessages = from_value(btp_message).unwrap();
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
     BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.add_verifier(link.network_address().unwrap(), verifier());

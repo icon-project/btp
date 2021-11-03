@@ -28,7 +28,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 fn request_service_new_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.ss".parse::<AccountId>().unwrap(),
@@ -47,7 +47,7 @@ fn request_service_new_request() {
 fn request_service_existing_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -64,7 +64,7 @@ fn request_service_existing_request() {
 fn request_service_invalid_address() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         AccountId::new_unchecked("10-4.8-2".to_string()),
@@ -76,7 +76,7 @@ fn request_service_invalid_address() {
 fn request_service_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -96,7 +96,7 @@ fn request_service_existing_service() {
 fn get_requests() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -113,7 +113,7 @@ fn get_requests() {
 fn approve_service_approve() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -134,7 +134,7 @@ fn approve_service_approve() {
 fn approve_service_non_existing_request() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -148,7 +148,7 @@ fn approve_service_non_existing_request() {
 fn approve_service_reject() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -166,7 +166,7 @@ fn approve_service_reject() {
 fn approve_service_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -178,7 +178,7 @@ fn approve_service_permission() {
 fn remove_service_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -199,7 +199,7 @@ fn remove_service_existing_service() {
 fn remove_service_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -217,7 +217,7 @@ fn remove_service_permission() {
 fn remove_service_non_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -234,7 +234,7 @@ fn remove_service_non_existing_service() {
 fn get_services() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BtpMessageCenter::new("0x1.near".into());
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.request_service(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
