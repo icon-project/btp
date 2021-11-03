@@ -78,6 +78,10 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         _;
     }
 
+    modifier onlyBSHCore {
+        require(msg.sender == address(bshCore), "Unauthorized");
+        _;
+    }
     function initialize(
         address _bmc,
         address _bshCore,
@@ -102,7 +106,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         string[] memory _coinNames,
         uint256[] memory _values,
         uint256[] memory _fees
-    ) external override {
+    ) external override onlyBSHCore{
         //  Send Service Message to BMC
         //  If '_to' address is an invalid BTP Address format
         //  VM throws an error and revert(). Thus, it does not need
