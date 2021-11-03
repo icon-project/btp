@@ -66,6 +66,7 @@ impl NativeCoinService {
         network: String,
         native_coin: Token<NativeCoin>,
     ) -> Self {
+        require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
 
