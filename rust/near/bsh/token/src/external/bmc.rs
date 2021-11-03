@@ -5,7 +5,8 @@ use near_sdk::ext_contract;
 pub trait BtpMessageCenter {
     fn send_service_message(
         serial_no: i128,
-        destination_network: String,
+        service: String,
+        network: String,
         message: SerializedMessage,
     );
 }

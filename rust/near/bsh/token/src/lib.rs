@@ -58,6 +58,7 @@ pub struct TokenService {
 impl TokenService {
     #[init]
     pub fn new(service_name: String, bmc: AccountId, network: String) -> Self {
+        require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
         Self {

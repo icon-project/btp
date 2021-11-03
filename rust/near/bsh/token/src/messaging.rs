@@ -174,6 +174,7 @@ impl TokenService {
     ) {
         ext_bmc::send_service_message(
             serial_no,
+            self.name.clone(),
             destination_network,
             message.clone(),
             self.bmc.clone(),
