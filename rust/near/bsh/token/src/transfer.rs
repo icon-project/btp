@@ -238,8 +238,6 @@ impl TokenService {
             });
         }
 
-        // Validate if all assets are from genuine source
-        let mut invalid_tokens: Vec<String> = Vec::new();
         let tokens = token_ids
             .into_iter()
             .map(|(asset_index, token_id)| {
@@ -249,23 +247,7 @@ impl TokenService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .filter(|(index, _, token)| {
-                return if token.network() == &message_source.network_address().unwrap()
-                    || token.network() == &self.network
-                {
-                    true
-                } else {
-                    invalid_tokens.push(assets[index.to_owned()].token().to_owned());
-                    false
-                };
-            })
             .collect::<Vec<(usize, TokenId, Token<FungibleToken>)>>();
-
-        if invalid_tokens.len() > 0 {
-            return Err(BshError::Reverted {
-                message: format!("Illegal Tokens({}) Detected!", invalid_tokens.join(", ")),
-            });
-        }
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
