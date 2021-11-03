@@ -52,7 +52,7 @@ pub enum ServiceType {
 }
 
 #[derive(
-    BorshDeserialize, BorshSerialize, Clone, Debug, Default, Deserialize, PartialEq, Serialize,
+    BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, PartialEq, Serialize,
 )]
 #[serde(crate = "near_sdk::serde")]
 pub struct PendingTransferCoin {

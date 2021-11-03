@@ -1,4 +1,4 @@
-use bmc::BTPMessageCenter;
+use bmc::BtpMessageCenter;
 use near_sdk::{testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
@@ -9,7 +9,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
-        predecessor_account_id: alice().to_string(),
+        predecessor_account_id: signer_account_id.to_string(),
         input,
         block_index: 0,
         block_timestamp: 0,
@@ -26,10 +26,10 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 }
 
 #[test]
-fn add_owner_new_owner_pass() {
+fn add_owner_new_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
 
@@ -42,29 +42,29 @@ fn add_owner_new_owner_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertAlreadyExistsOwner")]
-fn add_owner_exisinting_owner_fail() {
+fn add_owner_exisinting_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(alice());
 }
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn add_owner_permission_fail() {
+fn add_owner_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     testing_env!(context(chuck()));
     contract.add_owner(carol());
 }
 
 #[test]
-fn remove_owner_existing_owner_pass() {
+fn remove_owner_existing_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
     contract.add_owner(charlie());
@@ -79,10 +79,10 @@ fn remove_owner_existing_owner_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn remove_owner_permission_fail() {
+fn remove_owner_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.add_owner(carol());
 
@@ -92,20 +92,20 @@ fn remove_owner_permission_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertLastOwner")]
-fn remove_owner_last_owner_fail() {
+fn remove_owner_last_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.remove_owner(alice());
 }
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsOwner")]
-fn remove_owner_non_exisitng_owner_fail() {
+fn remove_owner_non_exisitng_owner() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
 
     contract.remove_owner(carol());
 }

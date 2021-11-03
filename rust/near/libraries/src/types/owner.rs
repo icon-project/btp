@@ -1,13 +1,13 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::AccountId;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Owners(HashMap<AccountId, bool>);
+pub struct Owners(HashSet<AccountId>);
 
 impl Owners {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(HashSet::new())
     }
 
     pub fn len(&self) -> usize {
@@ -15,7 +15,7 @@ impl Owners {
     }
 
     pub fn add(&mut self, address: &AccountId) {
-        self.0.insert(address.to_owned(), true);
+        self.0.insert(address.to_owned());
     }
 
     pub fn remove(&mut self, address: &AccountId) {
@@ -23,12 +23,12 @@ impl Owners {
     }
 
     pub fn contains(&self, address: &AccountId) -> bool {
-        self.0.contains_key(&address)
+        self.0.contains(&address)
     }
 
     pub fn to_vec(&self) -> Vec<AccountId> {
         if !self.0.is_empty() {
-            return self.0.keys().cloned().collect::<Vec<AccountId>>();
+            return self.0.clone().into_iter().collect::<Vec<AccountId>>();
         }
         vec![]
     }

@@ -1,4 +1,4 @@
-use bmc::BTPMessageCenter;
+use bmc::BtpMessageCenter;
 use near_sdk::{testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
@@ -8,7 +8,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
-        predecessor_account_id: bob().to_string(),
+        predecessor_account_id: signer_account_id.to_string(),
         input,
         block_index: 0,
         block_timestamp: 0,
@@ -25,10 +25,10 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> V
 }
 
 #[test]
-fn add_verifier_new_verifier_pass() {
+fn add_verifier_new_verifier() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.ss".parse::<AccountId>().unwrap(),
@@ -43,10 +43,10 @@ fn add_verifier_new_verifier_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertAlreadyExistsBMV")]
-fn add_verifier_existing_verifier_fail() {
+fn add_verifier_existing_verifier() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -59,10 +59,10 @@ fn add_verifier_existing_verifier_fail() {
 }
 
 #[test]
-fn get_verifiers_pass() {
+fn get_verifiers() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -77,10 +77,10 @@ fn get_verifiers_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn add_verifier_permission_fail() {
+fn add_verifier_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(bob()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -88,10 +88,10 @@ fn add_verifier_permission_fail() {
 }
 
 #[test]
-fn remove_verifier_existing_verifier_pass() {
+fn remove_verifier_existing_verifier() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -102,10 +102,10 @@ fn remove_verifier_existing_verifier_pass() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
-fn remove_verifier_permission_fail() {
+fn remove_verifier_permission() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),
@@ -117,10 +117,10 @@ fn remove_verifier_permission_fail() {
 
 #[test]
 #[should_panic(expected = "BMCRevertNotExistBMV")]
-fn remove_verifier_non_existing_verifier_fail() {
+fn remove_verifier_non_existing_verifier() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     testing_env!(context(alice()));
-    let mut contract = BTPMessageCenter::default();
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     contract.add_verifier(
         "test".to_string(),
         "sssssssss.s".parse::<AccountId>().unwrap(),

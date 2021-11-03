@@ -1,7 +1,7 @@
 use near_sdk::AccountId;
 
 pub fn alice() -> AccountId {
-    "alice.near".parse::<AccountId>().unwrap()
+    "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".parse::<AccountId>().unwrap()
 }
 
 pub fn bob() -> AccountId {
@@ -18,4 +18,8 @@ pub fn charlie() -> AccountId {
 
 pub fn chuck() -> AccountId {
     "chuck.near".parse::<AccountId>().unwrap()
+}
+
+pub fn verifier() -> AccountId {
+    "verifier.near".parse::<AccountId>().unwrap()
 }

@@ -33,7 +33,7 @@ impl Bmv {
     }
 
     pub fn contains(&self, network: &str) -> bool {
-        return self.0.get(&network.to_string()).is_some();
+        self.0.get(&network.to_string()).is_some()
     }
 
     pub fn to_vec(&self) -> Vec<Verifier> {

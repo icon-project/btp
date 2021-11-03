@@ -12,17 +12,28 @@ btp-common = { path = "../../btp-common" }
 libraries = { path = "../libraries" }
 near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
 
+[features]
+testable = []
+
+[[test]]
+name = "test_link_management"
+path = "tests/test_link_management.rs"
+
 [[test]]
 name = "test_ownership_management"
 path = "tests/test_ownership_management.rs"
 
 [[test]]
-name = "test_service_management"
-path = "tests/test_service_management.rs"
-
-[[test]]
 name = "test_relay_management"
 path = "tests/test_relay_management.rs"
+
+[[test]]
+name = "test_route_management"
+path = "tests/test_route_management.rs"
+
+[[test]]
+name = "test_service_management"
+path = "tests/test_service_management.rs"
 
 [[test]]
 name = "test_verifier_managementt"

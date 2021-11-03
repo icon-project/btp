@@ -7,6 +7,10 @@ edition = "2018"
 [workspace]
 members = [
     "bmc",
+    "bsh/base",
+    "bsh/token",
+    "bsh/nativecoin",
+    "bmv/icon",
     "libraries",
     "test-helper"
 ]
