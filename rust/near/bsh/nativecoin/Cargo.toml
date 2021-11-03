@@ -14,7 +14,6 @@ testable = []
 btp-common = { path = "../../../btp-common" }
 libraries = { path = "../../libraries" }
 near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
-base-service = { path="../base" }
 tiny-keccak = { version = "2.0", features = ["fips202"] }
 
 [dev-dependencies]
