@@ -25,6 +25,12 @@ pub struct MerkleTreeAccumulator {
 }
 
 impl MerkleTreeAccumulator {
+    pub fn new(height: u128) -> Self {
+        Self{
+            height,
+            ..Default::default()
+        }
+    }
     /// Initialize MTA from a serialized type
     pub fn init_from_serialized(&mut self, rlp_bytes: &[u8]) {
         let mut unpacked: Vec<RlpItem> = vec![];
