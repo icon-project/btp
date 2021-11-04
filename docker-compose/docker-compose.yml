@@ -1,6 +1,7 @@
 version: "3.9"  # optional since v1.27.0
 services:
   goloop:
+    container_name: tutorial_goloop
     build:
       context: .
       args:
@@ -15,6 +16,7 @@ services:
       - GOLOOP_NODE_DIR=/goloop/data/goloop
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
   btpsimple_src:
+    container_name: tutorial_btpsimple_src
     image: btpsimple:latest
     volumes:
       - config:/btpsimple/config
@@ -33,6 +35,7 @@ services:
     links:
       - goloop
   btpsimple_dst:
+    container_name: tutorial_btpsimple_dst
     image: btpsimple:latest
     volumes:
       - config:/btpsimple/config

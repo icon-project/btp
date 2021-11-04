@@ -16,6 +16,7 @@ deploy_bmc() {
   echo "$GOLOOP_RPC_NID.icon" > net.btp.${CHAIN}
   goloop rpc sendtx deploy ${SCORE_FILE} ${CONTENT_TYPE} \
       --param _net=$(cat net.btp.${CHAIN}) | jq -r . > tx.bmc.${CHAIN}
+  sleep 2
   extract_scoreAddress tx.bmc.${CHAIN} bmc.${CHAIN}
   echo "btp://$(cat net.btp.${CHAIN})/$(cat bmc.${CHAIN})" > btp.${CHAIN}
 }

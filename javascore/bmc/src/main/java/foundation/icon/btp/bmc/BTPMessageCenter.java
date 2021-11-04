@@ -21,7 +21,13 @@ import foundation.icon.score.util.*;
 import foundation.icon.score.util.ArrayUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
-import score.*;
+import score.UserRevertedException;
+import score.VarDB;
+import score.ArrayDB;
+import score.BranchDB;
+import score.DictDB;
+import score.Address;
+import score.Context;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Payable;
@@ -387,6 +393,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 //TODO [TBD] ignore BTPMessage parse failure?
                 logger.println("handleRelayMessage","fail to parse BTPMessage err:", e.getMessage());
             }
+            logger.println("handleRelayMessage", "BTPMessage = ", msg);
             if (msg != null) {
                 rxSeq = rxSeq.add(BigInteger.ONE);
                 if (dropSequences != null && dropSequences.remove(rxSeq)) {
@@ -395,6 +402,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                     }
                     MessageDropped(_prev, rxSeq, serializedMsg);
                 } else {
+                    logger.println("handleRelayMessage", "btpAddr = ", btpAddr.net(), ", to = ", msg.getDst().net());
                     if (btpAddr.net().equals(msg.getDst().net())) {
                         handleMessage(prev, msg);
                     } else {
@@ -661,6 +669,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         btpMsg.setSvc(_svc);
         btpMsg.setSn(_sn);
         btpMsg.setPayload(_msg);
+        logger.println("sendMessage", "to = ", link.getAddr(), ", btpMsg = ", btpMsg);
         sendMessage(link.getAddr(), btpMsg);
     }
 

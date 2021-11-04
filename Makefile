@@ -100,6 +100,10 @@ $(JAVASCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(JAVASCORE_DIST_DIR)/%,%,$@))
 	mkdir -p $(JAVASCORE_DIST_DIR)
 
+dist-lib:
+	cd javascore/lib ; \
+    gradle build
+
 dist-java-bmc: $(JAVASCORE_DIST_DIR)/bmc.jar
 	cd javascore ; \
     ./gradlew :bmc:optimizedJar ; \
@@ -117,7 +121,11 @@ dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
     ./gradlew :nativecoin:optimizedJarIRC31 ; \
     cp ./nativecoin/build/libs/irc31-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc31.jar
 
-dist-java: dist-java-bmc dist-java-bmv-icon dist-java-nativecoin
+dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-nativecoin
+
+clean-java-build:
+	cd javascore ; \
+	rm -rf lib/build bmc/build bmv/icon/build nativecoin/build score-util/build
 
 clean-dist-java:
 	rm -rf $(JAVASCORE_DIST_DIR)/*
