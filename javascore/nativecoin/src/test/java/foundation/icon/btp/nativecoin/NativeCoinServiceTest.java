@@ -290,8 +290,8 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         BigInteger[] res = new BigInteger[assets.size()];
         for(int i = 0 ; i < assets.size() ; i++ ) {
             String coinName = assets.get(i).getCoinName();
-            byte[] coinId = ncs.coinId(coinName);
-            res[i] = new BigInteger(coinId);
+            String coinId = ncs.coinId(coinName);
+            res[i] = new BigInteger(coinId, 16);
         }
 
         return res;
@@ -307,14 +307,6 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 .map(Asset::getAmount).toArray(BigInteger[]::new);
     }
 
-    public static String bytesToHexString(byte[] bytes){
-        StringBuilder sb = new StringBuilder();
-        for(byte b : bytes){
-            sb.append(String.format("%02x", b&0xff));
-        }
-        return sb.toString();
-    }
-    
     static Asset[] feeAssets() {
         String[] coinNames = ncs.coinNames();
         Balance[] balances = ncs.balanceOfBatch(ncsAddress, coinNames);
@@ -337,7 +329,8 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         IRC31SupplierTest.setApprovalForAll(ncsAddress, true);
         if (!isExistsCoin(coinName)) {
             register(coinName);
-            coinId = new BigInteger(ncs.coinId(coinName));
+            System.out.println(ncs.coinId(coinName));
+            coinId = new BigInteger(ncs.coinId(coinName), 16);
         }
         if (!ncs.feeRatio().equals(feeRatio)) {
             ncs.setFeeRatio(feeRatio);
@@ -586,9 +579,9 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
     @Test
     void coinIdShouldReturnFullValue() {
         ncs.register("DEV");
-        byte[] res = ncs.coinId("DEV");
-        System.out.println(bytesToHexString(res));
+        String res = ncs.coinId("DEV");
+        System.out.println(res);
 
-        assertEquals("08f7ce30203eb1ff1d26492c94d9ab04d63f4e54f1f9e677e8d4a0d6daaab2dd", bytesToHexString(res));
+        assertEquals("08f7ce30203eb1ff1d26492c94d9ab04d63f4e54f1f9e677e8d4a0d6daaab2dd", res);
     }
 }

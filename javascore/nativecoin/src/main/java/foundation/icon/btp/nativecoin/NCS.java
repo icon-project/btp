@@ -53,7 +53,7 @@ public interface NCS {
      * @return id of Native Coin Token.
      */
     @External(readonly = true)
-    byte[] coinId(String _coinName);
+    String coinId(String _coinName);
 
     /**
      * Return a usable/locked balance of an account based on coinName.

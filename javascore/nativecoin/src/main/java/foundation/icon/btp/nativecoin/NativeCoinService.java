@@ -37,7 +37,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
 
     public static final String SERVICE = "nativecoin";
     public static final BigInteger NATIVE_COIN_ID = BigInteger.ZERO;
-    public static final byte[] NATIVE_COIN_ID_BYTE_ARRAY = "0000000000000000000000000000000000000000000000000000000000000000".getBytes();
+    public static final String NATIVE_COIN_ID_STRING = "0000000000000000000000000000000000000000000000000000000000000000";
     public static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(10000);
 
     //
@@ -96,8 +96,17 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         return new BigInteger(Context.hash("sha3-256", name.getBytes()));
     }
 
-    static byte[] generateTokenIdByteArray(String name) {
-        return Context.hash("sha3-256", name.getBytes());
+    static String generateTokenIdString(String name) {
+        byte[] resByte = Context.hash("sha3-256", name.getBytes());
+
+        char[] hexArray = "0123456789abcdef".toCharArray();
+        char[] hexChars = new char[resByte.length * 2];
+        for ( int j = 0; j < resByte.length; j++ ) {
+            int v = resByte[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
     static void require(boolean condition, String message) {
@@ -126,11 +135,11 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External(readonly = true)
-    public byte[] coinId(String _coinName) {
+    public String coinId(String _coinName) {
         if (name.equals(_coinName)) {
-            return NATIVE_COIN_ID_BYTE_ARRAY;
+            return NATIVE_COIN_ID_STRING;
         } else if (isRegistered(_coinName)) {
-            return generateTokenIdByteArray(_coinName);
+            return generateTokenIdString(_coinName);
         }
         return null;
     }
