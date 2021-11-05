@@ -36,6 +36,50 @@ pub mod errors {
     }
 
     #[derive(Debug, Clone)]
+    pub enum BmvError {
+        Unknown,
+        NotBmc,
+        DecodeFailed { message: String },
+        EncodeFailed { message: String },
+    }
+
+    impl Exception for BmvError {
+        fn code(&self) -> u32 {
+            u32::from(self)
+        }
+        fn message(&self) -> String {
+            self.to_string()
+        }
+    }
+
+    impl From<&BmvError> for u32 {
+        fn from(bsh_error: &BmvError) -> Self {
+            match bsh_error {
+                BmvError::Unknown => 0,
+                _ => 0,
+            }
+        }
+    }
+
+    impl fmt::Display for BmvError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+            let label = "BMVRevert";
+            match self {
+                BmvError::NotBmc => {
+                    write!(f, "{}{}", label, "NotBMC")
+                },
+                BmvError::DecodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "DecodeError", message)
+                }
+                BmvError::EncodeFailed { message } => {
+                    write!(f, "{}{} for {}", label, "EncodeError", message)
+                }
+                _ => todo!(),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
     pub enum BshError {
         Unknown,
         LastOwner,
@@ -59,7 +103,7 @@ pub mod errors {
         InvalidAddress { message: String },
         SameSenderReceiver,
         AccountNotExist,
-        TokenNotRegistered
+        TokenNotRegistered,
     }
 
     impl Exception for BshError {
@@ -87,68 +131,68 @@ pub mod errors {
             match self {
                 BshError::Reverted { message } => {
                     write!(f, "{}{}: {}", label, "Reverted", message)
-                },
+                }
                 BshError::TokenExist => {
                     write!(f, "{}{}", label, "AlreadyExistsToken")
-                },
+                }
                 BshError::TokenNotExist { message } => {
                     write!(f, "{}{}: {}", label, "NotExistsToken", message)
-                },
+                }
                 BshError::LastOwner => {
                     write!(f, "{}{}", label, "LastOwner")
-                },
+                }
                 BshError::OwnerExist => {
                     write!(f, "{}{}", label, "AlreadyExistsOwner")
-                },
+                }
                 BshError::OwnerNotExist => {
                     write!(f, "{}{}", label, "NotExistsOwner")
-                },
+                }
                 BshError::PermissionNotExist => {
                     write!(f, "{}{}", label, "NotExistsPermission")
-                },
+                }
                 BshError::NotMinimumDeposit => {
                     write!(f, "{}{}", label, "NotMinimumDeposit")
-                },
+                }
                 BshError::NotMinimumRefundable => {
                     write!(f, "{}{}", label, "NotMinimumRefundable")
-                },
+                }
                 BshError::NotBmc => {
                     write!(f, "{}{}", label, "NotBMC")
-                },
+                }
                 BshError::InvalidService => {
                     write!(f, "{}{}", label, "InvalidSvc")
-                },
+                }
                 BshError::DecodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "DecodeError", message)
-                },
+                }
                 BshError::EncodeFailed { message } => {
                     write!(f, "{}{} for {}", label, "EncodeError", message)
-                },
+                }
                 BshError::InvalidSetting => {
                     write!(f, "{}{}", label, "InvalidSetting")
-                },
+                }
                 BshError::InvalidAddress { message } => {
                     write!(f, "{}{}: {}", label, "InvalidAddress", message)
-                },
+                }
                 BshError::InvalidCount { message } => {
                     write!(f, "{}{} for {}", label, "InvalidCount", message)
                 }
                 BshError::SameSenderReceiver => {
                     write!(f, "{}{}", label, "SameSenderReceiver")
-                },
+                }
                 BshError::AccountNotExist => {
                     write!(f, "{}{}", label, "AccountNotExist")
-                },
+                }
                 BshError::NotMinimumBalance { account } => {
                     write!(f, "{}{} for {}", label, "NotMinimumBalance", account)
-                },
+                }
                 BshError::NotMinimumAmount => {
                     write!(f, "{}{}", label, "NotMinimumAmount")
                 }
                 BshError::TokenNotRegistered => {
                     write!(f, "{}{}", label, "TokenNotRegistered")
                 }
-                _ => todo!()
+                _ => todo!(),
             }
         }
     }

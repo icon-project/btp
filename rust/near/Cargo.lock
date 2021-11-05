@@ -606,6 +606,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bmv-icon"
+version = "0.1.0"
+dependencies = [
+ "btp-common",
+ "libraries",
+ "near-sdk 4.0.0-pre.2",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "borsh"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
