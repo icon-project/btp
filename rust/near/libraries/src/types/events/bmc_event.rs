@@ -1,16 +1,18 @@
 use crate::types::messages::{BtpMessage, SerializedMessage};
 use crate::types::BTPAddress;
 use near_sdk::json_types::{Base64VecU8, U128};
+use near_sdk::serde_json::from_str;
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     collections::LazyOption,
     serde::{Deserialize, Serialize},
+    serde_json::{from_value, to_value, Value},
 };
 use std::convert::TryInto;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BmcEvent {
-    message: LazyOption<Message>,
+    message: LazyOption<String>,
     error: LazyOption<Error>,
 }
 
@@ -28,22 +30,25 @@ impl BmcEvent {
         next: BTPAddress,
         message: BtpMessage<SerializedMessage>,
     ) {
-        self.message.set(&Message {
-            next,
-            sequence: sequence.into(),
-            message: <Vec<u8>>::from(message).into(),
-        });
+        self.message.set(
+            &to_value(Message {
+                next,
+                sequence: sequence.into(),
+                message: <Vec<u8>>::from(message).into(),
+            })
+            .unwrap()
+            .to_string(),
+        );
     }
 
     pub fn amend_error(&mut self) {}
 
     pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
-        self.message.get().ok_or("Not Found")?.message.0.try_into()
+        let message: Message = from_str(&self.message.get().ok_or("Not Found")?).map_err(|e| format!(""))?;
+        message.message.0.try_into().map_err(|e| format!("{}", e))
     }
 
-    pub fn get_error(&self){
-
-    }
+    pub fn get_error(&self) {}
 }
 
 #[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
