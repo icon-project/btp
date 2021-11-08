@@ -31,8 +31,11 @@ module.exports = {
       provider: () => new HDWalletProvider({
         privateKeys: privKeys,
         providerOrUrl: "BSC_RPC_URI",
+        chainId: 97,
       }),
       network_id: '97',
+      skipDryRun: true,
+      networkCheckTimeout: 1000000000,
     },
     development: {
       host: "localhost",

@@ -34,6 +34,8 @@ module.exports = {
         chainId: 97,
       }),
       network_id: '97',
+      skipDryRun: true,
+      networkCheckTimeout: 1000000000
     },
     development: {
       host: "localhost",

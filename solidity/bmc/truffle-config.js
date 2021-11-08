@@ -32,7 +32,9 @@ module.exports = {
               providerOrUrl: "BSC_RPC_URI",
               chainId: 97,
           }),
-          network_id: '97'
+          network_id: '97',
+          skipDryRun: true,
+          networkCheckTimeout: 1000000000
       },
       bsc: {
           provider: () => new HDWalletProvider({
