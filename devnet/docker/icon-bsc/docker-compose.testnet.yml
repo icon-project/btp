@@ -17,8 +17,6 @@ services:
       - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
 
   btp-icon:
-    networks:
-      - bsc_network
     container_name: btp-icon
     build:
       context: .
@@ -48,8 +46,6 @@ services:
       retries: 300
 
   btp-bsc:
-    networks:
-      - bsc_network
     container_name: btp-bsc
     image: btpsimple:latest
     volumes:
