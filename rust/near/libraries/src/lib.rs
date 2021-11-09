@@ -5,6 +5,5 @@ pub mod bmv_types;
 pub mod bsh_types;
 pub mod mta;
 pub use mta::MerkleTreeAccumulator;
-pub use rlp;
-
+pub mod rlp;
 pub use bytes::BytesMut;

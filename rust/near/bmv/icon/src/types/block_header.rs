@@ -21,7 +21,6 @@ impl Decodable for BlockHeader {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         let data = rlp.as_val::<Vec<u8>>()?;
         let rlp = rlp::Rlp::new(&data);
-        println!("{}", rlp.item_count()?);
         Ok(Self {
             version: rlp.val_at(0)?,
             height: rlp.val_at(1)?,

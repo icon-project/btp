@@ -1,7 +1,7 @@
 use std::ops::Neg;
 
 use super::Wrapper;
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 
 pub type WrappedI128 = Wrapper<i128>;
 

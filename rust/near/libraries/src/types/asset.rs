@@ -1,6 +1,6 @@
 use super::{Network, TokenName};
 use near_sdk::serde::{Deserialize, Serialize};
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, BorshDeserialize, BorshSerialize)]

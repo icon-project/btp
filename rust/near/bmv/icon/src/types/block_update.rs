@@ -5,8 +5,8 @@ use std::convert::TryFrom;
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct BlockUpdate {
     block_header: BlockHeader,
-    // votes: Votes,
-    // next_validators: Validators,
+    votes: Votes,
+    next_validators: Validators,
 }
 
 impl Decodable for BlockUpdate {
@@ -15,8 +15,8 @@ impl Decodable for BlockUpdate {
         let rlp = rlp::Rlp::new(&data);
         Ok(Self {
             block_header: rlp.val_at(0)?,
-            // votes: rlp.val_at(1)?,
-            // next_validators: rlp.val_at(2)?,
+            votes: rlp.val_at(1)?,
+            next_validators: rlp.val_at(2)?,
         })
     }
 }

@@ -2,7 +2,7 @@ use crate::mta::error::MtaError;
 use byteorder::{BigEndian, ByteOrder};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSchema, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use rlp::{self, encode_list};
+use crate::rlp::{self, encode_list};
 use safe_transmute::transmute_vec;
 use tiny_keccak::{Hasher, Sha3};
 

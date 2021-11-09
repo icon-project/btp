@@ -1,7 +1,7 @@
 use crate::types::{messages::BtpMessage, messages::Message, messages::SerializedMessage, Asset};
 use btp_common::errors::BshError;
 use near_sdk::base64::{self, URL_SAFE_NO_PAD};
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Eq, Debug)]

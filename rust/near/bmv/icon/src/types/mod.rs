@@ -7,7 +7,7 @@ pub(super) use block_update::BlockUpdate;
 mod receipt_proof;
 pub(super) use receipt_proof::ReceiptProof;
 mod block_proof;
-pub(super) use block_proof::BlockProof;
+pub(super) use block_proof::{BlockProof, NullableBlockProof};
 mod block_header;
 pub(super) use block_header::BlockHeader;
 mod block_result;

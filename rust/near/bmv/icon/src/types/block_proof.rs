@@ -1,21 +1,40 @@
-use libraries::rlp::{self, Decodable, Encodable};
-use super::{BlockHeader};
-use std::convert::TryFrom;
+use super::BlockHeader;
 use btp_common::errors::BmvError;
+use libraries::rlp::{self, Decodable, Encodable};
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD},
     serde::{de, ser, Deserialize, Serialize},
 };
+use std::convert::TryFrom;
 
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct BlockProof {
-    pub block_header: BlockHeader
+    pub block_header: BlockHeader,
+}
+
+#[derive(Default, PartialEq, Eq, Debug)]
+pub struct NullableBlockProof(Option<BlockProof>);
+
+impl NullableBlockProof {
+    pub fn new(block_proof: Option<BlockProof>) -> Self {
+        Self(block_proof)
+    }
+}
+
+impl Decodable for NullableBlockProof {
+    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        if rlp.is_null() {
+            Ok(Self(None))
+        } else {
+            Ok(Self(Some(rlp.as_val()?)))
+        }
+    }
 }
 
 impl Decodable for BlockProof {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         Ok(Self {
-            block_header: rlp.val_at(0)?
+            block_header: rlp.val_at(0)?,
         })
     }
 }

@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use libraries::rlp::{self, Decodable};
+use libraries::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 
 #[derive(Default, PartialEq, Eq, Debug, BorshDeserialize, BorshSerialize)]
@@ -34,9 +34,7 @@ impl TryFrom<&Vec<Validator>> for Validators {
 
 impl Decodable for Validators {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        let data = rlp.as_val::<Vec<u8>>()?;
-        let rlp = rlp::Rlp::new(&data);
-        Ok(Self(HashSet::new()))
+        Ok(Self::try_from(&rlp.as_list::<Validator>()?)?)
     }
 }
 
