@@ -413,7 +413,7 @@ public class MessageTest implements BMCIntegrationTest {
         //BSHMock.sendMessage -> BMC.Message(str,int,bytes)
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
-        BTPAddress netBTPAddress = BTPAddress.parse(net);
+        //BTPAddress netBTPAddress = BTPAddress.parse(net);
         BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
         ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
                 BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
@@ -421,7 +421,7 @@ public class MessageTest implements BMCIntegrationTest {
                     assertEquals(seq, el.getSeq());
                     BTPMessage btpMessage = el.getMsg();
                     assertEquals(btpAddress, btpMessage.getSrc());
-                    assertEquals(netBTPAddress, btpMessage.getDst());
+                    assertEquals(linkBtpAddress, btpMessage.getDst());
                     assertEquals(svc, btpMessage.getSvc());
                     assertEquals(sn, btpMessage.getSn());
                     assertArrayEquals(payload, btpMessage.getPayload());

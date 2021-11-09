@@ -651,14 +651,13 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (_sn.compareTo(BigInteger.ZERO) < 1) {
             throw BMCException.invalidSn();
         }
-        BTPAddress dst = BTPAddress.parse(_to);
         Link link = resolveNext(_to);
 
         //TODO (txSeq > sackSeq && (currentHeight - sackHeight) > THRESHOLD) ? revert
         //  THRESHOLD = (delayLimit * NUM_OF_ROTATION)
         BTPMessage btpMsg = new BTPMessage();
         btpMsg.setSrc(btpAddr);
-        btpMsg.setDst(dst);
+        btpMsg.setDst(link.getAddr());
         btpMsg.setSvc(_svc);
         btpMsg.setSn(_sn);
         btpMsg.setPayload(_msg);
