@@ -124,7 +124,6 @@ contract BSHImpl is IBSHImpl, Initializable {
             try this.handleRequest(_ta) {
                 _statusMsg = "Transfer Success";
                 _status = RC_OK;
-                return;
             } catch Error(string memory _err) {
                 /**
                  * @dev Uncomment revert to debug errors
