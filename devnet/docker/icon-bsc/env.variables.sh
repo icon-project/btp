@@ -24,6 +24,6 @@ export BSC_RPC_URI=${BSC_RPC_URI:-'http://binancesmartchain:8545'}
 #Token Config
 export TOKEN_NAME=ETH
 export TOKEN_SYM=ETH
-export TOKEN_SUPPLY=0x3e8
+export TOKEN_SUPPLY=0x186A0
 export TOKEN_DECIMALS=0x12
 export SVC_NAME=TokenBSH

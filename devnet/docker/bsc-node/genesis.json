@@ -13,7 +13,7 @@
     "muirGlacierBlock": 0,
     "parlia": {
       "period": 3,
-      "epoch": 20000
+      "epoch": 200000
     }
   },
   "nonce": "0x0",

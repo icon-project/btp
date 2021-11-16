@@ -238,9 +238,9 @@ irc2_javascore_transfer() {
 }
 
 token_icon_fundBSH() {
-  echo "funding BSH with 100ETH tokens"
+  echo "funding BSH with 1000ETH tokens"
   cd $CONFIG_DIR
-  weiAmount=$(coin2wei 100)
+  weiAmount=$(coin2wei 1000)
   echo "Wei Amount: $weiAmount"
   irc2_javascore_transfer "$weiAmount"
   #echo "$tx" >tx/fundBSH.icon

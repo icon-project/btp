@@ -27,7 +27,7 @@ contract BEP20TKN is BEP20Token {
     // modify token decimals
     uint8 public constant DECIMALS = 18;
     // modify initial token supply
-    uint256 public constant INITIAL_SUPPLY = 10000 * (10**uint256(DECIMALS)); // 10000 tokens
+    uint256 public constant INITIAL_SUPPLY = 100000 * (10**uint256(DECIMALS)); // 100000 tokens
 
     /**
      * @dev Constructor that gives msg.sender all of existing tokens.

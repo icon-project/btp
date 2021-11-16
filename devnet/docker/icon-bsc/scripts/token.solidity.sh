@@ -102,7 +102,7 @@ token_bsc_fundBSH() {
   echo "Funding solidity BSH"
   cd $CONTRACTS_DIR/solidity/TokenBSH
   tx=$(truffle exec --network bscDocker "$SCRIPTS_DIR"/bsh.token.js \
-    --method fundBSH --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount 99)
+    --method fundBSH --addr $(cat $CONFIG_DIR/token_bsh.proxy.bsc) --amount 1000)
   echo "$tx" >$CONFIG_DIR/tx/fundBSH.bsc
 }
 
