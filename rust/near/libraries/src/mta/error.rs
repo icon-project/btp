@@ -1,13 +1,7 @@
-//! Error types
-
-use thiserror::Error;
-
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum MtaError {
-    /// Serialization error
-    #[error("Serialization error: _0")]
     HashSerialize(String),
-    /// None error
-    #[error("Option.None an error")]
     NoneError,
+    InvalidWitnessOld { message: &'static str },
+    InvalidWitnessNewer { message: &'static str },
 }

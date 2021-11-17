@@ -1,6 +1,9 @@
 //! Merkle Tree Accumulator
 
-use super::{hash::Hash, utils::RlpItem};
+use std::ops::Deref;
+
+use crate::types::{Hash};
+use super::{utils::RlpItem, error::MtaError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
@@ -9,7 +12,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 #[serde(crate = "near_sdk::serde")]
 pub struct MerkleTreeAccumulator {
     /// Height
-    pub height: u128,
+    height: u128,
     /// Roots
     pub roots: Vec<Hash>,
     /// Offset
@@ -31,6 +34,11 @@ impl MerkleTreeAccumulator {
             ..Default::default()
         }
     }
+
+    pub fn height(&self) -> u128 {
+        self.height
+    }
+
     /// Initialize MTA from a serialized type
     pub fn init_from_serialized(&mut self, rlp_bytes: &[u8]) {
         let mut unpacked: Vec<RlpItem> = vec![];
@@ -93,7 +101,7 @@ impl MerkleTreeAccumulator {
 
     /// Check if the MTA includes a cache
     pub fn includes_cache(&self, hash: &Hash) -> bool {
-        if hash.0.is_empty() {
+        if hash.deref().is_empty() {
             return false;
         }
         for entry in &self.cache {
@@ -127,7 +135,7 @@ impl MerkleTreeAccumulator {
         } else {
             let mut root = Hash::default();
             for i in 0..self.clone().roots.len() {
-                if self.roots[i].0.is_empty() {
+                if self.roots[i].deref().is_empty() {
                     root = hash;
                     self.roots[i] = root;
                     break;
@@ -146,7 +154,7 @@ impl MerkleTreeAccumulator {
                     let _ = self.roots.remove(index);
                 }
             }
-            if root.0.is_empty() {
+            if root.deref().is_empty() {
                 self.roots.push(hash);
             }
         }
@@ -161,7 +169,7 @@ impl MerkleTreeAccumulator {
         let mut bit_flag: usize;
         while i > 0 {
             i -= 1;
-            if self.roots[i].0.is_empty() {
+            if self.roots[i].deref().is_empty() {
                 continue;
             }
             bit_flag = 1 << i;
@@ -181,7 +189,7 @@ impl MerkleTreeAccumulator {
         leaf: &Hash,
         height: u128,
         at: u128,
-    ) -> Result<(), &str> {
+    ) -> Result<(), MtaError> {
         let root: Hash;
         let root_idx: usize;
         if self.height == at {
@@ -192,10 +200,10 @@ impl MerkleTreeAccumulator {
                 .expect("Failed to verify");
         } else if self.height < at {
             if !self.newer_witness_allowed {
-                return Err("RevertInvalidBlockWitness: newer witness not allowed.");
+                return Err(MtaError::InvalidWitnessNewer { message: "newer witness not allowed" });
             }
             if self.height < height {
-                return Err("RevertInvalidBlockWitness: given witness for newer node.");
+                return Err(MtaError::InvalidWitnessNewer { message: "given witness for newer node" });
             }
             root_idx = self
                 .get_root_index_by_height(height)
@@ -207,7 +215,7 @@ impl MerkleTreeAccumulator {
                 .expect("Failed to verify");
         } else if (self.height - height - 1) < self.cache_size as u128 && !self.includes_cache(leaf)
         {
-            return Err("RevertInvalidBlockWitness: invalid old witness");
+            return Err(MtaError::InvalidWitnessOld { message: "invalid old witness" });
         }
         Ok(())
     }
