@@ -39,6 +39,14 @@ pub mod errors {
     pub enum BmvError {
         Unknown,
         NotBmc,
+        InvalidWitnessOld  { message: &'static str },
+        InvalidWitnessNewer  { message: &'static str },
+        InvalidBlockProof { message: &'static str },
+        InvalidVotes { message: &'static str },
+        InvalidBlockProofHeightHigher { expected: u128, actual: u128 },
+        InvalidBlockUpdate { message: &'static str },
+        InvalidBlockUpdateHeightLower { expected: u128, actual: u128 },
+        InvalidBlockUpdateHeightHigher { expected: u128, actual: u128 },
         DecodeFailed { message: String },
         EncodeFailed { message: String },
     }
@@ -69,11 +77,32 @@ pub mod errors {
                     write!(f, "{}{}", label, "NotBMC")
                 },
                 BmvError::DecodeFailed { message } => {
-                    write!(f, "{}{} for {}", label, "DecodeError", message)
+                    write!(f, "{}{}: {}", label, "DecodeError", message)
                 }
                 BmvError::EncodeFailed { message } => {
-                    write!(f, "{}{} for {}", label, "EncodeError", message)
+                    write!(f, "{}{}: {}", label, "EncodeError", message)
+                },
+                BmvError::InvalidBlockUpdate { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidBlockUpdate", message)
+                },
+                BmvError::InvalidVotes { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidVotes", message)
                 }
+                BmvError::InvalidBlockUpdateHeightLower { expected, actual } => {
+                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockUpdateHeightLower", expected, actual)
+                },
+                BmvError::InvalidBlockUpdateHeightHigher { expected, actual } => {
+                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockUpdateHeightLower", expected, actual)
+                },
+                BmvError::InvalidBlockProofHeightHigher { expected, actual } => {
+                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockProofHeightHigher", expected, actual)
+                },
+                BmvError::InvalidWitnessOld { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidWitnessOld", message)
+                },
+                BmvError::InvalidWitnessNewer { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidWitnessNewer", message)
+                },
                 _ => todo!(),
             }
         }

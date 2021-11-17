@@ -9,18 +9,43 @@ use near_sdk::{
     serde::{de, ser, Deserialize, Serialize},
 };
 use std::convert::TryFrom;
+use std::slice::Iter;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Vote {
     timestamp: u64,
     signature: Vec<u8>,
 }
 
-#[derive(Default, PartialEq, Eq, Debug)]
+impl Vote {
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+
+    pub fn signature(&self) -> &Vec<u8> {
+        &self.signature
+    }
+}
+
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct Votes {
     round: u8,
     part_set_id: PartSetId,
     items: Vec<Vote>,
+}
+
+impl Votes {
+    pub fn round(&self) -> u8 {
+        self.round
+    }
+
+    pub fn part_set_id(&self) -> &PartSetId {
+        &self.part_set_id
+    }
+
+    pub fn iter(&self) -> Iter<'_, Vote> {
+        self.items.iter()
+    }
 }
 
 impl Decodable for Votes {
@@ -56,12 +81,12 @@ impl Encodable for Vote {
 
 impl Encodable for Votes {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
-        stream
-            .begin_unbounded_list()
+        let mut params = rlp::RlpStream::new_list(3);
+        params
             .append(&self.round)
             .append(&self.part_set_id)
-            .append_list(&self.items)
-            .finalize_unbounded_list()
+            .append_list(&self.items);
+        stream.append(&params.out());
     }
 }
 
@@ -89,21 +114,23 @@ impl From<&Votes> for String {
 
 #[cfg(test)]
 mod tests {
+    use libraries::types::Hash;
+
     use super::*;
 
     #[test]
     fn deserialize_votes() {
-        let votes = Votes::try_from("-QFbAOIBoJtCEm8rj2sOT7vUAkFwkRp6QYXIg3H94xAB0gbbNnqD-QE0-EuHBcyhUmPrkrhBvoKQR_3bcXWLJ8kuzhIC7i3kG39iMVcyzEY6hv2AKARYdOLR96MfBQ_IHw1SIaMg9A4urxR9evI4hShhByOaxwD4S4cFzKFSY-sVuEGxX-iPKhfE-rOB_ME4SkUMK0jVzIUK0w11NhrnUz78-naDIGhivOOPp_qrHrYyARpeHKWLTkbnfqyug21B6j7WAPhLhwXMoVJj7LG4QZYr5iRVPn8xUJ08nvTo8mPpG8JaYFp2o00NeTArl7yAUonzeLDTfxJFf2HuQ4truNvbTtnprgcFixaGXUnLMTkB-EuHBcyhUmPrw7hBlEeTfAGOK9k5S3eCrjH-P5OqZdWQkfKBG8PE-Jma_AkV5bC3o8BbyW7OtEStz9Zs2nLbd2gkeaken3wVggNyWgE=".to_string()).unwrap();
+        let votes = Votes::try_from("uQFe-QFbgOKAoEfrbeMRvbH-b2ZJcOYXoBbk_5_NyhV8T8u8JLS18oFZ-QE0-EuHBcyhUmPrkrhBvoKQR_3bcXWLJ8kuzhIC7i3kG39iMVcyzEY6hv2AKARYdOLR96MfBQ_IHw1SIaMg9A4urxR9evI4hShhByOaxwD4S4cFzKFSY-sVuEGxX-iPKhfE-rOB_ME4SkUMK0jVzIUK0w11NhrnUz78-naDIGhivOOPp_qrHrYyARpeHKWLTkbnfqyug21B6j7WAPhLhwXMoVJj7LG4QZYr5iRVPn8xUJ08nvTo8mPpG8JaYFp2o00NeTArl7yAUonzeLDTfxJFf2HuQ4truNvbTtnprgcFixaGXUnLMTkB-EuHBcyhUmPrw7hBlEeTfAGOK9k5S3eCrjH-P5OqZdWQkfKBG8PE-Jma_AkV5bC3o8BbyW7OtEStz9Zs2nLbd2gkeaken3wVggNyWgE".to_string()).unwrap();
         assert_eq!(
             votes,
             Votes {
                 round: 0,
                 part_set_id: PartSetId {
-                    count: 1,
-                    hash: vec![
-                        155, 66, 18, 111, 43, 143, 107, 14, 79, 187, 212, 2, 65, 112, 145, 26, 122,
-                        65, 133, 200, 131, 113, 253, 227, 16, 1, 210, 6, 219, 54, 122, 131
-                    ]
+                    count: 0,
+                    hash: Hash::from_hash(&vec![
+                        71, 235, 109, 227, 17, 189, 177, 254, 111, 102, 73, 112, 230, 23, 160, 22,
+                        228, 255, 159, 205, 202, 21, 124, 79, 203, 188, 36, 180, 181, 242, 129, 89,
+                    ]),
                 },
                 items: vec![
                     Vote {
@@ -157,10 +184,10 @@ mod tests {
             round: 0,
             part_set_id: PartSetId {
                 count: 0,
-                hash: vec![
+                hash: Hash::from_hash(&vec![
                     71, 235, 109, 227, 17, 189, 177, 254, 111, 102, 73, 112, 230, 23, 160, 22, 228,
                     255, 159, 205, 202, 21, 124, 79, 203, 188, 36, 180, 181, 242, 129, 89,
-                ],
+                ]),
             },
             items: vec![
                 Vote {
@@ -203,6 +230,6 @@ mod tests {
                 },
             ],
         };
-        assert_eq!(String::from(&votes), "-HOA4oCgR-tt4xG9sf5vZklw5hegFuT_n83KFXxPy7wktLXygVn4TfhLhwXQG6OK1i-4QWom-8316eS01O0Xi76mg-bMkVetvKzbUYWMwB9lmskqAfEvrS3jYFojsDHpT6vbMgkLYcNDpNG2NMWpLR0BVAYA".to_string());
+        assert_eq!(String::from(&votes), "uQFe-QFbgOKAoEfrbeMRvbH-b2ZJcOYXoBbk_5_NyhV8T8u8JLS18oFZ-QE0-EuHBcyhUmPrkrhBvoKQR_3bcXWLJ8kuzhIC7i3kG39iMVcyzEY6hv2AKARYdOLR96MfBQ_IHw1SIaMg9A4urxR9evI4hShhByOaxwD4S4cFzKFSY-sVuEGxX-iPKhfE-rOB_ME4SkUMK0jVzIUK0w11NhrnUz78-naDIGhivOOPp_qrHrYyARpeHKWLTkbnfqyug21B6j7WAPhLhwXMoVJj7LG4QZYr5iRVPn8xUJ08nvTo8mPpG8JaYFp2o00NeTArl7yAUonzeLDTfxJFf2HuQ4truNvbTtnprgcFixaGXUnLMTkB-EuHBcyhUmPrw7hBlEeTfAGOK9k5S3eCrjH-P5OqZdWQkfKBG8PE-Jma_AkV5bC3o8BbyW7OtEStz9Zs2nLbd2gkeaken3wVggNyWgE".to_string());
     }
 }

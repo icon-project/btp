@@ -1,14 +1,18 @@
 use btp_common::errors::BmvError;
-use libraries::{types::Network, MerkleTreeAccumulator};
+use libraries::{types::Network, MerkleTreeAccumulator, types::Hash};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{
     env, json_types::U128, log, near_bindgen, require, AccountId, Gas, PanicOnDefault, Promise,
-    PromiseResult,
+    PromiseResult, PromiseOrValue
 };
+
 mod types;
-use types::{Validator, Validators, RelayMessage};
+use types::{Validator, Validators, RelayMessage, BlockHeader, StateChange, StateChanges, BlockProof, BlockUpdate, VoteMessage, Votes, VOTE_TYPE_PRECOMMIT, Response, ReceiptProof};
 mod assertion;
 mod messaging;
+mod state_management;
+mod block_validation;
+mod receipt_validation;
 mod util;
 
 #[near_bindgen]

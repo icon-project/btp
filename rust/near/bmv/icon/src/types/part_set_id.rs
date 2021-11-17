@@ -1,9 +1,10 @@
 use libraries::rlp::{self, Decodable, Encodable};
+use libraries::types::Hash;
 
-#[derive(Default, PartialEq, Eq, Debug)]
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct PartSetId {
     pub count: u64,
-    pub hash: Vec<u8>,
+    pub hash: Hash,
 }
 
 impl Decodable for PartSetId {

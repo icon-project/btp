@@ -1,4 +1,4 @@
-use super::{NullableBlockProof, BlockUpdate, ReceiptProof};
+use super::{BlockProof, BlockUpdate, Nullable, ReceiptProof};
 use btp_common::errors::BmvError;
 use libraries::rlp::{self, Decodable, Encodable};
 use near_sdk::{
@@ -10,15 +10,39 @@ use std::convert::TryFrom;
 #[derive(PartialEq, Eq, Debug)]
 pub struct RelayMessage {
     block_updates: Vec<BlockUpdate>,
-    block_proof: NullableBlockProof,
-    // receipt_proofs: Vec<ReceiptProof>,
+    block_proof: Nullable<BlockProof>,
+    receipt_proofs: Vec<ReceiptProof>,
+}
+
+impl RelayMessage {
+    pub fn block_updates(&self) -> &Vec<BlockUpdate> {
+        &self.block_updates
+    }
+
+    pub fn block_proof(&self) -> &Nullable<BlockProof> {
+        &self.block_proof
+    }
+
+    pub fn receipt_proofs(&self) -> &Vec<ReceiptProof> {
+        &self.receipt_proofs
+    }
+}
+
+impl Serialize for RelayMessage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: near_sdk::serde::Serializer,
+    {
+        unimplemented!()
+    }
 }
 
 impl Decodable for RelayMessage {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         Ok(Self {
             block_updates: rlp.list_at(0)?,
-            block_proof: rlp.val_at(1)?, // receipt_proofs: rlp.list_at(2)?
+            block_proof: rlp.val_at(1)?,
+            receipt_proofs: rlp.list_at(2)?,
         })
     }
 }
@@ -50,18 +74,17 @@ impl<'de> Deserialize<'de> for RelayMessage {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::BlockHeader;
-
     use super::*;
 
     #[test]
     fn deserialize_relay_message() {
-        let relay_message = RelayMessage::try_from("-QiR-QiLuQK8-QK5uQGh-QGeAoM0s--HBcyhUgh_-pUABFjYtvZJqeAFlj3JpyZpyJ7VLYWgCsgckk88Z8zEBqyoAnbbOKmMtqniTlVQhH1xa9o1V2GgdCg8AKcmf9dOkkjyPpbfnDlMj4Ci5IVl6-bpjrX7HCygZ3LUBWCxhGBqqeyRzWgy1JVM3Cqk4bkFTVgzb8VkuP34AKA_ut-RKCUO0QIozoLVkJSOZ_ku4IhQmkuNqW9S-sNwFaIBACBwSCwaDwMEQQAwiGw6HxAAQqIwaJxSLxiMwcgRqBwEuND4zqAcfII71tclsceu1RwNxPCAug4TPqsglfPPZOCOps2OYvgAoM-dQ20rcPSnAPatdGrX2FrzGASLRXgYt5VjMROpCBGluIj4hqDvUxVcnaaZizh-sTdbVE0k7VbMLAOZ7BT8JMgUsBiJRKB0OZr3qHXbRE52jRUq0pDB2oLxHZ9AN4unKkIMAjWsbPgAoCFkCcC27_cLaMx1jIp02B0-8VjZCt_H80hRxcOOFmVRoOfDD6P-atzNAdkyAadn_DbGl54gTXcbZlFlwJj7_44muQEQ-QENAOIBoOxziQuOW1z08w82GOfKMNwvwIU-jhcL0hdemkDHFryd-Of4S4cFzKFSJyCEuEGRtMoNFru2so9w-ZHpGOVIQv2Cyu2tdamg2ntu_XhEiA0W7tZy-vBMyMUMtzteas81-7Ttxn-BCWdTchldYbDjAfhLhwXMoVInFo64QTwSF8hRF2KA0lffO-vlYRkxd7cCllK8THzCUnMrUsvYQXX7IiYbAKCufMKTw9fLyVoISSRx05A1-x-iLjlcL38A-EuHBcyhUiccTbhB-sgq-HdCKlG_xc0WYK3YqOUzLOam1dqM6gUHth6zGI48hNDUpq4hCRT2e5DtqBFle3mTnRgfMihdlrn6LMlayAH4ALkCvPkCubkBofkBngKDNLPwhwXMoVInHE2VAO3rG4K5TVSOxEDfVT9SIUTKg_uNoGK5cmONt6kHKjNRJFP6lzOxY-BWhLTWB-b1O93BEL6yoAC4SXP2XXP0vnhv2l3LSUoWXsGIii1LqLVa-beu53EyoGdy1AVgsYRgaqnskc1oMtSVTNwqpOG5BU1YM2_FZLj9-ACg0_FbTAWdeaW7sCZuSaaGhP1diXwRlvRmWg_XQi66y5CiAQAgcEgsGg8DBEEAMIhsOh8QAEKiMGicUi8YjMHIEagcBLjQ-M6gHHyCO9bXJbHHrtUcDcTwgLoOEz6rIJXzz2TgjqbNjmL4AKAEJWiUOIqGxqgZMHe6oWo_zveV2MbmKNSHicQpt6PVlriI-IagKVvZfefWIbvb0uxZNCbRIp1f3x5w0CuM0oCBLai4-lagdDma96h120ROdo0VKtKQwdqC8R2fQDeLpypCDAI1rGz4AKAhZAnAtu_3C2jMdYyKdNgdPvFY2Qrfx_NIUcXDjhZlUaDnww-j_mrczQHZMgGnZ_w2xpeeIE13G2ZRZcCY-_-OJrkBEPkBDQDiAaARm6fRKphJeFlBuv8I_BjO7tZeFP3O5Zk2UJkEPMo_uPjn-EuHBcyhUkWbJbhBnycf-L2-3rcyxYmBlrrPNBA7LkS3NhqEt94FC5BRVWMzNtwwjPHJ_evaWAYI-AcBXaojjWzdIUCK3iCWNdR40gD4S4cFzKFSRYkzuEFqa1GfQNsdIs067r04GUDsu7AQl3K-CRqNPDFjup4eVmHsvt6m6suAQbBf9-MeE4sAu9c6lYrkQlH3F70ZC_27AfhLhwXMoVJFkn-4QdiZLNnRl93it2zXrAy_TAMuhZybF5Nlnr0hs7XpgEktEBZpUEQ96PGakB8rgU9ev1EMeq9XpiXKCLJNlR9DQZgA-AC5Awr5Awe5AaH5AZ4CgzSz8YcFzKFSRZJ_lQDWPExztiPpf2dAfWh69O_P5IalFaDY9mTy31D9Jmb8_A5X8jVca4PzdWX-O6BmGh90NpS-2aAlL30MApf-8LBBxncoFkRgKxsD6B7TGwTvbbF1U2qn4KBnctQFYLGEYGqp7JHNaDLUlUzcKqThuQVNWDNvxWS4_fgAoNamdrLXhLJ757QmelDzFBDJ1pHaYq2js9Nb0LL_GOnTogEAIHBILBoPAwRBADCIbDofEABCojBonFIvGIzByBGoHAS40PjOoBx8gjvW1yWxx67VHA3E8IC6DhM-qyCV889k4I6mzY5i-ACgTKD5cGKxYQLc-jO_biPZjkxtlGCoujMW85ipfjDvB8u4iPiGoJbMORAvie7GK08Gyu8ObS4bfa_mml35c0ZvtBPs8sBBoHQ5mveoddtETnaNFSrSkMHagvEdn0A3i6cqQgwCNaxs-ACgIWQJwLbv9wtozHWMinTYHT7xWNkK38fzSFHFw44WZVGg58MPo_5q3M0B2TIBp2f8NsaXniBNdxtmUWXAmPv_jia5AV75AVsA4gGgm0ISbyuPaw5Pu9QCQXCRGnpBhciDcf3jEAHSBts2eoP5ATT4S4cFzKFSY-uSuEG-gpBH_dtxdYsnyS7OEgLuLeQbf2IxVzLMRjqG_YAoBFh04tH3ox8FD8gfDVIhoyD0Di6vFH168jiFKGEHI5rHAPhLhwXMoVJj6xW4QbFf6I8qF8T6s4H8wThKRQwrSNXMhQrTDXU2GudTPvz6doMgaGK844-n-qsetjIBGl4cpYtORud-rK6DbUHqPtYA-EuHBcyhUmPssbhBlivmJFU-fzFQnTye9OjyY-kbwlpgWnajTQ15MCuXvIBSifN4sNN_EkV_Ye5Di2u429tO2emuBwWLFoZdScsxOQH4S4cFzKFSY-vDuEGUR5N8AY4r2TlLd4KuMf4_k6pl1ZCR8oEbw8T4mZr8CRXlsLejwFvJbs60RK3P1mzactt3aCR5qR6ffBWCA3JaAfgA-ADA".to_string()).unwrap();
+        let relay_message = RelayMessage::try_from("-Qee-QQ8uQFS-QFPuNT40gKCQKOHBdCqJx0eQ5UAtrV5G-C172cGOzwQuED7gVFNsv2g1tINkHhbtViQXPruQ-FnkmYs_jA0tYrJKbvq3BYO9Rqgt12iGPeeEGlPxvT_hNLnhr9K5nUqvKiB6A_Yc0bfl76g7Z5kTlmy_2VEb189fXfCeFj6z4rrO5aUcNdJnHn5dXz4APgAgLhG-ESgMpG4jtB7-p0Ls3k2EYmLp9RerPVrvKAFveS23xQl2UT4AKBhUsXohogqHXqYEfjsfRAHCiSbbzQfM_H7NFRDIoxzKLh1-HMA4gGgtVIyurXEb0cIjT3frYFFTMfDQ48iwgntObJ1ht6v-RL4TfhLhwXQqicsVs-4QfNbBjk7e16wLiu54BjoVhrFrH41obLbpuP8tVCxRbVLHYoBQyGbXYOYQduPi9KL_jc9iJ284R8Z5uKMJYJvntwB-AC5AVD5AU240vjQAoJApIcF0KonLFbPlQC2tXkb4LXvZwY7PBC4QPuBUU2y_aB_WlGDMMOOnc25Zw71Asy9qm5P1ckuxut4n7eyRa8sX6BkLQ2BfmajCXpSPKQyPbQfknSBaVE5Jh3D-Wyd1gODu6DtnmROWbL_ZURvXz19d8J4WPrPius7lpRw10mcefl1fPgAoNBv8fj4bmAFfa9a8IyYHOK_pHPZt7lJi8AF0Cgkad7_gKbloDKRuI7Qe_qdC7N5NhGJi6fUXqz1a7ygBb3ktt8UJdlE-AD4ALh1-HMA4gGgqw1QRCuG0tcqzCpKDqhHQO09T3_OQMhOHAAgt-D4O-_4TfhLhwXQqic7qGy4QZPydQXTosV0Bw1Q3ntf7-FCxRDMSM7FOnPhP591OxiYUlsWMdK0qfbp-WrnfBJKObfEwNm1dqfX98D9xKLtCVsA-AC5AZH5AY65ARL5AQ8CgkClhwXQqic7qGyVALa1eRvgte9nBjs8ELhA-4FRTbL9oItWxVWVSnoGHZaeON6tuc1mKVrq1Wm18UkpjaplJALMoBbHRfvDVLJUkLGrwX2BHDYbXjXpRT-EcCLGG68iaSdKoO2eZE5Zsv9lRG9fPX13wnhY-s-K6zuWlHDXSZx5-XV8-AD4ALg8CAAgcEAMEg8IhMDEBAhUDg0OhQEgYIiMEEEWjMIisaAENjsEAUIjEXghCkEZQEbjMQhEChETlEglUKgIuEb4RKC_bo8qyH3l705OLCmJ1kMQd9iEV0aw7gStxMPmCTOAffgAoL2i-AmVd_b_p3gkSP5glYl9pIn40AEUMIvqwpHIvkahuHX4cwDiAaCp1buI8W7RsDhZAp69_T6gJBjO_aR00EmjIj3-397EXfhN-EuHBdCqJ0rbgLhB459yJ9MK7TDZ2xQ23jTHbdbiwOCTEcmb5U7olxiUgaFV28sh8nuVzXrjJXuGfUnNureSKSOSXSwvp-aQTixLNAH4APgA-QNauQNX-QNUALkBVPkBUbkBTvkBS4IgALkBRfkBQgCVAZQ5KOt2a33MGDNmJIyCIn-oz8dWgwdSZIMHUmSFAukO3QC49hAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAgQAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAABAAACAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAACAAAAAAIAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAACAAAAAAAAAAAAAAAAQAAAAAAAAAQAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAPgA-ACgvEWAgjiMdu0pUAxvQcurR0OVNFEmP5ZzhNMkpIVwqPr5Afn5AfYAuQHy-QHvo-IQoMOetu_ZC-YK5vgAe7UsNeBouviaGeP9VQgl1JDY7dRguFP4UaBjTIu0WBCx1UEf8MBqzibUyAkFNsmaQ3gnewIx7LIl96CegRcYwno7-6NZanIbuiC4o_93OVbLE-UByERTjAHFv4CAgICAgICAgICAgICAgLkBc_kBcCC5AWz5AWmVAZwHK-9UWr65aj97ov_fi4YftV3q-FSWTWVzc2FnZShzdHIsaW50LGJ5dGVzKbg6YnRwOi8vMHg1MDEucHJhLzB4NUNDMzA3MjY4YTEzOTNBQjlBNzY0QTIwREFDRTg0OEFCODI3NWM0NgL4-7j5-Pe4PmJ0cDovLzB4NThlYjFjLmljb24vY3g5YzA3MmJlZjU0NWFiZWI5NmEzZjdiYTJmZmRmOGI4NjFmYjU1ZGVhuDpidHA6Ly8weDUwMS5wcmEvMHg1Q0MzMDcyNjhhMTM5M0FCOUE3NjRBMjBEQUNFODQ4QUI4Mjc1YzQ2im5hdGl2ZWNvaW4BuG34awC4aPhmqmh4NDUwMmFhZDc5ODZhZDVhODQ4OTU1MTVmYWY3NmU5MGI1YjQ3ODY1NKoweDE1OEEzOTFGMzUwMEMzMjg4QWIyODY1MzcyMmE2NDU5RTc3MjZCMDHPzoNJQ1iJAIlj3YwsXgAA".to_string()).unwrap();
         assert_eq!(
             relay_message,
             RelayMessage {
                 block_updates: vec![BlockUpdate::default()],
-                block_proof: NullableBlockProof::new(None)
+                block_proof: <Nullable<BlockProof>>::new(None),
+                receipt_proofs: vec![]
             }
         )
     }

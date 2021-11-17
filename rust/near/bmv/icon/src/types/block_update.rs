@@ -2,11 +2,25 @@ use super::{BlockHeader, Validators, Votes};
 use libraries::rlp::{self, Decodable};
 use std::convert::TryFrom;
 
-#[derive(Default, PartialEq, Eq, Debug)]
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct BlockUpdate {
     block_header: BlockHeader,
     votes: Votes,
     next_validators: Validators,
+}
+
+impl BlockUpdate {
+    pub fn block_header(&self) -> &BlockHeader {
+        &self.block_header
+    }
+
+    pub fn votes(&self) -> &Votes {
+        &self.votes
+    }
+
+    pub fn next_validators(&self) -> &Validators {
+        &self.next_validators
+    }
 }
 
 impl Decodable for BlockUpdate {
@@ -20,11 +34,3 @@ impl Decodable for BlockUpdate {
         })
     }
 }
-
-// impl TryFrom<&Vec<u8>> for Vec<BlockUpdate> {
-//     type Error = rlp::DecoderError;
-//     fn try_from(bytes: &Vec<u8>) -> Result<Self, Self::Error> {
-//         let rlp = rlp::Rlp::new(bytes);
-//         Self::decode(&rlp)
-//     }
-// }
