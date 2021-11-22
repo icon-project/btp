@@ -29,7 +29,7 @@ public class BMCMock {
             Context.revert("unauthorized");
         }
         if (_sn.compareTo(BigInteger.ZERO) < 1) {
-            Context.revert("invalid sn");
+            //Context.revert("invalid sn");
         }
     }
 
