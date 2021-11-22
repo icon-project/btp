@@ -209,7 +209,7 @@ public class ServiceHandler {
         reader.beginList();
         int actionType = reader.readInt();
         ObjectReader readerTa = null;
-        if(actionType == REQUEST_TOKEN_TRANSFER || actionType ==  RESPONSE_HANDLE_SERVICE){
+        if (actionType == REQUEST_TOKEN_TRANSFER || actionType == RESPONSE_HANDLE_SERVICE) {
             readerTa = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
         }
         if (actionType == REQUEST_TOKEN_TRANSFER) {
@@ -318,15 +318,17 @@ public class ServiceHandler {
         int actionType = reader.readInt();
         // Rollback token transfer
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            TransferAsset _ta = TransferAsset.readObject(reader);
+            ObjectReader readerTasset = Context.newByteArrayObjectReader(RLPn, reader.readByteArray());
+            TransferAsset _ta = TransferAsset.readObject(readerTasset);
             Address from = Address.fromString(_ta.getFrom());
             Address to = Address.fromString(_ta.getTo());
             Asset _asset = _ta.getAssets().get(0);
             String tokenName = _asset.getName();
             BigInteger value = _asset.getValue();
-            reader.end();
+            readerTasset.end();
             setBalance(from, tokenName, value, value.negate(), BigInteger.ZERO);
         }
+        reader.end();
         // delete pending message
         deletePending(sn);
     }
