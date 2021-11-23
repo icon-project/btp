@@ -14,12 +14,16 @@ pub struct BlockHeader {
     pub patch_tx_hash: Nullable<Hash>,
     pub tx_hash: Nullable<Hash>,
     pub logs_bloom: Vec<u8>,
-    pub block_result: BlockResult,
+    pub block_result: Nullable<BlockResult>,
 }
 
 impl BlockHeader {
     pub fn height(&self) -> u128 {
         self.height
+    }
+
+    pub fn block_result(&self) -> &Nullable<BlockResult> {
+        &self.block_result
     }
 
     pub fn next_validator_hash(&self) -> &Hash {

@@ -1,9 +1,13 @@
 use std::ops::Deref;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSchema, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use tiny_keccak::{Hasher, Sha3};
+// use tiny_keccak::{Hasher, Sha3};
 
 use crate::rlp::{Decodable, Encodable};
+
+pub trait Hasher {
+    fn hash(input: &[u8]) -> [u8; 32];
+}
 
 #[derive(
     BorshDeserialize,
@@ -26,15 +30,15 @@ pub struct Hash([u8; 32]);
 
 impl Hash {
     /// Create Hash from bytes
-    pub fn new(data: &[u8]) -> Self {
-        Self(Self::hash(data))
+    pub fn new<H: Hasher>(data: &[u8]) -> Self {
+        Self(Self::hash::<H>(data))
     }
 
     /// Create Hash for any serializable data
-    pub fn serialize<S: BorshSerialize + BorshSchema>(d: &S) -> Result<Self, String> {
+    pub fn serialize<S: BorshSerialize + BorshSchema, H: Hasher>(d: &S) -> Result<Self, String> {
         let ser = borsh::try_to_vec_with_schema(d)
             .map_err(|err| format!("{}", err))?;
-        Ok(Self(Self::hash(&ser[..])))
+        Ok(Self(Self::hash::<H>(&ser[..])))
     }
 
     pub fn from_hash(hash: &[u8]) -> Self {
@@ -43,12 +47,8 @@ impl Hash {
         Self(slice)
     }
 
-    fn hash(input: &[u8]) -> [u8; 32] {
-        let mut output = [0; 32];
-        let mut sha3 = Sha3::v256();
-        sha3.update(input);
-        sha3.finalize(&mut output);
-        output
+    fn hash<H: Hasher>(input: &[u8]) -> [u8; 32] {
+        H::hash(input)
     }
 }
 

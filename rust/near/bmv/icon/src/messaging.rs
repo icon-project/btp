@@ -11,6 +11,7 @@ impl BtpMessageVerifier {
 
         let mut state_changes = StateChanges::new();
         let mut last_block_header = BlockHeader::default();
+        let mut btp_messages = SerializedBtpMessages::new();
 
         let outcome = self.process_block_updates(
             relay_message.block_updates(),
@@ -22,15 +23,25 @@ impl BtpMessageVerifier {
         }
 
         if relay_message.block_proof().is_some() {
-            let outcome =
-                self.process_block_proof(relay_message.block_proof().get(), &mut last_block_header);
+            let outcome = self.process_block_proof(
+                relay_message
+                    .block_proof()
+                    .get()
+                    .map_err(|message| BmvError::InvalidBlockProof { message })
+                    .unwrap(),
+                &mut last_block_header,
+            );
             if outcome.is_err() {
                 return PromiseOrValue::Value(Response::Failed);
             }
         }
 
         if !relay_message.receipt_proofs().is_empty() {
-            let outcome = self.process_receipt_proofs(relay_message.receipt_proofs(), &last_block_header);
+            let outcome = self.process_receipt_proofs(
+                relay_message.receipt_proofs(),
+                &last_block_header,
+                &mut btp_messages,
+            );
             if outcome.is_err() {
                 return PromiseOrValue::Value(Response::Failed);
             }

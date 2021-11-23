@@ -16,8 +16,8 @@ impl<T> Nullable<T> {
         self.0.is_none()
     }
 
-    pub fn get(&self) -> &T {
-        self.0.as_ref().unwrap()
+    pub fn get(&self) -> Result<&T, &'static str> {
+        self.0.as_ref().ok_or("object is null")
     }
 }
 

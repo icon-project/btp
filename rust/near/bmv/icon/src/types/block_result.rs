@@ -10,6 +10,12 @@ pub struct BlockResult {
     extension_data: ExtensionData,
 }
 
+impl BlockResult {
+    pub fn receipt_hash(&self) -> &Nullable<Hash> {
+        &self.receipt_hash
+    }
+}
+
 impl Decodable for BlockResult {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         let data = rlp.as_val::<Vec<u8>>()?;

@@ -10,7 +10,7 @@ impl ToBmvError for MtaError {
         match self {
             MtaError::InvalidWitnessOld { message } => BmvError::InvalidWitnessOld { message },
             MtaError::InvalidWitnessNewer { message } => BmvError::InvalidWitnessNewer { message },
-            _ => BmvError::Unknown
+            _ => BmvError::Unknown { message: "MtaError"}
         }
     }
 }

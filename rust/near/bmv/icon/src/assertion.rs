@@ -17,21 +17,18 @@ impl BtpMessageVerifier {
     pub fn assert_have_block_updates_or_block_proof(&self, relay_message: &RelayMessage) {
         require!(
             !relay_message.block_updates().is_empty() || relay_message.block_proof().is_some(),
-            format!("{}", BmvError::Unknown)
-        )
-    }
-
-    pub fn assert_have_block_witness(&self, block_proof: &BlockProof) {
-        require!(
-            block_proof.block_witness().is_some()
-                && !block_proof.block_witness().get().witnesses().is_empty(),
-            format!("{}", BmvError::Unknown)
+            format!("{}", BmvError::Unknown { message: "does not have block updates or block proof" })
         )
     }
 
     pub fn ensure_have_block_witness(&self, block_proof: &BlockProof) -> Result<(), BmvError> {
         if block_proof.block_witness().is_some()
-            && !block_proof.block_witness().get().witnesses().is_empty()
+            && !block_proof
+                .block_witness()
+                .get()
+                .map_err(|message| BmvError::InvalidBlockProof { message })?
+                .witnesses()
+                .is_empty()
         {
             Ok(())
         } else {
@@ -73,7 +70,7 @@ impl BtpMessageVerifier {
             });
         };
 
-        if &Hash::new(&<Vec<u8>>::from(block_update.next_validators()))
+        if &Hash::new::<Sha256>(&<Vec<u8>>::from(block_update.next_validators()))
             != block_update.block_header().next_validator_hash()
         {
             return Err(BmvError::InvalidBlockUpdate {
@@ -118,13 +115,16 @@ impl BtpMessageVerifier {
         Ok(())
     }
 
-    pub fn ensure_block_proof_height_is_valid(&self, block_proof: &BlockProof) -> Result<(), BmvError> {
+    pub fn ensure_block_proof_height_is_valid(
+        &self,
+        block_proof: &BlockProof,
+    ) -> Result<(), BmvError> {
         if self.mta.height() >= block_proof.block_header().height() {
             Ok(())
         } else {
             Err(BmvError::InvalidBlockProofHeightHigher {
                 expected: self.mta.height(),
-                actual: block_proof.block_header().height()
+                actual: block_proof.block_header().height(),
             })
         }
     }

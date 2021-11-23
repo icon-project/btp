@@ -1,13 +1,18 @@
 use btp_common::errors::BmvError;
-use libraries::{types::Network, MerkleTreeAccumulator, types::Hash};
+use libraries::{types::Network, MerkleTreeAccumulator, types::Hash, types::messages::SerializedBtpMessages};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{
     env, json_types::U128, log, near_bindgen, require, AccountId, Gas, PanicOnDefault, Promise,
     PromiseResult, PromiseOrValue
 };
 
+#[cfg(not(feature = "testable"))]
 mod types;
-use types::{Validator, Validators, RelayMessage, BlockHeader, StateChange, StateChanges, BlockProof, BlockUpdate, VoteMessage, Votes, VOTE_TYPE_PRECOMMIT, Response, ReceiptProof};
+
+#[cfg(feature = "testable")]
+pub mod types;
+
+use types::{Validator, Validators, RelayMessage, BlockHeader, StateChange, StateChanges, BlockProof, BlockUpdate, VoteMessage, Votes, VOTE_TYPE_PRECOMMIT, Response, ReceiptProof, Sha256};
 mod assertion;
 mod messaging;
 mod state_management;

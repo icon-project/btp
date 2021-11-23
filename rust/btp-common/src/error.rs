@@ -37,7 +37,7 @@ pub mod errors {
 
     #[derive(Debug, Clone)]
     pub enum BmvError {
-        Unknown,
+        Unknown { message: &'static str },
         NotBmc,
         InvalidWitnessOld  { message: &'static str },
         InvalidWitnessNewer  { message: &'static str },
@@ -63,7 +63,7 @@ pub mod errors {
     impl From<&BmvError> for u32 {
         fn from(bsh_error: &BmvError) -> Self {
             match bsh_error {
-                BmvError::Unknown => 0,
+                BmvError::Unknown { message: _ } => 0,
                 _ => 0,
             }
         }
