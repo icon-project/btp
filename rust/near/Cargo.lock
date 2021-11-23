@@ -610,6 +610,7 @@ name = "bmv-icon"
 version = "0.1.0"
 dependencies = [
  "btp-common",
+ "hex 0.4.3",
  "libraries",
  "near-sdk 4.0.0-pre.2",
  "tiny-keccak",
@@ -1990,6 +1991,9 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "home"
@@ -2243,7 +2247,6 @@ dependencies = [
  "safe-transmute",
  "serde",
  "thiserror",
- "tiny-keccak",
 ]
 
 [[package]]
@@ -5927,3 +5930,8 @@ dependencies = [
  "thiserror",
  "time 0.1.44",
 ]
+
+[[patch.unused]]
+name = "near-sdk"
+version = "4.0.0-pre.4"
+source = "git+https://github.com/MuhammedIrfan/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
