@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn deserialize_transfer_request_message() {
         let service_message = TokenServiceMessage::try_from(
-            "-H2AuHr4eLhAODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNKpjeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWLKyYRORUFSggOEYw".to_string(),
+            "-FoAuFf4VaoweGMyOTRiMUE2MkU4MmQzZjEzNUE4RjliMmY5Y0FFQUEyM2ZiRDZDZjWKMHgxMjM0NTY3ON7JhElDT06DAwqEyYRUUk9OgwSQwMmEUEFSQYMBhEg".to_string(),
         )
         .unwrap();
 
@@ -202,10 +202,14 @@ mod tests {
             service_message,
             TokenServiceMessage {
                 service_type: TokenServiceType::RequestTokenTransfer {
-                    sender: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
+                    sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5"
                         .to_string(),
-                    receiver: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-                    assets: vec![Asset::new("NEAR".to_string(), 900, 99)]
+                    receiver: "0x12345678".to_string(),
+                    assets: vec![
+                        Asset::new("ICON".to_string(), 199300, 0),
+                        Asset::new("TRON".to_string(), 299200, 0),
+                        Asset::new("PARA".to_string(), 99400, 0)
+                        ]
                 },
             },
         );
@@ -215,16 +219,20 @@ mod tests {
     fn serialize_transfer_request_message() {
         let service_message = TokenServiceMessage {
             service_type: TokenServiceType::RequestTokenTransfer {
-                sender: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
+                sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5"
                     .to_string(),
-                receiver: "cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
-                assets: vec![Asset::new("NEAR".to_string(), 900, 99)],
+                receiver: "0x12345678".to_string(),
+                assets: vec![
+                    Asset::new("ICON".to_string(), 199300, 0),
+                    Asset::new("TRON".to_string(), 299200, 0),
+                    Asset::new("PARA".to_string(), 99400, 0)
+                    ]
             },
         };
 
         assert_eq!(
             String::from(&service_message),
-            "-H2AuHr4eLhAODhiZDA1NDQyNjg2YmUwYTVkZjdkYTMzYjZmMTA4OWViZmVhMzc2OWIxOWRiYjI0NzdmZTBjZDZlMGYxMjZlNKpjeDg3ZWQ5MDQ4YjU5NGI5NTE5OWYzMjZmYzc2ZTc2YTlkMzNkZDY2NWLKyYRORUFSggOEYw".to_string(),
+            "-FoAuFf4VaoweGMyOTRiMUE2MkU4MmQzZjEzNUE4RjliMmY5Y0FFQUEyM2ZiRDZDZjWKMHgxMjM0NTY3ON7JhElDT06DAwqEyYRUUk9OgwSQwMmEUEFSQYMBhEg".to_string(),
         );
     }
 }
