@@ -94,7 +94,7 @@ impl NativeCoinService {
         if let Some(balance) = self.balances.get(&account, &token_id) {
             require!(
                 balance.deposit() >= amount,
-                format!("{}", BshError::NotMinimumDeposit).as_str()
+                format!("{}", BshError::NotMinimumDeposit)
             );
         } else {
             env::panic_str(format!("{}", BshError::NotMinimumDeposit).as_str());
@@ -110,7 +110,7 @@ impl NativeCoinService {
         if let Some(balance) = self.balances.get(&account, &token_id) {
             require!(
                 balance.refundable() >= amount,
-                format!("{}", BshError::NotMinimumRefundable).as_str()
+                format!("{}", BshError::NotMinimumRefundable)
             );
         } else {
             env::panic_str(format!("{}", BshError::NotMinimumRefundable).as_str());

@@ -1,7 +1,7 @@
 use crate::types::{
     messages::BtpMessage, messages::Message, messages::SerializedMessage, BTPAddress, WrappedI128,
 };
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 
 #[derive(Default, Debug, PartialEq, Eq, Clone)]

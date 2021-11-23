@@ -1,6 +1,9 @@
 //! Merkle Tree Accumulator
 
-use super::{hash::Hash, utils::RlpItem};
+use std::ops::Deref;
+
+use crate::types::{Hash, Hasher};
+use super::{utils::RlpItem, error::MtaError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
@@ -9,7 +12,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 #[serde(crate = "near_sdk::serde")]
 pub struct MerkleTreeAccumulator {
     /// Height
-    pub height: u128,
+    height: u128,
     /// Roots
     pub roots: Vec<Hash>,
     /// Offset
@@ -31,8 +34,13 @@ impl MerkleTreeAccumulator {
             ..Default::default()
         }
     }
+
+    pub fn height(&self) -> u128 {
+        self.height
+    }
+
     /// Initialize MTA from a serialized type
-    pub fn init_from_serialized(&mut self, rlp_bytes: &[u8]) {
+    pub fn init_from_serialized<H: Hasher>(&mut self, rlp_bytes: &[u8]) {
         let mut unpacked: Vec<RlpItem> = vec![];
         let mut serialized_roots: Vec<RlpItem> = vec![];
 
@@ -46,7 +54,7 @@ impl MerkleTreeAccumulator {
         if unpacked.len() > 1 {
             serialized_roots.push(unpacked[1].clone());
             for root in &serialized_roots {
-                let hash = Hash::new(&RlpItem::try_to_vec(root).expect("Failed to convert to vec"));
+                let hash = Hash::new::<H>(&RlpItem::try_to_vec(root).expect("Failed to convert to vec"));
                 self.roots.push(hash);
             }
         }
@@ -63,7 +71,7 @@ impl MerkleTreeAccumulator {
             serialized_roots.clear();
             serialized_roots.push(unpacked[5].clone());
             for root in &serialized_roots {
-                let hash = Hash::new(&RlpItem::try_to_vec(root).expect("Failed to convert to vec"));
+                let hash = Hash::new::<H>(&RlpItem::try_to_vec(root).expect("Failed to convert to vec"));
                 self.cache.push(hash);
             }
         }
@@ -93,7 +101,7 @@ impl MerkleTreeAccumulator {
 
     /// Check if the MTA includes a cache
     pub fn includes_cache(&self, hash: &Hash) -> bool {
-        if hash.0.is_empty() {
+        if hash.deref().is_empty() {
             return false;
         }
         for entry in &self.cache {
@@ -127,7 +135,7 @@ impl MerkleTreeAccumulator {
         } else {
             let mut root = Hash::default();
             for i in 0..self.clone().roots.len() {
-                if self.roots[i].0.is_empty() {
+                if self.roots[i].deref().is_empty() {
                     root = hash;
                     self.roots[i] = root;
                     break;
@@ -146,7 +154,7 @@ impl MerkleTreeAccumulator {
                     let _ = self.roots.remove(index);
                 }
             }
-            if root.0.is_empty() {
+            if root.deref().is_empty() {
                 self.roots.push(hash);
             }
         }
@@ -161,7 +169,7 @@ impl MerkleTreeAccumulator {
         let mut bit_flag: usize;
         while i > 0 {
             i -= 1;
-            if self.roots[i].0.is_empty() {
+            if self.roots[i].deref().is_empty() {
                 continue;
             }
             bit_flag = 1 << i;
@@ -175,27 +183,27 @@ impl MerkleTreeAccumulator {
     }
 
     /// Verify
-    pub fn verify(
+    pub fn verify<H: Hasher>(
         &mut self,
         proofs: &[Hash],
         leaf: &Hash,
         height: u128,
         at: u128,
-    ) -> Result<(), &str> {
+    ) -> Result<(), MtaError> {
         let root: Hash;
         let root_idx: usize;
         if self.height == at {
             root = *self
                 .get_root(proofs.len())
                 .expect("Failed to retrieve root");
-            self.verify_internal(proofs, &root, leaf)
+            self.verify_internal::<H>(proofs, &root, leaf)
                 .expect("Failed to verify");
         } else if self.height < at {
             if !self.newer_witness_allowed {
-                return Err("RevertInvalidBlockWitness: newer witness not allowed.");
+                return Err(MtaError::InvalidWitnessNewer { message: "newer witness not allowed" });
             }
             if self.height < height {
-                return Err("RevertInvalidBlockWitness: given witness for newer node.");
+                return Err(MtaError::InvalidWitnessNewer { message: "given witness for newer node" });
             }
             root_idx = self
                 .get_root_index_by_height(height)
@@ -203,11 +211,11 @@ impl MerkleTreeAccumulator {
             root = *self.get_root(root_idx).expect("Failed to get root");
             let mut slice_roots: Vec<Hash> = Vec::with_capacity(root_idx);
             slice_roots[..root_idx].clone_from_slice(&proofs[..root_idx]);
-            self.verify_internal(slice_roots.as_slice(), &root, leaf)
+            self.verify_internal::<H>(slice_roots.as_slice(), &root, leaf)
                 .expect("Failed to verify");
         } else if (self.height - height - 1) < self.cache_size as u128 && !self.includes_cache(leaf)
         {
-            return Err("RevertInvalidBlockWitness: invalid old witness");
+            return Err(MtaError::InvalidWitnessOld { message: "invalid old witness" });
         }
         Ok(())
     }
@@ -217,7 +225,7 @@ impl MerkleTreeAccumulator {
         Self::try_to_vec(self).expect("Failed to convert Merkle Tree Accumulator to bytes.")
     }
 
-    fn verify_internal(
+    fn verify_internal<H: Hasher>(
         &mut self,
         witnesses: &[Hash],
         root: &Hash,
@@ -225,7 +233,7 @@ impl MerkleTreeAccumulator {
     ) -> Result<(), &str> {
         let mut hash = *leaf;
         for witness in witnesses {
-            hash = Hash::serialize(witness).expect("Failed to serialize");
+            hash = Hash::serialize::<_, H>(witness).expect("Failed to serialize");
         }
         if &hash != root {
             return Err("RevertInvalidBlockWitness: invalid witness");

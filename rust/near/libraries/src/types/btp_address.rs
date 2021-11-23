@@ -6,7 +6,7 @@ use near_sdk::{
     serde_json::Value,
     AccountId,
 };
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 use std::fmt::{self, Error, Formatter};
 use std::iter::FromIterator;

@@ -5,7 +5,7 @@ use near_sdk::{
     borsh::{self, maybestd::io, BorshDeserialize, BorshSerialize},
     serde::{de, ser, Deserialize, Serialize},
 };
-use rlp::{self, Decodable, Encodable};
+use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 use std::vec::IntoIter;
 

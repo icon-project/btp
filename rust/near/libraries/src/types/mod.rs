@@ -43,3 +43,5 @@ mod storage_balance;
 pub use storage_balance::StorageBalances;
 mod token_fee;
 pub use token_fee::TokenFees;
+mod hash;
+pub use hash::{Hash, Hasher};

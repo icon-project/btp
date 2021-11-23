@@ -7,6 +7,7 @@ edition = "2018"
 [workspace]
 members = [
     "bmc",
+    "bmv/icon",
     "bsh/token",
     "bsh/nativecoin",
     "libraries",
@@ -37,3 +38,6 @@ overflow-checks = true
 opt-level = "z"
 debug = false
 panic = "abort"
+
+[patch."https://github.com/near/near-sdk-rs.git"]
+near-sdk = { git = "https://github.com/MuhammedIrfan/near-sdk-rs.git", rev = "b18b475" }

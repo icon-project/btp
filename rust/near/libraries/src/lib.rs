@@ -1,8 +1,10 @@
 //! Library of BMC, BMV, and BSH Data Types
 pub mod types;
 // pub mod bmc_types;
-pub mod bmv_types;
 pub mod bsh_types;
 pub mod mta;
 pub use mta::MerkleTreeAccumulator;
-pub use rlp;
+pub mod rlp;
+pub use bytes::BytesMut;
+pub mod mpt;
+pub use mpt::MerklePatriciaTree;

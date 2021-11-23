@@ -1,0 +1,29 @@
+[package]
+name = "bmv-icon"
+version = "0.1.0"
+authors = ["Icon Foundation<foo@icon.foundation>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+mockable = []
+testable = []
+
+[dependencies]
+btp-common = { path = "../../../btp-common" }
+libraries = { path = "../../libraries" }
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
+tiny-keccak = { version = "2.0", features = ["fips202"] }
+
+[dev-dependencies]
+hex = { version = "0.4", features = ["serde"] }
+
+[[test]]
+name = "test_recover_address"
+path = "tests/test_recover_address.rs"
+
+[[test]]
+name = "test_mpt"
+path = "tests/test_mpt.rs"
