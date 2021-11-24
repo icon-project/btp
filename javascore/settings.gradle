@@ -1,5 +1,5 @@
 rootProject.name = 'javascore-btp'
 
-include 'bmv', 'bsh', 'integration-tests'
+include 'bmv', 'bsh', 'integration-tests', 'nativecoin'
 include 'BMC'
 

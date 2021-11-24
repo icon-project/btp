@@ -4,6 +4,9 @@ import score.ObjectReader;
 import score.ObjectWriter;
 
 public class BTPAddress {
+    public static final String PROTOCOL_BTP="btp";
+    private static final String DELIM_PROTOCOL="://";
+    private static final String DELIM_NET="/";
 
     private String protocol;
     private String net;
