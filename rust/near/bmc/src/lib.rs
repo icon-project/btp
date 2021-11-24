@@ -4,13 +4,12 @@ use btp_common::errors::{BmcError, BtpException, Exception};
 use libraries::{
     emit_message,
     types::{
-        Network,
         messages::{
             BmcServiceMessage, BmcServiceType, BtpMessage, ErrorMessage, SerializedBtpMessages,
             SerializedMessage,
         },
-        Address, BTPAddress, BmcEvent, Bmv, Bsh, Connection, Connections, HashedCollection, Links,
-        Owners, Routes,
+        Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links,
+        Network, Owners, Routes, Services,
     },
 };
 
@@ -25,6 +24,8 @@ use near_sdk::{
 use std::convert::TryInto;
 
 mod assertion;
+mod estimate;
+mod external;
 mod internal_service;
 mod link_management;
 mod messaging;
@@ -33,8 +34,6 @@ mod relay_management;
 mod route_management;
 mod service_management;
 mod verifier_management;
-mod estimate;
-mod external;
 use external::*;
 
 const SERVICE: &str = "bmc";
@@ -45,7 +44,7 @@ pub struct BtpMessageCenter {
     block_interval: u128,
     btp_address: BTPAddress,
     owners: Owners,
-    bsh: Bsh,
+    services: Services,
     bmv: Bmv,
     links: Links,
     routes: Routes,
@@ -62,9 +61,13 @@ impl BtpMessageCenter {
         owners.add(&env::current_account_id());
         Self {
             block_interval,
-            btp_address: BTPAddress::new(format!("btp://{}/{}", network, env::current_account_id())),
+            btp_address: BTPAddress::new(format!(
+                "btp://{}/{}",
+                network,
+                env::current_account_id()
+            )),
             owners,
-            bsh: Bsh::new(),
+            services: Services::new(),
             bmv: Bmv::new(),
             links: Links::new(),
             routes: Routes::new(),

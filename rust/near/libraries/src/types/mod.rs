@@ -1,7 +1,7 @@
 mod owner;
 pub use owner::Owners;
 mod service;
-pub use service::Bsh;
+pub use service::Services;
 mod link;
 pub use link::Links;
 mod route;

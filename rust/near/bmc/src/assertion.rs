@@ -47,20 +47,6 @@ impl BtpMessageCenter {
         assert!(self.owners.len() > 1, "{}", BmcError::LastOwner);
     }
 
-    pub fn assert_request_exists(&self, name: &str) {
-        require!(
-            self.bsh.requests.contains(name),
-            format!("{}", BmcError::RequestNotExist)
-        );
-    }
-
-    pub fn assert_request_does_not_exists(&self, name: &str) {
-        require!(
-            !self.bsh.requests.contains(name),
-            format!("{}", BmcError::RequestExist)
-        );
-    }
-
     pub fn assert_route_exists(&self, destination: &BTPAddress) {
         require!(
             self.routes.contains(destination),
@@ -77,21 +63,21 @@ impl BtpMessageCenter {
 
     pub fn assert_sender_is_authorized_service(&self, service: &str) {
         require!(
-            self.bsh.services.get(service) == Some(&env::predecessor_account_id()),
+            self.services.get(service) == Some(&env::predecessor_account_id()),
             format!("{}", BmcError::PermissionNotExist)
         );
     }
 
     pub fn assert_service_exists(&self, name: &str) {
         require!(
-            self.bsh.services.contains(name),
+            self.services.contains(name),
             format!("{}", BmcError::ServiceNotExist)
         );
     }
 
     pub fn assert_service_does_not_exists(&self, name: &str) {
         require!(
-            !self.bsh.services.contains(name),
+            !self.services.contains(name),
             format!("{}", BmcError::ServiceExist)
         );
     }
