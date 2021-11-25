@@ -12,14 +12,11 @@ pub struct Link {
     reachable: HashSet<BTPAddress>,
     relay_index: u64,
     rotate_height: u64,
-    rotate_term: u64, // TODO: X
     delay_limit: u64,
     max_aggregation: u64,
     rx_height_src: u128,
     rx_height: u128,
-    block_interval_src: u64,
     block_interval_dst: u64,
-    current_height: u128, // TODO: X
 }
 
 impl Link {
@@ -47,8 +44,8 @@ impl Link {
         &mut self.reachable
     }
 
-    pub fn set_block_interval_src(&mut self, block_interval_src: u64) {
-        self.block_interval_src = block_interval_src;
+    pub fn set_block_interval_dst(&mut self, block_interval_dst: u64) {
+        self.block_interval_dst = block_interval_dst;
     }
 
     pub fn set_max_aggregation(&mut self, max_aggregation: u64) {
@@ -205,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn set_link_block_interval_src() {
+    fn set_link_block_interval_dst() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let link_1 = BTPAddress::new(
@@ -214,11 +211,11 @@ mod tests {
         let mut links = Links::new();
         links.add(&link_1);
         if let Some(link) = links.get(&link_1).as_mut() {
-            link.set_block_interval_src(1000);
+            link.set_block_interval_dst(1000);
             links.set(&link_1, &link);
         }
         let expected = Link {
-            block_interval_src: 1000,
+            block_interval_dst: 1000,
             ..Default::default()
         };
         assert_eq!(links.get(&link_1).unwrap(), expected);

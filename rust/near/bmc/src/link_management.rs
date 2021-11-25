@@ -12,15 +12,27 @@ impl BtpMessageCenter {
         self.assert_have_permission();
         self.assert_verifier_exists(&link.network_address().unwrap());
         self.assert_link_does_not_exists(&link);
-        self.links.add(&link);
 
-        // TODO
+        self.links.add(&link);
+        self.connections
+            .add(&Connection::Link(link.network_address().unwrap()), &link);
+
+        self.send_internal_service_message(
+            &link,
+            &BmcServiceMessage::new(BmcServiceType::Init {
+                links: self.links.to_vec(),
+            }),
+        );
+        self.propogate_internal(BmcServiceMessage::new(BmcServiceType::Link { link }));
     }
 
     pub fn remove_link(&mut self, link: BTPAddress) {
         self.assert_have_permission();
         self.assert_link_exists(&link);
+        self.assert_link_does_not_have_route_connection(&link);
+
         self.links.remove(&link);
+        self.propogate_internal(BmcServiceMessage::new(BmcServiceType::Unlink { link }));
     }
 
     #[cfg(feature = "testable")]
@@ -46,6 +58,7 @@ impl BtpMessageCenter {
         max_aggregation: u64,
         delay_limit: u64,
     ) {
+        // Interact with BMV
         self.assert_have_permission();
         self.assert_link_exists(&link);
         require!(

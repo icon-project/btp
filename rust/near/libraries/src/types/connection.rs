@@ -5,6 +5,7 @@ use std::collections::HashSet;
 
 #[derive(BorshDeserialize, BorshSerialize, Eq, PartialEq, PartialOrd, Hash, Clone)]
 pub enum Connection {
+    Link(String),
     Route(String),
     LinkReachable(String),
 }

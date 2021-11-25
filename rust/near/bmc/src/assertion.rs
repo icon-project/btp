@@ -29,6 +29,13 @@ impl BtpMessageCenter {
         );
     }
 
+    pub fn assert_link_does_not_have_route_connection(&self, link: &BTPAddress) {
+        require!(
+            !self.connections.contains(&Connection::Route(link.network_address().unwrap())),
+            format!("{}", BmcError::LinkRouteExist)
+        )
+    }
+
     pub fn assert_owner_exists(&self, account: &AccountId) {
         require!(
             self.owners.contains(&account),

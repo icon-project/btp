@@ -92,9 +92,28 @@ impl BtpMessageCenter {
 }
 
 impl BtpMessageCenter {
-    pub fn propogate_internal(&mut self, service_message: BmcServiceMessage) {}
+    pub fn propogate_internal(&mut self, service_message: BmcServiceMessage) {
+        self.links
+            .to_vec()
+            .iter()
+            .for_each(|link| self.send_internal_service_message(link, &service_message));
+    }
 
-    fn send_internal_service_message(&mut self, service_message: BmcServiceMessage) {}
+    pub fn send_internal_service_message(
+        &mut self,
+        destination: &BTPAddress,
+        service_message: &BmcServiceMessage,
+    ) {
+        let btp_message = <BtpMessage<BmcServiceMessage>>::new(
+            self.btp_address.clone(),
+            destination.clone(),
+            SERVICE.to_string(),
+            WrappedI128::new(0),
+            vec![],
+            Some(service_message.clone()),
+        );
+        self.send_message(&self.btp_address.clone(), destination, btp_message.into())
+    }
 
     fn handle_btp_error_message(
         &self,
@@ -110,7 +129,7 @@ impl BtpMessageCenter {
         source: &BTPAddress,
         message: &BtpMessage<SerializedMessage>,
     ) -> bool {
-        return if self.btp_address.network_address() == message.destination().network_address() {
+        if self.btp_address.network_address() == message.destination().network_address() {
             self.increment_link_rx_seq(source);
             let outcome = match message.service().as_str() {
                 SERVICE => self.handle_internal_service_message(source, message.clone().try_into()),
@@ -124,7 +143,7 @@ impl BtpMessageCenter {
             false
         } else {
             true
-        };
+        }
     }
 
     fn handle_internal_service_message(
