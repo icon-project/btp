@@ -443,7 +443,7 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 
 				if je, ok := err.(*jsonrpc.Error); ok {
 					switch je.Code {
-					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
+					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting, JsonrpcErrorCodeNotFound:
 						<-time.After(DefaultGetRelayResultInterval)
 						s.l.Tracef("GetResult: retry %d with GetResult %s err:%+v", tries, txh.Hash, err)
 						continue
