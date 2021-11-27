@@ -45,6 +45,8 @@ fn new_mpt() {
             .last()
             .unwrap()
             .proofs()
+            .get()
+            .unwrap()
             .deref()
             .first()
             .unwrap(),

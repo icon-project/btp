@@ -1,17 +1,15 @@
-use std::ops::Deref;
-
-use super::{EventProof, Proof};
+use super::{EventProof, Proof, Proofs, Nullable};
 use libraries::rlp::{self, Decodable, Encodable};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct ReceiptProof {
     index: u128,
-    proofs: Proofs, // Confirm regarding this why vec of proofs and which is root
+    proofs: Nullable<Proofs>,
     event_proofs: Vec<EventProof>,
 }
 
 impl ReceiptProof {
-    pub fn proofs(&self) -> &Proofs {
+    pub fn proofs(&self) -> &Nullable<Proofs> {
         &self.proofs
     }
 }
@@ -25,23 +23,5 @@ impl Decodable for ReceiptProof {
             proofs: rlp.val_at(1)?,
             event_proofs: rlp.list_at(2)?,
         })
-    }
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct Proofs(Vec<Proof>);
-
-impl Deref for Proofs {
-    type Target = Vec<Proof>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Decodable for Proofs {
-    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        let data = rlp.as_val::<Vec<u8>>()?;
-        let rlp = rlp::Rlp::new(&data);
-        Ok(Self(rlp.as_list()?))
     }
 }
