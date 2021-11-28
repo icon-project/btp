@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use chrono::Utc;
 use near_crypto::{InMemorySigner, KeyType, PublicKey};
 use rand::Rng;
+use workspaces::AccountId;
 
 #[derive(Clone)]
 pub struct Signer(InMemorySigner);
@@ -9,8 +12,8 @@ impl Default for Signer {
     fn default() -> Signer {
         let mut rng = rand::thread_rng();
         let random_num = rng.gen_range(10000000000000usize..99999999999999);
-        let account_id = format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num);
-        let signer = InMemorySigner::from_seed(&account_id, KeyType::ED25519, "test");
+        let account_id = AccountId::from_str(format!("dev-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), random_num).as_str()).unwrap();
+        let signer = InMemorySigner::from_seed(account_id, KeyType::ED25519, "test");
         Signer(signer)
     }
 }
@@ -20,7 +23,7 @@ impl Signer {
         Signer(signer)
     }
 
-    pub fn account_id(&self) -> &String {
+    pub fn account_id(&self) -> &AccountId {
         &self.0.account_id
     }
 

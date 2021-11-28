@@ -1,4 +1,5 @@
 use super::*;
+use near_primitives::errors::TxExecutionError;
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -9,6 +10,7 @@ pub struct Context {
     signer: Signer,
     method_params: HashMap<String, Value>,
     method_responses: HashMap<String, Value>,
+    method_errors: HashMap<String, TxExecutionError>,
 }
 
 impl Context {
@@ -20,7 +22,7 @@ impl Context {
 
     pub fn pipe(self, function: fn(Self) -> Self) -> Self {
         function(self)
-    } 
+    }
 
     pub fn contracts(&self) -> &Contracts {
         &self.contracts
@@ -54,6 +56,11 @@ impl Context {
         self.method_responses.insert(key.to_string(), value);
     }
 
+    pub fn add_method_errors(&mut self, key: &str, tx_execution_error: TxExecutionError) {
+        self.method_errors
+            .insert(key.to_string(), tx_execution_error);
+    }
+
     pub fn method_params(&self, key: &str) -> Value {
         self.method_params
             .get(key)
@@ -66,5 +73,9 @@ impl Context {
             .get(key)
             .unwrap_or(&Value::default())
             .to_owned()
+    }
+
+    pub fn method_errors(&self, key: &str) -> TxExecutionError {
+        self.method_errors.get(key).unwrap().to_owned()
     }
 }

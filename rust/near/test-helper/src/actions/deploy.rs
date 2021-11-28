@@ -1,15 +1,10 @@
 use crate::types::{Bmc, Bmv, Bsh, Context, Contract, Signer};
 use duplicate::duplicate;
 use futures::executor::LocalPool;
-use near_crypto::InMemorySigner;
-use runner::dev_deploy;
+use workspaces::{dev_deploy, AccountId, InMemorySigner};
 use std::path::Path;
-use tokio::time::{sleep, Duration};
 
-pub async fn deploy(path: &str) -> Result<(String, InMemorySigner), String> {
-    // Wait is addeded to wait until the sandbox starts up
-    // TODO: Use api to query status of the sandbox
-    sleep(Duration::from_millis(18000)).await;
+pub async fn deploy(path: &str) -> anyhow::Result<(AccountId, InMemorySigner)> {
     dev_deploy(Path::new(path)).await
 }
 
@@ -25,6 +20,7 @@ impl Contract<'_, contract_type> {
         let (_, signer) = pool.run_until(async { deploy(self.source()).await.unwrap() });
         let contract_owner = Signer::new(signer);
         context.contracts_mut().add(self.name(), &contract_owner);
+        context.set_signer(&contract_owner);
         context
     }
 }

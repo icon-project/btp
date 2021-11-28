@@ -9,5 +9,5 @@ mod manage_services;
 mod manage_verifiers;
 mod manage_links;
 mod setup;
-
+mod initialize;
 pub use setup::create_account;

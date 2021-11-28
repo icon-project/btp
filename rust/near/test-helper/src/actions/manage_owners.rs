@@ -8,13 +8,13 @@ use duplicate::duplicate;
     [ Bsh ];
 )]
 impl Contract<'_, contract_type> {
-    pub fn add_owner(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_owner", method_params).unwrap();
+    pub fn add_owner(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "add_owner", method_params);
         context
     }
 
-    pub fn remove_owner(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_owner", method_params).unwrap();
+    pub fn remove_owner(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_owner", method_params);
         context
     }
 

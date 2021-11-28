@@ -8,13 +8,13 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn add_relay(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_relay", method_params).unwrap();
+    pub fn add_relay(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "add_relay", method_params);
         context
     }
 
-    pub fn remove_relay(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_relay", method_params).unwrap();
+    pub fn remove_relay(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_relay", method_params);
         context
     }
 

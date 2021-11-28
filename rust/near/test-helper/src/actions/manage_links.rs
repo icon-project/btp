@@ -8,13 +8,13 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn add_link(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_link", method_params).unwrap();
+    pub fn add_link(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "add_link", method_params);
         context
     }
 
-    pub fn remove_link(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_link", method_params).unwrap();
+    pub fn remove_link(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_link", method_params);
         context
     }
 
@@ -23,8 +23,8 @@ impl Contract<'_, contract_type> {
         context
     }
 
-    pub fn set_link(&self, context: Context) -> Context {
-        invoke_call!(self, context, "set_link", method_params).unwrap();
+    pub fn set_link(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "set_link", method_params);
         context
     }
 }

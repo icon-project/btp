@@ -57,7 +57,11 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut co
 };
 
 // TODO: Add error handling
-pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |context: Context| context;
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) = |context: Context| {
+    let error = context.method_errors("add_owner");
+    assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+};
+
 pub static BMC_SHOULD_THROW_LASTOWNER_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_NOTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context =
@@ -82,7 +86,7 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Co
         context.add_method_params(
             "add_owner",
             json!({
-                "address": charlie.account_id()
+                "account": charlie.account_id()
             }),
         );
         context
