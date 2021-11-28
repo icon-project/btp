@@ -1,4 +1,4 @@
-use crate::types::{Bmc, Bmv, Bsh, Context, Contract};
+use crate::types::{Bmc, Bmv, NativeCoinBsh, TokenBsh, Context, Contract};
 use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
 
@@ -6,7 +6,8 @@ use duplicate::duplicate;
     contract_type;
     [ Bmc ];
     [ Bmv ];
-    [ Bsh ];
+    [ NativeCoinBsh ];
+    [ TokenBsh ];
 )]
 impl Contract<'_, contract_type> {
     pub fn initialize(&self, mut context: Context) -> Context {

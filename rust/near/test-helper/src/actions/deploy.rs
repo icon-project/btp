@@ -1,4 +1,4 @@
-use crate::types::{Bmc, Bmv, Bsh, Context, Contract, Signer};
+use crate::types::{Bmc, Bmv, TokenBsh, NativeCoinBsh, Context, Contract, Signer};
 use duplicate::duplicate;
 use futures::executor::LocalPool;
 use workspaces::{dev_deploy, AccountId, InMemorySigner};
@@ -12,7 +12,8 @@ pub async fn deploy(path: &str) -> anyhow::Result<(AccountId, InMemorySigner)> {
     contract_type;
     [ Bmc ];
     [ Bmv ];
-    [ Bsh ];
+    [ TokenBsh ];
+    [ NativeCoinBsh ];
 )]
 impl Contract<'_, contract_type> {
     pub fn deploy(&self, mut context: Context) -> Context {

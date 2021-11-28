@@ -14,7 +14,7 @@ mod manage_bsh_services {
         async fn request_service_as_bsh_contract_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BSH_CONTRACT_IS_DEPLOYED)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
                 .and(BOB_IS_BSH_CONTRACT_OWNER)
                 .and(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
                 .when(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)

@@ -1,5 +1,5 @@
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT, BSH_CONTRACT};
+use super::{BMC_CONTRACT, BMV_CONTRACT};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 

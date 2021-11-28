@@ -1,11 +1,12 @@
 use crate::{invoke_call, invoke_view};
-use crate::types::{Bmc, Bsh, Context, Contract};
+use crate::types::{Bmc, NativeCoinBsh, TokenBsh, Context, Contract};
 use duplicate::duplicate;
 
 #[duplicate(
     contract_type;
     [ Bmc ];
-    [ Bsh ];
+    [ NativeCoinBsh ];
+    [ TokenBsh ];
 )]
 impl Contract<'_, contract_type> {
     pub fn add_owner(&self, mut context: Context) -> Context {
