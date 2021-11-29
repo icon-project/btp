@@ -208,8 +208,11 @@ public class ServiceHandler {
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, msg);
         reader.beginList();
         int actionType = reader.readInt();
+        ObjectReader readerTa = null;
+        if (actionType == REQUEST_TOKEN_TRANSFER || actionType == RESPONSE_HANDLE_SERVICE) {
+            readerTa = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
+        }
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, reader.readByteArray());
             TransferAsset _ta = TransferAsset.readObject(readerTa);
             Address dataTo = null;
             try {
@@ -237,7 +240,9 @@ public class ServiceHandler {
             if (!hasPending(sn) && !hasPendingFees(sn)) {
                 Context.revert(ErrorCodes.BSH_INVALID_SERIALNO, "Invalid Serial Number");
             }
-            int code = reader.readInt();
+            readerTa.beginList();
+            int code = readerTa.readInt();
+            byte[] respMsg = readerTa.readByteArray();
             boolean feeAggregationSvc = false;
             if (pendingFeesDb.get(sn) != null) {
                 feeAggregationSvc = true;
@@ -247,8 +252,8 @@ public class ServiceHandler {
                 ObjectReader pmsgReader = Context.newByteArrayObjectReader(RLPn, pmsg);
                 pmsgReader.beginList();
                 pmsgReader.skip();
-                ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, pmsgReader.readByteArray());
-                TransferAsset pendingMsg = TransferAsset.readObject(readerTa);
+                ObjectReader readerTasset = Context.newByteArrayObjectReader(RLPn, pmsgReader.readByteArray());
+                TransferAsset pendingMsg = TransferAsset.readObject(readerTasset);
                 fromAddr.set(pendingMsg.getFrom());
                 Address pmsgFrom = Address.fromString(pendingMsg.getFrom());
                 for (int i = 0; i < pendingMsg.getAssets().size(); i++) {
@@ -281,7 +286,7 @@ public class ServiceHandler {
                 pendingFeesDb.set(sn, null);
             }
             Address _owner = Address.fromString(fromAddr.get());
-            TransferEnd(_owner, sn, BigInteger.valueOf(code), msg);
+            TransferEnd(_owner, sn, BigInteger.valueOf(code), respMsg);
         } else if (actionType == RESPONSE_UNKNOWN_) {
             return;
         } else {
@@ -299,12 +304,6 @@ public class ServiceHandler {
      */
     @External
     public void handleBTPError(String src, String svc, BigInteger sn, int code, String msg) {
-        Context.println(logMessage("handleBTPError() src=", src,
-                "svc=", svc,
-                "sn=", String.valueOf(sn),
-                "code=", String.valueOf(code),
-                "msg=", msg)
-        );
         onlyBMC();
         //TODO: no pending message
         if (svc.compareTo(_svc) != 0) {
@@ -317,21 +316,19 @@ public class ServiceHandler {
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, pmsg);
         reader.beginList();
         int actionType = reader.readInt();
-        Context.println(logMessage("handleBTPError() actionType=", String.valueOf(actionType)));
-
         // Rollback token transfer
         if (actionType == REQUEST_TOKEN_TRANSFER) {
-            ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, reader.readByteArray());
-            TransferAsset _ta = TransferAsset.readObject(readerTa);
+            ObjectReader readerTasset = Context.newByteArrayObjectReader(RLPn, reader.readByteArray());
+            TransferAsset _ta = TransferAsset.readObject(readerTasset);
             Address from = Address.fromString(_ta.getFrom());
             Address to = Address.fromString(_ta.getTo());
             Asset _asset = _ta.getAssets().get(0);
             String tokenName = _asset.getName();
             BigInteger value = _asset.getValue();
-            reader.end();
-            Context.println("handleBTPError() setBalance");
+            readerTasset.end();
             setBalance(from, tokenName, value, value.negate(), BigInteger.ZERO);
         }
+        reader.end();
         // delete pending message
         deletePending(sn);
     }
@@ -392,15 +389,9 @@ public class ServiceHandler {
 
     @External
     public void setBalance(Address user, String tokenName, BigInteger usable, BigInteger locked, BigInteger refundable) {
-        Context.println(logMessage("setBalance() tokenName=", tokenName,
-                "usable=", String.valueOf(usable),
-                "locked=", String.valueOf(locked)
-                )
-        );
         Balance balanceBefore = getBalance(user, tokenName);
         Balance newBalance = new Balance(balanceBefore.getUsable().add(usable), balanceBefore.getLocked().add(locked), balanceBefore.getRefundable().add(refundable));
         balanceDB.at(user).set(tokenName, newBalance);
-        Context.println("setBalance() finished");
     }
 
     private byte[] createMessage(int type, Object... args) {
@@ -477,15 +468,6 @@ public class ServiceHandler {
 
     @EventLog(indexed = 1)
     protected void TransferEnd(Address _from, BigInteger _sn, BigInteger _code, byte[] _msg) {
-    }
-
-    private String logMessage(String ... msg) {
-        StringBuilder sb = new StringBuilder();
-        for(String s : msg) {
-            sb.append(" ").append(s);
-        }
-
-        return sb.toString();
     }
 }
 

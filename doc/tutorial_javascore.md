@@ -516,13 +516,28 @@ Mint token to Alice
 # goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
   --param _to=$(jq -r .address alice.ks.json) \
-  --param _value=10
+  --param _value=1000
 ```
 
 > To retrieve balance of Alice, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
 >
 > ```console
 > # goloop rpc call --to $(cat irc2.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)
+> ```
+
+Mint token to Token-BSH of dst
+```console
+# rpcch dst
+# rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
+# goloop rpc sendtx call --to $(cat irc2.dst) \
+    --method transfer \
+    --param _to=$(cat token.dst) \
+    --param _value=1000
+```
+
+> To retrieve balance of dst Token-BSH, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
+> ```console
+> # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(cat token.dst)
 > ```
 
 Alice transfer token to Token-BSH
@@ -532,7 +547,7 @@ Alice transfer token to Token-BSH
 # goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
   --param _to=$(cat token.src) \
-  --param _value=10
+  --param _value=100
 ```
 
 > To retrieve balance of Alice which is able to interchain-transfer, use `balanceOf(_owner)` method of Token-BSH.
@@ -551,10 +566,10 @@ Alice transfer token to Bob via Token-BSH
   --method transfer \
   --param tokenName=IRC2Token \
   --param to=btp://$(cat net.btp.dst)/$(jq -r .address bob.ks.json) \
-  --param value=5
+  --param value=10
 ```
 
-> To retrieve locked-balance of Alice, use `balanceOf(_owner)` method of Token-BSH.
+> To retrieve balance of Alice, use `balanceOf(_owner)` method of Token-BSH.
 >
 > ```console
 > # goloop rpc call --to $(cat token.src) --method getBalance \
@@ -562,30 +577,22 @@ Alice transfer token to Bob via Token-BSH
 >   --param tokenName=IRC2Token
 > ```
 >
-> To retrieve transferred balance of Bob which is, use `balanceOf(_owner)` method of Token-BSH.
+> To retrieve transferred balance of Token-BSH which is, use `balanceOf(_owner)` method of IRC-2.0 token contract.
 >
 > ```console
-> # goloop rpc call --to $(cat token.dst) --method getBalance \
->   --param user=$(jq -r .address bob.ks.json) \
->   --param tokenName=IRC2Token
+> # rpcch dst
+> # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(cat token.dst)
 > ```
 >
-> alice usable balance is 5, bob usable balance is 5
+> alice usable balance is 0x3de, dst Token-BSH balance is 0x3de
 
-Bob withdraw usable token from Token-BSH
-```console
-# rpcch dst
-# rpcks bob.ks.json bob.secret
-# goloop rpc sendtx call --to $(cat token.dst) \
-  --method reclaim \
-  --param tokenName=IRC2Token \
-  --param value=5
-```
+Balance of Bob from Token-BSH
 
 > To retrieve balance of Bob which is, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
 >
 > ```console
 > # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json)
+> "0xa"
 > ```
 
 ## Docker-compose

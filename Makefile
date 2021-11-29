@@ -130,7 +130,7 @@ dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nat
 
 clean-java-build:
 	cd javascore ; \
-	rm -rf lib/build bmc/build bmv/icon/build nativecoin/build score-util/build
+	rm -rf lib/build bmc/build bmv/icon/build bsh/build nativecoin/build score-util/build
 
 clean-dist-java:
 	rm -rf $(JAVASCORE_DIST_DIR)/*
