@@ -208,11 +208,14 @@ public class ServiceHandler {
         ObjectReader reader = Context.newByteArrayObjectReader(RLPn, msg);
         reader.beginList();
         int actionType = reader.readInt();
+        /*
         ObjectReader readerTa = null;
         if (actionType == REQUEST_TOKEN_TRANSFER || actionType == RESPONSE_HANDLE_SERVICE) {
             readerTa = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
         }
+        */
         if (actionType == REQUEST_TOKEN_TRANSFER) {
+            ObjectReader readerTa = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
             TransferAsset _ta = TransferAsset.readObject(readerTa);
             Address dataTo = null;
             try {
@@ -240,9 +243,10 @@ public class ServiceHandler {
             if (!hasPending(sn) && !hasPendingFees(sn)) {
                 Context.revert(ErrorCodes.BSH_INVALID_SERIALNO, "Invalid Serial Number");
             }
-            readerTa.beginList();
-            int code = readerTa.readInt();
-            byte[] respMsg = readerTa.readByteArray();
+            ObjectReader respReader = Context.newByteArrayObjectReader(RLPn, reader.readNullable(byte[].class));
+            respReader.beginList();
+            int code = respReader.readInt();
+            byte[] respMsg = respReader.readByteArray();
             boolean feeAggregationSvc = false;
             if (pendingFeesDb.get(sn) != null) {
                 feeAggregationSvc = true;
