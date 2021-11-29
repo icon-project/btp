@@ -90,8 +90,7 @@ func (s *Sender) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment
 			}
 			size += buSize
 
-			// BlockUpdates should not empty in case the last bu.Height > Verifier.Height
-			if (s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate)) && i < lastBlockIndex {
+			if s.isOverSizeLimit(size) || s.isOverBlocksLimit(msg.numberOfBlockUpdate) {
 				s.log.Tracef("Segment parachain blockupdates")
 				segment := &chain.Segment{
 					Height:              msg.height,

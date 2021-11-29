@@ -3,6 +3,7 @@ package pra
 import (
 	"context"
 	"math/big"
+	"regexp"
 	"time"
 
 	"github.com/icon-project/btp/common/log"
@@ -18,6 +19,8 @@ const (
 	BlockRetryInterval = time.Second * 1
 	DefaultReadTimeout = 10 * time.Second
 )
+
+var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
 
 type EthClient interface {
 	TransactionReceipt(ctx context.Context, hash EvmHash) (*EvmReceipt, error)
@@ -151,7 +154,10 @@ func (c *Client) MonitorBlock(height uint64, fetchHeader bool, cb func(v *BlockN
 			return nil
 		default:
 			latestHeader, err := c.bestLatestBlockHeader()
-			if err != nil {
+			if err != nil && RetryHTTPError.MatchString(err.Error()) {
+				<-time.After(BlockRetryInterval)
+				continue
+			} else if err != nil {
 				return err
 			}
 
@@ -162,7 +168,7 @@ func (c *Client) MonitorBlock(height uint64, fetchHeader bool, cb func(v *BlockN
 			}
 
 			hash, err := c.subClient.GetBlockHash(current)
-			if err != nil && err.Error() == ErrBlockNotReady.Error() {
+			if err != nil && (err.Error() == ErrBlockNotReady.Error() || RetryHTTPError.MatchString(err.Error())) {
 				<-time.After(BlockRetryInterval)
 				continue
 			} else if err != nil {
