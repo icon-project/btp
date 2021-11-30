@@ -41,12 +41,12 @@ impl TokenService {
 
     // TODO: Confirm regarding the Fee ratio. Other implementations follow a global fee ratio,
     // but ideally fee ratio and denominations varies between tokens.
-    pub fn set_fee_ratio(&mut self, fee_numerator: u128, token_id: &TokenId) {
+    pub fn set_fee_ratio(&mut self, fee_numerator: U128, token_id: &TokenId) {
         self.assert_have_permission();
         let mut token = self.tokens.get(&token_id).unwrap();
         self.assert_valid_fee_ratio(fee_numerator, &token);
 
-        token.fee_numerator_mut().clone_from(&&fee_numerator);
+        token.fee_numerator_mut().clone_from(&&fee_numerator.into());
         self.tokens.set(&token_id, &token);
     }
 }

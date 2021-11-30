@@ -49,7 +49,7 @@ impl StorageBalances {
 mod tests {
     use super::*;
     use near_sdk::{testing_env, VMContext};
-    use crate::types::Transfer;
+    use crate::types::Math;
 
     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
         VMContext {

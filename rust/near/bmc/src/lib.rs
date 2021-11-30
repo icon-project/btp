@@ -8,8 +8,8 @@ use libraries::{
             BmcServiceMessage, BmcServiceType, BtpMessage, ErrorMessage, SerializedBtpMessages,
             SerializedMessage,
         },
-        Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links,
-        Network, Owners, Routes, Services,
+        Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links, RelayStatus,
+        Network, Owners, Routes, Services, VerifierStatus, Math, LinkStatus, Link, VerifierResponse
     },
 };
 
@@ -41,7 +41,7 @@ const SERVICE: &str = "bmc";
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct BtpMessageCenter {
-    block_interval: u128,
+    block_interval: u64,
     btp_address: BTPAddress,
     owners: Owners,
     services: Services,
@@ -55,7 +55,7 @@ pub struct BtpMessageCenter {
 #[near_bindgen]
 impl BtpMessageCenter {
     #[init]
-    pub fn new(network: String, block_interval: u128) -> Self {
+    pub fn new(network: String, block_interval: u64) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());

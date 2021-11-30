@@ -35,12 +35,12 @@ pub mod errors {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum BmvError {
         Unknown { message: &'static str },
         NotBmc,
-        InvalidWitnessOld  { message: &'static str },
-        InvalidWitnessNewer  { message: &'static str },
+        InvalidWitnessOld { message: &'static str },
+        InvalidWitnessNewer { message: &'static str },
         InvalidBlockProof { message: &'static str },
         InvalidVotes { message: &'static str },
         InvalidBlockProofHeightHigher { expected: u128, actual: u128 },
@@ -75,34 +75,46 @@ pub mod errors {
             match self {
                 BmvError::NotBmc => {
                     write!(f, "{}{}", label, "NotBMC")
-                },
+                }
                 BmvError::DecodeFailed { message } => {
                     write!(f, "{}{}: {}", label, "DecodeError", message)
                 }
                 BmvError::EncodeFailed { message } => {
                     write!(f, "{}{}: {}", label, "EncodeError", message)
-                },
+                }
                 BmvError::InvalidBlockUpdate { message } => {
                     write!(f, "{}{}: {}", label, "InvalidBlockUpdate", message)
-                },
+                }
                 BmvError::InvalidVotes { message } => {
                     write!(f, "{}{}: {}", label, "InvalidVotes", message)
                 }
                 BmvError::InvalidBlockUpdateHeightLower { expected, actual } => {
-                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockUpdateHeightLower", expected, actual)
-                },
+                    write!(
+                        f,
+                        "{}{} expected: {}, but got: {}",
+                        label, "InvalidBlockUpdateHeightLower", expected, actual
+                    )
+                }
                 BmvError::InvalidBlockUpdateHeightHigher { expected, actual } => {
-                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockUpdateHeightLower", expected, actual)
-                },
+                    write!(
+                        f,
+                        "{}{} expected: {}, but got: {}",
+                        label, "InvalidBlockUpdateHeightLower", expected, actual
+                    )
+                }
                 BmvError::InvalidBlockProofHeightHigher { expected, actual } => {
-                    write!(f, "{}{} expected: {}, but got: {}", label, "InvalidBlockProofHeightHigher", expected, actual)
-                },
+                    write!(
+                        f,
+                        "{}{} expected: {}, but got: {}",
+                        label, "InvalidBlockProofHeightHigher", expected, actual
+                    )
+                }
                 BmvError::InvalidWitnessOld { message } => {
                     write!(f, "{}{}: {}", label, "InvalidWitnessOld", message)
-                },
+                }
                 BmvError::InvalidWitnessNewer { message } => {
                     write!(f, "{}{}: {}", label, "InvalidWitnessNewer", message)
-                },
+                }
                 _ => todo!(),
             }
         }
@@ -255,6 +267,7 @@ pub mod errors {
         Unreachable { destination: String },
         VerifierExist,
         VerifierNotExist,
+        Unauthorized { message: &'static str }
     }
 
     impl Exception for BmcError {
@@ -343,6 +356,9 @@ pub mod errors {
                 }
                 BmcError::InvalidSerialNo => {
                     write!(f, "{}{}", label, "Invalid Serial No")
+                },
+                BmcError::Unauthorized { message }=> {
+                    write!(f, "{}{}: {}", label, "Unauthorized", message)
                 }
             }
         }

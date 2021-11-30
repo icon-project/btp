@@ -31,7 +31,9 @@ impl BtpMessageCenter {
 
     pub fn assert_link_does_not_have_route_connection(&self, link: &BTPAddress) {
         require!(
-            !self.connections.contains(&Connection::Route(link.network_address().unwrap())),
+            !self
+                .connections
+                .contains(&Connection::Route(link.network_address().unwrap())),
             format!("{}", BmcError::LinkRouteExist)
         )
     }
@@ -51,7 +53,32 @@ impl BtpMessageCenter {
     }
 
     pub fn assert_owner_is_not_last_owner(&self) {
-        assert!(self.owners.len() > 1, "{}", BmcError::LastOwner);
+        require!(self.owners.len() > 1, format!("{}", BmcError::LastOwner));
+    }
+
+    pub fn assert_relay_is_registered(&self, link: &BTPAddress) {
+        let link = self.links.get(link).unwrap();
+        require!(
+            link.relays().contains(&env::predecessor_account_id()),
+            format!(
+                "{}",
+                BmcError::Unauthorized {
+                    message: "not registered relay"
+                }
+            )
+        )
+    }
+
+    pub fn assert_relay_is_valid(&self, accepted_relay: &AccountId) {
+        require!(
+            &env::predecessor_account_id() == accepted_relay,
+            format!(
+                "{}",
+                BmcError::Unauthorized {
+                    message: "invalid relay"
+                }
+            )
+        );
     }
 
     pub fn assert_route_exists(&self, destination: &BTPAddress) {
@@ -100,6 +127,13 @@ impl BtpMessageCenter {
         require!(
             !self.bmv.contains(network),
             format!("{}", BmcError::VerifierExist)
+        );
+    }
+
+    pub fn assert_valid_set_link_param(&self, max_aggregation: u64, delay_limit: u64) {
+        require!(
+            max_aggregation >= 1 && delay_limit >= 1,
+            format!("{}", BmcError::InvalidParam)
         );
     }
 }
