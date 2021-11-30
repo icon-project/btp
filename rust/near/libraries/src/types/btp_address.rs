@@ -26,12 +26,18 @@ impl BTPAddress {
     pub fn new(string: String) -> Self {
         Self(string)
     }
+
+    pub fn new_from_str(str: &str) -> Self {
+        Self(str.to_string())
+    }
 }
+
 impl Address for BTPAddress {
     fn as_ref(&self) -> &String {
         &self.0
     }
 }
+
 impl Account for BTPAddress {
     fn account_id(&self) -> AccountId {
         self.contract_address()
