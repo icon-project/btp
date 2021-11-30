@@ -5934,4 +5934,4 @@ dependencies = [
 [[patch.unused]]
 name = "near-sdk"
 version = "4.0.0-pre.4"
-source = "git+https://github.com/MuhammedIrfan/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
+source = "git+https://github.com/HugoByte/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
