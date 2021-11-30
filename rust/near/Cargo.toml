@@ -40,4 +40,4 @@ debug = false
 panic = "abort"
 
 [patch."https://github.com/near/near-sdk-rs.git"]
-near-sdk = { git = "https://github.com/MuhammedIrfan/near-sdk-rs.git", rev = "b18b475" }
+near-sdk = { git = "https://github.com/HugoByte/near-sdk-rs.git", rev = "b18b475" }
