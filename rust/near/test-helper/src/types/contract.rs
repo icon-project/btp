@@ -3,7 +3,7 @@ use duplicate::duplicate;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Contracts(HashMap<String, Signer>);
 
 impl Contracts {

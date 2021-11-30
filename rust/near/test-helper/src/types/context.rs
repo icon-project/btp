@@ -3,7 +3,7 @@ use near_primitives::errors::TxExecutionError;
 use serde_json::Value;
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Context {
     contracts: Contracts,
     accounts: Accounts,

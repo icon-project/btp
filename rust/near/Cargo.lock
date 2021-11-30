@@ -1679,6 +1679,7 @@ version = "0.1.0"
 dependencies = [
  "kitten",
  "lazy_static",
+ "libraries",
  "serde_json",
  "test-helper",
  "workspaces",
@@ -2025,7 +2026,7 @@ dependencies = [
 [[package]]
 name = "near-sdk"
 version = "4.0.0-pre.4"
-source = "git+https://github.com/MuhammedIrfan/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
+source = "git+https://github.com/HugoByte/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
 dependencies = [
  "base64 0.13.0",
  "borsh 0.8.2",
@@ -2042,7 +2043,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "4.0.0-pre.4"
-source = "git+https://github.com/MuhammedIrfan/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
+source = "git+https://github.com/HugoByte/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -2053,7 +2054,7 @@ dependencies = [
 [[package]]
 name = "near-sys"
 version = "0.1.0"
-source = "git+https://github.com/MuhammedIrfan/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
+source = "git+https://github.com/HugoByte/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
 
 [[package]]
 name = "near-vm-errors"
@@ -3601,7 +3602,7 @@ dependencies = [
 [[package]]
 name = "workspaces"
 version = "0.1.0"
-source = "git+https://github.com/near/workspaces-rs.git#6c2d5509aa77d03f8f43ca621a8738980db9f38d"
+source = "git+https://github.com/HugoByte/workspaces-rs.git#d100fe7dc518519966b2907d832e543412096007"
 dependencies = [
  "actix",
  "actix-web",
@@ -3630,7 +3631,7 @@ dependencies = [
 [[package]]
 name = "workspaces-macros"
 version = "0.1.0"
-source = "git+https://github.com/near/workspaces-rs.git#6c2d5509aa77d03f8f43ca621a8738980db9f38d"
+source = "git+https://github.com/HugoByte/workspaces-rs.git#d100fe7dc518519966b2907d832e543412096007"
 dependencies = [
  "proc-macro2",
  "quote",

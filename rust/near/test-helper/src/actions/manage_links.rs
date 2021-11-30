@@ -1,6 +1,7 @@
 use crate::types::{Bmc, Context, Contract};
 use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
+use near_primitives::types::Gas;
 
 #[duplicate(
     contract_type;
@@ -8,8 +9,8 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn add_link(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "add_link", method_params);
+    pub fn add_link(&self, mut context: Context, gas: Gas) -> Context {
+        invoke_call!(self, context, "add_link", method_params, gas);
         context
     }
 

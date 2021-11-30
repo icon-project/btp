@@ -18,6 +18,7 @@ members = [
 integration-tests = []
 
 [dev-dependencies]
+libraries = { path = "./libraries" }
 test-helper = { path = "./test-helper" }
 lazy_static = "1.4.0"
 kitten = "^0.2.0"
@@ -34,7 +35,10 @@ debug = false
 panic = "abort"
 
 [patch."https://github.com/near/near-sdk-rs.git"]
-near-sdk = { git = "https://github.com/MuhammedIrfan/near-sdk-rs.git", rev = "b18b475" }
+near-sdk = { git = "https://github.com/HugoByte/near-sdk-rs.git", rev = "b18b475" }
 
 [patch."https://github.com/near/near-jsonrpc-client-rs"]
 near-jsonrpc-client = { branch = "fix/serde", git = "https://github.com/HugoByte/near-jsonrpc-client-rs", features = ["sandbox"] }
+
+[patch."https://github.com/near/workspaces-rs.git"]
+workspaces = { git = "https://github.com/HugoByte/workspaces-rs.git" }

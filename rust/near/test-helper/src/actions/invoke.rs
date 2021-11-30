@@ -1,6 +1,6 @@
 use futures::executor::LocalPool;
 use near_crypto::InMemorySigner;
-use near_primitives::{types::FunctionArgs, views::FinalExecutionStatus, errors::TxExecutionError};
+use near_primitives::{types::FunctionArgs, views::FinalExecutionStatus, errors::TxExecutionError, types::Gas};
 use workspaces::{self, AccountId};
 use serde_json::Value;
 
@@ -10,6 +10,7 @@ pub fn call(
     contract_id: &AccountId,
     method: &str,
     value: Option<Value>,
+    gas: Option<Gas>
 ) -> Result<(), TxExecutionError> {
     let mut pool = LocalPool::new();
     pool.run_until(async {
@@ -23,6 +24,7 @@ pub fn call(
                 .to_string()
                 .into(),
             None,
+            gas
         )
         .await
         .unwrap();
@@ -62,6 +64,7 @@ macro_rules! invoke_call {
             $context.contracts().get($self.name()).account_id(),
             $method,
             None,
+            None
         );
         if outcome.is_err() {
             $context.add_method_errors($method, outcome.unwrap_error());
@@ -74,6 +77,20 @@ macro_rules! invoke_call {
             $context.contracts().get($self.name()).account_id(),
             $method,
             Some($context.$param($method)),
+            None
+        );
+        if outcome.is_err() {
+            $context.add_method_errors($method, outcome.unwrap_err());
+        }
+    };
+    ($self: ident, $context: ident, $method: tt, $param: ident, $gas: ident) => {
+        let outcome = crate::actions::call(
+            $context.signer().get(),
+            $context.signer().account_id(),
+            $context.contracts().get($self.name()).account_id(),
+            $method,
+            Some($context.$param($method)),
+            Some($gas)
         );
         if outcome.is_err() {
             $context.add_method_errors($method, outcome.unwrap_err());
