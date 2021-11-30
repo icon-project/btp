@@ -55,6 +55,32 @@ impl BtpMessageCenter {
         }
     }
 
+    #[cfg(not(feature = "testable"))]
+    fn send_message(
+        &mut self,
+        source: &BTPAddress,
+        destination: &BTPAddress,
+        message: BtpMessage<SerializedMessage>,
+    ) {
+        if let Some(next) = self.resolve_route(destination) {
+            bmc_contract::emit_message(
+                next,
+                message,
+                env::current_account_id(),
+                estimate::NO_DEPOSIT,
+                estimate::SEND_MESSAGE,
+            );
+        } else {
+            self.send_error(
+                source,
+                &BtpException::Bmc(BmcError::Unreachable {
+                    destination: destination.to_string(),
+                }),
+                message,
+            );
+        }
+    }
+    
     pub fn send_service_message(
         &mut self,
         serial_no: i128,
@@ -183,32 +209,6 @@ impl BtpMessageCenter {
         self.increment_link_rx_seq(source);
         self.send_message(source, &message.destination(), message.to_owned());
         false
-    }
-
-    #[cfg(not(feature = "testable"))]
-    fn send_message(
-        &mut self,
-        source: &BTPAddress,
-        destination: &BTPAddress,
-        message: BtpMessage<SerializedMessage>,
-    ) {
-        if let Some(next) = self.resolve_route(destination) {
-            bmc_contract::emit_message(
-                next,
-                message,
-                env::current_account_id(),
-                estimate::NO_DEPOSIT,
-                estimate::SEND_MESSAGE,
-            );
-        } else {
-            self.send_error(
-                source,
-                &BtpException::Bmc(BmcError::Unreachable {
-                    destination: destination.to_string(),
-                }),
-                message,
-            );
-        }
     }
 
     fn send_error(

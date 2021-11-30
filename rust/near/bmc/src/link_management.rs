@@ -32,6 +32,7 @@ impl BtpMessageCenter {
         self.assert_link_does_not_have_route_connection(&link);
 
         self.links.remove(&link);
+        // TODO: Remove from connection
         self.propogate_internal(BmcServiceMessage::new(BmcServiceType::Unlink { link }));
     }
 
