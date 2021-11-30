@@ -75,6 +75,12 @@ set debug config to get smart-contract log with `goloop debug trace txhash`
 ### Package
 zip each BTP-Smart-Contracts from project source, and copy files to `/path/to/config` which is mounted with `/goloop/config` of goloop container
 
+```console
+$ make dist-py
+$ mkdir -p ${CONFIG_DIR}/pyscore
+$ cp build/contracts/pyscore/*.zip ${CONFIG_DIR}/pyscore/
+```
+
 package for javascore/bmc
 ```console
 $ make dist-java
@@ -196,7 +202,7 @@ sleep 2
 Deploy Token-BSH contract to 'src' chain
 ```console
 # rpcch src
-# goloop rpc sendtx deploy javascore/bsh.jar --content_type application/java \
+# goloop rpc sendtx deploy pyscore/token.zip \
     --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token.$(rpcch)
 ```
 
@@ -208,7 +214,7 @@ Extract Token-BSH contract address from deploy result
 For 'dst' chain, same flows with replace 'src' to 'dst'.
 ```console
 # rpcch dst
-# goloop rpc sendtx deploy javascore/bsh.jar --content_type application/java \
+# goloop rpc sendtx deploy pyscore/token.zip \
     --param _bmc=$(cat bmc.$(rpcch)) | jq -r . > tx.token.$(rpcch)
 # goloop rpc txresult $(cat tx.token.$(rpcch)) | jq -r .scoreAddress > token.$(rpcch)
 ```
@@ -217,7 +223,7 @@ For 'dst' chain, same flows with replace 'src' to 'dst'.
 Deploy IRC-2.0 Token contract to 'src' chain
 ```console
 # rpcch src
-# goloop rpc sendtx deploy javascore/irc2.jar --content_type application/java \
+# goloop rpc sendtx deploy pyscore/irc2.zip \
     --param _name=IRC2Token \
     --param _symbol=I2T \
     --param _initialSupply=1000 \
@@ -233,11 +239,12 @@ Extract IRC-2.0 Token contract address from deploy result
 For 'dst' chain, same flows with replace 'src' to 'dst' and add `_owner` parameter. because IRC-2.0 Token contract of 'dst' chain is proxy.
 ```console
 # rpcch dst
-# goloop rpc sendtx deploy javascore/irc2.jar --content_type application/java \
+# goloop rpc sendtx deploy pyscore/irc2.zip \
     --param _name=IRC2Token \
     --param _symbol=I2T \
     --param _initialSupply=0x3E8 \
     --param _decimals=0x12 \
+    --param _owner=$(cat token.$(rpcch)) \
     | jq -r . > tx.irc2.$(rpcch)
 # goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
 ```
@@ -330,13 +337,13 @@ Register Token service to BMC
 # rpcch src
 # goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
   --method addService \
-  --param _svc=TokenBSH \
+  --param _svc=token \
   --param _addr=$(cat token.$(rpcch)) | jq -r . > tx.service.token.$(rpcch)
 
 # rpcch dst
 # goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
   --method addService \
-  --param _svc=TokenBSH \
+  --param _svc=token \
   --param _addr=$(cat token.$(rpcch)) | jq -r . > tx.service.token.$(rpcch)
 ```
 
@@ -346,20 +353,14 @@ Register IRC 2.0 Token contract to Token-BSH
 # rpcch src
 # goloop rpc sendtx call --to $(cat token.$(rpcch)) \
   --method register \
-  --param name=IRC2Token \
-  --param symbol=I2T \
-  --param feeNumerator=0x64 \
-  --param decimals=0x12 \
-  --param address=$(cat irc2.$(rpcch))
+  --param _name=IRC2Token \
+  --param _addr=$(cat irc2.$(rpcch))
 
 # rpcch dst
 # goloop rpc sendtx call --to $(cat token.$(rpcch)) \
   --method register \
-  --param name=IRC2Token \
-  --param symbol=I2T \
-  --param feeNumerator=0x64 \
-  --param decimals=0x12 \
-  --param address=$(cat irc2.$(rpcch))
+  --param _name=IRC2Token \
+  --param _addr=$(cat irc2.$(rpcch))
 ```
 
 > To retrieve list of registered token, use `tokenNames` method of Token-BSH.
@@ -516,28 +517,13 @@ Mint token to Alice
 # goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
   --param _to=$(jq -r .address alice.ks.json) \
-  --param _value=1000
+  --param _value=10
 ```
 
 > To retrieve balance of Alice, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
 >
 > ```console
 > # goloop rpc call --to $(cat irc2.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)
-> ```
-
-Mint token to Token-BSH of dst
-```console
-# rpcch dst
-# rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
-# goloop rpc sendtx call --to $(cat irc2.dst) \
-    --method transfer \
-    --param _to=$(cat token.dst) \
-    --param _value=1000
-```
-
-> To retrieve balance of dst Token-BSH, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
-> ```console
-> # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(cat token.dst)
 > ```
 
 Alice transfer token to Token-BSH
@@ -547,15 +533,13 @@ Alice transfer token to Token-BSH
 # goloop rpc sendtx call --to $(cat irc2.src) \
   --method transfer \
   --param _to=$(cat token.src) \
-  --param _value=100
+  --param _value=10
 ```
 
 > To retrieve balance of Alice which is able to interchain-transfer, use `balanceOf(_owner)` method of Token-BSH.
 >
 > ```console
-> # goloop rpc call --to $(cat token.src) --method getBalance \
->   --param user=$(jq -r .address alice.ks.json) \
->   --param tokenName=IRC2Token
+> # goloop rpc call --to $(cat token.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)
 > ```
 
 Alice transfer token to Bob via Token-BSH
@@ -564,35 +548,39 @@ Alice transfer token to Bob via Token-BSH
 # rpcks alice.ks.json alice.secret
 # goloop rpc sendtx call --to $(cat token.src) \
   --method transfer \
-  --param tokenName=IRC2Token \
-  --param to=btp://$(cat net.btp.dst)/$(jq -r .address bob.ks.json) \
-  --param value=10
+  --param _tokenName=IRC2Token \
+  --param _to=btp://$(cat net.btp.dst)/$(jq -r .address bob.ks.json) \
+  --param _value=5
 ```
 
-> To retrieve balance of Alice, use `balanceOf(_owner)` method of Token-BSH.
+> To retrieve locked-balance of Alice, use `balanceOf(_owner)` method of Token-BSH.
 >
 > ```console
-> # goloop rpc call --to $(cat token.src) --method getBalance \
->   --param user=$(jq -r .address alice.ks.json) \
->   --param tokenName=IRC2Token
+> # goloop rpc call --to $(cat token.src) --method balanceOf --param _owner=$(jq -r .address alice.ks.json)
 > ```
 >
-> To retrieve transferred balance of Token-BSH which is, use `balanceOf(_owner)` method of IRC-2.0 token contract.
+> To retrieve transferred balance of Bob which is, use `balanceOf(_owner)` method of Token-BSH.
 >
 > ```console
-> # rpcch dst
-> # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(cat token.dst)
+> # goloop rpc call --to $(cat token.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json)
 > ```
 >
-> alice usable balance is 0x3de, dst Token-BSH balance is 0x3de
+> alice usable balance is 5, bob usable balance is 5
 
-Balance of Bob from Token-BSH
+Bob withdraw usable token from Token-BSH
+```console
+# rpcch dst
+# rpcks bob.ks.json bob.secret
+# goloop rpc sendtx call --to $(cat token.dst) \
+  --method reclaim \
+  --param _tokenName=IRC2Token \
+  --param _value=5
+```
 
 > To retrieve balance of Bob which is, use `balanceOf(_owner)` method of IRC-2.0 Token contract.
 >
 > ```console
 > # goloop rpc call --to $(cat irc2.dst) --method balanceOf --param _owner=$(jq -r .address bob.ks.json)
-> "0xa"
 > ```
 
 ## Docker-compose

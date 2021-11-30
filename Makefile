@@ -114,6 +114,13 @@ dist-java-bmv-icon: $(JAVASCORE_DIST_DIR)/bmv-icon.jar
     ./gradlew :bmv:icon:optimizedJar ; \
     cp ./bmv/icon/build/libs/bmv-icon-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmv-icon.jar
 
+dist-java-bsh: $(JAVASCORE_DIST_DIR)/bsh.jar
+	cd javascore ; \
+    ./gradlew :bsh:optimizedJar ; \
+    cp ./bsh/build/libs/bsh-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bsh.jar ; \
+    ./gradlew :bsh:optimizedJarIRC2 ; \
+    cp ./bsh/build/libs/irc2-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc2.jar
+
 dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
 	cd javascore ; \
     ./gradlew :nativecoin:optimizedJar ; \
@@ -121,11 +128,11 @@ dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
     ./gradlew :nativecoin:optimizedJarIRC31 ; \
     cp ./nativecoin/build/libs/irc31-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc31.jar
 
-dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-nativecoin
+dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin
 
 clean-java-build:
 	cd javascore ; \
-	rm -rf lib/build bmc/build bmv/icon/build nativecoin/build score-util/build
+	rm -rf lib/build bmc/build bmv/icon/build bsh/build nativecoin/build score-util/build
 
 clean-dist-java:
 	rm -rf $(JAVASCORE_DIST_DIR)/*
