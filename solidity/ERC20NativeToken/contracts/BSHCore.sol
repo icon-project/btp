@@ -28,12 +28,12 @@ contract BSHCore is
     event SetOwnership(address indexed promoter, address indexed newOwner);
     event RemoveOwnership(address indexed remover, address indexed formerOwner);
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(owners[msg.sender] == true, "Unauthorized");
         _;
     }
 
-    modifier onlyBSHPeriphery {
+    modifier onlyBSHPeriphery() {
         require(msg.sender == address(bshPeriphery), "Unauthorized");
         _;
     }
@@ -57,7 +57,6 @@ contract BSHCore is
     mapping(string => uint256) private coins; //  a list of all supported coins
 
     function initialize(
-        string calldata _uri,
         string calldata _nativeCoinName,
         uint256 _feeNumerator,
         uint256 _fixedFee,
@@ -71,9 +70,11 @@ contract BSHCore is
         emit SetOwnership(address(0), msg.sender);
 
         coins[_nativeCoinName] = 0;
+        coins[_tokenName] = 1;
         feeNumerator = _feeNumerator;
         fixedFee = _fixedFee;
         coinsName.push(_nativeCoinName);
+        _mint(msg.sender, _initialSupply);
     }
 
     /**
@@ -279,8 +280,11 @@ contract BSHCore is
         //  require(_chargeAmt > 0) can be omitted
         //  If msg.value less than _chargeAmt, it likely fails when calculating
         //  _amount = _value - _chargeAmt
-        uint256 _chargeAmt =
-            msg.value.mul(feeNumerator).div(FEE_DENOMINATOR).add(fixedFee);
+        uint256 _chargeAmt = msg
+            .value
+            .mul(feeNumerator)
+            .div(FEE_DENOMINATOR)
+            .add(fixedFee);
 
         //  @dev msg.value is an amount request to transfer (include fee)
         //  Later on, it will be calculated a true amount that should be received at a destination
@@ -306,15 +310,16 @@ contract BSHCore is
         uint256 _value,
         string calldata _to
     ) external override {
-        require(coins[_coinName] != 0, "UnregisterCoin");
+        //TODO: check how to keep method name with overloading
+        require(this.isValidCoin(_coinName), "UnregisterCoin");
         //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
         //  Thus, it's likely that _chargeAmt is always greater than 0
         //  require(_chargeAmt > 0) can be omitted
         //  If _value less than _chargeAmt, it likely fails when calculating
         //  _amount = _value - _chargeAmt
-        uint256 _chargeAmt =
-            _value.mul(feeNumerator).div(FEE_DENOMINATOR).add(fixedFee);
-
+        uint256 _chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR).add(
+            fixedFee
+        );
         //  Transfer and Lock Token processes:
         //  BSHCore contract calls transferFrom() to transfer the Token from Caller's account (msg.sender)
         //  Before that, Caller must approve (setApproveForAll) to accept
@@ -327,11 +332,7 @@ contract BSHCore is
         //  then emit a successful TransferEnd event as a notification
         //  Otherwise, the locked amount will also be updated
         //  but BSHCore contract will issue a refund to Caller before emitting an error TransferEnd event
-        this.transferFrom(
-            msg.sender,
-            address(this),
-            _value
-        );
+        this.transferFrom(msg.sender, address(this), _value);
         //  @dev _value is an amount request to transfer (include fee)
         //  Later on, it will be calculated a true amount that should be received at a destination
         _sendServiceMessage(msg.sender, _to, _coinName, _value, _chargeAmt);
@@ -387,9 +388,7 @@ contract BSHCore is
 
         balances[msg.sender][_coinName].refundableBalance = balances[
             msg.sender
-        ][_coinName]
-            .refundableBalance
-            .sub(_value);
+        ][_coinName].refundableBalance.sub(_value);
 
         this.refund(msg.sender, _coinName, _value);
     }
@@ -414,7 +413,7 @@ contract BSHCore is
         if (_id == 0) {
             paymentTransfer(payable(_to), _value);
         } else {
-            this.transferFrom(address(this), _to,  _value);
+            this.transferFrom(address(this), _to, _value);
         }
     }
 
@@ -480,9 +479,7 @@ contract BSHCore is
         uint256 _amount = _value.add(_fee);
         balances[_requester][_coinName].lockedBalance = balances[_requester][
             _coinName
-        ]
-            .lockedBalance
-            .sub(_amount);
+        ].lockedBalance.sub(_amount);
 
         //  A new implementation has been proposed to prevent spam attacks
         //  In receiving error response, BSHCore refunds `_value`, not including `_fee`, back to Requestor
@@ -490,9 +487,7 @@ contract BSHCore is
             try this.refund(_requester, _coinName, _value) {} catch {
                 balances[_requester][_coinName].refundableBalance = balances[
                     _requester
-                ][_coinName]
-                    .refundableBalance
-                    .add(_value);
+                ][_coinName].refundableBalance.add(_value);
             }
         } else if (_rspCode == RC_OK) {
             uint256 _id = coins[_coinName];
