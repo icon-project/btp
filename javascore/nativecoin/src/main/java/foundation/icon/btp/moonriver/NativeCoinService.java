@@ -16,9 +16,10 @@
 
 package foundation.icon.btp.moonriver;
 
-import foundation.icon.btp.lib.*;
+import foundation.icon.btp.lib.BSH;
+import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.OwnerManager;
-import foundation.icon.btp.moonriver.irc2.IRC2ScoreInterface;
+import foundation.icon.btp.lib.OwnerManagerImpl;
 import foundation.icon.score.util.ArrayUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
@@ -38,6 +39,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     public static final String SERVICE = "nativecoin";
     public static final BigInteger NATIVE_COIN_ID = BigInteger.ZERO;
     public static final BigInteger FEE_DENOMINATOR = BigInteger.valueOf(10000);
+    protected static final Address ZERO_ADDRESS = new Address(new byte[Address.LENGTH]);
 
     //
     private final Address bmc;
@@ -60,7 +62,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         bmc = _bmc;
         BMCScoreInterface bmcInterface = new BMCScoreInterface(bmc);
         //BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
-        String btpAddr = (String)Context.call(bmcInterface._getAddress(), "getBtpAddress");
+        String btpAddr = (String) Context.call(bmcInterface._getAddress(), "getBtpAddress");
         BTPAddress btpAddress = BTPAddress.valueOf(btpAddr);
         net = btpAddress.net();
         irc2 = _irc2;
@@ -77,28 +79,11 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         this.properties.set(properties);
     }
 
-    //TODO: can remove after confirmation for not multiple coins
     private boolean isRegistered(String name) {
-        int len = coinNames.size();
-        for (int i = 0; i < len; i++) {
-            if(coinNames.get(i).equals(name)) {
-                return true;
-            }
+        if (tokenName.equals(name)) {
+            return true;
         }
         return false;
-    }
-
-    private List<String> getCoinNamesAsList() {
-        List<String> coinNames = new ArrayList<>();
-        int len = this.coinNames.size();
-        for (int i = 0; i < len; i++) {
-            coinNames.add(this.coinNames.get(i));
-        }
-        return coinNames;
-    }
-
-    static BigInteger generateTokenId(String name) {
-        return new BigInteger(Context.hash("sha3-256", name.getBytes()));
     }
 
     static void require(boolean condition, String message) {
@@ -109,30 +94,16 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
 
     @External(readonly = true)
     public String[] coinNames() {
-        int len = coinNames.size();
-        String[] names = new String[len + 1];
+        String[] names = new String[2];
         names[0] = name;
-        for (int i = 0; i < len; i++) {
-            names[i+1] = coinNames.get(i);
-        }
+        names[1] = tokenName;
         return names;
-    }
-
-    @External(readonly = true)
-    public BigInteger coinId(String _coinName) {
-        if (name.equals(_coinName)) {
-            return NATIVE_COIN_ID;
-        } else if (isRegistered(_coinName)) {
-            return generateTokenId(_coinName);
-        }
-        return null;
     }
 
     @External(readonly = true)
     public Balance balanceOf(Address _owner, String _coinName) {
         if (_owner.equals(Context.getAddress())) {
-            Balance balance = new Balance();
-            balance.setLocked(BigInteger.ZERO);
+            Balance balance = new Balance(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
             balance.setRefundable(feeBalances.getOrDefault(_coinName, BigInteger.ZERO));
             return balance;
         } else {
@@ -140,7 +111,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         }
     }
 
-   /* @External
+    @External
     public void reclaim(String _coinName, BigInteger _value) {
         require(_value.compareTo(BigInteger.ZERO) > 0, "_value must be positive");
 
@@ -153,15 +124,16 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         if (name.equals(_coinName)) {
             Context.transfer(owner, _value);
         } else {
-            transferFrom(Context.getAddress(), owner, generateTokenId(_coinName), _value);
+            transfer(irc2, owner, _value, "Reclaim: transferring to Caller".getBytes());
         }
-    }*/
+    }
 
     @External
     public void tokenFallback(Address from, BigInteger value, @Optional byte[] data) {
         require(value.compareTo(BigInteger.ZERO) > 0, "Invalid Amount");
-        require(Context.getCaller()==irc2, "Invalid Token Address");
-        require( tokenName != null && !tokenName.equals(""), "Token not registered");
+        require(Context.getCaller() == irc2, "Invalid Token Address");
+        require(tokenName != null && !tokenName.equals(""), "Token not registered");
+        deposit(tokenName, from, value);
     }
 
     @Payable
@@ -178,20 +150,22 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         require(!name.equals(_coinName) && isRegistered(_coinName), "Not supported Token");
 
         Address owner = Context.getCaller();
-        BigInteger balance = _balanceOf(irc2, owner);
-        require(balance.compareTo(_value) >= 0 , "Overdrawn: Insufficient Balance");
+        Balance balance = getBalance(_coinName, owner);
+        require(balance.getUsable().compareTo(_value) >= 0, "Overdrawn: Insufficient Balance");
         sendRequest(owner, BTPAddress.valueOf(_to), List.of(_coinName), List.of(_value));
     }
 
+    @EventLog(indexed = 1)
+    public void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assetDetails) {
+    }
 
     @EventLog(indexed = 1)
-    public void TransferStart(Address _from, String _to, BigInteger _sn, byte[] _assetDetails) {}
+    public void TransferEnd(Address _from, BigInteger _sn, BigInteger _code, byte[] _msg) {
+    }
 
     @EventLog(indexed = 1)
-    public void TransferEnd(Address _from, BigInteger _sn, BigInteger _code, byte[] _msg) {}
-
-    @EventLog(indexed = 1)
-    public void UnknownResponse(String _from, BigInteger _sn) { }
+    public void UnknownResponse(String _from, BigInteger _sn) {
+    }
 
     @External(readonly = true)
     public TransferTransaction getTransaction(BigInteger _sn) {
@@ -199,7 +173,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     }
 
     private void sendRequest(Address owner, BTPAddress to, List<String> coinNames, List<BigInteger> amounts) {
-        logger.println("sendRequest","begin");
+        logger.println("sendRequest", "begin");
         NCSProperties properties = getProperties();
 
         BigInteger feeRatio = properties.getFeeRatio();
@@ -235,28 +209,27 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
 
         sendMessage(to.net(), NCSMessage.REQUEST_COIN_TRANSFER, sn, request.toBytes());
         TransferStart(owner, to.toString(), sn, encode(assetTransferDetails));
-        logger.println("sendRequest","end");
+        logger.println("sendRequest", "end");
     }
 
     static byte[] encode(AssetTransferDetail[] assetTransferDetails) {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
         writer.beginList(assetTransferDetails.length);
-        for(AssetTransferDetail v : assetTransferDetails) {
-            writer.write(v);
+        for (AssetTransferDetail v : assetTransferDetails) {
+            //writer.write(v);
+            AssetTransferDetail.writeObject(writer, v);
         }
         writer.end();
         return writer.toByteArray();
     }
 
     private void sendMessage(String to, int serviceType, BigInteger sn, byte[] data) {
-        logger.println("sendMessage","begin");
+        logger.println("sendMessage", "begin");
         NCSMessage message = new NCSMessage();
         message.setServiceType(serviceType);
         message.setData(data);
-
-        BMCScoreInterface bmc = new BMCScoreInterface(this.bmc);
-        bmc.sendMessage(to, SERVICE, sn, message.toBytes());
-        logger.println("sendMessage","end");
+        Context.call(bmc, "sendMessage", to, SERVICE, sn, message.toBytes());
+        logger.println("sendMessage", "end");
     }
 
     private void responseSuccess(String to, BigInteger sn) {
@@ -315,7 +288,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
 
         List<String> coinNames = new ArrayList<>();
         List<BigInteger> feeAmounts = new ArrayList<>();
-        for(String coinName : coinNames()) {
+        for (String coinName : coinNames()) {
             BigInteger feeAmount = clearFee(coinName);
             if (feeAmount.compareTo(BigInteger.ZERO) > 0) {
                 coinNames.add(coinName);
@@ -332,49 +305,65 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
                     BigInteger feeAmount = feeAmounts.remove(idx);
                     Context.transfer(fa, feeAmount);
                 }
-                _transferBatch( fa, ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(feeAmounts));
+                _transferBatch(fa, ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(feeAmounts));
             } else {
                 sendRequest(owner, from, coinNames, feeAmounts);
             }
         }
     }
 
+    private void _transferBatch(Address to, String[] coinNames, BigInteger[] amounts) {
+        logger.println("transferBatch", to, StringUtil.toString(coinNames), StringUtil.toString(amounts));
+        for (int i = 0; i < coinNames.length; i++) {
+            _transfer(irc2, to, amounts[i]);
+        }
+    }
+
     private Balance getBalance(String coinName, Address owner) {
         Balance balance = balances.at(coinName).get(owner);
         if (balance == null) {
-            balance = new Balance();
-            balance.setLocked(BigInteger.ZERO);
-            balance.setRefundable(BigInteger.ZERO);
+            balance = new Balance(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
+            return balance;
         }
-        return balance;
+        Balance newBal = new Balance(balance.getUsable(), balance.getLocked(), balance.getRefundable());
+        return newBal;
     }
 
     private void setBalance(String coinName, Address owner, Balance balance) {
-        balances.at(coinName).set(owner, balance);
+        Balance newBalance = new Balance(balance.getUsable(), balance.getLocked(), balance.getRefundable());
+        balances.at(coinName).set(owner, newBalance);
     }
 
     private void lock(String coinName, Address owner, BigInteger value) {
-        logger.println("lock","coinName:",coinName,"owner:",owner,"value:",value);
+        logger.println("lock", "coinName:", coinName, "owner:", owner, "value:", value);
         Balance balance = getBalance(coinName, owner);
+        balance.setUsable(balance.getUsable().subtract(value));
         balance.setLocked(balance.getLocked().add(value));
         setBalance(coinName, owner, balance);
     }
 
     private void unlock(String coinName, Address owner, BigInteger value) {
-        logger.println("unlock","coinName:",coinName,"owner:",owner,"value:",value);
+        logger.println("unlock", "coinName:", coinName, "owner:", owner, "value:", value);
         Balance balance = getBalance(coinName, owner);
         balance.setLocked(balance.getLocked().subtract(value));
         setBalance(coinName, owner, balance);
     }
 
     private void refund(String coinName, Address owner, BigInteger value) {
-        logger.println("refund","coinName:",coinName,"owner:",owner,"value:",value);
+        logger.println("refund", "coinName:", coinName, "owner:", owner, "value:", value);
         //unlock and add refundable
         Balance balance = getBalance(coinName, owner);
         balance.setLocked(balance.getLocked().subtract(value));
         if (!owner.equals(Context.getAddress())) {
             balance.setRefundable(balance.getRefundable().add(value));
         }
+        setBalance(coinName, owner, balance);
+    }
+
+    private void deposit(String coinName, Address owner, BigInteger value) {
+        logger.println("deposit", "coinName:", coinName, "owner:", owner, "value:", value);
+        Balance balance = getBalance(coinName, owner);
+        balance.setUsable(balance.getUsable().add(value));
         setBalance(coinName, owner, balance);
     }
 
@@ -392,7 +381,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     }
 
     private void handleRequest(TransferRequest request, String from, BigInteger sn) {
-        logger.println("handleRequest","begin","sn:",sn);
+        logger.println("handleRequest", "begin", "sn:", sn);
         Address to;
         try {
             to = Address.fromString(request.getTo());
@@ -402,9 +391,6 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
 
         BigInteger nativeCoinTransferAmount = null;
         Asset[] assets = request.getAssets();
-        List<String> coinNames = new ArrayList<>();
-        List<BigInteger> amounts = new ArrayList<>();
-        List<String> registeredCoinNames = getCoinNamesAsList();
         for (Asset asset : assets) {
             String coinName = asset.getCoinName();
             BigInteger amount = asset.getAmount();
@@ -412,9 +398,8 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
                 throw NCSException.unknown("Amount must be positive value");
             }
 
-            if (registeredCoinNames.contains(coinName)) {
-                coinNames.add(coinName);
-                amounts.add(amount);
+            if (tokenName.equals(coinName)) {
+                _transfer(irc2, to, amount);
             } else if (name.equals(coinName)) {
                 nativeCoinTransferAmount = amount;
             } else {
@@ -426,55 +411,42 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
             try {
                 Context.transfer(to, nativeCoinTransferAmount);
             } catch (Exception e) {
-                throw NCSException.unknown("fail to transfer err:"+e.getMessage());
+                throw NCSException.unknown("fail to transfer err:" + e.getMessage());
             }
         }
 
-        if (coinNames.size() > 0) {
-            _transferBatch(to, ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(amounts));
-        }
-
-        logger.println("handleRequest","responseSuccess");
+        logger.println("handleRequest", "responseSuccess");
         responseSuccess(from, sn);
-        logger.println("handleRequest","end");
+        logger.println("handleRequest", "end");
     }
 
     private void handleResponse(BigInteger sn, TransferResponse response) {
-        logger.println("handleResponse","begin","sn:",sn);
+        logger.println("handleResponse", "begin", "sn:", sn);
         TransferTransaction transaction = transactions.get(sn);
-        List<String> registeredCoinNames = getCoinNamesAsList();
         // ignore when not exists pending request
         if (transaction != null) {
             BigInteger code = response.getCode();
             Address owner = Address.fromString(transaction.getFrom());
             AssetTransferDetail[] assets = transaction.getAssets();
 
-            logger.println("handleResponse","code:",code);
+            logger.println("handleResponse", "code:", code);
             if (TransferResponse.RC_OK.equals(code)) {
-                List<String> coinNames = new ArrayList<>();
-                List<BigInteger> amounts = new ArrayList<>();
                 for (AssetTransferDetail asset : assets) {
                     String coinName = asset.getCoinName();
                     BigInteger amount = asset.getAmount();
                     BigInteger fee = asset.getFee();
                     BigInteger locked = amount.add(fee);
                     boolean isNativeCoin = name.equals(coinName);
-                    if(isNativeCoin || registeredCoinNames.contains(coinName)) {
+                    if (isNativeCoin || tokenName.equals(coinName)) {
                         unlock(coinName, owner, locked);
                         addFee(coinName, fee);
                         if (!isNativeCoin) {
-                            coinNames.add(coinName);
-                            amounts.add(amount);
+                            _burn(irc2, amount);
                         }
                     } else {
                         //This should not happen
                         throw NCSException.unknown("invalid transaction, invalid coinName");
                     }
-                }
-
-                if (coinNames.size() > 0) {
-                    //TODO: check if it needs to burn ERC20 token by sending it to Zero address
-                   // burnBatch(coinNamesToIds(coinNames), ArrayUtil.toBigIntegerArray(amounts));
                 }
             } else {
                 for (AssetTransferDetail asset : assets) {
@@ -483,7 +455,7 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
                     BigInteger fee = asset.getFee();
                     BigInteger locked = amount.add(fee);
                     boolean isNativeCoin = name.equals(coinName);
-                    if(isNativeCoin || registeredCoinNames.contains(coinName)) {
+                    if (isNativeCoin || tokenName.equals(coinName)) {
                         refund(coinName, owner, locked);
                     } else {
                         //This should not happen
@@ -495,14 +467,14 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
             transactions.set(sn, null);
             TransferEnd(owner, sn, code, response.getMessage() != null ? response.getMessage().getBytes() : null);
         }
-        logger.println("handleResponse","end");
+        logger.println("handleResponse", "end");
     }
 
     @External
     public void setFeeRatio(BigInteger _feeNumerator) {
         requireOwnerAccess();
         require(_feeNumerator.compareTo(BigInteger.ONE) >= 0 &&
-                _feeNumerator.compareTo(FEE_DENOMINATOR) < 0,
+                        _feeNumerator.compareTo(FEE_DENOMINATOR) < 0,
                 "The feeNumetator should be less than FEE_DEMONINATOR and greater than 1");
         NCSProperties properties = getProperties();
         properties.setFeeRatio(_feeNumerator);
@@ -516,13 +488,13 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     }
 
     private AssetTransferDetail newAssetTransferDetail(String coinName, BigInteger amount, BigInteger feeRatio) {
-        logger.println("newAssetTransferDetail","begin");
+        logger.println("newAssetTransferDetail", "begin");
         BigInteger fee = amount.multiply(feeRatio).divide(FEE_DENOMINATOR);
         if (feeRatio.compareTo(BigInteger.ZERO) > 0 && fee.compareTo(BigInteger.ZERO) == 0) {
             fee = BigInteger.ONE;
         }
         BigInteger transferAmount = amount.subtract(fee);
-        logger.println("newAssetTransferDetail","amount:",amount,"fee:",fee);
+        logger.println("newAssetTransferDetail", "amount:", amount, "fee:", fee);
         if (transferAmount.compareTo(BigInteger.ZERO) < 1) {
             throw NCSException.unknown("not enough value");
         }
@@ -530,15 +502,14 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         asset.setCoinName(coinName);
         asset.setAmount(transferAmount);
         asset.setFee(fee);
-        logger.println("newAssetTransferDetail","end");
+        logger.println("newAssetTransferDetail", "end");
         return asset;
     }
 
     private void _transfer(Address token, Address to, BigInteger amount) {
-        logger.println("transfer",  to, amount);
+        logger.println("transfer", to, amount);
         try {
-            IRC2ScoreInterface _irc2 = new IRC2ScoreInterface(token);
-            _irc2.transfer(to, amount, "transfer to Receiver".getBytes());
+            transfer(token, to, amount, "transfer to Receiver".getBytes());
         } catch (UserRevertedException e) {
             logger.println("transfer", "code:", e.getCode(), "msg:", e.getMessage());
             throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
@@ -548,12 +519,16 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
         }
     }
 
-
-    private void _transferBatch( Address to, String[] coinNames , BigInteger[] amounts) {
-        logger.println("transferBatch", to, StringUtil.toString(coinNames), StringUtil.toString(amounts));
-        for(int i=0;i<coinNames.length ; i++) {
-            //TODO: irc2 can change if multiple ERC20 tokens are registered
-            _transfer(irc2, to, amounts[i]);
+    private void _burn(Address token, BigInteger amount) {
+        logger.println("burn", ZERO_ADDRESS, amount);
+        try {
+            transfer(token, ZERO_ADDRESS, amount, "Burn Transfer to Zero Address".getBytes());
+        } catch (UserRevertedException e) {
+            logger.println("burn", "code:", e.getCode(), "msg:", e.getMessage());
+            throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
+        } catch (IllegalArgumentException | RevertedException e) {
+            logger.println("burn", "Exception:", e.toString());
+            throw NCSException.irc31Failure("Exception:" + e);
         }
     }
 
@@ -595,11 +570,6 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     @External(readonly = true)
     public boolean isOwner(Address _addr) {
         return ownerManager.isOwner(_addr);
-    }
-
-
-    public BigInteger _balanceOf(Address tokenAddr, Address _owner) {
-        return (BigInteger)Context.call( tokenAddr, "balanceOf", _owner);
     }
 
     public void transfer(Address tokenAddr, Address _to, BigInteger _value, byte[] _data) {

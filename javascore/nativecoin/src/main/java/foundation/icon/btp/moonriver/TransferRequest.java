@@ -77,7 +77,8 @@ public class TransferRequest {
             Asset[] assets = null;
             List<Asset> assetsList = new ArrayList<>();
             while(reader.hasNext()) {
-                assetsList.add(reader.readNullable(Asset.class));
+//                assetsList.add(reader.readNullable(Asset.class));
+                assetsList.add(Asset.readObject(reader));
             }
             assets = new Asset[assetsList.size()];
             for(int i=0; i<assetsList.size(); i++) {
