@@ -44,7 +44,7 @@ impl TokenService {
     pub fn set_fee_ratio(&mut self, fee_numerator: U128, token_id: &TokenId) {
         self.assert_have_permission();
         let mut token = self.tokens.get(&token_id).unwrap();
-        self.assert_valid_fee_ratio(fee_numerator, &token);
+        self.assert_valid_fee_ratio(fee_numerator.into(), &token);
 
         token.fee_numerator_mut().clone_from(&&fee_numerator.into());
         self.tokens.set(&token_id, &token);
