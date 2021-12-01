@@ -74,6 +74,7 @@ contract BSHCore is
         feeNumerator = _feeNumerator;
         fixedFee = _fixedFee;
         coinsName.push(_nativeCoinName);
+        coinsName.push(_tokenName);
         _mint(msg.sender, _initialSupply);
     }
 

@@ -147,7 +147,6 @@ contract('As a user, I want to send ERC20_ICX to ICON blockchain', (accounts) =>
         let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _tokenName, _value);
         await bmc.receiveRequest(_bmcICON, "", service, 0, _msg);
         let balanceBefore = await bsh_core.balanceOf(accounts[0]);
-        console.log("init mint balanec  " + balanceBefore)
     });
 
     it('Scenario 8: User sends a valid transferring request', async () => {
@@ -156,8 +155,6 @@ contract('As a user, I want to send ERC20_ICX to ICON blockchain', (accounts) =>
         await bsh_core.transfer(accounts[1], amount);
         let balanceBefore = await bsh_core.getBalanceOf(accounts[1], _tokenName);
         await bsh_core.approve(bsh_core.address, amount, { from: accounts[1] });
-        console.log(await bsh_core.allowance(accounts[1], bsh_core.address));
-        console.log(await bsh_core.isValidCoin(_tokenName));
         const data = await bsh_core.contract.methods["transfer(string,uint256,string)"](_tokenName, amount, _to).encodeABI();
         let tx = await bsh_core.sendTransaction({ data, from: accounts[1] });
         //let tx = await bsh_core.transfer(_tokenName, amount, _to, {from: accounts[1]});
@@ -216,7 +213,6 @@ contract('As a user, I want to send ERC20_ICX to ICON blockchain', (accounts) =>
         let tx = await bmc.receiveResponse(_net, service, 1, _msg);
         let contract_balanceAfter = await bsh_core.getBalanceOf(accounts[1], _tokenName);
         let fees = await bsh_core.getAccumulatedFees();
-        console.log(fees)
         let bsh_core_balance = await bsh_core.getBalanceOf(bsh_core.address, _tokenName);
 
         const transferEvents = await bsh_perif.getPastEvents('TransferEnd', { fromBlock: tx.receipt.blockNumber, toBlock: 'latest' });
@@ -234,8 +230,8 @@ contract('As a user, I want to send ERC20_ICX to ICON blockchain', (accounts) =>
             web3.utils.BN(contract_balanceAfter._usableBalance).toNumber()
         );
         assert.equal(web3.utils.BN(bsh_core_balance._usableBalance).toNumber(), chargedFee);
-        //assert.equal(fees[0].coinName, _tokenName);//todo: check this
-        //assert.equal(Number(fees[0].value), chargedFee)
+        assert.equal(fees[1].coinName, _tokenName);//todo: check this
+        assert.equal(Number(fees[1].value), chargedFee)
     });
 });
 
