@@ -12,7 +12,7 @@ module.exports = {
   networks: {
     testnet: {
       provider: () => new HDWalletProvider(privKeys,
-        `http://127.0.0.1:8545`),
+        `http://127.0.0.1:9545`),
       network_id: 1000,
       confirmations: 0,
       timeoutBlocks: 900,
