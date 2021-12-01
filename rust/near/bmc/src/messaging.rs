@@ -13,7 +13,7 @@ impl BtpMessageCenter {
     pub fn handle_relay_message(&mut self, source: BTPAddress, message: Base64VecU8) {
         self.assert_link_exists(&source);
         self.assert_relay_is_registered(&source);
-        let verifier = self.bmv.get(source.network_address().unwrap()).unwrap();
+        let verifier = self.bmv.get(&source.network_address().unwrap()).unwrap();
         bmv_contract::handle_relay_message(
             message,
             verifier.clone(),
@@ -25,7 +25,7 @@ impl BtpMessageCenter {
             env::current_account_id(),
             estimate::NO_DEPOSIT,
             estimate::HANDLE_RELAY_MESSAGE_BMV_CALLBACK,
-        ))
+        ));
     }
 
     #[private]

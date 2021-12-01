@@ -38,7 +38,7 @@ impl VerifierStatus {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum VerifierResponse {
     Success {
         previous_height: u64,
