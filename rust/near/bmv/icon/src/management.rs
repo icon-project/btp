@@ -1,5 +1,16 @@
 use super::*;
 
+#[near_bindgen]
+impl BtpMessageVerifier {
+    pub fn get_status(&self) -> PromiseOrValue<VerifierStatus> {
+        PromiseOrValue::Value(VerifierStatus::new(self.mta.height(), self.mta.offset(), self.last_height))
+    }
+
+    pub fn status(&self) -> VerifierStatus {
+        VerifierStatus::new(self.mta.height(), self.mta.offset(), self.last_height)
+    }
+}
+
 impl BtpMessageVerifier {
     pub fn update_state(&mut self, state_changes: &mut StateChanges) {
         state_changes.retain(|state_change| {

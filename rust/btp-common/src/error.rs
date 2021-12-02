@@ -43,10 +43,10 @@ pub mod errors {
         InvalidWitnessNewer  { message: &'static str },
         InvalidBlockProof { message: &'static str },
         InvalidVotes { message: &'static str },
-        InvalidBlockProofHeightHigher { expected: u128, actual: u128 },
+        InvalidBlockProofHeightHigher { expected: u64, actual: u64 },
         InvalidBlockUpdate { message: &'static str },
-        InvalidBlockUpdateHeightLower { expected: u128, actual: u128 },
-        InvalidBlockUpdateHeightHigher { expected: u128, actual: u128 },
+        InvalidBlockUpdateHeightLower { expected: u64, actual: u64 },
+        InvalidBlockUpdateHeightHigher { expected: u64, actual: u64 },
         DecodeFailed { message: String },
         EncodeFailed { message: String },
     }

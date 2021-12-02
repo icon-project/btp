@@ -12,6 +12,47 @@ pub struct Verifier {
     verifier: AccountId,
 }
 
+#[derive(
+    Debug, Default, BorshDeserialize, BorshSerialize, Eq, PartialEq, Serialize, Deserialize,
+)]
+pub struct VerifierStatus {
+    mta_height: u64,
+    mta_offset: u64,
+    last_height: u64,
+}
+
+impl VerifierStatus {
+    pub fn new(mta_height: u64, mta_offset: u64, last_height: u64) -> Self {
+        Self {
+            mta_height,
+            mta_offset,
+            last_height,
+        }
+    }
+
+    pub fn mta_height(&self) -> u64 {
+        self.mta_height
+    }
+
+    pub fn mta_offset(&self) -> u64 {
+        self.mta_offset
+    }
+
+    pub fn last_height(&self) -> u64 {
+        self.last_height
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum VerifierResponse {
+    Success {
+        previous_height: u64,
+        verifier_status: VerifierStatus,
+        messages: SerializedBtpMessages,
+    },
+    Failed(u32),
+}
+
 impl Bmv {
     pub fn new() -> Self {
         Self(UnorderedMap::new(b"verifiers".to_vec()))

@@ -5,7 +5,7 @@ impl BtpMessageVerifier {
     pub fn handle_relay_message(
         &mut self,
         relay_message: RelayMessage,
-    ) -> PromiseOrValue<Response> {
+    ) -> PromiseOrValue<VerifierResponse> {
         self.assert_predecessor_is_bmc();
         self.assert_have_block_updates_or_block_proof(&relay_message);
 
@@ -19,7 +19,7 @@ impl BtpMessageVerifier {
             &mut state_changes,
         );
         if outcome.is_err() {
-            return PromiseOrValue::Value(Response::Failed);
+            return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
         }
 
         if relay_message.block_proof().is_some() {
@@ -32,7 +32,7 @@ impl BtpMessageVerifier {
                 &mut last_block_header,
             );
             if outcome.is_err() {
-                return PromiseOrValue::Value(Response::Failed);
+                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
             }
         }
 
@@ -43,11 +43,11 @@ impl BtpMessageVerifier {
                 &mut btp_messages,
             );
             if outcome.is_err() {
-                return PromiseOrValue::Value(Response::Failed);
+                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
             }
         }
         self.update_state(&mut state_changes);
 
-        PromiseOrValue::Value(Response::Success)
+        PromiseOrValue::Value(VerifierResponse::Failed(1))
     }
 }

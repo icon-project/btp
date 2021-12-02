@@ -32,8 +32,6 @@ mod state_change;
 pub(super) use state_change::{StateChange, StateChanges};
 mod mta_error;
 pub(super) use mta_error::ToBmvError;
-mod response;
-pub(super) use response::Response;
 mod sha3_fips202;
 pub use sha3_fips202::Sha256;
 pub type RlpBytes = Vec<u8>;

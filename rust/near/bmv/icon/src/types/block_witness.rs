@@ -5,8 +5,8 @@ pub type Witness = Hash; // Confirm: Is this byte 32 hash?
 
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct BlockWitness {
-    height: u128,
-    witnesses: Vec<Witness> // Confirm: Can the list contain null eg [witness, null, witness];
+    height: u64,
+    witnesses: Vec<Witness>
 }
 
 impl BlockWitness {
@@ -14,7 +14,7 @@ impl BlockWitness {
         &self.witnesses
     }
 
-    pub fn height(&self) -> u128 {
+    pub fn height(&self) -> u64 {
         self.height
     }
 }
