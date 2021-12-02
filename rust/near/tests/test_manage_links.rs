@@ -13,6 +13,7 @@ mod manage_verifers {
         async fn add_link_as_authorized_success(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(ALICE_IS_BMC_CONTRACT_OWNER)
             .and(VERIFIER_FOR_ICON_IS_ADDED)
             .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
@@ -106,10 +107,16 @@ mod manage_verifers {
                 .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
         }
 
-        #[ignore]
         #[workspaces::test(sandbox)]
         async fn set_link_as_authorized_success(){
-            unimplemented!()
+            Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(ALICE_IS_BMC_CONTRACT_OWNER)
+            .and(ICON_LINK_IS_ADDED)
+            .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM)
+            .when(ALICE_INVOKES_SET_LINK_IN_BMC)
+            .then(ICON_LINK_STATUS_SHOULD_BE_UPDATED)
         }
 
         #[ignore]

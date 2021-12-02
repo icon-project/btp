@@ -157,12 +157,11 @@ pub static USER_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context =
 
 pub static ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM: fn(Context) -> Context =
     |mut context| {
-        //let account = context.contracts().get("bmv").account_id().clone();
         context.add_method_params(
             "add_verifier",
             json!({
                 "network": ICON_NETWORK,
-                "verifier": "test.near"
+                "verifier": context.contracts().get("bmv").account_id()
             }),
         );
         context

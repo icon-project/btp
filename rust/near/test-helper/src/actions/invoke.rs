@@ -11,7 +11,7 @@ pub fn call(
     method: &str,
     value: Option<Value>,
     gas: Option<Gas>
-) -> Result<(), TxExecutionError> {
+) -> Result<(), String> {
     let mut pool = LocalPool::new();
     pool.run_until(async {
         let request = workspaces::call(
@@ -30,17 +30,17 @@ pub fn call(
         .unwrap();
         match &request.status {
             FinalExecutionStatus::Failure(_) => {
-                return Err(request.status.as_failure().unwrap())
+                return Err(request.status.as_failure().unwrap().to_string())
             }
             _ => return Ok(())
         }
     })
 }
 
-pub fn view(contract_id: &AccountId, method: &str, value: Option<Value>) -> serde_json::Value {
+pub fn view(contract_id: &AccountId, method: &str, value: Option<Value>) -> Result<serde_json::Value, String> {
     let mut pool = LocalPool::new();
     pool.run_until(async {
-        workspaces::view(
+        let result = workspaces::view(
             contract_id.to_owned(),
             method.to_owned(),
             FunctionArgs::from(
@@ -50,8 +50,11 @@ pub fn view(contract_id: &AccountId, method: &str, value: Option<Value>) -> serd
                     .into_bytes(),
             ),
         )
-        .await
-        .unwrap()
+        .await;
+        match result {
+            Ok(value) => Ok(value),
+            Err(tx_error) => Err(tx_error)
+        }
     })
 }
 
@@ -106,7 +109,11 @@ macro_rules! invoke_view {
             $method,
             None,
         );
-        $context.add_method_responses($method, response);
+        if response.is_err() {
+            $context.add_method_errors($method, response.unwrap_err());
+        } else {
+            $context.add_method_responses($method, response.unwrap());
+        }
     };
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
         let response = crate::actions::view(
@@ -114,6 +121,10 @@ macro_rules! invoke_view {
             $method,
             Some($context.$param($method)),
         );
-        $context.add_method_responses($method, response);
+        if response.is_err() {
+            $context.add_method_errors($method, response.unwrap_err());
+        } else {
+            $context.add_method_responses($method, response.unwrap());
+        }
     };
 }

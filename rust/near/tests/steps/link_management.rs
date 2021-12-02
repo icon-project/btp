@@ -1,6 +1,6 @@
 use super::*;
 use super::{BMC_CONTRACT, BMV_CONTRACT};
-use libraries::types::{Address, BTPAddress};
+use libraries::types::{Address, BTPAddress, LinkStatus};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 
@@ -114,8 +114,45 @@ pub static ADD_LINK_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut cont
         .pipe(CHUCK_INVOKES_ADD_LINK_IN_BMC)
 };
 
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "set_link",
+            json!({
+                "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "block_interval": 15000,
+                "max_aggregation": 5,
+                "delay_limit": 4
+            }),
+        );
+        context
+    };
+
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "get_status",
+            json!({ "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC) }),
+        );
+        context
+    };
+
 pub static LINKS_ARE_QURIED_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_links(context);
+
+pub static QUERY_LINK_STATUS_BMC: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.get_status(context);
+
+pub static ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) = |context: Context| {
+    let context = context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
+        .pipe(QUERY_LINK_STATUS_BMC);
+    let result: LinkStatus = from_value(context.method_responses("get_status")).unwrap();
+    assert_eq!(
+        result.delay_limit(),
+        4
+    );
+};
 
 pub static ADDED_LINK_SHOULD_BE_IN_LIST: fn(Context) = |mut context: Context| {
     let link = context.method_responses("get_links");
@@ -173,8 +210,18 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Conte
         context
     };
 
+pub static ICON_LINK_IS_ADDED: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(VERIFIER_FOR_ICON_IS_ADDED)
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+        .pipe(ALICE_INVOKES_ADD_LINK_IN_BMC)
+};
+
 pub static USER_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.add_link(context, 300000000000000);
+
+pub static USER_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.set_link(context, 300000000000000);
 
 pub static USER_INVOKES_REMOVE_LINK_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.remove_link(context);
@@ -183,6 +230,12 @@ pub static ALICE_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Con
     context
         .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
+};
+
+pub static ALICE_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(ALICE_IS_THE_SIGNER)
+        .pipe(USER_INVOKES_SET_LINK_IN_BMC)
 };
 
 pub static ALICE_INVOKES_REMOVE_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
@@ -208,7 +261,10 @@ pub static ALREADY_HAVE_10_EXISTING_LINKS: fn(Context) -> Context = |context: Co
         .collect::<Vec<u16>>()
         .iter()
         .map(|index| {
-            BTPAddress::new(format!("btp://0x{}.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5", index))
+            BTPAddress::new(format!(
+                "btp://0x{}.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5",
+                index
+            ))
         })
         .collect::<Vec<BTPAddress>>();
 
@@ -234,7 +290,10 @@ pub static ALREADY_HAVE_12_EXISTING_LINKS: fn(Context) -> Context = |context: Co
         .collect::<Vec<u16>>()
         .iter()
         .map(|index| {
-            BTPAddress::new(format!("btp://0x{}.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5", index))
+            BTPAddress::new(format!(
+                "btp://0x{}.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5",
+                index
+            ))
         })
         .collect::<Vec<BTPAddress>>();
 

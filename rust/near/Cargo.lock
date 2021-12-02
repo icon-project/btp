@@ -1677,6 +1677,7 @@ dependencies = [
 name = "near-btp"
 version = "0.1.0"
 dependencies = [
+ "hex 0.4.3",
  "kitten",
  "lazy_static",
  "libraries",

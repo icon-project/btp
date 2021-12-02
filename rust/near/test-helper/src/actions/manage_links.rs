@@ -24,8 +24,13 @@ impl Contract<'_, contract_type> {
         context
     }
 
-    pub fn set_link(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "set_link", method_params);
+    pub fn set_link(&self, mut context: Context, gas: Gas) -> Context {
+        invoke_call!(self, context, "set_link", method_params, gas);
+        context
+    }
+
+    pub fn get_status(&self, mut context: Context) -> Context {
+        invoke_view!(self, context, "get_status", method_params);
         context
     }
 }

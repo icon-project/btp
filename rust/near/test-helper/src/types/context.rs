@@ -10,7 +10,7 @@ pub struct Context {
     signer: Signer,
     method_params: HashMap<String, Value>,
     method_responses: HashMap<String, Value>,
-    method_errors: HashMap<String, TxExecutionError>,
+    method_errors: HashMap<String, String>,
 }
 
 impl Context {
@@ -56,7 +56,7 @@ impl Context {
         self.method_responses.insert(key.to_string(), value);
     }
 
-    pub fn add_method_errors(&mut self, key: &str, tx_execution_error: TxExecutionError) {
+    pub fn add_method_errors(&mut self, key: &str, tx_execution_error: String) {
         self.method_errors
             .insert(key.to_string(), tx_execution_error);
     }
@@ -75,7 +75,7 @@ impl Context {
             .to_owned()
     }
 
-    pub fn method_errors(&self, key: &str) -> TxExecutionError {
+    pub fn method_errors(&self, key: &str) -> String {
         self.method_errors.get(key).unwrap().to_owned()
     }
 }
