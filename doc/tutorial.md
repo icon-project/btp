@@ -242,6 +242,22 @@ For 'dst' chain, same flows with replace 'src' to 'dst' and add `_owner` paramet
 # goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
 ```
 
+### Fee aggregator
+Deploy Fee aggregator
+```console
+# rpcch src
+# goloop rpc sendtx deploy javascore/fee-aggregation.jar --content_type application/java \
+    --param _cps_address=$(cat keystore.json | jq -r .address) \
+    --param _band_protocol_address=$(cat keystore.json | jq -r .address) \
+    | jq -r . > tx.feeaggr.$(rpcch)
+```
+
+Extract Fee aggregator contract address from deploy result
+```console
+# goloop rpc txresult $(cat tx.feeaggr.$(rpcch)) | jq -r .scoreAddress > feeaggr.$(rpcch)
+```
+
+
 ## Configuration
 
 ### Register BMV
@@ -423,6 +439,22 @@ For 'dst' chain, same flows with replace 'src' to 'dst'
 > # goloop rpc call --to $(cat bmc.dst) --method getRelays --param _link=$(cat btp.src)
 > ```
 
+### Register fee aggregator
+Register Fee aggreator to BMC
+```console
+# rpcch src
+# goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+    --method setFeeAggregator \
+    --param _addr=$(cat feeaggr.$(rpcch)) \
+    | jq -r . > tx.setFeeAggr.$(rpcch)
+```
+
+> Get registered contract address of Fee aggregator 
+> ```console
+> # goloop rpc call --to $(cat bmc.$(rpcch)) \
+>     --method getFeeAggregator
+> ```
+
 ### Register relayer candidate : only for testing of ICON main network environment
 Create key store for relayer
 ```console
@@ -454,6 +486,26 @@ Register to 'src' chain
 > ```console
 > # goloop rpc call --to $(cat bmc.src) --method getRelayers
 > ```
+
+## Shortcut deploy and configuration
+To make it easier to deploy and configuration
+```console
+$ cp scprits/provision.sh config/provision.sh
+```
+
+in goloop docker
+```console
+# source provision.sh
+# deploy_all
+deploy all
+...
+# register_all
+register all
+...
+```
+
+> Now you can check deploy result in `src_result.json` and `dst_result.json`
+
 
 ## Start relay
 

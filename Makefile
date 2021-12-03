@@ -128,11 +128,16 @@ dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
     ./gradlew :nativecoin:optimizedJarIRC31 ; \
     cp ./nativecoin/build/libs/irc31-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc31.jar
 
-dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin
+dist-java-feeaggregation: $(JAVASCORE_DIST_DIR)/fee-aggregation.jar
+	cd javascore ; \
+    ./gradlew :fee-aggregation:optimizedJar ; \
+    cp ./fee-aggregation/build/libs/fee-aggregation-?.?-*.jar $(JAVASCORE_DIST_DIR)/fee-aggregation.jar ; \
+
+dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin dist-java-feeaggregation
 
 clean-java-build:
 	cd javascore ; \
-	rm -rf lib/build bmc/build bmv/icon/build bsh/build nativecoin/build score-util/build
+	rm -rf lib/build bmc/build bmv/icon/build bsh/build nativecoin/build score-util/build fee_aggregation/build
 
 clean-dist-java:
 	rm -rf $(JAVASCORE_DIST_DIR)/*

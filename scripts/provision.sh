@@ -16,7 +16,6 @@ deploy_bmc() {
     echo "deploy BMC"
 
     rpcch src > /dev/null
-    rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
     echo "deploy bmc on src chain"
     goloop rpc sendtx deploy javascore/bmc.jar --content_type application/java \
       --param _net=$(cat net.btp.$(rpcch)) | jq -r . > tx.bmc.$(rpcch)
@@ -107,6 +106,19 @@ deploy_irc2() {
     goloop rpc txresult $(cat tx.irc2.$(rpcch)) | jq -r .scoreAddress > irc2.$(rpcch)
 }
 
+deploy_feeaggregation() {
+    echo "deploy fee aggregation"
+    rpcch src > /dev/null
+    KEYSTORE_ADDRESS=$(cat keystore.json | jq -r .address)
+    goloop rpc sendtx deploy javascore/fee-aggregation.jar --content_type application/java \
+      --param _cps_address=$KEYSTORE_ADDRESS \
+      --param _band_protocol_address=$KEYSTORE_ADDRESS \
+      | jq -r . > tx.feeaggr.$(rpcch)
+
+    sleep 3
+    goloop rpc txresult $(cat tx.feeaggr.$(rpcch)) | jq -r .scoreAddress > feeaggr.$(rpcch)
+}
+
 deploy_result() {
     for channel in src dst
     do
@@ -123,6 +135,14 @@ deploy_result() {
             \"tx.irc2\" : \"$(cat tx.irc2.$(rpcch))\",
             \"irc2\" : \"$(cat irc2.$(rpcch))\"
         }" | jq . > ${channel}_result.json
+
+        if [[ "$channel" == "src" ]]; then
+            feeinfo="{
+                \"tx.feeaggregation\" : \"$(cat tx.feeaggr.${channel})\",
+                \"feeaggregation\" : \"$(cat feeaggr.${channel})\"
+            }"
+            echo "$(jq ". + $feeinfo" ${channel}_result.json)" > ${channel}_result.json
+        fi
     done
 }
 
@@ -294,6 +314,19 @@ register_bmr() {
     goloop rpc call --to $(cat bmc.dst) --method getRelays --param _link=$(cat btp.src)
 }
 
+register_fee_aggregation() {
+    echo "register FeeAggregator"
+
+    goloop rpc sendtx call --to $(cat bmc.$(rpcch)) \
+      --method setFeeAggregator \
+      --param _addr=$(cat feeaggr.$(rpcch)) \
+      | jq -r . > tx.setFeeAggr.$(rpcch)
+    sleep 2
+    echo "$(rpcch) getFeeAggregator"
+    goloop rpc call --to $(cat bmc.$(rpcch)) \
+      --method getFeeAggregator
+}
+
 register_all() {
     echo "register all"
     register_bmv
@@ -303,6 +336,10 @@ register_all() {
     register_irc2
     register_bmc_owner
     register_bmr
+    register_fee_aggregation
+
+    rpcch src
+    rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
 }
 
 deploy_all() {
@@ -311,7 +348,11 @@ deploy_all() {
     deploy_bmv
     deploy_bsh
     deploy_irc2
+    deploy_feeaggregation
     deploy_result
+
+    rpcch src
 }
 
 source rpc.sh
+rpcks $GOLOOP_KEY_STORE $GOLOOP_KEY_SECRET
