@@ -9,6 +9,8 @@ impl BtpMessageVerifier {
         self.assert_predecessor_is_bmc();
         self.assert_have_block_updates_or_block_proof(&relay_message);
 
+
+        let previous_height = self.mta.height(); 
         let mut state_changes = StateChanges::new();
         let mut last_block_header = BlockHeader::default();
         let mut btp_messages = SerializedBtpMessages::new();
@@ -19,6 +21,9 @@ impl BtpMessageVerifier {
             &mut state_changes,
         );
         if outcome.is_err() {
+            #[cfg(feature = "testable")]
+            outcome.clone().unwrap();
+
             return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
         }
 
@@ -32,6 +37,9 @@ impl BtpMessageVerifier {
                 &mut last_block_header,
             );
             if outcome.is_err() {
+                #[cfg(feature = "testable")]
+                outcome.clone().unwrap();
+
                 return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
             }
         }
@@ -43,11 +51,18 @@ impl BtpMessageVerifier {
                 &mut btp_messages,
             );
             if outcome.is_err() {
+                #[cfg(feature = "testable")]
+                outcome.clone().unwrap();
+                
                 return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
             }
         }
         self.update_state(&mut state_changes);
 
-        PromiseOrValue::Value(VerifierResponse::Failed(1))
+        PromiseOrValue::Value(VerifierResponse::Success { previous_height, messages: btp_messages, verifier_status: self.status()})
     }
+}
+
+impl BtpMessageVerifier {
+
 }

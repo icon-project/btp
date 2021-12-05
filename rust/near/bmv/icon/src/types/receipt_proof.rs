@@ -1,7 +1,7 @@
 use super::{EventProof, Proof, Proofs, Nullable};
 use libraries::rlp::{self, Decodable, Encodable};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ReceiptProof {
     index: u128,
     proofs: Nullable<Proofs>,
@@ -9,6 +9,10 @@ pub struct ReceiptProof {
 }
 
 impl ReceiptProof {
+    pub fn index(&self) -> u128 {
+        self.index
+    }
+    
     pub fn proofs(&self) -> &Nullable<Proofs> {
         &self.proofs
     }

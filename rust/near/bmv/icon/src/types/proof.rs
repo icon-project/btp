@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 pub type Proof = Vec<u8>;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Proofs(Vec<Proof>);
 
 impl Deref for Proofs {

@@ -103,7 +103,12 @@ pub mod errors {
                 BmvError::InvalidWitnessNewer { message } => {
                     write!(f, "{}{}: {}", label, "InvalidWitnessNewer", message)
                 },
-                _ => todo!(),
+                BmvError::Unknown { message } => {
+                    write!(f, "{}{}: {}", label, "Unknown", message)
+                },
+                BmvError::InvalidBlockProof { message } => {
+                    write!(f, "{}{}: {}", label, "InvalidBlockProof", message)
+                },
             }
         }
     }

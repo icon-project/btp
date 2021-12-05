@@ -1,4 +1,5 @@
 use super::error::MptError;
+use super::util::bytes_to_nibbles;
 use crate::{
     rlp::{self, Decodable, Encodable},
     types::{Hash, Hasher},
@@ -149,6 +150,8 @@ struct Node {
 
 impl Decodable for Node {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        
+        
         let header: NodeHeader = rlp.val_at(0)?;
         println!("{:?}", header);
         let data = rlp.val_at::<Vec<u8>>(1)?;
@@ -182,6 +185,54 @@ pub struct MerklePatriciaTree<H> {
     root: Node,
     hash: Hash,
     _hasher: PhantomData<H>,
+}
+
+impl<H: Hasher> MerklePatriciaTree<H> {
+    pub fn verify_proof(root: &Hash, key: &Vec<u8>, proof: &Vec<Vec<u8>>) -> Result<Vec<u8>, MptError> {
+        let mut actual_key = vec![];
+        for el in key {
+            actual_key.push(el / 16);
+            actual_key.push(el % 16);
+        }
+        // println!("{:?} {:?}", key.len(), root);
+
+        // bytes_to_nibbles(key, 0, None);
+
+        // println!("{:?}", actual_key);
+
+        //let mut actual_key = vec![];
+        // for el in key {
+        //     actual_key.push(el / 16);
+        //     actual_key.push(el % 16);
+        // }
+
+        Self::prove(root, &actual_key, &proof, 0, 0)
+    }
+
+    fn prove(
+        root: &Hash,
+        key: &Vec<u8>,
+        proof: &Vec<Vec<u8>>,
+        key_index: usize,
+        proof_index: usize,
+    ) -> Result<Vec<u8>, MptError> {
+        let node = &proof[proof_index];
+        if key_index == 0 {
+            if Hash::new::<H>(node) != *root {
+                return Err(MptError::HashMismatch);
+            };
+        };
+
+        let node = rlp::Rlp::new(&node.as_slice());
+        // if node.iter().count() == 17 {
+
+        // } else {
+
+    // }
+
+    Err(MptError::EncodeFailed)
+        
+    }
 }
 
 impl<H: Hasher> Decodable for MerklePatriciaTree<H> {

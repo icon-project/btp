@@ -1,7 +1,7 @@
 use libraries::rlp::{self, Decodable, Encodable};
 use super::{Proof, Proofs, Nullable};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct EventProof {
     index: u64,
     proofs: Nullable<Proofs>,

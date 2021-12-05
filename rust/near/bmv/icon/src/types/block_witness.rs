@@ -3,7 +3,7 @@ use libraries::types::Hash;
 
 pub type Witness = Hash; // Confirm: Is this byte 32 hash?
 
-#[derive(Default, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct BlockWitness {
     height: u64,
     witnesses: Vec<Witness>

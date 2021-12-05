@@ -7,7 +7,7 @@ use near_sdk::{
 };
 use std::convert::TryFrom;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct RelayMessage {
     block_updates: Vec<BlockUpdate>,
     block_proof: Nullable<BlockProof>,
