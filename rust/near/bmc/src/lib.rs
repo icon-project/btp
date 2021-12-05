@@ -17,6 +17,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde_json::{to_value, Value};
 use near_sdk::AccountId;
 use near_sdk::{
+    PromiseResult,
     env,
     json_types::{Base64VecU8, U128, U64},
     log, near_bindgen, require, serde_json, Gas, PanicOnDefault,

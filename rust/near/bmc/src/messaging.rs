@@ -10,7 +10,7 @@ impl BtpMessageCenter {
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
 
-    pub fn handle_relay_message(&mut self, source: BTPAddress, message: Base64VecU8) {
+    pub fn handle_relay_message(&mut self, source: BTPAddress, message: SerializedMessage) {
         self.assert_link_exists(&source);
         self.assert_relay_is_registered(&source);
         let verifier = self.bmv.get(&source.network_address().unwrap()).unwrap();
@@ -70,7 +70,9 @@ impl BtpMessageCenter {
                     self.handle_btp_messages(source, messages)
                 }
             }
-            VerifierResponse::Failed(code) => (),
+            VerifierResponse::Failed(code) => (
+                env::panic_str(format!("{}", code).as_str())
+            ),
         };
     }
 

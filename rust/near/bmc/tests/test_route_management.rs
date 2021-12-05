@@ -239,7 +239,7 @@ fn resolve_route_link_reachable() {
         <Vec<u8>>::from(bmc_service_message.clone()),
         None,
     );
-    contract.handle_serialized_btp_messages(link.clone(), vec![btp_message]);
+    contract.handle_btp_messages(link.clone(), vec![btp_message]);
     let result = contract.resolve_route_pub(BTPAddress::new(
         "btp://0x5.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
     ));
