@@ -230,6 +230,12 @@ pub struct LinkStatus {
     current_height: BlockHeight,
 }
 
+impl LinkStatus {
+    pub fn delay_limit(&self) -> u64 {
+        self.delay_limit
+    }
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Links(UnorderedMap<BTPAddress, Link>);
 
