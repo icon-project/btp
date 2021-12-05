@@ -7,3 +7,5 @@ pub use contract::{Bmc, BmcContract, Bmv, BmvContract, NativeCoinBsh, NativeCoin
 pub(crate) use contract::Contracts;
 mod account;
 pub(crate) use account::Accounts;
+
+pub use near_crypto::SecretKey;

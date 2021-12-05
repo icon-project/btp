@@ -24,3 +24,5 @@ pub use link_management::*;
 mod route_management;
 pub use route_management::*;
 
+mod messaging;
+pub use messaging::*;

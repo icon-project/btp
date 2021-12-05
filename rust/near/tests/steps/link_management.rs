@@ -148,10 +148,7 @@ pub static ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) = |context: Context| 
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
         .pipe(QUERY_LINK_STATUS_BMC);
     let result: LinkStatus = from_value(context.method_responses("get_status")).unwrap();
-    assert_eq!(
-        result.delay_limit(),
-        4
-    );
+    assert_eq!(result.delay_limit(), 4);
 };
 
 pub static ADDED_LINK_SHOULD_BE_IN_LIST: fn(Context) = |mut context: Context| {
@@ -216,6 +213,15 @@ pub static ICON_LINK_IS_ADDED: fn(Context) -> Context = |context: Context| {
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
         .pipe(ALICE_INVOKES_ADD_LINK_IN_BMC)
 };
+
+pub static ICON_LINK_IS_INITIALIZED: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM)
+        .pipe(ALICE_INVOKES_SET_LINK_IN_BMC)
+};
+
+pub static ICON_LINK_IS_ADDED_AND_INITIALIZED: fn(Context) -> Context =
+    |context: Context| context.pipe(ICON_LINK_IS_ADDED).pipe(ICON_LINK_IS_INITIALIZED);
 
 pub static USER_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.add_link(context, 300000000000000);

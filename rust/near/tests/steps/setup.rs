@@ -21,7 +21,6 @@ lazy_static! {
 pub static ICON_NETWORK: &str = "0x1.icon";
 pub static ICON_BMC: &str = "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5";
 pub static NEAR_NETWORK: &str = "0x1.near";
-pub static NEAR_BMC: &str = "94a5a3fc9bc948a7f4b1c6210518b4afe1744ebe33188eb91d17c863dfe200a8";
 
 pub static NEW_CONTEXT: fn() -> Context = || Context::new();
 
@@ -52,7 +51,7 @@ pub static BMV_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Cont
     context.add_method_params(
         "new",
         json!({
-            "bmc": NEAR_BMC,
+            "bmc": context.contracts().get("bmc").account_id(),
             "validators": [
                 hex::decode("b6b5791be0b5ef67063b3c10b840fb81514db2fd").unwrap()
             ],
