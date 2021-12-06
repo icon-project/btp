@@ -244,7 +244,7 @@ func (rc *RecConn) setDefaultHandshakeTimeout() {
 	defer rc.mu.Unlock()
 
 	if rc.HandshakeTimeout == 0 {
-		rc.HandshakeTimeout = 2 * time.Second
+		rc.HandshakeTimeout = 10 * time.Second
 	}
 }
 
