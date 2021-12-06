@@ -1,13 +1,12 @@
+use crate::rlp::{self, Decodable, Encodable};
 use crate::types::{
-    messages::BtpMessage, messages::SerializedMessage, messages::Message, BTPAddress,
-    WrappedI128,
+    messages::BtpMessage, messages::Message, messages::SerializedMessage, BTPAddress, WrappedI128,
 };
 use btp_common::errors::BmcError;
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
     serde::{de, ser, Deserialize, Serialize},
 };
-use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -255,24 +254,26 @@ impl TryFrom<BtpMessage<SerializedMessage>> for BtpMessage<BmcServiceMessage> {
     }
 }
 
-impl TryFrom<&BtpMessage<BmcServiceMessage>> for BtpMessage<SerializedMessage> {
-    type Error = BmcError;
-    fn try_from(value: &BtpMessage<BmcServiceMessage>) -> Result<Self, Self::Error> {
-        Ok(Self::new(
+impl From<BtpMessage<BmcServiceMessage>> for BtpMessage<SerializedMessage> {
+    fn from(value: BtpMessage<BmcServiceMessage>) -> Self {
+        Self::new(
             value.source().clone(),
             value.destination().clone(),
             value.service().clone(),
             value.serial_no().clone(),
-            value.message().clone().ok_or(BmcError::EncodeFailed { message: "Encoding Failed".to_string()})?.into(),
+            value.message().clone().unwrap().into(),
             None,
-        ))
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{BTPAddress, BmcServiceMessage, BmcServiceType};
-    use crate::types::{WrappedI128, messages::{SerializedMessage, btp_message::BtpMessage}};
+    use crate::types::{
+        messages::{btp_message::BtpMessage, SerializedMessage},
+        WrappedI128,
+    };
     use std::convert::TryFrom;
 
     #[test]
@@ -651,7 +652,7 @@ mod tests {
             vec![],
             Some(bmc_service_message),
         );
-        assert_eq!(String::from(&<BtpMessage<SerializedMessage>>::try_from(&btp_message).unwrap()), "-MKcYnRwOi8vMTIzNC5pY29uZWUvMHgxMjM0NTY3OJxidHA6Ly8xMjM0Lmljb25lZS8weDEyMzQ1Njc4g2JtYwG4gfh_hEluaXS4ePh2-HS4OGJ0cDovLzB4MS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjViuDhidHA6Ly8weDUucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yg".to_string());
+        assert_eq!(String::from(&<BtpMessage<SerializedMessage>>::from(btp_message)), "-MKcYnRwOi8vMTIzNC5pY29uZWUvMHgxMjM0NTY3OJxidHA6Ly8xMjM0Lmljb25lZS8weDEyMzQ1Njc4g2JtYwG4gfh_hEluaXS4ePh2-HS4OGJ0cDovLzB4MS5wcmEvY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjViuDhidHA6Ly8weDUucHJhL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1Yg".to_string());
     }
 
     #[test]

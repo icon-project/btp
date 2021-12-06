@@ -5,7 +5,7 @@ use libraries::types::Hash;
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct BlockHeader {
     pub version: u8,
-    pub height: u128,
+    pub height: u64,
     pub timestamp: u64,
     pub proposer: Vec<u8>,
     pub previous_hash: Hash,
@@ -18,7 +18,7 @@ pub struct BlockHeader {
 }
 
 impl BlockHeader {
-    pub fn height(&self) -> u128 {
+    pub fn height(&self) -> u64 {
         self.height
     }
 

@@ -3,7 +3,7 @@ use btp_common::errors::BmcError;
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD}, // TODO: Confirm
     borsh::{self, maybestd::io, BorshDeserialize, BorshSerialize},
-    serde::{de, ser, Deserialize, Serialize},
+    serde::{de, ser, Deserialize, Serialize, Serializer, Deserializer},
 };
 use crate::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
@@ -69,7 +69,7 @@ where
 pub type SerializedBtpMessages = Vec<BtpMessage<SerializedMessage>>;
 
 #[derive(Clone, Serialize, Deserialize, BorshDeserialize, BorshSerialize, PartialEq, Eq, Debug)]
-pub struct SerializedMessage(Vec<u8>);
+pub struct SerializedMessage(#[serde(with = "base64_bytes")] Vec<u8>);
 
 impl SerializedMessage {
     pub fn new(data: Vec<u8>) -> Self {
@@ -95,6 +95,19 @@ impl Encodable for BtpMessage<SerializedMessage> {
         .finalize_unbounded_list()
     }
 }
+
+impl TryFrom<String> for SerializedMessage {
+    type Error = BmcError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let decoded = base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
+            BmcError::DecodeFailed {
+                message: format!("base64: {}", error),
+            }
+        })?;
+        Ok(Self(decoded))
+    }
+}
+
 
 impl Decodable for BtpMessage<SerializedMessage> {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
@@ -162,5 +175,25 @@ impl<'de> Deserialize<'de> for BtpMessage<SerializedMessage> {
     {
         <String as Deserialize>::deserialize(deserializer)
             .and_then(|s| Self::try_from(s).map_err(de::Error::custom))
+    }
+}
+
+mod base64_bytes {
+    use super::*;
+    use serde::de;
+
+    pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&base64::encode_config(&bytes, URL_SAFE_NO_PAD))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        base64::decode_config(s, URL_SAFE_NO_PAD).map_err(de::Error::custom)
     }
 }

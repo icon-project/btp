@@ -56,6 +56,7 @@ pub const EMPTY_LIST_RLP: [u8; 1] = [0xC0; 1];
 /// Shortcut function to decode trusted rlp
 ///
 /// ```
+/// use libraries::rlp::{self};
 /// let data = vec![0x83, b'c', b'a', b't'];
 /// let animal: String = rlp::decode(&data).expect("could not decode");
 /// assert_eq!(animal, "cat".to_owned());
@@ -79,6 +80,7 @@ where
 /// Shortcut function to encode structure into rlp.
 ///
 /// ```
+/// use libraries::rlp::{self};
 /// let animal = "cat";
 /// let out = rlp::encode(&animal);
 /// assert_eq!(out, vec![0x83, b'c', b'a', b't']);

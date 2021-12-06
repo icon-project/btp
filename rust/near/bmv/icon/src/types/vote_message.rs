@@ -6,7 +6,7 @@ pub static VOTE_TYPE_PRECOMMIT: u8 = 1;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct VoteMessage {
-    height: u128,
+    height: u64,
     round: u8,
     vote_type: u8,
     block_id: Hash,
@@ -16,7 +16,7 @@ pub struct VoteMessage {
 
 impl VoteMessage {
     pub fn new(
-        height: u128,
+        height: u64,
         round: u8,
         vote_type: u8,
         block_id: Hash,

@@ -1,6 +1,6 @@
 use libraries::rlp::{self, Decodable, Encodable};
 
-#[derive(Default, PartialEq, Eq, Debug, Clone)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct Nullable<T>(Option<T>);
 
 impl<T> Nullable<T> {

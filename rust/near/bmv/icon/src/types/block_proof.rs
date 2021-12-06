@@ -2,7 +2,7 @@ use super::{BlockHeader, BlockWitness, Nullable};
 use libraries::rlp::{self, Decodable, Encodable};
 use std::convert::TryFrom;
 
-#[derive(Default, PartialEq, Eq, Debug)]
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct BlockProof {
     pub block_header: BlockHeader,
     pub block_witness: Nullable<BlockWitness>,

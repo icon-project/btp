@@ -141,11 +141,7 @@ where
 
 impl Encodable for u8 {
 	fn rlp_append(&self, s: &mut RlpStream) {
-		if *self != 0 {
-			s.encoder().encode_iter(once(*self));
-		} else {
-			s.encoder().encode_iter(empty());
-		}
+		s.encoder().encode_iter(once(*self));
 	}
 }
 

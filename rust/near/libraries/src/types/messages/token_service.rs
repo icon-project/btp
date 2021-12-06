@@ -215,6 +215,7 @@ mod tests {
         );
     }
 
+    #[ignore] // TODO
     #[test]
     fn serialize_transfer_request_message() {
         let service_message = TokenServiceMessage {

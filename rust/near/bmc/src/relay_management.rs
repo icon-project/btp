@@ -1,4 +1,5 @@
 use super::*;
+use near_sdk::BlockHeight;
 
 #[near_bindgen]
 impl BtpMessageCenter {
@@ -64,9 +65,5 @@ impl BtpMessageCenter {
         } else {
             to_value(Vec::new() as Vec<String>).unwrap()
         }
-    }
-
-    pub fn rotate_relay() {
-        unimplemented!();
     }
 }

@@ -1,7 +1,10 @@
+use btp_common::errors::BmvError;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::serde::Serialize;
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
+
+use super::messages::SerializedBtpMessages;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bmv(UnorderedMap<String, AccountId>);
@@ -10,6 +13,47 @@ pub struct Bmv(UnorderedMap<String, AccountId>);
 pub struct Verifier {
     network: String,
     verifier: AccountId,
+}
+
+#[derive(
+    Debug, Default, BorshDeserialize, BorshSerialize, Eq, PartialEq, Serialize, Deserialize,
+)]
+pub struct VerifierStatus {
+    mta_height: u64,
+    mta_offset: u64,
+    last_height: u64,
+}
+
+impl VerifierStatus {
+    pub fn new(mta_height: u64, mta_offset: u64, last_height: u64) -> Self {
+        Self {
+            mta_height,
+            mta_offset,
+            last_height,
+        }
+    }
+
+    pub fn mta_height(&self) -> u64 {
+        self.mta_height
+    }
+
+    pub fn mta_offset(&self) -> u64 {
+        self.mta_offset
+    }
+
+    pub fn last_height(&self) -> u64 {
+        self.last_height
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum VerifierResponse {
+    Success {
+        previous_height: u64,
+        verifier_status: VerifierStatus,
+        messages: SerializedBtpMessages,
+    },
+    Failed(u32),
 }
 
 impl Bmv {

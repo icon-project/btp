@@ -40,7 +40,7 @@ impl BtpMessageVerifier {
 
     pub fn ensure_have_valid_block_height(
         &self,
-        next_height: u128,
+        next_height: u64,
         block_update: &BlockUpdate,
     ) -> Result<(), BmvError> {
         if next_height > block_update.block_header().height() {
