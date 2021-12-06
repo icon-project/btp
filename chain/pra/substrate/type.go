@@ -190,6 +190,7 @@ type SubstrateClient interface {
 	GetParachainId() (*SubstrateParachainId, error)
 	SubcribeFinalizedHeadAt(height uint64, cb func(*SubstrateHash)) error
 	GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBlockNumber) ([]SubstrateHeader, error)
+	GetBlockHashesByRange(start SubstrateBlockNumber, end SubstrateBlockNumber) ([]SubstrateHash, error)
 	GetSystemEventStorageKey(blockhash SubstrateHash) (SubstrateStorageKey, error)
 	GetSystemEvents(blockHash SubstrateHash, section string, method string) ([]map[string]interface{}, error)
 }

@@ -32,7 +32,7 @@ func NewSubstrateClient(url string) (*SubstrateAPI, error) {
 		Client:                    cl,
 		keepSubscribeFinalizeHead: make(chan bool),
 		blockInterval:             time.Second * 3,
-		log:                       log.New(),
+		log:                       log.GlobalLogger(),
 	}, err
 }
 
@@ -204,21 +204,47 @@ func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBloc
 	headers := make([]SubstrateHeader, 0)
 
 	wp := workerpool.New(runtime.NumCPU())
-	rspChan := make(chan *SubstrateHeader, len(blockNumbers))
+	rspChan := make(chan struct {
+		header *SubstrateHeader
+		err    error
+	}, len(blockNumbers))
 
 	for _, blockNumber := range blockNumbers {
 		blockNumber := blockNumber
 		wp.Submit(func() {
-			blockHash, _ := c.GetBlockHash(uint64(blockNumber))
-			header, _ := c.GetHeader(blockHash)
-			rspChan <- header
+			blockHash, err := c.GetBlockHash(uint64(blockNumber))
+			if err != nil {
+				rspChan <- struct {
+					header *SubstrateHeader
+					err    error
+				}{
+					header: nil,
+					err:    err,
+				}
+				return
+			}
+
+			header, err := c.GetHeader(blockHash)
+			c.log.Tracef("GetBlockHeaderByBlockNumbers: get header of %d", blockNumber)
+
+			rspChan <- struct {
+				header *SubstrateHeader
+				err    error
+			}{
+				header: header,
+				err:    err,
+			}
 		})
 	}
 
 	wp.StopWait()
 	close(rspChan)
-	for header := range rspChan {
-		headers = append(headers, *header)
+	for rsp := range rspChan {
+		if rsp.err != nil {
+			c.log.Panicf("GetBlockHeaderByBlockNumbers: fails err:%+v", rsp.err)
+		}
+
+		headers = append(headers, *rsp.header)
 	}
 
 	sort.Slice(headers, func(i, j int) bool {
@@ -226,6 +252,37 @@ func (c *SubstrateAPI) GetBlockHeaderByBlockNumbers(blockNumbers []SubstrateBloc
 	})
 
 	return headers, nil
+}
+
+func (c *SubstrateAPI) GetBlockHashesByRange(start SubstrateBlockNumber, end SubstrateBlockNumber) ([]SubstrateHash, error) {
+	var blockNumbers []SubstrateBlockNumber
+	hashes := make([]SubstrateHash, 0)
+
+	for i := start; i <= end; i++ {
+		blockNumbers = append(blockNumbers, i)
+	}
+
+	blockHeaders, err := c.GetBlockHeaderByBlockNumbers(blockNumbers)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := c.GetBlockHash(uint64(len(blockNumbers) - 1))
+	if err != nil {
+		return nil, err
+	}
+
+	for i, blockHeader := range blockHeaders {
+		if i == 0 {
+			continue
+		}
+
+		hashes = append(hashes, blockHeader.ParentHash)
+	}
+
+	hashes = append(hashes, hash)
+
+	return hashes, nil
 }
 
 func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (SubstrateReadProof, error) {

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -400,9 +401,14 @@ func (c *Client) wsClose(conn *jsonrpc.RecConn) {
 func NewClient(uri string, l log.Logger) *Client {
 
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
-	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 10
+	standardClient := retryClient.StandardClient()
+	standardClient.Transport = &http.Transport{MaxIdleConnsPerHost: 1000}
+
 	c := &Client{
-		Client: jsonrpc.NewJsonRpcClient(&http.Client{Transport: tr}, uri),
+		Client: jsonrpc.NewJsonRpcClient(standardClient, uri),
 		conns:  make(map[string]*jsonrpc.RecConn),
 		l:      l,
 	}

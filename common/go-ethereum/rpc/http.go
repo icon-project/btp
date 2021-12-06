@@ -29,6 +29,9 @@ import (
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/icon-project/btp/common/log"
 )
 
 const (
@@ -128,7 +131,12 @@ func DialHTTPWithClient(endpoint string, client *http.Client) (*Client, error) {
 
 // DialHTTP creates a new RPC client that connects to an RPC server over HTTP.
 func DialHTTP(endpoint string) (*Client, error) {
-	return DialHTTPWithClient(endpoint, new(http.Client))
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 10
+	retryClient.Logger = log.New()
+
+	standardClient := retryClient.StandardClient()
+	return DialHTTPWithClient(endpoint, standardClient)
 }
 
 func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) error {

@@ -97,13 +97,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		blockHeaders = append(blockHeaders, *nextMtaBlockHeader)
 	}
 
-	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
 
 	for i := from; i <= to; i++ {
-		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
+		missingBlockNumbers = append(missingBlockNumbers, substrate.SubstrateBlockNumber(i))
 	}
 
-	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(misisingBlockNumbers)
+	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(missingBlockNumbers)
 	if err != nil {
 		return nil, err
 	}
@@ -243,15 +243,15 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	}
 
 	localRelayMtaHeight := r.store.Height()
-
-	// Sync MTA completely
-	// TODO fetch with runtime.GOMAXPROCS(runtime.NumCPU()) hashes per call
-	// sort these hashses, and add to MTA one by one
 	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
 		r.log.Tracef("newParaFinalityProof: sync localRelayMtaHeight %d with remoteRelayMtaHeight %d", localRelayMtaHeight, r.bmvStatus.RelayMtaHeight)
-		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
-			relayHash, _ := r.c.GetBlockHash(uint64(i))
-			r.updateMta(uint64(i), relayHash)
+		missingBlockHashes, err := r.c.GetBlockHashesByRange(substrate.SubstrateBlockNumber(localRelayMtaHeight+1), substrate.SubstrateBlockNumber(r.bmvStatus.RelayMtaHeight))
+		if err != nil {
+			return nil, errors.Wrap(err, "newParaFinalityProof: sync MTA fails")
+		}
+
+		for i, blockHashes := range missingBlockHashes {
+			r.updateMta(uint64(int(localRelayMtaHeight)+1+i), blockHashes)
 		}
 	}
 

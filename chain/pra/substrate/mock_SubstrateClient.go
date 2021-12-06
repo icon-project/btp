@@ -75,6 +75,29 @@ func (_m *MockSubstrateClient) GetBlockHashLatest() (types.Hash, error) {
 	return r0, r1
 }
 
+// GetBlockHashesByRange provides a mock function with given fields: start, end
+func (_m *MockSubstrateClient) GetBlockHashesByRange(start types.BlockNumber, end types.BlockNumber) ([]types.Hash, error) {
+	ret := _m.Called(start, end)
+
+	var r0 []types.Hash
+	if rf, ok := ret.Get(0).(func(types.BlockNumber, types.BlockNumber) []types.Hash); ok {
+		r0 = rf(start, end)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.Hash)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.BlockNumber, types.BlockNumber) error); ok {
+		r1 = rf(start, end)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBlockHeaderByBlockNumbers provides a mock function with given fields: blockNumbers
 func (_m *MockSubstrateClient) GetBlockHeaderByBlockNumbers(blockNumbers []types.BlockNumber) ([]types.Header, error) {
 	ret := _m.Called(blockNumbers)
