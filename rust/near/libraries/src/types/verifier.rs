@@ -25,6 +25,14 @@ pub struct VerifierStatus {
 }
 
 impl VerifierStatus {
+    pub fn new(mta_height: u64, mta_offset: u64, last_height: u64) -> Self {
+        Self {
+            mta_height,
+            mta_offset,
+            last_height,
+        }
+    }
+
     pub fn mta_height(&self) -> u64 {
         self.mta_height
     }
@@ -43,7 +51,7 @@ pub enum VerifierResponse {
     Success {
         previous_height: u64,
         verifier_status: VerifierStatus,
-        messages: SerializedBtpMessages
+        messages: SerializedBtpMessages,
     },
     Failed(u32),
 }

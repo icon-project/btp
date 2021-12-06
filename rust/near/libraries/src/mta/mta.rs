@@ -12,11 +12,11 @@ use near_sdk::serde::{Deserialize, Serialize};
 #[serde(crate = "near_sdk::serde")]
 pub struct MerkleTreeAccumulator {
     /// Height
-    height: u128,
+    height: u64,
     /// Roots
     pub roots: Vec<Hash>,
     /// Offset
-    pub offset: usize,
+    pub offset: u64,
     /// Roots size
     pub roots_size: usize,
     /// Cache size
@@ -28,15 +28,19 @@ pub struct MerkleTreeAccumulator {
 }
 
 impl MerkleTreeAccumulator {
-    pub fn new(height: u128) -> Self {
+    pub fn new(height: u64) -> Self {
         Self{
             height,
             ..Default::default()
         }
     }
 
-    pub fn height(&self) -> u128 {
+    pub fn height(&self) -> u64 {
         self.height
+    }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
     }
 
     /// Initialize MTA from a serialized type
@@ -49,7 +53,7 @@ impl MerkleTreeAccumulator {
             unpacked.push(rlp_item);
         }
         if !unpacked.is_empty() {
-            self.height = unpacked[0].len as u128;
+            self.height = unpacked[0].len as u64;
         }
         if unpacked.len() > 1 {
             serialized_roots.push(unpacked[1].clone());
@@ -59,7 +63,7 @@ impl MerkleTreeAccumulator {
             }
         }
         if unpacked.len() > 2 {
-            self.offset = unpacked[2].len;
+            self.offset = unpacked[2].len as u64;
         }
         if unpacked.len() > 3 {
             self.roots_size = unpacked[3].len;
@@ -79,15 +83,15 @@ impl MerkleTreeAccumulator {
             self.newer_witness_allowed = unpacked[6].len != 0;
         }
         if self.height == 0 && self.offset == 0 {
-            self.height = self.offset as u128;
+            self.height = self.offset as u64;
         }
     }
 
     /// Set offset
     pub fn set_offset(&mut self, offset: usize) {
-        self.offset = offset;
+        self.offset = offset as u64;
         if self.height == 0 && self.offset > 0 {
-            self.height = self.offset as u128;
+            self.height = self.offset as u64;
         }
     }
 
@@ -142,7 +146,7 @@ impl MerkleTreeAccumulator {
                 } else if self.roots_size > 0 && self.roots_size <= i + 1 {
                     root = hash;
                     self.roots[i] = root;
-                    self.offset += 2_usize.pow(i as u32);
+                    self.offset += 2_usize.pow(i as u32) as u64;
                     break;
                 } else {
                     let index = self
@@ -162,8 +166,8 @@ impl MerkleTreeAccumulator {
     }
 
     /// Get root index by height
-    pub fn get_root_index_by_height(&self, height: u128) -> Result<usize, &str> {
-        let mut idx = (height - 1) as usize - self.offset;
+    pub fn get_root_index_by_height(&self, height: u64) -> Result<usize, &str> {
+        let mut idx = (height - 1) - self.offset as u64;
         let mut root_idx = 0;
         let mut i = self.roots.len();
         let mut bit_flag: usize;
@@ -173,11 +177,11 @@ impl MerkleTreeAccumulator {
                 continue;
             }
             bit_flag = 1 << i;
-            if idx < bit_flag {
+            if idx < bit_flag as u64 {
                 root_idx = i;
                 break;
             }
-            idx -= bit_flag;
+            idx -= bit_flag as u64;
         }
         Ok(root_idx)
     }
@@ -187,8 +191,8 @@ impl MerkleTreeAccumulator {
         &mut self,
         proofs: &[Hash],
         leaf: &Hash,
-        height: u128,
-        at: u128,
+        height: u64,
+        at: u64,
     ) -> Result<(), MtaError> {
         let root: Hash;
         let root_idx: usize;
@@ -213,7 +217,7 @@ impl MerkleTreeAccumulator {
             slice_roots[..root_idx].clone_from_slice(&proofs[..root_idx]);
             self.verify_internal::<H>(slice_roots.as_slice(), &root, leaf)
                 .expect("Failed to verify");
-        } else if (self.height - height - 1) < self.cache_size as u128 && !self.includes_cache(leaf)
+        } else if (self.height - height - 1) < self.cache_size as u64 && !self.includes_cache(leaf)
         {
             return Err(MtaError::InvalidWitnessOld { message: "invalid old witness" });
         }

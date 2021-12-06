@@ -76,7 +76,7 @@ impl BtpMessageVerifier {
     fn verify_votes(
         &self,
         votes: &Votes,
-        block_height: u128,
+        block_height: u64,
         block_hash: &Hash,
     ) -> Result<(), BmvError> {
         let mut vote_message = VoteMessage::new(
