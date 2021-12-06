@@ -4,13 +4,12 @@ use btp_common::errors::{BmcError, BtpException, Exception};
 use libraries::{
     emit_message,
     types::{
-        Network,
         messages::{
             BmcServiceMessage, BmcServiceType, BtpMessage, ErrorMessage, SerializedBtpMessages,
             SerializedMessage,
         },
-        Address, BTPAddress, BmcEvent, Bmv, Bsh, Connection, Connections, HashedCollection, Links,
-        Owners, Routes,
+        Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links, RelayStatus,
+        Network, Owners, Routes, Services, VerifierStatus, Math, LinkStatus, Link, VerifierResponse
     },
 };
 
@@ -18,6 +17,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde_json::{to_value, Value};
 use near_sdk::AccountId;
 use near_sdk::{
+    PromiseResult,
     env,
     json_types::{Base64VecU8, U128, U64},
     log, near_bindgen, require, serde_json, Gas, PanicOnDefault,
@@ -25,6 +25,8 @@ use near_sdk::{
 use std::convert::TryInto;
 
 mod assertion;
+mod estimate;
+mod external;
 mod internal_service;
 mod link_management;
 mod messaging;
@@ -33,8 +35,6 @@ mod relay_management;
 mod route_management;
 mod service_management;
 mod verifier_management;
-mod estimate;
-mod external;
 use external::*;
 
 const SERVICE: &str = "bmc";
@@ -42,10 +42,10 @@ const SERVICE: &str = "bmc";
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct BtpMessageCenter {
-    block_interval: u128,
+    block_interval: u64,
     btp_address: BTPAddress,
     owners: Owners,
-    bsh: Bsh,
+    services: Services,
     bmv: Bmv,
     links: Links,
     routes: Routes,
@@ -56,15 +56,19 @@ pub struct BtpMessageCenter {
 #[near_bindgen]
 impl BtpMessageCenter {
     #[init]
-    pub fn new(network: String, block_interval: u128) -> Self {
+    pub fn new(network: String, block_interval: u64) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
         Self {
             block_interval,
-            btp_address: BTPAddress::new(format!("btp://{}/{}", network, env::current_account_id())),
+            btp_address: BTPAddress::new(format!(
+                "btp://{}/{}",
+                network,
+                env::current_account_id()
+            )),
             owners,
-            bsh: Bsh::new(),
+            services: Services::new(),
             bmv: Bmv::new(),
             links: Links::new(),
             routes: Routes::new(),

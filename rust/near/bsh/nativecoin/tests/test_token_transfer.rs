@@ -5,7 +5,7 @@ use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
     Account, AccountBalance, AccumulatedAssetFees, BTPAddress, MultiTokenCore, NativeCoin, Token,
-    Transfer, WrappedI128,
+    Math, WrappedI128,
 };
 mod token;
 use libraries::types::{Asset, Request};

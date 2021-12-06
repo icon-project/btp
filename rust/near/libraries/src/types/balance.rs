@@ -41,51 +41,6 @@ impl AccountBalance {
     }
 }
 
-pub trait Transfer {
-    fn add(&mut self, rhs: u128) -> Result<&mut Self, String>;
-    fn sub(&mut self, rhs: u128) -> Result<&mut Self, String>;
-    fn mul(&mut self, rhs: u128) -> Result<&mut Self, String>;
-    fn div(&mut self, rhs: u128) -> Result<&mut Self, String>;
-}
-
-impl Transfer for Balance {
-    fn add(&mut self, rhs: u128) -> Result<&mut Self, String> {
-        self.clone_from(
-            &&self
-                .checked_add(rhs)
-                .ok_or_else(|| "overflow occured".to_string())?,
-        );
-        Ok(self)
-    }
-
-    fn sub(&mut self, rhs: u128) -> Result<&mut Self, String> {
-        self.clone_from(
-            &&self
-                .checked_sub(rhs)
-                .ok_or_else(|| "underflow occured".to_string())?,
-        );
-        Ok(self)
-    }
-
-    fn mul(&mut self, rhs: u128) -> Result<&mut Self, String> {
-        self.clone_from(
-            &self
-                .checked_mul(rhs)
-                .ok_or_else(|| "overflow occured".to_string())?,
-        );
-        Ok(self)
-    }
-
-    fn div(&mut self, rhs: u128) -> Result<&mut Self, String> {
-        self.clone_from(
-            &&self
-                .checked_div(rhs)
-                .ok_or_else(|| "underflow occured".to_string())?,
-        );
-        Ok(self)
-    }
-}
-
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Balances(LookupMap<(AccountId, TokenId), AccountBalance>);
 
@@ -137,6 +92,7 @@ mod tests {
     use near_sdk::AccountId;
     use near_sdk::{testing_env, VMContext};
     use std::vec;
+    use crate::types::Math;
 
     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
         VMContext {

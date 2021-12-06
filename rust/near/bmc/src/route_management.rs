@@ -42,30 +42,28 @@ impl BtpMessageCenter {
 
 impl BtpMessageCenter {
     pub fn resolve_route(&self, destination: &BTPAddress) -> Option<BTPAddress> {
-        //TODO: Revisit
-        // Check if part of links
         if self.links.contains(destination) {
-            return Some(destination.clone());
-        }
-
-        // Check if part of routes
-        if self
+            Some(destination.clone())
+        } else if self
+            .connections
+            .contains(&Connection::Link(destination.network_address().unwrap()))
+        {
+            self.connections
+                .get(&Connection::Link(destination.network_address().unwrap()))
+        } else if self
             .connections
             .contains(&Connection::Route(destination.network_address().unwrap()))
         {
-            return self
-                .connections
-                .get(&Connection::Route(destination.network_address().unwrap()));
-        }
-
-        // Check if part of link reachable
-        if self.connections.contains(&Connection::LinkReachable(
+            self.connections
+                .get(&Connection::Route(destination.network_address().unwrap()))
+        } else if self.connections.contains(&Connection::LinkReachable(
             destination.network_address().unwrap(),
         )) {
-            return self.connections.get(&Connection::LinkReachable(
+            self.connections.get(&Connection::LinkReachable(
                 destination.network_address().unwrap(),
-            ));
+            ))
+        } else {
+            None
         }
-        None
     }
 }

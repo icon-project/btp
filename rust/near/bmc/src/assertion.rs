@@ -29,6 +29,15 @@ impl BtpMessageCenter {
         );
     }
 
+    pub fn assert_link_does_not_have_route_connection(&self, link: &BTPAddress) {
+        require!(
+            !self
+                .connections
+                .contains(&Connection::Route(link.network_address().unwrap())),
+            format!("{}", BmcError::LinkRouteExist)
+        )
+    }
+
     pub fn assert_owner_exists(&self, account: &AccountId) {
         require!(
             self.owners.contains(&account),
@@ -44,20 +53,31 @@ impl BtpMessageCenter {
     }
 
     pub fn assert_owner_is_not_last_owner(&self) {
-        assert!(self.owners.len() > 1, "{}", BmcError::LastOwner);
+        require!(self.owners.len() > 1, format!("{}", BmcError::LastOwner));
     }
 
-    pub fn assert_request_exists(&self, name: &str) {
+    pub fn assert_relay_is_registered(&self, link: &BTPAddress) {
+        let link = self.links.get(link).unwrap();
         require!(
-            self.bsh.requests.contains(name),
-            format!("{}", BmcError::RequestNotExist)
-        );
+            link.relays().contains(&env::predecessor_account_id()),
+            format!(
+                "{}",
+                BmcError::Unauthorized {
+                    message: "not registered relay"
+                }
+            )
+        )
     }
 
-    pub fn assert_request_does_not_exists(&self, name: &str) {
+    pub fn assert_relay_is_valid(&self, accepted_relay: &AccountId) {
         require!(
-            !self.bsh.requests.contains(name),
-            format!("{}", BmcError::RequestExist)
+            &env::predecessor_account_id() == accepted_relay,
+            format!(
+                "{}",
+                BmcError::Unauthorized {
+                    message: "invalid relay"
+                }
+            )
         );
     }
 
@@ -77,21 +97,21 @@ impl BtpMessageCenter {
 
     pub fn assert_sender_is_authorized_service(&self, service: &str) {
         require!(
-            self.bsh.services.get(service) == Some(&env::predecessor_account_id()),
+            self.services.get(service) == Some(&env::predecessor_account_id()),
             format!("{}", BmcError::PermissionNotExist)
         );
     }
 
     pub fn assert_service_exists(&self, name: &str) {
         require!(
-            self.bsh.services.contains(name),
+            self.services.contains(name),
             format!("{}", BmcError::ServiceNotExist)
         );
     }
 
     pub fn assert_service_does_not_exists(&self, name: &str) {
         require!(
-            !self.bsh.services.contains(name),
+            !self.services.contains(name),
             format!("{}", BmcError::ServiceExist)
         );
     }
@@ -107,6 +127,13 @@ impl BtpMessageCenter {
         require!(
             !self.bmv.contains(network),
             format!("{}", BmcError::VerifierExist)
+        );
+    }
+
+    pub fn assert_valid_set_link_param(&self, max_aggregation: u64, delay_limit: u64) {
+        require!(
+            max_aggregation >= 1 && delay_limit >= 1,
+            format!("{}", BmcError::InvalidParam)
         );
     }
 }

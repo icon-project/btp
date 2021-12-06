@@ -3,7 +3,7 @@ use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{AccountBalance, MultiTokenCore, NativeCoin, Token, Transfer, TokenItem};
+use libraries::types::{AccountBalance, MultiTokenCore, NativeCoin, Token, Math, TokenItem};
 mod token;
 use token::*;
 

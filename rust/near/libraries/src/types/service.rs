@@ -10,67 +10,7 @@ pub struct Service {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Bsh {
-    pub services: Services,
-    pub requests: Requests,
-}
-
-impl Bsh {
-    pub fn new() -> Self {
-        Self {
-            services: Services::new(),
-            requests: Requests::new(),
-        }
-    }
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Services(HashMap<String, AccountId>);
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct Requests(HashMap<String, AccountId>);
-
-impl Requests {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    pub fn add(&mut self, name: &str, service: &AccountId) {
-        self.0.insert(name.to_string(), service.to_owned());
-    }
-
-    pub fn remove(&mut self, name: &str) {
-        if self.0.contains_key(name) {
-            self.0.remove(name);
-        }
-    }
-
-    pub fn contains(&self, name: &str) -> bool {
-        return self.0.contains_key(name);
-    }
-
-    pub fn get(&self, name: &str) -> Option<&AccountId> {
-        if let Some(service) = self.0.get(name) {
-            return Some(service);
-        }
-        None
-    }
-
-    pub fn to_vec(&self) -> Vec<Service> {
-        if !self.0.is_empty() {
-            return self
-                .0
-                .clone()
-                .into_iter()
-                .map(|v| Service {
-                    name: v.0,
-                    service: v.1,
-                })
-                .collect();
-        }
-        vec![]
-    }
-}
 
 impl Services {
     pub fn new() -> Self {
@@ -143,27 +83,6 @@ mod tests {
     }
 
     #[test]
-    fn add_pending_request() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let name = String::from("service_1");
-        let service = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.requests.add(&name, &service);
-        let result = bsh.requests.get(&name);
-        assert_eq!(
-            result,
-            Some(
-                &"88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .parse::<AccountId>()
-                    .unwrap()
-            )
-        );
-    }
-
-    #[test]
     fn add_service() {
         let context = get_context(vec![], false);
         testing_env!(context);
@@ -171,44 +90,13 @@ mod tests {
         let service = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
             .parse::<AccountId>()
             .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.services.add(&name, &service);
-        let result = bsh.services.get(&name);
+        let mut services = Services::new();
+        services.add(&name, &service);
+        let result = services.get(&name);
         assert_eq!(
             result,
             Some(
                 &"88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .parse::<AccountId>()
-                    .unwrap()
-            )
-        );
-    }
-
-    #[test]
-    fn get_pending_request() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let name_1 = String::from("service_1");
-        let service_1 = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_2 = String::from("service_2");
-        let service_2 = "68bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_3 = String::from("service_3");
-        let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.requests.add(&name_1, &service_1);
-        bsh.requests.add(&name_2, &service_2);
-        bsh.requests.add(&name_3, &service_3);
-        let result = bsh.requests.get(&name_2);
-        assert_eq!(
-            result,
-            Some(
-                &"68bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
                     .parse::<AccountId>()
                     .unwrap()
             )
@@ -231,11 +119,11 @@ mod tests {
         let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
             .parse::<AccountId>()
             .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.services.add(&name_1, &service_1);
-        bsh.services.add(&name_2, &service_2);
-        bsh.services.add(&name_3, &service_3);
-        let result = bsh.services.get(&name_2);
+        let mut services = Services::new();
+        services.add(&name_1, &service_1);
+        services.add(&name_2, &service_2);
+        services.add(&name_3, &service_3);
+        let result = services.get(&name_2);
         assert_eq!(
             result,
             Some(
@@ -244,31 +132,6 @@ mod tests {
                     .unwrap()
             )
         );
-    }
-
-    #[test]
-    fn remove_pending_request() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let name_1 = String::from("service_1");
-        let service_1 = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_2 = String::from("service_2");
-        let service_2 = "68bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_3 = String::from("service_3");
-        let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.requests.add(&name_1, &service_1);
-        bsh.requests.add(&name_2, &service_2);
-        bsh.requests.add(&name_3, &service_3);
-        bsh.requests.remove(&name_2);
-        let result = bsh.requests.get(&name_2);
-        assert_eq!(result, None);
     }
 
     #[test]
@@ -287,27 +150,13 @@ mod tests {
         let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
             .parse::<AccountId>()
             .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.services.add(&name_1, &service_1);
-        bsh.services.add(&name_2, &service_2);
-        bsh.services.add(&name_3, &service_3);
-        bsh.services.remove(&name_2);
-        let result = bsh.services.get(&name_2);
+        let mut services = Services::new();
+        services.add(&name_1, &service_1);
+        services.add(&name_2, &service_2);
+        services.add(&name_3, &service_3);
+        services.remove(&name_2);
+        let result = services.get(&name_2);
         assert_eq!(result, None);
-    }
-
-    #[test]
-    fn contains_pending_request() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let name = String::from("service_1");
-        let service = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.requests.add(&name, &service);
-        let result = bsh.requests.contains(&name);
-        assert_eq!(result, true);
     }
 
     #[test]
@@ -318,56 +167,10 @@ mod tests {
         let service = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
             .parse::<AccountId>()
             .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.services.add(&name, &service);
-        let result = bsh.services.contains(&name);
+        let mut services = Services::new();
+        services.add(&name, &service);
+        let result = services.contains(&name);
         assert_eq!(result, true);
-    }
-
-    #[test]
-    fn to_vec_pending_request() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let name_1 = String::from("service_1");
-        let service_1 = "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_2 = String::from("service_2");
-        let service_2 = "68bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let name_3 = String::from("service_3");
-        let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-            .parse::<AccountId>()
-            .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.requests.add(&name_1, &service_1);
-        bsh.requests.add(&name_2, &service_2);
-        bsh.requests.add(&name_3, &service_3);
-        let requests = bsh.requests.to_vec();
-        let expected_requests = vec![
-            Service {
-                name: "service_1".to_string(),
-                service: "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .parse::<AccountId>()
-                    .unwrap(),
-            },
-            Service {
-                name: "service_2".to_string(),
-                service: "68bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .parse::<AccountId>()
-                    .unwrap(),
-            },
-            Service {
-                name: "service_3".to_string(),
-                service: "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
-                    .parse::<AccountId>()
-                    .unwrap(),
-            },
-        ];
-        let result: HashSet<_> = requests.iter().collect();
-        let expected: HashSet<_> = expected_requests.iter().collect();
-        assert_eq!(result, expected);
     }
 
     #[test]
@@ -386,11 +189,11 @@ mod tests {
         let service_3 = "78bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
             .parse::<AccountId>()
             .unwrap();
-        let mut bsh = Bsh::new();
-        bsh.services.add(&name_1, &service_1);
-        bsh.services.add(&name_2, &service_2);
-        bsh.services.add(&name_3, &service_3);
-        let services = bsh.services.to_vec();
+        let mut services = Services::new();
+        services.add(&name_1, &service_1);
+        services.add(&name_2, &service_2);
+        services.add(&name_3, &service_3);
+        let services = services.to_vec();
         let expected_services = vec![
             Service {
                 name: "service_1".to_string(),
