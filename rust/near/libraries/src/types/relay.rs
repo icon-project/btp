@@ -1,17 +1,19 @@
 use super::BTPAddress;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::UnorderedSet;
+use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::env::keccak256;
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Relays(UnorderedSet<AccountId>);
+pub struct Relays(Vec<AccountId>, UnorderedMap<AccountId, RelayStatus>);
 
 impl Default for Relays {
     fn default() -> Relays {
-        let relays: UnorderedSet<AccountId> =
-            UnorderedSet::new(keccak256("relay".to_string().as_bytes()));
-        Self(relays)
+        let relays: Vec<AccountId> = Vec::new();
+        let relay_status: UnorderedMap<AccountId, RelayStatus> =
+            UnorderedMap::new(keccak256("relay_status".to_string().as_bytes()));
+        Self(relays, relay_status)
     }
 }
 
@@ -30,12 +32,24 @@ impl std::fmt::Debug for Relays {
 
 impl Relays {
     pub fn new(link: &BTPAddress) -> Self {
-        link.to_string().push_str("_relay");
-        Self(UnorderedSet::new(keccak256(link.to_string().as_bytes())))
+        Self(
+            Vec::new(),
+            UnorderedMap::new(keccak256(format!("{}_relay_status", link).as_bytes())),
+        )
     }
 
     pub fn as_mut(&mut self) -> &mut Self {
         self
+    }
+
+    pub fn add(&mut self, account_id: &AccountId) {
+        if !self.contains(account_id) {
+            self.0.push(account_id.to_owned())
+        }
+    }
+
+    pub fn get(&self, index: u64) -> Option<&AccountId> {
+        self.0.get(index as usize)
     }
 
     pub fn set(&mut self, account_ids: &[AccountId]) {
@@ -46,8 +60,12 @@ impl Relays {
         }
     }
 
-    pub fn add(&mut self, account_id: &AccountId) {
-        self.0.insert(account_id);
+    pub fn status(&self, account_id: &AccountId) -> Option<RelayStatus> {
+        self.1.get(account_id)
+    }
+
+    pub fn set_status(&mut self, account_id: &AccountId, relay_status: &RelayStatus) {
+        self.1.insert(account_id, relay_status);
     }
 
     pub fn clear(&mut self) {
@@ -55,18 +73,78 @@ impl Relays {
     }
 
     pub fn contains(&self, account_id: &AccountId) -> bool {
-        self.0.contains(account_id)
+        self.0.contains(&account_id)
     }
 
     pub fn remove(&mut self, account_id: &AccountId) {
-        self.0.remove(account_id);
+        let index = self.0.iter().position(|item| item == account_id);
+        if index.is_some() {
+            self.0.swap_remove(index.unwrap());
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 
     pub fn to_vec(&self) -> Vec<AccountId> {
         self.0.to_vec()
     }
+
+    pub fn bmr_status(&self) -> Vec<BmrStatus> {
+        self.to_vec()
+            .iter()
+            .map(|relay| {
+                let relay_status = self.status(relay).unwrap_or_default();
+                {
+                    BmrStatus {
+                        account_id: relay.to_owned(),
+                        block_count: relay_status.block_count,
+                        message_count: relay_status.message_count,
+                    }
+                }
+            })
+            .collect()
+    }
+}
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct BmrStatus {
+    account_id: AccountId,
+    block_count: u64,
+    message_count: u64,
 }
 
+#[derive(Default, BorshDeserialize, BorshSerialize)]
+pub struct RelayStatus {
+    block_count: u64,
+    message_count: u64,
+}
+
+impl RelayStatus {
+    pub fn new(block_count: u64, message_count: u64) -> RelayStatus {
+        RelayStatus {
+            block_count,
+            message_count,
+        }
+    }
+
+    pub fn block_count(&self) -> u64 {
+        self.block_count
+    }
+
+    pub fn block_count_mut(&mut self) -> &mut u64 {
+        &mut self.block_count
+    }
+
+    pub fn message_count(&self) -> u64 {
+        self.message_count
+    }
+
+    pub fn message_count_mut(&mut self) -> &mut u64 {
+        &mut self.message_count
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -3,7 +3,7 @@ use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
-    messages::{BtpMessage, TokenServiceMessage, TokenServiceType}, AccumulatedAssetFees, FungibleToken, AccountBalance, BTPAddress, MultiTokenCore, Token, Transfer, WrappedI128,
+    messages::{BtpMessage, TokenServiceMessage, TokenServiceType}, AccumulatedAssetFees, FungibleToken, AccountBalance, BTPAddress, MultiTokenCore, Token, Math, WrappedI128,
 };
 mod token;
 use std::convert::TryInto;

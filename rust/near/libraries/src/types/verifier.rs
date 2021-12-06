@@ -1,7 +1,10 @@
+use btp_common::errors::BmvError;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::serde::Serialize;
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
+
+use super::messages::SerializedBtpMessages;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bmv(UnorderedMap<String, AccountId>);

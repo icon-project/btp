@@ -1,17 +1,27 @@
 use crate::types::{btp_address::Network, token::TokenMetadata, TokenName};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::serde::{Deserialize, Serialize, Deserializer};
 use near_sdk::AccountId;
+use near_sdk::json_types::U128;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FungibleToken {
     name: String,
     symbol: String,
+    #[serde(deserialize_with = "deserialize_u128")]
     fee_numerator: u128,
-    uri: Option<AccountId>,
+    #[serde(deserialize_with = "deserialize_u128")]
     denominator: u128,
+    uri: Option<AccountId>,
     network: Network,
+}
+
+fn deserialize_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    <U128 as Deserialize>::deserialize(deserializer).map(|s| s.into())
 }
 
 impl FungibleToken {

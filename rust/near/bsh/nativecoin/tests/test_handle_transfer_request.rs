@@ -5,7 +5,7 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, Asset, BTPAddress, MultiTokenCore, NativeCoin, Token, Transfer,
+    Account, AccountBalance, Asset, BTPAddress, MultiTokenCore, NativeCoin, Token, Math,
     WrappedI128,
 };
 mod token;

@@ -10,7 +10,7 @@ use libraries::{
     types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
     types::MultiTokenCore, types::MultiTokenResolver, types::NativeCoin, types::Network,
     types::Owners, types::StorageBalances, types::Token, types::TokenFees,
-    types::Tokens, types::Transfer, types::Requests
+    types::Tokens, types::Math, types::Requests
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
