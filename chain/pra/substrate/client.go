@@ -267,7 +267,7 @@ func (c *SubstrateAPI) GetBlockHashesByRange(start SubstrateBlockNumber, end Sub
 		return nil, err
 	}
 
-	hash, err := c.GetBlockHash(uint64(len(blockNumbers) - 1))
+	hash, err := c.GetBlockHash(uint64(blockNumbers[len(blockNumbers)-1]))
 	if err != nil {
 		return nil, err
 	}
