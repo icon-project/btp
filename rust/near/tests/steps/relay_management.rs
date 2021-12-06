@@ -85,7 +85,7 @@ pub static ADD_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context
     //bmc owner adds link
     // relay provided to the link added
     //bmc owner invokes add_relay realy will be added to the link
-    ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAY_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
 };
@@ -94,7 +94,7 @@ pub static ADD_RELAYS_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut contex
     //bmc owner adds link
     // relay provided to the link added
     //bmc owner invokes add_relay realy will be added to the link
-    ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
 };
@@ -117,14 +117,14 @@ pub static CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC: fn(Context) -> Context = |mut con
     BMC_CONTRACT.add_relays(context)
 };
 pub static ADD_RELAY_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAY_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
         .pipe(CHUCK_INVOKES_ADD_RELAY_IN_BMC)
 };
 
 pub static ADD_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
         .pipe(CHUCK_INVOKES_ADD_RELAYS_IN_BMC)
@@ -135,7 +135,7 @@ pub static ADD_RELAY_WITH_NON_EXISTING_LINK_INVOKED_BY_BMC_OWNER: fn(Context) ->
         //bmc owner adds link
         // relay provided to the link added
         //bmc owner invokes add_relay realy will be added to the link
-        ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
             .pipe(INVALID_LINK_AND_RELAY_PROVIDED_AS_ADD_RELAY_PARAM)
             .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
     };
@@ -168,14 +168,14 @@ pub static REMOVE_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut cont
     //bmc owner adds link
     // relay provided to the link added
     //bmc owner invokes add_relay realy will be added to the link
-    ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
         .pipe(ALICE_INVOKES_REMOVE_RELAYS_IN_BMC)
 };
 
 pub static REMOVE_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context =
     |mut context: Context| {
-        ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
             .pipe(LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
             .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
             .pipe(CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC)
@@ -183,7 +183,7 @@ pub static REMOVE_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context =
 
 pub static REMOVE_NON_EXISTING_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context =
     |mut context: Context| {
-        ADD_LINK_INVOKED_BY_BMC_OWNER(context)
+        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
             .pipe(NONEXISTING_LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
             .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
             .pipe(CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC)

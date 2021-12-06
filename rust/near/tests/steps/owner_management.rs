@@ -45,7 +45,9 @@ pub static ALICE_IS_BMC_CONTRACT_OWNER: fn(Context) -> Context = |mut context: C
     context
 };
 
-pub static CHUCK_IS_NOT_A_BMC_OWNER: fn(Context) -> Context = |context: Context| context;
+pub static CHUCK_IS_NOT_A_BMC_OWNER: fn(Context) -> Context = |context: Context| {
+    context.pipe(CHUCKS_ACCOUNT_IS_CREATED)
+};
 
 pub static OWNERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_owners(context);
@@ -56,7 +58,6 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut co
     BMC_CONTRACT.add_owner(context)
 };
 
-// TODO: Add error handling
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) = |context: Context| {
     let error = context.method_errors("add_owner");
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
