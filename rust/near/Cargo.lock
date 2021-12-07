@@ -3603,7 +3603,7 @@ dependencies = [
 [[package]]
 name = "workspaces"
 version = "0.1.0"
-source = "git+https://github.com/HugoByte/workspaces-rs.git#d100fe7dc518519966b2907d832e543412096007"
+source = "git+https://github.com/HugoByte/workspaces-rs.git?branch=hotfix/gas#d100fe7dc518519966b2907d832e543412096007"
 dependencies = [
  "actix",
  "actix-web",
@@ -3632,7 +3632,7 @@ dependencies = [
 [[package]]
 name = "workspaces-macros"
 version = "0.1.0"
-source = "git+https://github.com/HugoByte/workspaces-rs.git#d100fe7dc518519966b2907d832e543412096007"
+source = "git+https://github.com/HugoByte/workspaces-rs.git?branch=hotfix/gas#d100fe7dc518519966b2907d832e543412096007"
 dependencies = [
  "proc-macro2",
  "quote",

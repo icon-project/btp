@@ -5,7 +5,7 @@ use serde_json::{from_value, json};
 use test_helper::types::Context;
 
 pub static USER_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_link(context, 300000000000000);
+    |context: Context| BMC_CONTRACT.add_link(context, 30000000000000);
 
 pub static USER_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.set_link(context, 300000000000000);
@@ -168,7 +168,7 @@ pub static ICON_LINK_SHOULD_BE_ADDED_TO_LIST: fn(Context) = |mut context: Contex
     let context = context
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
         .pipe(USER_INVOKES_GET_LINKS_BMC);
-    
+
     let link = context.method_responses("get_links");
 
     let result: HashSet<_> = from_value::<Vec<String>>(link)
@@ -184,8 +184,8 @@ pub static ICON_LINK_SHOULD_BE_ADDED_TO_LIST: fn(Context) = |mut context: Contex
 
 pub static LEN_OF_LINKS_SHOULD_BE_11: fn(Context) = |mut context: Context| {
     let context = context
-    .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
-    .pipe(USER_INVOKES_GET_LINKS_BMC);
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
+        .pipe(USER_INVOKES_GET_LINKS_BMC);
 
     let link = context.method_responses("get_links");
 
@@ -198,8 +198,8 @@ pub static LEN_OF_LINKS_SHOULD_BE_11: fn(Context) = |mut context: Context| {
 
 pub static LEN_OF_LINKS_SHOULD_BE_13: fn(Context) = |mut context: Context| {
     let context = context
-    .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
-    .pipe(USER_INVOKES_GET_LINKS_BMC);
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
+        .pipe(USER_INVOKES_GET_LINKS_BMC);
 
     let link = context.method_responses("get_links");
 
@@ -212,8 +212,8 @@ pub static LEN_OF_LINKS_SHOULD_BE_13: fn(Context) = |mut context: Context| {
 
 pub static LINK_SHOULD_BE_REMOVED_FROM_LIST: fn(Context) = |context: Context| {
     let context = context
-    .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
-    .pipe(USER_INVOKES_GET_LINKS_BMC);
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
+        .pipe(USER_INVOKES_GET_LINKS_BMC);
 
     let link = context.method_responses("get_links");
 
