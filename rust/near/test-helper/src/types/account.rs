@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Accounts(HashMap<String, Signer>);
 
 impl Accounts {

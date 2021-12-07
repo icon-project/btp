@@ -9,11 +9,12 @@ mod manage_bsh_services {
     mod bmc {
         use super::*;
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn request_service_as_bsh_contract_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BSH_CONTRACT_IS_DEPLOYED)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
                 .and(BOB_IS_BSH_CONTRACT_OWNER)
                 .and(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
                 .when(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
@@ -21,7 +22,8 @@ mod manage_bsh_services {
                 .and(NEWLY_ADDED_REQUEST_SHOULD_BE_IN_BMC_REQUESTS)
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn request_service_unauthorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(CONTRACTS_ARE_DEPLOYED)
@@ -32,7 +34,8 @@ mod manage_bsh_services {
 
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn request_service_of_invalid_contract_address_authorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED)
@@ -41,7 +44,8 @@ mod manage_bsh_services {
             .then(BMC_SHOULD_THROW_INVALIDADDRESS_ERROR) //TODO: Confirm InvalidAddress Message   
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn request_service_of_existing_service_authorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(BSH_IS_AN_EXISTING_SERVICE)
@@ -49,8 +53,8 @@ mod manage_bsh_services {
             .then(BSH_SHOULD_THROW_REQUESTEXIST_ERROR)
         }
 
-
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn approve_service_authorized_success() {
             Kitten::given(NEW_CONTEXT)
             .and(BSH_SERVICE_ALREADY_EXISTS)
@@ -60,7 +64,8 @@ mod manage_bsh_services {
 
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn approve_service_unauthorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(BSH_SERVICE_ALREADY_EXISTS)
@@ -70,7 +75,8 @@ mod manage_bsh_services {
 
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn remove_service_authorized_success() {
             Kitten::given(NEW_CONTEXT)
             .and(APPROVED_BSH_SERVICE)
@@ -79,7 +85,8 @@ mod manage_bsh_services {
             .then(BSH_SERVICE_REMOVED_FROM_SERVICES)
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn remove_service_unauthorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(APPROVED_BSH_SERVICE)
@@ -89,7 +96,8 @@ mod manage_bsh_services {
             .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
         }
 
-        #[runner::test(sandbox)]
+        #[ignore]
+        #[workspaces::test(sandbox)]
         async fn remove_non_existing_service_authorized_success() {
             Kitten::given(NEW_CONTEXT)
             .and(CONTRACTS_ARE_DEPLOYED)

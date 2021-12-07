@@ -68,7 +68,7 @@ pub static BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH_AGAIN: fn(Context) -> Con
 
 pub static BSH_IS_AN_EXISTING_SERVICE: fn(Context) -> Context = |mut context: Context| {
     BMC_CONTRACT_IS_DEPLOYED(context)
-        .pipe(BSH_CONTRACT_IS_DEPLOYED)
+        .pipe(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
         .pipe(BOB_IS_BSH_CONTRACT_OWNER)
         .pipe(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
 };
@@ -76,14 +76,14 @@ pub static BSH_IS_AN_EXISTING_SERVICE: fn(Context) -> Context = |mut context: Co
 pub static BSH_SERVICE_ALREADY_EXISTS: fn(Context) -> Context = |mut context: Context| {
     BMC_CONTRACT_IS_DEPLOYED(context)
         .pipe(ALICE_IS_BMC_CONTRACT_OWNER)
-        .pipe(BSH_CONTRACT_IS_DEPLOYED)
+        .pipe(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
         .pipe(BOB_IS_BSH_CONTRACT_OWNER)
         .pipe(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
         .pipe(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
 };
 
 pub static CONTRACTS_ARE_DEPLOYED: fn(Context) -> Context =
-    |mut context: Context| BMC_CONTRACT_IS_DEPLOYED(context).pipe(BSH_CONTRACT_IS_DEPLOYED);
+    |mut context: Context| BMC_CONTRACT_IS_DEPLOYED(context).pipe(TOKEN_BSH_CONTRACT_IS_DEPLOYED);
 
 pub static CHUCK_IS_NOT_A_BSH_OWNER: fn(Context) -> Context = |context: Context| context;
 
@@ -91,7 +91,7 @@ pub static CHUCK_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH: fn(Context) -> Context
     |mut context: Context| {
         let signer = context.accounts().get("chuck").to_owned();
         context.set_signer(&signer);
-        BSH_CONTRACT.request_service(context)
+        BMC_CONTRACT.request_service(context)
     };
 
 pub static ALICE_INVOKES_APPROVE_SERVICE_IN_BMC: fn(Context) -> Context = |mut context: Context| {
@@ -120,7 +120,7 @@ pub static BSH_REQUEST_SHOULD_BE_REMOVED_FROM_BMC_REQUESTS: fn(Context) = |conte
 pub static APPROVED_BSH_SERVICE: fn(Context) -> Context = |mut context: Context| {
     BMC_CONTRACT_IS_DEPLOYED(context)
         .pipe(ALICE_IS_BMC_CONTRACT_OWNER)
-        .pipe(BSH_CONTRACT_IS_DEPLOYED)
+        .pipe(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
         .pipe(BOB_IS_BSH_CONTRACT_OWNER)
         .pipe(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
         .pipe(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
@@ -169,5 +169,6 @@ pub static BSH_SERVICE_REMOVED_FROM_SERVICES: fn(Context) = |context: Context| {
 //TODO: Error Handling
 pub static BSH_SHOULD_THROW_REQUESTEXIST_ERROR: fn(Context) -> Context = |context: Context| context;
 pub static BSH_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) -> Context = |context: Context| context;
+pub static BSH_SHOULD_THROW_ALREADY_EXIST_ERRROR: fn(Context) -> Context = |context: Context| context;
 pub static BMC_SHOULD_THROW_INVALIDADDRESS_ERROR: fn(Context) -> Context =
     |context: Context| context;

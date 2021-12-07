@@ -3,7 +3,7 @@ use duplicate::duplicate;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Contracts(HashMap<String, Signer>);
 
 impl Contracts {
@@ -30,7 +30,8 @@ pub struct Contract<'a, T> {
     contract_type;
     [ Bmc ];
     [ Bmv ];
-    [ Bsh ];
+    [ NativeCoinBsh ];
+    [ TokenBsh ];
   )]
 impl Contract<'_, contract_type> {
     fn new(name: &'static str, source: &'static str) -> Contract<'static, contract_type> {
@@ -54,7 +55,9 @@ pub struct Bmc {}
 
 pub struct Bmv {}
 
-pub struct Bsh {}
+pub struct NativeCoinBsh {}
+
+pub struct TokenBsh {}
 
 pub struct BmcContract {}
 
@@ -71,10 +74,19 @@ impl BmvContract {
         Contract::<Bmv>::new(name, source)
     }
 }
-pub struct BshContract {}
 
-impl BshContract {
-    pub fn new(name: &'static str, source: &'static str) -> Contract<'static, Bsh> {
-        Contract::<Bsh>::new(name, source)
+pub struct NativeCoinBshContract {}
+
+impl NativeCoinBshContract {
+    pub fn new(name: &'static str, source: &'static str) -> Contract<'static, NativeCoinBsh> {
+        Contract::<NativeCoinBsh>::new(name, source)
+    }
+}
+
+pub struct TokenBshContract {}
+
+impl TokenBshContract {
+    pub fn new(name: &'static str, source: &'static str) -> Contract<'static, TokenBsh> {
+        Contract::<TokenBsh>::new(name, source)
     }
 }

@@ -8,13 +8,13 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn add_verifier(&self, context: Context) -> Context {
-        invoke_call!(self, context, "add_verifier", method_params).unwrap();
+    pub fn add_verifier(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "add_verifier", method_params);
         context
     }
 
-    pub fn remove_verifier(&self, context: Context) -> Context {
-        invoke_call!(self, context, "remove_verifier", method_params).unwrap();
+    pub fn remove_verifier(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_verifier", method_params);
         context
     }
 
