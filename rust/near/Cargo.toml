@@ -42,4 +42,4 @@ near-sdk = { git = "https://github.com/HugoByte/near-sdk-rs.git", rev = "b18b475
 near-jsonrpc-client = { branch = "fix/serde", git = "https://github.com/HugoByte/near-jsonrpc-client-rs", features = ["sandbox"] }
 
 [patch."https://github.com/near/workspaces-rs.git"]
-workspaces = { git = "https://github.com/HugoByte/workspaces-rs.git" }
+workspaces = { git = "https://github.com/HugoByte/workspaces-rs.git", branch = "hotfix/gas" }
