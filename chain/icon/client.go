@@ -71,6 +71,16 @@ func countBytesOfCompactJSON(jsonData interface{}) int {
 
 var txSerializeExcludes = map[string]bool{"signature": true}
 
+func (c *Client) do(method string, reqPtr, respPtr interface{}) (jrResp *jsonrpc.Response, err error) {
+	var resp *jsonrpc.Response
+	if resp, err = c.Do(method, reqPtr, respPtr); err != nil {
+		c.l.Debugf("do %s fails with %+v", method, err)
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (c *Client) SignTransaction(w Wallet, p *TransactionParam) error {
 	p.Timestamp = NewHexInt(time.Now().UnixNano() / int64(time.Microsecond))
 	js, err := json.Marshal(p)
@@ -94,34 +104,34 @@ func (c *Client) SignTransaction(w Wallet, p *TransactionParam) error {
 }
 func (c *Client) SendTransaction(p *TransactionParam) (*HexBytes, error) {
 	var result HexBytes
-	if _, err := c.Do("icx_sendTransaction", p, &result); err != nil {
+	if _, err := c.do("icx_sendTransaction", p, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 func (c *Client) SendTransactionAndWait(p *TransactionParam) (*HexBytes, error) {
 	var result HexBytes
-	if _, err := c.Do("icx_sendTransactionAndWait", p, &result); err != nil {
+	if _, err := c.do("icx_sendTransactionAndWait", p, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 func (c *Client) GetTransactionResult(p *TransactionHashParam) (*TransactionResult, error) {
 	tr := &TransactionResult{}
-	if _, err := c.Do("icx_getTransactionResult", p, tr); err != nil {
+	if _, err := c.do("icx_getTransactionResult", p, tr); err != nil {
 		return nil, err
 	}
 	return tr, nil
 }
 func (c *Client) WaitTransactionResult(p *TransactionHashParam) (*TransactionResult, error) {
 	tr := &TransactionResult{}
-	if _, err := c.Do("icx_waitTransactionResult", p, tr); err != nil {
+	if _, err := c.do("icx_waitTransactionResult", p, tr); err != nil {
 		return nil, err
 	}
 	return tr, nil
 }
 func (c *Client) Call(p *CallParam, r interface{}) error {
-	_, err := c.Do("icx_call", p, r)
+	_, err := c.do("icx_call", p, r)
 	return err
 }
 func (c *Client) SendTransactionAndGetResult(p *TransactionParam) (*HexBytes, *TransactionResult, error) {
@@ -182,7 +192,7 @@ txrLoop:
 
 func (c *Client) GetBlockByHeight(p *BlockHeightParam) (*Block, error) {
 	result := &Block{}
-	if _, err := c.Do("icx_getBlockByHeight", p, &result); err != nil {
+	if _, err := c.do("icx_getBlockByHeight", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -190,21 +200,21 @@ func (c *Client) GetBlockByHeight(p *BlockHeightParam) (*Block, error) {
 
 func (c *Client) GetBlockHeaderByHeight(p *BlockHeightParam) ([]byte, error) {
 	var result []byte
-	if _, err := c.Do("icx_getBlockHeaderByHeight", p, &result); err != nil {
+	if _, err := c.do("icx_getBlockHeaderByHeight", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 func (c *Client) GetVotesByHeight(p *BlockHeightParam) ([]byte, error) {
 	var result []byte
-	if _, err := c.Do("icx_getVotesByHeight", p, &result); err != nil {
+	if _, err := c.do("icx_getVotesByHeight", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 func (c *Client) GetDataByHash(p *DataHashParam) ([]byte, error) {
 	var result []byte
-	_, err := c.Do("icx_getDataByHash", p, &result)
+	_, err := c.do("icx_getDataByHash", p, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -212,14 +222,14 @@ func (c *Client) GetDataByHash(p *DataHashParam) ([]byte, error) {
 }
 func (c *Client) GetProofForResult(p *ProofResultParam) ([][]byte, error) {
 	var result [][]byte
-	if _, err := c.Do("icx_getProofForResult", p, &result); err != nil {
+	if _, err := c.do("icx_getProofForResult", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
 	var result [][][]byte
-	if _, err := c.Do("icx_getProofForEvents", p, &result); err != nil {
+	if _, err := c.do("icx_getProofForEvents", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
