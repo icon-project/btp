@@ -6,6 +6,7 @@ import (
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
+	"github.com/icon-project/btp/common/log"
 )
 
 type ExtAccumulator struct {
@@ -97,12 +98,10 @@ func (a *ExtAccumulator) Recover() error {
 	}
 	a.length = s.Height - s.Offset
 	a.serialized = b
-	if a.offset < s.Offset {
-		return errors.New("not support recover to lower offset")
-	} else if a.offset > s.Offset {
-		//TODO rebuild node
-		//a.offset = s.Offset
-		return errors.New("not support recover to higher offset")
+	if a.offset < s.Offset || a.offset > s.Offset {
+		a.length = 0
+		a.Flush()
+		log.Debugf("resync with new offset:%d, height:%d", a.Offset(), a.Height())
 	}
 	return nil
 }

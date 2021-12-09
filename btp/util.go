@@ -29,16 +29,16 @@ func (b *BTP) prepareDatabase(offset int64) error {
 	if offset < 0 {
 		offset = 0
 	}
-
 	b.store = mta.NewExtAccumulator(k, bk, offset)
 	if bk.Has(k) {
 		if err = b.store.Recover(); err != nil {
-			return errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
+			b.log.Panicf("fail to acc.Recover cause:%v", err)
 		}
 		b.log.Debugf("recover Accumulator offset:%d, height:%d", b.store.Offset(), b.store.Height())
 		// b.log.Fatal("Stop")
 		//TODO sync offset
 	}
+
 	return nil
 }
 

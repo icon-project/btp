@@ -107,11 +107,11 @@ func New(cfg *Config, w wallet.Wallet, l log.Logger) (*BTP, error) {
 }
 
 func (b *BTP) init() error {
-	if err := b.prepareDatabase(b.cfg.Offset); err != nil {
+	if err := b.refreshStatus(); err != nil {
 		return err
 	}
 
-	if err := b.refreshStatus(); err != nil {
+	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset); err != nil {
 		return err
 	}
 	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
@@ -174,8 +174,13 @@ func (b *BTP) Serve() error {
 // OnBlockOfDst callback when got a new update from the BMC source
 func (b *BTP) OnBlockOfSrc(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 	b.log.Tracef("OnBlockOfSrc bu.Height:%d", bu.Height)
+	// BMV.Offset > Next BTP Message block => throw out of bound
+	if len(rps) > 0 && b.bmcLinkStatus.Verifier.Height > rps[0].Height {
+		b.log.Panicf("OnBlockOfSrc: out of bound Msg %d at Height %d lower than BMV.Height:%d", rps[0].Events[0].Sequence, rps[0].Height, b.bmcLinkStatus.Verifier.Height)
+	}
 	b.updateMTA(bu)
 	b.addRelayMessage(bu, rps)
+
 	if b.store.Height() >= b.bmcLinkStatus.Verifier.Height {
 		b.relaySignal <- true
 	} else {
@@ -414,6 +419,7 @@ func (b *BTP) updateMTA(bu *chain.BlockUpdate) {
 		b.log.Fatalf("found missing block next:%d bu:%d", next, bu.Height)
 		return
 	}
+
 	if next == bu.Height {
 		b.store.AddHash(bu.BlockHash)
 		if err := b.store.Flush(); err != nil {
