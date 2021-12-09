@@ -8,9 +8,9 @@ pub trait ToBmvError {
 impl ToBmvError for MtaError {
     fn to_bmv_error(&self) -> BmvError {
         match self {
-            MtaError::InvalidWitnessOld { message } => BmvError::InvalidWitnessOld { message },
-            MtaError::InvalidWitnessNewer { message } => BmvError::InvalidWitnessNewer { message },
-            _ => BmvError::Unknown { message: "MtaError"}
+            MtaError::InvalidWitnessOld { message } => BmvError::InvalidWitnessOld { message: message.to_string() },
+            MtaError::InvalidWitnessNewer { message } => BmvError::InvalidWitnessNewer { message: message.to_string() },
+            _ => BmvError::Unknown { message: "MtaError".to_string() }
         }
     }
 }

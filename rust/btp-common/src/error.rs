@@ -1,4 +1,5 @@
 pub mod errors {
+    use serde::{Deserialize, Serialize};
     use std::fmt::{self, Error, Formatter};
 
     pub trait Exception {
@@ -6,6 +7,7 @@ pub mod errors {
         fn message(&self) -> String;
     }
 
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     pub enum BtpException<T: Exception> {
         Base,
         Bmc(T),
@@ -35,16 +37,17 @@ pub mod errors {
         }
     }
 
-    #[derive(Debug, Clone, Eq, PartialEq)]
+    #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(tag = "error")]
     pub enum BmvError {
-        Unknown { message: &'static str },
+        Unknown { message: String },
         NotBmc,
-        InvalidWitnessOld { message: &'static str },
-        InvalidWitnessNewer { message: &'static str },
-        InvalidBlockProof { message: &'static str },
-        InvalidVotes { message: &'static str },
+        InvalidWitnessOld { message: String },
+        InvalidWitnessNewer { message: String },
+        InvalidBlockProof { message: String },
+        InvalidVotes { message: String },
         InvalidBlockProofHeightHigher { expected: u64, actual: u64 },
-        InvalidBlockUpdate { message: &'static str },
+        InvalidBlockUpdate { message: String },
         InvalidBlockUpdateHeightLower { expected: u64, actual: u64 },
         InvalidBlockUpdateHeightHigher { expected: u64, actual: u64 },
         DecodeFailed { message: String },
@@ -114,18 +117,19 @@ pub mod errors {
                 }
                 BmvError::InvalidWitnessNewer { message } => {
                     write!(f, "{}{}: {}", label, "InvalidWitnessNewer", message)
-                },
+                }
                 BmvError::Unknown { message } => {
                     write!(f, "{}{}: {}", label, "Unknown", message)
-                },
+                }
                 BmvError::InvalidBlockProof { message } => {
                     write!(f, "{}{}: {}", label, "InvalidBlockProof", message)
-                },
+                }
             }
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(tag = "error")]
     pub enum BshError {
         Unknown,
         LastOwner,
@@ -243,7 +247,8 @@ pub mod errors {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(tag = "error")]
     pub enum BmcError {
         DecodeFailed { message: String },
         EncodeFailed { message: String },
@@ -272,7 +277,7 @@ pub mod errors {
         Unreachable { destination: String },
         VerifierExist,
         VerifierNotExist,
-        Unauthorized { message: &'static str }
+        Unauthorized { message: &'static str },
     }
 
     impl Exception for BmcError {
@@ -361,8 +366,8 @@ pub mod errors {
                 }
                 BmcError::InvalidSerialNo => {
                     write!(f, "{}{}", label, "Invalid Serial No")
-                },
-                BmcError::Unauthorized { message }=> {
+                }
+                BmcError::Unauthorized { message } => {
                     write!(f, "{}{}: {}", label, "Unauthorized", message)
                 }
             }

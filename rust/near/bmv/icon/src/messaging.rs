@@ -24,7 +24,7 @@ impl BtpMessageVerifier {
             #[cfg(feature = "testable")]
             outcome.clone().unwrap();
 
-            return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
+            return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
         }
 
         if relay_message.block_proof().is_some() {
@@ -32,7 +32,7 @@ impl BtpMessageVerifier {
                 relay_message
                     .block_proof()
                     .get()
-                    .map_err(|message| BmvError::InvalidBlockProof { message })
+                    .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })
                     .unwrap(),
                 &mut last_block_header,
             );
@@ -40,7 +40,7 @@ impl BtpMessageVerifier {
                 #[cfg(feature = "testable")]
                 outcome.clone().unwrap();
 
-                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
+                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
             }
         }
 
@@ -54,7 +54,7 @@ impl BtpMessageVerifier {
                 #[cfg(feature = "testable")]
                 outcome.clone().unwrap();
                 
-                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err().code()));
+                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
             }
         }
         self.update_state(&mut state_changes);
