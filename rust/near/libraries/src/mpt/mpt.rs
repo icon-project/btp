@@ -150,8 +150,6 @@ struct Node {
 
 impl Decodable for Node {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        
-        
         let header: NodeHeader = rlp.val_at(0)?;
         println!("{:?}", header);
         let data = rlp.val_at::<Vec<u8>>(1)?;
@@ -188,30 +186,18 @@ pub struct MerklePatriciaTree<H> {
 }
 
 impl<H: Hasher> MerklePatriciaTree<H> {
-    pub fn verify_proof(root: &Hash, key: &Vec<u8>, proof: &Vec<Vec<u8>>) -> Result<Vec<u8>, MptError> {
-        let mut actual_key = vec![];
-        for el in key {
-            actual_key.push(el / 16);
-            actual_key.push(el % 16);
-        }
-        // println!("{:?} {:?}", key.len(), root);
-
-        // bytes_to_nibbles(key, 0, None);
-
-        // println!("{:?}", actual_key);
-
-        //let mut actual_key = vec![];
-        // for el in key {
-        //     actual_key.push(el / 16);
-        //     actual_key.push(el % 16);
-        // }
-
-        Self::prove(root, &actual_key, &proof, 0, 0)
+    pub fn verify_proof(
+        root: &Hash,
+        key: &Vec<u8>,
+        proof: &Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, MptError> {
+        let nibbles = bytes_to_nibbles(key, 0, None);
+        Self::prove(root, &nibbles, &proof, 0, 0)
     }
 
     fn prove(
         root: &Hash,
-        key: &Vec<u8>,
+        nibbles: &Vec<u8>,
         proof: &Vec<Vec<u8>>,
         key_index: usize,
         proof_index: usize,
@@ -224,14 +210,46 @@ impl<H: Hasher> MerklePatriciaTree<H> {
         };
 
         let node = rlp::Rlp::new(&node.as_slice());
-        // if node.iter().count() == 17 {
+        if node.iter().count() == 17 {
+            if key_index == nibbles.len() {
+                if proof_index + 1 != proof.len(){
+                    return Err(MptError::InvalidLength);
+                }
+                node.val_at::<Vec<u8>>(16).map_err(|error| MptError::DecodeFailed { message: error.to_string() })
+            } else {
+                let new_expected_root = Hash::new::<H>(&node.val_at::<Vec<u8>>(nibbles[key_index] as usize).map_err(|error| MptError::DecodeFailed { message: error.to_string() })?);
+                Self::prove(
+                    &new_expected_root,
+                    nibbles,
+                    proof,
+                    key_index + 1,
+                    proof_index + 1,
+                )
+            }
+        } else if node.iter().count() == 2 {
+            let header = node.val_at::<Vec<u8>>(0).map_err(|error| MptError::DecodeFailed { message: error.to_string() })?;
+            let prefix = header[0] & 0xF0;
 
-        // } else {
+            let mut nibbles: Vec<u8> = vec![];
+            if (prefix & 0x10) != 0 {
+                nibbles = bytes_to_nibbles(&header, 1, Some(vec![prefix]));
+            }
 
-    // }
-
-    Err(MptError::EncodeFailed)
-        
+            if (prefix & 0x20) != 0 { 
+                node.val_at::<Vec<u8>>(1).map_err(|error| MptError::DecodeFailed { message: error.to_string() })
+            } else {
+                let new_expected_root = Hash::new::<H>(&node.val_at::<Vec<u8>>(1).map_err(|error| MptError::DecodeFailed { message: error.to_string() })?);
+                Self::prove(
+                    &new_expected_root,
+                    &nibbles,
+                    proof,
+                    key_index + nibbles.len(),
+                    proof_index + 1,
+                )
+            }
+        } else {
+            Err(MptError::InvalidLength)
+        }
     }
 }
 

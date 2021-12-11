@@ -14,7 +14,13 @@ impl BtpMessageCenter {
         self.assert_link_exists(&source);
         self.assert_relay_is_registered(&source);
         let verifier = self.bmv.get(&source.network_address().unwrap()).unwrap();
+
+        let link = self.links.get(&source).unwrap();
+
         bmv_contract::handle_relay_message(
+            self.btp_address.clone(),
+            source.clone(),
+            link.rx_seq(),
             message,
             verifier.clone(),
             estimate::NO_DEPOSIT,
@@ -70,9 +76,7 @@ impl BtpMessageCenter {
                     self.handle_btp_messages(source, messages)
                 }
             }
-            VerifierResponse::Failed(code) => (
-                env::panic_str(format!("{}", code).as_str())
-            ),
+            VerifierResponse::Failed(code) => (env::panic_str(format!("{}", code).as_str())),
         };
     }
 
@@ -174,7 +178,7 @@ impl BtpMessageCenter {
         messages.retain(|message| self.handle_service_message(&source, message));
         messages.retain(|message| self.handle_route_message(&source, message));
     }
-    
+
     pub fn propogate_internal(&mut self, service_message: BmcServiceMessage) {
         self.links
             .to_vec()

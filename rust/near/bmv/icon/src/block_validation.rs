@@ -1,5 +1,4 @@
 use super::*;
-use types::ToBmvError;
 
 impl BtpMessageVerifier {
     pub fn process_block_updates(

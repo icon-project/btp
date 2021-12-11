@@ -1,4 +1,6 @@
 use super::*;
+use btp_common::btp_address::Address;
+use libraries::types::Account;
 
 impl BtpMessageVerifier {
     // * * * * * * * * * * * * * * * * *
@@ -14,10 +16,34 @@ impl BtpMessageVerifier {
         )
     }
 
+    pub fn assert_bmc_is_valid(&self, bmc: &BTPAddress) {
+        require!(
+            bmc.account_id() == *self.bmc(),
+            format!("{}", BmvError::NotBmc)
+        )
+    }
+
+    pub fn assert_source_is_valid(&self, source: &BTPAddress) {
+        require!(
+            self.network == source.network_address().unwrap(),
+            format!(
+                "{}",
+                BmvError::Unknown {
+                    message: format!("not acceptable from {}", source)
+                }
+            )
+        )
+    }
+
     pub fn assert_have_block_updates_or_block_proof(&self, relay_message: &RelayMessage) {
         require!(
             !relay_message.block_updates().is_empty() || relay_message.block_proof().is_some(),
-            format!("{}", BmvError::Unknown { message: "does not have block updates or block proof".to_string() })
+            format!(
+                "{}",
+                BmvError::Unknown {
+                    message: "does not have block updates or block proof".to_string()
+                }
+            )
         )
     }
 
@@ -26,7 +52,9 @@ impl BtpMessageVerifier {
             && !block_proof
                 .block_witness()
                 .get()
-                .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })?
+                .map_err(|message| BmvError::InvalidBlockProof {
+                    message: message.to_string(),
+                })?
                 .witnesses()
                 .is_empty()
         {
@@ -126,6 +154,16 @@ impl BtpMessageVerifier {
                 expected: self.mta.height(),
                 actual: block_proof.block_header().height(),
             })
+        }
+    }
+
+    pub fn ensure_valid_sequence(&self, actual: u128, expected: u128) -> Result<(), BmvError> {
+        if actual == expected {
+            Ok(())
+        } else if actual > expected {
+            Err(BmvError::InvalidSequenceHigher { actual, expected })
+        } else {
+            Err(BmvError::InvalidSequence { actual, expected })
         }
     }
 }

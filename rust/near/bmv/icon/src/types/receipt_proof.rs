@@ -1,5 +1,5 @@
-use super::{EventProof, Proof, Proofs, Nullable};
-use libraries::rlp::{self, Decodable, Encodable};
+use super::{EventProof, Nullable, Proofs};
+use libraries::rlp::{self, Decodable, Encodable, encode};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ReceiptProof {
@@ -9,12 +9,20 @@ pub struct ReceiptProof {
 }
 
 impl ReceiptProof {
+    pub fn index_serialized(&self) -> Vec<u8> {
+        encode(&self.index).to_vec()
+    }
+    
     pub fn index(&self) -> u128 {
         self.index
     }
-    
+
     pub fn proofs(&self) -> &Nullable<Proofs> {
         &self.proofs
+    }
+
+    pub fn event_proofs(&self) -> &Vec<EventProof> {
+        &self.event_proofs
     }
 }
 
