@@ -1,8 +1,6 @@
 use libraries::rlp::{self, Decodable, Encodable};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::Serialize;
 use std::convert::TryFrom;
-use std::iter::FromIterator;
 
 use super::RlpBytes;
 

@@ -1,7 +1,7 @@
 use super::Nullable;
-use libraries::rlp::{self, Decodable, Encodable};
+use libraries::rlp::{self, Decodable};
 use libraries::types::{BTPAddress, Message};
-use near_sdk::json_types::{Base64VecU8, U128};
+use near_sdk::json_types::{Base64VecU8};
 use std::str::from_utf8;
 use std::str::FromStr;
 
@@ -28,7 +28,7 @@ impl EventLog {
     }
 
     pub fn is_message(&self) -> bool {
-        if let Ok(method_signature) = rlp::decode::<String>(&self.indexed[0]) {
+        if let Ok(method_signature) = from_utf8(&self.indexed[0]) {
             if method_signature.contains("Message") {
                 return true;
             }
@@ -39,7 +39,11 @@ impl EventLog {
     }
 
     pub fn to_message(&self) -> Result<Message, rlp::DecoderError> {
-        let next: BTPAddress = rlp::decode(&self.indexed[1])?;
+        let next = BTPAddress::from_str(
+            from_utf8(&self.indexed[1])
+                .map_err(|_| rlp::DecoderError::Custom("BTPAddress String Parse Error"))?,
+        )
+        .map_err(|_| rlp::DecoderError::Custom("Invalid BTPAddress Error"))?;
         let sequence: u128 = rlp::decode(&self.indexed[2])?;
         let message = Base64VecU8::from(self.data[0].clone());
         Ok(Message::new(next, sequence.into(), message))

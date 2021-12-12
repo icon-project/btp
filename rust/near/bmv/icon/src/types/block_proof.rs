@@ -1,5 +1,5 @@
 use super::{BlockHeader, BlockWitness, Nullable};
-use libraries::rlp::{self, Decodable, Encodable};
+use libraries::rlp::{self, Decodable};
 use std::convert::TryFrom;
 
 #[derive(Clone, Default, PartialEq, Eq, Debug)]

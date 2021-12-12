@@ -1,5 +1,5 @@
 use btp_common::errors::BmvError;
-use libraries::{types::Network, MerkleTreeAccumulator, types::Hash, types::messages::SerializedBtpMessages, types::VerifierResponse, types::VerifierStatus, MerklePatriciaTree, rlp, types::BTPAddress};
+use libraries::{types::Network, MerkleTreeAccumulator, types::Hash, types::messages::SerializedBtpMessages, types::VerifierResponse, types::VerifierStatus, rlp, types::BTPAddress};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{
     env, json_types::U128, log, near_bindgen, require, AccountId, Gas, PanicOnDefault, Promise,

@@ -1,5 +1,5 @@
 use super::{EventLog, Nullable};
-use libraries::rlp::{self, Decodable, Encodable};
+use libraries::rlp::{self, Decodable};
 use libraries::types::Hash;
 
 #[derive(Debug)]

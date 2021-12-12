@@ -1,19 +1,17 @@
-use super::{EventProof, Nullable, Proofs};
-use libraries::rlp::{self, Decodable, Encodable, encode};
+use super::{EventProof, Nullable, Proofs, Receipt, Sha256};
+use libraries::mpt::Prove;
+use libraries::rlp::{self, Decodable};
+use std::ops::Deref;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ReceiptProof {
-    index: u128,
+    index: u64,
     proofs: Nullable<Proofs>,
     event_proofs: Vec<EventProof>,
 }
 
 impl ReceiptProof {
-    pub fn index_serialized(&self) -> Vec<u8> {
-        encode(&self.index).to_vec()
-    }
-    
-    pub fn index(&self) -> u128 {
+    pub fn index(&self) -> u64 {
         self.index
     }
 
@@ -35,5 +33,21 @@ impl Decodable for ReceiptProof {
             proofs: rlp.val_at(1)?,
             event_proofs: rlp.list_at(2)?,
         })
+    }
+}
+
+impl Prove<Sha256> for ReceiptProof {
+    type Output = Receipt;
+
+    fn index_ref(&self) -> u64 {
+        self.index
+    }
+
+    fn mpt_proofs(&self) -> Result<&Vec<Vec<u8>>, String> {
+        if let Ok(proof) = self.proofs.get() {
+            Ok(proof.deref())
+        } else {
+            Err("Invalid Receipt Proof".to_string())
+        }
     }
 }

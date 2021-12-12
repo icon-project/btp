@@ -5,7 +5,7 @@ use near_sdk::{
     serde::{Deserialize, Serialize},
 };
 
-#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
+#[derive(Debug, Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Message {
     next: BTPAddress,

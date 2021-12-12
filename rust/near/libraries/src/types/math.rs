@@ -99,3 +99,51 @@ impl Math<u64> for u64 {
         self
     }
 }
+
+
+impl Math<usize> for usize {
+    fn add(&mut self, rhs: usize) -> Result<&mut Self, String> {
+        self.clone_from(
+            &&self
+                .checked_add(rhs)
+                .ok_or_else(|| "overflow occured".to_string())?,
+        );
+        Ok(self)
+    }
+
+    fn sub(&mut self, rhs: usize) -> Result<&mut Self, String> {
+        self.clone_from(
+            &&self
+                .checked_sub(rhs)
+                .ok_or_else(|| "underflow occured".to_string())?,
+        );
+        Ok(self)
+    }
+
+    fn mul(&mut self, rhs: usize) -> Result<&mut Self, String> {
+        self.clone_from(
+            &self
+                .checked_mul(rhs)
+                .ok_or_else(|| "overflow occured".to_string())?,
+        );
+        Ok(self)
+    }
+
+    fn div(&mut self, rhs: usize) -> Result<&mut Self, String> {
+        self.clone_from(
+            &&self
+                .checked_div(rhs)
+                .ok_or_else(|| "underflow occured".to_string())?,
+        );
+        Ok(self)
+    }
+
+    fn div_ceil(&mut self, rhs: usize) -> &mut Self {
+        if *self % rhs == 0 {
+            self.clone_from(&(*self / rhs));
+        } else {
+            self.clone_from(&((*self / rhs) + 1));
+        }
+        self
+    }
+}

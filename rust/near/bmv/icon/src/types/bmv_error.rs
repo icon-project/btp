@@ -18,6 +18,7 @@ impl ToBmvError for MtaError {
 
 impl ToBmvError for MptError {
     fn to_bmv_error(&self) -> BmvError {
+        println!("{:?}", self);
         match self {
             _ => BmvError::Unknown { message: "MptError".to_string() }
         }

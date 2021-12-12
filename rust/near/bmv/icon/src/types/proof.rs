@@ -1,4 +1,4 @@
-use libraries::rlp::{self, Decodable, Encodable};
+use libraries::rlp::{self, Decodable};
 use std::ops::Deref;
 
 pub type Proof = Vec<u8>;
