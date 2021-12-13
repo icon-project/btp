@@ -16,27 +16,27 @@ impl BtpMessageVerifier {
             message: format!("RxSeq failed: {}", error),
         })?;
 
+        let receipt_hash = last_block_header
+            .block_result()
+            .get()
+            .map_err(|message| BmvError::Unknown {
+                message: format!(
+                    "Invalid Relay Message, BlockResult: {}",
+                    message.to_string()
+                ),
+            })?
+            .receipt_hash()
+            .get()
+            .map_err(|message| BmvError::Unknown {
+                message: format!(
+                    "Invalid Relay Message, ReceiptHash: {}",
+                    message.to_string()
+                ),
+            })?;
+
         receipt_proofs
             .iter()
             .map(|receipt_proof| -> Result<(), BmvError> {
-                let receipt_hash = last_block_header
-                    .block_result()
-                    .get()
-                    .map_err(|message| BmvError::Unknown {
-                        message: format!(
-                            "Invalid Relay Message, BlockResult: {}",
-                            message.to_string()
-                        ),
-                    })?
-                    .receipt_hash()
-                    .get()
-                    .map_err(|message| BmvError::Unknown {
-                        message: format!(
-                            "Invalid Relay Message, ReceiptHash: {}",
-                            message.to_string()
-                        ),
-                    })?;
-
                 let receipt = self.prove_receipt_proof(receipt_proof, receipt_hash)?;
 
                 receipt
@@ -51,13 +51,16 @@ impl BtpMessageVerifier {
                                     .map_err(|error| BmvError::DecodeFailed {
                                         message: error.to_string(),
                                     })?;
+
                             if message.next() == &bmc {
                                 self.ensure_valid_sequence(message.sequence().into(), rx_seq)?;
+
                                 btp_messages.push(
                                     message.message().0.clone().try_into().map_err(|error| {
                                         BmvError::DecodeFailed { message: error }
                                     })?,
                                 );
+                                
                                 rx_seq.add(1).map_err(|error| BmvError::Unknown {
                                     message: format!("RxSeq failed: {}", error),
                                 })?;
