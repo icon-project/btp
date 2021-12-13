@@ -39,6 +39,8 @@ import (
 const (
 	DefaultSendTransactionRetryInterval        = 3 * time.Second         //3sec
 	DefaultGetTransactionResultPollingInterval = 1500 * time.Millisecond //1.5sec
+	maxRetryReadMethod                         = 10
+	maxRetryReadMethodInterval                 = time.Second
 )
 
 type Wallet interface {
@@ -73,12 +75,22 @@ var txSerializeExcludes = map[string]bool{"signature": true}
 
 func (c *Client) do(method string, reqPtr, respPtr interface{}) (jrResp *jsonrpc.Response, err error) {
 	var resp *jsonrpc.Response
-	if resp, err = c.Do(method, reqPtr, respPtr); err != nil {
-		c.l.Debugf("do %s fails with %+v", method, err)
-		return nil, err
+	tries := 0
+	for {
+		tries++
+		resp, err = c.Do(method, reqPtr, respPtr)
+		if err != nil && tries < maxRetryReadMethod && strings.HasPrefix(method, "icx_get") {
+			if je, ok := err.(*jsonrpc.Error); ok {
+				switch je.Code {
+				case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting, JsonrpcErrorCodeNotFound:
+					<-time.After(maxRetryReadMethodInterval)
+					c.l.Tracef("do: retry %d with method %s err:%+v", tries, method, err)
+					continue
+				}
+			}
+		}
+		return resp, err
 	}
-
-	return resp, nil
 }
 
 func (c *Client) SignTransaction(w Wallet, p *TransactionParam) error {

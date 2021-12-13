@@ -32,5 +32,5 @@ type Config struct {
 	Src               BaseConfig       `json:"src"`
 	Dst               BaseConfig       `json:"dst"`
 
-	Offset int64 `json:"offset"`
+	syncWithBmvHeight bool `json:"sync_with_bmv_height`
 }

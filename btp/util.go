@@ -42,20 +42,27 @@ func (b *BTP) prepareDatabase(offset int64) error {
 	return nil
 }
 
-// receiveHeight return min(max(b.store.Height(), b.bmcLinkStatus.Verifier.Offset), b.bmcLinkStatus.Verifier.LastHeight)
 func (b *BTP) receiveHeight() int64 {
-
-	max := b.store.Height()
-	if max < b.bmcLinkStatus.Verifier.Offset {
-		max = b.bmcLinkStatus.Verifier.Offset
+	mtaHeight := b.store.Height()
+	if b.cfg.syncWithBmvHeight {
+		if b.store.Height() < b.bmcLinkStatus.Verifier.Height {
+			b.log.Panicf("not allow to sycn with BMV height, local mta height %d not catched up", mtaHeight)
+		}
+		b.log.Warnf("sync with BMV height, might skip next BTP message")
+		return b.bmcLinkStatus.Verifier.Height
 	}
 
-	max += 1
-	min := b.bmcLinkStatus.Verifier.LastHeight
-	if max < min {
-		min = max
+	if mtaHeight < b.bmcLinkStatus.Verifier.Offset {
+		mtaHeight = b.bmcLinkStatus.Verifier.Offset
 	}
-	return min
+
+	mtaHeight += 1
+	receiveHeight := b.bmcLinkStatus.Verifier.LastHeight
+	if mtaHeight < receiveHeight {
+		receiveHeight = mtaHeight
+	}
+
+	return receiveHeight
 }
 
 // newRelayMessage initializes an empty RelayMessage into the bufferred rms
