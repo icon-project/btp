@@ -238,7 +238,7 @@ For example:
     - current block number: 100
 - When:
     - has newAuthorities in block 110
-    - current setId increase to 101 at block 111
+    - current setId increase to 11 at block 111
 - Then:
     - If relay submit to BMV relay block from 100-130 and votes of block 130, BMV will throw error `verify signature for invalid validator set id` because block 130 validator sign for setId 11 but in BMV still store setId 10.
     - In this case relay should send relay block from 100-110, votes of block 110 and newAuthorities in block 110, BMV will update new authorities list and setId to db and then next block signatures will be verify properly.
