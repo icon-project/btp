@@ -76,7 +76,10 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 	if err != nil {
 		return nil, err
 	}
-	blkHash, _ := v.Hash.Value()
+	blkHash, err := v.Hash.Value()
+	if err != nil {
+		r.l.Warnf("newReceiptProofs: failed to get hash value")
+	}
 	if !bytes.Equal(blkHash, crypto.SHA3Sum256(bh.serialized)) {
 		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
@@ -144,8 +147,14 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 					continue RpLoop
 				}
 			}
-			idx, _ := index.Value()
-			h, _ := v.Height.Value()
+			idx, err := index.Value()
+			if err != nil {
+				r.l.Warnf("newReceiptProofs: failed to get value for index")
+			}
+			h, err := v.Height.Value()
+			if err != nil {
+				r.l.Warnf("newReceiptProofs: failed to get height value")
+			}
 			rp := &chain.ReceiptProof{
 				Height:      h,
 				Index:       int(idx),
@@ -155,7 +164,10 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				return nil, err
 			}
 			for k := nextEp; k < len(p.Events); k++ {
-				eIdx, _ := p.Events[k].Value()
+				eIdx, err := p.Events[k].Value()
+				if err != nil {
+					r.l.Warnf("newReceiptProofs: failed to get event value")
+				}
 				ep := &chain.EventProof{
 					Index: int(eIdx),
 				}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/icon-project/btp/common/log"
 	scalecodec "github.com/itering/scale.go"
 )
 
@@ -194,6 +195,7 @@ func NewEncodedSubstrateHeader(header SubstrateHeader) ([]byte, error) {
 }
 
 func NewStorageKey(hex string) SubstrateStorageKey {
-	byte, _ := types.HexDecodeString(hex)
+	byte, err := types.HexDecodeString(hex)
+	log.Warnf("GetMetadataRawLatest: fail %v", err)
 	return types.NewStorageKey(byte)
 }

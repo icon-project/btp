@@ -83,9 +83,18 @@ func (c *Client) SubstrateClient() substrate.SubstrateClient {
 func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	ew := w.(*wallet.EvmWallet)
 	context := context.Background()
-	chainID, _ := c.ethClient.ChainID(context)
-	txopts, _ := bind.NewKeyedTransactorWithChainID(ew.Skey, chainID)
-	txopts.GasPrice, _ = c.ethClient.SuggestGasPrice(context)
+	chainID, err := c.ethClient.ChainID(context)
+	if err != nil {
+		log.Warnf("failed to get ChainID err:%v", err.Error())
+	}
+	txopts, err := bind.NewKeyedTransactorWithChainID(ew.Skey, chainID)
+	if err != nil {
+		log.Warnf("failed to create a transaction signer from a single private key err:%v", err.Error())
+	}
+	txopts.GasPrice, err = c.ethClient.SuggestGasPrice(context)
+	if err != nil {
+		log.Warnf("failed to get suggest gas price err:%v", err.Error())
+	}
 	txopts.Context = context
 
 	return txopts

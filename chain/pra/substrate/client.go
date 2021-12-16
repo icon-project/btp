@@ -99,7 +99,8 @@ func (c *SubstrateAPI) getRuntimeVersion(blockHash *SubstrateHash) (*RuntimeVers
 }
 
 func (c *SubstrateAPI) GetMetadataRawLatest() string {
-	res, _ := c.getMetadataRaw(nil)
+	res, err := c.getMetadataRaw(nil)
+	log.Warnf("GetMetadataRawLatest: fail %v", err)
 	return res
 }
 
@@ -187,7 +188,8 @@ func (c *SubstrateAPI) getStorageRaw(key types.StorageKey, blockHash *SubstrateH
 }
 
 func (c *SubstrateAPI) GetSpecName() string {
-	rtv, _ := c.GetRuntimeVersionLatest()
+	rtv, err := c.GetRuntimeVersionLatest()
+	log.Warnf("GetMetadataRawLatest: fail %v", err)
 	return rtv.SpecName
 }
 
@@ -392,7 +394,8 @@ func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
 
 func (c *SubstrateAPI) GetSystemEvents(blockHash SubstrateHash, section string, method string) ([]map[string]interface{}, error) {
 	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "System", "Events")
-	systemEventsStorageRaw, _ := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
+	systemEventsStorageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
+	log.Warnf("GetMetadataRawLatest: fail %v", err)
 
 	c.eventDecoder.Init(scaletypes.ScaleBytes{Data: *systemEventsStorageRaw}, &c.scaleDecoderOption)
 	c.eventDecoder.Process()

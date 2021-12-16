@@ -139,6 +139,8 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				if bmcMsg.Seq.Int64() == int64(r.rxSeq+1) {
 					r.foundNextEventFromRxSeq = true
 				}
+			} else if err != nil {
+				r.l.Warnf("fail to parse bmc message err:%+v", err)
 			}
 		}
 
