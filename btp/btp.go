@@ -234,7 +234,7 @@ func (b *BTP) relayLoop() {
 
 func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
 	if len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0 {
-		b.log.Debugf("canRelay empty rm")
+		b.log.Debugf("canRelay: skip empty rm")
 		return false
 	}
 
@@ -242,7 +242,7 @@ func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
 	skippable := b.skippable(rm)
 	relayable := b.relayble(rm)
 
-	b.log.Debugf("canRelay rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
+	b.log.Debugf("canRelay: rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
 	return !(hasWait || (!skippable && !relayable))
 }
 
@@ -310,8 +310,12 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 	b.lastBlockUpdate = bu
 
 	rm := b.rms[len(b.rms)-1]
-	// TODO make this number as Sender.MaxTransactionsPerRelayTerm / Sender.MaxBlockUpdatePerSegment
-	if len(rm.Segments) > 0 || len(rm.BlockUpdates) > 1000 {
+	if len(rm.Segments) > 0 {
+		b.log.Tracef("addRelayMessage: rm being proceed")
+		rm = b.newRelayMessage()
+		// TODO make this number as Sender.MaxTransactionsPerRelayTerm / Sender.MaxBlockUpdatePerSegment
+	} else if len(rm.BlockUpdates) > 1000 {
+		b.log.Tracef("addRelayMessage: rm have more than 1000 blockupdates")
 		rm = b.newRelayMessage()
 	}
 

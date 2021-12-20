@@ -85,7 +85,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 
 		update.FinalityProofs, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
 		if err != nil {
-			r.l.Debugf("r.relayReceiver.newParaFinalityProof error: %+v", err)
+			r.l.Tracef("r.relayReceiver.newParaFinalityProof error: %+v", err)
 			return nil, err
 		}
 	} else {
@@ -93,7 +93,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		update.FinalityProofs = [][]byte{nil}
 	}
 
-	r.l.Debugf("block proof rlp encode")
+	r.l.Tracef("block proof rlp encode")
 	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
 	if err != nil {
 		r.l.Debugf("codec.RLP.MarshalToBytes(&update) error: %+v", err)
@@ -112,16 +112,15 @@ func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]substrate.Ev
 	for _, event := range events {
 		evmLogEvents = append(evmLogEvents, substrate.NewEventEVMLog(event))
 	}
-	r.l.Debugf("decoded decoded substrate.NewEventEVMLog(event)")
 
 	return evmLogEvents, err
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
-	r.l.Debugf("new receipt proof  start get evm log events")
+	r.l.Tracef("new receipt proof  start get evm log events")
 	rps := make([]*chain.ReceiptProof, 0)
 	els, err := r.getEvmLogEvents(v.Hash)
-	r.l.Debugf("got evm log events")
+	r.l.Tracef("got evm log events")
 	if err != nil {
 		r.l.Debugf("r.getEvmLogEvents(v.Hash) error: %+v", err)
 		return nil, err
@@ -132,7 +131,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			Height: int64(v.Height),
 		}
 
-		r.l.Debugf("filter evm log event")
+		r.l.Tracef("filter evm log event")
 		for _, e := range els {
 			if !e.CompareAddressCaseInsensitive(r.src.ContractAddress()) {
 				continue
