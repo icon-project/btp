@@ -105,10 +105,13 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 }
 
 func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]substrate.EventEVMLog, error) {
-	r.l.Debugf("start getEvmLogEvents")
+	r.l.Tracef("start getEvmLogEvents")
 	events, err := r.c.subClient.GetSystemEvents(hash, "EVM", "Log")
+	if err != nil {
+		r.l.Debugf("getEvmLogEvents: fails to get EVM_Log event")
+	}
 	evmLogEvents := make([]substrate.EventEVMLog, 0)
-	r.l.Debugf("decode substrate.NewEventEVMLog(event)")
+	r.l.Tracef("decode substrate.NewEventEVMLog(event)")
 	for _, event := range events {
 		evmLogEvents = append(evmLogEvents, substrate.NewEventEVMLog(event))
 	}
@@ -117,7 +120,7 @@ func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]substrate.Ev
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
-	r.l.Tracef("new receipt proof  start get evm log events")
+	r.l.Tracef("new receipt proof start get evm log events")
 	rps := make([]*chain.ReceiptProof, 0)
 	els, err := r.getEvmLogEvents(v.Hash)
 	r.l.Tracef("got evm log events")

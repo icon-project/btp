@@ -276,7 +276,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		for {
 			txr, err := s.c.GetTransactionReceipt(thp.Hash())
 			if err != nil {
-				s.log.Debugf("GetResult: failed getting transaction receipt:%s err:%+v", thp.Hash(), err)
+				s.log.Tracef("GetResult: failed getting transaction receipt:%s err:%+v", thp.Hash(), err)
 				<-time.After(DefaultRetryContractCallInterval)
 				continue
 			}
