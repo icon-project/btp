@@ -10,6 +10,7 @@ import (
 	"github.com/icon-project/btp/common/wallet"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/icon-project/btp/chain/pra/binding"
 	"github.com/icon-project/btp/chain/pra/substrate"
@@ -28,6 +29,7 @@ type EthClient interface {
 	CallContract(ctx context.Context, callMsg EvmCallMsg, block *big.Int) ([]byte, error)
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
 	ChainID(ctx context.Context) (*big.Int, error)
+	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
 }
 
 type BMCContract interface {
@@ -96,6 +98,11 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 		log.Warnf("failed to get suggest gas price err:%v", err.Error())
 	}
 	txopts.Context = context
+	nonce, err := c.ethClient.PendingNonceAt(context, txopts.From)
+	if err != nil {
+		log.Warnf("failed to get pending nonce at err:%v", err.Error())
+	}
+	txopts.Nonce = new(big.Int).SetUint64(nonce)
 
 	return txopts
 }
