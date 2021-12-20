@@ -191,7 +191,9 @@ func (c *SubstrateAPI) getStorageRaw(key types.StorageKey, blockHash *SubstrateH
 
 func (c *SubstrateAPI) GetSpecName() string {
 	rtv, err := c.GetRuntimeVersionLatest()
-	log.Warnf("GetMetadataRawLatest: fail %v", err)
+	if err != nil {
+		log.Panic("GetSpecName: fail %v", err)
+	}
 	return rtv.SpecName
 }
 
@@ -397,7 +399,9 @@ func (c *SubstrateAPI) GetParachainId() (*SubstrateParachainId, error) {
 func (c *SubstrateAPI) GetSystemEvents(blockHash SubstrateHash, section string, method string) ([]map[string]interface{}, error) {
 	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "System", "Events")
 	systemEventsStorageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
-	log.Warnf("GetMetadataRawLatest: fail %v", err)
+	if err != nil {
+		log.Panicf("GetStorageRaw: fail %v", err)
+	}
 
 	c.eventDecoder.Init(scaletypes.ScaleBytes{Data: *systemEventsStorageRaw}, &c.scaleDecoderOption)
 	c.eventDecoder.Process()

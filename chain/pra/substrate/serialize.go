@@ -196,6 +196,8 @@ func NewEncodedSubstrateHeader(header SubstrateHeader) ([]byte, error) {
 
 func NewStorageKey(hex string) SubstrateStorageKey {
 	byte, err := types.HexDecodeString(hex)
-	log.Warnf("GetMetadataRawLatest: fail %v", err)
+	if err != nil {
+		log.Panicf("NewStorageKey: fail %v", err)
+	}
 	return types.NewStorageKey(byte)
 }
