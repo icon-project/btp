@@ -233,6 +233,11 @@ func (b *BTP) relayLoop() {
 }
 
 func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
+	if len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0 {
+		b.log.Debugf("canRelay empty rm")
+		return false
+	}
+
 	hasWait := rm.HasWait()
 	skippable := b.skippable(rm)
 	relayable := b.relayble(rm)
