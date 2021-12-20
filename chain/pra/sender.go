@@ -21,9 +21,9 @@ const (
 	txMaxDataSize                    = 524288 //512 * 1024 // 512kB
 	txOverheadScale                  = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                      = txMaxDataSize / (1 + txOverheadScale)
-	DefaultRetryContractCallInterval = 3 * time.Second
-	defaultMaxBlockUpdatesPerSegment = 11       // this is for Moonbase alpha testnet
-	defaultGasLimit                  = 10000000 // estimation for 3 blocks MaxBlockUpdatesPerSegment
+	DefaultRetryContractCallInterval = 12 * time.Second // blocktime of Moonbeam blocks
+	defaultMaxBlockUpdatesPerSegment = 11               // this is for Moonbase alpha testnet
+	defaultGasLimit                  = 10000000         // estimation for 3 blocks MaxBlockUpdatesPerSegment
 )
 
 var RetrableRelayReSendReExp = regexp.MustCompile(``)
@@ -276,7 +276,7 @@ func (s *Sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 		for {
 			txr, err := s.c.GetTransactionReceipt(thp.Hash())
 			if err != nil {
-				s.log.Warnf("GetResult: failed getting transaction receipt:%s err:%+v", thp.Hash(), err)
+				s.log.Debugf("GetResult: failed getting transaction receipt:%s err:%+v", thp.Hash(), err)
 				<-time.After(DefaultRetryContractCallInterval)
 				continue
 			}
