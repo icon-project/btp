@@ -85,6 +85,7 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 
 		update.FinalityProofs, err = r.relayReceiver.newParaFinalityProof(vd, r.parachainId, v.Hash, v.Height)
 		if err != nil {
+			r.l.Debugf("r.relayReceiver.newParaFinalityProof error: %+v", err)
 			return nil, err
 		}
 	} else {
@@ -92,8 +93,10 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 		update.FinalityProofs = [][]byte{nil}
 	}
 
+	r.l.Debugf("block proof rlp encode")
 	bu.Proof, err = codec.RLP.MarshalToBytes(&update)
 	if err != nil {
+		r.l.Debugf("codec.RLP.MarshalToBytes(&update) error: %+v", err)
 		return nil, err
 	}
 
@@ -102,19 +105,25 @@ func (r *Receiver) newParaBlockUpdate(v *BlockNotification) (*chain.BlockUpdate,
 }
 
 func (r *Receiver) getEvmLogEvents(hash substrate.SubstrateHash) ([]substrate.EventEVMLog, error) {
+	r.l.Debugf("start getEvmLogEvents")
 	events, err := r.c.subClient.GetSystemEvents(hash, "EVM", "Log")
 	evmLogEvents := make([]substrate.EventEVMLog, 0)
+	r.l.Debugf("decode substrate.NewEventEVMLog(event)")
 	for _, event := range events {
 		evmLogEvents = append(evmLogEvents, substrate.NewEventEVMLog(event))
 	}
+	r.l.Debugf("decoded decoded substrate.NewEventEVMLog(event)")
 
 	return evmLogEvents, err
 }
 
 func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
+	r.l.Debugf("new receipt proof  start get evm log events")
 	rps := make([]*chain.ReceiptProof, 0)
 	els, err := r.getEvmLogEvents(v.Hash)
+	r.l.Debugf("got evm log events")
 	if err != nil {
+		r.l.Debugf("r.getEvmLogEvents(v.Hash) error: %+v", err)
 		return nil, err
 	}
 
@@ -123,6 +132,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			Height: int64(v.Height),
 		}
 
+		r.l.Debugf("filter evm log event")
 		for _, e := range els {
 			if !e.CompareAddressCaseInsensitive(r.src.ContractAddress()) {
 				continue
@@ -139,8 +149,6 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 				if bmcMsg.Seq.Int64() == int64(r.rxSeq+1) {
 					r.foundNextEventFromRxSeq = true
 				}
-			} else if err != nil {
-				r.l.Warnf("fail to parse bmc message err:%+v", err)
 			}
 		}
 
@@ -149,15 +157,18 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 			r.l.Debugf("newReceiptProofs: build StateProof %d", v.Height)
 			key, err := r.c.subClient.GetSystemEventStorageKey(v.Hash)
 			if err != nil {
+				r.l.Debugf("r.c.subClient.GetSystemEventStorageKey(v.Hash) error: %+v", err)
 				return nil, err
 			}
 
 			readProof, err := r.c.SubstrateClient().GetReadProof(key, v.Hash)
 			if err != nil {
+				r.l.Debugf("r.c.SubstrateClient().GetReadProof(key, v.Hash) error: %+v", err)
 				return nil, err
 			}
 
 			if rp.Proof, err = codec.RLP.MarshalToBytes(NewStateProof(key, &readProof)); err != nil {
+				r.l.Debugf("codec.RLP.MarshalToBytes(NewStateProof(key, &readProof) error: %+v", err)
 				return nil, err
 			}
 
@@ -179,10 +190,12 @@ func (r *Receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 		var bu *chain.BlockUpdate
 		var sp []*chain.ReceiptProof
 		if bu, err = r.newParaBlockUpdate(v); err != nil {
+			r.l.Debugf("r.newParaBlockUpdate(v) error: %+v", err)
 			return errors.Wrap(err, "ReceiveLoop: newParaBlockUpdate")
 		}
 
 		if sp, err = r.newReceiptProofs(v); err != nil {
+			r.l.Debugf("r.newReceiptProofs(v) error: %+v", err)
 			return errors.Wrap(err, "ReceiveLoop: newReceiptProofs")
 		} else if r.foundNextEventFromRxSeq {
 			cb(bu, sp)
