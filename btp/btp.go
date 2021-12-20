@@ -305,7 +305,8 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 	b.lastBlockUpdate = bu
 
 	rm := b.rms[len(b.rms)-1]
-	if len(rm.Segments) > 0 {
+	// TODO make this number as Sender.MaxTransactionsPerRelayTerm / Sender.MaxBlockUpdatePerSegment
+	if len(rm.Segments) > 0 || len(rm.BlockUpdates) > 1000 {
 		rm = b.newRelayMessage()
 	}
 
