@@ -44,12 +44,10 @@ func (b *BTP) prepareDatabase(offset int64) error {
 
 func (b *BTP) receiveHeight() int64 {
 	mtaHeight := b.store.Height()
-	if b.cfg.syncWithBmvHeight {
-		if b.store.Height() < b.bmcLinkStatus.Verifier.Height {
-			b.log.Panicf("not allow to sycn with BMV height, local mta height %d not catched up", mtaHeight)
-		}
-		b.log.Warnf("sync with BMV height, might skip next BTP message")
-		return b.bmcLinkStatus.Verifier.Height
+	// LastHeight out of bound for range of [BMV.Offset, BMV.Height]
+	if b.bmcLinkStatus.Verifier.Offset > b.bmcLinkStatus.Verifier.LastHeight {
+		b.log.Warnf("BMV.LastHeight %d out of bound for range of [BMV.Offset %d, BMV.Height %d], might skip next BTP message", b.bmcLinkStatus.Verifier.LastHeight, b.bmcLinkStatus.Verifier.Offset, b.bmcLinkStatus.Verifier.Height)
+		return b.bmcLinkStatus.Verifier.Offset
 	}
 
 	if mtaHeight < b.bmcLinkStatus.Verifier.Offset {
@@ -57,6 +55,13 @@ func (b *BTP) receiveHeight() int64 {
 	}
 
 	mtaHeight += 1
+
+	// Force sync to catchup
+	// if b.store.Offset() == b.bmcLinkStatus.Verifier.Offset {
+	// 	b.log.Debugf("force sync with local MTA height, might miss next BTP Message", mtaHeight)
+	// 	return b.bmcLinkStatus.Verifier.Height
+	// }
+
 	receiveHeight := b.bmcLinkStatus.Verifier.LastHeight
 	if mtaHeight < receiveHeight {
 		receiveHeight = mtaHeight

@@ -31,6 +31,4 @@ type Config struct {
 	config.FileConfig `json:",squash"` //instead of `mapstructure:",squash"`
 	Src               BaseConfig       `json:"src"`
 	Dst               BaseConfig       `json:"dst"`
-
-	syncWithBmvHeight bool `json:"sync_with_bmv_height`
 }
