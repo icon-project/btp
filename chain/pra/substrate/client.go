@@ -100,7 +100,9 @@ func (c *SubstrateAPI) getRuntimeVersion(blockHash *SubstrateHash) (*RuntimeVers
 
 func (c *SubstrateAPI) GetMetadataRawLatest() string {
 	res, err := c.getMetadataRaw(nil)
-	log.Warnf("GetMetadataRawLatest: fail %v", err)
+	if err != nil {
+		log.Panicf("GetMetadataRawLatest: fail %v", err)
+	}
 	return res
 }
 
