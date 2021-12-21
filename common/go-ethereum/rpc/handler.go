@@ -83,10 +83,12 @@ func newHandler(connCtx context.Context, conn jsonWriter, idgen func() ID, reg *
 		cancelRoot:     cancelRoot,
 		allowSubscribe: true,
 		serverSubs:     make(map[ID]*Subscription),
-		log:            log.Root(),
+		log:            log.GlobalLogger(),
 	}
 	if conn.remoteAddr() != "" {
-		h.log = h.log.New("conn", conn.remoteAddr())
+		h.log = log.New().WithFields(log.Fields{
+			"conn": conn.remoteAddr(),
+		})
 	}
 	h.unsubscribeCb = newCallback(reflect.Value{}, reflect.ValueOf(h.unsubscribe))
 	return h
@@ -303,9 +305,9 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMess
 			if resp.Error.Data != nil {
 				ctx = append(ctx, "errdata", resp.Error.Data)
 			}
-			h.log.Warn("Served "+msg.Method, ctx...)
+			h.log.Warnf("Served "+msg.Method, ctx...)
 		} else {
-			h.log.Debug("Served "+msg.Method, ctx...)
+			h.log.Debugf("Served "+msg.Method, ctx...)
 		}
 		return resp
 	case msg.hasValidID():
