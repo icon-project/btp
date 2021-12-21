@@ -400,7 +400,7 @@ func (c *SubstrateAPI) GetSystemEvents(blockHash SubstrateHash, section string, 
 	key := EncodeStorageKey(c.scaleDecoderOption.Metadata, "System", "Events")
 	systemEventsStorageRaw, err := c.GetStorageRaw(NewStorageKey(key.EncodeKey), blockHash)
 	if err != nil {
-		log.Panicf("GetStorageRaw: fail %v", err)
+		log.Panicf("GetSystemEvents: fail %v", err)
 	}
 
 	c.eventDecoder.Init(scaletypes.ScaleBytes{Data: *systemEventsStorageRaw}, &c.scaleDecoderOption)

@@ -87,20 +87,20 @@ func (c *Client) newTransactOpts(w Wallet) *bind.TransactOpts {
 	context := context.Background()
 	chainID, err := c.ethClient.ChainID(context)
 	if err != nil {
-		log.Warnf("failed to get ChainID err:%v", err.Error())
+		log.Panicf("failed to get ChainID err:%v", err.Error())
 	}
 	txopts, err := bind.NewKeyedTransactorWithChainID(ew.Skey, chainID)
 	if err != nil {
-		log.Warnf("failed to create a transaction signer from a single private key err:%v", err.Error())
+		log.Panicf("failed to create a transaction signer from a single private key err:%v", err.Error())
 	}
 	txopts.GasPrice, err = c.ethClient.SuggestGasPrice(context)
 	if err != nil {
-		log.Warnf("failed to get suggest gas price err:%v", err.Error())
+		log.Panicf("failed to get suggest gas price err:%v", err.Error())
 	}
 	txopts.Context = context
 	nonce, err := c.ethClient.PendingNonceAt(context, txopts.From)
 	if err != nil {
-		log.Warnf("failed to get pending nonce at err:%v", err.Error())
+		log.Panicf("failed to get pending nonce at err:%v", err.Error())
 	}
 	txopts.Nonce = new(big.Int).SetUint64(nonce)
 
