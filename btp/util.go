@@ -109,15 +109,15 @@ func (b *BTP) logCanRelay(rm *chain.RelayMessage, hasWait bool, skippable bool, 
 			bufferedRmIndex = i
 		}
 	}
-	b.log.Debugf("canRelay: len(rms):%s rms[%d] hasWait:%v skippable:%v relayable:%v", len(b.rms), bufferedRmIndex, hasWait, skippable, relayable)
+	b.log.Debugf("canRelay: len(rms):%d rms[%d] hasWait:%v skippable:%v relayable:%v", len(b.rms), bufferedRmIndex, hasWait, skippable, relayable)
 	if len(rm.BlockUpdates) > 0 {
-		b.log.Tracef("canRelay: %s rm:%d bu:%d ~ %d rps:%d",
+		b.log.Tracef("canRelay: rm:%d bu:%d ~ %d rps:%d",
 			rm.Seq,
 			rm.BlockUpdates[0].Height,
 			rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
 			len(rm.ReceiptProofs))
 	} else {
-		b.log.Tracef("canRelay: %s rm:%d bp:%d ~ %d rps:%d",
+		b.log.Tracef("canRelay: rm:%d bp:%d ~ %d rps:%d",
 			rm.Seq,
 			rm.BlockProof.BlockWitness.Height,
 			rm.ReceiptProofs[0],
