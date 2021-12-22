@@ -1,0 +1,45 @@
+{
+    "accounts": [
+        {
+            "address": "hxb6b5791be0b5ef67063b3c10b840fb81514db2fd",
+            "balance": "0x2961fff8ca4a62327800000",
+            "name": "god"
+        },
+        {
+            "address": "hx1000000000000000000000000000000000000000",
+            "balance": "0x0",
+            "name": "treasury"
+        }
+    ],
+    "chain": {
+        "revision": "0x8",
+        "auditEnabled": "0x1",
+        "deployerWhiteListEnabled": "0x0",
+        "fee": {
+            "stepPrice": "0x2e90edd00",
+            "stepLimit": {
+                "invoke": "0x12A05F200",
+                "query": "0x2faf080"
+            },
+            "stepCosts": {
+                "default": "0x186a0",
+                "contractCall": "0x61a8",
+                "contractCreate": "0x3b9aca00",
+                "contractUpdate": "0x5f5e1000",
+                "contractDestruct": "-0x11170",
+                "contractSet": "0x7530",
+                "get": "0x0",
+                "set": "0x140",
+                "replace": "0x50",
+                "delete": "-0xf0",
+                "input": "0xc8",
+                "eventLog": "0x64",
+                "apiCall": "0x2710"
+            }
+        },
+        "validatorList": [
+            "hxb6b5791be0b5ef67063b3c10b840fb81514db2fd"
+        ]
+    },
+    "message": "generated 2021-08-19 10:37:34.329357452 +0000 UTC m=+0.010340239"
+}

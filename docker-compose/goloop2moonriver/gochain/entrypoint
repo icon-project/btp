@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+GOCHAIN_CONFIG_DIR=$(dirname ${GOCHAIN_CONFIG})
+if [ "${PROVISION_CONFIG}" != "" ] && [ "${PROVISION_CONFIG}" != "${GOCHAIN_CONFIG_DIR}" ]; then
+  echo "Provisioning config ${PROVISION_CONFIG} to ${GOCHAIN_CONFIG_DIR}"
+  mkdir -p ${GOCHAIN_CONFIG_DIR}
+  cp -u -r ${PROVISION_CONFIG}/* ${GOCHAIN_CONFIG_DIR}/
+fi
+
+if [ "${GOCHAIN_DATA}" != "" ]; then
+  mkdir -p ${GOCHAIN_DATA}
+fi
+
+source /goloop/venv/bin/activate
+exec "$@"
