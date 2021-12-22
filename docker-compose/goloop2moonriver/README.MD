@@ -50,12 +50,22 @@ Note: If you want a fresh test, run `make clean` to remove the old test data.
 ### Run test scenarios:
 
 Keep the docker-compose running and open an other terminal.  
-Run this command to transfer the native coin ICX from ICON to MOONBEAN.
+Run this command to transfer the ERC20 Wrapped MOVR from ICON to MOONBEAM.
 ```
-make transfer_icx
+make transfer_movr_from_icon
 ```
 
-Run this command to transfer the native coin DEV from MOONBEAN to ICON:
+Run this command to transfer the native coin MOVR from MOONBEAM to ICON:
 ```
-make transfer_dev
+make transfer_movr_from_moonbeam
+```
+
+Run this command to transfer the native coin ICX from ICON to MOONBEAM:
+```
+make transfer_icx_from_icon
+```
+
+Run this command to transfer the ERC20 Wrapped  from MOONBEAM to ICON:
+```
+make transfer_icx_from_moonbeam
 ```
