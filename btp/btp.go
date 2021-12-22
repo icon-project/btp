@@ -242,7 +242,7 @@ func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
 	skippable := b.skippable(rm)
 	relayable := b.relayble(rm)
 
-	b.log.Debugf("canRelay: rms:%v has_wait:%v skippable:%v relayable:%v", len(b.rms), hasWait, skippable, relayable)
+	b.logCanRelay(rm, hasWait, skippable, relayable)
 	return !(hasWait || (!skippable && !relayable))
 }
 
