@@ -6,4 +6,5 @@ include (
         'bmc',
         'bmv:icon',
         'nativecoin',
+        'nativecoinIRC2'
 )

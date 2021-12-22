@@ -1,0 +1,33 @@
+const BSHPerif = artifacts.require("BSHPeriphery");
+const MockBSHCore = artifacts.require("MockBSHCore");
+const CheckParseAddress = artifacts.require("CheckParseAddress");
+const { assert } = require('chai');
+const truffleAssert = require('truffle-assertions');
+ 
+
+//  BSHPeriphery is being used for communications among BSHCore and BMCPeriphery contract
+//  Thus, all tests relating to BSHPeriphery will be moved to Integration Test
+//  This part just covers some basic feature which is checking an authorization
+contract('BSHPeriphery Unit Tests', (accounts) => {
+    let bsh_perif;
+
+    before(async () => {
+        bsh_perif = await BSHPerif.new();
+    });
+
+    
+    it('Scenario 40: Should succeed when a client, which owns a refundable, tries to reclaim', async () => {
+        let _coin = 'ICON';     let _value = 10000;
+        let _id = await bsh_core.coinId(_coin);
+        await bsh_core.mintMock(bsh_core.address, _id, _value);
+        let balanceBefore = await bsh_core.getBalanceOf(accounts[2], _coin);
+        await bsh_core.reclaim(_coin, _value, {from: accounts[2]});
+        let balanceAfter = await bsh_core.getBalanceOf(accounts[2], _coin);
+        assert(
+            web3.utils.BN(balanceAfter._usableBalance).toNumber() === 
+                web3.utils.BN(balanceBefore._usableBalance).toNumber() + _value
+        );
+    });
+  
+});
+ 
