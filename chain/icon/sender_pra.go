@@ -26,15 +26,20 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			continue
 		}
 
+		// There're cases that BMR requires to submit BlockUpdate contains empty ScaleEncodedBlockHeader and
+		// with FinaliyProofs with RelayBlockUpdates and Justifications
+		// Then, it can submit ParaChainBlockUpdate with RelayBlockProof and RelayReceiptProofs
 		var paraBuExtra chain.ParaChainBlockUpdateExtra
 		if _, err := codec.RLP.UnmarshalFromBytes(bu.Proof, &paraBuExtra); err != nil {
 			return nil, err
 		}
 
+		// There must be FinalityProofs because Parachain can be self-finalized
 		if len(paraBuExtra.FinalityProofs) == 0 {
 			return nil, ErrInvalidParaChainFinalityProofsLength
 		}
 
+		// The ParaChainBlockUpdate with RelayBlockProof and RelayReceiptProofs always in the last element of the array
 		encodedParaBu, err := codec.RLP.MarshalToBytes(chain.ParaChainBlockUpdate{
 			ScaleEncodedBlockHeader: paraBuExtra.ScaleEncodedBlockHeader,
 			FinalityProof:           paraBuExtra.FinalityProofs[len(paraBuExtra.FinalityProofs)-1],
@@ -44,11 +49,13 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			return nil, err
 		}
 
-		// Check a Single ParaBlockUpdate requires submit multiple RelayMessages
+		// We can't submit ParachainBlockUpdates contains non-empty ScaleEncodedBlockHeader,
+		// and ParaBlockUpdates contains empty ScaleEncodedBlockHeader, in a SAME RelayMessage
+
+		// Check a Single ParachainBlockUpdate requires submit multiple RelayMessages
 		if len(paraBuExtra.FinalityProofs) > 1 {
-			// We can't submit ParaBlockUpdates contains non-empty ScaleEncodedBlockHeader
-			// with ParaBlockUpdates contains empty ScaleEncodedBlockHeader
-			// So, if message contains previous ParaBlockUpdates of non-empty ScaleEncodedBlockHeader, split them into a Segment/RelayMessage
+			// The next ParachainBlockUpdate requires submit in a separate RelayMessage
+			// Then, all the previous ParachainBlockUpdates in msg, is included in a RelayMessage
 			if len(msg.BlockUpdates) > 0 {
 				s.l.Debug("Segment: send non-empty ScaleEncodedBlockHeader")
 				segment := &chain.Segment{
@@ -105,7 +112,7 @@ func (s *sender) praSegment(rm *chain.RelayMessage, height int64) ([]*chain.Segm
 			}
 		}
 
-		// If the remaining BlockUpdates over limit
+		// If the remaining BlockUpdates in msg over limit
 		if msg.numberOfBlockUpdate > paraChainMaxBlockUpdatePerSegment {
 			s.l.Debugf("Segment: split by maximum number of blockupdate per Segment")
 			segment := &chain.Segment{
