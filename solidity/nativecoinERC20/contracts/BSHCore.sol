@@ -15,7 +15,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
    @dev This contract is used to handle coin transferring service
    Note: The coin of following contract can be:
    Native Coin : The native coin of this chain
-   Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
+   Wrapped Native Coin : A tokenized ERC20 version of another native coin like ICX
 */
 contract BSHCore is
     Initializable,
@@ -322,9 +322,8 @@ contract BSHCore is
             fixedFee
         );
         //  Transfer and Lock Token processes:
-        //  BSHCore contract calls transferFrom() to transfer the Token from Caller's account (msg.sender)
-        //  Before that, Caller must approve (setApproveForAll) to accept
-        //  token being transfer out by an Operator
+        //  BSHCore contract calls transferFrom() to transfer the Token from Caller's account (msg.sender) to this Contract
+        //  Before that, Caller must approve (ERC20's approve() method) to approve this BSH contract to act as Operator for caller funds
         //  If this requirement is failed, a transaction is reverted.
         //  After transferring token, BSHCore contract updates Caller's locked balance
         //  as a record of pending transfer transaction

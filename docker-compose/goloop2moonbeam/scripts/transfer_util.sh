@@ -70,3 +70,18 @@ get_alice_balance() {
     balance=$(wei2coin $balance)
     echo "Alice's balance: $balance (ICX)"
 }
+
+get_alice_irc2_balance() {
+  cd $CONFIG_DIR
+  balance=$(goloop rpc call --to $(cat irc2token.icon) \
+    --method balanceOf \
+    --param _owner=$(get_alice_address) | jq -r .)
+  balance=$(hex2int $balance)
+  balance=$(wei2coin $balance)
+  echo "Alice's balance:: $balance (MOVR)"
+}
+
+get_bob_balance_MOVR() {
+    bob_balance=$(eth address:balance --network $MOONBEAM_RPC_URL $(get_bob_address))
+    echo "Bob's balance: $bob_balance (MOVR)" 
+}
