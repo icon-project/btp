@@ -21,7 +21,7 @@ require (
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/haltingstate/secp256k1-go v0.0.0-20151224084235-572209b26df6
-	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/itering/scale.go v1.1.23
 	github.com/itering/substrate-api-rpc v0.4.6

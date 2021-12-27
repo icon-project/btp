@@ -3,6 +3,7 @@ package substrate
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"runtime"
 	"sort"
 	"time"
@@ -15,6 +16,13 @@ import (
 	"github.com/itering/scale.go/source"
 	scaletypes "github.com/itering/scale.go/types"
 	"github.com/itering/scale.go/utiles"
+)
+
+var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
+
+const (
+	MaxSubtrateCallRetries = 5
+	SubstrateCallInterval  = time.Second
 )
 
 type SubstrateAPI struct {
@@ -65,9 +73,25 @@ func (c *SubstrateAPI) Init() {
 	scaletypes.RegCustomTypes(source.LoadTypeRegistry(typesDefinition))
 }
 
+func (c *SubstrateAPI) callRetry(target interface{}, method string, args ...interface{}) error {
+	tries := 0
+	for {
+		tries++
+		err := c.Call(target, method, args...)
+		if err != nil && tries < MaxSubtrateCallRetries {
+			if RetryHTTPError.MatchString(err.Error()) {
+				<-time.After(SubstrateCallInterval)
+				c.log.Tracef("Substrate call: retry %d with err:%+v", tries, err)
+				continue
+			}
+		}
+		return err
+	}
+}
+
 func (c *SubstrateAPI) callWithBlockHash(target interface{}, method string, blockHash *SubstrateHash, args ...interface{}) error {
 	if blockHash == nil {
-		err := c.Call(target, method, args...)
+		err := c.callRetry(target, method, args...)
 		if err != nil {
 			return err
 		}
@@ -78,7 +102,7 @@ func (c *SubstrateAPI) callWithBlockHash(target interface{}, method string, bloc
 		return err
 	}
 	hargs := append(args, hexHash)
-	err = c.Call(target, method, hargs...)
+	err = c.callRetry(target, method, hargs...)
 	if err != nil {
 		return err
 	}
@@ -119,7 +143,7 @@ func (c *SubstrateAPI) getMetadataRaw(blockHash *SubstrateHash) (string, error) 
 func (c *SubstrateAPI) GetFinalizedHead() (SubstrateHash, error) {
 	var res string
 
-	err := c.Call(&res, "chain_getFinalizedHead")
+	err := c.callRetry(&res, "chain_getFinalizedHead")
 	if err != nil {
 		return SubstrateHash{}, err
 	}
@@ -157,9 +181,9 @@ func (c *SubstrateAPI) getBlockHash(blockNumber *uint64) (SubstrateHash, error) 
 	var err error
 
 	if blockNumber == nil {
-		err = c.Call(&res, "chain_getBlockHash")
+		err = c.callRetry(&res, "chain_getBlockHash")
 	} else {
-		err = c.Call(&res, "chain_getBlockHash", *blockNumber)
+		err = c.callRetry(&res, "chain_getBlockHash", *blockNumber)
 	}
 
 	if err != nil {
@@ -293,7 +317,7 @@ func (c *SubstrateAPI) GetBlockHashesByRange(start SubstrateBlockNumber, end Sub
 
 func (c *SubstrateAPI) GetReadProof(key SubstrateStorageKey, hash SubstrateHash) (SubstrateReadProof, error) {
 	var res SubstrateReadProof
-	err := c.Call(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
+	err := c.callRetry(&res, "state_getReadProof", []string{key.Hex()}, hash.Hex())
 	return res, err
 }
 
@@ -319,7 +343,7 @@ func (c *SubstrateAPI) GetGrandpaCurrentSetId(blockHash SubstrateHash) (types.U6
 
 func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.BlockNumber) (*FinalityProof, error) {
 	var finalityProofHexstring string
-	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
+	err := c.callRetry(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +359,7 @@ func (c *SubstrateAPI) GetFinalitiyProof(blockNumber types.BlockNumber) (*Finali
 
 func (c *SubstrateAPI) GetJustificationsAndUnknownHeaders(blockNumber types.BlockNumber) (*GrandpaJustification, []SubstrateHeader, error) {
 	var finalityProofHexstring string
-	err := c.Call(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
+	err := c.callRetry(&finalityProofHexstring, "grandpa_proveFinality", types.NewU32(uint32(blockNumber)))
 	if err != nil {
 		return nil, nil, err
 	}
