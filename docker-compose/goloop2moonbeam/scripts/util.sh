@@ -24,6 +24,13 @@ GOLOOPCHAIN=${GOLOOPCHAIN:-'goloop'}
 export BC_LINE_LENGTH=0 
 
 
+#Token Config
+export TOKEN_NAME=MOVR
+export TOKEN_SYM=MOVR
+export TOKEN_SUPPLY=0x186A0
+export TOKEN_DECIMALS=0x12
+export SVC_NAME=NativeCoinIRC2BSH
+
 latest_block_goloop() {
     goloop rpc lastblock
 }

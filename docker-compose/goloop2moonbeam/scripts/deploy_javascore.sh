@@ -115,6 +115,37 @@ deploy_javascore_IRC31Token() {
     ensure_file_exist $CONFIG_DIR irc31token.icon
 }
 
+deploy_javascore_IRC2Token() {
+    echo "deploy_javascore_IRC2Token"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc2-0.1.0-optimized.jar \
+    --content_type application/java \
+    --param _name=${TOKEN_NAME} \
+    --param _symbol=${TOKEN_SYM} \
+    --param _initialSupply=${TOKEN_SUPPLY} \
+    --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.icon.deploy_irc2token
+
+    extract_scoreAddress tx.icon.deploy_irc2token irc2token.icon
+    ensure_file_exist $CONFIG_DIR irc2token.icon
+}
+
+deploy_javascore_NativeCoinIRC2BSH() {
+    echo "deploy_javascore_NativeCoinIRC2BSH"
+
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoinIRC2-0.1.0-optimized.jar \
+        --content_type application/java \
+        --param _bmc=$(cat bmc.icon) \
+        --param _irc2=$(cat irc2token.icon) \
+        --param _name=ICX \
+        --param _tokenName=${TOKEN_NAME} | jq -r . > tx.icon.deploy_nativeCoinIRC2Bsh
+
+    extract_scoreAddress tx.icon.deploy_nativeCoinIRC2Bsh nativeCoinIRC2Bsh.icon
+    ensure_file_exist $CONFIG_DIR nativeCoinIRC2Bsh.icon
+}
+
 deploy_javascore_NativeCoinBSH() {
     echo "deploy_javascore_NativeCoinBSH"
 
@@ -196,6 +227,18 @@ goloop_bmc_addService() {
     ensure_txresult tx.icon.addService
 }
 
+goloop_bmc_addServiceIRC2() {
+    echo "goloop_bmc_addServiceIRC2"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx call --to $(cat bmc.icon) \
+        --method addService \
+        --param _addr=$(cat nativeCoinIRC2Bsh.icon) \
+        --param _svc=$SVC_NAME \
+        | jq -r . > tx.icon.addService
+    ensure_txresult tx.icon.addService
+}
+
 goloop_bmc_addRelay() {
     echo "goloop_bmc_addRelay"
     cd $CONFIG_DIR
@@ -242,4 +285,16 @@ goloop_bsh_config_native_coin() {
         --param _addr=$(cat nativeCoinBsh.icon) \
         | jq -r . > tx.icon.addOwnerIrc31
     ensure_txresult tx.icon.addOwnerIrc31
+}
+
+goloop_bsh_config_native_coin_IRC2() {
+    echo "goloop_bsh_config_native_coin_IRC2"
+    cd $CONFIG_DIR
+
+    echo "goloop_bsh_setFeeRatio"
+    goloop rpc sendtx call --to $(cat nativeCoinIRC2Bsh.icon) \
+        --method setFeeRatio \
+        --param _feeNumerator=100 \
+        | jq -r . > tx.icon.setFeeRatio
+    ensure_txresult tx.icon.setFeeRatio
 }

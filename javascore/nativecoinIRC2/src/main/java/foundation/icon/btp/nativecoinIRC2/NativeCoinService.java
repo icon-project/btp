@@ -117,6 +117,11 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
 
         Address owner = Context.getCaller();
         Balance balance = getBalance(_coinName, owner);
+
+        if (balance.getUsable().compareTo(BigInteger.ZERO) > 0) {
+            balance.setRefundable(balance.getRefundable().add(balance.getUsable()));
+            balance.setUsable(BigInteger.ZERO);
+        }
         require(balance.getRefundable().compareTo(_value) > -1, "invalid value");
         balance.setRefundable(balance.getRefundable().subtract(_value));
         setBalance(_coinName, owner, balance);

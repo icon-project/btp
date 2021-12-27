@@ -12,25 +12,31 @@ provision() {
     deploy_javascore_bmc
     deploy_solidity_bmc
     deploy_solidity_bsh
+    deploy_solidity_nativeCoinERC20
     deploy_solidity_bmv
 
     deploy_javascore_bmv
     deploy_javascore_IRC31Token
     deploy_javascore_NativeCoinBSH
     deploy_javascore_FeeAggregation
+    deploy_javascore_IRC2Token
+    deploy_javascore_NativeCoinIRC2BSH
     # ------------------------------
 
     # config contracts
     goloop_bmc_addVerifier
     goloop_bmc_addLink
     goloop_bmc_addService
+    goloop_bmc_addServiceIRC2
     goloop_bmc_addRelay
     goloop_bmc_setFeeAggregator
     goloop_bsh_config_native_coin
+    goloop_bsh_config_native_coin_IRC2
 
     moonbeam_bmc_addVerifier
     moonbeam_bmc_addLink
     moonbeam_bmc_addService
+    moonbeam_bmc_addService_ERC20
     moonbeam_bsh_registerCoin
     # -------------------------------
 

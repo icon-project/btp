@@ -50,6 +50,8 @@ public class IRC2NativeServiceHandler extends TestBase {
 
         BigInteger balance = (BigInteger) token.call("balanceOf", owners[0].getAddress());
         assertEquals(totalSupply, balance);
+        //fund user1 with tokens
+        token.invoke(owners[0], "transfer", owners[1].getAddress(), transferAmount.multiply(BigInteger.valueOf(100)), new byte[0]);
     }
 
 
@@ -66,7 +68,10 @@ public class IRC2NativeServiceHandler extends TestBase {
         //Add some enough token balance for BSH
         Balance balanceBefore = ((Balance) bsh.call("balanceOf", owners[0].getAddress(), tokenName));
         BigInteger bshTokenBalanceBefore = (BigInteger) token.call("balanceOf", bsh.getAddress());
+        //TransferAmount multiplied by 10 to reclaim unused coins later
         token.invoke(owners[0], "transfer", bsh.getAddress(), transferAmount.multiply(BigInteger.valueOf(10)), new byte[0]);
+        //Fund BSH with more tokens by another user (owners[1]) for future funds for reclaim & credit
+        token.invoke(owners[1], "transfer", bsh.getAddress(), transferAmount.multiply(BigInteger.valueOf(100)), new byte[0]);
         BigInteger bshTokenBalanceAfter = (BigInteger) token.call("balanceOf", bsh.getAddress());
 
         //Initiate a transfer and check for locked balance
@@ -85,6 +90,13 @@ public class IRC2NativeServiceHandler extends TestBase {
         bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ONE, handleBTPResponseBtpMsg(0, "Transfer Success"));
         Balance balanceAfterSuccess = (Balance) bsh.call("balanceOf", owners[0].getAddress(), tokenName);
         assertEquals(balanceAfterSuccess.getLocked().add(transferAmount), balanceBeforeSuccess.getLocked());
+
+        //Reclaim unused available balance back to user
+        BigInteger bshTokenBalanceNow = (BigInteger) token.call("balanceOf", bsh.getAddress());
+        bsh.invoke(owners[0], "reclaim", tokenName, balanceAfterSuccess.getUsable());
+        Balance balanceAfterReclaim = (Balance) bsh.call("balanceOf", owners[0].getAddress(), tokenName);
+        assertEquals(balanceAfterReclaim.getUsable(), BigInteger.ZERO);
+        assertEquals(balanceAfterReclaim.getLocked(), BigInteger.ZERO);
     }
 
     public byte[] handleBTPRequestBtpMsg(String from, String to) {
