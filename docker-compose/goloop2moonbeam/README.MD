@@ -59,3 +59,25 @@ Run this command to transfer the native coin DEV from MOONBEAN to ICON:
 ```
 make transfer_dev
 ```
+
+### Run test for scenarios ERC20 wrapped & Native token:
+
+Run this command to transfer the ERC20 Wrapped MOVR from ICON to MOONBEAM.
+```
+make transfer_movr_from_icon
+```
+
+Run this command to transfer the native coin MOVR from MOONBEAM to ICON:
+```
+make transfer_movr_from_moonbeam
+```
+
+Run this command to transfer the native coin ICX from ICON to MOONBEAM:
+```
+make transfer_icx_from_icon
+```
+
+Run this command to transfer the ERC20 Wrapped  from MOONBEAM to ICON:
+```
+make transfer_icx_from_moonbeam
+```
