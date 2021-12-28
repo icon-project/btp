@@ -137,7 +137,6 @@ public class NativeCoinService implements NCSEvents, BSH, OwnerManager {
     public void tokenFallback(Address from, BigInteger value, @Optional byte[] data) {
         require(value.compareTo(BigInteger.ZERO) > 0, "Invalid Amount");
         require(Context.getCaller().equals(irc2), "Invalid Caller: Token Contract wrong");
-        require(tokenName != null && !tokenName.equals(""), "Token not registered");
         deposit(tokenName, from, value);
     }
 
