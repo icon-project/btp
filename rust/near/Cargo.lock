@@ -563,18 +563,7 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 name = "btp-common"
 version = "0.1.0"
 dependencies = [
- "btp-macro",
  "serde",
- "serde_json",
-]
-
-[[package]]
-name = "btp-macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -1197,10 +1186,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
 dependencies = [
  "cfg-if 1.0.0",
- "js-sys",
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1519,16 +1506,11 @@ name = "libraries"
 version = "0.1.0"
 dependencies = [
  "btp-common",
- "byteorder",
  "bytes",
- "getrandom 0.2.3",
  "near-sdk",
- "rand 0.8.4",
  "rlp-derive",
  "rustc-hex",
- "safe-transmute",
  "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -2737,12 +2719,6 @@ name = "ryu"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
-
-[[package]]
-name = "safe-transmute"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98a01dab6acf992653be49205bdd549f32f17cb2803e8eacf1560bf97259aae8"
 
 [[package]]
 name = "schannel"

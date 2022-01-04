@@ -8,13 +8,7 @@ edition = "2018"
 [dependencies]
 btp-common = { path="../../btp-common" }
 serde = { version = "1.0", features = ["derive"] }
-byteorder = "1.4.3"
-near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
-thiserror = "1.0.29"
-
-rlp-derive = "0.1.0"
-safe-transmute = "0.11.2"
-rand = "0.8.0"
-getrandom = { version = "0.2", features = ["js"] }
 bytes = { version = "1" }
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
 rustc-hex = { version = "2.0.1", default-features = false }
+rlp-derive = "0.1.0"
