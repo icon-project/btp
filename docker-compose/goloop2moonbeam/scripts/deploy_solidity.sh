@@ -44,6 +44,31 @@ deploy_solidity_bsh() {
     wait_file_created $CONFIG_DIR bsh.moonbeam
 }
 
+deploy_solidity_nativeCoinERC20() {
+    echo "deploying solidity bsh nativecoinERC20"
+
+    cd $SOLIDITY_DIST_DIR/nativecoinERC20
+    sed -i 's/"http:\/\/localhost:9933"/process.env.MOONBEAM_RPC_URL/' truffle-config.js
+    rm -rf .openzeppelin build node_modules
+    yarn && yarn add fs@0.0.1-security
+    truffle compile --all
+    cat ./build/contracts/BSHCore.json  | jq -r .abi > $CONFIG_DIR/abi.bsh_core_erc20.json
+    cat ./build/contracts/BSHPeriphery.json  | jq -r .abi > $CONFIG_DIR/abi.bsh_periphery_erc20.json
+
+    BSH_COIN_NAME=MOVR \
+    BSH_COIN_FEE=100 \
+    BSH_FIXED_FEE=50000 \
+    BSH_TOKEN_NAME=ICX \
+    BSH_TOKEN_SYMBOL=ICX \
+    BSH_INITIAL_SUPPLY=100000 \
+    BMC_PERIPHERY_ADDRESS=$(cat $CONFIG_DIR/bmc.moonbeam) \
+    BSH_SERVICE=$SVC_NAME \
+    truffle migrate --network moonbeamlocal
+
+    truffle exec $SCRIPT_DIR/mb_extract_bsh_ERC20.js --network moonbeamlocal
+    wait_file_created $CONFIG_DIR bsh_erc20.moonbeam
+}
+
 deploy_solidity_bmv() {
     echo "deploying solidity bmv"
 
@@ -115,7 +140,21 @@ moonbeam_bmc_addService() {
     cd $SOLIDITY_DIST_DIR/bmc
     cp $SCRIPT_DIR/mb_bmc_add_service.js .
 
+    SVC_NAME=nativecoin \
     BSH_MOONBEAM=$(cat $CONFIG_DIR/bsh.moonbeam) \
+    ICON_BTP_ADDRESS=$(cat $CONFIG_DIR/btp.icon) \
+    RELAY_ADDRESS=0x$(cat $CONFIG_DIR/moonbeam.keystore.json | jq -r .address) \
+    truffle exec mb_bmc_add_service.js --network moonbeamlocal
+}
+
+moonbeam_bmc_addService_ERC20() {
+    echo "moonbeam_bmc_addService_ERC20"
+
+    cd $SOLIDITY_DIST_DIR/bmc
+    cp $SCRIPT_DIR/mb_bmc_add_service.js .
+
+    SVC_NAME=$SVC_NAME \
+    BSH_MOONBEAM=$(cat $CONFIG_DIR/bsh_erc20.moonbeam) \
     ICON_BTP_ADDRESS=$(cat $CONFIG_DIR/btp.icon) \
     RELAY_ADDRESS=0x$(cat $CONFIG_DIR/moonbeam.keystore.json | jq -r .address) \
     truffle exec mb_bmc_add_service.js --network moonbeamlocal
@@ -134,4 +173,17 @@ clean_solidity_build() {
     do
         cd $SOLIDITY_DIST_DIR/$module && rm -rf .openzeppelin build node_modules
     done
+}
+
+PRECISION=18
+COIN_UNIT=$((10 ** $PRECISION))
+
+coin2wei() {
+    amount=$1
+    printf '%s * %s\n' $COIN_UNIT $amount | bc
+}
+
+wei2coin() {
+    amount=$1
+    printf 'scale=%s; %s / %s\n' $PRECISION $amount $COIN_UNIT | bc
 }
