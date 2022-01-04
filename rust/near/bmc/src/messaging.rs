@@ -158,12 +158,13 @@ impl BtpMessageCenter {
     }
 
     #[private]
-    pub fn emit_message(&mut self, link: BTPAddress, btp_message: BtpMessage<SerializedMessage>) {
+    pub fn emit_message(&mut self, link: BTPAddress, btp_message: BtpMessage<SerializedMessage>) -> Vec<u8> {
         if let Some(link_property) = self.links.get(&link).as_mut() {
             link_property.tx_seq_mut().add(1).unwrap();
             self.links.set(&link, &link_property);
-            emit_message!(self, event, link_property.tx_seq(), link, btp_message);
+            emit_message!(self, event, link_property.tx_seq(), link, btp_message.clone());
         }
+        env::keccak256(&<Vec<u8>>::from(btp_message))
     }
 }
 

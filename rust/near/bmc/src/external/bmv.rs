@@ -1,5 +1,5 @@
 use near_sdk::ext_contract;
-use crate::{VerifierStatus, VerifierResponse, SerializedMessage};
+use crate::{BTPAddress, VerifierStatus, VerifierResponse, SerializedMessage};
 
 #[ext_contract(bmv_contract)]
 pub trait BmvContract {
