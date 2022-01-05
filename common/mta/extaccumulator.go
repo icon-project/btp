@@ -107,8 +107,15 @@ func (a *ExtAccumulator) Recover() error {
 }
 
 func (a *ExtAccumulator) addNode(h int, n Node, w []Witness) []Witness {
+	//limitRoots, offset calculate
+	if a.RootSize() == a.limitRoots {
+		a.roots[len(a.roots)-1].Delete()
+		a.roots[len(a.roots)-1] = nil // 1, 2, 4, 8, 16
+		var change = int64(1) << (a.limitRoots - 1)
+		a.offset += change
+		a.length -= change
+	}
 	w = a.Accumulator.addNode(h, n, w)
-	//TODO limitRoots, offset calculate
 	return w
 }
 
