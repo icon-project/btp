@@ -9,7 +9,7 @@ import (
 	"github.com/icon-project/btp/common/mta"
 )
 
-func (r *relayReceiver) prepareDatabase(offset int64, absDir string, relayChainNetworkAddres string) error {
+func (r *relayReceiver) prepareDatabase(offset int64, rootSize int, absDir string, relayChainNetworkAddres string) error {
 	r.log.Debugln("open database", filepath.Join(absDir, relayChainNetworkAddres))
 	database, err := db.Open(absDir, string(db.GoLevelDBBackend), relayChainNetworkAddres)
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *relayReceiver) prepareDatabase(offset int64, absDir string, relayChainN
 		offset = 0
 	}
 
-	r.store = mta.NewExtAccumulator(k, bk, offset)
+	r.store = mta.NewExtAccumulator(k, bk, offset, rootSize)
 	if bk.Has(k) {
 		if err = r.store.Recover(); err != nil {
 			return errors.Wrapf(err, "fail to acc.Recover cause:%v", err)

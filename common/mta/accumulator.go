@@ -339,7 +339,7 @@ func (a *Accumulator) RootSize() int {
 			return i
 		}
 	}
-	return len(a.roots) - 1
+	return len(a.roots)
 }
 
 func (a *Accumulator) Recover() error {

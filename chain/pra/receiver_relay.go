@@ -29,7 +29,7 @@ func NewRelayReceiver(opt receiverOptions, log log.Logger) relayReceiver {
 	rC.c.Init()
 	rC.bmvC = icon.NewPraBmvClient(opt.DstEndpoint, opt.PraBmvAddress.ContractAddress(), log)
 	rC.bmvStatus = rC.bmvC.GetPraBmvStatus()
-	rC.prepareDatabase(int64(rC.bmvStatus.RelayMtaOffset), opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
+	rC.prepareDatabase(int64(rC.bmvStatus.RelayMtaOffset), opt.MtaRootSize, opt.AbsBaseDir(), opt.RelayBtpAddress.NetworkAddress())
 	return rC
 }
 

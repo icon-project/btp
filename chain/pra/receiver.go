@@ -16,6 +16,7 @@ type receiverOptions struct {
 	RelayBtpAddress chain.BtpAddress `json:"relayBtpAddress"`
 	RelayEndpoint   string           `json:"relayEndpoint"`
 	RelayOffSet     int64            `json:"relayOffset"`
+	MtaRootSize     int              `json:"mtaRootSize"`
 	PraBmvAddress   chain.BtpAddress `json:"iconBmvAddress"`
 	DstEndpoint     string
 }
