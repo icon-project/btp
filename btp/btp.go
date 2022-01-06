@@ -17,6 +17,7 @@
 package btp
 
 import (
+	"encoding/json"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,7 @@ import (
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra"
+	"github.com/icon-project/btp/common/config"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
@@ -66,6 +68,11 @@ type BTP struct {
 	rmSeq            uint64
 	lastBlockUpdate  *chain.BlockUpdate
 	wp               *workerpool.WorkerPool // Use worker pool to avoid too many open files error
+}
+
+type receiverOptions struct {
+	config.FileConfig
+	MtaRootSize int `json:"mtaRootSize"`
 }
 
 // New creates a new BTP object
@@ -113,7 +120,17 @@ func (b *BTP) init() error {
 		return err
 	}
 
-	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset); err != nil {
+	options := &receiverOptions{}
+
+	bt, err := json.Marshal(b.cfg.Src.Options)
+	if err != nil {
+		b.log.Panicf("fail to marshal opt:%#v err:%+v", b.cfg.Src.Options, err)
+	}
+	if err = json.Unmarshal(bt, &options); err != nil {
+		b.log.Panicf("fail to unmarshal opt:%#v err:%+v", b.cfg.Src.Options, err)
+	}
+
+	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset, options.MtaRootSize); err != nil {
 		return err
 	}
 	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)

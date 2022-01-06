@@ -18,7 +18,7 @@ func TestExtAccumulator_Basic(t *testing.T) {
 	mdb := db.NewMapDB()
 	bk, _ := mdb.GetBucket("")
 
-	a := NewExtAccumulator([]byte("a"), bk, 0)
+	a := NewExtAccumulator([]byte("a"), bk, 0, 0)
 	if a.Len() != 0 {
 		t.Errorf("Length is not zero")
 	}
@@ -42,7 +42,7 @@ func TestExtAccumulator_Basic(t *testing.T) {
 	}
 	assert.Equal(t, int64(len(data)), a.Len())
 
-	a2 := NewExtAccumulator([]byte("a"), bk, 0)
+	a2 := NewExtAccumulator([]byte("a"), bk, 0, 0)
 	assert.NoError(t, a2.Recover())
 	t.Logf("Recovered Accumulator:%s", a2)
 
@@ -59,7 +59,7 @@ func TestExtAccumulator_Basic(t *testing.T) {
 	tat, w, err := a2.WitnessForAt(h, at, a2.offset)
 	assert.NoError(t, err)
 	assert.Equal(t, at, tat, "")
-	assert.NoError(t,a2.VerifyAt(w, crypto.SHA3Sum256([]byte(data[h-1])), at, a2.offset))
+	assert.NoError(t, a2.VerifyAt(w, crypto.SHA3Sum256([]byte(data[h-1])), at, a2.offset))
 
 	t.Logf("%s", a)
 }
@@ -78,7 +78,7 @@ func TestMTAccumulator_Dump(t *testing.T) {
 	for i, d := range data {
 		acc.AddData([]byte(d))
 		assert.NoError(t, acc.Flush())
-		fmt.Println(strings.Repeat("=",10),"Accumulator", acc.length, strings.Repeat("=",10), strings.Join(data[:i+1],","))
+		fmt.Println(strings.Repeat("=", 10), "Accumulator", acc.length, strings.Repeat("=", 10), strings.Join(data[:i+1], ","))
 		fmt.Println(dumpAccumulator(acc))
 		for j := int64(0); j <= int64(i); j++ {
 			fmt.Println("Witness", j, data[j])
@@ -97,20 +97,20 @@ func base64Encode(b []byte) string {
 }
 
 func dumpAccumulator(acc *Accumulator) string {
-	st := struct{
+	st := struct {
 		Height int64
-		Roots [][]byte
+		Roots  [][]byte
 	}{
 		Height: acc.length,
-		Roots: make([][]byte, len(acc.roots)),
+		Roots:  make([][]byte, len(acc.roots)),
 	}
-	fmt.Println("height:",st.Height)
+	fmt.Println("height:", st.Height)
 	for i, r := range acc.roots {
 		if r != nil {
 			st.Roots[i] = r.Hash()
-			fmt.Println("root[",i,"]:",hex.EncodeToString(st.Roots[i]))
-		}else{
-			fmt.Println("root[",i,"]:nil")
+			fmt.Println("root[", i, "]:", hex.EncodeToString(st.Roots[i]))
+		} else {
+			fmt.Println("root[", i, "]:nil")
 		}
 	}
 	b, _ := codec.RLP.MarshalToBytes(&st)
@@ -119,30 +119,30 @@ func dumpAccumulator(acc *Accumulator) string {
 
 func dumpData(height int64, data []byte) string {
 	h := crypto.SHA3Sum256(data)
-	st := struct{
+	st := struct {
 		Height int64
-		Hash []byte
+		Hash   []byte
 	}{
 		Height: height,
-		Hash: h,
+		Hash:   h,
 	}
 	b, _ := codec.RLP.MarshalToBytes(&st)
-	fmt.Println("dumpData.height:",st.Height,",hash:",hex.EncodeToString(h))
+	fmt.Println("dumpData.height:", st.Height, ",hash:", hex.EncodeToString(h))
 	return base64Encode(b)
 }
 
 func dumpWitness(height int64, ws []Witness) string {
-	st := struct{
-		Height int64
+	st := struct {
+		Height  int64
 		Witness [][]byte
 	}{
-		Height: height,
+		Height:  height,
 		Witness: WitnessesToHashes(ws),
 	}
 	b, _ := codec.RLP.MarshalToBytes(&st)
-	fmt.Print("dumpWitness.height:",st.Height,",witness:[")
+	fmt.Print("dumpWitness.height:", st.Height, ",witness:[")
 	for _, w := range st.Witness {
-		fmt.Print(hex.EncodeToString(w),",")
+		fmt.Print(hex.EncodeToString(w), ",")
 	}
 	fmt.Println("]")
 	return base64Encode(b)

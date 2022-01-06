@@ -108,9 +108,9 @@ func (a *ExtAccumulator) Recover() error {
 
 func (a *ExtAccumulator) addNode(h int, n Node, w []Witness) []Witness {
 	//limitRoots, offset calculate
-	if a.RootSize() == a.limitRoots {
+	if a.limitRoots > 0 && a.RootSize() == a.limitRoots {
 		a.roots[len(a.roots)-1].Delete()
-		a.roots[len(a.roots)-1] = nil // 1, 2, 4, 8, 16
+		a.roots[len(a.roots)-1] = nil
 		var change = int64(1) << (a.limitRoots - 1)
 		a.offset += change
 		a.length -= change
@@ -181,9 +181,10 @@ func (a *ExtAccumulator) GetNode(height int64) (Node, error) {
 	return a.Accumulator.GetNode(height - 1 - a.offset)
 }
 
-func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64) *ExtAccumulator {
+func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64, limitRoots int) *ExtAccumulator {
 	return &ExtAccumulator{
-		offset: offset,
+		offset:     offset,
+		limitRoots: limitRoots,
 		Accumulator: Accumulator{
 			KeyForState: keyForState,
 			Bucket:      bk,
