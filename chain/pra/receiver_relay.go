@@ -97,13 +97,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		blockHeaders = append(blockHeaders, *nextMtaBlockHeader)
 	}
 
-	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
 
 	for i := from; i <= to; i++ {
-		missingBlockNumbers = append(missingBlockNumbers, substrate.SubstrateBlockNumber(i))
+		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
 	}
 
-	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(missingBlockNumbers)
+	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(misisingBlockNumbers)
 	if err != nil {
 		return nil, err
 	}
@@ -162,27 +162,6 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 	for r.expectMtaHeight < uint64(includeHeader.Number) {
 		stateProofs := make([][]byte, 0)
 
-		// Justifications includes Validator Signatures, we just need to build into VoteMessages, of the last block
-		// type GrandpaSignedPrecommit struct {
-		//    Precommit GrandpaPrecommit
-		//    Signature Signature
-		//    Id        types.AccountID
-		// }
-		//
-		// We can build Votes Message as
-		//
-		// VoteMessage{
-		//    	Message: SignedMessageEnum{
-		//	  	   IsPrecommit: true,
-		//	  	   AsPrecommit: SignedMessage{
-		//			     TargetHash:   justification.Commit.TargetHash,
-		//			     TargetNumber: justification.Commit.TargetNumber,
-		//	  	   },
-		//    	},
-		//    	Round: justification.Round,
-		//    	SetId: setId,
-		//    }
-		// }
 		gj, bhs, err := r.c.GetJustificationsAndUnknownHeaders(substrate.SubstrateBlockNumber(r.expectMtaHeight + 1))
 		if err != nil {
 			return nil, err
@@ -202,7 +181,6 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 			return nil, err
 		}
 
-		// New validator list so, we have to send them on BMV with new setId
 		if len(eventGrandpaNewAuthorities) > 0 {
 			r.log.Debugf("buildFinalityProof: found GrandpaNewAuthorities %d", gj.Commit.TargetNumber)
 			newAuthoritiesStateProof, err := r.newStateProof(gj.Commit.TargetHash)
@@ -222,7 +200,7 @@ func (r *relayReceiver) buildFinalityProof(includeHeader *substrate.SubstrateHea
 
 		finalityProofs = append(finalityProofs, finalityProof)
 
-		// Early exit and only need one StateProof
+		// early exit and only need one StateProof
 		if (r.expectMtaHeight) == uint64(includeHeader.Number) && len(eventGrandpaNewAuthorities) > 0 {
 			r.log.Debugf("buildFinalityProof: GrandpaNewAuthorities and LastBlock is equal at %d", gj.Commit.TargetNumber)
 			return finalityProofs, nil
@@ -265,15 +243,15 @@ func (r *relayReceiver) newParaFinalityProof(vd *substrate.PersistedValidationDa
 	}
 
 	localRelayMtaHeight := r.store.Height()
+
+	// Sync MTA completely
+	// TODO fetch with runtime.GOMAXPROCS(runtime.NumCPU()) hashes per call
+	// sort these hashses, and add to MTA one by one
 	if localRelayMtaHeight < r.bmvStatus.RelayMtaHeight {
 		r.log.Tracef("newParaFinalityProof: sync localRelayMtaHeight %d with remoteRelayMtaHeight %d", localRelayMtaHeight, r.bmvStatus.RelayMtaHeight)
-		missingBlockHashes, err := r.c.GetBlockHashesByRange(substrate.SubstrateBlockNumber(localRelayMtaHeight+1), substrate.SubstrateBlockNumber(r.bmvStatus.RelayMtaHeight))
-		if err != nil {
-			return nil, errors.Wrap(err, "newParaFinalityProof: sync MTA fails")
-		}
-
-		for i, blockHashes := range missingBlockHashes {
-			r.updateMta(uint64(int(localRelayMtaHeight)+1+i), blockHashes)
+		for i := localRelayMtaHeight + 1; i <= r.bmvStatus.RelayMtaHeight; i++ {
+			relayHash, _ := r.c.GetBlockHash(uint64(i))
+			r.updateMta(uint64(i), relayHash)
 		}
 	}
 
