@@ -82,7 +82,7 @@ func (r *relayReceiver) newBlockProof(height int64, expectMtaHeight int64) ([]by
 		return nil, err
 	}
 
-	at, w, err := r.store.WitnessForAt(height, expectMtaHeight, int64(r.bmvStatus.RelayMtaOffset))
+	at, w, err := r.store.WitnessForAt(height, expectMtaHeight, int64(r.store.Offset()))
 	if err != nil {
 		r.log.Errorf("newBlockProof: height %d mtaHeight %d %v", height, r.bmvStatus.RelayMtaHeight, err)
 		return nil, err
