@@ -18,7 +18,7 @@ import (
 	"github.com/itering/scale.go/utiles"
 )
 
-var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF`)
+var RetryHTTPError = regexp.MustCompile(`connection reset by peer|EOF|Block not yet finalized`)
 
 const (
 	MaxSubtrateCallRetries = 5
