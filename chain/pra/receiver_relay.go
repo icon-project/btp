@@ -97,13 +97,13 @@ func (r *relayReceiver) buildBlockUpdates(nexMtaHeight uint64, gj *substrate.Gra
 		blockHeaders = append(blockHeaders, *nextMtaBlockHeader)
 	}
 
-	misisingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
+	missingBlockNumbers := make([]substrate.SubstrateBlockNumber, 0)
 
 	for i := from; i <= to; i++ {
-		misisingBlockNumbers = append(misisingBlockNumbers, substrate.SubstrateBlockNumber(i))
+		missingBlockNumbers = append(missingBlockNumbers, substrate.SubstrateBlockNumber(i))
 	}
 
-	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(misisingBlockNumbers)
+	missingBlockHeaders, err := r.c.GetBlockHeaderByBlockNumbers(missingBlockNumbers)
 	if err != nil {
 		return nil, err
 	}
