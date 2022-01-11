@@ -34,10 +34,12 @@ module.exports = {
     moonbase: {
       provider: () => new HDWalletProvider({
         privateKeys: privKeys,
-        providerOrUrl: "https://rpc.testnet.moonbeam.network",
+        providerOrUrl: "https://rpc.api.moonbase.moonbeam.network",
       }),
       network_id: 1287,
-      networkCheckTimeout: 100000,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks: 50000,
+      deploymentPollingInterval: 5000,
       // Make deploy faster for deployment
       gasPrice: web3.utils.toWei("2", "Gwei"),
     },

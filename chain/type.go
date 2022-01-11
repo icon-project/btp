@@ -58,6 +58,17 @@ func (rm RelayMessage) HasWait() bool {
 	return false
 }
 
+func (rm RelayMessage) PendingTx() int {
+	nu := 0
+	for _, segment := range rm.Segments {
+		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
+			nu++
+		}
+	}
+
+	return nu
+}
+
 func (rm RelayMessage) BuRange() string {
 	return fmt.Sprintf("bu: %d ~ %d", rm.BlockUpdates[0].Height, rm.BlockUpdates[len(rm.BlockUpdates)-1].Height)
 }

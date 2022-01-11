@@ -9,7 +9,7 @@ import (
 	"github.com/icon-project/btp/common/mta"
 )
 
-func (b *BTP) prepareDatabase(offset int64) error {
+func (b *BTP) prepareDatabase(offset int64, rootSize int) error {
 	b.log.Debugln("open database", filepath.Join(b.cfg.AbsBaseDir(), b.bmcDstBtpAddress.NetworkAddress()))
 	database, err := db.Open(b.cfg.AbsBaseDir(), string(DefaultDBType), b.bmcDstBtpAddress.NetworkAddress())
 	if err != nil {
@@ -29,7 +29,7 @@ func (b *BTP) prepareDatabase(offset int64) error {
 	if offset < 0 {
 		offset = 0
 	}
-	b.store = mta.NewExtAccumulator(k, bk, offset)
+	b.store = mta.NewExtAccumulator(k, bk, offset, rootSize)
 	if bk.Has(k) {
 		if err = b.store.Recover(); err != nil {
 			b.log.Panicf("fail to acc.Recover cause:%v", err)
@@ -102,13 +102,7 @@ func (b *BTP) newBlockProof(height int64, header []byte) (*chain.BlockProof, err
 	return bp, nil
 }
 
-func (b *BTP) logCanRelay(rm *chain.RelayMessage, hasWait bool, skippable bool, relayable bool) {
-	bufferedRmIndex := -1
-	for i, bufferedRm := range b.rms {
-		if bufferedRm == rm {
-			bufferedRmIndex = i
-		}
-	}
+func (b *BTP) logCanRelay(rm *chain.RelayMessage, bufferedRmIndex int, hasWait bool, skippable bool, relayable bool) {
 	b.log.Debugf("canRelay: len(rms):%d rms[%d] hasWait:%v skippable:%v relayable:%v", len(b.rms), bufferedRmIndex, hasWait, skippable, relayable)
 	if len(rm.BlockUpdates) > 0 {
 		b.log.Tracef("canRelay: rm:%d bu:%d ~ %d rps:%d",

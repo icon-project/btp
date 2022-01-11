@@ -17,6 +17,7 @@
 package btp
 
 import (
+	"encoding/json"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,7 @@ import (
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/chain/pra"
+	"github.com/icon-project/btp/common/config"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
@@ -37,12 +39,14 @@ const (
 	DefaultDBDir  = "db"
 	DefaultDBType = db.GoLevelDBBackend
 	//Base64 in:out = 6:8
-	DefaultBufferScaleOfBlockProof  = 0.5
-	DefaultBufferNumberOfBlockProof = 100
-	DefaultBufferInterval           = 5 * time.Second
-	DefaultReconnectDelay           = time.Second
-	DefaultRelayReSendInterval      = time.Second
-	DefaultMaxWorkers               = 100
+	DefaultBufferScaleOfBlockProof         = 0.5
+	DefaultBufferNumberOfBlockProof        = 100
+	DefaultBufferInterval                  = 5 * time.Second
+	DefaultReconnectDelay                  = time.Second
+	DefaultRelayReSendInterval             = time.Second
+	DefaultMaxWorkers                      = 100
+	MaxBlockUpdatesPerBufferedRelayMessage = 1000
+	MaxTransactionsPerTransactionPool      = 2000
 )
 
 // BTP is the core to manage relaying messages
@@ -64,6 +68,11 @@ type BTP struct {
 	rmSeq            uint64
 	lastBlockUpdate  *chain.BlockUpdate
 	wp               *workerpool.WorkerPool // Use worker pool to avoid too many open files error
+}
+
+type receiverOptions struct {
+	config.FileConfig
+	MtaRootSize int `json:"mtaRootSize"`
 }
 
 // New creates a new BTP object
@@ -111,7 +120,17 @@ func (b *BTP) init() error {
 		return err
 	}
 
-	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset); err != nil {
+	options := &receiverOptions{}
+
+	bt, err := json.Marshal(b.cfg.Src.Options)
+	if err != nil {
+		b.log.Panicf("fail to marshal opt:%#v err:%+v", b.cfg.Src.Options, err)
+	}
+	if err = json.Unmarshal(bt, &options); err != nil {
+		b.log.Panicf("fail to unmarshal opt:%#v err:%+v", b.cfg.Src.Options, err)
+	}
+
+	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset, options.MtaRootSize); err != nil {
 		return err
 	}
 	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
@@ -238,11 +257,28 @@ func (b *BTP) canRelay(rm *chain.RelayMessage) bool {
 		return false
 	}
 
+	bufferedRmIndex := -1
+	for i, bufferedRm := range b.rms {
+		if bufferedRm == rm {
+			bufferedRmIndex = i
+		}
+	}
+
+	totalPendingTx := 0
+	for i := 0; i <= bufferedRmIndex; i++ {
+		totalPendingTx = totalPendingTx + b.rms[i].PendingTx()
+	}
+
+	if totalPendingTx > MaxTransactionsPerTransactionPool {
+		b.log.Debugf("canRelay: reach max transactions per pool of this account %d", totalPendingTx)
+		return false
+	}
+
 	hasWait := rm.HasWait()
 	skippable := b.skippable(rm)
 	relayable := b.relayble(rm)
 
-	b.logCanRelay(rm, hasWait, skippable, relayable)
+	b.logCanRelay(rm, bufferedRmIndex, hasWait, skippable, relayable)
 	return !(hasWait || (!skippable && !relayable))
 }
 
@@ -314,7 +350,7 @@ func (b *BTP) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) 
 		b.log.Tracef("addRelayMessage: rm being proceed")
 		rm = b.newRelayMessage()
 		// TODO make this number as Sender.MaxTransactionsPerRelayTerm / Sender.MaxBlockUpdatePerSegment
-	} else if len(rm.BlockUpdates) > 1000 {
+	} else if len(rm.BlockUpdates) > MaxBlockUpdatesPerBufferedRelayMessage {
 		b.log.Tracef("addRelayMessage: rm have more than 1000 blockupdates")
 		rm = b.newRelayMessage()
 	}
@@ -441,7 +477,6 @@ func (b *BTP) updateMTA(bu *chain.BlockUpdate) {
 
 // updateResult updates TransactionResult of the segment
 func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err error) {
-
 	b.wp.Submit(func() {
 		segment.TransactionResult, err = b.sender.GetResult(segment.GetResultParam)
 		if err != nil {

@@ -107,8 +107,18 @@ func (a *ExtAccumulator) Recover() error {
 }
 
 func (a *ExtAccumulator) addNode(h int, n Node, w []Witness) []Witness {
+	//limitRoots, offset calculate
+	var rootSize = a.RootSize()
+	if a.limitRoots > 0 && rootSize == a.limitRoots {
+		log.Debugf("limitRoots, offset calculate:%d, rootSize:%d", a.Offset(), rootSize)
+		a.roots[rootSize-1].Delete()
+		a.roots[rootSize-1] = nil
+		var change = int64(1) << (a.limitRoots - 1)
+		a.offset += change
+		a.length -= change
+		log.Debugf("new offset:%d", a.Offset())
+	}
 	w = a.Accumulator.addNode(h, n, w)
-	//TODO limitRoots, offset calculate
 	return w
 }
 
@@ -174,9 +184,10 @@ func (a *ExtAccumulator) GetNode(height int64) (Node, error) {
 	return a.Accumulator.GetNode(height - 1 - a.offset)
 }
 
-func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64) *ExtAccumulator {
+func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64, limitRoots int) *ExtAccumulator {
 	return &ExtAccumulator{
-		offset: offset,
+		offset:     offset,
+		limitRoots: limitRoots,
 		Accumulator: Accumulator{
 			KeyForState: keyForState,
 			Bucket:      bk,
