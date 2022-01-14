@@ -1,0 +1,46 @@
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    "//visibility:public",
+])
+
+licenses([
+    "notice",
+])
+
+rust_proc_macro(
+    name = "borsh_derive",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "src/lib.rs",
+    data = [],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=borsh-derive"
+    ],
+    version = "0.8.2",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__borsh_derive_internal__0_8_2//:borsh_derive_internal",
+        "@raze__borsh_schema_derive_internal__0_8_2//:borsh_schema_derive_internal",
+        "@raze__proc_macro2__1_0_32//:proc_macro2",
+        "@raze__proc_macro_crate__0_1_5//:proc_macro_crate",
+        "@raze__syn__1_0_57//:syn",
+    ],
+)

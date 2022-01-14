@@ -1,0 +1,90 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # Apache-2.0 from expression "Apache-2.0"
+])
+
+# Generated Targets
+
+rust_library(
+    name = "near_vm_logic",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "default",
+    ],
+    crate_root = "runtime/near-vm-logic/src/lib.rs",
+    data = [],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=near-vm-logic"
+    ],
+    version = "3.0.0",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__base64__0_13_0//:base64",
+        "@raze__borsh__0_8_2//:borsh",
+        "@raze__bs58__0_4_0//:bs58",
+        "@raze__byteorder__1_4_3//:byteorder",
+        "@raze__near_crypto__0_1_0//:near_crypto",
+        "@raze__near_primitives__0_1_0//:near_primitives",
+        "@raze__near_primitives_core__0_1_0//:near_primitives_core",
+        "@raze__near_runtime_utils__3_0_0//:near_runtime_utils",
+        "@raze__near_vm_errors__3_0_0//:near_vm_errors",
+        "@raze__ripemd160__0_9_1//:ripemd160",
+        "@raze__serde__1_0_118//:serde",
+        "@raze__sha2__0_9_8//:sha2",
+        "@raze__sha3__0_9_1//:sha3",
+    ],
+)
+
+# Unsupported target "fixtures" with type "test" omitted
+
+# Unsupported target "helpers" with type "test" omitted
+
+# Unsupported target "test_context" with type "test" omitted
+
+# Unsupported target "test_iterators" with type "test" omitted
+
+# Unsupported target "test_miscs" with type "test" omitted
+
+# Unsupported target "test_promises" with type "test" omitted
+
+# Unsupported target "test_registers" with type "test" omitted
+
+# Unsupported target "test_storage_read_write" with type "test" omitted
+
+# Unsupported target "test_storage_usage" with type "test" omitted
+
+# Unsupported target "test_view_method" with type "test" omitted
+
+# Unsupported target "vm_logic_builder" with type "test" omitted

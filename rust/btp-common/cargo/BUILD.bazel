@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses([
+    "notice",
+])
+
+alias(
+    name = "serde",
+    actual = "@raze__serde__1_0_118//:serde",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+exports_files(
+    [
+        "crates.bzl",
+    ],
+    visibility = ["//visibility:public"],
+)

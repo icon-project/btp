@@ -1,0 +1,14 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses([
+    "notice",
+])
+
+alias(
+    name = "near_sdk",
+    actual = "@raze__near_sdk__4_0_0_pre_4//:near_sdk",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)

@@ -1,0 +1,76 @@
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    "//visibility:public",
+])
+
+licenses([
+    "notice",
+])
+
+rust_binary(
+    name = "cargo_bin_generate_schema_schema",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "default",
+        "std",
+    ],
+    crate_root = "src/generate_schema_schema.rs",
+    data = [],
+    edition = "2018",
+    proc_macro_deps = [
+        "@raze__borsh_derive__0_8_2//:borsh_derive",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=generate_schema_schema"
+    ],
+    version = "0.8.2",
+    # buildifier: leave-alone
+    deps = [
+        ":borsh",
+        "@raze__hashbrown__0_9_1//:hashbrown",
+    ],
+)
+
+rust_library(
+    name = "borsh",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "default",
+        "std",
+    ],
+    crate_root = "src/lib.rs",
+    data = [],
+    edition = "2018",
+    proc_macro_deps = [
+        "@raze__borsh_derive__0_8_2//:borsh_derive",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=borsh"
+    ],
+    version = "0.8.2",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__hashbrown__0_9_1//:hashbrown",
+    ],
+)

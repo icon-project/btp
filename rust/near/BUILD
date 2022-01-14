@@ -1,0 +1,53 @@
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_image",
+)
+load("@btp//utils:defs.bzl", "open_port")
+
+package(default_visibility = ["//visibility:public"])
+
+container_image(
+    name = "near_node_image",
+    base = "@nearup_base//image",
+    cmd = "/root/start.sh run localnet --num-nodes 1",
+    entrypoint = None,
+)
+
+open_port(
+    name = "near"
+)
+
+genrule(
+    name = "deploy_node",
+    outs = ["near_node"],
+    cmd = """
+            docker run -d -v ~/.near:/root/.near -p $$(cat $(location :open_port_near)):3030 bazel:near_node_image
+            cat $(location :open_port_near) > \"$@\" """,
+    executable = True,
+    tools = [
+        ":home",
+        ":near_node_image",
+        ":open_port_near",
+    ],
+)
+
+genrule(
+    name = "home_dir",
+    outs = ["home"],
+    cmd = "echo 'home' > $@",
+)
+
+genrule(
+    name = "wait_until_near_up",
+    outs = ["wait_until_near_up.out"],
+    cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:$$(cat $(location :deploy_node)) status 300 > $@",
+    executable = True,
+    output_to_bindir = True,
+    tags = [
+        "no-cache",
+    ],
+    tools = [
+        ":deploy_node",
+        "@btp//utils:wait_until_curl_script",
+    ],
+)

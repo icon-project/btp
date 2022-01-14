@@ -1,0 +1,88 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # Apache-2.0 from expression "Apache-2.0"
+])
+
+# Generated Targets
+
+# Unsupported target "benches" with type "bench" omitted
+
+rust_library(
+    name = "parity_scale_codec",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "bitvec",
+        "chain-error",
+        "max-encoded-len",
+        "parity-scale-codec-derive",
+        "serde",
+        "std",
+    ],
+    crate_root = "src/lib.rs",
+    data = [],
+    edition = "2018",
+    proc_macro_deps = [
+        "@raze__impl_trait_for_tuples__0_2_1//:impl_trait_for_tuples",
+        "@raze__parity_scale_codec_derive__2_3_1//:parity_scale_codec_derive",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=parity-scale-codec"
+    ],
+    version = "2.3.1",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__arrayvec__0_7_2//:arrayvec",
+        "@raze__bitvec__0_20_4//:bitvec",
+        "@raze__byte_slice_cast__1_2_0//:byte_slice_cast",
+        "@raze__serde__1_0_118//:serde",
+    ],
+)
+
+# Unsupported target "chain-error" with type "test" omitted
+
+# Unsupported target "max_encoded_len" with type "test" omitted
+
+# Unsupported target "max_encoded_len_ui" with type "test" omitted
+
+# Unsupported target "mod" with type "test" omitted
+
+# Unsupported target "scale_codec_ui" with type "test" omitted
+
+# Unsupported target "single_field_struct_encoding" with type "test" omitted
+
+# Unsupported target "skip" with type "test" omitted
+
+# Unsupported target "type_inference" with type "test" omitted
+
+# Unsupported target "variant_number" with type "test" omitted

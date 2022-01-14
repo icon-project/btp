@@ -1,0 +1,6 @@
+{
+    "name": "near-actions",
+    "dependencies": {
+        "near-cli": "^3.1.0"
+    }
+}

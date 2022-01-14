@@ -1,0 +1,32 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses([
+    "notice",
+])
+
+alias(
+    name = "near_sdk",
+    actual = "@raze__near_sdk__4_0_0_pre_4//:near_sdk",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "tiny_keccak",
+    actual = "@raze__tiny_keccak__2_0_2//:tiny_keccak",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "hex",
+    actual = "@raze__hex__0_4_3//:hex",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)

@@ -1,0 +1,4 @@
+workspace(
+    name = "near",
+    managed_directories = {"@near_npm": ["node_modules"]},
+)

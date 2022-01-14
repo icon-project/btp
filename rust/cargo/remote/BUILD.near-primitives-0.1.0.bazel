@@ -1,0 +1,84 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # Apache-2.0 from expression "Apache-2.0"
+])
+
+# Generated Targets
+
+# Unsupported target "serialization" with type "bench" omitted
+
+rust_library(
+    name = "near_primitives",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "default",
+        "jemallocator",
+    ],
+    crate_root = "core/primitives/src/lib.rs",
+    data = [],
+    edition = "2018",
+    proc_macro_deps = [
+        "@raze__derive_more__0_99_16//:derive_more",
+        "@raze__easy_ext__0_2_9//:easy_ext",
+        "@raze__near_rpc_error_macro__0_1_0//:near_rpc_error_macro",
+        "@raze__smart_default__0_6_0//:smart_default",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=near-primitives"
+    ],
+    version = "0.1.0",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__base64__0_13_0//:base64",
+        "@raze__borsh__0_8_2//:borsh",
+        "@raze__bs58__0_4_0//:bs58",
+        "@raze__byteorder__1_4_3//:byteorder",
+        "@raze__chrono__0_4_19//:chrono",
+        "@raze__hex__0_4_3//:hex",
+        "@raze__jemallocator__0_3_2//:jemallocator",
+        "@raze__lazy_static__1_4_0//:lazy_static",
+        "@raze__near_crypto__0_1_0//:near_crypto",
+        "@raze__near_primitives_core__0_1_0//:near_primitives_core",
+        "@raze__near_vm_errors__3_0_0//:near_vm_errors",
+        "@raze__num_rational__0_3_2//:num_rational",
+        "@raze__primitive_types__0_9_1//:primitive_types",
+        "@raze__rand__0_7_3//:rand",
+        "@raze__reed_solomon_erasure__4_0_2//:reed_solomon_erasure",
+        "@raze__regex__1_5_4//:regex",
+        "@raze__serde__1_0_118//:serde",
+        "@raze__serde_json__1_0_72//:serde_json",
+        "@raze__sha2__0_9_8//:sha2",
+        "@raze__validator__0_12_0//:validator",
+    ],
+)
