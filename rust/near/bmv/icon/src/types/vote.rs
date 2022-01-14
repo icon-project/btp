@@ -2,7 +2,6 @@ use super::PartSetId;
 use btp_common::errors::BmvError;
 use libraries::{
     rlp::{self, Decodable, Encodable},
-    BytesMut,
 };
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD},

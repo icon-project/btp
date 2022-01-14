@@ -22,6 +22,9 @@ impl BtpMessageVerifier {
                 StateChange::MtaAddBlockHash { block_hash } => {
                     self.mta.add(*block_hash);
                 }
+                StateChange::SetLastHeight { height} => {
+                    self.last_height.clone_from(height);
+                }
             };
             false
         });

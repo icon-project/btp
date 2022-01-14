@@ -53,7 +53,7 @@ pub enum VerifierResponse {
         verifier_status: VerifierStatus,
         messages: SerializedBtpMessages,
     },
-    Failed(u32),
+    Failed(BmvError),
 }
 
 impl Bmv {

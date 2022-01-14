@@ -1,6 +1,5 @@
 use super::{BlockHeader, Validators, Votes};
 use libraries::rlp::{self, Decodable};
-use std::convert::TryFrom;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct BlockUpdate {

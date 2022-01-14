@@ -1,5 +1,7 @@
-use std::ops::Deref;
 use super::*;
+use btp_common::btp_address::Address;
+use hex::encode;
+use std::ops::Deref;
 
 impl BtpMessageVerifier {
     // * * * * * * * * * * * * * * * * *
@@ -16,6 +18,15 @@ impl BtpMessageVerifier {
             0,
         ))[12..]
             .to_vec()
+    }
+
+    pub fn filter_source_events(event_log: &EventLog, source: &BTPAddress) -> bool {
+        let address = event_log.address().get();
+        if address.is_ok() && (encode(address.unwrap()) == source.contract_address().unwrap()) {
+            true
+        } else {
+            false
+        }
     }
 }
 
