@@ -1,5 +1,4 @@
 use super::*;
-use types::ToBmvError;
 
 impl BtpMessageVerifier {
     pub fn process_block_updates(
@@ -57,14 +56,14 @@ impl BtpMessageVerifier {
                 block_proof
                     .block_witness()
                     .get()
-                    .map_err(|message| BmvError::InvalidBlockProof { message })?
+                    .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })?
                     .witnesses(),
                 &block_hash,
                 block_proof.block_header().height(),
                 block_proof
                     .block_witness()
                     .get()
-                    .map_err(|message| BmvError::InvalidBlockProof { message })?
+                    .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })?
                     .height(),
             )
             .map_err(|error| error.to_bmv_error())?;

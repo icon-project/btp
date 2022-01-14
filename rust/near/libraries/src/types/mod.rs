@@ -47,3 +47,5 @@ mod hash;
 pub use hash::{Hash, Hasher};
 mod math;
 pub use math::Math;
+mod message;
+pub use message::Message;

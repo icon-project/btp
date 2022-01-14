@@ -1,9 +1,9 @@
 use super::{BlockProof, BlockUpdate, Nullable, ReceiptProof};
 use btp_common::errors::BmvError;
-use libraries::rlp::{self, Decodable, Encodable};
+use libraries::rlp::{self, Decodable};
 use near_sdk::{
     base64::{self, URL_SAFE_NO_PAD},
-    serde::{de, ser, Deserialize, Serialize},
+    serde::{de, Deserialize, Serialize},
 };
 use std::convert::TryFrom;
 

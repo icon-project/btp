@@ -1,11 +1,12 @@
 use bmv_icon::BtpMessageVerifier;
 use hex::{decode, encode};
-use libraries::{rlp, MerklePatriciaTree};
+use libraries::{rlp, MerklePatriciaTree, rlp::Encodable, rlp::Decodable};
 use near_sdk::{testing_env, VMContext};
 pub mod accounts;
 use accounts::*;
 use std::convert::TryFrom;
 use std::ops::Deref;
+use bmv_icon::types::Receipt;
 
 #[cfg(feature = "testable")]
 use bmv_icon::types::{RelayMessage, Sha256};
@@ -53,6 +54,7 @@ fn new_mpt() {
         .unwrap()
         .clone();
     let index = relay_message.receipt_proofs().last().unwrap().index();
+
     let receipt_proofs = relay_message
         .receipt_proofs()
         .last()
@@ -61,5 +63,6 @@ fn new_mpt() {
         .get()
         .unwrap()
         .deref();
-    let data = <MerklePatriciaTree<Sha256>>::verify_proof(&receipt_hash, &rlp::encode(&(0 as u32)).to_vec(), receipt_proofs);
+
+    let data = <MerklePatriciaTree<Sha256>>::verify_proof(&receipt_hash, &rlp::encode(&(index as u32)).to_vec(), receipt_proofs);
 }
