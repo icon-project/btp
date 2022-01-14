@@ -30,15 +30,14 @@ build_image() {
 	    BIN_VERSION="${BIN_VERSION}-tags(${BUILD_TAGS})"
     fi
 
-    # copy bin and extras
+    # copy bin and contracts
     rm -rf ${BUILD_DIR}/dist
     mkdir -p ${BUILD_DIR}/dist/bin/
     cp ${BIN_DIR}/* ${BUILD_DIR}/dist/bin/
 
-    if [ -d "${DIST_DIR}" ] ; then
-      mkdir -p ${BUNDLE_DIR}
-      cp -r ${DIST_DIR} ${BUILD_DIR}/dist/
-    fi
+    mkdir -p ${BUILD_DIR}/dist/contracts
+    cp -r ${CONTRACTS_DIST_DIR}/* ${BUILD_DIR}/dist/contracts/
+    tar cv -C ${BUILD_DIR}/dist -f ${BUILD_DIR}/dist/contracts.tar contracts
 
     CDIR=$(pwd)
     cd ${BUILD_DIR}

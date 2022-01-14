@@ -17,7 +17,7 @@ Terminologies
 | BTP Message     | A verified message which is delivered by the relay                                                     |
 | Service Message | A payload in a BTP message                                                                             |
 | Relay Message   | A message including BTPMessages with proofs for that, and other block update messages.                 |
-| NetworkAddress  | Network Type and Network ID <br/> *0x1.icon* <br/> *0x1.icon*                                        |
+| NetworkAddress  | Network Type and Network ID <br/> *0x1.icon*                                      |
 | ContractAddress | Addressing contract in the network <br/> *btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b* |
 
 > BTP Standard
@@ -70,8 +70,6 @@ Terminologies
 | /`<env>`/bmv/`<src>` | Implement of BMV smart contract, `<src>` is name of source blockchain |
 | /`<env>`/lib | Library for execution environment |
 | /`<env>`/`<svc>` | Root of implement of BSH smart contract, `<svc>` is name of BTP service |
-| /`<env>`/token_bsh | Reference implement of BSH smart contract for Interchain-Token transfer service |
-| /`<env>`/token_bsh/sample/irc2_token | Implement of IRC-2.0 smart contract, example for support legacy smart contract |
 
 ### BTP implement for ICON blockchain
 
@@ -84,6 +82,17 @@ Terminologies
 | Directory                | Description  |
 |:--------------------|:-------|
 | /pyscore | Implement of BTP smart contracts for Python SCORE of ICON blockchain |
+| /pyscore/bmc | Implement of BMC smart contract |
 | /pyscore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
 | /pyscore/lib | BTP interface and common codes for Python SCORE |
 | /pyscore/lib/icon | ICON related common codes |
+| /pyscore/token_bsh | Reference implement of BSH smart contract for Interchain-Token transfer service |
+| /pyscore/token_bsh/sample/irc2_token | Implement of IRC-2.0 smart contract, example for support legacy smart contract |
+
+#### Java SCORE of ICON
+| Directory                | Description  |
+|:--------------------|:-------|
+| /javascore | Implement of BTP smart contracts for Java SCORE of ICON blockchain |
+| /javascore/bmc | Implement of BMC smart contract |
+| /javascore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
+| /javascore/lib | BTP interface and common codes for Python SCORE |

@@ -29,30 +29,6 @@ class BMCInterfaceForBSH(InterfaceScore):
         """
         pass
 
-    @interface
-    def addService(self, _svc: str, _addr: Address):
-        """
-        Registers the smart contract for the service.
-        Called by the operator to manage the BTP network.
-
-        :param _svc: String (the name of the service)
-        :param _addr: Address (the address of the smart contract handling the service)
-        """
-        pass
-
-
-class BMCInterfaceForBMV(InterfaceScore):
-    @interface
-    def addVerifier(self, _net: str, _addr: Address):
-        """
-        Registers BMV for the network.
-        Called by the operator to manage the BTP network.
-
-        :param _net: String (Network Address of the blockchain )
-        :param _addr: Address (the address of BMV)
-        """
-        pass
-
 
 class BMVInterface(InterfaceScore):
     @interface

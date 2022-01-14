@@ -20,14 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
+	"math/big"
 	"github.com/reactivex/rxgo/v2"
 
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/log"
 )
 
-/*---------------------------struct---------------------------*/
 type receiver struct {
 	client      Client
 	source      BtpAddress
@@ -41,8 +40,6 @@ type receiver struct {
 	blockHeader             *BlockHeader
 	isFoundOffsetBySequence bool
 }
-
-/*-------------------------Private functions-------------------*/
 
 func (r *receiver) getBlockHeader(height int64) (*BlockHeader, error) {
 	var blockHeader BlockHeader
@@ -97,8 +94,8 @@ func (r *receiver) newReceiptProofs(blockNotification *BlockNotification) ([]*Re
 	return receiptProofs, nil
 }
 
-/*-------------------------Public functions--------------------------------*/
-func (r *receiver) ReceiveLoop(height int64, sequence int64, receiveCallback ReceiveCallback, scb func()) error {
+
+func (r *receiver) ReceiveLoop(height int64, sequence *big.Int, receiveCallback ReceiveCallback, scb func()) error {
 	destination := r.destination.String()
 	r.eventRequest = r.client.GetEventRequest(r.source, destination, height)
 
@@ -111,7 +108,7 @@ func (r *receiver) ReceiveLoop(height int64, sequence int64, receiveCallback Rec
 		return err
 	}
 
-	if sequence < 1 {
+	if sequence.Cmp(big.NewInt(1)) < 0 {
 		r.isFoundOffsetBySequence = true
 	}
 

@@ -152,7 +152,7 @@ func (a *ExtAccumulator) WitnessForAt(height, at, offset int64) (int64, []Witnes
 	}
 
 	w, err := a.Accumulator.WitnessForWithAccLength(idx, accLength)
-	fmt.Printf("at:%d, idx:%d, accLength:%d\n", at, idx, accLength)
+	fmt.Printf("at:%d, idx:%d, accLength:%d, offset:%d\n", at, idx, accLength, offset)
 	return at, w, err
 }
 
