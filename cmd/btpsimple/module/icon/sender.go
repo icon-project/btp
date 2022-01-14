@@ -20,6 +20,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/big"
 	"net/url"
 	"strconv"
 	"time"
@@ -35,10 +37,14 @@ import (
 
 const (
 	txMaxDataSize                 = 524288 //512 * 1024 // 512kB
-	txOverheadScale               = 0.37    //base64 encoding overhead 0.36, rlp and other fields 0.01
-	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
+	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	DefaultGetRelayResultInterval = time.Second
 	DefaultRelayReSendInterval    = time.Second
+	DefaultStepLimit              = 0x9502f900 //maxStepLimit(invoke), refer https://www.icondev.io/docs/step-estimation
+)
+
+var (
+	txSizeLimit = int(math.Ceil(txMaxDataSize / (1 + txOverheadScale)))
 )
 
 type sender struct {
@@ -68,18 +74,18 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 	if err != nil {
 		return nil, err
 	}
-	rmp := BMCRelayMethodParams{
+	rmp := &BMCRelayMethodParams{
 		Prev:     prev,
 		Messages: base64.URLEncoding.EncodeToString(b),
 	}
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.ContractAddress()),
+		ToAddress:   Address(s.dst.Account()),
 		NetworkID:   HexInt(s.dst.NetworkID()),
 		StepLimit:   NewHexInt(s.opt.StepLimit),
 		DataType:    "call",
-		Data: CallData{
+		Data: &CallData{
 			Method: BMCRelayMethod,
 			Params: rmp,
 		},
@@ -108,7 +114,7 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 		size += buSize
 		if s.isOverLimit(size) {
 			segment := &base.Segment{
-				Height: msg.height,
+				Height:              msg.height,
 				NumberOfBlockUpdate: msg.numberOfBlockUpdate,
 			}
 			if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
@@ -126,6 +132,9 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 		msg.numberOfBlockUpdate += 1
 	}
 
+	if len(rm.ReceiptProofs) > 0 && rm.BlockProof == nil {
+		s.l.Panicf("rm.BlockProof is nil, rm:%d h:%d", rm.Seq, rm.HeightOfSrc)
+	}
 	var bp []byte
 	if bp, err = codec.RLP.MarshalToBytes(rm.BlockProof); err != nil {
 		return nil, err
@@ -142,7 +151,7 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 		if len(msg.BlockUpdates) == 0 {
 			size += len(bp)
 			msg.BlockProof = bp
-			msg.height = rm.BlockProof.BlockWitness.Height
+			msg.height = rm.HeightOfSrc
 		}
 		size += len(rp.Proof)
 		trp := &ReceiptProof{
@@ -151,20 +160,22 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 			EventProofs: make([]*base.EventProof, 0),
 		}
 		for j, ep := range rp.EventProofs {
-			if s.isOverLimit(len(ep.Proof)) {
-				return nil, fmt.Errorf("invalid EventProof.Proof size")
-			}
+			//FIXME
+			//if s.isOverLimit(len(ep.Proof)) {
+			//	return nil, fmt.Errorf("invalid EventProof.Proof size")
+			//}
 			size += len(ep.Proof)
 			if s.isOverLimit(size) {
-				if j == 0 && len(msg.BlockUpdates) == 0 {
-					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
-				}
+				//FIXME
+				//if j == 0 && len(msg.BlockUpdates) == 0 {
+				//	return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
+				//}
 				//
 				segment := &base.Segment{
-					Height: msg.height,
+					Height:              msg.height,
 					NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-					EventSequence: msg.eventSequence,
-					NumberOfEvent: msg.numberOfEvent,
+					EventSequence:       msg.eventSequence,
+					NumberOfEvent:       msg.numberOfEvent,
 				}
 				if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 					return nil, err
@@ -175,6 +186,7 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 					BlockUpdates:  make([][]byte, 0),
 					ReceiptProofs: make([][]byte, 0),
 					BlockProof:    bp,
+					height: rm.HeightOfSrc,
 				}
 				size = len(ep.Proof)
 				size += len(rp.Proof)
@@ -198,10 +210,10 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 	}
 	//
 	segment := &base.Segment{
-		Height: msg.height,
+		Height:              msg.height,
 		NumberOfBlockUpdate: msg.numberOfBlockUpdate,
-		EventSequence: msg.eventSequence,
-		NumberOfEvent: msg.numberOfEvent,
+		EventSequence:       msg.eventSequence,
+		NumberOfEvent:       msg.numberOfEvent,
 	}
 	if segment.TransactionParam, err = s.newTransactionParam(rm.From.String(), msg); err != nil {
 		return nil, err
@@ -212,8 +224,7 @@ func (s *sender) Segment(rm *base.RelayMessage, height int64) ([]*base.Segment, 
 
 func (s *sender) UpdateSegment(bp *base.BlockProof, segment *base.Segment) error {
 	p := segment.TransactionParam.(*TransactionParam)
-	cd := p.Data.(CallData)
-	rmp := cd.Params.(BMCRelayMethodParams)
+	rmp := p.Data.(*CallData).Params.(*BMCRelayMethodParams)
 	msg := &RelayMessage{}
 	b, err := base64.URLEncoding.DecodeString(rmp.Messages)
 	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
@@ -226,11 +237,51 @@ func (s *sender) UpdateSegment(bp *base.BlockProof, segment *base.Segment) error
 	return err
 }
 
-func (s *sender) Relay(segment *base.Segment) (base.GetResultParam, error) {
-	p, ok := segment.TransactionParam.(*TransactionParam)
-	if !ok {
-		return nil, fmt.Errorf("casting failure")
+func (s *sender) sendFragment(rmp *BMCRelayMethodParams, idx int) (base.GetResultParam, error) {
+	msgLen := txSizeLimit
+	if len(rmp.Messages) < msgLen {
+		msgLen = len(rmp.Messages)
 	}
+	fmp := &BMCFragmentMethodParams{
+		Prev: rmp.Prev, Messages: rmp.Messages[:msgLen], Index: NewHexInt(int64(idx))}
+	rmp.Messages = rmp.Messages[msgLen:]
+	p := &TransactionParam{
+		Version:     NewHexInt(JsonrpcApiVersion),
+		FromAddress: Address(s.w.Address()),
+		ToAddress:   Address(s.dst.Account()),
+		NetworkID:   HexInt(s.dst.NetworkID()),
+		StepLimit:   NewHexInt(s.opt.StepLimit),
+		DataType:    "call",
+		Data: &CallData{
+			Method: BMCFragmentMethod,
+			Params: fmp,
+		},
+	}
+	return s.sendTransaction(p)
+}
+
+func (s *sender) Relay(segment *base.Segment) (base.GetResultParam, error) {
+	p := segment.TransactionParam.(*TransactionParam)
+	rmp := p.Data.(*CallData).Params.(*BMCRelayMethodParams)
+
+	idx := len(rmp.Messages) / txSizeLimit
+	if idx == 0 {
+		return s.sendTransaction(p)
+	} else {
+		ret, err := s.sendFragment(rmp, idx*-1)
+		if err != nil {
+			return nil, err
+		}
+		for idx--; idx >= 0; idx-- {
+			if ret, err = s.sendFragment(rmp, idx); err != nil {
+				return ret, err
+			}
+		}
+		return ret, err
+	}
+}
+
+func (s *sender) sendTransaction(p *TransactionParam) (base.GetResultParam, error) {
 	thp := &TransactionHashParam{}
 SignLoop:
 	for {
@@ -284,14 +335,14 @@ func (s *sender) GetResult(p base.GetResultParam) (base.TransactionResult, error
 			return txr, mapErrorWithTransactionResult(txr, err)
 		}
 	} else {
-		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)
+		return nil, fmt.Errorf("fail to cast *TransactionHashParam %T", p)
 	}
 }
 
 func (s *sender) GetStatus() (*base.BMCLinkStatus, error) {
 	p := &CallParam{
 		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.ContractAddress()),
+		ToAddress:   Address(s.dst.Account()),
 		DataType:    "call",
 		Data: CallData{
 			Method: BMCGetStatusMethod,
@@ -306,34 +357,64 @@ func (s *sender) GetStatus() (*base.BMCLinkStatus, error) {
 		return nil, err
 	}
 	ls := &base.BMCLinkStatus{}
-	ls.TxSeq, err = bs.TxSeq.Value()
-	ls.RxSeq, err = bs.RxSeq.Value()
-	ls.Verifier.Height, err = bs.Verifier.Height.Value()
-	ls.Verifier.Offset, err = bs.Verifier.Offset.Value()
-	ls.Verifier.LastHeight, err = bs.Verifier.LastHeight.Value()
+	if ls.TxSeq, err = bs.TxSeq.BigInt(); err != nil {
+		return nil, err
+	}
+	if ls.RxSeq, err = bs.RxSeq.BigInt(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Height, err = bs.Verifier.Height.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Offset, err = bs.Verifier.Offset.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.LastHeight, err = bs.Verifier.LastHeight.Value(); err != nil {
+		return nil, err
+	}
 	ls.BMRs = make([]struct {
 		Address      string
 		BlockCount   int64
-		MessageCount int64
+		MessageCount *big.Int
 	}, len(bs.BMRs))
 	for i, bmr := range bs.BMRs {
 		ls.BMRs[i].Address = string(bmr.Address)
-		ls.BMRs[i].BlockCount, err = bmr.BlockCount.Value()
-		ls.BMRs[i].MessageCount, err = bmr.MessageCount.Value()
+		if ls.BMRs[i].BlockCount, err = bmr.BlockCount.Value(); err != nil {
+			return nil, err
+		}
+		if ls.BMRs[i].MessageCount, err = bmr.MessageCount.BigInt(); err != nil {
+			return nil, err
+		}
 	}
-	ls.BMRIndex, err = bs.BMRIndex.Int()
-	ls.RotateHeight, err = bs.RotateHeight.Value()
-	ls.RotateTerm, err = bs.RotateTerm.Int()
-	ls.DelayLimit, err = bs.DelayLimit.Int()
-	ls.MaxAggregation, err = bs.MaxAggregation.Int()
-	ls.CurrentHeight, err = bs.CurrentHeight.Value()
-	ls.RxHeight, err = bs.RxHeight.Value()
-	ls.RxHeightSrc, err = bs.RxHeightSrc.Value()
+	if ls.BMRIndex, err = bs.BMRIndex.Int(); err != nil {
+		return nil, err
+	}
+	if ls.RotateHeight, err = bs.RotateHeight.Value(); err != nil {
+		return nil, err
+	}
+	if ls.RotateTerm, err = bs.RotateTerm.Int(); err != nil {
+		return nil, err
+	}
+	if ls.DelayLimit, err = bs.DelayLimit.Int(); err != nil {
+		return nil, err
+	}
+	if ls.MaxAggregation, err = bs.MaxAggregation.Int(); err != nil {
+		return nil, err
+	}
+	if ls.CurrentHeight, err = bs.CurrentHeight.Value(); err != nil {
+		return nil, err
+	}
+	if ls.RxHeight, err = bs.RxHeight.Value(); err != nil {
+		return nil, err
+	}
+	if ls.RxHeightSrc, err = bs.RxHeightSrc.Value(); err != nil {
+		return nil, err
+	}
 	return ls, nil
 }
 
 func (s *sender) isOverLimit(size int) bool {
-	return txSizeLimit < float64(size)
+	return txSizeLimit < size
 }
 
 func (s *sender) MonitorLoop(height int64, cb base.MonitorCallback, scb func()) error {
@@ -381,6 +462,9 @@ func NewSender(src, dst base.BtpAddress, w Wallet, endpoint string, opt map[stri
 	}
 	if err = json.Unmarshal(b, &s.opt); err != nil {
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
+	}
+	if s.opt.StepLimit <= 0 {
+		s.opt.StepLimit = DefaultStepLimit
 	}
 	s.c = NewClient(endpoint, l)
 	return s

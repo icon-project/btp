@@ -12,8 +12,8 @@ LABEL BTPSIMPLE_VERSION="$VERSION"
 COPY dist/bin/btpsimple /btpsimple/bin/btpsimple
 ENV PATH $PATH:/btpsimple/bin
 
-# copy extras
-COPY dist/pyscore/*.zip /btpsimple/contracts/pyscore/
+# copy contracts
+ADD dist/contracts.tar /btpsimple/
 WORKDIR /btpsimple
 
 # container configuration
@@ -41,20 +41,20 @@ RUN { \
         echo '    UNSET="$UNSET BTPSIMPLE_KEY_STORE"' ; \
         echo '    CMD="$CMD --save_key_store=$BTPSIMPLE_KEY_STORE"' ; \
         echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_SRC_ADDRESS" != "" ] && [ -f "$BTPSIMPLE_SRC_ADDRESS" ]; then'; \
-        echo '    export BTPSIMPLE_SRC_ADDRESS=$(cat ${BTPSIMPLE_SRC_ADDRESS})' ; \
+        echo '  if [ "$BTPSIMPLE_SRC_ADDRESS_FILE" != "" ] && [ -f "$BTPSIMPLE_SRC_ADDRESS_FILE" ]; then'; \
+        echo '    export BTPSIMPLE_SRC_ADDRESS=$(cat ${BTPSIMPLE_SRC_ADDRESS_FILE})' ; \
         echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_SRC_ENDPOINT" != "" ] && [ -f "$BTPSIMPLE_SRC_ENDPOINT" ]; then'; \
-        echo '    export BTPSIMPLE_SRC_ENDPOINT=$(cat ${BTPSIMPLE_SRC_ENDPOINT})' ; \
+        echo '  if [ "$BTPSIMPLE_SRC_ENDPOINT_FILE" != "" ] && [ -f "$BTPSIMPLE_SRC_ENDPOINT_FILE" ]; then'; \
+        echo '    export BTPSIMPLE_SRC_ENDPOINT=$(cat ${BTPSIMPLE_SRC_ENDPOINT_FILE})' ; \
         echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_DST_ADDRESS" != "" ] && [ -f "$BTPSIMPLE_DST_ADDRESS" ]; then'; \
-        echo '    export BTPSIMPLE_DST_ADDRESS=$(cat ${BTPSIMPLE_DST_ADDRESS})' ; \
+        echo '  if [ "$BTPSIMPLE_DST_ADDRESS_FILE" != "" ] && [ -f "$BTPSIMPLE_DST_ADDRESS_FILE" ]; then'; \
+        echo '    export BTPSIMPLE_DST_ADDRESS=$(cat ${BTPSIMPLE_DST_ADDRESS_FILE})' ; \
         echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_DST_ENDPOINT" != "" ] && [ -f "$BTPSIMPLE_DST_ENDPOINT" ]; then'; \
-        echo '    export BTPSIMPLE_DST_ENDPOINT=$(cat ${BTPSIMPLE_DST_ENDPOINT})' ; \
+        echo '  if [ "$BTPSIMPLE_DST_ENDPOINT_FILE" != "" ] && [ -f "$BTPSIMPLE_DST_ENDPOINT_FILE" ]; then'; \
+        echo '    export BTPSIMPLE_DST_ENDPOINT=$(cat ${BTPSIMPLE_DST_ENDPOINT_FILE})' ; \
         echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_OFFSET" != "" ] && [ -f "$BTPSIMPLE_OFFSET" ]; then'; \
-        echo '    export BTPSIMPLE_OFFSET=$(cat ${BTPSIMPLE_OFFSET})' ; \
+        echo '  if [ "$BTPSIMPLE_OFFSET_FILE" != "" ] && [ -f "$BTPSIMPLE_OFFSET_FILE" ]; then'; \
+        echo '    export BTPSIMPLE_OFFSET=$(cat ${BTPSIMPLE_OFFSET_FILE})' ; \
         echo '  fi'; \
         echo '  sh -c "unset $UNSET ; $CMD"' ; \
         echo 'fi'; \

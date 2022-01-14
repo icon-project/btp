@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"math/big"
 
+	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/cmd/btpsimple/module/base"
 )
 
@@ -274,6 +276,12 @@ func (i HexInt) Int() (int, error) {
 
 	v, err := strconv.ParseInt(s, 16, 32)
 	return int(v), err
+}
+
+func (i HexInt) BigInt() (*big.Int, error) {
+	v := new(big.Int)
+	err := intconv.ParseBigInt(v, string(i))
+	return v, err
 }
 
 func NewHexInt(v int64) HexInt {

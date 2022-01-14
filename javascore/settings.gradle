@@ -1,0 +1,11 @@
+rootProject.name = 'javascore'
+include (
+        'score-util',
+        'lib',
+        'test-lib',
+        'bmc',
+        'bmv:icon',
+        'bsh',
+        'nativecoin',
+        'fee-aggregation',
+)
