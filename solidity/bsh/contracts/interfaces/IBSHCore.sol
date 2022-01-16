@@ -76,7 +76,11 @@ interface IBSHCore {
         _decimals decimal number
         @param _name    Coin name. 
     */
-    function register(string calldata _name, string calldata _symbol,  uint8 _decimals) external;
+    function register(
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals
+    ) external;
 
     /**
        @notice Return all supported coins names

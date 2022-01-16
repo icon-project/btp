@@ -20,7 +20,7 @@ let toHex = (buf) => {
 
 
 contract('PRA BSHCore Query and Management', (accounts) => {
-    let bsh_core, bsh_perif;                    let _uri = 'https://github.com/icon-project/btp'
+    let bsh_core, bsh_perif;
     let _native = 'PARA';                       let service = 'Coin/WrappedCoin';
     let _net = '1234.iconee';                   let _bmcICON = 'btp://1234.iconee/0x1234567812345678'; 
     let REPONSE_HANDLE_SERVICE = 2;             let RC_OK = 0;
@@ -30,7 +30,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
         bsh_core = await BSHCore.new();
         bsh_perif = await BSHPeriphery.new();
         encode_msg = await EncodeMsg.new();
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
         await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
@@ -39,7 +39,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
 
     it(`Scenario 1: Contract's owner to register a new coin`, async () => {
         let _name = "ICON";
-        await bsh_core.register(_name);
+        await bsh_core.register(_name,"" , 18);
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON'
@@ -49,7 +49,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
     it('Scenario 2: Non-ownership role client registers a new coin', async () => {   
         let _name = "TRON";
         await truffleAssert.reverts(
-            bsh_core.register.call(_name, {from: accounts[1]}),
+            bsh_core.register.call(_name,"" , 18, {from: accounts[1]}),
             "Unauthorized"
         );
     }); 
@@ -170,8 +170,8 @@ contract('PRA BSHCore Query and Management', (accounts) => {
 
     it('Scenario 15: Query a valid supporting coin', async () => {
         let _name1 = "wBTC";    let _name2 = "Ethereum";
-        await bsh_core.register(_name1);
-        await bsh_core.register(_name2);
+        await bsh_core.register(_name1,"" , 18);
+        await bsh_core.register(_name2,"" , 18);
 
         let _query = "ICON";
         let id = web3.utils.keccak256(_query);
@@ -215,7 +215,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
     
     it('Scenario 19: After adding a new Owner, owner registers a new coin', async () => {
         let _name3 = "TRON";
-        await bsh_core.register(_name3);
+        await bsh_core.register(_name3,"" , 18);
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -226,7 +226,7 @@ contract('PRA BSHCore Query and Management', (accounts) => {
 
     it('Scenario 20: New Owner registers a new coin', async () => {   
         let _name3 = "BINANCE";
-        await bsh_core.register(_name3, {from: accounts[1]});
+        await bsh_core.register(_name3,"" , 18, {from: accounts[1]});
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -380,7 +380,7 @@ contract('As a user, I want to send PRA to ICON blockchain', (accounts) => {
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         nonrefundable = await NonRefundable.new();
         refundable = await Refundable.new();
@@ -769,17 +769,17 @@ contract('As a user, I want to send ERC1155_ICX to ICON blockchain', (accounts) 
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
-        await bsh_core.register(_name);
+        await bsh_core.register(_name,"" , 18);
         let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _name, _value);
         await bmc.receiveRequest(_bmcICON, "", service, 0, _msg);
-        id = await bsh_core.coinId(_name);
+        id = await bsh_core.coinId(_name,"" , 18);
     });
 
     it('Scenario 1: User has not yet set approval for token being transferred out by Operator', async () => {
@@ -1091,7 +1091,7 @@ contract('As a user, I want to receive PRA from ICON blockchain', (accounts) => 
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         notpayable = await NotPayable.new();
         refundable = await Refundable.new();
@@ -1191,7 +1191,7 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         notpayable = await NotPayable.new();
@@ -1199,8 +1199,8 @@ contract('As a user, I want to receive ERC1155_ICX from ICON blockchain', (accou
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
-        await bsh_core.register(_name);
-        id = await bsh_core.coinId(_name);
+        await bsh_core.register(_name,"" , 18);
+        id = await bsh_core.coinId(_name,"" , 18);
         btpAddr = await bmc.bmcAddress();
     });
 
@@ -1296,7 +1296,7 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         btpAddr = await bmc.bmcAddress();
@@ -1305,10 +1305,10 @@ contract('BSHs handle Gather Fee Service Requests', (accounts) => {
         await bmc.addVerifier(_net2, accounts[2]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
-        await bsh_core.register(_name1);
-        await bsh_core.register(_name2);
-        await bsh_core.register(_name3);
-        await bsh_core.register(_name4);
+        await bsh_core.register(_name1,"" , 18);
+        await bsh_core.register(_name2,"" , 18);
+        await bsh_core.register(_name3,"" , 18);
+        await bsh_core.register(_name4,"" , 18);
         let _msg1 = await encode_msg.encodeTransferMsgWithAddress(_from1, holder.address, _name1, _value1);
         await bmc.receiveRequest(_bmcICON, "", service, _sn0, _msg1);
         let _msg2 = await encode_msg.encodeTransferMsgWithAddress(_from2, holder.address, _name2, _value2);
@@ -1512,7 +1512,7 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         refundable = await Refundable.new();
@@ -1521,10 +1521,10 @@ contract('As a user, I want to receive multiple Coins/Tokens from ICON blockchai
         await bmc.addVerifier(_net1, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
-        await bsh_core.register(_name1);
-        await bsh_core.register(_name2);
-        await bsh_core.register(_name3);
-        await bsh_core.register(_name4);
+        await bsh_core.register(_name1,"" , 18);
+        await bsh_core.register(_name2,"" , 18);
+        await bsh_core.register(_name3,"" , 18);
+        await bsh_core.register(_name4,"" , 18);
         await bsh_core.transferNativeCoin(_to, {from: accounts[0], value: 10000000});
     });
 
@@ -1718,16 +1718,16 @@ contract('As a user, I want to send multiple coins/tokens to ICON blockchain', (
         bmc = await BMC.new('1234.pra');
         encode_msg = await EncodeMsg.new();
         await bsh_perif.initialize(bmc.address, bsh_core.address, service);
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
         await bsh_core.updateBSHPeriphery(bsh_perif.address);
         holder = await Holder.new();
         await bmc.addService(service, bsh_perif.address);
         await bmc.addVerifier(_net, accounts[1]);
         await bmc.addLink(_bmcICON);
         await holder.addBSHContract(bsh_perif.address, bsh_core.address);
-        await bsh_core.register(_coin1);
-        await bsh_core.register(_coin2);
-        await bsh_core.register(_coin3);
+        await bsh_core.register(_coin1,"" , 18);
+        await bsh_core.register(_coin2,"" , 18);
+        await bsh_core.register(_coin3,"" , 18);
         await bsh_core.transferNativeCoin('btp://1234.iconee/0x12345678', {from: accounts[0], value: initAmt});
         await holder.deposit({from: accounts[1], value: 100000000000000});
         let _msg1 = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _coin1, _value);

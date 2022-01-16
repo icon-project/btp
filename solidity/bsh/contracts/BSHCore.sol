@@ -173,10 +173,16 @@ contract BSHCore is Initializable, IBSHCore, ReentrancyGuardUpgradeable {
         _decimals decimal number
         @param _name    Coin name. 
     */
-    function register(string calldata _name, string calldata _symbol,  uint8 _decimals) external override onlyOwner {
+    function register(
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals
+    ) external override onlyOwner {
         require(!_name.compareTo(nativeCoinName), "ExistNativeCoin");
         require(coins[_name] == address(0), "ExistCoin");
-        address deployedERC20 = address(new ERC20Tradable(_name, _symbol, _decimals));
+        address deployedERC20 = address(
+            new ERC20Tradable(_name, _symbol, _decimals)
+        );
         coins[_name] = deployedERC20;
         coinsName.push(_name);
     }
@@ -249,8 +255,9 @@ contract BSHCore is Initializable, IBSHCore, ReentrancyGuardUpgradeable {
             );
         }
         address _erc20Address = coins[_coinName];
+        _usableBalance = _erc20Address != address(0)? IERC20Tradable(_erc20Address).balanceOf(_owner) : 0;
         return (
-            IERC20Tradable(_erc20Address).balanceOf(_owner),
+            _usableBalance,
             balances[_owner][_coinName].lockedBalance,
             balances[_owner][_coinName].refundableBalance
         );
@@ -435,18 +442,17 @@ contract BSHCore is Initializable, IBSHCore, ReentrancyGuardUpgradeable {
         uint256 size = msg.value != 0
             ? _coinNames.length.add(1)
             : _coinNames.length;
-        address[] memory _erc20Addresses = new address[](_coinNames.length);
         string[] memory _coins = new string[](size);
         uint256[] memory _amounts = new uint256[](size);
         uint256[] memory _chargeAmts = new uint256[](size);
 
         for (uint256 i = 0; i < _coinNames.length; i++) {
-            _erc20Addresses[i] = coins[_coinNames[i]];
+            address _erc20Addresses = coins[_coinNames[i]];
             //  Does not need to check if _coinNames[i] == native_coin
             //  If _coinNames[i] is a native_coin, coins[_coinNames[i]] = 0
-            require(_erc20Addresses[i] != address(0), "UnregisterCoin");
+            require(_erc20Addresses != address(0), "UnregisterCoin");
 
-            IERC20Tradable(_erc20Addresses[i]).transferFrom(
+            IERC20Tradable(_erc20Addresses).transferFrom(
                 msg.sender,
                 address(this),
                 _values[i]
