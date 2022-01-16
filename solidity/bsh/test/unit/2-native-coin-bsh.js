@@ -6,12 +6,12 @@ const truffleAssert = require('truffle-assertions');
 
 contract('BSHCore Unit Tests', (accounts) => {
     let bsh_core;
-    let _native = 'PARA';       let _uri = 'https://github.com/icon-project/btp'              
+    let _native = 'PARA';            
     let _fee = 10;      let _fixed_fee = 500000;
 
     before(async () => {
         bsh_core = await MockBSHCore.new();
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
     });
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
@@ -35,7 +35,7 @@ contract('BSHCore Unit Tests', (accounts) => {
         let _name = "ICON";
         await truffleAssert.reverts(
             bsh_core.register.call(_name),
-            "ExistToken"
+            "ExistCoin"
         );
     }); 
 
@@ -50,17 +50,12 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 6: Should allow contract owner to update a new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri);
+    it.skip('Scenario 6: Should allow contract owner to update a new URI', async () => {
+        // new URL in no longer available
     });
 
-    it('Scenario 7: Should revert when arbitrary client update a new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await truffleAssert.reverts(
-            bsh_core.updateUri.call(new_uri, {from: accounts[1]}),
-            "Unauthorized"
-        );
+    it.skip('Scenario 7: Should revert when arbitrary client update a new URI', async () => {
+        // new URL in no longer available
     });
 
     it('Scenario 8: Should allow contract owner to update fee ratio', async () => {
@@ -142,15 +137,16 @@ contract('BSHCore Unit Tests', (accounts) => {
         let id = web3.utils.keccak256(_query);
         let result = await bsh_core.coinId(_query);
         assert(
-            web3.utils.BN(result).toString() === web3.utils.toBN(id).toString()
+            web3.utils.toChecksumAddress(result) !== web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
         );
     }); 
 
-    it('Scenario 15: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 15: Should receive an id = address(0) when querying an invalid supporting coin', async () => {
         let _query = "EOS";
         let result = await bsh_core.coinId(_query);
         assert(
-            web3.utils.BN(result).toNumber() === 0
+            web3.utils.toChecksumAddress(result) === web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
+
         );
     }); 
 
@@ -215,14 +211,12 @@ contract('BSHCore Unit Tests', (accounts) => {
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]});
     });
 
-    it('Scenario 22: Should allow new owner to update the new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri, {from: accounts[1]});
+    it.skip('Scenario 22: Should allow new owner to update the new URI', async () => {
+        // new URI no longer available
     });
 
-    it('Scenario 23: Should also allow old owner to update the new URI - After adding new Owner', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri, {from: accounts[0]});
+    it.skip('Scenario 23: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+        // new URI no longer available
     });
 
     it('Scenario 24: Should allow new owner to update new fee ratio', async () => {
@@ -322,12 +316,8 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 33: Should revert when removed Owner tries to update the new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await truffleAssert.reverts(
-            bsh_core.updateUri.call(new_uri, {from: accounts[0]}),
-            'Unauthorized'
-        );
+    it.skip('Scenario 33: Should revert when removed Owner tries to update the new URI', async () => {
+        // new URI no longer available
     });
 
     it('Scenario 34: Should revert when removed Owner tries to update new fee ratio', async () => {

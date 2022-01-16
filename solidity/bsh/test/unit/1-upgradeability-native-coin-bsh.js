@@ -9,7 +9,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
     let _native = 'PARA';       let _uri = 'https://github.com/icon-project/btp'                   
     let _fee = 10;      let _fixed_fee = 500000;
     before(async () => {
-        bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+        bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
         bsh_coreV2 = await upgradeProxy(bsh_coreV1.address, BSHCoreV2);
     });
 
@@ -34,7 +34,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         let _name = "ICON";
         await truffleAssert.reverts(
             bsh_coreV2.register.call(_name),
-            "ExistToken"
+            "ExistCoin"
         );
     }); 
 
@@ -140,6 +140,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
         let _query = "ICON";
         let id = web3.utils.keccak256(_query);
         let result = await bsh_coreV2.coinId(_query);
+        console.log("result", result)
         assert(
             web3.utils.BN(result).toString() === web3.utils.toBN(id).toString()
         );

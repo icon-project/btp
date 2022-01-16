@@ -73,7 +73,7 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     uint256 private serialNo; //  a counter of sequence number of service message
     uint256 private numOfPendingRequests;
 
-    modifier onlyBMC {
+    modifier onlyBMC() {
         require(msg.sender == address(bmc), "Unauthorized");
         _;
     }
@@ -107,11 +107,13 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
         //  If '_to' address is an invalid BTP Address format
         //  VM throws an error and revert(). Thus, it does not need
         //  a try_catch at this point
-        (string memory _toNetwork, string memory _toAddress) =
-            _to.splitBTPAddress();
+        (string memory _toNetwork, string memory _toAddress) = _to
+            .splitBTPAddress();
         Types.Asset[] memory _assets = new Types.Asset[](_coinNames.length);
-        Types.AssetTransferDetail[] memory _assetDetails =
-            new Types.AssetTransferDetail[](_coinNames.length);
+        Types.AssetTransferDetail[]
+            memory _assetDetails = new Types.AssetTransferDetail[](
+                _coinNames.length
+            );
         for (uint256 i = 0; i < _coinNames.length; i++) {
             _assets[i] = Types.Asset(_coinNames[i], _values[i]);
             _assetDetails[i] = Types.AssetTransferDetail(
@@ -132,13 +134,11 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
             serialNo,
             Types
                 .ServiceMessage(
-                Types
-                    .ServiceType
-                    .REQUEST_COIN_TRANSFER,
-                Types
-                    .TransferCoin(_strFrom, _toAddress, _assets)
-                    .encodeTransferCoinMsg()
-            )
+                    Types.ServiceType.REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_strFrom, _toAddress, _assets)
+                        .encodeTransferCoinMsg()
+                )
                 .encodeServiceMessage()
         );
         //  Push pending tx into Record list
@@ -247,11 +247,10 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
     ) external override onlyBMC {
         require(_svc.compareTo(serviceName) == true, "InvalidSvc");
         require(bytes(requests[_sn].from).length != 0, "InvalidSN");
-        string memory _emitMsg =
-            string("errCode: ")
-                .concat(_code.toString())
-                .concat(", errMsg: ")
-                .concat(_msg);
+        string memory _emitMsg = string("errCode: ")
+            .concat(_code.toString())
+            .concat(", errMsg: ")
+            .concat(_msg);
         handleResponseService(_sn, RC_ERR, _emitMsg);
     }
 
@@ -320,9 +319,9 @@ contract BSHPeriphery is Initializable, IBSHPeriphery {
             _sn,
             Types
                 .ServiceMessage(
-                _serviceType,
-                Types.Response(_code, _msg).encodeResponse()
-            )
+                    _serviceType,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
                 .encodeServiceMessage()
         );
     }

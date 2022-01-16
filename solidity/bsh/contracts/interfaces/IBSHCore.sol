@@ -3,8 +3,7 @@ pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "../libraries/Types.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
    @title Interface of BSHCore contract
@@ -13,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgrad
    Native Coin : The native coin of this chain
    Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
 */
-interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
+interface IBSHCore {
     /**
        @notice Adding another Onwer.
        @dev Caller must be an Onwer of BTP network
@@ -51,14 +50,6 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
         @param _bshPeriphery    BSHPeriphery contract address.
     */
     function updateBSHPeriphery(address _bshPeriphery) external;
-
-    /**
-        @notice update base uri.
-        @dev Caller must be an Owner of this contract
-        the uri must be initilized in construction.
-        @param _newURI    new uri
-    */
-    function updateUri(string calldata _newURI) external;
 
     /**
         @notice set fee ratio.
@@ -102,7 +93,7 @@ interface IBSHCore is IERC1155Upgradeable, IERC1155ReceiverUpgradeable {
     function coinId(string calldata _coinName)
         external
         view
-        returns (uint256 _coinId);
+        returns (address _coinId);
 
     /**
        @notice  Check Validity of a _coinName

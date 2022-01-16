@@ -12,10 +12,9 @@ contract NonRefundable {
         string calldata _to,
         uint256 _amt
     ) external {
-        (bool success, bytes memory err) =
-            _bsh.call{value: _amt}(
-                abi.encodeWithSignature("transferNativeCoin(string)", _to)
-            );
+        (bool success, bytes memory err) = _bsh.call{value: _amt}(
+            abi.encodeWithSignature("transferNativeCoin(string)", _to)
+        );
         require(success, string(err));
     }
 }
