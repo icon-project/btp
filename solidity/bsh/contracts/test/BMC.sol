@@ -72,7 +72,7 @@ contract BMC is IBMCPeriphery {
     uint256 internal constant BSH_ERR = 40;
     uint256 private constant DECIMAL_PRECISION = 10**6;
 
-    modifier owner {
+    modifier owner() {
         require(_owners[msg.sender] == true, "BMCRevertUnauthorized");
         _;
     }
@@ -124,9 +124,9 @@ contract BMC is IBMCPeriphery {
                         try
                             IBSH(bshServices[_gatherFee.svcs[i]])
                                 .handleFeeGathering(
-                                _gatherFee.fa,
-                                _gatherFee.svcs[i]
-                            )
+                                    _gatherFee.fa,
+                                    _gatherFee.svcs[i]
+                                )
                         {} catch {
                             //  If BSH contract throws a revert error, ignore and continue
                         }
@@ -217,25 +217,20 @@ contract BMC is IBMCPeriphery {
         string memory _errMsg
     ) internal {
         if (_message.sn > 0) {
-            bytes memory _serializedMsg =
-                Types
-                    .BMCMessage(
+            bytes memory _serializedMsg = Types
+                .BMCMessage(
                     bmcAddress,
-                    _message
-                        .src,
-                    _message
-                        .svc,
+                    _message.src,
+                    _message.svc,
                     int256(_message.sn) * -1,
                     Types
                         .ServiceMessage(
-                        Types
-                            .ServiceType
-                            .REPONSE_HANDLE_SERVICE,
-                        Types.Response(_errCode, _errMsg).encodeResponse()
-                    )
+                            Types.ServiceType.REPONSE_HANDLE_SERVICE,
+                            Types.Response(_errCode, _errMsg).encodeResponse()
+                        )
                         .encodeServiceMessage()
                 )
-                    .encodeBMCMessage();
+                .encodeBMCMessage();
             _sendMessage(_prev, _serializedMsg);
         }
     }
@@ -266,10 +261,9 @@ contract BMC is IBMCPeriphery {
             revert("BMCRevertNotExistsBMV");
         }
         string memory _toBMC = connectedBMC[_to];
-        bytes memory _rlp =
-            Types
-                .BMCMessage(bmcAddress, _toBMC, _svc, int256(_sn), _msg)
-                .encodeBMCMessage();
+        bytes memory _rlp = Types
+            .BMCMessage(bmcAddress, _toBMC, _svc, int256(_sn), _msg)
+            .encodeBMCMessage();
         if (_svc.compareTo("_EVENT")) {
             links[_toBMC].txSeq += 1;
             emit Event(_toBMC, links[_toBMC].txSeq, _rlp);

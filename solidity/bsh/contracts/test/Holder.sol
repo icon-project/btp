@@ -2,12 +2,12 @@
 pragma solidity >=0.5.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 import "../interfaces/IBSHPeriphery.sol";
 import "../interfaces/IBSHCore.sol";
 import "../libraries/String.sol";
+import "../interfaces/IERC20Tradable.sol";
 
-contract Holder is ERC1155Holder {
+contract Holder {
     IBSHPeriphery private bshp;
     IBSHCore private bshc;
     using String for string;
@@ -19,8 +19,12 @@ contract Holder is ERC1155Holder {
         bshc = IBSHCore(_bshc);
     }
 
-    function setApprove(address _operator) external {
-        bshc.setApprovalForAll(_operator, true);
+    function setApprove(
+        address _erc20,
+        address _operator,
+        uint256 _value
+    ) external {
+        IERC20Tradable(_erc20).approve(_operator, _value);
     }
 
     function callTransfer(
@@ -53,15 +57,14 @@ contract Holder is ERC1155Holder {
     ) external {
         // int256 pos = isSendingNative(_coinNames);
         if (_native != 0) {
-            (bool success, bytes memory err) =
-                _bsh.call{value: _native}(
-                    abi.encodeWithSignature(
-                        "transferBatch(string[],uint256[],string)",
-                        _coinNames,
-                        _values,
-                        _to
-                    )
-                );
+            (bool success, bytes memory err) = _bsh.call{value: _native}(
+                abi.encodeWithSignature(
+                    "transferBatch(string[],uint256[],string)",
+                    _coinNames,
+                    _values,
+                    _to
+                )
+            );
             require(success, string(err));
         } else {
             bshc.transferBatch(_coinNames, _values, _to);
