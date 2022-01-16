@@ -18,8 +18,12 @@ contract AnotherHolder is ERC1155Holder {
         bshc = BSHCoreV1(_bshc);
     }
 
-    function setApprove(address _operator) external {
-        bshc.setApprovalForAll(_operator, true);
+    function setApprove(
+        address _erc20,
+        address _operator,
+        uint256 _value
+    ) external {
+        IERC20Tradable(_erc20).approve(_operator, _value);
     }
 
     function callTransfer(
@@ -52,15 +56,14 @@ contract AnotherHolder is ERC1155Holder {
     ) external {
         // int256 pos = isSendingNative(_coinNames);
         if (_native != 0) {
-            (bool success, bytes memory err) =
-                _bsh.call{value: _native}(
-                    abi.encodeWithSignature(
-                        "transferBatch(string[],uint256[],string)",
-                        _coinNames,
-                        _values,
-                        _to
-                    )
-                );
+            (bool success, bytes memory err) = _bsh.call{value: _native}(
+                abi.encodeWithSignature(
+                    "transferBatch(string[],uint256[],string)",
+                    _coinNames,
+                    _values,
+                    _to
+                )
+            );
             require(success, string(err));
         } else {
             bshc.transferBatch(_coinNames, _values, _to);

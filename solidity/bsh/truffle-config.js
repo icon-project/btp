@@ -1,5 +1,4 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const web3 = require("web3")
 
 const privKeys = (process.env.PRIVATE_KEYS) ? process.env.PRIVATE_KEYS.split(',') : 
   [
@@ -34,14 +33,10 @@ module.exports = {
     moonbase: {
       provider: () => new HDWalletProvider({
         privateKeys: privKeys,
-        providerOrUrl: "https://rpc.api.moonbase.moonbeam.network",
+        providerOrUrl: "https://rpc.testnet.moonbeam.network",
       }),
       network_id: 1287,
-      networkCheckTimeout: 1000000,
-      timeoutBlocks: 50000,
-      deploymentPollingInterval: 5000,
-      // Make deploy faster for deployment
-      gasPrice: web3.utils.toWei("2", "Gwei"),
+      networkCheckTimeout: 100000,
     },
     moonriver: {
       provider: () => new HDWalletProvider({
@@ -75,5 +70,8 @@ module.exports = {
 
   db: {
     enabled: false
-  }
+  },
+  plugins: [
+    'truffle-contract-size'
+  ]
 };

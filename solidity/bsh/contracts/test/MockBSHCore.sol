@@ -6,18 +6,18 @@ import "../BSHCore.sol";
 contract MockBSHCore is BSHCore {
     function mintMock(
         address _acc,
-        uint256 _id,
+        uint256 _erc20Address,
         uint256 _value
     ) external {
-        _mint(_acc, _id, _value, "");
+        IERC20Tradable(_erc20Address).mint(_acc, _value);
     }
 
     function burnMock(
         address _acc,
-        uint256 _id,
+        uint256 _erc20Address,
         uint256 _value
     ) external {
-        _burn(_acc, _id, _value);
+        IERC20Tradable(_erc20Address).mint(_acc, _value);
     }
 
     function setAggregationFee(string calldata _coinName, uint256 _value)

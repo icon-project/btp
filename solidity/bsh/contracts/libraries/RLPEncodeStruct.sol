@@ -29,11 +29,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bs.serviceType.encodeString(),
-                _bs.payload.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bs.serviceType.encodeString(),
+            _bs.payload.encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -61,11 +60,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _em.conn.from.encodeString(),
-                _em.conn.to.encodeString()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _em.conn.from.encodeString(),
+            _em.conn.to.encodeString()
+        );
         _rlp = abi.encodePacked(
             _em.eventType.encodeString(),
             addLength(_rlp.length, false),
@@ -93,14 +91,13 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bm.src.encodeString(),
-                _bm.dst.encodeString(),
-                _bm.svc.encodeString(),
-                _bm.sn.encodeInt(),
-                _bm.message.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bm.src.encodeString(),
+            _bm.dst.encodeString(),
+            _bm.svc.encodeString(),
+            _bm.sn.encodeInt(),
+            _bm.message.encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -109,11 +106,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                uint256(_sm.serviceType).encodeUint(),
-                _sm.data.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            uint256(_sm.serviceType).encodeUint(),
+            _sm.data.encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -145,11 +141,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _res.code.encodeUint(),
-                _res.message.encodeString()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _res.code.encodeUint(),
+            _res.message.encodeString()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -163,16 +158,15 @@ library RLPEncodeStruct {
         //  In that case, encoding these two items gives the result as 0xF800
         //  Similarly, logsBloom might be also empty
         //  But, encoding this item gives the result as 0x80
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bh.version.encodeUint(),
-                _bh.height.encodeUint(),
-                _bh.timestamp.encodeUint(),
-                _bh.proposer.encodeBytes(),
-                _bh.prevHash.encodeBytes(),
-                _bh.voteHash.encodeBytes(),
-                _bh.nextValidators.encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bh.version.encodeUint(),
+            _bh.height.encodeUint(),
+            _bh.timestamp.encodeUint(),
+            _bh.proposer.encodeBytes(),
+            _bh.prevHash.encodeBytes(),
+            _bh.voteHash.encodeBytes(),
+            _bh.nextValidators.encodeBytes()
+        );
         bytes memory temp1;
         if (_bh.patchTxHash.length != 0) {
             temp1 = _bh.patchTxHash.encodeBytes();
@@ -354,11 +348,10 @@ library RLPEncodeStruct {
         pure
         returns (bytes memory)
     {
-        bytes memory _rlp =
-            abi.encodePacked(
-                _bp.bh.encodeBlockHeader().encodeBytes(),
-                _bp.bw.encodeBlockWitness().encodeBytes()
-            );
+        bytes memory _rlp = abi.encodePacked(
+            _bp.bh.encodeBlockHeader().encodeBytes(),
+            _bp.bw.encodeBlockWitness().encodeBytes()
+        );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
