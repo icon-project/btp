@@ -15,7 +15,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
         let _name = "ICON";
-        await bsh_coreV2.register(_name);
+        await bsh_coreV2.register(_name, "", 18);
         output = await bsh_coreV2.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON'
@@ -25,7 +25,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
     it('Scenario 2: Should revert when an arbitrary client tries to register a new coin', async () => {   
         let _name = "TRON";
         await truffleAssert.reverts(
-            bsh_coreV2.register.call(_name, {from: accounts[1]}),
+            bsh_coreV2.register.call(_name, "", 18, {from: accounts[1]}),
             "Unauthorized"
         );
     }); 
@@ -33,7 +33,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
     it('Scenario 3: Should revert when contract owner registers an existed coin', async () => {
         let _name = "ICON";
         await truffleAssert.reverts(
-            bsh_coreV2.register.call(_name),
+            bsh_coreV2.register.call(_name, "", 18),
             "ExistCoin"
         );
     }); 
@@ -134,8 +134,8 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
 
     it('Scenario 14: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
         let _name1 = "wBTC";    let _name2 = "Ethereum";
-        await bsh_coreV2.register(_name1);
-        await bsh_coreV2.register(_name2);
+        await bsh_coreV2.register(_name1, "", 18);
+        await bsh_coreV2.register(_name2, "", 18);
 
         let _query = "ICON";
         let id = web3.utils.keccak256(_query);
@@ -179,7 +179,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
     
     it('Scenario 18: Should allow old owner to register a new coin - After adding new Owner', async () => {
         let _name3 = "TRON";
-        await bsh_coreV2.register(_name3);
+        await bsh_coreV2.register(_name3, "", 18);
         output = await bsh_coreV2.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -190,7 +190,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
 
     it('Scenario 19: Should allow new owner to register a new coin', async () => {   
         let _name3 = "BINANCE";
-        await bsh_coreV2.register(_name3, {from: accounts[1]});
+        await bsh_coreV2.register(_name3, "", 18, {from: accounts[1]});
         output = await bsh_coreV2.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -300,7 +300,7 @@ contract('BSHCore Unit Tests - After Upgrading Contract', (accounts) => {
     it('Scenario 31: Should revert when removed Owner tries to register a new coin', async () => {
         let _name3 = "KYBER";
         await truffleAssert.reverts(
-            bsh_coreV2.register.call(_name3),
+            bsh_coreV2.register.call(_name3, "", 18),
             'Unauthorized'
         );
         output = await bsh_coreV2.coinNames();
