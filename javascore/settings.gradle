@@ -8,4 +8,6 @@ include (
         'bsh',
         'nativecoin',
         'fee-aggregation',
+        'bmv:near:verifier',
+        'bmv:near:proof-decoder'
 )

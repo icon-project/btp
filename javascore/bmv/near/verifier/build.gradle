@@ -1,0 +1,61 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("foundation.icon:javaee-scorex:$scorexVersion")
+    implementation 'foundation.icon:icon-sdk:2.0.0'
+    implementation project(':score-util')
+    implementation project(':lib')
+    implementation 'com.github.multiformats:java-multibase:1.0.0'
+    compileOnly 'androidx.annotation:annotation:1.1.0'
+    implementation files('../borshj-0.1.0.jar')
+    
+    testImplementation 'commons-codec:commons-codec:1.9'
+    testImplementation 'foundation.icon:javaee-unittest:0.9.2'
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+
+    testImplementation("org.mockito:mockito-core:3.3.3")
+}
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.bmv.near.verifier.BTPMessageVerifier'
+    archivesBaseName = 'bmv-near-verifier'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
+        }
+    }
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
+    parameters {[
+            arg('_bmc', 'cx?'),
+            arg('_net', '0x?.near'),
+            arg('_validators', '?'),
+            arg('_offset', '0x?')
+        ]
+    }
+}
+
+test {
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}
