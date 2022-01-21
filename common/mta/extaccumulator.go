@@ -98,9 +98,9 @@ func (a *ExtAccumulator) Recover() error {
 	}
 	a.length = s.Height - s.Offset
 	a.serialized = b
-	if a.offset < s.Offset || a.offset > s.Offset {
+	if a.offset != s.Offset || a.Height() > s.Height {
 		a.length = 0
-		a.Flush()
+		a.Clear()
 		log.Debugf("resync with new offset:%d, height:%d", a.Offset(), a.Height())
 	}
 	return nil
@@ -143,6 +143,15 @@ func (a *ExtAccumulator) AddData(d []byte) []Witness {
 		data:      d,
 	}
 	return a.AddNode(l)
+}
+
+func (a *ExtAccumulator) Clear() {
+	for _, rn := range a.roots {
+		if rn != nil {
+			rn.Delete()
+		}
+	}
+	a.roots = make([]Node, a.limitRoots)
 }
 
 func (a *ExtAccumulator) WitnessForAt(height, at, offset int64) (int64, []Witness, error) {

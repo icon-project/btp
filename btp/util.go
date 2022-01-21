@@ -47,27 +47,9 @@ func (b *BTP) receiveHeight() int64 {
 	// LastHeight out of bound for range of [BMV.Offset, BMV.Height]
 	if b.bmcLinkStatus.Verifier.Offset > b.bmcLinkStatus.Verifier.LastHeight {
 		b.log.Warnf("BMV.LastHeight %d out of bound for range of [BMV.Offset %d, BMV.Height %d], might skip next BTP message", b.bmcLinkStatus.Verifier.LastHeight, b.bmcLinkStatus.Verifier.Offset, b.bmcLinkStatus.Verifier.Height)
-		return b.bmcLinkStatus.Verifier.Offset
 	}
 
-	if mtaHeight < b.bmcLinkStatus.Verifier.Offset {
-		mtaHeight = b.bmcLinkStatus.Verifier.Offset
-	}
-
-	mtaHeight += 1
-
-	// Force sync to catchup
-	// if b.store.Offset() == b.bmcLinkStatus.Verifier.Offset {
-	// 	b.log.Debugf("force sync with local MTA height, might miss next BTP Message", mtaHeight)
-	// 	return b.bmcLinkStatus.Verifier.Height
-	// }
-
-	receiveHeight := b.bmcLinkStatus.Verifier.LastHeight
-	if mtaHeight < receiveHeight {
-		receiveHeight = mtaHeight
-	}
-
-	return receiveHeight
+	return mtaHeight
 }
 
 // newRelayMessage initializes an empty RelayMessage into the bufferred rms
