@@ -43,13 +43,16 @@ func (b *BTP) prepareDatabase(offset int64, rootSize int) error {
 }
 
 func (b *BTP) receiveHeight() int64 {
-	mtaHeight := b.store.Height()
 	// LastHeight out of bound for range of [BMV.Offset, BMV.Height]
 	if b.bmcLinkStatus.Verifier.Offset > b.bmcLinkStatus.Verifier.LastHeight {
 		b.log.Warnf("BMV.LastHeight %d out of bound for range of [BMV.Offset %d, BMV.Height %d], might skip next BTP message", b.bmcLinkStatus.Verifier.LastHeight, b.bmcLinkStatus.Verifier.Offset, b.bmcLinkStatus.Verifier.Height)
 	}
 
-	return mtaHeight
+	if b.store.Height() > b.bmcLinkStatus.Verifier.Height {
+		return b.bmcLinkStatus.Verifier.Height
+	} else {
+		return b.store.Height() + 1
+	}
 }
 
 // newRelayMessage initializes an empty RelayMessage into the bufferred rms
