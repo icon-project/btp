@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.nativecoin.irc31;
+package foundation.icon.btp.irc2Tradeable;
 
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.AssertRevertedException;
@@ -28,23 +28,23 @@ import java.math.BigInteger;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class OwnershipTest implements IRC31IntegrationTest {
+public class OwnershipTest implements IRC2IntegrationTest {
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
     static String string = "";
     static BigInteger bigInteger = BigInteger.ZERO;
     static BigInteger[] bigIntegerArray = new BigInteger[]{BigInteger.ZERO};
 
     static boolean isExistsOwner(Address address) {
-        return irc31OwnerManager.isOwner(address);
+        return irc2OwnerManager.isOwner(address);
     }
 
     static void addOwner(Address address) {
-        irc31OwnerManager.addOwner(address);
+        irc2OwnerManager.addOwner(address);
         assertTrue(isExistsOwner(address));
     }
 
     static void removeOwner(Address address) {
-        irc31OwnerManager.removeOwner(address);
+        irc2OwnerManager.removeOwner(address);
         assertFalse(isExistsOwner(address));
     }
 
@@ -104,36 +104,16 @@ public class OwnershipTest implements IRC31IntegrationTest {
 
     @Test
     void addOwnerShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31OwnerManagerWithTester.addOwner(address));
+        assertUnauthorized(() -> irc2OwnerManagerWithTester.addOwner(address));
     }
 
     @Test
     void removeOwnerShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31OwnerManagerWithTester.removeOwner(address));
+        assertUnauthorized(() -> irc2OwnerManagerWithTester.removeOwner(address));
     }
 
     @Test
     void mintShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31SupplierWithTester.mint(address, bigInteger, bigInteger));
-    }
-
-    @Test
-    void mintBatchShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31SupplierWithTester.mintBatch(address, bigIntegerArray, bigIntegerArray));
-    }
-
-    @Test
-    void burnShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31SupplierWithTester.burn(address, bigInteger, bigInteger));
-    }
-
-    @Test
-    void burnBatchShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31SupplierWithTester.burnBatch(address, bigIntegerArray, bigIntegerArray));
-    }
-
-    @Test
-    void setTokenURIShouldRevertUnauthorized() {
-        assertUnauthorized(() -> irc31SupplierWithTester.setTokenURI(bigInteger, string));
+        assertUnauthorized(() -> irc2SupplierWithTester.mint(address, bigInteger));
     }
 }

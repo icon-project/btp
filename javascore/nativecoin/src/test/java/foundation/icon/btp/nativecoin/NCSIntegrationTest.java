@@ -20,7 +20,6 @@ import foundation.icon.btp.lib.BSH;
 import foundation.icon.btp.lib.BSHScoreClient;
 import foundation.icon.btp.lib.OwnerManager;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
-import foundation.icon.btp.nativecoin.irc31.IRC31IntegrationTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.btp.test.SendMessageEventLog;
@@ -45,8 +44,8 @@ public interface NCSIntegrationTest extends BTPIntegrationTest {
 
     DefaultScoreClient ncsClient = DefaultScoreClient.of(
             System.getProperties(), Map.of(
-                    "_bmc", MockBMCIntegrationTest.mockBMCClient._address(),
-                    "_irc31", IRC31IntegrationTest.irc31Client._address()));
+                    "_bmc", MockBMCIntegrationTest.mockBMCClient._address()
+            ));
 
     @ScoreClient
     NCS ncs = new NCSScoreClient(ncsClient);

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.nativecoin.irc31;
+package foundation.icon.btp.irc2Tradeable;
 
 import foundation.icon.btp.lib.OwnerManager;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
-import foundation.icon.btp.nativecoin.TransferStartEventLog;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.ScoreClient;
@@ -30,7 +29,7 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public interface IRC31IntegrationTest extends ScoreIntegrationTest {
+public interface IRC2IntegrationTest extends ScoreIntegrationTest {
     @Override
     default void internalBeforeEach(TestInfo testInfo) {}
 
@@ -40,21 +39,21 @@ public interface IRC31IntegrationTest extends ScoreIntegrationTest {
     @Override
     default void clearIfExists(TestInfo testInfo) {}
 
-    DefaultScoreClient irc31Client = DefaultScoreClient.of("irc31.", System.getProperties());
+    DefaultScoreClient irc2Client = DefaultScoreClient.of("irc2.", System.getProperties());
     @ScoreClient
-    IRC31Supplier irc31Supplier = new IRC31SupplierScoreClient(irc31Client);
+    IRC2Supplier irc2Supplier = new IRC2SupplierScoreClient(irc2Client);
     @ScoreClient
-    OwnerManager irc31OwnerManager = new OwnerManagerScoreClient(irc31Client);
+    OwnerManager irc2OwnerManager = new OwnerManagerScoreClient(irc2Client);
 
-    DefaultScoreClient irc31ClientWithTester = new DefaultScoreClient(
-            irc31Client.endpoint(), irc31Client._nid(), tester, irc31Client._address());
-    IRC31Supplier irc31SupplierWithTester = new IRC31SupplierScoreClient(irc31ClientWithTester);
-    OwnerManager irc31OwnerManagerWithTester = new OwnerManagerScoreClient(irc31ClientWithTester);
+    DefaultScoreClient irc2ClientWithTester = new DefaultScoreClient(
+            irc2Client.endpoint(), irc2Client._nid(), tester, irc2Client._address());
+    IRC2Supplier irc2SupplierWithTester = new IRC2SupplierScoreClient(irc2ClientWithTester);
+    OwnerManager irc2OwnerManagerWithTester = new OwnerManagerScoreClient(irc2ClientWithTester);
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                irc31Client._address(), supplier, consumer);
+                irc2Client._address(), supplier, consumer);
     }
 
 }

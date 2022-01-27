@@ -162,6 +162,9 @@ moonbeam_bmc_addService_ERC20() {
 
 moonbeam_bsh_registerCoin() {
     echo "moonbeam_bsh_registerCoin"
+    NEXTLINK_BTP_NATIVECOIN_NAME="ICX"
+    NEXTLINK_BTP_NATIVECOIN_SYMBOL="ICON"
+    NEXTLINK_BTP_NATIVECOIN_DECIMAL=18
     cd $SOLIDITY_DIST_DIR/bsh
     cp $SCRIPT_DIR/mb_bsh_register_coin.js .
     truffle exec mb_bsh_register_coin.js --network moonbeamlocal

@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.nativecoin.irc31;
+package foundation.icon.btp.irc2Tradeable;
 
-import com.iconloop.score.token.irc31.IRC31;
-import foundation.icon.btp.nativecoin.NCSMessage;
-import foundation.icon.btp.nativecoin.TransferRequest;
-import foundation.icon.jsonrpc.Address;
-import org.junit.jupiter.api.Test;
+class IRC2Test implements IRC2IntegrationTest {
 
-import java.math.BigInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class IRC31Test implements IRC31IntegrationTest {
-
-    static IRC31 irc31 = IRC31IntegrationTest.irc31Supplier;
-
-
+    static IRC2Supplier irc2 = IRC2IntegrationTest.irc2Supplier;
 }
