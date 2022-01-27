@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.nativecoin.irc31;
-
+package foundation.icon.btp.irc2Tradeable;
 
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.IconJsonModule;
@@ -26,24 +25,16 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class TransferSingleEventLog {
-    static final String SIGNATURE = "TransferSingle(Address,Address,Address,int,int)";
-    private Address operator;
+public class TransferEventLog {
+    static final String SIGNATURE = "Transfer(Address,Address,int,bytes)";
     private Address from;
     private Address to;
-    private BigInteger id;
     private BigInteger value;
 
-    public TransferSingleEventLog(TransactionResult.EventLog el) {
-        this.operator = new Address(el.getIndexed().get(1));
-        this.from = new Address(el.getIndexed().get(2));
-        this.to = new Address(el.getIndexed().get(3));
-        this.id = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(0));
-        this.value = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(1));
-    }
-
-    public Address getOperator() {
-        return operator;
+    public TransferEventLog(TransactionResult.EventLog el) {
+        this.from = new Address(el.getIndexed().get(1));
+        this.to = new Address(el.getIndexed().get(2));
+        this.value = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getIndexed().get(3));
     }
 
     public Address getFrom() {
@@ -54,32 +45,26 @@ public class TransferSingleEventLog {
         return to;
     }
 
-    public BigInteger getId() {
-        return id;
-    }
-
     public BigInteger getValue() {
         return value;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("TransferSingleEventLog{");
-        sb.append("operator=").append(operator);
+        final StringBuilder sb = new StringBuilder("TransferEventLog{");
         sb.append(", from=").append(from);
         sb.append(", to=").append(to);
-        sb.append(", id=").append(id);
         sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<TransferSingleEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<TransferSingleEventLog> filter) {
+    public static List<TransferEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<TransferEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                TransferSingleEventLog.SIGNATURE,
+                TransferEventLog.SIGNATURE,
                 address,
-                TransferSingleEventLog::new,
+                TransferEventLog::new,
                 filter);
     }
 }

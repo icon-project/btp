@@ -61,6 +61,7 @@ services:
             - BTPSIMPLE_KEY_STORE=/btpsimple/config/moonbeam.keystore.json
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btp.icon.log
+            - BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
     btp_moonbeam:
         container_name: g2m_btp_moonbeam
         build:
@@ -86,3 +87,4 @@ services:
             - BTPSIMPLE_KEY_STORE=/btpsimple/config/goloop.keystore.json
             - BTPSIMPLE_KEY_SECRET=/btpsimple/config/goloop.keysecret
             - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_moonbeam/btpsimple_moonbeam.log
+            - BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=16]

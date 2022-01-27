@@ -18,9 +18,8 @@ package foundation.icon.btp.nativecoin;
 
 import com.iconloop.score.token.irc31.IRC31Receiver;
 import foundation.icon.btp.lib.*;
-import foundation.icon.btp.nativecoin.irc31.IRC31SupplierScoreInterface;
+import foundation.icon.btp.nativecoin.irc2.IRC2SupplierScoreInterface;
 import foundation.icon.score.util.ArrayUtil;
-import foundation.icon.score.util.BigIntegerUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
 import score.*;
@@ -42,7 +41,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     //
     private final Address bmc;
     private final String net;
-    private final Address irc31;
+    private final byte[] serializedIrc2;
     private final String name;
     private final VarDB<NCSProperties> properties = Context.newVarDB("properties", NCSProperties.class);
 
@@ -51,17 +50,20 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
 
     //
     private final ArrayDB<String> coinNames = Context.newArrayDB("coinNames", String.class);
+    private final DictDB<String, Address> coinAddresses = Context.newDictDB("coinAddresses", Address.class);
+
+    //
     private final BranchDB<String, DictDB<Address, Balance>> balances = Context.newBranchDB("balances", Balance.class);
     private final DictDB<String, BigInteger> feeBalances = Context.newDictDB("feeBalances", BigInteger.class);
     private final DictDB<BigInteger, TransferTransaction> transactions = Context.newDictDB("transactions", TransferTransaction.class);
 
-    public NativeCoinService(Address _bmc, Address _irc31, String _name) {
+    public NativeCoinService(Address _bmc, String _name, byte[] _serializedIrc2) {
         bmc = _bmc;
         BMCScoreInterface bmcInterface = new BMCScoreInterface(bmc);
         BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
         net = btpAddress.net();
-        irc31 = _irc31;
         name = _name;
+        serializedIrc2 = _serializedIrc2;
     }
 
     public NCSProperties getProperties() {
@@ -91,10 +93,6 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         return coinNames;
     }
 
-    static BigInteger generateTokenId(String name) {
-        return new BigInteger(Context.hash("sha3-256", name.getBytes()));
-    }
-
     static void require(boolean condition, String message) {
         if (!condition) {
             throw NCSException.unknown(message);
@@ -102,11 +100,13 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External
-    public void register(String _name) {
+    public void register(String _name, String _symbol, int _decimals) {
         requireOwnerAccess();
 
         require(!name.equals(_name) && !isRegistered(_name), "already existed");
+        Address irc2Address = Context.deploy(serializedIrc2, _name, _symbol, _decimals);
         coinNames.add(_name);
+        coinAddresses.set(_name, irc2Address);
     }
 
     @External(readonly = true)
@@ -121,13 +121,8 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     @External(readonly = true)
-    public BigInteger coinId(String _coinName) {
-        if (name.equals(_coinName)) {
-            return NATIVE_COIN_ID;
-        } else if (isRegistered(_coinName)) {
-            return generateTokenId(_coinName);
-        }
-        return null;
+    public Address coinAddress(String _coinName) {
+        return this.coinAddresses.getOrDefault(_coinName, null);
     }
 
     @External(readonly = true)
@@ -165,7 +160,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         if (name.equals(_coinName)) {
             Context.transfer(owner, _value);
         } else {
-            transferFrom(Context.getAddress(), owner, generateTokenId(_coinName), _value);
+            transferFrom(Context.getAddress(), owner, _coinName, _value);
         }
     }
 
@@ -183,7 +178,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         require(!name.equals(_coinName) && isRegistered(_coinName), "Not supported Token");
 
         Address owner = Context.getCaller();
-        transferFrom(owner, Context.getAddress(), generateTokenId(_coinName), _value);
+        transferFrom(owner, Context.getAddress(), _coinName, _value);
         sendRequest(owner, BTPAddress.valueOf(_to), List.of(_coinName), List.of(_value));
     }
 
@@ -196,17 +191,15 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         List<String> coinNames = new ArrayList<>();
         List<BigInteger> values = new ArrayList<>();
         int len = _coinNames.length;
-        BigInteger[] ids = new BigInteger[len];
         for (int i = 0; i < len; i++) {
             String coinName = _coinNames[i];
             require(!name.equals(coinName) && registeredCoinNames.contains(coinName), "Not supported Token");
             coinNames.add(coinName);
             values.add(_values[i]);
-            ids[i] = generateTokenId(coinName);
         }
 
         Address owner = Context.getCaller();
-        transferFromBatch(owner, Context.getAddress(), ids, _values);
+        transferFromBatch(owner, Context.getAddress(), _coinNames, _values);
 
         BigInteger value = Context.getValue();
         if (value != null && value.compareTo(BigInteger.ZERO) > 0) {
@@ -364,19 +357,11 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
                     BigInteger feeAmount = feeAmounts.remove(idx);
                     Context.transfer(fa, feeAmount);
                 }
-                transferFromBatch(owner, fa, coinNamesToIds(coinNames), ArrayUtil.toBigIntegerArray(feeAmounts));
+                transferFromBatch(owner, fa, ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(feeAmounts));
             } else {
                 sendRequest(owner, from, coinNames, feeAmounts);
             }
         }
-    }
-
-    private BigInteger[] coinNamesToIds(List<String> coinNames) {
-        BigInteger[] ids = new BigInteger[coinNames.size()];
-        for (int i = 0; i < coinNames.size(); i++) {
-            ids[i] = generateTokenId(coinNames.get(i));
-        }
-        return ids;
     }
 
     private Balance getBalance(String coinName, Address owner) {
@@ -471,7 +456,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         }
 
         if (coinNames.size() > 0) {
-            mintBatch(to, coinNamesToIds(coinNames), ArrayUtil.toBigIntegerArray(amounts));
+            mintBatch(to, ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(amounts));
         }
 
         logger.println("handleRequest","responseSuccess");
@@ -513,7 +498,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
                 }
 
                 if (coinNames.size() > 0) {
-                    burnBatch(coinNamesToIds(coinNames), ArrayUtil.toBigIntegerArray(amounts));
+                    burnBatch(ArrayUtil.toStringArray(coinNames), ArrayUtil.toBigIntegerArray(amounts));
                 }
             } else {
                 for (AssetTransferDetail asset : assets) {
@@ -584,11 +569,12 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
     }
 
     /* Intercall with IRC31Supplier */
-    private void transferFrom(Address from, Address to, BigInteger id, BigInteger amount) {
-        logger.println("transferFrom", from, to, id, amount);
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
+    private void transferFrom(Address from, Address to, String coinName, BigInteger amount) {
+        logger.println("transferFrom", from, to, coinName, amount);
+        Address coinAddress = this.getCoinAddress(coinName);
+        IRC2SupplierScoreInterface irc2 = new IRC2SupplierScoreInterface(coinAddress);
         try {
-            irc31.transferFrom(from, to, id, amount, null);
+            irc2.transferFrom(from, to, amount, null);
         } catch (UserRevertedException e) {
             logger.println("transferFrom", "code:", e.getCode(), "msg:", e.getMessage());
             throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
@@ -598,25 +584,19 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         }
     }
 
-    private void transferFromBatch(Address from, Address to, BigInteger[] ids, BigInteger[] amounts) {
-        logger.println("transferFromBatch", from, to, StringUtil.toString(ids), StringUtil.toString(amounts));
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
-        try {
-            irc31.transferFromBatch(from, to, ids, amounts, null);
-        } catch (UserRevertedException e) {
-            logger.println("transferFromBatch", "code:", e.getCode(), "msg:", e.getMessage());
-            throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
-        } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("transferFromBatch", "Exception:", e.toString());
-            throw NCSException.irc31Failure("Exception:" + e);
+    private void transferFromBatch(Address from, Address to, String[] coinNames, BigInteger[] amounts) {
+        logger.println("transferFromBatch", from, to, coinNames, StringUtil.toString(amounts));
+        for (int i = 0; i < coinNames.length; i++) {
+            this.transferFrom(from, to, coinNames[i], amounts[i]);
         }
     }
 
-    private void mint(Address to, BigInteger id, BigInteger amount) {
-        logger.println("mint", to, id, amount);
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
+    private void mint(Address to, String coinName, BigInteger amount) {
+        logger.println("mint", to, coinName, amount);
+        Address coinAddress = this.getCoinAddress(coinName);
+        IRC2SupplierScoreInterface irc2 = new IRC2SupplierScoreInterface(coinAddress);
         try {
-            irc31.mint(to, id, amount);
+            irc2.mint(to, amount);
         } catch (UserRevertedException e) {
             logger.println("mint", "code:", e.getCode(), "msg:", e.getMessage());
             throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
@@ -626,25 +606,19 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         }
     }
 
-    private void mintBatch(Address to, BigInteger[] ids, BigInteger[] amounts) {
-        logger.println("mintBatch", to, StringUtil.toString(ids), StringUtil.toString(amounts));
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
-        try {
-            irc31.mintBatch(to, ids, amounts);
-        } catch (UserRevertedException e) {
-            logger.println("mintBatch", "code:", e.getCode(), "msg:", e.getMessage());
-            throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
-        } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("mintBatch", "Exception:", e.toString());
-            throw NCSException.irc31Failure("Exception:" + e);
+    private void mintBatch(Address to, String[] coinNames, BigInteger[] amounts) {
+        logger.println("mintBatch", to, StringUtil.toString(coinNames), StringUtil.toString(amounts));
+        for (int i = 0; i < coinNames.length; i++) {
+            this.mint(to, coinNames[i], amounts[i]);
         }
     }
 
-    private void burn(BigInteger id, BigInteger amount) {
-        logger.println("burn", id, amount);
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
+    private void burn(String coinName, BigInteger amount) {
+        logger.println("burn", coinName, amount);
+        Address coinAddress = this.getCoinAddress(coinName);
+        IRC2SupplierScoreInterface irc2 = new IRC2SupplierScoreInterface(coinAddress);
         try {
-            irc31.burn(Context.getAddress(), id, amount);
+            irc2.burn(amount);
         } catch (UserRevertedException e) {
             logger.println("burn", "code:", e.getCode(), "msg:", e.getMessage());
             throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
@@ -654,18 +628,15 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         }
     }
 
-    private void burnBatch(BigInteger[] ids, BigInteger[] amounts) {
-        logger.println("burnBatch", StringUtil.toString(ids), StringUtil.toString(amounts));
-        IRC31SupplierScoreInterface irc31 = new IRC31SupplierScoreInterface(this.irc31);
-        try {
-            irc31.burnBatch(Context.getAddress(), ids, amounts);
-        } catch (UserRevertedException e) {
-            logger.println("mintBatch", "code:", e.getCode(), "msg:", e.getMessage());
-            throw NCSException.irc31Reverted("code:" + e.getCode() + "msg:" + e.getMessage());
-        } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("mintBatch", "Exception:", e.toString());
-            throw NCSException.irc31Failure("Exception:" + e);
+    private void burnBatch(String[] coinNames, BigInteger[] amounts) {
+        logger.println("burnBatch", StringUtil.toString(coinNames), StringUtil.toString(amounts));
+        for (int i = 0; i < coinNames.length; i++) {
+            this.burn(coinNames[i], amounts[i]);
         }
+    }
+
+    private Address getCoinAddress(String coinName) {
+        return this.coinAddresses.get(coinName);
     }
 
     /* Delegate OwnerManager */
