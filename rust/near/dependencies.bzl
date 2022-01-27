@@ -1,5 +1,7 @@
+
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "npm_install")
+load("@near//cli:dependencies.bzl", near_cli_util_dependencies = "dependencies")
 
 def dependencies():
     container_pull(
@@ -26,3 +28,5 @@ def dependencies():
         package_lock_json = "@near//cli:package-lock.json",
         symlink_node_modules = False,
     )
+
+    near_cli_util_dependencies()

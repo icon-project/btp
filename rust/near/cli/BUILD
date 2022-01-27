@@ -1,6 +1,17 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary", "npm_package_bin")
+load("@near//cli:defs.bzl", "create_account")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@near_cli_util_python_deps//:requirements.bzl", "requirement")
 
 package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "encode_base58",
+    srcs = ["encode_base58.py"],
+    deps = [
+        requirement("base58")
+    ],
+)
 
 nodejs_binary(
     name = "near_binary",
@@ -13,16 +24,8 @@ nodejs_binary(
     },
 )
 
-genrule(
-    name = "create_bmc_account",
-    outs = ["create_bmc_account.out"],
-    cmd = "$(execpath :near_binary) create-account bmc.node0 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json > $@",
-    executable = True,
-    local = True,
-    tools = [
-        "@near//:wait_until_near_up",
-        "@near//cli:near_binary",
-    ],
+create_account(
+    name = "bmc"
 )
 
 genrule(
@@ -31,12 +34,13 @@ genrule(
         "@near//bmc:bmc_wasm",
     ],
     outs = ["deploy_bmc.out"],
-    cmd = "$(execpath :near_binary) deploy bmc.node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --wasmFile $(locations @near//bmc:bmc_wasm) --accountId bmc.node0 --initFunction \"new\" --initArgs '{\"network\": \"0x1.near\", \"block_interval\": 1500}' > $@",
+    cmd = "$(execpath :near_binary) deploy $$(cat $(location @near//cli:encode_public_key_bmc)) --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --wasmFile $(locations @near//bmc:bmc_wasm) --accountId bmc.node0 --initFunction \"new\" --initArgs '{\"network\": \"0x1.near\", \"block_interval\": 1500}' > $@",
     executable = True,
     local = True,
     tools = [
         "@near//:wait_until_near_up",
-        "@near//cli:create_bmc_account",
+        "@near//cli:create_account_bmc",
+        "@near//cli:encode_public_key_bmc",
         "@near//cli:near_binary",
     ],
 )
