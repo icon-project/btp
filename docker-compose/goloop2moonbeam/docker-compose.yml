@@ -11,21 +11,21 @@ services:
         logging:
                 driver: none
         volumes:
-            - ${PWD}/config:/goloop/config
-            - ${PWD}/data/goloop:/goloop/data
+            - ./config:/goloop/config
+            - ./data/goloop:/goloop/data
         ports:
             - 9080:9080
     moonbeam:
         container_name: g2m_moonbeam
         build:
             context: ./moonbeam
-            args:     
+            args:
                 MOONBEAM_VERSION: v0.13.2-upgrade-hotfix
         logging:
             driver: none
         volumes:
-            - ${PWD}/data/moonbase_dev:/data/chains/moonbase_dev
-            - ${PWD}/data/moonbase_dev/wasm:/data/moonbase_dev/wasm
+            - ./data/moonbase_dev:/data/chains/moonbase_dev
+            - ./data/moonbase_dev/wasm:/data/moonbase_dev/wasm
         ports:
             - "9933:9933"
             - "9944:9944"
@@ -35,22 +35,22 @@ services:
         build:
             context: .
             args: *common-args
-        depends_on: 
+        depends_on:
             goloop:
                 condition: service_healthy
             moonbeam:
                 condition: service_healthy
-        volumes: 
+        volumes:
             - ./scripts:/btpsimple/scripts
-            - ${PWD}/config:/btpsimple/config
-            - ${PWD}/data/btpsimple_icon:/btpsimple/data
+            - ./config:/btpsimple/config
+            - ./data/btpsimple_icon:/btpsimple/data
         env_file: ./btp.share.env
         healthcheck:
             test: ["CMD", "test",  "-f", "/btpsimple/config/provision.started"]
             interval: 3s
             timeout: 3s
             retries: 10
-        environment: 
+        environment:
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
             - BTPSIMPLE_CONFIG=/btpsimple/config/config.icon.json
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
@@ -66,15 +66,15 @@ services:
         build:
             context: .
             args: *common-args
-        depends_on: 
+        depends_on:
             btp_icon:
                 condition: service_healthy
-        volumes: 
+        volumes:
             - ./scripts:/btpsimple/scripts
-            - ${PWD}/config:/btpsimple/config
-            - ${PWD}/data/btpsimple_moonbeam:/btpsimple/data
+            - ./config:/btpsimple/config
+            - ./data/btpsimple_moonbeam:/btpsimple/data
         env_file: ./btp.share.env
-        environment: 
+        environment:
             - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_moonbeam
             - BTPSIMPLE_CONFIG=/btpsimple/config/config.moonbeam.json
             - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam

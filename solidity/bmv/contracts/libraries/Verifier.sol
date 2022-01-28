@@ -49,40 +49,45 @@ library Verifier {
 
     function verifyValidators(
         Types.BlockUpdate memory _blockUpdate,
-        Types.Validators storage validators
+        Types.Validators storage validators,
+        bool _isLastBlock
     ) internal returns (bool) {
-        require(
-            _blockUpdate.votes.ts.length != 0,
-            "BMVRevertInvalidBlockUpdate: Not exists votes"
-        );
 
-        verifyVotes(
-            _blockUpdate.votes,
-            _blockUpdate.blockHeader.height,
-            _blockUpdate.blockHeader.blockHash,
-            validators,
-            _blockUpdate.blockHeader.nextValidatorsHash !=
+        if(_isLastBlock == true) {
+            require(
+                _blockUpdate.votes.ts.length != 0,
+                "BMVRevertInvalidBlockUpdate: Not exists votes"
+            );
+
+            verifyVotes(
+                _blockUpdate.votes,
+                _blockUpdate.blockHeader.height,
+                _blockUpdate.blockHeader.blockHash,
+                validators,
+                _blockUpdate.blockHeader.nextValidatorsHash !=
+                    validators.validatorsHash
+            );
+
+            if (
+                _blockUpdate.blockHeader.nextValidatorsHash !=
                 validators.validatorsHash
-        );
-
-        if (
-            _blockUpdate.blockHeader.nextValidatorsHash !=
-            validators.validatorsHash
-        ) {
-            if (_blockUpdate.nextValidators.length == 0) {
-                revert(
-                    "BMVRevertInvalidBlockUpdate: Not exists next validators"
-                );
-            } else if (
-                _blockUpdate.nextValidatorsHash ==
-                _blockUpdate.blockHeader.nextValidatorsHash
             ) {
-                return true;
-            } else
-                revert(
-                    "BMVRevertInvalidBlockUpdate: Invalid next validator hash"
-                );
+                if (_blockUpdate.nextValidators.length == 0) {
+                    revert(
+                        "BMVRevertInvalidBlockUpdate: Not exists next validators"
+                    );
+                } else if (
+                    _blockUpdate.nextValidatorsHash ==
+                    _blockUpdate.blockHeader.nextValidatorsHash
+                ) {
+                    return true;
+                } else
+                    revert(
+                        "BMVRevertInvalidBlockUpdate: Invalid next validator hash"
+                    );
+            }
         }
+
         return false;
     }
 

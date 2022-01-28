@@ -63,7 +63,7 @@ func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessa
 		if err != nil {
 			s.log.Debugln("newTransactionParam Decode: %v\n", err)
 		}
-		proof.Votes = nil
+		proof.Votes = make([]byte, 0)
 		encodedProof, err := codec.RLP.MarshalToBytes(proof)
 		if err != nil {
 			s.log.Debugln("newTransactionParam Decode: %v\n", err)

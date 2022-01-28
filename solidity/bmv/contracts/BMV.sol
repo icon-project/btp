@@ -93,7 +93,7 @@ contract BMV is IBMV, Initializable {
     /**
         @notice Used by the relay to resolve next BTP Message to send.
                 Called by BMC.
-        @return height height of MerkleTreeAccumulator 
+        @return height height of MerkleTreeAccumulator
         @return offset offset of MerkleTreeAccumulator
         @return lastHeight block height of last relayed BTP Message
      */
@@ -114,7 +114,14 @@ contract BMV is IBMV, Initializable {
         internal
         returns (bytes32 receiptHash, uint256 lastHeight)
     {
+        uint256 _buLength = relayMsg.blockUpdates.length;
+        uint256 _lastIndex = _buLength - 1;
+
         for (uint256 i = 0; i < relayMsg.blockUpdates.length; i++) {
+            bool _isLastBlock = false;
+            if(_lastIndex == i){
+                _isLastBlock = true;
+            }
             // verify height
             require(
                 relayMsg.blockUpdates[i].blockHeader.height <= mta.height + 1,
@@ -155,7 +162,7 @@ contract BMV is IBMV, Initializable {
                 relayMsg.blockUpdates[i].nextValidatorsHash ||
                 i == relayMsg.blockUpdates.length - 1
             ) {
-                if (relayMsg.blockUpdates[i].verifyValidators(validators)) {
+                if (relayMsg.blockUpdates[i].verifyValidators(validators, _isLastBlock)) {
                     delete validators;
                     validators.decodeValidators(
                         relayMsg.blockUpdates[i].nextValidatorsRlp

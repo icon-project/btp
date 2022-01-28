@@ -140,14 +140,18 @@ library MessageDecoder {
         return Types.EventProof(ls[0].toUint(), ls[0].toRlpBytes(), mptProofs);
     }
 
-    function decodeBlockUpdate(bytes memory _rlp)
+    function decodeBlockUpdate(bytes memory _rlp, bool _isLastBlock)
         internal
         returns (Types.BlockUpdate memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
 
         Types.BlockHeader memory _bh = ls[0].toBytes().decodeBlockHeader();
-        Types.Votes memory _v = ls[1].toBytes().decodeVotes();
+        Types.Votes memory _v;
+
+        if(_isLastBlock == true){
+            _v = ls[1].toBytes().decodeVotes();
+        }
         // Types.Votes memory _v;
 
         //  BlockUpdate may or may not include the RLP of addresses of validators
@@ -258,14 +262,22 @@ library MessageDecoder {
         //  Otherwise, create an array of BlockUpdate struct to decode
         Types.BlockUpdate[] memory _buArray;
         if (ls[0].toBytes().length != 0) {
-            _buArray = new Types.BlockUpdate[](ls[0].toList().length);
-            for (uint256 i = 0; i < ls[0].toList().length; i++) {
+            uint256 _buLength = ls[0].toList().length;
+            uint256 _lastIndex = _buLength - 1;
+            _buArray = new Types.BlockUpdate[](_buLength);
+            for (uint256 i = 0; i < _buLength; i++) {
                 //  Each of items inside an array [RLP_ENCODE(BlockUpdate)]
                 //  is a string which defines RLP_ENCODE(BlockUpdate)
                 //  that contains a LIST_HEAD_START and multiple RLP of data
                 //  ls[0].toList()[i].toBytes() returns bytes presentation of
                 //  RLP_ENCODE(BlockUpdate)
-                _buArray[i] = ls[0].toList()[i].toBytes().decodeBlockUpdate();
+                bool _isLastBlock = false;
+
+                if (_lastIndex == i) {
+                    _isLastBlock = true;
+                }
+
+                _buArray[i] = ls[0].toList()[i].toBytes().decodeBlockUpdate(_isLastBlock);
             }
         }
 
