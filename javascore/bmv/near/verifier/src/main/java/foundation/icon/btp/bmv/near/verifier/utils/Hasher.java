@@ -2,11 +2,11 @@ package foundation.icon.btp.bmv.near.verifier.utils;
 
 import foundation.icon.btp.bmv.near.verifier.types.Hash;
 
-public class Hasher<H extends Hash> {
+public class Hasher {
     private static final int HASH_LEN = 32;
-    private final H hasher;
+    private final Hash hasher;
 
-    public Hasher(H hasher) {  
+    public Hasher(Hash hasher) {  
         this.hasher = hasher;
     }
 

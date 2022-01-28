@@ -17,8 +17,10 @@
 package foundation.icon.btp.bmv.near.verifier;
 
 import foundation.icon.btp.bmv.near.verifier.types.BMVProperties;
+import foundation.icon.btp.bmv.near.verifier.types.ItemList;
 import foundation.icon.btp.bmv.near.verifier.types.MerkleTreeAccumulator;
 import foundation.icon.btp.bmv.near.verifier.types.Validators;
+import foundation.icon.btp.bmv.near.verifier.types.BlockProducer;
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;

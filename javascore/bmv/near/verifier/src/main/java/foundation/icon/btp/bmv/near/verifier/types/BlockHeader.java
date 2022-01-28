@@ -2,6 +2,10 @@ package foundation.icon.btp.bmv.near.verifier.types;
 
 import score.ObjectReader;
 import score.Context;
+
+import java.util.List;
+import java.util.Optional;
+
 import foundation.icon.btp.bmv.near.verifier.utils.Hasher;
 import foundation.icon.score.util.StringUtil;
 import io.ipfs.multibase.Base58;
@@ -12,6 +16,14 @@ public class BlockHeader {
     private HeaderInnerRest innerRest;
     private byte[] signature;
 
+    public long getHeight() {
+        return innerLite.getHeight();
+    }
+    
+    public List<Optional<Signature>> getApprovals() {
+        return innerRest.getApprovals();
+    }
+    
     public byte[] getPreviousBlockHash() {
         return previousBlockHash;
     }
@@ -32,13 +44,13 @@ public class BlockHeader {
     }
 
     public byte[] hash(byte[] previousBlockHash) {
-        Hasher<SHA256> hasher = new Hasher<SHA256>(new SHA256());
+        Hasher hasher = new Hasher(new SHA256());
         byte[] innerHash = hasher.combineHash(innerLite.hash(), innerRest.hash());
         return hasher.combineHash(innerHash, previousBlockHash);
     }
 
     public byte[] hash() {
-        Hasher<SHA256> hasher = new Hasher<SHA256>(new SHA256());
+        Hasher hasher = new Hasher(new SHA256());
         byte[] innerHash = hasher.combineHash(innerLite.hash(), innerRest.hash());
         return hasher.combineHash(innerHash, previousBlockHash);
     }

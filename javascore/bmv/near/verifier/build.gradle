@@ -11,11 +11,12 @@ dependencies {
     implementation files('../borshj-0.1.0.jar')
     
     testImplementation 'commons-codec:commons-codec:1.9'
-    testImplementation 'foundation.icon:javaee-unittest:0.9.2'
+    testImplementation files('../unittest-0.9.2-SNAPSHOT.jar')
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
-
     testImplementation("org.mockito:mockito-core:3.3.3")
+    testCompile group: 'com.adelean', name: 'inject-resources-core', version: '0.1.0'
+    testCompile group: 'com.adelean', name: 'inject-resources-junit-jupiter', version: '0.1.0'
 }
 
 optimizedJar {

@@ -64,7 +64,7 @@ public class HeaderInnerLite implements Borsh {
     }
 
     public byte[] hash() {
-        Hasher<SHA256> hasher = new Hasher<SHA256>(new SHA256());
+        Hasher hasher = new Hasher(new SHA256());
         return hasher.computeHash(borshSerialize());
     }
 

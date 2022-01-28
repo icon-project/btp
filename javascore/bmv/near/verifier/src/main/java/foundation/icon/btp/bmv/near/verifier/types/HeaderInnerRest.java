@@ -27,8 +27,12 @@ public class HeaderInnerRest implements Borsh {
     private long blockOrdinal;
     private long previousHeight;
     private Optional<byte[]> epochSyncDataHash;
-    private List<Optional<byte[]>> approvals;
+    private List<Optional<Signature>> approvals;
     private int latestProtocolVersion;
+
+    public List<Optional<Signature>> getApprovals() {
+        return approvals;
+    }
 
     @Override
     public void append(BorshBuffer buffer) {
@@ -94,7 +98,8 @@ public class HeaderInnerRest implements Borsh {
         reader.beginList();
         headerInnerRest.approvals = new ArrayList<>();
         while (reader.hasNext()) {
-            headerInnerRest.approvals.add(Optional.ofNullable(reader.readNullable(byte[].class)));
+            Signature approval = Signature.readObject(reader);
+            headerInnerRest.approvals.add(Optional.ofNullable(approval));
         }
         reader.end();
 
@@ -115,7 +120,7 @@ public class HeaderInnerRest implements Borsh {
     }
 
     public byte[] hash() {
-        Hasher<SHA256> hasher = new Hasher<SHA256>(new SHA256());
+        Hasher hasher = new Hasher(new SHA256());
         return hasher.computeHash(borshSerialize());
     }
 
