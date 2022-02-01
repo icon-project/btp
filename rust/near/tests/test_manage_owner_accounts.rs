@@ -103,8 +103,9 @@ mod manage_owner_accounts {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHUCK_IS_NOT_A_BMC_OWNER)
-                .and(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .and(CHARLES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
         }
     }
 
