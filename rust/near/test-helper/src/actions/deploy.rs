@@ -3,8 +3,10 @@ use duplicate::duplicate;
 use futures::executor::LocalPool;
 use workspaces::{dev_deploy, AccountId, InMemorySigner};
 use std::path::Path;
+use tokio::time::{sleep, Duration};
 
 pub async fn deploy(path: &str) -> anyhow::Result<(AccountId, InMemorySigner)> {
+    sleep(Duration::from_millis(8000)).await;
     dev_deploy(Path::new(path)).await
 }
 

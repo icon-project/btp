@@ -3091,6 +3091,7 @@ dependencies = [
  "near-primitives 0.1.0 (git+https://github.com/near/nearcore?rev=88a9e74d4b99867e417fe199cbd74559fd4fc349)",
  "rand 0.8.4",
  "serde_json",
+ "tokio",
  "workspaces",
 ]
 
