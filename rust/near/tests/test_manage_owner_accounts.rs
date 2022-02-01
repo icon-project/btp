@@ -97,6 +97,15 @@ mod manage_owner_accounts {
                 .when(CHUCK_INVOKES_REMOVE_OWNER_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR);
         }
+
+        #[workspaces::test(sandbox)]
+        async fn add_new_bmc_owner_by_existing_bmc_owner_success() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(CHUCK_IS_NOT_A_BMC_OWNER)
+                .and(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+        }
     }
 
     mod bsh {
