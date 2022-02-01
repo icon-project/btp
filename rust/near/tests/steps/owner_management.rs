@@ -147,22 +147,6 @@ pub static CHUCK_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |mut cont
     BMC_CONTRACT.remove_owner(context, 300000)
 };
 
-pub static CHARLIE_IS_PRESENT_IN_BMC_OWNER_LIST: fn(Context) = |context: Context| {
-    let owners = context.method_responses("get_owners");
-
-    let result: HashSet<_> = from_value::<Vec<String>>(owners)
-        .unwrap()
-        .into_iter()
-        .collect();
-    // let expected: HashSet<_> = vec![
-    //     context.accounts().get("alice").account_id().to_string(),
-    //     context.accounts().get("charlie").account_id().to_string(),
-    // ]
-    // .into_iter()
-    // .collect();
-    let expected = context.accounts().get("chuck").account_id().to_string();
-    assert!(result.contains(&expected));
-};
 
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
