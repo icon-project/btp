@@ -24,7 +24,7 @@ pub static CHUCKS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Con
     context
 };
 
-pub static BOBS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+pub static BOB_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
     let bob = Signer::default();
     create_account(&bob);
     context.accounts_mut().add("bob", &bob);

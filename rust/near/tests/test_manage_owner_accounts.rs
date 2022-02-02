@@ -109,6 +109,30 @@ mod manage_owner_accounts {
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
                 .then(CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
         }
+
+        #[workspaces::test(sandbox)]
+        async fn add_new_bmc_owner_by_recently_added_bmc_owner_success() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(BOB_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .and(CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .when(BOB_INVOKES_ADD_OWNER_IN_BMC)
+                .then(CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST)
+        }
+
+        #[workspaces::test(sandbox)]
+        async fn bmc_owner_can_remove_bmc_other_owner_success() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+                .and(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(CHARLIE_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST)
+        }
+
     }
 
     mod bsh {

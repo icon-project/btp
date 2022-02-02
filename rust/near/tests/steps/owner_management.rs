@@ -25,6 +25,17 @@ pub static CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: 
     assert_eq!(result, expected);
 };
 
+pub static CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST: fn(Context) = |context: Context| {
+    let owners = context.method_responses("get_owners");
+
+    let result: HashSet<_> = from_value::<Vec<String>>(owners)
+        .unwrap()
+        .into_iter()
+        .collect();
+    let expected = context.accounts().get("charlie").account_id().to_string();
+    assert_eq!(result.contains(&expected), true);
+};
+
 pub static CHARLIE_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
     assert_eq!(
@@ -93,8 +104,34 @@ pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Con
         context
     };
 
+pub static BOB_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+    |context: Context| {
+        context
+            .pipe(BOB_ACCOUNT_IS_CREATED)
+            .pipe(BOB_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+    };
+
+pub static BOB_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        let bob = context.accounts().get("bob").to_owned();
+        context.add_method_params(
+            "add_owner",
+            json!({
+                "account": bob.account_id()
+            }),
+        );
+        context
+    };
+
 pub static ALICE_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     context.pipe(ALICE_IS_THE_SIGNER)
+        .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
+        
+};
+
+pub static BOB_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
+    context.pipe(BOB_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
         .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
         
@@ -118,7 +155,7 @@ pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> 
         context.add_method_params(
             "remove_owner",
             json!({
-                "account_id": charlie.account_id()
+                "account": charlie.account_id()
             }),
         );
         context
