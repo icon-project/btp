@@ -10,13 +10,13 @@ use near_primitives::types::Gas;
     [ TokenBsh ];
 )]
 impl Contract<'_, contract_type> {
-    pub fn add_owner(&self, mut context: Context, gas: Gas) -> Context {
-        invoke_call!(self, context, "add_owner", method_params, gas);
+    pub fn add_owner(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "add_owner", method_params);
         context
     }
 
-    pub fn remove_owner(&self, mut context: Context, gas: Gas) -> Context {
-        invoke_call!(self, context, "remove_owner", method_params, gas);
+    pub fn remove_owner(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_owner", method_params);
         context
     }
 

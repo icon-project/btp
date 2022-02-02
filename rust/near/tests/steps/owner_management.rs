@@ -53,9 +53,10 @@ pub static OWNERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_owners(context);
 
 pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let alice = context.accounts().get("alice").to_owned();
-    context.set_signer(&alice);
-    BMC_CONTRACT.add_owner(context, 300000)
+    context.pipe(ALICE_IS_THE_SIGNER)
+        .pipe(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+        .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
 
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR: fn(Context) = |context: Context| {
@@ -73,7 +74,7 @@ pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context = |conte
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |context: Context| {
         context
             .pipe(CHARLIES_ACCOUNT_IS_CREATED)
@@ -95,14 +96,14 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Co
 pub static ALICE_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     context.pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
-        .pipe(USER_INVOKES_GET_OWNERS)
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
         
 };
 
 pub static CHUCK_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chuck").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_owner(context , 300000)
+    context.pipe(CHUCK_IS_THE_SIGNER) 
+        .pipe(USER_INVOKES_ADD_OWNER_IN_BMC) 
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
 
 // * * * * * * * * * * * * * *
@@ -136,15 +137,15 @@ pub static ALICE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Co
     };
 
 pub static ALICE_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("alice").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.remove_owner(context, 300000)
+    context.pipe(ALICE_IS_THE_SIGNER)
+        .pipe(USER_INVOKES_REMOVE_OWNER_IN_BMC)
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
 
 pub static CHUCK_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chuck").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.remove_owner(context, 300000)
+    context.pipe(CHUCK_IS_THE_SIGNER) 
+        .pipe(USER_INVOKES_REMOVE_OWNER_IN_BMC) 
+        .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
 
 

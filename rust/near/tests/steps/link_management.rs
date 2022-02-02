@@ -17,17 +17,13 @@ pub static USER_INVOKES_GET_LINKS_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_links(context);
 
 pub static USER_INVOKES_GET_STATUS_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_status(context);
-
-pub static USER_INVOKES_GET_OWNERS: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_owners(context);   
+    |context: Context| BMC_CONTRACT.get_status(context); 
 
 pub static USER_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.remove_owner(context, 30000000000000);
+    |context: Context| BMC_CONTRACT.remove_owner(context);
     
 pub static USER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_owner(context, 30000000000000);
-    
+    |context: Context| BMC_CONTRACT.add_owner(context);
     
 pub static USER_INVOKES_GET_OWNER_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_owners(context);

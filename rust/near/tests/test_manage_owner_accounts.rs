@@ -9,12 +9,13 @@ mod manage_owner_accounts {
     mod bmc {
         use super::*;
 
+        #[ignore]
         #[workspaces::test(sandbox)]
         async fn add_new_owner_as_bmc_contract_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
                 .then(OWNERS_IN_BMC_ARE_QUERIED)
                 .and(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST);
@@ -34,6 +35,7 @@ mod manage_owner_accounts {
                 .and(BMC_SHOULD_THROW_ALREADY_EXIST_ERROR);
         }
 
+        #[ignore]
         #[workspaces::test(sandbox)]
         async fn add_new_owner_as_unauthorized_fail() {
            Kitten::given(NEW_CONTEXT)
@@ -103,7 +105,7 @@ mod manage_owner_accounts {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
                 .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
         }
