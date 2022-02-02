@@ -60,7 +60,7 @@ mod manage_owner_accounts {
             .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
             .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
             .then(OWNERS_IN_BMC_ARE_QUERIED)
-            .and(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST);
+            .and(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST);
         }
 
         #[ignore]
@@ -123,14 +123,14 @@ mod manage_owner_accounts {
         }
 
         #[workspaces::test(sandbox)]
-        async fn bmc_owner_can_remove_bmc_another_bmc_owner_success() {
+        async fn bmc_owner_can_remove_another_bmc_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
                 .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST)
         }
 
     }

@@ -46,7 +46,7 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST: fn(Context) = |cont
     assert_eq!(result.contains(&expected), true);
 };
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
+pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
     assert_eq!(
         owners,
