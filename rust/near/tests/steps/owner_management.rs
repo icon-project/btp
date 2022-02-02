@@ -9,7 +9,7 @@ use test_helper::types::Context;
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
+pub static CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
 
     let result: HashSet<_> = from_value::<Vec<String>>(owners)
@@ -25,7 +25,7 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context:
     assert_eq!(result, expected);
 };
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
+pub static CHARLIE_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
     assert_eq!(
         owners,
@@ -54,7 +54,7 @@ pub static OWNERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
 
 pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     context.pipe(ALICE_IS_THE_SIGNER)
-        .pipe(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+        .pipe(CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
         .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
         .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
@@ -74,14 +74,14 @@ pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context = |conte
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |context: Context| {
         context
-            .pipe(CHARLIES_ACCOUNT_IS_CREATED)
-            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(CHARLIE_ACCOUNT_IS_CREATED)
+            .pipe(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
     };
 
-pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(
@@ -112,7 +112,7 @@ pub static CHUCK_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(

@@ -10,7 +10,7 @@ use workspaces::{InMemorySigner, AccountId};
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIES_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+pub static CHARLIE_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
     let charlie = Signer::default();
     create_account(&charlie);
     context.accounts_mut().add("charlie", &charlie);
