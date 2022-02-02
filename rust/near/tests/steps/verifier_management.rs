@@ -64,7 +64,6 @@ pub static VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM_AGAIN: fn(Context) 
         context
     };
 
-
 pub static EXISTING_VERIFIER_IS_ADDED_AGAIN_BY_BMC_OWNER: fn(Context) -> Context =
     |mut context: Context| {
         ALICE_IS_BMC_CONTRACT_OWNER(context)
@@ -101,8 +100,6 @@ pub static REMOVE_VERIFER_INOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut con
         .pipe(VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
         .pipe(ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC)
 };
-
-
 
 pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
@@ -175,5 +172,4 @@ pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context:
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER: fn(Context) = |context: Context| {
     let error = context.method_errors("add_verifier");
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
-
 };
