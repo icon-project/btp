@@ -1,7 +1,6 @@
 use crate::{invoke_call, invoke_view};
 use crate::types::{Bmc, NativeCoinBsh, TokenBsh, Context, Contract};
 use duplicate::duplicate;
-use near_primitives::types::Gas;
 
 #[duplicate(
     contract_type;

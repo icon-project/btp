@@ -19,15 +19,6 @@ pub static USER_INVOKES_GET_LINKS_BMC: fn(Context) -> Context =
 pub static USER_INVOKES_GET_STATUS_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_status(context); 
 
-pub static USER_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.remove_owner(context);
-    
-pub static USER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_owner(context);
-    
-pub static USER_INVOKES_GET_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_owners(context);
-    
 pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
