@@ -138,23 +138,18 @@ impl BtpMessageCenter {
         network: String,
         message: SerializedMessage,
     ) {
-        //TODO
+        
         self.assert_sender_is_authorized_service(&service);
-
-        if let Some(destination) = self.resolve_route(&BTPAddress::new(format!(
-            "btp://{}/{}",
-            network, 0000000000000000
-        ))) {
-            let message = BtpMessage::new(
+        let destination = self.resolve_route(&BTPAddress::new(format!("btp://{}/{}",network, 0000000000000000))).expect(format!("{}",BmcError::LinkNotExist).as_str());
+        let message = BtpMessage::new(
                 self.btp_address.clone(),
                 destination.clone(),
                 service,
                 WrappedI128::new(serial_no),
                 message.data().clone(),
                 None,
-            );
-            self.send_message(&self.btp_address.clone(), &destination, message);
-        }
+        );
+        self.send_message(&self.btp_address.clone(), &destination, message);
     }
 
     #[private]
