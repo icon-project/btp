@@ -17,7 +17,7 @@ pub static USER_INVOKES_GET_LINKS_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_links(context);
 
 pub static USER_INVOKES_GET_STATUS_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_status(context);
+    |context: Context| BMC_CONTRACT.get_status(context); 
 
 pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
