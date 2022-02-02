@@ -65,7 +65,7 @@ pub static OWNERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
 
 pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     context.pipe(ALICE_IS_THE_SIGNER)
-        .pipe(CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+        .pipe(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
         .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
         .pipe(USER_INVOKES_GET_OWNER_IN_BMC)
 };
@@ -85,14 +85,14 @@ pub static BMC_SHOULD_THROW_ALREADY_EXIST_ERROR: fn(Context) -> Context = |conte
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |context: Context| {
         context
-            .pipe(CHARLIE_ACCOUNT_IS_CREATED)
-            .pipe(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(CHARLIES_ACCOUNT_IS_CREATED)
+            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
     };
 
-pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(
@@ -104,14 +104,14 @@ pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Con
         context
     };
 
-pub static BOB_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static BOBS_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |context: Context| {
         context
-            .pipe(BOB_ACCOUNT_IS_CREATED)
-            .pipe(BOB_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(BOBS_ACCOUNT_IS_CREATED)
+            .pipe(BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
     };
 
-pub static BOB_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let bob = context.accounts().get("bob").to_owned();
         context.add_method_params(
@@ -149,7 +149,7 @@ pub static CHUCK_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |mut context
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(

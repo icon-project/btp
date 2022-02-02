@@ -57,7 +57,7 @@ mod manage_owner_accounts {
             .and(ALICE_IS_BMC_CONTRACT_OWNER)
             .and(CHARLIE_ACCOUNT_IS_CREATED)
             .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
-            .and(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+            .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
             .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
             .then(OWNERS_IN_BMC_ARE_QUERIED)
             .and(CHARLIE_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST);
@@ -82,7 +82,7 @@ mod manage_owner_accounts {
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
                 .and(CHARLIE_ACCOUNT_IS_CREATED)
-                .and(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
                 .then(BMC_SHOULD_THROW_NOTEXIST_ERROR);
         }
@@ -95,7 +95,7 @@ mod manage_owner_accounts {
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
                 .and(CHUCK_IS_NOT_A_BMC_OWNER)
                 .and(CHARLIE_ACCOUNT_IS_CREATED)
-                .and(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(CHUCK_INVOKES_REMOVE_OWNER_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR);
         }
@@ -105,7 +105,7 @@ mod manage_owner_accounts {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
                 .then(CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
         }
@@ -115,9 +115,9 @@ mod manage_owner_accounts {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(BOB_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(BOBS_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
                 .and(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .and(CHARLIE_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
                 .when(BOB_INVOKES_ADD_OWNER_IN_BMC)
                 .then(CHARLIE_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST)
         }
@@ -128,7 +128,7 @@ mod manage_owner_accounts {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
                 .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
-                .and(CHARLIE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
                 .then(CHARLIE_ACCOUNT_ID_SHOULD_NOT_BE_IN_OWNERS_LIST)
         }
