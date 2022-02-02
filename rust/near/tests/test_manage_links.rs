@@ -1,7 +1,7 @@
 mod steps;
 
 #[cfg(test)]
-mod manage_verifiers {
+mod manage_links {
     use super::*;
     use kitten::*;
     use steps::*;

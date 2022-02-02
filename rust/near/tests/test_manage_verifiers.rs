@@ -46,7 +46,7 @@ mod manage_verifiers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(REMOVE_VERIFIER_INOKED_BY_BMC_OWNER)
+                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(VERIFIER_DELETED_SHOULD_NOT_BE_IN_LIST_OF_VERIFIERS)
         }
 
@@ -56,7 +56,7 @@ mod manage_verifiers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(REMOVE_VERIFIER_INOKED_BY_NON_BMC_OWNER)
+                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
         }
 
@@ -66,7 +66,7 @@ mod manage_verifiers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .when(REMOVE_VERIFIER_INOKED_BY_BMC_OWNER)
+                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
         }
         
@@ -78,7 +78,7 @@ mod manage_verifiers {
             .and(ALICE_IS_BMC_CONTRACT_OWNER)
             .and(CHUCK_IS_NOT_A_BMC_OWNER)
             .and(ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM)
-            .when(CHUCK_INVOKED_ADD_VERIFIER_IN_BMC)
+            .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
             .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER)
         }
     }
