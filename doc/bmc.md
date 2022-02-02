@@ -67,6 +67,15 @@ BTP Message for error reply is composed of followings.
     to registered BSHs
   - It's allowed to be called by registered Relay.
 
+#### handleFragment
+* Params
+  - _prev: String ( BTP Address of the BMC generates the message )
+  - _msg: String ( base64 encoded string of serialized bytes of Relay Message )
+  - _idx: Integer ( Index of fragment )
+* Description:
+  - Assemble fragments of the Relay Message and call BMC.handleRelayMessage
+  - It's allowed to be called by registered Relay.
+
 #### sendMessage
 * Params
   - _to: String ( Network Address of destination network )

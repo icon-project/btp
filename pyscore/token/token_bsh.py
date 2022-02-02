@@ -105,8 +105,6 @@ class TokenBSH(IconScoreBase):
     def on_install(self, _bmc: Address) -> None:
         super().on_install()
         self._bmc_db.set(_bmc)
-        bmc_score = self.create_interface_score(_bmc, BMCInterfaceForBSH)
-        bmc_score.addService(self.SERVICE_NAME, self.address)
 
     def on_update(self) -> None:
         super().on_update()
@@ -210,6 +208,7 @@ class TokenBSH(IconScoreBase):
 
     @external
     def transfer(self, _tokenName: str, _to: str, _value: int):
+        Logger.info(f'transfer() tokenName={_tokenName}, to={_to}, value={_value}', TAG)
         token_addr = self._token_addr_db[_tokenName]
         if token_addr is None:
             raise NoSuchItemException("Not registered token")
@@ -323,6 +322,7 @@ class TokenBSH(IconScoreBase):
             }
 
     def _send_message(self, _sn: int, _to: str, _msg: any):
+        Logger.info(f'_send_message() sn={_sn}, to={_to}, msg={_msg}', TAG)
         bmc_addr = self._bmc_db.get()
         score = self.create_interface_score(bmc_addr, BMCInterfaceForBSH)
         score.sendMessage(_to, self.SERVICE_NAME, _sn, _to_bytes(_msg))
@@ -377,6 +377,8 @@ class TokenBSH(IconScoreBase):
         balance = self._get_balance(_user, _tokenName)
         usable = balance['usable'] + _usable
         locked = balance['locked'] + _locked
+        Logger.info(f'_update_balance_by() usable={usable}, locked={locked}', TAG)
+
         if usable == 0 and locked == 0:
             self._balance_db[_user].remove(_tokenName)
         else:

@@ -1,0 +1,125 @@
+version = '0.1.0'
+
+apply plugin: 'java-library'
+
+dependencies {
+    //for mock package
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("foundation.icon:javaee-scorex:$scorexVersion")
+    implementation project(':score-util')
+    implementation project(':lib')
+
+    //for test package
+    implementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    implementation("org.junit.jupiter:junit-jupiter-params:5.7.2")
+    runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+
+    annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    implementation("foundation.icon:javaee-score-client:$scoreClientVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    implementation("com.github.javafaker:javafaker:1.0.2")
+
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+    testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+}
+
+import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
+
+task optimizedJarMockBMC(type: OptimizedJar) {
+    mainClassName = 'foundation.icon.btp.mock.MockBMCImpl'
+    archiveName("bmc-mock-" + archiveVersion.get() + "." + archiveExtension.get());
+    from { sourceSets.main.output }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+task optimizedJarMockBMV(type: OptimizedJar) {
+    mainClassName = 'foundation.icon.btp.mock.MockBMVImpl'
+    archiveName("bmv-mock-" + archiveVersion.get() + "." + archiveExtension.get());
+    from { sourceSets.main.output }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+task optimizedJarMockBSH(type: OptimizedJar) {
+    mainClassName = 'foundation.icon.btp.mock.MockBSHImpl'
+    archiveName("bsh-mock-" + archiveVersion.get() + "." + archiveExtension.get());
+    from { sourceSets.main.output }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
+        }
+    }
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
+    parameters {
+        arg('_net', '0xf1c22d.icon')
+    }
+}
+
+test {
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+    
+    options {
+        testLogging.showStandardStreams = true
+        //for ScoreIntegrationTest.client
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+
+        //for ScoreIntegrationTest.tester
+        systemProperty 'tester.keyStore', scoreTest.tester.keyStore
+        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
+
+        //for MockBMCTest.mockBMCClient
+        systemProperty 'bmc-mock.url', scoreTest.url
+        systemProperty 'bmc-mock.nid', scoreTest.nid
+        systemProperty 'bmc-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bmc-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'bmc-mock.address', "cx4c513575af38ed8788b7b73729106e74fcf189d2"
+//        systemProperty 'bmc-mock.isUpdate', "true"
+        dependsOn "optimizedJarMockBMC"
+        systemProperty 'bmc-mock.scoreFilePath', tasks.getByPath("optimizedJarMockBMC").outputJarName
+        systemProperty 'bmc-mock.params._net', scoreTest.nid+'.icon'
+
+        //for MockBMVTest.mockBMVClient
+        systemProperty 'bmv-mock.url', scoreTest.url
+        systemProperty 'bmv-mock.nid', scoreTest.nid
+        systemProperty 'bmv-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bmv-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'bmv-mock.address', "cx0f549056aeebed9c06833bebfe8b17113958532f"
+//        systemProperty 'bmv-mock.isUpdate', "true"
+        dependsOn "optimizedJarMockBMV"
+        systemProperty 'bmv-mock.scoreFilePath', tasks.getByPath("optimizedJarMockBMV").outputJarName
+
+        //for MockBSHTest.mockBSHClient
+        systemProperty 'bsh-mock.url', scoreTest.url
+        systemProperty 'bsh-mock.nid', scoreTest.nid
+        systemProperty 'bsh-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bsh-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'bsh-mock.address', "cx47853622a461b34885c42d74e8354b03a3e88a42"
+//        systemProperty 'bsh-mock.isUpdate', "true"
+        dependsOn "optimizedJarMockBSH"
+        systemProperty 'bsh-mock.scoreFilePath', tasks.getByPath("optimizedJarMockBSH").outputJarName
+    }
+}

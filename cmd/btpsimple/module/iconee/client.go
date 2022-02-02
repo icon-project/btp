@@ -23,13 +23,13 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
+	"math/big"
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/reactivex/rxgo/v2"
 
 	"github.com/icon-project/btp/cmd/btpsimple/module/base"
-	"github.com/icon-project/btp/common"
+	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -198,7 +198,7 @@ func (c *Client) GetProofForEvents(param *ProofEventsParam) ([][][]byte, error) 
 
 func (c *Client) GetEventRequest(source base.BtpAddress, destination string, height int64) *base.BlockRequest {
 	eventFilter := &EventFilter{
-		Addr:      Address(source.ContractAddress()),
+		Addr:      Address(source.Account()),
 		Signature: EventSignature,
 		Indexed:   []*string{&destination},
 	}
@@ -318,7 +318,7 @@ func (c *Client) GetBlockNotificationHeight(bn *base.BlockNotification) (int64, 
 func (c *Client) GetBMCLinkStatus(wallet base.Wallet, destination, source base.BtpAddress) (*base.BMCLinkStatus, error) {
 	callParam := &CallParam{
 		FromAddress: Address(wallet.Address()),
-		ToAddress:   Address(destination.ContractAddress()),
+		ToAddress:   Address(destination.Account()),
 		DataType:    "call",
 
 		Data: CallData{
@@ -330,26 +330,43 @@ func (c *Client) GetBMCLinkStatus(wallet base.Wallet, destination, source base.B
 	}
 
 	bmcStatus := &BMCStatusResponse{}
-	if err := c.api.call(callParam, bmcStatus); err != nil {
+	err := c.api.call(callParam, bmcStatus)
+	if err != nil {
 		return nil, err
 	}
 
 	linkStatus := &base.BMCLinkStatus{}
-	linkStatus.TxSeq, _ = bmcStatus.TxSeq.Value()
-	linkStatus.RxSeq, _ = bmcStatus.RxSeq.Value()
-	linkStatus.Verifier.Height, _ = bmcStatus.Verifier.Height.Value()
-	linkStatus.Verifier.Offset, _ = bmcStatus.Verifier.Offset.Value()
-	linkStatus.Verifier.LastHeight, _ = bmcStatus.Verifier.LastHeight.Value()
+	if linkStatus.TxSeq, err = bmcStatus.TxSeq.BigInt(); err != nil {
+		return nil, err
+	}
+
+	if linkStatus.RxSeq, err = bmcStatus.RxSeq.BigInt(); err != nil {
+		return nil, err
+	}
+
+	if linkStatus.Verifier.Height, err = bmcStatus.Verifier.Height.Value(); err != nil {
+		return nil, err
+	}
+	if linkStatus.Verifier.Offset, err = bmcStatus.Verifier.Offset.Value(); err != nil {
+		return nil, err
+	}
+	if linkStatus.Verifier.LastHeight, err = bmcStatus.Verifier.LastHeight.Value(); err != nil {
+		return nil, err
+	}
 	linkStatus.BMRs = make([]struct {
 		Address      string
 		BlockCount   int64
-		MessageCount int64
+		MessageCount *big.Int
 	}, len(bmcStatus.BMRs))
 
 	for i, bmr := range bmcStatus.BMRs {
 		linkStatus.BMRs[i].Address = string(bmr.Address)
-		linkStatus.BMRs[i].BlockCount, _ = bmr.BlockCount.Value()
-		linkStatus.BMRs[i].MessageCount, _ = bmr.MessageCount.Value()
+		if linkStatus.BMRs[i].BlockCount, err = bmr.BlockCount.Value(); err != nil {
+			return nil, err
+		}
+		if linkStatus.BMRs[i].MessageCount, err = bmr.MessageCount.BigInt(); err != nil {
+			return nil, err
+		}
 	}
 
 	linkStatus.BMRIndex, _ = bmcStatus.BMRIndex.Int()
@@ -378,7 +395,7 @@ func (c *Client) BMCRelayMethodTransactionParam(wallet base.Wallet, destination,
 	transactionParam := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(wallet.Address()),
-		ToAddress:   Address(destination.ContractAddress()),
+		ToAddress:   Address(destination.Account()),
 		NetworkID:   HexInt(destination.NetworkID()),
 		StepLimit:   NewHexInt(stepLimit),
 		DataType:    "call",
@@ -532,12 +549,12 @@ func toEvent(proof [][]byte, eventLogFil base.EventLogFilter) (*base.Event, erro
 	if bytes.Equal(eventLog.Addr, eventLogFilter.addr) &&
 		bytes.Equal(eventLog.Indexed[EventIndexSignature], eventLogFilter.signature) &&
 		bytes.Equal(eventLog.Indexed[EventIndexNext], eventLogFilter.next) {
-		var i common.HexInt
+		var i big.Int
 		i.SetBytes(eventLog.Indexed[EventIndexSequence])
 
 		event := &base.Event{
 			Next:     base.BtpAddress(eventLog.Indexed[EventIndexNext]),
-			Sequence: i.Int64(),
+			Sequence: intconv.BigIntSetBytes(&i, eventLog.Indexed[EventIndexSequence]),
 			Message:  eventLog.Data[0],
 		}
 

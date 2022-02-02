@@ -1,0 +1,113 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+        }
+    }
+    dependencies {
+        classpath 'foundation.icon:gradle-javaee-plugin:0.7.8'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'foundation.icon.javaee'
+
+group 'foundation.icon.btp'
+version '1.0'
+
+// for integration tests
+sourceSets {
+    intTest {}
+}
+
+configurations {
+    intTestImplementation.extendsFrom testImplementation
+    intTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileJava {
+    options.compilerArgs += ['-parameters']
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+    }
+}
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.FeeAggregationSCORE'
+}
+
+gradlePlugin {
+    automatedPublishing = false
+    plugins {
+        javaeePlugin {
+            id = 'foundation.icon.javaee'
+            implementationClass = 'foundation.icon.gradle.plugins.javaee.JavaeePlugin'
+        }
+    }
+}
+
+dependencies {
+    compileOnly 'foundation.icon:javaee-api:0.8.9'
+    implementation 'com.github.sink772:javaee-scorex:0.5.1'
+    implementation 'com.github.sink772:javaee-tokens:0.5.4'
+    implementation 'com.github.sink772:minimal-json:0.9.6'
+
+    implementation 'foundation.icon:icon-sdk:2.0.0'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+
+    intTestImplementation 'foundation.icon:icon-sdk:2.0.0'
+    intTestImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://sejong.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = 'http://localhost:9080/api/v3/icon'
+            nid = 3
+        }
+    }
+    keystore = rootProject.hasProperty('keystoreName') ? "$keystoreName" : ''
+    password = rootProject.hasProperty('keystorePass') ? "$keystorePass" : ''
+    parameters {
+        arg('_cps_address', 'hxb6b5791be0b5ef67063b3c10b840fb81514db2fd')
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
+    testLogging.showStandardStreams = true
+
+    // use the common config files
+    systemProperty('env.props', new File('conf/env.props'))
+
+    def prefix = 'score.path.'
+    systemProperty(prefix + project.name, optimizedJar.outputJarName)
+}
+
+

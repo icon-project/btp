@@ -58,7 +58,7 @@ func (a BtpAddress) NetworkID() string {
 	n, _ := a.network()
 	return n
 }
-func (a BtpAddress) ContractAddress() string {
+func (a BtpAddress) Account() string {
 	if a.Protocol() != "" {
 		ss := strings.Split(string(a), "/")
 		if len(ss) > 3 {
@@ -93,8 +93,8 @@ func ValidateBtpAddress(ba BtpAddress) error {
 	default:
 		return fmt.Errorf("not supported blockchain:%s", v)
 	}
-	if len(ba.ContractAddress()) < 1 {
-		return fmt.Errorf("empty contract address")
+	if len(ba.Account()) < 1 {
+		return fmt.Errorf("empty account")
 	}
 	return nil
 }

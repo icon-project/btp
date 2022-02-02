@@ -21,13 +21,26 @@ import (
 	"strings"
 )
 
-/*-------------------Types--------------------------*/
 type BtpAddress string
 
-/*--------------------Private Functions-------------*/
-
-func (ba BtpAddress) network() (string, string) {
-	if s := ba.NetworkAddress(); s != "" {
+func (a BtpAddress) Protocol() string {
+	s := string(a)
+	if i := strings.Index(s, "://"); i > 0 {
+		return s[:i]
+	}
+	return ""
+}
+func (a BtpAddress) NetworkAddress() string {
+	if a.Protocol() != "" {
+		ss := strings.Split(string(a), "/")
+		if len(ss) > 2 {
+			return ss[2]
+		}
+	}
+	return ""
+}
+func (a BtpAddress) network() (string, string) {
+	if s := a.NetworkAddress(); s != "" {
 		ss := strings.Split(s, ".")
 		if len(ss) > 1 {
 			return ss[0], ss[1]
@@ -37,40 +50,17 @@ func (ba BtpAddress) network() (string, string) {
 	}
 	return "", ""
 }
-
-/*-------------------Public Functions------------------*/
-
-func (ba BtpAddress) Protocol() string {
-	s := string(ba)
-	if i := strings.Index(s, "://"); i > 0 {
-		return s[:i]
-	}
-	return ""
-}
-
-func (ba BtpAddress) NetworkAddress() string {
-	if ba.Protocol() != "" {
-		ss := strings.Split(string(ba), "/")
-		if len(ss) > 2 {
-			return ss[2]
-		}
-	}
-	return ""
-}
-
-func (ba BtpAddress) BlockChain() string {
-	_, v := ba.network()
+func (a BtpAddress) BlockChain() string {
+	_, v := a.network()
 	return v
 }
-
-func (ba BtpAddress) NetworkID() string {
-	n, _ := ba.network()
+func (a BtpAddress) NetworkID() string {
+	n, _ := a.network()
 	return n
 }
-
-func (ba BtpAddress) ContractAddress() string {
-	if ba.Protocol() != "" {
-		ss := strings.Split(string(ba), "/")
+func (a BtpAddress) Account() string {
+	if a.Protocol() != "" {
+		ss := strings.Split(string(a), "/")
 		if len(ss) > 3 {
 			return ss[3]
 		}
@@ -78,16 +68,16 @@ func (ba BtpAddress) ContractAddress() string {
 	return ""
 }
 
-func (ba BtpAddress) String() string {
-	return string(ba)
+func (a BtpAddress) String() string {
+	return string(a)
 }
 
-func (ba *BtpAddress) Set(v string) error {
-	*ba = BtpAddress(v)
+func (a *BtpAddress) Set(v string) error {
+	*a = BtpAddress(v)
 	return nil
 }
 
-func (ba BtpAddress) Type() string {
+func (a BtpAddress) Type() string {
 	return "BtpAddress"
 }
 
@@ -103,10 +93,8 @@ func ValidateBtpAddress(ba BtpAddress) error {
 	default:
 		return fmt.Errorf("not supported blockchain:%s", v)
 	}
-
-	if len(ba.ContractAddress()) < 1 {
-		return fmt.Errorf("empty contract address")
+	if len(ba.Account()) < 1 {
+		return fmt.Errorf("empty account")
 	}
-
 	return nil
 }

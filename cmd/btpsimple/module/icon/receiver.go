@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/gorilla/websocket"
-
 	"github.com/icon-project/btp/cmd/btpsimple/module/base"
-	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/crypto"
+	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mpt"
 )
@@ -183,11 +183,10 @@ func (r *receiver) toEvent(proof [][]byte) (*base.Event, error) {
 	if bytes.Equal(el.Addr, r.evtLogRawFilter.addr) &&
 		bytes.Equal(el.Indexed[EventIndexSignature], r.evtLogRawFilter.signature) &&
 		bytes.Equal(el.Indexed[EventIndexNext], r.evtLogRawFilter.next) {
-		var i common.HexInt
-		i.SetBytes(el.Indexed[EventIndexSequence])
+		var i big.Int
 		evt := &base.Event{
 			Next: base.BtpAddress(el.Indexed[EventIndexNext]),
-			Sequence: i.Int64(),
+			Sequence: intconv.BigIntSetBytes(&i, el.Indexed[EventIndexSequence]),
 			Message: el.Data[0],
 		}
 		return evt, nil
@@ -207,10 +206,11 @@ func toEventLog(proof [][]byte) (*EventLog, error) {
 	return el, nil
 }
 
-func (r *receiver) ReceiveLoop(height int64, seq int64, cb base.ReceiveCallback, scb func()) error {
+var bigIntOne = big.NewInt(1)
+func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb base.ReceiveCallback, scb func()) error {
 	s := r.dst.String()
 	ef := &EventFilter{
-		Addr:      Address(r.src.ContractAddress()),
+		Addr:      Address(r.src.Account()),
 		Signature: EventSignature,
 		Indexed:   []*string{&s},
 	}
@@ -226,7 +226,7 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb base.ReceiveCallback,
 	if r.bh, err = r.getBlockHeader(NewHexInt(height - 1)); err != nil {
 		return err
 	}
-	if seq < 1 {
+	if seq.Cmp(bigIntOne) < 0 {
 		r.isFoundOffsetBySeq = true
 	}
 	if r.evtLogRawFilter.addr, err = ef.Addr.Value(); err != nil {
@@ -234,7 +234,7 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb base.ReceiveCallback,
 	}
 	r.evtLogRawFilter.signature = []byte(EventSignature)
 	r.evtLogRawFilter.next = []byte(s)
-	r.evtLogRawFilter.seq = common.NewHexInt(seq).Bytes()
+	r.evtLogRawFilter.seq = intconv.BigIntToBytes(seq)
 	return r.c.MonitorBlock(r.evtReq,
 		func(conn *websocket.Conn, v *BlockNotification) error {
 			var err error
