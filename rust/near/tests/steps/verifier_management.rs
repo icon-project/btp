@@ -64,18 +64,6 @@ pub static VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM_AGAIN: fn(Context) 
         context
     };
 
-pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chucks").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_verifier(context)
-};
-
-pub static VERIFIER_IS_ADDED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    CHUCKS_ACCOUNT_IS_CREATED(context)
-        .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-        .pipe(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
-        .pipe(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-};
 pub static EXISTING_VERIFIER_IS_ADDED_AGAIN_BY_BMC_OWNER: fn(Context) -> Context =
     |mut context: Context| {
         ALICE_IS_BMC_CONTRACT_OWNER(context)
@@ -112,16 +100,6 @@ pub static REMOVE_VERIFER_INOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut con
         .pipe(VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
         .pipe(ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC)
 };
-
-pub static REMOVE_VERIFER_INOKED_BY_NON_BMC_OWNER: fn(Context) -> Context =
-    |mut context: Context| {
-        ALICE_IS_BMC_CONTRACT_OWNER(context)
-            .pipe(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
-            .pipe(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-            .pipe(VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
-            .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-            .pipe(CHUCK_INVOKES_REMOVE_VERIFIER_IN_BMC)
-    };
 
 pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
@@ -183,4 +161,15 @@ pub static VERIFIER_FOR_ICON_IS_ADDED: fn(Context) -> Context = |context| {
     context
         .pipe(ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM)
         .pipe(BMC_OWNER_INVOKES_ADD_VERIFIER_IN_BMC)
+};
+
+pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(CHUCK_IS_THE_SIGNER)
+        .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER: fn(Context) = |context: Context| {
+    let error = context.method_errors("add_verifier");
+    assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
 };

@@ -12,8 +12,8 @@ pub use account_management::*;
 mod service_management;
 pub use service_management::*;
 
-mod verifer_management;
-pub use verifer_management::*;
+mod verifier_management;
+pub use verifier_management::*;
 
 mod relay_management;
 pub use relay_management::*;
