@@ -22,16 +22,6 @@ mod manage_verifiers {
 
         #[ignore]
         #[workspaces::test(sandbox)]
-        async fn add_existing_verifier_authorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(EXISTING_VERIFIER_IS_ADDED_AGAIN_BY_BMC_OWNER)
-                .then(BMC_SHOULD_THROW_ALREADY_EXIST_ERROR)
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
         async fn add_invalid_verifier_authorized_fail() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED)
@@ -92,5 +82,18 @@ mod manage_verifiers {
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(VERIFIERS_IN_BMC_ARE_QUERIED)          
             }
+            #[workspaces::test(sandbox)]
+            async fn add_existing_verifier_authorized_fail() {
+                Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM)
+                .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
+                .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR)
+            }
+        }
+
     }
-}
+
