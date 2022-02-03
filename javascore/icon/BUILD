@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_image",
@@ -55,10 +57,6 @@ genrule(
     outs = ["wait_until_icon_up.out"],
     cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:$$(cat $(location :deploy_node)) admin/system 300 > $@",
     executable = True,
-    output_to_bindir = True,
-    tags = [
-        "no-cache",
-    ],
     tools = [
         ":deploy_node",
         "@btp//utils:wait_until_curl_script",
