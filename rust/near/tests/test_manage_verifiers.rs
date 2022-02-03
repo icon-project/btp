@@ -63,7 +63,7 @@ mod manage_verifiers {
         }
 
         #[workspaces::test(sandbox)]
-        async fn query_verifier_verifers_success() {
+        async fn query_verifiers_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -72,8 +72,9 @@ mod manage_verifiers {
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(VERIFIERS_IN_BMC_ARE_QUERIED)          
             }
-            #[workspaces::test(sandbox)]
-            async fn add_existing_verifier_authorized_fail() {
+        
+        #[workspaces::test(sandbox)]
+        async fn add_existing_verifier_authorized_fail() {
                 Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
