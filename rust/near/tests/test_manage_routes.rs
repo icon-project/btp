@@ -102,4 +102,17 @@ mod manage_verifers {
             .when(ALICE_INVOKES_ADD_ROUTE_IN_BMC)
             .then(BMC_SHOULD_THROW_INVALID_LINK_ADDRESS_ERROR)
     }
+
+    #[workspaces::test(sandbox)]
+    async fn bmc_owner_cannot_add_route_with_a_invalid_btp_route_address() {
+        Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(ALICE_IS_BMC_CONTRACT_OWNER)
+            .and(VERIFIER_FOR_ICON_IS_ADDED)
+            .and(ICON_LINK_ADDRESS_IS_PROVIDED_AND_ADDED_IN_BMC)
+            .and(LINK_AND_INVALID_ROUTE_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM)
+            .when(ALICE_INVOKES_ADD_ROUTE_IN_BMC)
+            .then(BMC_SHOULD_THROW_INVALID_LINK_ADDRESS_ERROR)
+    }
 }

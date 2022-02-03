@@ -182,6 +182,18 @@ pub static DESTINATION_AND_INVALID_LINK_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM:
         context
     };
 
+pub static LINK_AND_INVALID_ROUTE_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "add_route",
+            json!({
+                "destination":  format!("btp://{}///{}", DESTINATION_NETWORK, DESTINATION_BMC),
+                "link":  format!("btp://{}/{}/", ICON_NETWORK, ICON_BMC)
+            }),
+        );
+        context
+    };
+
 pub static BMC_SHOULD_THROW_INVALID_LINK_ADDRESS_ERROR: fn(Context) -> Context =
     |mut context: Context| {
         context.pipe(BMC_SHOULD_THROW_INVALIDADDRESS_ERROR)
