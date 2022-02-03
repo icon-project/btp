@@ -176,13 +176,25 @@ pub static DESTINATION_AND_INVALID_LINK_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM:
             "add_route",
             json!({
                 "destination":  format!("btp://{}/{}", DESTINATION_NETWORK, DESTINATION_BMC),
-                "link":  format!("btp://{}//{}//", ICON_NETWORK, ICON_BMC)
+                "link":  format!("btp://0x1.icon12/{}",ICON_BMC)
             }),
         );
         context
     };
 
-pub static BMC_SHOULD_THROW_INVALID_LINK_ADDRESS_ERROR: fn(Context) -> Context =
+pub static INVALID_DESTINATION_AND_VALID_LINK_ARE_PROVIDED_AS_ADD_ROUTE_PARAM: fn(Context) -> Context =
     |mut context: Context| {
-        context.pipe(BMC_SHOULD_THROW_INVALIDADDRESS_ERROR)
-    };   
+        context.add_method_params(
+            "add_route",
+            json!({
+                "destination":  format!("btp://0x1.bsc01/{}", DESTINATION_BMC),
+                "link":  format!("btp://{}/{}/", ICON_NETWORK, ICON_BMC)
+            }),
+        );
+        context
+    };
+
+pub static BMC_SHOULD_THROW_INVALID_LINK_ADDRESS_ERROR: fn(Context) = |context: Context| {
+        let error = context.method_errors("add_route");
+        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
+    };
