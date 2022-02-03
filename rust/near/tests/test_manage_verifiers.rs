@@ -49,16 +49,6 @@ mod manage_verifiers {
                 .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
         }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_nonexisting_verifier_authorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
-        }
         
         #[workspaces::test(sandbox)]
         async fn add_verifier_unauthorized_fail() {
@@ -94,6 +84,5 @@ mod manage_verifiers {
                 .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR)
             }
         }
-
     }
 

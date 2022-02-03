@@ -178,3 +178,7 @@ pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR: fn(Context) = |contex
     let error = context.method_errors("add_verifier");
     assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
 };
+    pub static BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR: fn(Context) = |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
+    };
