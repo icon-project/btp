@@ -9,16 +9,6 @@ use test_helper::types::Context;
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static USER_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.remove_owner(context);
-    
-pub static USER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_owner(context);
-    
-pub static USER_INVOKES_GET_OWNER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_owners(context);
-    
-
 pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
     let owners = context.method_responses("get_owners");
 

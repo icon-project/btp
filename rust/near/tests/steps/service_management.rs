@@ -2,9 +2,6 @@ use super::*;
 use serde_json::json;
 use test_helper::types::Context;
 
-pub static REQUEST_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_requests(context);
-
 pub static NEWLY_ADDED_REQUEST_SHOULD_BE_IN_BMC_REQUESTS: fn(Context) = |context: Context| {
     let requests = context.method_responses("get_requests");
     assert_eq!(

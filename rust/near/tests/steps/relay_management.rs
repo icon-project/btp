@@ -3,8 +3,7 @@ use super::{BMC_CONTRACT, BMV_CONTRACT};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 
-pub static USER_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_relay(context);
+
 
 pub static BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
     context

@@ -1,23 +1,7 @@
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT};
 use libraries::types::{Address, BTPAddress, LinkStatus};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
-
-pub static USER_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_link(context, 30000000000000);
-
-pub static USER_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.set_link(context, 300000000000000);
-
-pub static USER_INVOKES_REMOVE_LINK_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.remove_link(context);
-
-pub static USER_INVOKES_GET_LINKS_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_links(context);
-
-pub static USER_INVOKES_GET_STATUS_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_status(context); 
 
 pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -285,4 +269,10 @@ pub static ALREADY_HAVE_12_EXISTING_LINKS: fn(Context) -> Context = |context: Co
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADD_LINK: fn(Context) = |context: Context| {
     let error = context.method_errors("add_link");
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+};
+
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AND_ADDED_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+        .pipe(ALICE_INVOKES_ADD_LINK_IN_BMC)
 };
