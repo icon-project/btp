@@ -182,7 +182,7 @@ pub static DESTINATION_AND_INVALID_LINK_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM:
         context
     };
 
-pub static LINK_AND_INVALID_ROUTE_ADDRESS_ARE_PROVIDED_AS_ADD_ROUTE_PARAM: fn(Context) -> Context =
+pub static INVALID_DESTINATION_AND_VALID_LINK_ARE_PROVIDED_AS_ADD_ROUTE_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "add_route",
