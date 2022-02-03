@@ -2,6 +2,7 @@ use super::*;
 use super::{BMC_CONTRACT, BMV_CONTRACT};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
+use libraries::types::{HashedCollection, HashedValue};
 
 pub static VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM:
     fn(Context) -> Context = |mut context: Context| {
@@ -9,8 +10,8 @@ pub static VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER
     context.add_method_params(
         "add_verifier",
         json!({
-            "net": "NETWORK_ADDRESS",
-            "addr": address
+            "network": "0x1.icon",
+            "verifier":address,
         }),
     );
     context
@@ -85,33 +86,35 @@ pub static VERIFIERS_IN_BMC_ARE_QUERIED: fn(Context) -> Context =
 
 pub static ADDED_VERIFIER_SHOULD_BE_IN_LIST_OF_VERIFIERS: fn(Context) = |context: Context| {
     let verifiers = context.method_responses("get_verifiers");
-    let result: HashSet<_> = from_value::<Vec<String>>(verifiers)
-        .unwrap()
-        .into_iter()
-        .collect();
-    let expected: HashSet<_> = vec!["address".to_string()].into_iter().collect();
-    assert_eq!(result, expected);
+    let address = context.contracts().get("bmv").account_id().to_string();
+    let result = json!({
+        "network": "0x1.icon",
+        "verifier": address,
+    });
+    let expected1= verifiers.as_str().unwrap();
+    let expected= format!{"[{}]",result};
+    assert_eq!(expected1.to_owned(), expected);
 };
 
-pub static REMOVE_VERIFER_INOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    ALICE_IS_BMC_CONTRACT_OWNER(context)
-        .pipe(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
-        .pipe(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-        .pipe(VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
-        .pipe(ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC)
-};
+// pub static REMOVE_VERIFER_INOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
+//     ALICE_IS_BMC_CONTRACT_OWNER(context)
+//         .pipe(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
+//         .pipe(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
+//         .pipe(VERIFER_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
+//         .pipe(ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC)
+// };
 
-pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("alice").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.remove_verifier(context)
-};
+// pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
+//     let signer = context.accounts().get("alice").to_owned();
+//     context.set_signer(&signer);
+//     BMC_CONTRACT.remove_verifier(context)
+// };
 
-pub static CHUCK_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chuck").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.remove_verifier(context)
-};
+// pub static CHUCK_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
+//     let signer = context.accounts().get("chuck").to_owned();
+//     context.set_signer(&signer);
+//     BMC_CONTRACT.remove_verifier(context)
+// };
 
 pub static VERIFIER_DELETED_SHOULD_NOT_BE_IN_LIST_OF_VERIFIERS: fn(Context) =
     |mut context: Context| {
@@ -130,9 +133,6 @@ pub static ADD_VERIFIER_INVOKED_WITH_INVALID_VERIFIER_ADDRESS: fn(Context) -> Co
         context
     };
 
-pub static USER_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.add_verifier(context);
-
 pub static ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM: fn(Context) -> Context =
     |mut context| {
         context.add_method_params(
@@ -149,6 +149,7 @@ pub static ALICE_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context:
     context
         .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
+        .pipe(USER_INVOKES_GET_VERIFIERS_IN_BMC)
 };
 
 pub static BMC_OWNER_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context: Context| {
