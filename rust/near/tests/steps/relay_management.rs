@@ -188,7 +188,7 @@ pub static REMOVE_NON_EXISTING_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Contex
             .pipe(CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC)
     };
 
-pub static ADDED_RELAYS_SHOULD_BE_IN_LIST: fn(Context) = |mut context: Context| {
+pub static ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST: fn(Context) = |mut context: Context| {
     let relay = context.method_responses("get_relays");
 
     let result: HashSet<_> = from_value::<Vec<String>>(relay)

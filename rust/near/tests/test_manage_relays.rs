@@ -16,7 +16,7 @@ mod manage_verifers {
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .when(ADD_RELAY_INVOKED_BY_BMC_OWNER)
                 .then(RELAYS_ARE_QURIED_IN_BMC)
-                .and(ADDED_RELAYS_SHOULD_BE_IN_LIST)
+                .and(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
 
         }
 
@@ -27,7 +27,7 @@ mod manage_verifers {
             .and(BMC_CONTRACT_IS_DEPLOYED)
             .when(ADD_RELAYS_INVOKED_BY_BMC_OWNER)
             .then(RELAYS_ARE_QURIED_IN_BMC)
-            .and(ADDED_RELAYS_SHOULD_BE_IN_LIST)
+            .and(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
         }
 
         #[ignore]
