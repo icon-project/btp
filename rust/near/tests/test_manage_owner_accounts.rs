@@ -76,7 +76,7 @@ mod manage_owner_accounts {
         }
 
         #[workspaces::test(sandbox)]
-        async fn remove_nonexisting_owner_authorized_fail() {
+        async fn remove_non_existing_owner_authorized_fail() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
