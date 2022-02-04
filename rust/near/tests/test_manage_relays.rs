@@ -16,7 +16,7 @@ mod manage_verifers {
                 .and(BMC_CONTRACT_IS_DEPLOYED)
                 .when(ADD_RELAY_INVOKED_BY_BMC_OWNER)
                 .then(RELAYS_ARE_QURIED_IN_BMC)
-                .and(ADDED_RELAYS_SHOULD_BE_IN_LIST)
+                .and(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
 
         }
 
@@ -27,7 +27,7 @@ mod manage_verifers {
             .and(BMC_CONTRACT_IS_DEPLOYED)
             .when(ADD_RELAYS_INVOKED_BY_BMC_OWNER)
             .then(RELAYS_ARE_QURIED_IN_BMC)
-            .and(ADDED_RELAYS_SHOULD_BE_IN_LIST)
+            .and(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
         }
 
         #[ignore]
@@ -86,6 +86,20 @@ mod manage_verifers {
             .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
         }
 
+        #[workspaces::test(sandbox)]
+        async fn bmc_owner_can_add_bmr_as_list_and_overwrite_an_existing_bmr() {
+          Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(ALICE_IS_BMC_CONTRACT_OWNER)
+            .and(VERIFIER_FOR_ICON_IS_ADDED)
+            .and(ICON_LINK_ADDRESS_IS_PROVIDED_AND_ADDED_IN_BMC)
+            .and(RELAY_1_IS_REGISTERED)
+            .and(ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM)
+            .and(ALICE_INVOKES_ADD_RELAY_IN_BMC)
+            .when(ALICE_INVOKES_GET_RELAY_IN_BMC)
+            .then(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
+        }
     }
 
 }

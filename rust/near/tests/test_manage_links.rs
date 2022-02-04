@@ -21,6 +21,7 @@ mod manage_links {
             .then(ICON_LINK_SHOULD_BE_ADDED_TO_LIST);
         }
 
+        #[ignore]
         #[workspaces::test(sandbox)]
         async fn add_link_with_existing_10_links_as_authorized_success(){
             Kitten::given(NEW_CONTEXT)

@@ -75,16 +75,15 @@ mod manage_owner_accounts {
 
         }
 
-        #[ignore]
         #[workspaces::test(sandbox)]
-        async fn remove_non_existing_owner_as_authorized_fail() {
+        async fn remove_non_existing_owner_authorized_fail() {
             Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(ALICE_IS_BMC_CONTRACT_OWNER)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_NOTEXIST_ERROR);
+                .then(BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR)
         }
 
         #[ignore]

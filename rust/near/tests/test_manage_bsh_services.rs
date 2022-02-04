@@ -18,7 +18,7 @@ mod manage_bsh_services {
                 .and(BOB_IS_BSH_CONTRACT_OWNER)
                 .and(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
                 .when(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
-                .then(REQUEST_IN_BMC_ARE_QUERIED)
+                .then(USER_INVOKES_GET_REQUESTS_IN_BMC)
                 .and(NEWLY_ADDED_REQUEST_SHOULD_BE_IN_BMC_REQUESTS)
         }
 
