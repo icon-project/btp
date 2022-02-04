@@ -101,14 +101,14 @@ pub static ALICE_INVOKES_ADD_ROUTE_IN_BMC: fn(Context) -> Context = |context: Co
     context
         .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_ROUTE_IN_BMC)
-        .pipe(USER_INVOKES_GET_ROUTES_BMC)
+        .pipe(USER_INVOKES_GET_ROUTES_IN_BMC)
 };
 
 pub static ALICE_INVOKES_REMOVE_ROUTE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
         .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_REMOVE_ROUTE_IN_BMC)
-        .pipe(USER_INVOKES_GET_ROUTES_BMC)
+        .pipe(USER_INVOKES_GET_ROUTES_IN_BMC)
 };
 
 pub static DESTINATION_AND_LINK_ADDRESS_PROVIDED_AS_ADD_ROUTE_PARAM: fn(Context) -> Context =

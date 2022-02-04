@@ -96,7 +96,8 @@ mod manage_verifers {
             .and(ICON_LINK_ADDRESS_IS_PROVIDED_AND_ADDED_IN_BMC)
             .and(RELAY_1_IS_REGISTERED)
             .and(ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM)
-            .when(ALICE_INVOKES_ADD_RELAY_IN_BMC)
+            .and(ALICE_INVOKES_ADD_RELAY_IN_BMC)
+            .when(ALICE_INVOKES_GET_RELAY_IN_BMC)
             .then(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
         }
     }

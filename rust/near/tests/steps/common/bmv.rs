@@ -25,6 +25,7 @@ pub static BMV_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Cont
             "offset": "1846537"
         }),
     );
+
     BMV_CONTRACT.initialize(context)
 };
 

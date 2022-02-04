@@ -1,5 +1,5 @@
+use super::BMC_CONTRACT;
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 
@@ -18,6 +18,7 @@ pub static ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Cont
                 "relay": context.accounts().get("relay_1").account_id()
             }),
         );
+
         context
     };
 
@@ -30,10 +31,11 @@ pub static LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Contex
                 "relay": context.accounts().get("relay_1").account_id()
             }),
         );
+
         context
     };
 
-pub static LINK_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "get_relays",
@@ -41,10 +43,11 @@ pub static LINK_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
             }),
         );
+
         context
     };
 
-pub static INVALID_LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
+pub static INVALID_LINK_ADDRESS_AND_RELAY_ACCOUNT_ID_IS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "add_realy",
@@ -53,6 +56,7 @@ pub static INVALID_LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -
                 "relay": "relayaddress"
             }),
         );
+
         context
     };
 
@@ -65,20 +69,26 @@ pub static LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
                 "relay": "VECTOR(relays)"
             }),
         );
+
         context
     };
 
 pub static ALICE_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    context.pipe(ALICE_IS_THE_SIGNER)
+    context
+        .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
-        .pipe(LINK_PROVIDED_AS_GET_RELAY_PARAM)
+};
+
+pub static ALICE_INVOKES_GET_RELAY_IN_BMC: fn(Context) -> Context = |mut context: Context| {
+    context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAY_PARAM)
         .pipe(USER_INVOKES_GET_RELAYS_IN_BMC)
 };
 
 pub static ALICE_INVOKES_ADD_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    context.pipe(ALICE_IS_THE_SIGNER)
+    context
+        .pipe(ALICE_IS_THE_SIGNER)
         .pipe(USER_INVOKES_ADD_RELAYS_IN_BMC)
-        .pipe(USER_INVOKES_GET_RELAYS_IN_BMC)
 };
 
 pub static ALICE_INVOKES_REMOVE_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
@@ -91,9 +101,6 @@ pub static RELAYS_ARE_QURIED_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_relays(context);
 
 pub static ADD_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    //bmc owner adds link
-    // relay provided to the link added
-    //bmc owner invokes add_relay realy will be added to the link
     ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
@@ -141,11 +148,8 @@ pub static ADD_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut co
 
 pub static ADD_RELAY_WITH_NON_EXISTING_LINK_INVOKED_BY_BMC_OWNER: fn(Context) -> Context =
     |mut context: Context| {
-        //bmc owner adds link
-        // relay provided to the link added
-        //bmc owner invokes add_relay realy will be added to the link
         ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-            .pipe(INVALID_LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
+            .pipe(INVALID_LINK_ADDRESS_AND_RELAY_ACCOUNT_ID_IS_PROVIDED_AS_ADD_RELAY_PARAM)
             .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
     };
 
@@ -158,6 +162,7 @@ pub static LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context
                 "relay": "relayaddress"
             }),
         );
+
         context
     };
 
@@ -170,13 +175,11 @@ pub static NONEXISTING_LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context
                 "relay": "relayaddress"
             }),
         );
+
         context
     };
 
 pub static REMOVE_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    //bmc owner adds link
-    // relay provided to the link added
-    //bmc owner invokes add_relay realy will be added to the link
     ALICE_INVOKES_ADD_LINK_IN_BMC(context)
         .pipe(LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
         .pipe(ALICE_INVOKES_REMOVE_RELAYS_IN_BMC)
@@ -205,8 +208,11 @@ pub static ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST: fn(Context) = |mut context:
         .unwrap()
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec![context.accounts().get("relay_1").account_id().to_string()].into_iter().collect();
-    assert_eq!(result, expected); 
+    let expected: HashSet<_> = vec![context.accounts().get("relay_1").account_id().to_string()]
+        .into_iter()
+        .collect();
+
+    assert_eq!(result, expected);
 };
 
 pub static DELETED_RELAY_SHOULD_NOT_BE_IN_LIST: fn(Context) = |mut context: Context| {
@@ -217,6 +223,7 @@ pub static DELETED_RELAY_SHOULD_NOT_BE_IN_LIST: fn(Context) = |mut context: Cont
         .into_iter()
         .collect();
     let expected: HashSet<_> = vec!["to_be_given".to_string()].into_iter().collect();
+
     assert_eq!(result, expected);
 };
 
