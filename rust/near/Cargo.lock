@@ -1642,6 +1642,7 @@ dependencies = [
  "btp-common",
  "lazy_static",
  "libraries",
+ "near-contract-standards",
  "near-sdk",
  "tiny-keccak",
 ]
@@ -1722,6 +1723,14 @@ dependencies = [
  "serde",
  "strum",
  "thiserror",
+]
+
+[[package]]
+name = "near-contract-standards"
+version = "4.0.0-pre.4"
+source = "git+https://github.com/HugoByte/near-sdk-rs.git?rev=b18b475#b18b4751c556e6da7dbbab678b3ec981f48a406d"
+dependencies = [
+ "near-sdk",
 ]
 
 [[package]]
@@ -2080,6 +2089,14 @@ dependencies = [
  "serde",
  "sha2",
  "sha3",
+]
+
+[[package]]
+name = "nep141-service"
+version = "0.1.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk",
 ]
 
 [[package]]

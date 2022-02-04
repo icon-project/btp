@@ -10,6 +10,7 @@ members = [
     "bmv/icon",
     "bsh/token",
     "bsh/nativecoin",
+    "bsh/nep141",
     "libraries",
     "test-helper"
 ]
@@ -37,6 +38,7 @@ panic = "abort"
 
 [patch."https://github.com/near/near-sdk-rs.git"]
 near-sdk = { git = "https://github.com/HugoByte/near-sdk-rs.git", rev = "b18b475" }
+near-contract-standards = { git = "https://github.com/HugoByte/near-sdk-rs.git", rev = "b18b475" }
 
 [patch."https://github.com/near/near-jsonrpc-client-rs"]
 near-jsonrpc-client = { branch = "fix/serde", git = "https://github.com/HugoByte/near-jsonrpc-client-rs", features = ["sandbox"] }
