@@ -7,7 +7,7 @@ pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 
 pub static RELAY_1_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(RELAY_1_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_RELAY_1)
         .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC)
 };
 

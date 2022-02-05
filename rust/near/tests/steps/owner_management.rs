@@ -23,14 +23,14 @@ pub static BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Contex
 pub static BMC_OWNER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
     |context: Context| -> Context {
         context
-            .pipe(BMC_OWNER_IS_THE_SIGNER)
+            .pipe(TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
             .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
     };
 
 pub static CHARLIE_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
     |context: Context| -> Context {
         context
-            .pipe(CHARLIE_IS_THE_SIGNER)
+            .pipe(TRANSACTION_IS_SIGNED_BY_CHARLIE)
             .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
     };
 
@@ -50,7 +50,7 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) ->
 
 pub static ALICE_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(ALICE_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_REMOVE_OWNER_IN_BMC)
 };
 
@@ -68,7 +68,7 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Co
 
 pub static ALICE_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(ALICE_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
 };
 

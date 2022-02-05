@@ -44,31 +44,31 @@ pub static RELAY_1_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Co
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static BMC_OWNER_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
     let signer = context.contracts().get("bmc").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static ALICE_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_ALICE: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static BOB_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_BOB: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("bob").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static CHUCK_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_CHUCK: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("chuck").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static RELAY_1_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_RELAY_1: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("relay_1").to_owned();
     context.set_signer(&signer);
     context
@@ -81,13 +81,13 @@ pub static RELAY_2_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Co
     context
 };
 
-pub static RELAY_2_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_RELAY_2: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("relay_2").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static CHARLIE_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_CHARLIE: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("charlie").to_owned();
     context.set_signer(&signer);
     context

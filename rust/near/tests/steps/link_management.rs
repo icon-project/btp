@@ -24,7 +24,7 @@ pub static ICON_LINK_IS_PRESENT_IN_BMC: fn(Context) -> Context = |context: Conte
 
 pub static BMC_OWNER_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(BMC_OWNER_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
         .pipe(USER_INVOKES_SET_LINK_IN_BMC)
 };
 
@@ -55,13 +55,13 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Conte
 
 pub static BMC_OWNER_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(BMC_OWNER_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
 };
 
 pub static ALICE_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(ALICE_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
 };
 
@@ -96,7 +96,7 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM: fn(Context) -> Con
 
 pub static CHUCK_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(CHUCK_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_CHUCK)
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
 };
 
@@ -107,7 +107,7 @@ pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADD_LINK: fn(Context) = |conte
 
 pub static ALICE_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(ALICE_IS_THE_SIGNER)
+        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_SET_LINK_IN_BMC)
 };
 
