@@ -1,0 +1,11 @@
+use near_sdk::json_types::U128;
+use near_sdk::{ext_contract};
+use near_contract_standards::fungible_token::metadata::{FungibleTokenMetadata};
+
+
+#[ext_contract(ext_self)]
+pub trait Nep141Service { 
+    fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata);
+    fn mint(&mut self,amount:U128);
+    fn burn(&mut self, amount: U128);
+}

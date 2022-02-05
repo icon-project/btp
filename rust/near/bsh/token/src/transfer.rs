@@ -247,7 +247,7 @@ impl TokenService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<FungibleToken>)>>();
+            .collect::<Vec<(usize, TokenId, Token<WrappedFungibleToken>)>>();
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
@@ -282,7 +282,7 @@ impl TokenService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<FungibleToken>)>,
+        tokens: &Vec<(usize, TokenId, Token<WrappedFungibleToken>)>,
         assets: &Vec<Asset>,
     ) -> Result<(), String> {
         tokens

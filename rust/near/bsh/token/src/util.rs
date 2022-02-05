@@ -16,7 +16,7 @@ impl TokenService {
     }
 
     pub fn calculate_token_transfer_fee(
-        token: &Token<FungibleToken>,
+        token: &Token<WrappedFungibleToken>,
         mut amount: u128,
     ) -> Result<u128, String> {
         Ok(*(amount

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
-use libraries::types::FungibleToken;
+use libraries::types::{FungibleToken};
 use near_sdk::AccountId;
 
 lazy_static! {
@@ -11,7 +11,9 @@ lazy_static! {
         Some(AccountId::from_str("wnear.near").unwrap()),
         10000,
         100000,
-        "0x1.near".into()
+        "0x1.near".into(),
+        None
+        
     );
     pub static ref BALN: FungibleToken = FungibleToken::new(
         "BALN".into(),
@@ -19,6 +21,7 @@ lazy_static! {
         None,
         10000,
         100000,
-        "0x1.icon".into()
+        "0x1.icon".into(),
+        None
     );
 }

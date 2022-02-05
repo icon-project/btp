@@ -68,4 +68,7 @@ impl TokenMetadata for NativeCoin {
     fn metadata(&self) -> &Self {
         self
     }
+    fn extras(&self) -> &super::Extras {
+        self.extras()
+    }
 }

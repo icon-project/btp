@@ -1507,6 +1507,7 @@ version = "0.1.0"
 dependencies = [
  "btp-common",
  "bytes",
+ "near-contract-standards",
  "near-sdk",
  "rlp-derive",
  "rustc-hex",

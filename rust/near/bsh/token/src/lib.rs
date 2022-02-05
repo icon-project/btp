@@ -4,9 +4,10 @@ use libraries::types::{Account, AccountBalance, AccumulatedAssetFees, Asset, BTP
 use libraries::{
     types::messages::BtpMessage, types::messages::TokenServiceMessage,
     types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
-    types::FungibleToken, types::MultiTokenCore, types::MultiTokenResolver, types::Network,
+    types::MultiTokenCore, types::MultiTokenResolver, types::Network,
     types::Owners, types::Requests, types::StorageBalances, types::Token, types::TokenFees,
     types::Tokens, types::Math,
+    types::WrappedFungibleToken,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
@@ -40,7 +41,7 @@ pub use types::RegisteredTokens;
 pub struct TokenService {
     network: Network,
     owners: Owners,
-    tokens: Tokens<FungibleToken>,
+    tokens: Tokens<WrappedFungibleToken>,
     balances: Balances,
     storage_balances: StorageBalances,
     token_fees: TokenFees,
@@ -64,7 +65,7 @@ impl TokenService {
         Self {
             network,
             owners,
-            tokens: <Tokens<FungibleToken>>::new(),
+            tokens: <Tokens<WrappedFungibleToken>>::new(),
             balances: Balances::new(),
             storage_balances: StorageBalances::new(),
             token_fees: TokenFees::new(),

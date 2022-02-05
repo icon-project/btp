@@ -10,7 +10,7 @@ impl NativeCoinService {
 
     /// Register Coin, Accept token meta(name, symbol, network, denominator) as parameters
     // TODO: Complete Documentation
-    pub fn register(&mut self, token: Token<NativeCoin>) {
+    pub fn register(&mut self, token: Token<WrappedNativeCoin>) {
         self.assert_have_permission();
         self.assert_token_does_not_exists(&token);
 
@@ -48,7 +48,7 @@ impl NativeCoinService {
 }
 
 impl NativeCoinService {
-    pub fn mint(&mut self, token_id: &TokenId, amount: u128, token: &Token<NativeCoin>) {
+    pub fn mint(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedNativeCoin>) {
         // TODO: Add to supply
         let mut balance = self
             .balances
@@ -61,7 +61,7 @@ impl NativeCoinService {
         log!("[Mint] {} {}", amount, token.symbol());
     }
 
-    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<NativeCoin>) {
+    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedNativeCoin>) {
         // TODO: Remove from supply
         let mut balance = self
             .balances

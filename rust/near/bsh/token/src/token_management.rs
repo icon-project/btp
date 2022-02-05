@@ -10,7 +10,7 @@ impl TokenService {
 
     /// Register Token, Accept token meta(name, symbol, network, denominator) as parameters
     // TODO: Complete Documentation
-    pub fn register(&mut self, token: Token<FungibleToken>) {
+    pub fn register(&mut self, token: Token<WrappedFungibleToken>) {
         self.assert_have_permission();
         self.assert_token_does_not_exists(&token);
 
@@ -52,7 +52,7 @@ impl TokenService {
 }
 
 impl TokenService {
-    pub fn mint(&mut self, token_id: &TokenId, amount: u128, token: &Token<FungibleToken>) {
+    pub fn mint(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedFungibleToken>) {
         // TODO: Add to supply
         let mut balance = self
             .balances
@@ -65,7 +65,7 @@ impl TokenService {
         log!("[Mint] {} {}", amount, token.symbol());
     }
 
-    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<FungibleToken>) {
+    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedFungibleToken>) {
         // TODO: Remove from supply
         let mut balance = self
             .balances

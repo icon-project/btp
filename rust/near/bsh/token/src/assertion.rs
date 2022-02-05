@@ -42,7 +42,7 @@ impl TokenService {
         );
     }
 
-    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<FungibleToken>) {
+    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<WrappedFungibleToken>) {
         require!(
             fee_numerator <= token.denominator(),
             format!("{}", BshError::InvalidSetting),
@@ -142,7 +142,7 @@ impl TokenService {
         require!(self.owners.len() > 1, format!("{}", BshError::LastOwner));
     }
 
-    pub fn assert_token_does_not_exists(&self, token: &Token<FungibleToken>) {
+    pub fn assert_token_does_not_exists(&self, token: &Token<WrappedFungibleToken>) {
         let token = self.tokens.get(&Self::hash_token_id(token.name()));
         require!(token.is_none(), format!("{}", BshError::TokenExist))
     }

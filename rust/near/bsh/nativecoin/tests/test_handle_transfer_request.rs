@@ -5,7 +5,7 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, Asset, BTPAddress, MultiTokenCore, NativeCoin, Token, Math,
+    Account, AccountBalance, Asset, BTPAddress, MultiTokenCore, WrappedNativeCoin, Token, Math,
     WrappedI128,
 };
 mod token;
@@ -46,7 +46,7 @@ fn handle_transfer_mint_registered_icx() {
         get_context(vec![], false, account_id, deposit, env::storage_usage())
     };
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -57,7 +57,7 @@ fn handle_transfer_mint_registered_icx() {
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let icx_coin = <Token<NativeCoin>>::new(ICON_COIN.to_owned());
+    let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
 
     let btp_message = &BtpMessage::new(

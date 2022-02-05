@@ -3,7 +3,7 @@ use near_sdk::{testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{NativeCoin, Token};
+use libraries::types::{WrappedNativeCoin, Token};
 mod token;
 use token::*;
 
@@ -36,7 +36,7 @@ fn add_owner_new_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.add_owner(carol());
@@ -57,7 +57,7 @@ fn add_owner_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.add_owner(alice());
@@ -72,7 +72,7 @@ fn add_owner_permission() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
     testing_env!(context(chuck()));
     contract.add_owner(carol());
@@ -86,7 +86,7 @@ fn remove_owner_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.add_owner(carol());
@@ -109,7 +109,7 @@ fn remove_owner_permission() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.add_owner(carol());
@@ -127,7 +127,7 @@ fn remove_owner_last_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.remove_owner(alice());
@@ -142,7 +142,7 @@ fn remove_owner_non_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
     );
 
     contract.remove_owner(carol());

@@ -4,7 +4,7 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, BTPAddress, MultiTokenCore, NativeCoin, Token, Math, WrappedI128,
+    Account, AccountBalance, BTPAddress, MultiTokenCore, WrappedNativeCoin, Token, Math, WrappedI128,
 };
 mod token;
 use libraries::types::{Asset, Request};
@@ -48,7 +48,7 @@ fn handle_fee_gathering() {
         get_context(vec![], false, account_id, deposit, env::storage_usage(), 0)
     };
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = NativeCoinService::new(

@@ -16,7 +16,7 @@ impl NativeCoinService {
     }
 
     pub fn calculate_token_transfer_fee(
-        token: &Token<NativeCoin>,
+        token: &Token<WrappedNativeCoin>,
         mut amount: u128,
     ) -> Result<u128, String> {
         Ok(*(amount

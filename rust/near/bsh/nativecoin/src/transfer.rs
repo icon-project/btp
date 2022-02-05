@@ -247,7 +247,7 @@ impl NativeCoinService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<NativeCoin>)>>();
+            .collect::<Vec<(usize, TokenId, Token<WrappedNativeCoin>)>>();
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
@@ -282,7 +282,7 @@ impl NativeCoinService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<NativeCoin>)>,
+        tokens: &Vec<(usize, TokenId, Token<WrappedNativeCoin>)>,
         assets: &Vec<Asset>,
     ) -> Result<(), String> {
         tokens
