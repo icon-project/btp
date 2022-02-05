@@ -10,7 +10,7 @@ mod manage_verifiers {
         use super::*;
 
         #[workspaces::test(sandbox)]
-        async fn add_verifier_authorized_success() {
+        async fn bmc_owner_can_register_a_cross_chain_bmv() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -21,7 +21,7 @@ mod manage_verifiers {
         }
 
         #[workspaces::test(sandbox)]
-        async fn add_verifier_unauthorized_fail() {
+        async fn non_bmc_owner_cannot_register_a_cross_chain_bmv() {
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -33,7 +33,7 @@ mod manage_verifiers {
         }
 
         #[workspaces::test(sandbox)]
-        async fn query_verifiers_success() {
+        async fn user_can_query_all_the_registered_verifiers() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -44,7 +44,7 @@ mod manage_verifiers {
         }
 
         #[workspaces::test(sandbox)]
-        async fn add_existing_verifier_authorized_fail() {
+        async fn bmc_owner_cannot_add_a_verifier_for_an_existing_network() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)

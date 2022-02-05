@@ -7,7 +7,7 @@ mod manage_routes {
     use steps::*;
 
     #[workspaces::test(sandbox)]
-    async fn remove_registered_route_as_authorized_success() {
+    async fn bmc_owner_can_remove_a_registered_route_to_the_next_bmc() {
         Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -22,7 +22,7 @@ mod manage_routes {
     }
 
     #[workspaces::test(sandbox)]
-    async fn get_list_of_routes_from_bmc() {
+    async fn users_can_get_list_of_routes_registered_in_a_bmc() {
         Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -32,7 +32,7 @@ mod manage_routes {
     }
 
     #[workspaces::test(sandbox)]
-    async fn bmc_owner_cannot_add_route_with_a_invalid_btp_link_address() {
+    async fn bmc_owner_cannot_add_route_with_an_invalid_btp_link_address() {
         Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -44,7 +44,7 @@ mod manage_routes {
     }
 
     #[workspaces::test(sandbox)]
-    async fn bmc_owner_cannot_add_route_with_a_invalid_btp_route_address() {
+    async fn bmc_owner_cannot_add_route_with_an_invalid_btp_route_address() {
         Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)

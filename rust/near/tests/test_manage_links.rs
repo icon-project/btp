@@ -10,7 +10,7 @@ mod manage_links {
         use super::*;
 
         #[workspaces::test(sandbox)]
-        async fn add_link_as_authorized_success(){
+        async fn bmc_owner_can_add_a_link_connecting_cross_chain_bmc(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -22,7 +22,7 @@ mod manage_links {
         }
 
         #[workspaces::test(sandbox)]
-        async fn add_link_as_unauthorized_fail(){
+        async fn non_bmc_owner_cannot_add_a_link_connecting_cross_chain_bmc(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -35,7 +35,7 @@ mod manage_links {
         }
 
         #[workspaces::test(sandbox)]
-        async fn set_link_as_authorized_success(){
+        async fn bmc_owner_can_set_link_config_on_a_registered_link(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)

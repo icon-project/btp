@@ -10,7 +10,7 @@ mod manage_owner_accounts {
         use super::*;
 
         #[workspaces::test(sandbox)]
-        async fn remove_non_existing_owner_authorized_fail() {
+        async fn non_bmc_owner_cannot_remove_owners() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
@@ -21,7 +21,7 @@ mod manage_owner_accounts {
         }
 
         #[workspaces::test(sandbox)]
-        async fn add_new_bmc_owner_by_existing_bmc_owner_success() {
+        async fn bmc_contract_account_owner_can_add_new_bmc_owner() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
@@ -32,7 +32,7 @@ mod manage_owner_accounts {
         }
 
         #[workspaces::test(sandbox)]
-        async fn add_new_bmc_owner_by_recently_added_bmc_owner_success() {
+        async fn recently_added_bmc_owner_can_add_new_bmc_owner() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
@@ -44,7 +44,7 @@ mod manage_owner_accounts {
         }
 
         #[workspaces::test(sandbox)]
-        async fn bmc_owner_can_remove_another_bmc_owner_success() {
+        async fn bmc_contract_account_owner_can_remove_other_owners() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
