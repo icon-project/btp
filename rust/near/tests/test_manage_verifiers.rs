@@ -40,7 +40,7 @@ mod manage_verifiers {
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(VERIFIER_FOR_ICON_IS_ADDED)
                 .when(USER_INVOKES_GET_VERIFIERS_IN_BMC)
-                .then(USER_SHOULD_GET_EXISITING_VERIFIERS_LIST)
+                .then(USER_SHOULD_GET_THE_EXISITING_LIST_OF_VERIFIERS)
         }
 
         #[workspaces::test(sandbox)]

@@ -65,7 +65,7 @@ pub static ALICE_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Con
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
 };
 
-pub static ICON_LINK_SHOULD_BE_ADDED_TO_LIST: fn(Context) = |context: Context| {
+pub static ICON_LINK_SHOULD_BE_ADDED_TO_THE_LIST_OF_LINKS: fn(Context) = |context: Context| {
     let context = context
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
         .pipe(USER_INVOKES_GET_LINKS_IN_BMC);

@@ -79,7 +79,7 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |contex
         .pipe(BMC_OWNER_INVOKES_ADD_OWNER_IN_BMC)
 };
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context: Context| {
+pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) = |context: Context| {
     let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
 
     let owners = context.method_responses("get_owners");
@@ -96,7 +96,7 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST: fn(Context) = |context:
     assert_eq!(result, expected);
 };
 
-pub static BOBS_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST: fn(Context) = |context: Context| {
+pub static BOBS_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) = |context: Context| {
     let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
     let owners = context.method_responses("get_owners");
 
@@ -108,7 +108,7 @@ pub static BOBS_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST: fn(Context) = |context:
     assert_eq!(result.contains(&expected), true);
 };
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST: fn(Context) =
+pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) =
     |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
         let owners = context.method_responses("get_owners");

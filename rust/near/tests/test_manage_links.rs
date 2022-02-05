@@ -18,7 +18,7 @@ mod manage_links {
             .and(VERIFIER_FOR_ICON_IS_ADDED)
             .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
             .when(ALICE_INVOKES_ADD_LINK_IN_BMC)
-            .then(ICON_LINK_SHOULD_BE_ADDED_TO_LIST);
+            .then(ICON_LINK_SHOULD_BE_ADDED_TO_THE_LIST_OF_LINKS);
         }
 
         #[workspaces::test(sandbox)]

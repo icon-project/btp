@@ -50,7 +50,7 @@ pub static ALICE_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Co
         .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
 };
 
-pub static ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST: fn(Context) = |context: Context| {
+pub static ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS: fn(Context) = |context: Context| {
     let context = context
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM)
         .pipe(USER_INVOKES_GET_RELAYS_IN_BMC);

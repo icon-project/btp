@@ -28,7 +28,7 @@ mod manage_routes {
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(ROUTE_TO_BSC_IS_PRESENT_IN_BMC)
             .when(USER_INVOKES_GET_ROUTES_IN_BMC)
-            .then(USER_SHOULD_GET_EXISITING_ROUTES_LIST)
+            .then(USER_SHOULD_GET_THE_EXISITING_LIST_OF_ROUTES)
     }
 
     #[workspaces::test(sandbox)]

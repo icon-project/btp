@@ -83,7 +83,7 @@ pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER: fn(Context) = |cont
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
 };
 
-pub static USER_SHOULD_GET_EXISITING_VERIFIERS_LIST: fn(Context) = |context: Context| {
+pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_VERIFIERS: fn(Context) = |context: Context| {
     let verifiers = context.method_responses("get_verifiers");
     let result: HashSet<_> = from_value::<Vec<Verifier>>(verifiers)
         .unwrap()

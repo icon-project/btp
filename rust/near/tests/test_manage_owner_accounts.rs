@@ -28,7 +28,7 @@ mod manage_owner_accounts {
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS)
         }
 
         #[workspaces::test(sandbox)]
@@ -40,7 +40,7 @@ mod manage_owner_accounts {
                 .and(BOBS_ACCOUNT_IS_CREATED)
                 .and(BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
                 .when(CHARLIE_INVOKES_ADD_OWNER_IN_BMC)
-                .then(BOBS_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST)
+                .then(BOBS_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS)
         }
 
         #[workspaces::test(sandbox)]
@@ -51,7 +51,7 @@ mod manage_owner_accounts {
                 .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS)
         }
     }
 }

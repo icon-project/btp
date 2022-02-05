@@ -66,7 +66,7 @@ pub static ROUTE_TO_BSC_IS_PRESENT_IN_BMC: fn(Context) -> Context = |context: Co
         .pipe(USER_INVOKES_ADD_ROUTE_IN_BMC)
 };
 
-pub static USER_SHOULD_GET_EXISITING_ROUTES_LIST: fn(Context) = |context: Context| {
+pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_ROUTES: fn(Context) = |context: Context| {
     let routes = context.method_responses("get_routes");
     let result = routes
         .as_array()

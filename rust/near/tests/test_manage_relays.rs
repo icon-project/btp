@@ -20,7 +20,7 @@ mod manage_verifers {
             .and(RELAY_2_ACCOUNT_IS_CREATED)
             .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM)
             .when(ALICE_INVOKES_ADD_RELAY_IN_BMC)
-            .then(ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST)
+            .then(ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS)
         }
     }
 }
