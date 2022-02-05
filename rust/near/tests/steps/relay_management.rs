@@ -2,7 +2,7 @@ use super::*;
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 
-pub static ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "add_relay",
@@ -24,7 +24,7 @@ pub static BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context
 pub static RELAY_1_IS_REGISTERED: fn(Context) -> Context = |context: Context| -> Context {
     context
         .pipe(RELAY_1_ACCOUNT_IS_CREATED)
-        .pipe(ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM)
+        .pipe(ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
         .pipe(BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC)
 };
 
