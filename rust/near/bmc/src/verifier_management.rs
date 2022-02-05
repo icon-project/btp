@@ -2,7 +2,7 @@ use super::*;
 
 #[near_bindgen]
 impl BtpMessageCenter {
-        // * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
     // * * * * Verifier Management * * *
     // * * * * * * * * * * * * * * * * *
@@ -20,7 +20,7 @@ impl BtpMessageCenter {
         self.bmv.remove(&network)
     }
 
-    pub fn get_verifiers(&self) -> String {
-        to_value(self.bmv.to_vec()).unwrap().to_string()
+    pub fn get_verifiers(&self) -> Vec<Verifier> {
+        self.bmv.to_vec()
     }
 }
