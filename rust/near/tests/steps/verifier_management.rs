@@ -28,7 +28,7 @@ pub static VERIFIER_FOR_ICON_IS_ADDED: fn(Context) -> Context = |context| {
         .pipe(BMC_OWNER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNER: fn(Context) = |context: Context| {
     let error = context.method_errors("remove_owner");
     assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
 };
@@ -78,7 +78,7 @@ pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context:
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER: fn(Context) = |context: Context| {
     let error = context.method_errors("add_verifier");
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
 };
@@ -92,7 +92,7 @@ pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_VERIFIERS: fn(Context) = |conte
     assert!(result.len() > 0);
 };
 
-pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER: fn(Context) = |context: Context| {
     let error = context.method_errors("add_verifier");
     assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
 };

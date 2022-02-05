@@ -29,7 +29,7 @@ mod manage_verifiers {
             .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
             .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
             .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER)
+            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER)
         }
 
         #[workspaces::test(sandbox)]
@@ -52,7 +52,7 @@ mod manage_verifiers {
                 .and(VERIFIER_FOR_ICON_IS_ADDED)
                 .and(ICON_BMV_ACCOUNT_ID_AND_ICON_NETWORK_ADDRESS_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR)
+                .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER)
         }
     }
 }

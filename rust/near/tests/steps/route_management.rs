@@ -90,7 +90,7 @@ pub static BSC_LINK_ADDRESS_AS_DESTINATION_AND_INVALID_BTP_ADDRESS_AS_LINK_ARE_P
     context
 };
 
-pub static BMC_SHOULD_THROW_INVALID_BTP_ADDRESS_ERROR: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_INVALID_BTP_ADDRESS_ERROR_ON_ADDING_ROUTE: fn(Context) = |context: Context| {
     let error = context.method_errors("add_route");
     assert!(error.to_string().contains("InvalidBtpAddress"));
 };

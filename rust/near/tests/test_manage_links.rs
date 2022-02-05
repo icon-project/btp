@@ -31,7 +31,7 @@ mod manage_links {
             .and(VERIFIER_FOR_ICON_IS_ADDED)
             .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
             .when(CHUCK_INVOKES_ADD_LINK_IN_BMC)
-            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADD_LINK);
+            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_LINK);
         }
 
         #[workspaces::test(sandbox)]

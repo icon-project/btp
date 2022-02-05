@@ -17,7 +17,7 @@ mod manage_owner_accounts {
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR)
+                .then(BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNER)
         }
 
         #[workspaces::test(sandbox)]

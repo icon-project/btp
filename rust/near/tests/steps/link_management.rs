@@ -100,7 +100,7 @@ pub static CHUCK_INVOKES_ADD_LINK_IN_BMC: fn(Context) -> Context = |context: Con
         .pipe(USER_INVOKES_ADD_LINK_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADD_LINK: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_LINK: fn(Context) = |context: Context| {
     let error = context.method_errors("add_link");
     assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
 };
