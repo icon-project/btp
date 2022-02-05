@@ -14,50 +14,20 @@ mod manage_verifiers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(ADDED_VERIFIER_SHOULD_BE_IN_LIST_OF_VERIFIERS)
+                .then(THE_ADDED_VERIFIER_SHOULD_BE_IN_THE_LIST_OF_VERIFIERS)
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn add_invalid_verifier_authorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(ADD_VERIFIER_INVOKED_WITH_INVALID_VERIFIER_ADDRESS)
-                .then(BMC_SHOULD_THROW_INVALIDADDRESS_ERROR)
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_verifier_authorized_success() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(VERIFIER_DELETED_SHOULD_NOT_BE_IN_LIST_OF_VERIFIERS)
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_verifier_unauthorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(BMV_CONTRACT_IS_DEPLOYED)
-                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
-        }
-        
         #[workspaces::test(sandbox)]
         async fn add_verifier_unauthorized_fail() {
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(ALICE_IS_BMC_CONTRACT_OWNER)
-            .and(CHUCK_IS_NOT_A_BMC_OWNER)
-            .and(VERIFIER_NETWORKADDRESS_AND_VERIFIER_ADDRESS_PROVIDED_AS_ADD_VERIFIER_PARAM)
+            .and(CHUCKS_ACCOUNT_IS_CREATED)
+            .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
+            .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
             .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
             .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_FOR_VERIFIER)
         }
@@ -67,23 +37,22 @@ mod manage_verifiers {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM)
-                .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
-                .then(VERIFIERS_IN_BMC_ARE_QUERIED)          
-            }
-        
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .when(USER_INVOKES_GET_VERIFIERS_IN_BMC)
+                .then(USER_SHOULD_GET_EXISITING_VERIFIERS_LIST)
+        }
+
         #[workspaces::test(sandbox)]
         async fn add_existing_verifier_authorized_fail() {
-                Kitten::given(NEW_CONTEXT)
+            Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(VERIFIER_FOR_ICON_IS_ADDED)
-                .and(ICON_BMV_AND_ICON_NETWORK_IS_PROVIDED_AS_ADD_VERIFIER_PARAM)
+                .and(ICON_BMV_ACCOUNT_ID_AND_ICON_NETWORK_ADDRESS_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR)
-            }
         }
     }
-
+}

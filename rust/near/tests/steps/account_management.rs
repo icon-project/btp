@@ -74,3 +74,21 @@ pub static RELAY_1_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context
     context
 };
 
+pub static RELAY_2_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+    let signer = Signer::new(InMemorySigner::from_secret_key(AccountId::from_str("2adf8be778b91a57fd279515f3fdedc713798f8d5ee49d909da690a22b8641b2").unwrap(), SecretKey::from_str("qZagEaQwRrNm87Lu23eCXFBGy1bKDN3pHJyXMSLB7tAKTygqpVto4YxCKv5qythSetGgjoEMTKRJVYh7imjWp1o").unwrap()));
+    create_account(&signer);
+    context.accounts_mut().add("relay_2", &signer);
+    context
+};
+
+pub static RELAY_2_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+    let signer = context.accounts().get("relay_2").to_owned();
+    context.set_signer(&signer);
+    context
+};
+
+pub static CHARLIE_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+    let signer = context.accounts().get("charlie").to_owned();
+    context.set_signer(&signer);
+    context
+};

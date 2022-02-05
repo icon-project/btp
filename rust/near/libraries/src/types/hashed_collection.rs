@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 
 #[derive(Debug)]
-pub struct HashedCollection<T>(HashSet<T>);
+pub struct HashedCollection<T>(pub HashSet<T>);
 
 impl<T: PartialEq + Hash + Eq> HashedCollection<T> {
     pub fn new() -> HashedCollection<T> {
