@@ -19,8 +19,11 @@ impl TokenService {
         self.tokens.add(&token_id, &token);
         self.token_fees.add(&token_id);
 
-        if token.network() == &self.network  {
-            self.registered_tokens.add(&token.metadata().uri_deref().expect("Token Account Missing"), &token_id);
+        if token.network() == &self.network {
+            self.registered_tokens.add(
+                &token.metadata().uri_deref().expect("Token Account Missing"),
+                &token_id,
+            );
         };
 
         // Add fungible token list
@@ -58,6 +61,22 @@ impl TokenService {
             .balances
             .get(&env::current_account_id(), token_id)
             .unwrap();
+        //Review Required
+        ext_nep141::mint(
+            amount.into(),
+            env::predecessor_account_id(),
+            estimate::NO_DEPOSIT,
+            env::prepaid_gas(),
+        )
+        .then(ext_ft::ft_transfer(
+            env::current_account_id(),
+            amount.into(),
+            None,
+            env::predecessor_account_id(),
+            estimate::NO_DEPOSIT,
+            env::prepaid_gas(),
+        ));
+
         balance.deposit_mut().add(amount).unwrap();
         self.balances
             .set(&env::current_account_id(), token_id, balance);
@@ -74,11 +93,19 @@ impl TokenService {
         balance.deposit_mut().sub(amount).unwrap();
         self.balances
             .set(&env::current_account_id(), token_id, balance);
-        
+
+        ext_nep141::burn(
+            amount.into(),
+            env::predecessor_account_id(),
+            estimate::NO_DEPOSIT,
+            env::prepaid_gas(),
+        );
+        //TODO: Handle Promise
+
         log!("[Burn] {} {}", amount, token.symbol());
     }
 
-    pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String>{
+    pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String> {
         let mut balance = self
             .balances
             .get(&env::current_account_id(), token_id)

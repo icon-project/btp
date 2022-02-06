@@ -3223,6 +3223,7 @@ dependencies = [
  "btp-common",
  "lazy_static",
  "libraries",
+ "near-contract-standards",
  "near-sdk",
  "tiny-keccak",
 ]
