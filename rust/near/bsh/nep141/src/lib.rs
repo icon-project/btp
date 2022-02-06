@@ -55,6 +55,25 @@ impl Contract {
             .internal_withdraw(&env::predecessor_account_id(), amount.into())
     }
 
+    pub fn ft_transfer_call_with_storage_check(
+        &mut self,
+        receiver_id: AccountId,
+        amount: Balance,
+        memo: Option<String>,
+    ) {
+        require!(env::predecessor_account_id() == self.owner);
+        if let None = self.storage_balance_of(receiver_id.clone()) {
+            self.token.internal_register_account(&receiver_id);
+        }
+        
+        self.token.internal_transfer(
+            &env::predecessor_account_id(),
+            &receiver_id.clone(),
+            amount,
+            memo,
+        )
+    }
+
     fn on_account_closed(&mut self, account_id: AccountId, balance: Balance) {
         log!("Closed @{} with {}", account_id, balance);
     }

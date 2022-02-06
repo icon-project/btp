@@ -61,20 +61,21 @@ impl TokenService {
             .balances
             .get(&env::current_account_id(), token_id)
             .unwrap();
+        println!("{:?}", token.metadata().uri().to_owned().unwrap());
         //Review Required
         ext_nep141::mint(
             amount.into(),
-            env::predecessor_account_id(),
+            token.metadata().uri().to_owned().unwrap(),
             estimate::NO_DEPOSIT,
-            env::prepaid_gas(),
+            estimate::GAS_FOR_MINT,
         )
-        .then(ext_ft::ft_transfer(
-            env::current_account_id(),
+        .then(ext_nep141::ft_transfer_call_with_storage_check(
+            &env::predecessor_account_id(), //need to check !!
             amount.into(),
             None,
-            env::predecessor_account_id(),
+            token.metadata().uri().to_owned().unwrap(),
             estimate::NO_DEPOSIT,
-            env::prepaid_gas(),
+            estimate::GAS_FOR_FT_TRANSFER,
         ));
 
         balance.deposit_mut().add(amount).unwrap();
