@@ -1,4 +1,4 @@
-# Binance Smart Chain BTP Guide (WIP)
+# Binance Smart Chain BTP Guide
 
 ## Overview
 
