@@ -70,7 +70,7 @@ impl TokenService {
             estimate::GAS_FOR_MINT,
         )
         .then(ext_nep141::ft_transfer_call_with_storage_check(
-            &env::predecessor_account_id(), //need to check !!
+            env::predecessor_account_id(), //need to check !!
             amount.into(),
             None,
             token.metadata().uri().to_owned().unwrap(),

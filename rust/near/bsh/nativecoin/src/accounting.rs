@@ -25,7 +25,7 @@ impl NativeCoinService {
     }
 
     #[payable]
-    pub fn withdraw(&mut self, amount: U128) {
+    pub fn withdraw(&mut self,token_id: TokenId, amount: U128) {
         // To Prevent Spam
         assert_one_yocto();
 
