@@ -10,14 +10,11 @@ lazy_static! {
         "wNEAR".into(),
         Some(AccountId::from_str("wnear.near").unwrap()),
         "0x1.near".into(),
-        None
-        
     );
     pub static ref BALN: FungibleToken = FungibleToken::new(
         "BALN".into(),
         "BALN".into(),
         None,
         "0x1.icon".into(),
-        None
     );
 }
