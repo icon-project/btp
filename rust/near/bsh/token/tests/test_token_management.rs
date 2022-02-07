@@ -36,7 +36,7 @@ fn get_context(
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into(),1000.into());
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
 
@@ -55,7 +55,7 @@ fn register_token() {
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into(),1000.into());
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
     contract.register(baln.clone());
@@ -66,7 +66,7 @@ fn register_existing_token() {
 fn register_token_permission() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into(),1000.into());
     testing_env!(context(chuck(), 0));
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());

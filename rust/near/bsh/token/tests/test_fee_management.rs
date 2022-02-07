@@ -50,6 +50,7 @@ fn handle_fee_gathering() {
         "TokenBSH".to_string(),
         bmc(),
         "0x1.near".into(),
+        1000.into()
     );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());

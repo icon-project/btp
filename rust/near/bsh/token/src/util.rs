@@ -14,13 +14,4 @@ impl TokenService {
         sha3.finalize(&mut output);
         output.to_vec()
     }
-
-    pub fn calculate_token_transfer_fee(
-        token: &Token<FungibleToken>,
-        mut amount: u128,
-    ) -> Result<u128, String> {
-        Ok(*(amount
-            .mul(token.fee_numerator())?
-            .div(token.denominator())?))
-    }
 }

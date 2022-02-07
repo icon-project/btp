@@ -30,6 +30,17 @@ impl TokenService {
         self.assert_valid_service(&service);
         self.transfer_fees(&fee_aggregator);
     }
+
+    pub fn set_fee_ratio(&mut self, fee_numerator: u128) {
+        self.assert_have_permission();
+        self.assert_valid_fee_ratio(fee_numerator.into());
+        self.fee_numerator.clone_from(&fee_numerator);
+    }
+
+    pub fn calculate_token_transfer_fee(&self, amount: u128) -> u128 {
+        let fee = (amount * self.fee_numerator) / FEE_DENOMINATOR;
+        fee
+    }
 }
 
 impl TokenService {

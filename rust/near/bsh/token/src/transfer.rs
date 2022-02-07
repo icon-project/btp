@@ -45,7 +45,7 @@ impl TokenService {
         mut amount: u128,
     ) -> Result<Asset, String> {
         let token = self.tokens.get(&token_id).unwrap();
-        let fees = Self::calculate_token_transfer_fee(&token, amount)?;
+        let fees = self.calculate_token_transfer_fee(amount);
 
         self.assert_have_sufficient_deposit(&sender_id, &token_id, amount, Some(fees));
 
