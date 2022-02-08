@@ -19,7 +19,6 @@ use near_sdk::{
 };
 use std::convert::TryFrom;
 use std::convert::TryInto;
-use tiny_keccak::{Hasher, Sha3};
 mod external;
 use external::*;
 mod accounting;
