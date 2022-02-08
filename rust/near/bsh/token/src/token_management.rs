@@ -69,14 +69,7 @@ impl TokenService {
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_MINT,
         )
-        .then(ext_nep141::ft_transfer_call_with_storage_check(
-            env::predecessor_account_id(), //need to check !!
-            amount.into(),
-            None,
-            token.metadata().uri().to_owned().unwrap(),
-            estimate::NO_DEPOSIT,
-            estimate::GAS_FOR_FT_TRANSFER,
-        ));
+        .then(self.on_mint(amount, token));
 
         balance.deposit_mut().add(amount).unwrap();
         self.balances
@@ -97,7 +90,7 @@ impl TokenService {
 
         ext_nep141::burn(
             amount.into(),
-            env::predecessor_account_id(),
+            token.metadata().uri().to_owned().unwrap(),
             estimate::NO_DEPOSIT,
             env::prepaid_gas(),
         );
@@ -113,5 +106,16 @@ impl TokenService {
             .unwrap();
         balance.deposit_mut().add(amount)?;
         Ok(())
+    }
+
+    pub fn on_mint(&self, amount: u128, token: &Token<WrappedFungibleToken>) -> Promise {
+        ext_nep141::ft_transfer_call_with_storage_check(
+            env::predecessor_account_id(), //need to check !! WORKING FINE :)
+            amount.into(),
+            None,
+            token.metadata().uri().to_owned().unwrap(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_FT_TRANSFER,
+        )
     }
 }
