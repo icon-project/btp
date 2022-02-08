@@ -23,13 +23,13 @@ mod manage_verifiers {
         #[tokio::test(flavor = "multi_thread")]
         async fn non_bmc_owner_cannot_register_a_cross_chain_bmv() {
             Kitten::given(NEW_CONTEXT)
-            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(CHUCKS_ACCOUNT_IS_CREATED)
-            .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
-            .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
-            .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
-            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER);
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(CHUCKS_ACCOUNT_IS_CREATED)
+                .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
+                .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
+                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
+                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -50,9 +50,32 @@ mod manage_verifiers {
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(VERIFIER_FOR_ICON_IS_ADDED)
-                .and(ICON_BMV_ACCOUNT_ID_AND_ICON_NETWORK_ADDRESS_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM)
+                .and(ICON_BMV_ACCOUNT_ID_AND_ICON_NETWORK_ADDRESS_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM,)
                 .when(ALICE_INVOKES_ADD_VERIFIER_IN_BMC)
                 .then(BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn add_verifier_unauthorized_fail() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHUCKS_ACCOUNT_IS_CREATED)
+                .and(ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM,)
+                .when(CHUCK_INVOKES_ADD_VERIFIER_IN_BMC)
+                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn remove_non_existing_verifier_authorized_fail() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_NETWORK_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC)
+                .then(BMC_SHOULD_THROW_VERIFIER_DOES_NOT_EXISTS_ERROR_ON_REMOVING_VERIFIER);
         }
     }
 }
