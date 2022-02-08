@@ -17,7 +17,7 @@ pub static ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Con
 
 pub static BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
         .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
 };
 
@@ -46,7 +46,7 @@ pub static ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_P
 
 pub static ALICE_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
 };
 

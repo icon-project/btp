@@ -17,7 +17,7 @@ pub static BSC_LINK_ADDRESS_AS_DESTINATION_AND_ICON_LINK_ADDRESS_AS_LINK_ARE_PRO
 
 pub static ALICE_INVOKES_ADD_ROUTE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_ROUTE_IN_BMC)
 };
 
@@ -34,7 +34,7 @@ pub static BSC_LINK_ADDRESS_IS_PROVIDED_AS_REMOVE_ROUTE_PARAM: fn(Context) -> Co
 
 pub static ALICE_INVOKES_REMOVE_ROUTE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_REMOVE_ROUTE_IN_BMC)
 };
 
