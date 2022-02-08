@@ -8,7 +8,7 @@ lazy_static! {
 }
 
 pub static BMC_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.deploy(context);
+    |context| BMC_CONTRACT.deploy(context);
 
 pub static BMC_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(

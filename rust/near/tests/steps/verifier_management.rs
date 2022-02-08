@@ -16,7 +16,7 @@ pub static ICON_BMV_ACCOUNT_ID_AND_ICON_NETWORK_ADDRESS_ARE_PROVIDED_AS_ADD_VERI
         "add_verifier",
         json!({
             "network": ICON_NETWORK,
-            "verifier": context.contracts().get("bmv").account_id()
+            "verifier": context.contracts().get("bmv").id()
         }),
     );
     context
@@ -28,14 +28,15 @@ pub static VERIFIER_FOR_ICON_IS_ADDED: fn(Context) -> Context = |context| {
         .pipe(BMC_OWNER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNER: fn(Context) = |context: Context| {
-    let error = context.method_errors("remove_owner");
-    assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
-};
+pub static BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNER: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
+    };
 
 pub static ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERIFIER_PARAM:
     fn(Context) -> Context = |mut context: Context| {
-    let address = context.contracts().get("bmv").account_id().clone();
+    let address = context.contracts().get("bmv").id().clone();
     context.add_method_params(
         "add_verifier",
         json!({
@@ -63,8 +64,7 @@ pub static THE_ADDED_VERIFIER_SHOULD_BE_IN_THE_LIST_OF_VERIFIERS: fn(Context) =
 
         let expected: HashSet<Verifier> = vec![Verifier {
             network: ICON_NETWORK.to_string(),
-            verifier: AccountId::try_from(context.contracts().get("bmv").account_id().to_string())
-                .unwrap(),
+            verifier: AccountId::try_from(context.contracts().get("bmv").id().to_string()).unwrap(),
         }]
         .into_iter()
         .collect();
@@ -78,10 +78,11 @@ pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context:
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER: fn(Context) = |context: Context| {
-    let error = context.method_errors("add_verifier");
-    assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
-};
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_VERIFIER: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_verifier");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
 
 pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_VERIFIERS: fn(Context) = |context: Context| {
     let verifiers = context.method_responses("get_verifiers");
@@ -92,7 +93,8 @@ pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_VERIFIERS: fn(Context) = |conte
     assert!(result.len() > 0);
 };
 
-pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER: fn(Context) = |context: Context| {
-    let error = context.method_errors("add_verifier");
-    assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
-};
+pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_verifier");
+        assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
+    };

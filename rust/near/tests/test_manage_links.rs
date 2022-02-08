@@ -9,7 +9,7 @@ mod manage_links {
     mod bmc {
         use super::*;
 
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_add_a_link_connecting_cross_chain_bmc(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -21,7 +21,7 @@ mod manage_links {
             .then(ICON_LINK_SHOULD_BE_ADDED_TO_THE_LIST_OF_LINKS);
         }
 
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
         async fn non_bmc_owner_cannot_add_a_link_connecting_cross_chain_bmc(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -34,7 +34,7 @@ mod manage_links {
             .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_LINK);
         }
 
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_set_link_config_on_a_registered_link(){
             Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -43,7 +43,7 @@ mod manage_links {
             .and(ICON_LINK_IS_ADDED)
             .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM)
             .when(ALICE_INVOKES_SET_LINK_IN_BMC)
-            .then(ICON_LINK_STATUS_SHOULD_BE_UPDATED)
+            .then(ICON_LINK_STATUS_SHOULD_BE_UPDATED);
         }
     }
 }

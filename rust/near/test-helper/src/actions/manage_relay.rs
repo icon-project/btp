@@ -1,5 +1,5 @@
-use crate::{invoke_call, invoke_view};
 use crate::types::{Bmc, Context, Contract};
+use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
 
 #[duplicate(
@@ -12,7 +12,6 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "add_relay", method_params);
         context
     }
-    
     pub fn add_relays(&self, mut context: Context) -> Context {
         invoke_call!(self, context, "add_relays", method_params);
         context
@@ -27,5 +26,4 @@ impl Contract<'_, contract_type> {
         invoke_view!(self, context, "get_relays", method_params);
         context
     }
-
 }

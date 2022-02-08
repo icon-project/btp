@@ -10,7 +10,7 @@ use near_primitives::types::Gas;
 
 impl Contract<'_, contract_type> {
     pub fn add_link(&self, mut context: Context, gas: Gas) -> Context {
-        invoke_call!(self, context, "add_link", method_params, gas);
+        invoke_call!(self, context, "add_link", method_params, None, Some(gas));
         context
     }
 
@@ -25,7 +25,7 @@ impl Contract<'_, contract_type> {
     }
 
     pub fn set_link(&self, mut context: Context, gas: Gas) -> Context {
-        invoke_call!(self, context, "set_link", method_params, gas);
+        invoke_call!(self, context, "set_link", method_params, None, Some(gas));
         context
     }
 

@@ -1,13 +1,13 @@
 use super::*;
-use near_primitives::errors::TxExecutionError;
 use serde_json::Value;
 use std::collections::HashMap;
+use workspaces::{Worker, Account as WorkspaceAccount, Sandbox, sandbox};
 
-#[derive(Default, Clone)]
 pub struct Context {
+    worker: Worker<Sandbox>,
     contracts: Contracts,
     accounts: Accounts,
-    signer: Signer,
+    signer: Option<WorkspaceAccount>,
     method_params: HashMap<String, Value>,
     method_responses: HashMap<String, Value>,
     method_errors: HashMap<String, String>,
@@ -16,8 +16,18 @@ pub struct Context {
 impl Context {
     pub fn new() -> Context {
         Context {
-            ..Default::default()
+            worker: sandbox(),
+            contracts: Contracts::default(),
+            accounts: Accounts::default(),
+            signer: None,
+            method_params: HashMap::default(),
+            method_responses: HashMap::default(),
+            method_errors: HashMap::default()
         }
+    }
+
+    pub fn worker(&self) -> &Worker<Sandbox> {
+        &self.worker
     }
 
     pub fn pipe(self, function: fn(Self) -> Self) -> Self {
@@ -40,12 +50,12 @@ impl Context {
         self.accounts.as_mut()
     }
 
-    pub fn signer(&self) -> &Signer {
+    pub fn signer(&self) -> &Option<WorkspaceAccount> {
         &self.signer
     }
 
-    pub fn set_signer(&mut self, signer: &Signer) {
-        self.signer.clone_from(signer);
+    pub fn set_signer(&mut self, signer: &WorkspaceAccount) {
+        self.signer.clone_from(&Some(signer.clone()))
     }
 
     pub fn add_method_params(&mut self, key: &str, value: Value) {

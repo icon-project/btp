@@ -1,5 +1,5 @@
-use crate::{invoke_call, invoke_view};
 use crate::types::{Bmc, Context, Contract};
+use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
 
 #[duplicate(
@@ -22,5 +22,4 @@ impl Contract<'_, contract_type> {
         invoke_view!(self, context, "get_routes");
         context
     }
-    
 }

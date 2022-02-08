@@ -1,17 +1,17 @@
-use super::*;
 use duplicate::duplicate;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use workspaces::Contract as WorkspaceContract;
 
-#[derive(Default, Clone)]
-pub struct Contracts(HashMap<String, Signer>);
+#[derive(Default)]
+pub struct Contracts(HashMap<String, WorkspaceContract>);
 
 impl Contracts {
-    pub fn add(&mut self, name: &str, signer: &Signer) {
-        self.0.insert(name.to_owned(), signer.to_owned());
+    pub fn add(&mut self, name: &str, contract: WorkspaceContract) {
+        self.0.insert(name.to_owned(), contract);
     }
 
-    pub fn get(&self, name: &str) -> &Signer {
+    pub fn get(&self, name: &str) -> &WorkspaceContract {
         self.0.get(name).unwrap()
     }
 

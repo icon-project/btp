@@ -3,8 +3,8 @@ use serde_json::{from_value, json};
 use test_helper::types::Context;
 
 pub static BMC_CONTRACT_IS_OWNED_BY_ALICE: fn(Context) -> Context = |mut context: Context| {
-    let bmc_signer = context.contracts().get("bmc").to_owned();
-    context.accounts_mut().add("alice", &bmc_signer);
+    let bmc_signer = context.contracts().get("bmc").as_account().clone();
+    context.accounts_mut().add("alice", bmc_signer);
     context
 };
 
@@ -14,7 +14,7 @@ pub static BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Contex
         context.add_method_params(
             "add_owner",
             json!({
-                "account": bob.account_id()
+                "account": bob.id()
             }),
         );
         context
@@ -42,7 +42,7 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) ->
         context.add_method_params(
             "remove_owner",
             json!({
-                "account": charlie.account_id()
+                "account": charlie.id()
             }),
         );
         context
@@ -60,7 +60,7 @@ pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Co
         context.add_method_params(
             "add_owner",
             json!({
-                "account": charlie.account_id()
+                "account": charlie.id()
             }),
         );
         context
@@ -79,22 +79,23 @@ pub static CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC: fn(Context) -> Context = |contex
         .pipe(BMC_OWNER_INVOKES_ADD_OWNER_IN_BMC)
 };
 
-pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) = |context: Context| {
-    let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
+pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) =
+    |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
 
-    let owners = context.method_responses("get_owners");
-    let result: HashSet<_> = from_value::<Vec<String>>(owners)
-        .unwrap()
+        let owners = context.method_responses("get_owners");
+        let result: HashSet<_> = from_value::<Vec<String>>(owners)
+            .unwrap()
+            .into_iter()
+            .collect();
+        let expected: HashSet<_> = vec![
+            context.accounts().get("alice").id().to_string(),
+            context.accounts().get("charlie").id().to_string(),
+        ]
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec![
-        context.accounts().get("alice").account_id().to_string(),
-        context.accounts().get("charlie").account_id().to_string(),
-    ]
-    .into_iter()
-    .collect();
-    assert_eq!(result, expected);
-};
+        assert_eq!(result, expected);
+    };
 
 pub static BOBS_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) = |context: Context| {
     let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
@@ -104,7 +105,7 @@ pub static BOBS_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context) = |c
         .unwrap()
         .into_iter()
         .collect();
-    let expected = context.accounts().get("bob").account_id().to_string();
+    let expected = context.accounts().get("bob").id().to_string();
     assert_eq!(result.contains(&expected), true);
 };
 
@@ -112,8 +113,5 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Conte
     |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
         let owners = context.method_responses("get_owners");
-        assert_eq!(
-            owners,
-            json!([context.accounts().get("alice").account_id()])
-        );
+        assert_eq!(owners, json!([context.accounts().get("alice").id()]));
     };

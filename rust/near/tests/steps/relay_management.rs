@@ -8,7 +8,7 @@ pub static ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Con
             "add_relay",
             json!({
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-                "relay": context.accounts().get("relay_1").account_id()
+                "relay": context.accounts().get("relay_1").id()
             }),
         );
 
@@ -35,8 +35,8 @@ pub static ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_P
             json!({
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
                 "relays": [
-                    context.accounts().get("relay_1").account_id(),
-                    context.accounts().get("relay_2").account_id()
+                    context.accounts().get("relay_1").id(),
+                    context.accounts().get("relay_2").id()
                 ]
             }),
         );
@@ -60,7 +60,7 @@ pub static ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS: fn(Context) = |context:
         .unwrap()
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec![context.accounts().get("relay_1").account_id().to_string()]
+    let expected: HashSet<_> = vec![context.accounts().get("relay_1").id().to_string()]
         .into_iter()
         .collect();
 

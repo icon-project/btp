@@ -9,7 +9,7 @@ mod manage_verifers {
     mod bmc {
         use super::*;
 
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_add_bmr_as_list_and_overwrite_an_existing_bmr() {
           Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
@@ -20,7 +20,7 @@ mod manage_verifers {
             .and(RELAY_2_ACCOUNT_IS_CREATED)
             .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM)
             .when(ALICE_INVOKES_ADD_RELAY_IN_BMC)
-            .then(ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS)
+            .then(ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS);
         }
     }
 }
