@@ -24,7 +24,6 @@ use near_sdk::{
 };
 use near_sdk::{PromiseOrValue};
 use std::convert::TryInto;
-use tiny_keccak::{Hasher, Sha3};
 mod external;
 use external::*;
 mod estimate;
