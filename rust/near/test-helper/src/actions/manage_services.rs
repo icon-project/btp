@@ -1,5 +1,5 @@
-use crate::{invoke_call, invoke_view};
 use crate::types::{Bmc, Context, Contract};
+use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
 
 #[duplicate(
@@ -17,9 +17,8 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "approve_service", method_params);
         context
     }
-    
-    pub fn remove_service(&self, mut context: Context) -> Context{
-        invoke_call!(self, context, "remove_service",method_params);
+    pub fn remove_service(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "remove_service", method_params);
         context
     }
 
@@ -28,9 +27,8 @@ impl Contract<'_, contract_type> {
         context
     }
 
-    pub fn get_requests(&self, mut context: Context) -> Context{
+    pub fn get_requests(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "get_requests");
         context
     }
-
 }

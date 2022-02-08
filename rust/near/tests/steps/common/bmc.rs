@@ -2,21 +2,19 @@ use lazy_static::lazy_static;
 use serde_json::json;
 use test_helper::types::{Bmc, BmcContract, Context, Contract};
 
-pub static NEAR_NETWORK: &str = "0x1.near";
-
 lazy_static! {
     pub static ref BMC_CONTRACT: Contract<'static, Bmc> =
         BmcContract::new("bmc", "res/BMC_CONTRACT.wasm");
 }
 
 pub static BMC_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.deploy(context);
+    |context| BMC_CONTRACT.deploy(context);
 
 pub static BMC_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
         "new",
         json!({
-            "network": NEAR_NETWORK,
+            "network": super::NEAR_NETWORK,
             "block_interval": 1500
         }),
     );
@@ -116,7 +114,7 @@ pub static USER_INVOKES_REMOVE_OWNER_IN_BMC: fn(Context) -> Context =
 pub static USER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.add_owner(context);
 
-pub static USER_INVOKES_GET_OWNER_IN_BMC: fn(Context) -> Context =
+pub static USER_INVOKES_GET_OWNERS_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_owners(context);
 
 /*  * * * * * * * * * * * *

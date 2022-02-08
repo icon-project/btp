@@ -6,9 +6,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-workspaces = { git = "https://github.com/near/workspaces-rs.git"}
-near-crypto = { git = "https://github.com/near/nearcore", rev = "88a9e74d4b99867e417fe199cbd74559fd4fc349" }
-near-primitives = { git = "https://github.com/near/nearcore", rev = "88a9e74d4b99867e417fe199cbd74559fd4fc349" }
+workspaces = "0.1.1"
+near-crypto = "0.5"
+near-primitives = "0.5"
 chrono = "0.4.19"
 rand = "0.8.4"
 futures = "0.3.17"

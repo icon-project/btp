@@ -1,8 +1,5 @@
-use std::str::FromStr;
-
 use test_helper::actions::create_account;
-use test_helper::types::{Context, Signer, SecretKey};
-use workspaces::{InMemorySigner, AccountId};
+use test_helper::types::Context;
 
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
@@ -11,30 +8,26 @@ use workspaces::{InMemorySigner, AccountId};
 // * * * * * * * * * * * * * *
 
 pub static CHARLIES_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
-    let charlie = Signer::default();
-    create_account(&charlie);
-    context.accounts_mut().add("charlie", &charlie);
+    let charlie = create_account(&context);
+    context.accounts_mut().add("charlie", charlie);
     context
 };
 
 pub static CHUCKS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
-    let chuck = Signer::default();
-    create_account(&chuck);
-    context.accounts_mut().add("chuck", &chuck);
+    let chuck = create_account(&context);
+    context.accounts_mut().add("chuck", chuck);
     context
 };
 
 pub static BOBS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
-    let bob = Signer::default();
-    create_account(&bob);
-    context.accounts_mut().add("bob", &bob);
+    let bob = create_account(&context);
+    context.accounts_mut().add("bob", bob);
     context
 };
 
 pub static RELAY_1_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
-    let signer = Signer::new(InMemorySigner::from_secret_key(AccountId::from_str("69c003c3b80ed12ea02f5c67c9e8167f0ce3b2e8020a0f43b1029c4d787b0d21").unwrap(), SecretKey::from_str("22yx6AjQgG1jGuAmPuEwLnVKFnuq5LU23dbU3JBZodKxrJ8dmmqpDZKtRSfiU4F8UQmv1RiZSrjWhQMQC3ye7M1J").unwrap()));
-    create_account(&signer);
-    context.accounts_mut().add("relay_1", &signer);
+    let relay_1 = create_account(&context);
+    context.accounts_mut().add("relay_1", relay_1);
     context
 };
 
@@ -44,33 +37,50 @@ pub static RELAY_1_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Co
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static BMC_OWNER_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.contracts().get("bmc").to_owned();
+pub static TRANSACTION_IS_SIGNED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
+    let signer = context.contracts().get("bmc").as_account().clone();
     context.set_signer(&signer);
     context
 };
 
-pub static ALICE_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_ALICE: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static BOB_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_BOB: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("bob").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static CHUCK_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_CHUCK: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("chuck").to_owned();
     context.set_signer(&signer);
     context
 };
 
-pub static RELAY_1_IS_THE_SIGNER: fn(Context) -> Context = |mut context: Context| {
+pub static TRANSACTION_IS_SIGNED_BY_RELAY_1: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("relay_1").to_owned();
     context.set_signer(&signer);
     context
 };
 
+pub static RELAY_2_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+    let signer = create_account(&context);
+    context.accounts_mut().add("relay_2", signer);
+    context
+};
+
+pub static TRANSACTION_IS_SIGNED_BY_RELAY_2: fn(Context) -> Context = |mut context: Context| {
+    let signer = context.accounts().get("relay_2").to_owned();
+    context.set_signer(&signer);
+    context
+};
+
+pub static TRANSACTION_IS_SIGNED_BY_CHARLIE: fn(Context) -> Context = |mut context: Context| {
+    let signer = context.accounts().get("charlie").to_owned();
+    context.set_signer(&signer);
+    context
+};

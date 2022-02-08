@@ -1,9 +1,7 @@
-use hex::decode;
 use lazy_static::lazy_static;
-use serde_json::json;
 pub use std::collections::HashSet;
 use test_helper::types::{
-    Bmc, BmcContract, Bmv, BmvContract, Context, Contract, NativeCoinBsh, NativeCoinBshContract,
+    Context, Contract, NativeCoinBsh, NativeCoinBshContract,
     TokenBsh, TokenBshContract,
 };
 
