@@ -101,7 +101,7 @@ pub static CHUCK_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context = |context:
         .pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_UNAUTHERISD_ERROR_ON_REMOVING_RELAY: fn(Context) =
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_RELAY: fn(Context) =
     |context: Context| {
         let error = context.method_errors("remove_relay");
         assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
@@ -187,7 +187,7 @@ pub static ALICE_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context = |context:
         .pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC)
 };
 
-pub static BMC_SHOULD_THROW_RELAY_DOES_NOT_EXIST_ON_REMOVING_NON_EXISTING_RELAY: fn(Context) =
+pub static BMC_SHOULD_THROW_RELAY_DOES_NOT_EXIST_ERROR_ON_REMOVING_NON_EXISTING_RELAY: fn(Context) =
     |context: Context| {
         let error = context.method_errors("remove_relay");
         assert!(error.to_string().contains("BMCRevertNotExistRelay"));
@@ -267,14 +267,14 @@ pub static NON_EXISTING_LINK_ADDRESS_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) ->
 pub static USER_INVOKES_GET_RELAY_METHOD_WITH_NON_EXISTING_LINK: fn(Context) -> Context =
     |context: Context| context.pipe(USER_INVOKES_GET_RELAYS_IN_BMC);
 
-pub static BMC_SHOULD_THROW_LINK_NOT_EXIST_ERROR_ON_GETTING_RELAYS: fn(Context) =
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS: fn(Context) =
     |context: Context| {
         let error = context.method_errors("get_relays");
         // assert!(error.to_string().contains("BMCRevertNotExistsRelay"));
         println!("{}", error);
     };
 
-pub static NON_EXISTING_LINK_ADDRESS_AND_RELAY1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC:
+pub static NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC:
     fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
         "remove_relay",
@@ -289,7 +289,7 @@ pub static NON_EXISTING_LINK_ADDRESS_AND_RELAY1_IS_PROVIDED_AS_REMOVE_RELAY_PARA
 pub static BMC_OWNER_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context =
     |context: Context| context.pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC);
 
-pub static BMC_SHOULD_THROW_LINK_NOT_EXIST_ERROR_ON_REMOVE_RELAYS: fn(Context) =
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_REMOVING_RELAY: fn(Context) =
     |context: Context| {
         let error = context.method_errors("remove_relay");
         assert!(error.to_string().contains("BMCRevertNotExistsLink"));

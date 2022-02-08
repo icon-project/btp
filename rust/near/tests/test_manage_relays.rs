@@ -33,7 +33,7 @@ mod manage_relays {
                 .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
                 .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM)
                 .when(CHUCK_INVOKES_REMOVE_RELAY_IN_BMC)
-                .then(BMC_SHOULD_THROW_UNAUTHERISD_ERROR_ON_REMOVING_RELAY);
+                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_RELAY);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -87,7 +87,7 @@ mod manage_relays {
                 .and(RELAY_1_ACCOUNT_IS_CREATED)
                 .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM)
                 .when(ALICE_INVOKES_REMOVE_RELAY_IN_BMC)
-                .then(BMC_SHOULD_THROW_RELAY_DOES_NOT_EXIST_ON_REMOVING_NON_EXISTING_RELAY);
+                .then(BMC_SHOULD_THROW_RELAY_DOES_NOT_EXIST_ERROR_ON_REMOVING_NON_EXISTING_RELAY);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -164,7 +164,7 @@ mod manage_relays {
               .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
               .and(NON_EXISTING_LINK_ADDRESS_PROVIDED_AS_GET_RELAY_PARAM)
               .when(USER_INVOKES_GET_RELAY_METHOD_WITH_NON_EXISTING_LINK)
-              .then(BMC_SHOULD_THROW_LINK_NOT_EXIST_ERROR_ON_GETTING_RELAYS);
+              .then(BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS);
           }
 
           #[tokio::test(flavor = "multi_thread")]
@@ -174,9 +174,9 @@ mod manage_relays {
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(ICON_LINK_IS_PRESENT_IN_BMC)
             .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
-            .and(NON_EXISTING_LINK_ADDRESS_AND_RELAY1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC)
+            .and(NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC)
             .when(BMC_OWNER_INVOKES_REMOVE_RELAY_IN_BMC)
-            .then(BMC_SHOULD_THROW_LINK_NOT_EXIST_ERROR_ON_REMOVE_RELAYS);
+            .then(BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_REMOVING_RELAY);
           }
     }
 }
