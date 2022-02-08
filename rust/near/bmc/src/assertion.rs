@@ -151,7 +151,7 @@ impl BtpMessageCenter {
         }
     }
 
-    pub fn assert_relay_exists(&self,link:&BTPAddress,relay: &AccountId){
+    pub fn assert_relay_exists(&self, link: &BTPAddress, relay: &AccountId) {
         if let Some(link_property) = self.links.get(&link).as_mut() {
             require!(
                 link_property.relays().contains(&relay),
