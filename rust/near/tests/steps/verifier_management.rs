@@ -6,7 +6,7 @@ use test_helper::types::Context;
 
 pub static BMC_OWNER_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
@@ -49,7 +49,7 @@ pub static ICON_NETWORK_ADDRESS_AND_VERIFIER_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_VERI
 
 pub static ALICE_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
@@ -74,7 +74,7 @@ pub static THE_ADDED_VERIFIER_SHOULD_BE_IN_THE_LIST_OF_VERIFIERS: fn(Context) =
 
 pub static CHUCK_INVOKES_ADD_VERIFIER_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
         .pipe(USER_INVOKES_ADD_VERIFIER_IN_BMC)
 };
 
