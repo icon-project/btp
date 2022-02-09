@@ -111,7 +111,7 @@ pub static ALICE_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context = |context: Con
         .pipe(USER_INVOKES_SET_LINK_IN_BMC)
 };
 
-pub static ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) = |context: Context| {
+pub static USER_SHOULD_GET_THE_ICON_LINK_STATUS: fn(Context) = |context: Context| {
     let context = context
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
         .pipe(USER_INVOKES_GET_STATUS_IN_BMC);
@@ -131,10 +131,10 @@ pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_SETTING_LINK: fn(Contex
     };
 
 pub static SET_LINK_IN_BMC_IS_INVOKED_BY_ALICE: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
-            .pipe(USER_INVOKES_SET_LINK_IN_BMC)
-    };
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(USER_INVOKES_SET_LINK_IN_BMC)
+};
 
 pub static ALICE_INVOKES_GET_STATUS_IN_BMC: fn(Context) -> Context =
     |context: Context| context.pipe(USER_INVOKES_GET_STATUS_IN_BMC);
@@ -150,22 +150,22 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_REMOVE_LINK_PARAM: fn(Context) -> Co
     };
 
 pub static ALICE_INVOKES_REMOVE_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
-            .pipe(USER_INVOKES_REMOVE_LINK_IN_BMC)
-    };
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(USER_INVOKES_REMOVE_LINK_IN_BMC)
+};
 
 pub static BMC_SHOULD_THROW_LINK_NOT_EXISTING_ERROR: fn(Context) = |context: Context| {
-        let error = context.method_errors("remove_link");
-        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
-    };
+    let error = context.method_errors("remove_link");
+    assert!(error.to_string().contains("BMCRevertNotExistsLink"));
+};
 
 pub static SET_LINK_IN_BMC_IS_INVOKED_ALICE: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
-            .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
-            .pipe(USER_INVOKES_SET_LINK_IN_BMC)
-    };
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+        .pipe(USER_INVOKES_SET_LINK_IN_BMC)
+};
 
 pub static MAX_AGGREGATION_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -189,15 +189,15 @@ pub static MAX_AGGREGATION_IN_ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) =
     };
 
 pub static CHUCK_INVOKES_SET_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
-            .pipe(USER_INVOKES_SET_LINK_IN_BMC)
-    };
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_SET_LINK_IN_BMC)
+};
 
 pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_SETTING_LINK: fn(Context) = |context: Context| {
-        let error = context.method_errors("set_link");
-        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
-    };
+    let error = context.method_errors("set_link");
+    assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+};
 
 pub static ICON_LINK_ADDRESS_WITH_0_DELAY_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -214,22 +214,52 @@ pub static ICON_LINK_ADDRESS_WITH_0_DELAY_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Cont
         context
     };
 
-pub static BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_SET_LINK: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_SETTING_LINK: fn(Context) =
+    |context: Context| {
         let error = context.method_errors("set_link");
         assert!(error.to_string().contains("BMCRevertInvalidParam"));
     };
 
 pub static ICON_LINK_ADDRESS_WITH_0_MAX_AGGREGATION_IS_PROVIDED_AS_SET_LINK_PARAM: fn(
-        Context,
-    ) -> Context = |mut context: Context| {
+    Context,
+) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "set_link",
+        json!({
+            "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "block_interval": 15000,
+            "max_aggregation": 0,
+            "delay_limit": 4
+        }),
+    );
+    context
+};
+
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_LINK: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_link");
+
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
+
+pub static CHUCK_INVOKES_REMOVE_LINK_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_REMOVE_LINK_IN_BMC)
+};
+
+pub static INVALID_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
         context.add_method_params(
-            "set_link",
-            json!({
-                "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-                "block_interval": 15000,
-                "max_aggregation": 0,
-                "delay_limit": 4
-            }),
+            "add_link",
+            json!({ "link": format!("http://{}/{}", ICON_NETWORK, ICON_BMC) }),
         );
+
         context
     };
+
+pub static BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_ADDING_LINK: fn(Context) = |context: Context| {
+    let error = context.method_errors("add_link");
+
+    assert!(error.to_string().contains("InvalidBtpAddress"));
+};
