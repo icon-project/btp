@@ -124,17 +124,14 @@ pub static USER_INVOKES_GET_OWNERS_IN_BMC: fn(Context) -> Context =
 * * * * * * * * * * * * * *
 */
 
-pub static USER_INVOKES_REQUEST_SERVICE_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.request_service(context);
+pub static USER_INVOKES_ADD_SERVICE_IN_BMC: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.add_service(context);
 
-pub static USER_INVOKES_APPROVE_SERVICE_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.approve_service(context);
+pub static USER_INVOKES_REMOVE_SERVICE_IN_BMC: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.remove_service(context);
 
 pub static USER_INVOKES_GET_SERVICES_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_services(context);
-
-pub static USER_INVOKES_GET_REQUESTS_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_requests(context);
 
 /*  * * * * * * * * * * * *
 * * * * * * * * * * * * * *
