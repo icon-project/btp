@@ -106,3 +106,35 @@ pub static INVALID_BTP_ADDRESS_AS_DESTINATION_ADDRESS_AND_ICON_LINK_ADDRESS_AS_L
     );
     context
 };
+
+    pub static BMC_SHOULD_THROW_ROUTE_DOES_NOT_EXIST_ERROR_ON_REMOVING_ROUTE: fn(Context) = |context: Context| {
+        let error = context.method_errors("remove_route");
+        assert!(error.to_string().contains("BMCRevertNotExistsRoute"));
+    };
+
+    pub static BMC_SHOULD_THROW_ROUTE_ALREADY_EXIST_ERROR_ON_ADDING_ROUTE: fn(Context) = |context: Context| {
+        let error = context.method_errors("add_route");
+        assert!(error.to_string().contains("BMCRevertAlreadyExistsRoute"));
+    };
+
+    pub static CHUCK_INVOKES_ADD_ROUTE_IN_BMC: fn(Context) -> Context = |context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+            .pipe(USER_INVOKES_ADD_ROUTE_IN_BMC)
+    };
+
+    pub static CHUCK_INVOKES_REMOVE_ROUTE_IN_BMC: fn(Context) -> Context = |context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+            .pipe(USER_INVOKES_REMOVE_ROUTE_IN_BMC)
+    };
+
+    pub static BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_ROUTE: fn(Context) = |context: Context| {
+        let error = context.method_errors("add_route");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
+
+    pub static BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_ROUTE: fn(Context) = |context: Context| {
+        let error = context.method_errors("remove_route");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
