@@ -2,6 +2,7 @@ use bmc::BtpMessageCenter;
 use near_sdk::{testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
+use near_sdk::serde_json::{json, to_value};
 
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
     VMContext {
@@ -36,8 +37,8 @@ fn add_new_service() {
 
     let services = contract.get_services();
     assert_eq!(
-        services,
-        "[{\"name\":\"test\",\"service\":\"sssssssss.ss\"}]"
+        to_value(services).unwrap(),
+        json!([{"name":"test","service":"sssssssss.ss"}])
     );
 }
 
@@ -83,7 +84,7 @@ fn remove_service_existing_service() {
     contract.remove_service("test".to_string());
 
     testing_env!(context(bob()));
-    assert_eq!(contract.get_services(), "[]");
+    assert_eq!(to_value(contract.get_services()).unwrap(), json!([]));
 }
 
 #[test]
@@ -122,7 +123,7 @@ fn get_services() {
     );
 
     assert_eq!(
-        contract.get_services(),
-        "[{\"name\":\"test\",\"service\":\"sssssssss.s\"}]"
+        to_value(contract.get_services()).unwrap(),
+        json!([{"name":"test","service":"sssssssss.s"}])
     );
 }
