@@ -135,6 +135,37 @@ deploy_javascore_NativeCoinIRC2BSH() {
     ensure_file_exist $CONFIG_DIR nativeCoinIRC2Bsh.icon
 }
 
+deploy_javascore_IRC2Token() {
+    echo "deploy_javascore_IRC2Token"
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc2-0.1.0-optimized.jar \
+    --content_type application/java \
+    --param _name=${TOKEN_NAME} \
+    --param _symbol=${TOKEN_SYM} \
+    --param _initialSupply=${TOKEN_SUPPLY} \
+    --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.icon.deploy_irc2token
+
+    extract_scoreAddress tx.icon.deploy_irc2token irc2token.icon
+    ensure_file_exist $CONFIG_DIR irc2token.icon
+}
+
+deploy_javascore_NativeCoinIRC2BSH() {
+    echo "deploy_javascore_NativeCoinIRC2BSH"
+
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoinIRC2-0.1.0-optimized.jar \
+        --content_type application/java \
+        --param _bmc=$(cat bmc.icon) \
+        --param _irc2=$(cat irc2token.icon) \
+        --param _name=ICX \
+        --param _tokenName=${TOKEN_NAME} | jq -r . > tx.icon.deploy_nativeCoinIRC2Bsh
+
+    extract_scoreAddress tx.icon.deploy_nativeCoinIRC2Bsh nativeCoinIRC2Bsh.icon
+    ensure_file_exist $CONFIG_DIR nativeCoinIRC2Bsh.icon
+}
+
 deploy_javascore_NativeCoinBSH() {
     echo "deploy_javascore_NativeCoinBSH"
 

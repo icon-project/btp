@@ -1116,6 +1116,37 @@ goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javasc
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
 ```
 
+#### Deploy IRC2 token Jar
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/irc2-0.1.0-optimized.jar \
+    --key_store godWallet.json --key_password gochain \
+    --nid 0x42 --step_limit 3519157719 \
+    --content_type application/java \
+    --param _name=MOVR \
+    --param _symbol=MOVR \
+    --param _initialSupply=0x186A0 \
+    --param _decimals=0x12
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
+```
+
+
+#### Deploy IRC2_BSH
+
+```bash
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/nativecoinIRC2-0.1.0-optimized.jar \
+    --key_store godWallet.json --key_password gochain \
+    --nid 0x42 --step_limit 3519157719 \
+    --content_type application/java \
+    --param _bmc=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
+    --param _irc2=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
+    --param _name=ICX \
+    --param _tokenName=MOVR
+
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
+```
+
 #### Register coin names to BSH
 
 ```bash
