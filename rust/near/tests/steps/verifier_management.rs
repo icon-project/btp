@@ -99,7 +99,7 @@ pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER: fn
         assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
     };
 
-    pub static ICON_NETWORK_ADDRESS_PROVIDED_AS_REMOVE_VERIFIER_PARAM: fn(Context) -> Context =
+    pub static ICON_NETWORK_ADDRESS_IS_PROVIDED_AS_REMOVE_VERIFIER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "remove_verifier",
