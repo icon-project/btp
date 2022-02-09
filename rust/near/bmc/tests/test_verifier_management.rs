@@ -2,6 +2,7 @@ use bmc::BtpMessageCenter;
 use near_sdk::{testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
+use near_sdk::serde_json::{json, to_value};
 
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
     VMContext {
@@ -36,8 +37,8 @@ fn add_verifier_new_verifier() {
 
     let verifiers = contract.get_verifiers();
     assert_eq!(
-        verifiers,
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.ss\"}]"
+        to_value(verifiers).unwrap(),
+        json!([{"network":"test","verifier":"sssssssss.ss"}])
     );
 }
 
@@ -70,8 +71,8 @@ fn get_verifiers() {
 
     testing_env!(context(bob()));
     assert_eq!(
-        contract.get_verifiers(),
-        "[{\"network\":\"test\",\"verifier\":\"sssssssss.s\"}]"
+        to_value(contract.get_verifiers()).unwrap(),
+        json!([{"network":"test","verifier":"sssssssss.s"}])
     );
 }
 
