@@ -165,5 +165,17 @@ mod manage_links {
                 .when(ALICE_INVOKES_SET_LINK_IN_BMC)
                 .then(MAX_AGGREGATION_IN_ICON_LINK_STATUS_SHOULD_BE_UPDATED);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_cannot_add_link_if_link_is_already_existing() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
+                .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+                .when(ALICE_INVOKES_ADD_LINK_IN_BMC)
+                .then(BMC_SHOULD_THROW_ALREADY_EXISTING_LINK_ERROR_ON_ADDING_LINK);
+        }
     }
 }
