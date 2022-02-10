@@ -85,6 +85,7 @@ fn withdraw_native_coin() {
         nativecoin.clone(),
         1000.into()
     );
+    let coin_id = contract.coin_id(nativecoin.name().to_owned());
     testing_env!(context(chuck(), 1000));
 
     contract.deposit();
@@ -95,9 +96,12 @@ fn withdraw_native_coin() {
     assert_eq!(result, U128::from(expected.deposit()));
 
     testing_env!(context(chuck(), 1));
-    contract.withdraw(U128::from(999));
+    contract.withdraw(coin_id.clone(), U128::from(999));
 
-    let result = contract.balance_of(chuck(), contract.coin_id(nativecoin.name().to_owned()));
+    testing_env!(context(alice(), 0));
+    contract.on_withdraw(chuck(), 999, coin_id.clone(), nativecoin.symbol().to_owned());
+
+    let result = contract.balance_of(chuck(), coin_id.clone());
     let mut expected = AccountBalance::default();
     expected.deposit_mut().add(1).unwrap();
     assert_eq!(result, U128::from(expected.deposit()));
@@ -125,6 +129,7 @@ fn withdraw_native_coin_higher_amount() {
         nativecoin.clone(),
         1000.into()
     );
+    let coin_id = contract.coin_id(nativecoin.name().to_owned());
     testing_env!(context(chuck(), 100));
 
     contract.deposit();
@@ -135,7 +140,7 @@ fn withdraw_native_coin_higher_amount() {
     assert_eq!(result, U128::from(expected.deposit()));
 
     testing_env!(context(chuck(), 1));
-    contract.withdraw(U128::from(1000));
+    contract.withdraw(coin_id.clone(),U128::from(1000));
 
     let result = contract.balance_of(chuck(), contract.coin_id(nativecoin.name().to_owned()));
     let expected = AccountBalance::default();

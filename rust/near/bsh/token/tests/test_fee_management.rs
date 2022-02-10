@@ -4,7 +4,7 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    AccountBalance, AccumulatedAssetFees, BTPAddress, FungibleToken, Math, MultiTokenCore, Token,
+    AccountBalance, AccumulatedAssetFees, BTPAddress, WrappedFungibleToken, Math, MultiTokenCore, Token,
     WrappedI128,
 };
 mod token;
@@ -54,7 +54,7 @@ fn handle_fee_gathering() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
 
     testing_env!(context(alice(), 0));

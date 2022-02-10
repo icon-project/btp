@@ -28,7 +28,6 @@ mod token_management;
 mod estimate;
 mod fee_management;
 mod messaging;
-mod multi_token;
 mod owner_management;
 mod transfer;
 mod util;

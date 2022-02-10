@@ -32,7 +32,6 @@ mod accounting;
 mod fee_management;
 mod transfer;
 mod messaging;
-mod multi_token;
 
 pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
 

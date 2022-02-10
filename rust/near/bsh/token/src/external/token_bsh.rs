@@ -1,14 +1,22 @@
-use libraries::types::TokenId;
+use libraries::types::{AccountBalance, TokenId};
+use near_sdk::ext_contract;
 use near_sdk::json_types::U128;
-use near_sdk::{ext_contract};
 
 #[ext_contract(ext_self)]
-pub trait TokenService {    
-    fn mt_resolve_transfer(
+pub trait TokenService {
+    fn on_mint(
         &mut self,
-        sender_id: AccountId,
-        receiver_id: AccountId,
-        token_ids: Vec<TokenId>,
-        amounts: Vec<U128>,
-    ) -> Vec<U128>;
+        amount: u128,
+        token_id: TokenId,
+        token_symbol: String,
+        receiver_id: AccountId
+    );
+
+    fn on_withdraw(
+        &mut self,
+        account: AccountId,
+        amount: u128,
+        token_id: TokenId,
+        token_symbol: String,
+    );
 }

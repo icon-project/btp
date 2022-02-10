@@ -25,7 +25,7 @@ impl NativeCoinService {
     }
 
     #[payable]
-    pub fn withdraw(&mut self,token_id: TokenId, amount: U128) {
+    pub fn withdraw(&mut self, token_id: TokenId, amount: U128) {
         // To Prevent Spam
         assert_one_yocto();
 
@@ -40,12 +40,38 @@ impl NativeCoinService {
         // Check if current account have sufficient balance
         self.assert_have_sufficient_balance(1 + amount);
 
-        let mut balance = self.balances.get(&account, &native_coin_id).unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances
-            .set(&account.clone(), &native_coin_id, balance);
+        let native_coin = self.tokens.get(&token_id).unwrap();
 
-        Promise::new(account).transfer(amount + 1);
+        if native_coin.network() != &self.network {
+            ext_nep141::ft_transfer_call_with_storage_check(
+                account.clone(),
+                amount,
+                None,
+                native_coin.metadata().uri().to_owned().unwrap(),
+                estimate::NO_DEPOSIT,
+                estimate::GAS_FOR_MT_TRANSFER_CALL,
+            ).then(ext_self::on_withdraw(
+                account.clone(),
+                amount,
+                native_coin_id,
+                native_coin.symbol().to_owned(),
+                env::current_account_id(),
+                estimate::NO_DEPOSIT,
+                estimate::GAS_FOR_MT_TRANSFER_CALL,
+            ));
+        } else {
+            Promise::new(account.clone())
+                .transfer(amount + 1)
+                .then(ext_self::on_withdraw(
+                    account.clone(),
+                    amount,
+                    native_coin_id,
+                    native_coin.symbol().to_owned(),
+                    env::current_account_id(),
+                    estimate::NO_DEPOSIT,
+                    estimate::GAS_FOR_MT_TRANSFER_CALL,
+                ));
+        }
     }
 
     pub fn reclaim(&mut self, coin_id: TokenId, amount: U128) {
@@ -87,5 +113,34 @@ impl NativeCoinService {
         token_id: TokenId,
     ) -> Option<AccountBalance> {
         self.balances.get(&owner_id, &token_id)
+    }
+
+    pub fn balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        let balance = self
+            .balances
+            .get(&owner_id, &token_id)
+            .expect(format!("{}", BshError::AccountNotExist).as_str());
+        balance.deposit().into()
+    }
+
+    pub fn on_withdraw(
+        &mut self,
+        account: AccountId,
+        amount: u128,
+        native_coin_id: TokenId,
+        token_symbol: String,
+    ) {
+        let mut balance = self.balances.get(&account, &native_coin_id).unwrap();
+        balance.deposit_mut().sub(amount).unwrap();
+        self.balances
+            .set(&account.clone(), &native_coin_id, balance);
+
+        log!(
+            "[Withdrawn] Amount : {} by {}  {}",
+            amount,
+            account,
+            token_symbol
+        );
     }
 }

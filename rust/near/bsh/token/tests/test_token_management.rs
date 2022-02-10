@@ -2,7 +2,7 @@ use near_sdk::{serde_json::to_value, testing_env, AccountId, VMContext};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{FungibleToken, Token, TokenItem};
+use libraries::types::{WrappedFungibleToken, Token, TokenItem};
 mod token;
 use token::*;
 
@@ -42,7 +42,7 @@ fn register_token() {
         "0x1.near".into(),
         1000.into(),
     );
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
 
     let result = contract.tokens();
@@ -66,7 +66,7 @@ fn register_existing_token() {
         "0x1.near".into(),
         1000.into(),
     );
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
     contract.register(baln.clone());
 }
@@ -83,6 +83,6 @@ fn register_token_permission() {
         1000.into(),
     );
     testing_env!(context(chuck(), 0));
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
 }

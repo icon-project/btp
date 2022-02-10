@@ -259,7 +259,12 @@ impl NativeCoinService {
 
         tokens.iter().for_each(|(index, token_id, token)| {
             if token.network() != &self.network {
-                self.mint(token_id, assets[index.to_owned()].amount(), &token);
+                self.mint(
+                    token_id,
+                    assets[index.to_owned()].amount(),
+                    &token,
+                    receiver_id.clone(),
+                );
             }
 
             self.internal_transfer(
