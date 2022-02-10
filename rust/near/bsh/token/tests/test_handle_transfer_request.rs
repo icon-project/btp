@@ -44,7 +44,12 @@ fn handle_transfer_mint_registered_icx() {
         get_context(vec![], false, account_id, deposit, env::storage_usage())
     };
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into(),1000.into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());

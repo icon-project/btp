@@ -1,9 +1,11 @@
-use token_service::TokenService;
 use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
+use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
-    messages::{BtpMessage, TokenServiceMessage, TokenServiceType}, AccumulatedAssetFees, FungibleToken, AccountBalance, BTPAddress, MultiTokenCore, Token, Math, WrappedI128,
+    messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
+    AccountBalance, AccumulatedAssetFees, BTPAddress, FungibleToken, Math, MultiTokenCore, Token,
+    WrappedI128,
 };
 mod token;
 use std::convert::TryInto;
@@ -50,7 +52,7 @@ fn handle_fee_gathering() {
         "TokenBSH".to_string(),
         bmc(),
         "0x1.near".into(),
-        1000.into()
+        1000.into(),
     );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -104,26 +106,29 @@ fn handle_fee_gathering() {
 
     let accumulted_fees = contract.accumulated_fees();
 
-    assert_eq!(accumulted_fees, vec![
-        AccumulatedAssetFees{
+    assert_eq!(
+        accumulted_fees,
+        vec![AccumulatedAssetFees {
             name: w_near.name().to_string(),
             network: w_near.network().to_string(),
             accumulated_fees: 99
-        }
-    ]);
+        }]
+    );
 
-    let fee_aggregator = BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let fee_aggregator =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.handle_fee_gathering(fee_aggregator, "TokenBSH".to_string());
 
     let accumulted_fees = contract.accumulated_fees();
 
-    assert_eq!(accumulted_fees, vec![
-        AccumulatedAssetFees{
+    assert_eq!(
+        accumulted_fees,
+        vec![AccumulatedAssetFees {
             name: w_near.name().to_string(),
             network: w_near.network().to_string(),
             accumulated_fees: 0
-        }
-    ]);
+        }]
+    );
 
     let result = contract.balance_of(alice(), token_id.clone());
     assert_eq!(result, U128::from(900));
