@@ -83,20 +83,19 @@ public class BlockUpdate {
         return approvalMessage.getApprovalInner().equals(new ApprovalSkip(blockHeight));
     }
 
-    public boolean validateHeader(byte[] blockHash, ItemList<BlockProducer> blockProducers) {
-        if (approvalMessage.getTargetHeight() != blockHeader.getHeight() && !validateApprovalMessage(blockHash)
-                && !verifyCurrentApprovals((ItemList<MapItem<BlockProducer, Optional<Signature>>>) ArrayZip
-                        .zip(blockProducers, approvalsAfterNext)))
-            return false;
-        return true;
+    public byte[] validateHeader(byte[] previousBlockHash, ItemList<BlockProducer> blockProducers) {
+        if (approvalMessage.getTargetHeight() == blockHeader.getHeight() && validateApprovalMessage(previousBlockHash)
+                && verifyCurrentApprovals((ItemList<MapItem<BlockProducer, Optional<Signature>>>) ArrayZip
+                        .zip(blockProducers, blockHeader.getApprovals())))
+            return blockHeader.hash(previousBlockHash);
+        return null;
     }
 
-    public boolean validateHeader(byte[] blockHash, long blockHeight, ItemList<BlockProducer> blockProducers) {
+    public byte[] validateHeader(byte[] previousBlockHash, long blockHeight, ItemList<BlockProducer> blockProducers) {
         if (approvalMessage.getTargetHeight() != blockHeader.getHeight() && !validateApprovalMessage(blockHeight)
                 && !verifyCurrentApprovals((ItemList<MapItem<BlockProducer, Optional<Signature>>>) ArrayZip
-                        .zip(blockProducers, approvalsAfterNext)))
-            return true;
-
-        return false;
+                        .zip(blockProducers, blockHeader.getApprovals())))
+            return blockHeader.hash(previousBlockHash);
+        return null;
     }
 }
