@@ -208,6 +208,7 @@ impl Link {
             block_interval_dst: self.block_interval_dst,
             block_interval_src: self.block_interval_src,
             current_height: env::block_height(),
+            max_aggregation: self.max_aggregation()
         }
     }
 }
@@ -228,6 +229,7 @@ pub struct LinkStatus {
     block_interval_dst: u64,
     block_interval_src: u64,
     current_height: BlockHeight,
+    max_aggregation: u64
 }
 
 impl LinkStatus {

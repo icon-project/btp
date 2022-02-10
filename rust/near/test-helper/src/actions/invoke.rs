@@ -1,60 +1,68 @@
-use futures::executor::LocalPool;
-use near_crypto::InMemorySigner;
-use near_primitives::{types::FunctionArgs, views::FinalExecutionStatus, errors::TxExecutionError, types::Gas};
-use workspaces::{self, AccountId};
+use crate::types::Context;
+use near_primitives::types::{Balance, Gas};
+use near_primitives::views::FinalExecutionStatus;
 use serde_json::Value;
+use tokio::runtime::Handle;
+use workspaces::{self, Account, AccountId, Contract};
 
 pub fn call(
-    signer: &InMemorySigner,
-    account_id: &AccountId,
+    context: &Context,
+    account: &Account,
     contract_id: &AccountId,
     method: &str,
     value: Option<Value>,
-    gas: Option<Gas>
-) -> Result<(), String> {
-    let mut pool = LocalPool::new();
-    pool.run_until(async {
-        let request = workspaces::call(
-            signer,
-            account_id.to_owned(),
-            contract_id.to_owned(),
-            method.to_owned(),
-            value
-                .unwrap_or_default()
-                .to_string()
-                .into(),
-            None,
-            gas
-        )
-        .await
-        .unwrap();
-        match &request.status {
-            FinalExecutionStatus::Failure(_) => {
-                return Err(request.status.as_failure().unwrap().to_string())
+    gas: Option<Gas>,
+    deposit: Option<Balance>,
+) -> Result<(), anyhow::Error> {
+    let worker = context.worker().clone();
+    let handle = Handle::current();
+    tokio::task::block_in_place(move || {
+        handle.block_on(async {
+            let mut request = account.call(&worker, contract_id, method);
+
+            if let Some(args) = value {
+                request = request.args_json(args)?;
             }
-            _ => return Ok(())
-        }
+
+            if let Some(gas) = gas {
+                request = request.gas(gas);
+            }
+
+            if let Some(deposit) = deposit {
+                request = request.deposit(deposit);
+            }
+
+            let request = request.transact().await;
+            match request.unwrap().status {
+                FinalExecutionStatus::Failure(err) => Err(anyhow::anyhow!(err)),
+                _ => return Ok(()),
+            }
+        })
     })
 }
 
-pub fn view(contract_id: &AccountId, method: &str, value: Option<Value>) -> Result<serde_json::Value, String> {
-    let mut pool = LocalPool::new();
-    pool.run_until(async {
-        let result = workspaces::view(
-            contract_id.to_owned(),
-            method.to_owned(),
-            FunctionArgs::from(
-                value
-                    .unwrap_or_default()
-                    .to_string()
-                    .into_bytes(),
-            ),
-        )
-        .await;
-        match result {
-            Ok(value) => Ok(value),
-            Err(tx_error) => Err(tx_error)
-        }
+pub fn view(
+    context: &Context,
+    contract: &Contract,
+    method: &str,
+    value: Option<Value>,
+) -> Result<serde_json::Value, String> {
+    let handle = Handle::current();
+    let worker = context.worker().clone();
+    tokio::task::block_in_place(move || {
+        handle.block_on(async {
+            let result = contract
+                .view(
+                    &worker,
+                    method,
+                    value.unwrap_or_default().to_string().into_bytes(),
+                )
+                .await;
+            match result {
+                Ok(value) => Ok(value.json().unwrap()),
+                Err(query_error) => Err(query_error.to_string()),
+            }
+        })
     })
 }
 
@@ -62,41 +70,58 @@ pub fn view(contract_id: &AccountId, method: &str, value: Option<Value>) -> Resu
 macro_rules! invoke_call {
     ($self: ident, $context: ident, $method: tt) => {
         let outcome = crate::actions::call(
-            $context.signer().get(),
-            $context.signer().account_id(),
-            $context.contracts().get($self.name()).account_id(),
+            &$context,
+            $context.signer().as_ref().unwrap(),
+            $context.contracts().get($self.name()).id(),
             $method,
             None,
-            None
+            None,
+            None,
         );
         if outcome.is_err() {
-            $context.add_method_errors($method, outcome.unwrap_error());
+            $context.add_method_errors($method, outcome.unwrap_err().to_string());
         };
     };
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
         let outcome = crate::actions::call(
-            $context.signer().get(),
-            $context.signer().account_id(),
-            $context.contracts().get($self.name()).account_id(),
+            &$context,
+            $context.signer().as_ref().unwrap(),
+            $context.contracts().get($self.name()).id(),
             $method,
             Some($context.$param($method)),
-            None
+            None,
+            None,
         );
         if outcome.is_err() {
-            $context.add_method_errors($method, outcome.unwrap_err());
+            $context.add_method_errors($method, outcome.unwrap_err().to_string());
+        };
+    };
+    ($self: ident, $context: ident, $method: tt, $param: ident, $deposit: expr) => {
+        let outcome = crate::actions::call(
+            &$context,
+            $context.signer().as_ref().unwrap(),
+            $context.contracts().get($self.name()).id(),
+            $method,
+            Some($context.$param($method)),
+            None,
+            $deposit,
+        );
+        if outcome.is_err() {
+            $context.add_method_errors($method, outcome.unwrap_err().to_string());
         }
     };
-    ($self: ident, $context: ident, $method: tt, $param: ident, $gas: ident) => {
+    ($self: ident, $context: ident, $method: tt, $param: ident, $deposit: expr, $gas: expr) => {
         let outcome = crate::actions::call(
-            $context.signer().get(),
-            $context.signer().account_id(),
-            $context.contracts().get($self.name()).account_id(),
+            &$context,
+            $context.signer().as_ref().unwrap(),
+            $context.contracts().get($self.name()).id(),
             $method,
             Some($context.$param($method)),
-            Some($gas)
+            $gas,
+            $deposit,
         );
         if outcome.is_err() {
-            $context.add_method_errors($method, outcome.unwrap_err());
+            $context.add_method_errors($method, outcome.unwrap_err().to_string());
         }
     };
 }
@@ -105,7 +130,8 @@ macro_rules! invoke_call {
 macro_rules! invoke_view {
     ($self: ident, $context: ident, $method: tt) => {
         let response = crate::actions::view(
-            $context.contracts().get($self.name()).account_id(),
+            &$context,
+            $context.contracts().get($self.name()),
             $method,
             None,
         );
@@ -117,7 +143,8 @@ macro_rules! invoke_view {
     };
     ($self: ident, $context: ident, $method: tt, $param: ident) => {
         let response = crate::actions::view(
-            $context.contracts().get($self.name()).account_id(),
+            &$context,
+            $context.contracts().get($self.name()),
             $method,
             Some($context.$param($method)),
         );

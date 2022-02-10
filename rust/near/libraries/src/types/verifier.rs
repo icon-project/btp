@@ -9,10 +9,10 @@ use super::messages::SerializedBtpMessages;
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bmv(UnorderedMap<String, AccountId>);
 
-#[derive(Serialize, Debug, Eq, PartialEq, Hash)]
+#[derive(Serialize, Debug, Eq, PartialEq, Hash, Deserialize)]
 pub struct Verifier {
-    network: String,
-    verifier: AccountId,
+    pub network: String,
+    pub verifier: super::AccountId,
 }
 
 #[derive(

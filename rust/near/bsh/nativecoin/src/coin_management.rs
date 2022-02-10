@@ -33,18 +33,6 @@ impl NativeCoinService {
     pub fn coin_id(&self, coin_name: String) -> TokenId {
         Self::hash_token_id(&coin_name)
     }
-
-    // TODO: Confirm regarding the Fee ratio. Other implementations follow a global fee ratio,
-    // but ideally fee ratio and denominations varies between tokens.
-    pub fn set_fee_ratio(&mut self, fee_numerator: U128) {
-        self.assert_have_permission();
-        let token_id = Self::hash_token_id(&self.native_coin_name);
-        let mut token = self.tokens.get(&token_id).unwrap();
-        self.assert_valid_fee_ratio(fee_numerator.into(), &token);
-
-        token.fee_numerator_mut().clone_from(&&fee_numerator.into());
-        self.tokens.set(&token_id, &token);
-    }
 }
 
 impl NativeCoinService {
@@ -70,11 +58,11 @@ impl NativeCoinService {
         balance.deposit_mut().sub(amount).unwrap();
         self.balances
             .set(&env::current_account_id(), token_id, balance);
-        
+
         log!("[Burn] {} {}", amount, token.symbol());
     }
 
-    pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String>{
+    pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String> {
         let mut balance = self
             .balances
             .get(&env::current_account_id(), token_id)

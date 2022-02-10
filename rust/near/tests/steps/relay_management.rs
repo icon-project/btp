@@ -1,39 +1,77 @@
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT};
 use serde_json::{from_value, json};
 use test_helper::types::Context;
 
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "add_relay",
+            json!({
+                "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "relay": context.accounts().get("relay_1").id()
+            }),
+        );
+
+        context
+    };
+
 pub static BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(BMC_OWNER_IS_THE_SIGNER)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
         .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
 };
 
-pub static ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
+pub static RELAY_1_IS_REGISTERED_FOR_ICON_LINK: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(RELAY_1_ACCOUNT_IS_CREATED)
+            .pipe(ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
+            .pipe(BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC)
+    };
+
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
-            "add_relay",
+            "add_relays",
             json!({
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-                "relay": context.accounts().get("relay_1").account_id()
+                "relays": [
+                    context.accounts().get("relay_1").id(),
+                    context.accounts().get("relay_2").id()
+                ]
             }),
         );
+
         context
     };
 
-pub static LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "add_relay",
-            json!({
-                "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-                "relay": context.accounts().get("relay_1").account_id()
-            }),
-        );
-        context
-    };
+pub static ALICE_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
+};
 
-pub static LINK_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
+pub static ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS: fn(Context) = |context: Context| {
+    let context = context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM)
+        .pipe(USER_INVOKES_GET_RELAYS_IN_BMC);
+
+    let relays = context.method_responses("get_relays");
+    let result: HashSet<_> = from_value::<Vec<String>>(relays)
+        .unwrap()
+        .into_iter()
+        .collect();
+    let expected: HashSet<_> = vec![
+        context.accounts().get("relay_1").id().to_string(),
+        context.accounts().get("relay_2").id().to_string(),
+    ]
+    .into_iter()
+    .collect();
+
+    assert_eq!(result, expected);
+};
+
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "get_relays",
@@ -41,188 +79,218 @@ pub static LINK_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
             }),
         );
+
         context
     };
 
-pub static INVALID_LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "add_realy",
-            json!({
-                "link": "INVALIDADDRESS",
-                "relay": "relayaddress"
-            }),
-        );
-        context
-    };
-
-pub static LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "add_realy",
-            json!({
-                "link": "BTPADDRESS",
-                "relay": "VECTOR(relays)"
-            }),
-        );
-        context
-    };
-
-pub static ALICE_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    context.pipe(ALICE_IS_THE_SIGNER)
-        .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
-        .pipe(LINK_PROVIDED_AS_GET_RELAY_PARAM)
-        .pipe(USER_INVOKES_GET_RELAYS_IN_BMC)
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM:
+    fn(Context) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "remove_relay",
+        json!({
+            "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "relay": context.accounts().get("relay_1").id()
+        }),
+    );
+    context
 };
 
-pub static ALICE_INVOKES_ADD_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    context.pipe(ALICE_IS_THE_SIGNER)
+pub static CHUCK_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_RELAY: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_relay");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
+
+pub static BSC_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM: fn(
+    Context,
+)
+    -> Context = |mut context: Context| {
+    context.add_method_params(
+        "add_relays",
+        json!({
+            "link": format!("btp://{}/{}", BSC_NETWORK, BSC_BMC),
+            "relays": [
+                context.accounts().get("relay_1").id()
+            ]
+        }),
+    );
+    context
+};
+
+pub static ALICE_INVOKES_ADD_RELAYS_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_ADD_RELAYS_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_ADDING_RELAYS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_relays");
+        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
+    };
+
+pub static ALICE_INVOKES_GET_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_GET_RELAYS_IN_BMC)
 };
 
-pub static ALICE_INVOKES_REMOVE_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("alice").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.remove_relay(context)
-};
-
-pub static RELAYS_ARE_QURIED_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.get_relays(context);
-
-pub static ADD_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    //bmc owner adds link
-    // relay provided to the link added
-    //bmc owner invokes add_relay realy will be added to the link
-    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-        .pipe(LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
-        .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
-};
-
-pub static ADD_RELAYS_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    //bmc owner adds link
-    // relay provided to the link added
-    //bmc owner invokes add_relay realy will be added to the link
-    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-        .pipe(LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM)
-        .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
-};
-
-pub static CHUCK_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chucks").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_relay(context)
-};
-
-pub static CHUCK_INVOKES_ADD_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chucks").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_relays(context)
-};
-
-pub static CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.accounts().get("chucks").to_owned();
-    context.set_signer(&signer);
-    BMC_CONTRACT.add_relays(context)
-};
-pub static ADD_RELAY_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-        .pipe(LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
-        .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-        .pipe(CHUCK_INVOKES_ADD_RELAY_IN_BMC)
-};
-
-pub static ADD_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-        .pipe(LINK_AND_RELAYS_PROVIDED_AS_ADD_RELAY_PARAM)
-        .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-        .pipe(CHUCK_INVOKES_ADD_RELAYS_IN_BMC)
-};
-
-pub static ADD_RELAY_WITH_NON_EXISTING_LINK_INVOKED_BY_BMC_OWNER: fn(Context) -> Context =
-    |mut context: Context| {
-        //bmc owner adds link
-        // relay provided to the link added
-        //bmc owner invokes add_relay realy will be added to the link
-        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-            .pipe(INVALID_LINK_AND_RELAY_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
-            .pipe(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
-    };
-
-pub static LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "remove_realy",
-            json!({
-                "link": "BTPADDRESS",
-                "relay": "relayaddress"
-            }),
-        );
-        context
-    };
-
-pub static NONEXISTING_LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "remove_realy",
-            json!({
-                "link": "NONEXISTING_LINK",
-                "relay": "relayaddress"
-            }),
-        );
-        context
-    };
-
-pub static REMOVE_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    //bmc owner adds link
-    // relay provided to the link added
-    //bmc owner invokes add_relay realy will be added to the link
-    ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-        .pipe(LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
-        .pipe(ALICE_INVOKES_REMOVE_RELAYS_IN_BMC)
-};
-
-pub static REMOVE_RELAYS_INVOKED_BY_NON_BMC_OWNER: fn(Context) -> Context =
-    |mut context: Context| {
-        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-            .pipe(LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
-            .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-            .pipe(CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC)
-    };
-
-pub static REMOVE_NON_EXISTING_RELAY_INVOKED_BY_BMC_OWNER: fn(Context) -> Context =
-    |mut context: Context| {
-        ALICE_INVOKES_ADD_LINK_IN_BMC(context)
-            .pipe(NONEXISTING_LINK_AND_RELAY_PROVIDED_AS_REMOVE_RELAY_PARAM)
-            .pipe(CHUCK_IS_NOT_A_BMC_OWNER)
-            .pipe(CHUCK_INVOKES_REMOVE_RELAYS_IN_BMC)
-    };
-
-pub static ADDED_RELAYS_SHOULD_BE_IN_BMC_RELAY_LIST: fn(Context) = |mut context: Context| {
-    let relay = context.method_responses("get_relays");
-
-    let result: HashSet<_> = from_value::<Vec<String>>(relay)
+pub static LIST_OF_RELAYS_SHOULD_EXIST_FOR_THE_GIVEN_LINK: fn(Context) = |context: Context| {
+    let relays = context.method_responses("get_relays");
+    let result: HashSet<_> = from_value::<Vec<String>>(relays)
         .unwrap()
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec![context.accounts().get("relay_1").account_id().to_string()].into_iter().collect();
-    assert_eq!(result, expected); 
-};
-
-pub static DELETED_RELAY_SHOULD_NOT_BE_IN_LIST: fn(Context) = |mut context: Context| {
-    let relay = context.method_responses("get_relays");
-
-    let result: HashSet<_> = from_value::<Vec<String>>(relay)
-        .unwrap()
+    let expected: HashSet<_> = vec![context.accounts().get("relay_1").id().to_string()]
         .into_iter()
         .collect();
-    let expected: HashSet<_> = vec!["to_be_given".to_string()].into_iter().collect();
+
     assert_eq!(result, expected);
 };
 
-pub static RELAY_1_IS_REGISTERED: fn(Context) -> Context = |context: Context| -> Context {
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM:
+    fn(Context) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "add_relays",
+        json!({
+            "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "relays": [
+                context.accounts().get("relay_1").id()
+            ]
+        }),
+    );
+
     context
-        .pipe(RELAY_1_ACCOUNT_IS_CREATED)
-        .pipe(ICON_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_ADD_RELAY_PARAM)
-        .pipe(BMC_OWNER_INVOKES_ADD_RELAY_IN_BMC)
 };
+
+pub static CHUCK_INVOKES_ADD_RELAYS_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_ADD_RELAYS_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_RELAYS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_relays");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
+
+pub static ALICE_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+        .pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_RELAY_DOES_NOT_EXIST_ERROR_ON_REMOVING_NON_EXISTING_RELAY: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_relay");
+        assert!(error.to_string().contains("BMCRevertNotExistRelay"));
+    };
+
+pub static BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_RELAY: fn(Context) = |context: Context| {
+    let error = context.method_errors("add_relay");
+    assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+};
+
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_ADDING_RELAY: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_relay");
+        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
+    };
+
+pub static ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "remove_relay",
+        json!({
+            "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "relay": context.accounts().get("relay_1").id()
+        }),
+    );
+
+    context
+};
+
+pub static CHUCK_INVOKES_ADD_RELAY_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_ADD_RELAY_IN_BMC)
+};
+
+pub static REMOVED_RELAYS_SHOULD_NOT_BE_IN_THE_LIST_OF_RELAYS: fn(Context) = |context: Context| {
+    let context = context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM)
+        .pipe(USER_INVOKES_GET_RELAYS_IN_BMC);
+
+    let relays = context.method_responses("get_relays");
+    let result: HashSet<_> = from_value::<Vec<String>>(relays).into_iter().collect();
+    let expected: HashSet<_> = from_value::<Vec<String>>(json!([])).into_iter().collect();
+
+    assert_eq!(result, expected);
+};
+
+pub static ADDED_RELAY_SHOULD_BE_IN_THE_LIST_OF_RELAYS: fn(Context) = |context: Context| {
+    let context = context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM)
+        .pipe(USER_INVOKES_GET_RELAYS_IN_BMC);
+
+    let relays = context.method_responses("get_relays");
+    let result: HashSet<_> = from_value::<Vec<String>>(relays)
+        .unwrap()
+        .into_iter()
+        .collect();
+    let expected: HashSet<_> = vec![context.accounts().get("relay_1").id().to_string()]
+        .into_iter()
+        .collect();
+
+    assert_eq!(result, expected);
+};
+
+pub static NON_EXISTING_LINK_ADDRESS_PROVIDED_AS_GET_RELAY_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "get_relays",
+            json!({
+                "link": format!("btp://{}/{}", BSC_NETWORK, BSC_BMC),
+            }),
+        );
+        context
+    };
+
+pub static USER_INVOKES_GET_RELAY_METHOD_WITH_NON_EXISTING_LINK: fn(Context) -> Context =
+    |context: Context| context.pipe(USER_INVOKES_GET_RELAYS_IN_BMC);
+
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("get_relays");
+        // assert!(error.to_string().contains("BMCRevertNotExistsRelay"));
+        println!("{}", error);
+    };
+
+pub static NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC:
+    fn(Context) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "remove_relay",
+        json!({
+            "link": format!("btp://{}/{}", BSC_NETWORK, BSC_BMC),
+            "relay": context.accounts().get("relay_1").id(),
+        }),
+    );
+    context
+};
+
+pub static BMC_OWNER_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context =
+    |context: Context| context.pipe(USER_INVOKES_REMOVE_RELAY_IN_BMC);
+
+pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_REMOVING_RELAY: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_relay");
+        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
+    };

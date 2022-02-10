@@ -68,7 +68,7 @@ impl BorshDeserialize for BTPAddress {
 impl TryFrom<String> for BTPAddress {
     type Error = String;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        validate_btp_address(value.as_str())?;
+        validate_btp_address(value.as_str()).map_err(|err| format!("InvalidBtpAddress: {}", err))?;
         Ok(Self(value))
     }
 }
@@ -82,7 +82,7 @@ impl From<BTPAddress> for Value {
 impl std::str::FromStr for BTPAddress {
     type Err = String;
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        validate_btp_address(value)?;
+        validate_btp_address(value).map_err(|err| format!("InvalidBtpAddress: {}", err))?;
         Ok(Self(value.to_string()))
     }
 }

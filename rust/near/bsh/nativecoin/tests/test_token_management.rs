@@ -43,6 +43,7 @@ fn register_token() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
@@ -74,6 +75,7 @@ fn register_existing_token() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
@@ -91,6 +93,7 @@ fn register_token_permission() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 0));
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());

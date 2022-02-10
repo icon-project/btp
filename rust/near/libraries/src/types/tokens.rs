@@ -127,8 +127,6 @@ mod tests {
             "ABC Token".to_string(),
             "ABC".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.near".to_string(),
             None
         );
@@ -154,8 +152,6 @@ mod tests {
             "ABC Token".to_string(),
             "ABC".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.near".to_string(),
             None
         );
@@ -182,8 +178,6 @@ mod tests {
            "ABC Token".to_string(),
             "ABC".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.near".to_string(),
             None
         );
@@ -217,8 +211,6 @@ mod tests {
             "ABC Token".to_string(),
             "ABC".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.near".to_string(),
             None
         );
@@ -226,8 +218,6 @@ mod tests {
             "DEF Token".to_string(),
             "DEF".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.bsc".to_string(),
             None
         );
@@ -267,8 +257,6 @@ mod tests {
             "ABC Token".to_string(),
             "ABC".to_string(),
             None,
-            10000,
-            1000000,
             "0x1.near".to_string(),
             None
         );

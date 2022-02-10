@@ -9,137 +9,137 @@ mod manage_owner_accounts {
     mod bmc {
         use super::*;
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn add_new_owner_as_bmc_contract_owner_success() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn non_bmc_owner_cannot_remove_owners() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
-                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .then(OWNERS_IN_BMC_ARE_QUERIED)
-                .and(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST);
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(BMC_SHOULD_THROW_USER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNER);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn add_existing_owner_as_authorized_fail() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_contract_account_owner_can_add_new_bmc_owner() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn recently_added_bmc_owner_can_add_new_bmc_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
-                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
-                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .then(OWNERS_IN_BMC_ARE_QUERIED)
-                .and(BMC_SHOULD_THROW_ALREADY_EXIST_ERROR);
+                .and(BOBS_ACCOUNT_IS_CREATED)
+                .and(BOBS_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(CHARLIE_INVOKES_ADD_OWNER_IN_BMC)
+                .then(BOBS_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn add_new_owner_as_unauthorized_fail() {
-           Kitten::given(NEW_CONTEXT)
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_contract_account_owner_can_remove_other_owners() {
+            Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(CHUCK_IS_NOT_A_BMC_OWNER)
-                .and(CHARLIES_ACCOUNT_IS_CREATED)
-                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
-                .when(CHUCK_INVOKES_ADD_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR);
-                
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_owner_as_authorized_success() {
-            Kitten::given(NEW_CONTEXT)
-            .and(BMC_CONTRACT_IS_DEPLOYED)
-            .and(ALICE_IS_BMC_CONTRACT_OWNER)
-            .and(CHARLIES_ACCOUNT_IS_CREATED)
-            .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
-            .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
-            .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-            .then(OWNERS_IN_BMC_ARE_QUERIED)
-            .and(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST);
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_last_owner_as_authorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(ALICE_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
-                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_LASTOWNER_ERROR)
-
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_non_existing_owner_as_authorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_NOTEXIST_ERROR);
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_owner_as_unauthorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(CHUCK_IS_NOT_A_BMC_OWNER)
-                .and(CHARLIES_ACCOUNT_IS_CREATED)
-                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
-                .when(CHUCK_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR);
-        }
-
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
         async fn add_new_bmc_owner_by_existing_bmc_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
                 .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_OWNERS_LIST)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS);
         }
 
-        #[workspaces::test(sandbox)]
-        async fn add_new_bmc_owner_by_recently_added_bmc_owner_success() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn non_bmc_owner_cannot_add_new_owners() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
-                .and(BOBS_ACCOUNT_IS_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
-                .and(ALICE_INVOKES_ADD_OWNER_IN_BMC)
-                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_PASSED_AS_ADD_OWNER_PARAM)
-                .when(BOB_INVOKES_ADD_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_BMC_OWNERS_LIST)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHUCKS_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(CHUCK_INVOKES_ADD_OWNER_IN_BMC)
+                .then(BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_OWNERS);
         }
 
-        #[workspaces::test(sandbox)]
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_cannot_remove_self_if_self_is_the_last_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ALICES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(BMC_SHOULD_THROW_LAST_OWNER_ERROR_ON_REMOVING_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn new_bmc_owner_cannot_add_already_existing_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(ALICE_INVOKES_ADD_OWNER_IN_BMC)
+                .then(BMC_SHOULD_THROW_OWNER_ALREADY_EXISTS_ERROR_ON_ADDING_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn newly_added_bmc_owner_can_remove_bmc_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+                .and(ALICES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(CHARLIE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_remove_another_bmc_owner_success() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(ALICE_IS_BMC_CONTRACT_OWNER)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
-                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_BMC_OWNERS_LIST)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS);
         }
 
-    }
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_cannot_remove_non_existing_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(BMC_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ON_REMOVING_OWNERS);
+        }
 
-    mod bsh {
-        #[ignore]
-        #[test]
-        fn it_works() {
-            unimplemented!();
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_can_remove_self() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+                .and(ALICES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS);
         }
     }
 }

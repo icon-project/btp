@@ -9,102 +9,61 @@ mod manage_bsh_services {
     mod bmc {
         use super::*;
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn request_service_as_bsh_contract_owner_success() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_cannot_remove_non_existing_service() {
             Kitten::given(NEW_CONTEXT)
-                .and(BMC_CONTRACT_IS_DEPLOYED)
-                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED)
-                .and(BOB_IS_BSH_CONTRACT_OWNER)
-                .and(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
-                .when(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
-                .then(USER_INVOKES_GET_REQUESTS_IN_BMC)
-                .and(NEWLY_ADDED_REQUEST_SHOULD_BE_IN_BMC_REQUESTS)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_NAME_IS_PROVIDED_AS_REMOVE_SERVICE_PARAM)
+                .when(ALICE_INVOKES_REMOVE_SERVICE_IN_BMC)
+                .then(BMC_SHOULD_THROW_SERVICE_DOES_NOT_EXIST_ERROR_ON_REMOVING_SERVICE);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn request_service_unauthorized_fail() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_can_delete_a_registered_bsh() {
             Kitten::given(NEW_CONTEXT)
-            .and(CONTRACTS_ARE_DEPLOYED)
-            .and(CHUCK_IS_NOT_A_BSH_OWNER)
-            .and(SERVICE_NAME_AND_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
-            .when(CHUCK_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
-            .then(BSH_SHOULD_THROW_UNAUTHORIZED_ERROR)
-
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .and(NATIVE_COIN_BSH_NAME_IS_PROVIDED_AS_REMOVE_SERVICE_PARAM)
+                .when(ALICE_INVOKES_REMOVE_SERVICE_IN_BMC)
+                .then(THE_REMOVED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_LIST_OF_SERVICES);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn request_service_of_invalid_contract_address_authorized_fail() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_cannot_add_an_existing_service() {
             Kitten::given(NEW_CONTEXT)
-            .and(BMC_CONTRACT_IS_DEPLOYED)
-            .and(SERVICE_NAME_AND_INVALID_SMARTCONTRACT_ADDRESS_PROVIDED_AS_REQUEST_SERVICE_PARAM)
-            .when(CHUCK_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH)
-            .then(BMC_SHOULD_THROW_INVALIDADDRESS_ERROR) //TODO: Confirm InvalidAddress Message   
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .and(NATIVE_COIN_BSH_NAME_AND_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_SERVICE_PARAM)
+                .when(ALICE_INVOKES_ADD_SERVICE_IN_BMC)
+                .then(BMC_SHOULD_THROW_SERVICE_ALREADY_EXIST_ON_ADDING_SERVICES);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn request_service_of_existing_service_authorized_fail() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn non_bmc_owner_cannot_add_new_bsh() {
             Kitten::given(NEW_CONTEXT)
-            .and(BSH_IS_AN_EXISTING_SERVICE)
-            .when(BOB_INVOKES_REQUEST_SERVICE_IN_BMC_FROM_BSH_AGAIN)
-            .then(BSH_SHOULD_THROW_REQUESTEXIST_ERROR)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(CHUCKS_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_NAME_AND_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_SERVICE_PARAM)
+                .when(CHUCK_INVOKES_ADD_SERVICE_IN_BMC)
+                .then(BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_SERVICE);
         }
 
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn approve_service_authorized_success() {
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_can_query_all_the_registered_services() {
             Kitten::given(NEW_CONTEXT)
-            .and(BSH_SERVICE_ALREADY_EXISTS)
-            .when(ALICE_INVOKES_APPROVE_SERVICE_IN_BMC)
-            .then(BSH_SHOULD_BE_ADDED_IN_BMC_SERVICES)
-            .and(BSH_REQUEST_SHOULD_BE_REMOVED_FROM_BMC_REQUESTS)
-
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .when(USER_INVOKES_GET_SERVICES_IN_BMC)
+                .then(USER_SHOULD_GET_THE_EXISITING_LIST_OF_SERVICES);
         }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn approve_service_unauthorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-            .and(BSH_SERVICE_ALREADY_EXISTS)
-            .and(CHUCK_IS_NOT_A_BMC_OWNER)
-            .when(CHUCK_INVOKES_APPROVE_SERVICE_IN_BMC)
-            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)//
-
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_service_authorized_success() {
-            Kitten::given(NEW_CONTEXT)
-            .and(APPROVED_BSH_SERVICE)
-            .and(SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM)
-            .when(ALICE_INVOKES_REMOVE_REQUEST)
-            .then(BSH_SERVICE_REMOVED_FROM_SERVICES)
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_service_unauthorized_fail() {
-            Kitten::given(NEW_CONTEXT)
-            .and(APPROVED_BSH_SERVICE)
-            .and(CHUCK_IS_NOT_A_BMC_OWNER)
-            .and(SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM)
-            .when(CHUCK_INVOKES_REMOVE_REQUEST)
-            .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR)
-        }
-
-        #[ignore]
-        #[workspaces::test(sandbox)]
-        async fn remove_non_existing_service_authorized_success() {
-            Kitten::given(NEW_CONTEXT)
-            .and(CONTRACTS_ARE_DEPLOYED)
-            .and(NONEXISTING_SERVICE_NAME_PROVIDED_AS_REMOVE_REQUEST_PARAM)
-            .when(ALICE_INVOKES_REMOVE_REQUEST)
-            .then(BMC_SHOULD_THROW_NOTEXIST_ERROR)
-        }
-
     }
 }

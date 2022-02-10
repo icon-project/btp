@@ -11,13 +11,13 @@ lazy_static! {
 }
 
 pub static BMV_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =
-    |context: Context| BMV_CONTRACT.deploy(context);
+    |context| BMV_CONTRACT.deploy(context);
 
-pub static BMV_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Context| {
+pub static BMV_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context| {
     context.add_method_params(
         "new",
         json!({
-            "bmc": context.contracts().get("bmc").account_id(),
+            "bmc": context.contracts().get("bmc").id(),
             "validators": [
                 hex::decode("b6b5791be0b5ef67063b3c10b840fb81514db2fd").unwrap()
             ],
@@ -25,6 +25,7 @@ pub static BMV_CONTRACT_INITIALZIED: fn(Context) -> Context = |mut context: Cont
             "offset": "1846537"
         }),
     );
+
     BMV_CONTRACT.initialize(context)
 };
 

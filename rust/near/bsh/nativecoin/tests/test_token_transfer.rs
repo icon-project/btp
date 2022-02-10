@@ -52,6 +52,7 @@ fn deposit_native_coin() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 100));
 
@@ -82,6 +83,7 @@ fn withdraw_native_coin() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
 
@@ -121,6 +123,7 @@ fn withdraw_native_coin_higher_amount() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 100));
 
@@ -154,6 +157,7 @@ fn external_transfer() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -196,6 +200,7 @@ fn handle_success_response_native_coin_external_transfer() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -269,6 +274,7 @@ fn handle_success_response_icx_coin_external_transfer() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
 
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
@@ -369,6 +375,7 @@ fn handle_failure_response_native_coin_external_transfer() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -444,6 +451,7 @@ fn handle_failure_response_icx_coin_external_transfer() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
 
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
@@ -542,6 +550,7 @@ fn reclaim_icx_coin() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
 
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
@@ -613,6 +622,7 @@ fn external_transfer_higher_amount() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -637,6 +647,7 @@ fn external_transfer_unregistered_coin() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
 
@@ -662,6 +673,7 @@ fn external_transfer_nil_balance() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
 
     contract.register(icx_coin.clone());
@@ -688,6 +700,7 @@ fn external_transfer_batch() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -720,6 +733,7 @@ fn external_transfer_batch_higher_amount() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -744,6 +758,7 @@ fn external_transfer_batch_unregistered_coin() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
@@ -773,6 +788,7 @@ fn external_transfer_batch_nil_balance() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
 
     contract.register(icx_coin.clone());

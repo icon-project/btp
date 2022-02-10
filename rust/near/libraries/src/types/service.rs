@@ -1,9 +1,9 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::Serialize;
+use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::AccountId;
 use std::{collections::HashMap, hash::Hash};
 
-#[derive(Serialize, Debug, Eq, PartialEq, Hash)]
+#[derive(Serialize, Debug, Eq, PartialEq, Hash, Deserialize)]
 pub struct Service {
     name: String,
     service: AccountId,

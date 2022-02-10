@@ -9,8 +9,6 @@ lazy_static! {
         "NEAR".into(),
         "wNEAR".into(),
         Some(AccountId::from_str("wnear.near").unwrap()),
-        10000,
-        100000,
         "0x1.near".into(),
         None
         
@@ -19,8 +17,6 @@ lazy_static! {
         "BALN".into(),
         "BALN".into(),
         None,
-        10000,
-        100000,
         "0x1.icon".into(),
         None
     );

@@ -12,9 +12,6 @@ pub trait TokenMetadata {
     fn name(&self) -> &TokenName;
     fn network(&self) -> &Network;
     fn symbol(&self) -> &String;
-    fn fee_numerator(&self) -> u128;
-    fn fee_numerator_mut(&mut self) -> &u128;
-    fn denominator(&self) -> u128;
     fn metadata(&self) -> &Self;
     fn extras(&self) -> &Option<FungibleTokenExtras>;
 }
@@ -43,19 +40,7 @@ impl<T: TokenMetadata> Token<T>  {
     pub fn symbol(&self) -> &String {
         self.metadata.symbol()
     }
-
-    pub fn fee_numerator(&self) -> u128 {
-        self.metadata.fee_numerator()
-    }
-
-    pub fn fee_numerator_mut(&mut self) -> &u128 {
-        &self.metadata.fee_numerator_mut()
-    }
-
-    pub fn denominator(&self) -> u128 {
-        self.metadata.denominator()
-    }
-
+    
     pub fn metadata(&self) -> &T {
         &self.metadata
     }

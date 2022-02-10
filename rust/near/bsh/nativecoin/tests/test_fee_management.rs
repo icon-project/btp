@@ -56,6 +56,7 @@ fn handle_fee_gathering() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());

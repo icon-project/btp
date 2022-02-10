@@ -1,7 +1,5 @@
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT};
-use libraries::types::{Address, BTPAddress, LinkStatus};
-use serde_json::{from_value, json};
+use serde_json::json;
 use test_helper::types::Context;
 
 pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
@@ -9,11 +7,11 @@ pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 
 pub static RELAY_1_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(RELAY_1_IS_THE_SIGNER)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_RELAY_1)
         .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC)
 };
 
-pub static VALID_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context = |mut context: Context| {
+pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
         "handle_relay_message",
         json!({

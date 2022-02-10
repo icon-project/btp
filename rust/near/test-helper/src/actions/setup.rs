@@ -1,15 +1,11 @@
-use crate::types::Signer;
-use futures::executor::LocalPool;
-use workspaces::create_top_level_account;
+use crate::types::Context;
+use tokio::runtime::Handle;
+use workspaces::prelude::*;
+use workspaces::{Account};
 
-pub fn create_account(signer: &Signer) {
-    let mut pool = LocalPool::new();
-    pool.run_until(async {
-        create_top_level_account(
-            signer.account_id().to_owned(),
-            signer.public_key().to_owned(),
-        )
-        .await
-        .unwrap()
-    });
+pub fn create_account(context: &Context) -> Account {
+    let handle = Handle::current();
+    tokio::task::block_in_place(|| {
+        handle.block_on(async { context.worker().dev_create_account().await.unwrap() })
+    })
 }

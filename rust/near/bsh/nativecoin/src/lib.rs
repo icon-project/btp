@@ -21,7 +21,6 @@ use near_sdk::{
 };
 use near_sdk::{PromiseOrValue};
 use std::convert::TryInto;
-use tiny_keccak::{Hasher, Sha3};
 mod external;
 use external::*;
 mod estimate;
@@ -34,6 +33,8 @@ mod fee_management;
 mod transfer;
 mod messaging;
 mod multi_token;
+
+pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -49,6 +50,7 @@ pub struct NativeCoinService {
     serial_no: i128,
     bmc: AccountId,
     name: String,
+    fee_numerator: u128,
 
     #[cfg(feature = "testable")]
     pub message: LazyOption<Base64VecU8>,
@@ -62,6 +64,7 @@ impl NativeCoinService {
         bmc: AccountId,
         network: String,
         native_coin: Token<WrappedNativeCoin>,
+        fee_numerator: U128
     ) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
@@ -88,6 +91,7 @@ impl NativeCoinService {
             requests: Requests::new(),
             bmc,
             name: service_name,
+            fee_numerator: fee_numerator.into(),
 
             #[cfg(feature = "testable")]
             message: LazyOption::new(b"message".to_vec(), None)

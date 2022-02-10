@@ -1,5 +1,5 @@
-use crate::types::{Bmc, Bmv, NativeCoinBsh, TokenBsh, Context, Contract};
-use crate::{invoke_call, invoke_view};
+use crate::invoke_call;
+use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh};
 use duplicate::duplicate;
 
 #[duplicate(

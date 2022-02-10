@@ -8,6 +8,8 @@ use libraries::{
             BmcServiceMessage, BmcServiceType, BtpMessage, ErrorMessage, SerializedBtpMessages,
             SerializedMessage,
         },
+        Service,
+        Verifier,
         Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links, RelayStatus,
         Network, Owners, Routes, Services, VerifierStatus, Math, LinkStatus, Link, VerifierResponse
     },
