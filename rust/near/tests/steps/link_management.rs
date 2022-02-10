@@ -264,7 +264,7 @@ pub static BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_ADDING_LINK: fn(Context) = |c
     assert!(error.to_string().contains("InvalidBtpAddress"));
 };
 
-pub static BMC_SHOULD_THROW_ALREADY_EXISTING_LINK_ERROR_ON_ADDING_LINK: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context) = |context: Context| {
     let error = context.method_errors("add_link");
 
     assert!(error.to_string().contains("BMCRevertAlreadyExistsLink"));

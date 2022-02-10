@@ -175,7 +175,7 @@ mod manage_links {
                 .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
                 .when(ALICE_INVOKES_ADD_LINK_IN_BMC)
-                .then(BMC_SHOULD_THROW_ALREADY_EXISTING_LINK_ERROR_ON_ADDING_LINK);
+                .then(BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK);
         }
     }
 }
