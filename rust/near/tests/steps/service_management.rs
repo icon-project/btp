@@ -95,3 +95,30 @@ pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_SERVICES: fn(Context) = |contex
 
     assert_eq!(result, expected);
 };
+
+pub static NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) = |context: Context| {
+    |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_SERVICES_IN_BMC);
+        let result = context.method_responses("get_services");
+        let expected = json!([
+            {
+                "name": "nativecoin",
+                "service": context.contracts().get("nativecoin").id()
+            }
+        ]);
+    
+        assert_eq!(result, expected);
+    };
+};
+
+pub static CHUCK_INVOKES_REMOVE_SERVICE_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_REMOVE_SERVICE_IN_BMC)
+};
+
+pub static BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_SERVICE: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_service");
+        assert!(error.to_string().contains("BMCRevertNotExistsPermission"));
+    };
