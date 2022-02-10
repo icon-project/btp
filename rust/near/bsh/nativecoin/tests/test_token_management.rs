@@ -104,12 +104,13 @@ fn register_token_permission() {
 fn get_registered_coin_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     let coin_id = contract.coin_id("NEAR".to_string());
     let expected = env::sha256(nativecoin.name().as_bytes());
@@ -121,12 +122,13 @@ fn get_registered_coin_id() {
 fn get_non_exist_coin_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     let coin_id = contract.coin_id("ICON".to_string());
 }
