@@ -4,8 +4,8 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, FungibleToken, MultiTokenCore,
-    Token, Math, WrappedI128,
+    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, FungibleToken, Math, MultiTokenCore,
+    Token, WrappedI128,
 };
 mod token;
 use libraries::types::{Asset, Request};
@@ -46,7 +46,12 @@ fn deposit_wnear() {
         get_context(vec![], false, account_id, deposit, env::storage_usage(), 0)
     };
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -75,7 +80,12 @@ fn withdraw_wnear() {
         )
     };
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
     contract.register(w_near.clone());
@@ -112,7 +122,12 @@ fn withdraw_wnear_higher_amount() {
         )
     };
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
     contract.register(w_near.clone());
@@ -139,7 +154,12 @@ fn external_transfer() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -180,7 +200,12 @@ fn handle_success_response_wnear_external_transfer() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -252,7 +277,12 @@ fn handle_success_response_baln_external_transfer() {
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     let token_id = contract.token_id(baln.name().to_owned());
@@ -339,7 +369,12 @@ fn handle_failure_response_wnear_external_transfer() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -413,7 +448,12 @@ fn handle_failure_response_baln_coin_external_transfer() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     let token_id = contract.token_id(baln.name().to_owned());
@@ -497,7 +537,12 @@ fn reclaim_baln_coin() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
     let token_id = contract.token_id(baln.name().to_owned());
@@ -561,7 +606,12 @@ fn external_transfer_higher_amount() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -585,7 +635,12 @@ fn external_transfer_unregistered_coin() {
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let token_id = contract.token_id(w_near.name().to_owned());
     testing_env!(context(chuck(), 0));
     contract.transfer(token_id, destination, U128::from(1001));
@@ -601,7 +656,12 @@ fn external_transfer_nil_balance() {
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -624,7 +684,12 @@ fn external_transfer_batch() {
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let token_id = contract.token_id(w_near.name().to_owned());
     contract.register(w_near.clone());
 
@@ -653,7 +718,12 @@ fn external_transfer_batch_higher_amount() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
     contract.register(w_near.clone());
@@ -674,7 +744,12 @@ fn external_transfer_batch_unregistered_coin() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
     let baln = <Token<FungibleToken>>::new(BALN.to_owned());
@@ -701,7 +776,12 @@ fn external_transfer_batch_nil_balance() {
     testing_env!(context(alice(), 0));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
 
     let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());

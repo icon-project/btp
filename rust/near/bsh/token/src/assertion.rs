@@ -42,9 +42,9 @@ impl TokenService {
         );
     }
 
-    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<FungibleToken>) {
+    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128) {
         require!(
-            fee_numerator <= token.denominator(),
+            fee_numerator <= FEE_DENOMINATOR,
             format!("{}", BshError::InvalidSetting),
         );
     }

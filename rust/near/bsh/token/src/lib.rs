@@ -34,6 +34,7 @@ mod util;
 mod types;
 pub use types::RegisteredTokens;
 
+pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct TokenService {
@@ -47,6 +48,7 @@ pub struct TokenService {
     serial_no: i128,
     bmc: AccountId,
     name: String,
+    fee_numerator: u128,
     registered_tokens: RegisteredTokens,
 
     #[cfg(feature = "testable")]
@@ -56,7 +58,7 @@ pub struct TokenService {
 #[near_bindgen]
 impl TokenService {
     #[init]
-    pub fn new(service_name: String, bmc: AccountId, network: String) -> Self {
+    pub fn new(service_name: String, bmc: AccountId, network: String, fee_numerator: U128) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
@@ -71,6 +73,7 @@ impl TokenService {
             requests: Requests::new(),
             bmc,
             name: service_name,
+            fee_numerator : fee_numerator.into(),
             registered_tokens: RegisteredTokens::new(),
 
             #[cfg(feature = "testable")]

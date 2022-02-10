@@ -126,8 +126,6 @@ mod tests {
         let native_coin = NativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
-            10000,
-            1000000,
             "0x1.near".to_string(),
         );
 
@@ -151,8 +149,6 @@ mod tests {
         let native_coin = NativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
-            10000,
-            1000000,
             "0x1.near".to_string(),
         );
 
@@ -177,8 +173,6 @@ mod tests {
         let native_coin = NativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
-            10000,
-            1000000,
             "0x1.near".to_string(),
         );
 
@@ -210,15 +204,11 @@ mod tests {
         let native_coin_1 = NativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
-            10000,
-            1000000,
             "0x1.near".to_string(),
         );
         let native_coin_2 = NativeCoin::new(
             "DEF Token".to_string(),
             "DEF".to_string(),
-            10000,
-            1000000,
             "0x1.bsc".to_string(),
         );
 
@@ -256,8 +246,6 @@ mod tests {
         let native_coin = NativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
-            10000,
-            1000000,
             "0x1.near".to_string(),
         );
         tokens.add(
