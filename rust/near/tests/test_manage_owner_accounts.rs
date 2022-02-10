@@ -130,6 +130,17 @@ mod manage_owner_accounts {
                 .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
                 .then(BMC_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ON_REMOVING_OWNERS);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_owner_can_remove_self() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIE_IS_AN_EXISITNG_OWNER_IN_BMC)
+                .and(ALICES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(ALICE_INVOKES_REMOVE_OWNER_IN_BMC)
+                .then(ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS);
+        }
     }
 }
 
