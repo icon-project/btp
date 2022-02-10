@@ -74,7 +74,7 @@ mod manage_bsh_services {
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(NATIVE_COIN_BSH_NAME_AND_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_SERVICE_PARAM)
                 .when(ALICE_INVOKES_ADD_SERVICE_IN_BMC)
-                .then(BSH_SERVICE_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES);
+                .then(NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES);
         }
 
         #[tokio::test(flavor = "multi_thread")]

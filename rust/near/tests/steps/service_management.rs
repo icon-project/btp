@@ -96,7 +96,7 @@ pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_SERVICES: fn(Context) = |contex
     assert_eq!(result, expected);
 };
 
-pub static BSH_SERVICE_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) = |context: Context| {
+pub static NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) = |context: Context| {
     |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_SERVICES_IN_BMC);
         let result = context.method_responses("get_services");
