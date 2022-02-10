@@ -31,14 +31,14 @@ impl TokenService {
         self.transfer_fees(&fee_aggregator);
     }
 
-    pub fn set_fee_ratio(&mut self, fee_numerator: u128) {
+    pub fn set_fee_ratio(&mut self, fee_numerator: U128) {
         self.assert_have_permission();
         self.assert_valid_fee_ratio(fee_numerator.into());
-        self.fee_numerator.clone_from(&fee_numerator);
+        self.fee_numerator.clone_from(&fee_numerator.into());
     }
 
-    pub fn calculate_token_transfer_fee(&self, amount: u128) -> u128 {
-        let fee = (amount * self.fee_numerator) / FEE_DENOMINATOR;
+    pub fn calculate_token_transfer_fee(&self, amount: U128) -> u128 {
+        let fee = (u128::from(amount) * self.fee_numerator) / FEE_DENOMINATOR;
         fee
     }
 }

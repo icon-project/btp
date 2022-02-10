@@ -33,18 +33,6 @@ impl NativeCoinService {
     pub fn coin_id(&self, coin_name: String) -> TokenId {
         Self::hash_token_id(&coin_name)
     }
-
-    // TODO: Confirm regarding the Fee ratio. Other implementations follow a global fee ratio,
-    // but ideally fee ratio and denominations varies between tokens.
-    pub fn set_fee_ratio(&mut self, fee_numerator: u128) {
-        self.assert_have_permission();
-        self.assert_valid_fee_ratio(fee_numerator.into());
-        self.fee_numerator.clone_from(&fee_numerator);
-    }
-    pub fn calculate_token_transfer_fee(&self,amount: u128) -> u128 {
-        let fee = (amount * self.fee_numerator) / FEE_DENOMINATOR;
-        fee
-    }
 }
 
 impl NativeCoinService {
