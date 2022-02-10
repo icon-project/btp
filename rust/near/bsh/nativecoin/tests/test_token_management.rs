@@ -1,6 +1,6 @@
 use nativecoin_service::NativeCoinService;
 use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env};
-use std::{collections::HashSet, slice::SliceIndex};
+use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{AccountBalance, MultiTokenCore, NativeCoin, Token, Math, TokenItem};
