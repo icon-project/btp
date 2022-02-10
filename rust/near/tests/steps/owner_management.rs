@@ -164,3 +164,9 @@ pub static ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context
         let owners = context.method_responses("get_owners");
         assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
     };
+
+    pub static BMC_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ON_REMOVING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
+    };
