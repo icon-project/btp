@@ -110,7 +110,6 @@ fn get_registered_coin_id() {
     );
     let coin_id = contract.coin_id("NEAR".to_string());
     let expected = env::sha256(nativecoin.name().as_bytes());
-    println!("{:?}",coin_id);
     assert_eq!(coin_id,expected)
 }
 
