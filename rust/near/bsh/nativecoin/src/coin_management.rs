@@ -31,7 +31,9 @@ impl NativeCoinService {
 
     // Hashing to be done out of chain
     pub fn coin_id(&self, coin_name: String) -> TokenId {
-        Self::hash_token_id(&coin_name)
+        let coin_id = Self::hash_token_id(&coin_name);
+        self.assert_tokens_exists(&vec![coin_id.clone()]);
+        coin_id
     }
 }
 
