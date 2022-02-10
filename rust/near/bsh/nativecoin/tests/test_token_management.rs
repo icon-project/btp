@@ -1,5 +1,5 @@
 use nativecoin_service::NativeCoinService;
-use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value};
+use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
@@ -98,4 +98,35 @@ fn register_token_permission() {
     testing_env!(context(chuck(), 0));
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+}
+
+#[test]
+fn get_registered_coin_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(context(alice(), 0));
+    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        nativecoin.clone(),
+    );
+    let coin_id = contract.coin_id("NEAR".to_string());
+    let expected = env::sha256(nativecoin.name().as_bytes());
+    assert_eq!(coin_id,expected)
+}
+
+#[test]
+#[should_panic(expected = "BSHRevertNotExistsToken: [38, 6b, d, cf, f4, cf, 7b, f0, f7, 91, 97, 88, ec, 8f, f2, d6, 98, e5, 32, 16, 2a, e4, 5, 3d, 32, 3b, 8d, 4f, e0, bd, ae, 94]")]
+fn get_non_exist_coin_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(context(alice(), 0));
+    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let mut contract = NativeCoinService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        nativecoin.clone(),
+    );
+    let coin_id = contract.coin_id("ICON".to_string());
 }
