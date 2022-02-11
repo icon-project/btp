@@ -247,7 +247,7 @@ impl NativeCoinService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<NativeCoin>)>>();
+            .collect::<Vec<(usize, TokenId, Token<WrappedNativeCoin>)>>();
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
@@ -259,7 +259,12 @@ impl NativeCoinService {
 
         tokens.iter().for_each(|(index, token_id, token)| {
             if token.network() != &self.network {
-                self.mint(token_id, assets[index.to_owned()].amount(), &token);
+                self.mint(
+                    token_id,
+                    assets[index.to_owned()].amount(),
+                    &token,
+                    receiver_id.clone(),
+                );
             }
 
             self.internal_transfer(
@@ -282,7 +287,7 @@ impl NativeCoinService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<NativeCoin>)>,
+        tokens: &Vec<(usize, TokenId, Token<WrappedNativeCoin>)>,
         assets: &Vec<Asset>,
     ) -> Result<(), String> {
         tokens

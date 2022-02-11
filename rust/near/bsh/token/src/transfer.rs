@@ -72,6 +72,8 @@ impl TokenService {
         token_id: &TokenId,
         amount: u128,
     ) {
+        log!("Starting Internal Transfer");
+
         self.assert_sender_is_not_receiver(sender_id, receiver_id);
         self.assert_have_sufficient_deposit(sender_id, token_id, amount, None);
 
@@ -247,7 +249,7 @@ impl TokenService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<FungibleToken>)>>();
+            .collect::<Vec<(usize, TokenId, Token<WrappedFungibleToken>)>>();
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
@@ -259,15 +261,15 @@ impl TokenService {
 
         tokens.iter().for_each(|(index, token_id, token)| {
             if token.network() != &self.network {
-                self.mint(token_id, assets[index.to_owned()].amount(), &token);
+                self.mint(token_id, assets[index.to_owned()].amount(), &token, &receiver_id);
+            } else {
+                self.internal_transfer(
+                    &env::current_account_id(),
+                    &receiver_id,
+                    token_id,
+                    assets[index.to_owned()].amount(),
+                );
             }
-
-            self.internal_transfer(
-                &env::current_account_id(),
-                &receiver_id,
-                token_id,
-                assets[index.to_owned()].amount(),
-            );
         });
 
         Ok(Some(TokenServiceMessage::new(
@@ -282,7 +284,7 @@ impl TokenService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<FungibleToken>)>,
+        tokens: &Vec<(usize, TokenId, Token<WrappedFungibleToken>)>,
         assets: &Vec<Asset>,
     ) -> Result<(), String> {
         tokens

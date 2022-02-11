@@ -93,7 +93,7 @@ impl<T: BorshDeserialize + BorshSerialize + TokenMetadata> Tokens<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::NativeCoin;
+    use crate::types::WrappedNativeCoin;
     use near_sdk::{serde_json, testing_env, VMContext};
     use std::{collections::HashSet};
 
@@ -123,22 +123,24 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut tokens = Tokens::new();
-        let native_coin = NativeCoin::new(
+        let native_coin = WrappedNativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
+            None,
             "0x1.near".to_string(),
+            None
         );
 
         tokens.add(
             &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<NativeCoin>>::new(native_coin.clone()),
+            &<Token<WrappedNativeCoin>>::new(native_coin.clone()),
         );
 
         let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
         assert_eq!(result, true);
 
         let result = tokens.get(&"ABC Token".to_string().as_bytes().to_vec());
-        assert_eq!(result, Some(<Token<NativeCoin>>::new(native_coin)));
+        assert_eq!(result, Some(<Token<WrappedNativeCoin>>::new(native_coin)));
     }
 
     #[test]
@@ -146,14 +148,16 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut tokens = Tokens::new();
-        let native_coin = NativeCoin::new(
+        let native_coin = WrappedNativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
+            None,
             "0x1.near".to_string(),
+            None
         );
 
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<NativeCoin>>::new(native_coin.clone()));
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<NativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
         
         let result = tokens.to_vec();
 
@@ -170,13 +174,15 @@ mod tests {
         let context = get_context(vec![], false);
         testing_env!(context);
         let mut tokens = Tokens::new();
-        let native_coin = NativeCoin::new(
-            "ABC Token".to_string(),
+        let native_coin = WrappedNativeCoin::new(
+           "ABC Token".to_string(),
             "ABC".to_string(),
+            None,
             "0x1.near".to_string(),
+            None
         );
 
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<NativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
 
         tokens.remove(&"ABC Token".to_string().as_bytes().to_vec());
         let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
@@ -190,7 +196,7 @@ mod tests {
     fn remove_token_non_existing() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<NativeCoin>>::new();
+        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
         tokens.remove(&"ABC Token".to_string().as_bytes().to_vec());
         let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
         assert_eq!(result, false);
@@ -200,25 +206,29 @@ mod tests {
     fn to_vec_tokens() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<NativeCoin>>::new();
-        let native_coin_1 = NativeCoin::new(
+        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
+        let native_coin_1 = WrappedNativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
+            None,
             "0x1.near".to_string(),
+            None
         );
-        let native_coin_2 = NativeCoin::new(
+        let native_coin_2 = WrappedNativeCoin::new(
             "DEF Token".to_string(),
             "DEF".to_string(),
+            None,
             "0x1.bsc".to_string(),
+            None
         );
 
         tokens.add(
             &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<NativeCoin>>::new(native_coin_1),
+            &<Token<WrappedNativeCoin>>::new(native_coin_1),
         );
         tokens.add(
             &"DEF Token".to_string().as_bytes().to_vec(),
-            &<Token<NativeCoin>>::new(native_coin_2),
+            &<Token<WrappedNativeCoin>>::new(native_coin_2),
         );
         let tokens = tokens.to_vec();
         let expected_tokens: Vec<TokenItem> = vec![
@@ -242,15 +252,17 @@ mod tests {
     fn to_vec_tokens_value() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<NativeCoin>>::new();
-        let native_coin = NativeCoin::new(
+        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
+        let native_coin = WrappedNativeCoin::new(
             "ABC Token".to_string(),
             "ABC".to_string(),
+            None,
             "0x1.near".to_string(),
+            None
         );
         tokens.add(
             &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<NativeCoin>>::new(native_coin),
+            &<Token<WrappedNativeCoin>>::new(native_coin),
         );
         let tokens = serde_json::to_value(tokens.to_vec()).unwrap();
         assert_eq!(

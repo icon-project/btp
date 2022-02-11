@@ -3,7 +3,7 @@ use near_sdk::{testing_env, AccountId, VMContext};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{NativeCoin, Token};
+use libraries::types::{WrappedNativeCoin, Token};
 mod token;
 use token::*;
 
@@ -36,7 +36,7 @@ fn add_owner_new_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 
@@ -58,7 +58,7 @@ fn add_owner_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 
@@ -74,7 +74,7 @@ fn add_owner_permission() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
     testing_env!(context(chuck()));
@@ -89,7 +89,7 @@ fn remove_owner_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 
@@ -113,7 +113,7 @@ fn remove_owner_permission() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 
@@ -132,7 +132,7 @@ fn remove_owner_last_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 
@@ -148,7 +148,7 @@ fn remove_owner_non_existing_owner() {
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
-        <Token<NativeCoin>>::new(NATIVE_COIN.to_owned()),
+        <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned()),
         1000.into()
     );
 

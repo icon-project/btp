@@ -5,7 +5,7 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, Asset, BTPAddress, FungibleToken, Token, WrappedI128,
+    Account, Asset, BTPAddress, WrappedFungibleToken, Token, WrappedI128,
 };
 mod token;
 use token::*;
@@ -54,7 +54,7 @@ fn handle_transfer_mint_registered_icx() {
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     let token_id = contract.token_id(baln.name().to_owned());
 
     testing_env!(context(alice(), 0));
