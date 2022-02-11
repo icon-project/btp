@@ -1,39 +1,38 @@
-use std::convert::TryFrom;
 use btp_common::btp_address::Address;
-use btp_common::errors::{BshError};
+use btp_common::errors::BshError;
 use libraries::types::{
     Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId, WrappedNativeCoin,
 };
 use libraries::{
-    types::messages::BtpMessage, types::messages::TokenServiceMessage,
-    types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
-    types::MultiTokenCore, types::MultiTokenResolver, types::Network,
-    types::Owners, types::StorageBalances, types::Token, types::TokenFees,
-    types::Tokens, types::Math, types::Requests
+    types::messages::BtpMessage, types::messages::SerializedMessage,
+    types::messages::TokenServiceMessage, types::messages::TokenServiceType, types::Balances,
+    types::Math, types::MultiTokenCore, types::MultiTokenResolver, types::Network, types::Owners,
+    types::Requests, types::StorageBalances, types::Token, types::TokenFees, types::Tokens,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde_json::{to_value, Value};
+use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
-    env,
-    json_types::{U128},
-    log, near_bindgen, require, Gas, PanicOnDefault, Promise, PromiseResult,
+    env, json_types::U128, log, near_bindgen, require, Gas, PanicOnDefault, Promise, PromiseResult,
 };
-use near_sdk::{PromiseOrValue};
+use std::convert::TryFrom;
 use std::convert::TryInto;
 mod external;
 use external::*;
-mod estimate;
-mod assertion;
-mod util;
-mod owner_management;
-mod coin_management;
 mod accounting;
+mod assertion;
+mod coin_management;
+mod estimate;
 mod fee_management;
-mod transfer;
 mod messaging;
+mod owner_management;
+mod transfer;
+mod types;
+mod util;
+pub use types::RegisteredCoins;
 
-pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
+pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -53,6 +52,8 @@ pub struct NativeCoinService {
 
     #[cfg(feature = "testable")]
     pub message: LazyOption<Base64VecU8>,
+
+    registered_coins: RegisteredCoins,
 }
 
 #[near_bindgen]
@@ -63,7 +64,7 @@ impl NativeCoinService {
         bmc: AccountId,
         network: String,
         native_coin: Token<WrappedNativeCoin>,
-        fee_numerator: U128
+        fee_numerator: U128,
     ) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
@@ -72,7 +73,7 @@ impl NativeCoinService {
         let mut tokens = <Tokens<WrappedNativeCoin>>::new();
         let mut balances = Balances::new();
         let native_coin_id = Self::hash_token_id(native_coin.name());
-        
+
         balances.add(&env::current_account_id(), &native_coin_id);
         tokens.add(&native_coin_id, &native_coin);
 
@@ -93,7 +94,8 @@ impl NativeCoinService {
             fee_numerator: fee_numerator.into(),
 
             #[cfg(feature = "testable")]
-            message: LazyOption::new(b"message".to_vec(), None)
+            message: LazyOption::new(b"message".to_vec(), None),
+            registered_coins: RegisteredCoins::new(),
         }
     }
 

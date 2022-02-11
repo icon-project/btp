@@ -8,6 +8,30 @@ impl NativeCoinService {
     // * * * * * * * * * * * * * * * * *
     // * * * * * * * * * * * * * * * * *
 
+    pub fn ft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        amount: U128,
+        _msg: String,
+    ) -> PromiseOrValue<U128> {
+        let amount = amount.into();
+        let coin_account = env::predecessor_account_id();
+
+        self.assert_have_minimum_amount(amount);
+        self.assert_coin_registered(&coin_account);
+
+        let token_id = self.registered_coins.get(&coin_account).unwrap().clone();
+        let mut balance = match self.balances.get(&sender_id, &token_id) {
+            Some(balance) => balance,
+            None => AccountBalance::default(),
+        };
+
+        self.process_deposit(amount, &mut balance);
+        self.balances.set(&sender_id, &token_id, balance);
+
+        PromiseOrValue::Value(U128::from(0))
+    }
+
     #[payable]
     pub fn deposit(&mut self) {
         let account = env::predecessor_account_id();
