@@ -46,7 +46,7 @@ impl TokenService {
 
         let token = self.tokens.get(&token_id).unwrap();
 
-        let token_proomise = if token.network() != &self.network {
+        let transfer_promise = if token.network() != &self.network {
             ext_nep141::ft_transfer_with_storage_check(
                 account.clone(),
                 amount,
@@ -66,7 +66,7 @@ impl TokenService {
             )
         };
 
-        token_proomise.then(ext_self::on_withdraw(
+        transfer_promise.then(ext_self::on_withdraw(
             account.clone(),
             amount,
             token_id,
