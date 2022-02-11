@@ -96,19 +96,7 @@ pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_SERVICES: fn(Context) = |contex
     assert_eq!(result, expected);
 };
 
-pub static USER_SHOULD_GET_THE_EXISITING_LIST_OF_SERVICES: fn(Context) = |context: Context| {
-    let result = context.method_responses("get_services");
-    let expected = json!([
-        {
-            "name": "nativecoin",
-            "service": context.contracts().get("nativecoin").id()
-        }
-    ]);
-
-    assert_eq!(result, expected);
-};
-
-pub static NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) = |context: Context| {
+pub static NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) =
     |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_SERVICES_IN_BMC);
         let result = context.method_responses("get_services");
@@ -118,10 +106,9 @@ pub static NATIVE_COIN_BSH_SHOULD_BE_ADDED_TO_THE_LIST_OF_SERVICES: fn(Context) 
                 "service": context.contracts().get("nativecoin").id()
             }
         ]);
-    
+
         assert_eq!(result, expected);
     };
-};
 
 pub static CHUCK_INVOKES_REMOVE_SERVICE_IN_BMC: fn(Context) -> Context = |context: Context| {
     context
