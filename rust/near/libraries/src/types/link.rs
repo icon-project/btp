@@ -236,6 +236,14 @@ impl LinkStatus {
     pub fn delay_limit(&self) -> u64 {
         self.delay_limit
     }
+
+    pub fn max_aggregation(&self) -> u64 {
+        self.max_aggregation
+    }
+
+    pub fn block_interval_dst(&self) -> u64 {
+        self.block_interval_dst
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
