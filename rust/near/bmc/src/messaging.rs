@@ -138,26 +138,40 @@ impl BtpMessageCenter {
         network: String,
         message: SerializedMessage,
     ) {
-        
         self.assert_sender_is_authorized_service(&service);
-        let destination = self.resolve_route(&BTPAddress::new(format!("btp://{}/{}",network, 0000000000000000))).expect(format!("{}",BmcError::LinkNotExist).as_str());
+        let destination = self
+            .resolve_route(&BTPAddress::new(format!(
+                "btp://{}/{}",
+                network, 0000000000000000
+            )))
+            .expect(format!("{}", BmcError::LinkNotExist).as_str());
         let message = BtpMessage::new(
-                self.btp_address.clone(),
-                destination.clone(),
-                service,
-                WrappedI128::new(serial_no),
-                message.data().clone(),
-                None,
+            self.btp_address.clone(),
+            destination.clone(),
+            service,
+            WrappedI128::new(serial_no),
+            message.data().clone(),
+            None,
         );
         self.send_message(&self.btp_address.clone(), &destination, message);
     }
 
     #[private]
-    pub fn emit_message(&mut self, link: BTPAddress, btp_message: BtpMessage<SerializedMessage>) -> Vec<u8> {
+    pub fn emit_message(
+        &mut self,
+        link: BTPAddress,
+        btp_message: BtpMessage<SerializedMessage>,
+    ) -> Vec<u8> {
         if let Some(link_property) = self.links.get(&link).as_mut() {
             link_property.tx_seq_mut().add(1).unwrap();
             self.links.set(&link, &link_property);
-            emit_message!(self, event, link_property.tx_seq(), link, btp_message.clone());
+            emit_message!(
+                self,
+                event,
+                link_property.tx_seq(),
+                link,
+                btp_message.clone()
+            );
         }
         env::keccak256(&<Vec<u8>>::from(btp_message))
     }
@@ -216,17 +230,25 @@ impl BtpMessageCenter {
             self.increment_link_rx_seq(source);
             let outcome = match message.service().as_str() {
                 SERVICE => self.handle_internal_service_message(source, message.clone().try_into()),
-                _ => self.handle_external_service_message(source, message),
+                _ => self.handle_external_service_message(message),
             };
 
             if outcome.is_err() {
                 panic!("{}", outcome.unwrap_err()); // TODO
             }
-
             false
         } else {
             true
         }
+    }
+
+    #[cfg(feature = "testable")]
+    pub fn handle_service_message_testable(
+        &mut self,
+        source: BTPAddress,
+        message: BtpMessage<SerializedMessage>,
+    ) {
+        self.handle_service_message(&source, &message);
     }
 
     fn handle_internal_service_message(
@@ -252,10 +274,17 @@ impl BtpMessageCenter {
 
     fn handle_external_service_message(
         &self,
-        source: &BTPAddress,
         message: &BtpMessage<SerializedMessage>,
     ) -> Result<(), BmcError> {
-        todo!() // TODO
+        self.ensure_service_exists(message.service())?;
+        let serivce_account_id = self.services.get(message.service()).unwrap();
+        bsh_contract::handle_btp_message(
+            message.to_owned(),
+            serivce_account_id.to_owned(),
+            estimate::NO_DEPOSIT,
+            estimate::SEND_MESSAGE,
+        );
+        Ok(())
     }
 
     fn handle_route_message(
