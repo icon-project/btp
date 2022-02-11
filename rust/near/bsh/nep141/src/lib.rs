@@ -55,7 +55,7 @@ impl Contract {
             .internal_withdraw(&env::predecessor_account_id(), amount.into())
     }
 
-    pub fn ft_transfer_call_with_storage_check(
+    pub fn ft_transfer_with_storage_check(
         &mut self,
         receiver_id: AccountId,
         amount: Balance,
@@ -65,7 +65,7 @@ impl Contract {
         if let None = self.storage_balance_of(receiver_id.clone()) {
             self.token.internal_register_account(&receiver_id);
         }
-        
+
         self.token.internal_transfer(
             &env::predecessor_account_id(),
             &receiver_id.clone(),

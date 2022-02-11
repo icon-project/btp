@@ -42,36 +42,28 @@ impl NativeCoinService {
 
         let native_coin = self.tokens.get(&token_id).unwrap();
 
-        if native_coin.network() != &self.network {
-            ext_nep141::ft_transfer_call_with_storage_check(
+        let transfer_promise = if native_coin.network() != &self.network {
+            ext_nep141::ft_transfer_with_storage_check(
                 account.clone(),
                 amount,
                 None,
                 native_coin.metadata().uri().to_owned().unwrap(),
                 estimate::NO_DEPOSIT,
                 estimate::GAS_FOR_MT_TRANSFER_CALL,
-            ).then(ext_self::on_withdraw(
-                account.clone(),
-                amount,
-                native_coin_id,
-                native_coin.symbol().to_owned(),
-                env::current_account_id(),
-                estimate::NO_DEPOSIT,
-                estimate::GAS_FOR_MT_TRANSFER_CALL,
-            ));
+            )
         } else {
-            Promise::new(account.clone())
-                .transfer(amount + 1)
-                .then(ext_self::on_withdraw(
-                    account.clone(),
-                    amount,
-                    native_coin_id,
-                    native_coin.symbol().to_owned(),
-                    env::current_account_id(),
-                    estimate::NO_DEPOSIT,
-                    estimate::GAS_FOR_MT_TRANSFER_CALL,
-                ));
-        }
+            Promise::new(account.clone()).transfer(amount + 1)
+        };
+
+        transfer_promise.then(ext_self::on_withdraw(
+            account.clone(),
+            amount,
+            native_coin_id,
+            native_coin.symbol().to_owned(),
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_MT_TRANSFER_CALL,
+        ));
     }
 
     pub fn reclaim(&mut self, coin_id: TokenId, amount: U128) {
@@ -124,6 +116,7 @@ impl NativeCoinService {
         balance.deposit().into()
     }
 
+    #[private]
     pub fn on_withdraw(
         &mut self,
         account: AccountId,

@@ -46,8 +46,8 @@ impl TokenService {
 
         let token = self.tokens.get(&token_id).unwrap();
 
-        if token.network() != &self.network {
-            ext_nep141::ft_transfer_call_with_storage_check(
+        let token_proomise = if token.network() != &self.network {
+            ext_nep141::ft_transfer_with_storage_check(
                 account.clone(),
                 amount,
                 None,
@@ -55,15 +55,6 @@ impl TokenService {
                 estimate::NO_DEPOSIT,
                 estimate::GAS_FOR_FT_TRANSFER,
             )
-            .then(ext_self::on_withdraw(
-                account.clone(),
-                amount,
-                token_id,
-                token.symbol().to_string(),
-                env::predecessor_account_id(),
-                estimate::NO_DEPOSIT,
-                estimate::GAS_FOR_ON_MINT,
-            ));
         } else {
             ext_ft::ft_transfer(
                 account.clone(),
@@ -73,16 +64,17 @@ impl TokenService {
                 estimate::NO_DEPOSIT,
                 estimate::GAS_FOR_FT_TRANSFER,
             )
-            .then(ext_self::on_withdraw(
-                account.clone(),
-                amount,
-                token_id,
-                token.symbol().to_string(),
-                env::predecessor_account_id(),
-                estimate::NO_DEPOSIT,
-                estimate::GAS_FOR_ON_MINT,
-            ));
-        }
+        };
+
+        token_proomise.then(ext_self::on_withdraw(
+            account.clone(),
+            amount,
+            token_id,
+            token.symbol().to_string(),
+            env::predecessor_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_ON_MINT,
+        ));
     }
 
     pub fn reclaim(&mut self, token_id: TokenId, amount: U128) {
@@ -126,6 +118,7 @@ impl TokenService {
         self.balances.get(&owner_id, &token_id)
     }
 
+    #[private]
     pub fn on_withdraw(
         &mut self,
         account: AccountId,
