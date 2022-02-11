@@ -14,7 +14,11 @@ impl NativeCoinService {
         )
     }
 
-    pub fn assert_token_id_len_match_amount_len(&self, token_ids: &Vec<TokenId>, amounts: &Vec<U128>) {
+    pub fn assert_token_id_len_match_amount_len(
+        &self,
+        token_ids: &Vec<TokenId>,
+        amounts: &Vec<U128>,
+    ) {
         require!(
             token_ids.len() == amounts.len(),
             format!(
@@ -65,10 +69,7 @@ impl NativeCoinService {
     }
 
     pub fn assert_have_minimum_amount(&self, amount: u128) {
-        require!(
-            amount > 0,
-            format!("{}", BshError::NotMinimumAmount)
-        );
+        require!(amount > 0, format!("{}", BshError::NotMinimumAmount));
     }
 
     pub fn assert_have_sufficient_balance(&self, amount: u128) {
@@ -168,5 +169,12 @@ impl NativeCoinService {
                 }
             ),
         );
+    }
+
+    pub fn assert_coin_registered(&self, coin_account: &AccountId) {
+        require!(
+            self.registered_coins.contains(coin_account),
+            format!("{}", BshError::TokenNotRegistered)
+        )
     }
 }

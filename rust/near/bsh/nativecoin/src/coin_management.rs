@@ -18,6 +18,12 @@ impl NativeCoinService {
         // token id is hash(token_name)
         self.tokens.add(&token_id, &token);
         self.token_fees.add(&token_id);
+        if token.network() != &self.network {
+            self.registered_coins.add(
+                &token.metadata().uri_deref().expect("Token Account Missing"),
+                &token_id,
+            );
+        };
 
         // Sets initial balance for self
         self.balances.add(&env::current_account_id(), &token_id);
