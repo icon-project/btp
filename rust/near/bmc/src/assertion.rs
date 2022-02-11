@@ -164,4 +164,11 @@ impl BtpMessageCenter {
             );
         }
     }
+
+    pub fn ensure_service_exists(&self, name: &str) -> Result<(), BmcError> {
+        if !self.services.contains(name) {
+            return Err(BmcError::ServiceNotExist);
+        }
+        Ok(())
+    }
 }
