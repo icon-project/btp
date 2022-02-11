@@ -46,22 +46,35 @@ impl TokenService {
 
         let token = self.tokens.get(&token_id).unwrap();
 
-        let mut balance = self.balances.get(&account, &token_id).unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances.set(&account.clone(), &token_id, balance);
+        let transfer_promise = if token.network() != &self.network {
+            ext_nep141::ft_transfer_with_storage_check(
+                account.clone(),
+                amount,
+                None,
+                token.metadata().uri().to_owned().unwrap(),
+                estimate::NO_DEPOSIT,
+                estimate::GAS_FOR_FT_TRANSFER,
+            )
+        } else {
+            ext_ft::ft_transfer(
+                account.clone(),
+                U128::from(amount),
+                None,
+                token.metadata().uri_deref().unwrap(),
+                estimate::NO_DEPOSIT,
+                estimate::GAS_FOR_FT_TRANSFER,
+            )
+        };
 
-        Promise::new(token.metadata().uri_deref().unwrap()).function_call(
-            "ft_transfer".to_string(),
-            json!({
-                "receiver_id": account,
-                "amount": U128::from(amount),
-                "memo": ()
-            })
-            .to_string()
-            .into_bytes(),
+        transfer_promise.then(ext_self::on_withdraw(
+            account.clone(),
+            amount,
+            token_id,
+            token.symbol().to_string(),
+            env::predecessor_account_id(),
             estimate::NO_DEPOSIT,
-            estimate::GAS_FOR_FT_TRANSFER,
-        );
+            estimate::GAS_FOR_ON_MINT,
+        ));
     }
 
     pub fn reclaim(&mut self, token_id: TokenId, amount: U128) {
@@ -103,5 +116,34 @@ impl TokenService {
         token_id: TokenId,
     ) -> Option<AccountBalance> {
         self.balances.get(&owner_id, &token_id)
+    }
+
+    #[private]
+    pub fn on_withdraw(
+        &mut self,
+        account: AccountId,
+        amount: u128,
+        token_id: TokenId,
+        token_symbol: String,
+    ) {
+        let mut balance = self.balances.get(&account, &token_id).unwrap();
+        balance.deposit_mut().sub(amount).unwrap();
+        self.balances.set(&account.clone(), &token_id, balance);
+
+        log!(
+            "[Withdrawn] Amount : {} by {}  {}",
+            amount,
+            account,
+            token_symbol
+        );
+    }
+
+    pub fn balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        let balance = self
+            .balances
+            .get(&owner_id, &token_id)
+            .expect(format!("{}", BshError::AccountNotExist).as_str());
+        balance.deposit().into()
     }
 }

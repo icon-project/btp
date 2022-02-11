@@ -1,20 +1,17 @@
 use std::convert::TryFrom;
 use btp_common::btp_address::Address;
 use btp_common::errors::{BshError};
-use libraries::types::messages::Message;
 use libraries::types::{
-    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId,
+    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId, WrappedNativeCoin,
 };
 use libraries::{
     types::messages::BtpMessage, types::messages::TokenServiceMessage,
     types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
-    types::MultiTokenCore, types::MultiTokenResolver, types::NativeCoin, types::Network,
+    types::MultiTokenCore, types::MultiTokenResolver, types::Network,
     types::Owners, types::StorageBalances, types::Token, types::TokenFees,
     types::Tokens, types::Math, types::Requests
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LazyOption;
-use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde_json::{to_value, Value};
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -35,7 +32,6 @@ mod accounting;
 mod fee_management;
 mod transfer;
 mod messaging;
-mod multi_token;
 
 pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
 
@@ -45,7 +41,7 @@ pub struct NativeCoinService {
     native_coin_name: String,
     network: Network,
     owners: Owners,
-    tokens: Tokens<NativeCoin>,
+    tokens: Tokens<WrappedNativeCoin>,
     balances: Balances,
     storage_balances: StorageBalances,
     token_fees: TokenFees,
@@ -66,14 +62,14 @@ impl NativeCoinService {
         service_name: String,
         bmc: AccountId,
         network: String,
-        native_coin: Token<NativeCoin>,
+        native_coin: Token<WrappedNativeCoin>,
         fee_numerator: U128
     ) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
 
-        let mut tokens = <Tokens<NativeCoin>>::new();
+        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
         let mut balances = Balances::new();
         let native_coin_id = Self::hash_token_id(native_coin.name());
         
@@ -129,7 +125,6 @@ impl NativeCoinService {
 
     fn process_deposit(&mut self, amount: u128, balance: &mut AccountBalance) {
         let storage_cost = 0;
-        // TODO
-        balance.deposit_mut().add(amount - storage_cost);
+        balance.deposit_mut().add(amount - storage_cost).unwrap();
     }
 }

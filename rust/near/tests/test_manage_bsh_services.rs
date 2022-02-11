@@ -89,6 +89,5 @@ mod manage_bsh_services {
                 .when(CHUCK_INVOKES_REMOVE_SERVICE_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_SERVICE);
         }
-
     }
 }

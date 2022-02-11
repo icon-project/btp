@@ -64,6 +64,12 @@ impl TokenService {
     pub fn last_request(&self) -> Option<Request> {
         self.requests().get(self.serial_no())
     }
+
+    //review_required
+    pub fn transfer_start(&self, from: AccountId, to: AccountId, serial_no: i128, token:Token<WrappedFungibleToken>) {}
+
+    //review_required
+    pub fn transfer_end(&self, from: AccountId,) {}
 }
 
 impl TokenService {
@@ -111,9 +117,8 @@ impl TokenService {
         assets: Vec<Asset>,
     ) {
         let serial_no = self.serial_no.checked_add(1).unwrap();
-        self.serial_no
-            .clone_from(&serial_no);
-        
+        self.serial_no.clone_from(&serial_no);
+
         let message = TokenServiceMessage::new(TokenServiceType::RequestTokenTransfer {
             sender: sender_id.clone().into(),
             receiver: destination.account_id().into(),
@@ -128,7 +133,11 @@ impl TokenService {
                 assets,
             ),
         );
-        self.send_message(serial_no, destination.network_address().unwrap(), message.into());
+        self.send_message(
+            serial_no,
+            destination.network_address().unwrap(),
+            message.into(),
+        );
     }
 
     pub fn send_response(

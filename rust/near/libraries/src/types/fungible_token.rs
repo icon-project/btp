@@ -4,13 +4,23 @@ use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde::{Deserialize, Deserializer, Serialize};
 use near_sdk::AccountId;
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct FungibleTokenExtras {
+    pub spec: String,
+    pub icon: Option<String>,
+    pub reference: Option<String>,
+    pub reference_hash: Option<Base64VecU8>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FungibleToken {
     name: String,
     symbol: String,
     uri: Option<AccountId>,
     network: Network,
+    extras: Option<FungibleTokenExtras>
 }
 
 fn deserialize_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
@@ -26,12 +36,14 @@ impl FungibleToken {
         symbol: String,
         uri: Option<AccountId>,
         network: Network,
+        extras: Option<FungibleTokenExtras>
     ) -> FungibleToken {
         Self {
             name,
             symbol,
             uri,
             network,
+            extras
         }
     }
 }
@@ -57,6 +69,10 @@ impl TokenMetadata for FungibleToken {
 
     fn symbol(&self) -> &String {
         &self.symbol
+    }
+
+    fn extras(&self) -> &Option<FungibleTokenExtras>{
+        &self.extras
     }
 
     fn metadata(&self) -> &Self {

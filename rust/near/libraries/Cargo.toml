@@ -10,5 +10,6 @@ btp-common = { path="../../btp-common" }
 serde = { version = "1.0", features = ["derive"] }
 bytes = { version = "1" }
 near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
+near-contract-standards = { git = "https://github.com/near/near-sdk-rs.git" }
 rustc-hex = { version = "2.0.1", default-features = false }
 rlp-derive = "0.1.0"

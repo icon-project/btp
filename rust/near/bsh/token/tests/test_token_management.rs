@@ -1,8 +1,8 @@
-use near_sdk::{serde_json::to_value, testing_env, AccountId, VMContext};
+use near_sdk::{env, serde_json::to_value, testing_env, AccountId, VMContext};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{FungibleToken, Token, TokenItem};
+use libraries::types::{Token, TokenItem, WrappedFungibleToken};
 mod token;
 use token::*;
 
@@ -42,7 +42,7 @@ fn register_token() {
         "0x1.near".into(),
         1000.into(),
     );
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
 
     let result = contract.tokens();
@@ -66,7 +66,7 @@ fn register_existing_token() {
         "0x1.near".into(),
         1000.into(),
     );
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
     contract.register(baln.clone());
 }
@@ -83,6 +83,39 @@ fn register_token_permission() {
         1000.into(),
     );
     testing_env!(context(chuck(), 0));
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
     contract.register(baln.clone());
+}
+
+#[test]
+#[should_panic(
+    expected = "BSHRevertNotExistsToken: [38, 6b, d, cf, f4, cf, 7b, f0, f7, 91, 97, 88, ec, 8f, f2, d6, 98, e5, 32, 16, 2a, e4, 5, 3d, 32, 3b, 8d, 4f, e0, bd, ae, 94]"
+)]
+fn get_non_exist_token_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(context(alice(), 0));
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let token_id = contract.token_id("ICON".to_string());
+}
+
+#[test]
+fn get_registered_token_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(context(alice(), 0));
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    contract.register(baln.clone());
+    let token_id = contract.token_id("BALN".to_string());
+    let expected = env::sha256(baln.name().as_bytes());
+    assert_eq!(token_id, expected)
 }

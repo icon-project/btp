@@ -89,10 +89,10 @@ impl Balances {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::Math;
     use near_sdk::AccountId;
     use near_sdk::{testing_env, VMContext};
     use std::vec;
-    use crate::types::Math;
 
     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
         VMContext {
@@ -297,10 +297,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance
-            .locked_mut()
-            .add(1000)
-            .unwrap();
+        account_balance.locked_mut().add(1000).unwrap();
 
         balances.set(
             &account,
@@ -330,10 +327,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance
-            .locked_mut()
-            .add(1000)
-            .unwrap();
+        account_balance.locked_mut().add(1000).unwrap();
 
         balances.set(
             &account,
@@ -380,10 +374,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance
-            .refundable_mut()
-            .add(1000)
-            .unwrap();
+        account_balance.refundable_mut().add(1000).unwrap();
 
         balances.set(
             &account,
@@ -413,10 +404,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance
-            .refundable_mut()
-            .add(1000)
-            .unwrap();
+        account_balance.refundable_mut().add(1000).unwrap();
 
         balances.set(
             &account,
@@ -434,10 +422,7 @@ mod tests {
             .get(&account, &"ABC Token".to_string().as_bytes().to_vec())
             .unwrap();
 
-        account_balance
-            .refundable_mut()
-            .sub(1)
-            .unwrap();
+        account_balance.refundable_mut().sub(1).unwrap();
 
         balances.set(
             &account,

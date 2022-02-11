@@ -142,7 +142,7 @@ impl NativeCoinService {
         require!(self.owners.len() > 1, format!("{}", BshError::LastOwner));
     }
 
-    pub fn assert_token_does_not_exists(&self, token: &Token<NativeCoin>) {
+    pub fn assert_token_does_not_exists(&self, token: &Token<WrappedNativeCoin>) {
         let token = self.tokens.get(&Self::hash_token_id(token.name()));
         require!(token.is_none(), format!("{}", BshError::TokenExist))
     }
