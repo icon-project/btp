@@ -39,7 +39,9 @@ impl TokenService {
 
     // Hashing to be done out of chain
     pub fn token_id(&self, token_name: String) -> TokenId {
-        Self::hash_token_id(&token_name)
+        let token_id = Self::hash_token_id(&token_name);
+        self.assert_tokens_exists(&vec![token_id.clone()]);
+        token_id
     }
 
     #[private]
