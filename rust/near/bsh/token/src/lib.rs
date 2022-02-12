@@ -34,6 +34,7 @@ mod util;
 pub use types::RegisteredTokens;
 
 pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct TokenService {
