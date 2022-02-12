@@ -72,8 +72,6 @@ impl TokenService {
         token_id: &TokenId,
         amount: u128,
     ) {
-        log!("Starting Internal Transfer");
-
         self.assert_sender_is_not_receiver(sender_id, receiver_id);
         self.assert_have_sufficient_deposit(sender_id, token_id, amount, None);
 
