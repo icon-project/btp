@@ -19,8 +19,7 @@ use near_sdk::{
     json_types::{Base64VecU8, U128},
     log, near_bindgen, require, Gas, PanicOnDefault, Promise, PromiseResult,
 };
-use near_sdk::json_types::Base64VecU8;
-use near_sdk::collections::LazyOption;
+
 use std::convert::TryFrom;
 use std::convert::TryInto;
 mod external;

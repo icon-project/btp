@@ -308,7 +308,7 @@ fn handle_success_response_icx_coin_external_transfer() {
 
     contract.on_mint(900,coin_id.clone(),icx_coin.symbol().to_string(),chuck().clone());
 
-    contract.transfer(coin_id, destination.clone(), U128::from(800));
+    contract.transfer(coin_id.clone(), destination.clone(), U128::from(800));
 
     let result = contract.account_balance(chuck(), contract.coin_id(icx_coin.name().to_owned()));
     let mut expected = AccountBalance::default();
@@ -336,6 +336,9 @@ fn handle_success_response_icx_coin_external_transfer() {
 
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    testing_env!(context(alice(), 0));
+    contract.on_burn(720, coin_id.clone(), icx_coin.symbol().to_string());
 
     let result = contract.balance_of(alice(), contract.coin_id(icx_coin.name().to_owned()));
     assert_eq!(result, U128::from(80));
