@@ -306,6 +306,8 @@ fn handle_success_response_icx_coin_external_transfer() {
     testing_env!(context(chuck(), 0));
     let coin_id = contract.coin_id(icx_coin.name().to_owned());
 
+    contract.on_mint(900,coin_id.clone(),icx_coin.symbol().to_string(),chuck().clone());
+
     contract.transfer(coin_id, destination.clone(), U128::from(800));
 
     let result = contract.account_balance(chuck(), contract.coin_id(icx_coin.name().to_owned()));
@@ -480,10 +482,15 @@ fn handle_failure_response_icx_coin_external_transfer() {
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    testing_env!(context(chuck(), 0));
     let coin_id = contract.coin_id(icx_coin.name().to_owned());
 
-    contract.transfer(coin_id, destination.clone(), U128::from(800));
+    contract.on_mint(900,coin_id.clone(),icx_coin.symbol().to_string(),chuck().clone());
+
+    testing_env!(context(chuck(), 0));
+    contract.transfer(coin_id.clone(), destination.clone(), U128::from(800));
+
+    testing_env!(context(chuck(), 0));
+    
 
     let result = contract.account_balance(chuck(), contract.coin_id(icx_coin.name().to_owned()));
     let mut expected = AccountBalance::default();
@@ -581,7 +588,9 @@ fn reclaim_icx_coin() {
 
     testing_env!(context(chuck(), 0));
     let coin_id = contract.coin_id(icx_coin.name().to_owned());
-
+    contract.on_mint(900,coin_id.clone(),icx_coin.symbol().to_string(),chuck());
+    
+    testing_env!(context(chuck(), 0));
     contract.transfer(coin_id.clone(), destination.clone(), U128::from(800));
 
     let btp_message = &BtpMessage::new(

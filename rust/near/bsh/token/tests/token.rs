@@ -16,7 +16,7 @@ lazy_static! {
     pub static ref BALN: WrappedFungibleToken = WrappedFungibleToken::new(
         "BALN".into(),
         "BALN".into(),
-        None,
+        Some(AccountId::from_str("baln.icon").unwrap()),
         "0x1.icon".into(),
         None
     );

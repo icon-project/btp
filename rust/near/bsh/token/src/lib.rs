@@ -2,17 +2,16 @@ use btp_common::btp_address::Address;
 use btp_common::errors::BshError;
 use libraries::types::{Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId};
 use libraries::{
-    types::messages::BtpMessage, types::messages::TokenServiceMessage,
-    types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
-    types::MultiTokenCore, types::MultiTokenResolver, types::Network,
-    types::Owners, types::Requests, types::StorageBalances, types::Token, types::TokenFees,
-    types::Tokens, types::Math,
+    types::messages::BtpMessage, types::messages::SerializedMessage,
+    types::messages::TokenServiceMessage, types::messages::TokenServiceType, types::Balances,
+    types::Math, types::MultiTokenCore, types::MultiTokenResolver, types::Network, types::Owners,
+    types::Requests, types::StorageBalances, types::Token, types::TokenFees, types::Tokens,
     types::WrappedFungibleToken,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::Base64VecU8;
-use near_sdk::serde_json::{to_value, Value, json};
+use near_sdk::serde_json::{json, to_value, Value};
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -24,17 +23,17 @@ mod external;
 use external::*;
 mod accounting;
 mod assertion;
-mod token_management;
 mod estimate;
 mod fee_management;
 mod messaging;
 mod owner_management;
+mod token_management;
 mod transfer;
-mod util;
 mod types;
+mod util;
 pub use types::RegisteredTokens;
 
-pub static  FEE_DENOMINATOR:u128 = 10_u128.pow(4);
+pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct TokenService {
@@ -73,7 +72,7 @@ impl TokenService {
             requests: Requests::new(),
             bmc,
             name: service_name,
-            fee_numerator : fee_numerator.into(),
+            fee_numerator: fee_numerator.into(),
             registered_tokens: RegisteredTokens::new(),
 
             #[cfg(feature = "testable")]

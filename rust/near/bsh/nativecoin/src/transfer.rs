@@ -265,14 +265,14 @@ impl NativeCoinService {
                     &token,
                     receiver_id.clone(),
                 );
+            } else {
+                self.internal_transfer(
+                    &env::current_account_id(),
+                    &receiver_id,
+                    token_id,
+                    assets[index.to_owned()].amount(),
+                );
             }
-
-            self.internal_transfer(
-                &env::current_account_id(),
-                &receiver_id,
-                token_id,
-                assets[index.to_owned()].amount(),
-            );
         });
 
         Ok(Some(TokenServiceMessage::new(

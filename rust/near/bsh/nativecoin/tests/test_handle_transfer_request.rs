@@ -61,6 +61,8 @@ fn handle_transfer_mint_registered_icx() {
     let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
 
+    let token_id = contract.coin_id(icx_coin.name().to_owned());
+
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
         BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
@@ -79,11 +81,14 @@ fn handle_transfer_mint_registered_icx() {
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
+    testing_env!(context(alice(), 0));
+    contract.on_mint(900,token_id,icx_coin.symbol().to_string(),destination.account_id());
+
+
     let result = contract
-        .account_balance(
+        .balance_of(
             destination.account_id(),
             contract.coin_id(icx_coin.name().to_owned()),
-        )
-        .unwrap();
-    assert_eq!(result.deposit(), 900);
+        );
+    assert_eq!(result, U128::from(900));
 }

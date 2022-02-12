@@ -9,7 +9,7 @@ pub trait TokenService {
         amount: u128,
         token_id: TokenId,
         token_symbol: String,
-        receiver_id: AccountId
+        receiver_id: AccountId,
     );
 
     fn on_withdraw(
@@ -19,4 +19,6 @@ pub trait TokenService {
         token_id: TokenId,
         token_symbol: String,
     );
+
+    fn on_burn(&mut self, amount: u128, token_id: TokenId, token_symbol: String);
 }

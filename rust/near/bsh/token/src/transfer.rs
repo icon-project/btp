@@ -261,7 +261,12 @@ impl TokenService {
 
         tokens.iter().for_each(|(index, token_id, token)| {
             if token.network() != &self.network {
-                self.mint(token_id, assets[index.to_owned()].amount(), &token, &receiver_id);
+                self.mint(
+                    token_id,
+                    assets[index.to_owned()].amount(),
+                    &token,
+                    &receiver_id,
+                );
             } else {
                 self.internal_transfer(
                     &env::current_account_id(),
