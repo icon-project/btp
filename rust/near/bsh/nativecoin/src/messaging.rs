@@ -151,11 +151,7 @@ impl NativeCoinService {
         _message: &str,
     ) -> Result<Option<TokenServiceMessage>, BshError> {
         if let Some(request) = self.requests().get(*serial_no.get()) {
-            let sender_id = AccountId::try_from(request.sender().to_owned()).map_err(|error| {
-                BshError::InvalidAddress {
-                    message: error.to_string(),
-                }
-            })?;
+            let sender_id = AccountId::try_from(request.sender().to_owned()).unwrap();
             if code == 0 {
                 self.finalize_external_transfer(&sender_id, request.assets());
             } else if code == 1 {
