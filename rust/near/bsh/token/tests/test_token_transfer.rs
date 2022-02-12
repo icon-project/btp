@@ -4,8 +4,8 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, WrappedFungibleToken, Math, MultiTokenCore,
-    Token, WrappedI128,
+    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, Math, MultiTokenCore, Token,
+    WrappedFungibleToken, WrappedI128,
 };
 mod token;
 use libraries::types::{Asset, Request};
@@ -19,7 +19,7 @@ fn get_context(
     attached_deposit: u128,
     storage_usage: u64,
     account_balance: u128,
-    prepaid_gas: u64
+    prepaid_gas: u64,
 ) -> VMContext {
     VMContext {
         current_account_id: alice().to_string(),
@@ -44,7 +44,15 @@ fn get_context(
 #[test]
 fn deposit_wnear() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let mut contract = TokenService::new(
@@ -79,7 +87,7 @@ fn withdraw_wnear() {
             deposit,
             env::storage_usage(),
             1000,
-            10u64.pow(18)
+            10u64.pow(18),
         )
     };
     testing_env!(context(alice(), 0));
@@ -125,7 +133,7 @@ fn withdraw_wnear_higher_amount() {
             deposit,
             env::storage_usage(),
             1000,
-            10u64.pow(18)
+            10u64.pow(18),
         )
     };
     testing_env!(context(alice(), 0));
@@ -156,7 +164,15 @@ fn withdraw_wnear_higher_amount() {
 #[cfg(feature = "testable")]
 fn external_transfer() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -202,7 +218,15 @@ fn external_transfer() {
 #[cfg(feature = "testable")]
 fn handle_success_response_wnear_external_transfer() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -278,7 +302,15 @@ fn handle_success_response_wnear_external_transfer() {
 #[cfg(feature = "testable")]
 fn handle_success_response_baln_external_transfer() {
     let context = |account_id: AccountId, deposit: u128, prepaid_gas: u64| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, prepaid_gas)
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            prepaid_gas,
+        )
     };
     testing_env!(context(alice(), 0, 10u64.pow(18)));
     let destination =
@@ -314,7 +346,7 @@ fn handle_success_response_baln_external_transfer() {
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
     testing_env!(context(alice(), 0, 10u64.pow(18)));
-    contract.on_mint(900,token_id.clone(),baln.symbol().to_string(),chuck());
+    contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
 
     testing_env!(context(chuck(), 0, 10u64.pow(18)));
     contract.transfer(token_id.clone(), destination.clone(), U128::from(800));
@@ -347,6 +379,9 @@ fn handle_success_response_baln_external_transfer() {
 
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
+    testing_env!(context(alice(), 0, 10u64.pow(18)));
+    contract.on_burn(720, token_id.clone(), baln.symbol().to_string());
+
     let result = contract.balance_of(alice(), token_id.clone());
     assert_eq!(result, U128::from(80));
 
@@ -374,7 +409,15 @@ fn handle_failure_response_wnear_external_transfer() {
     use libraries::types::AccumulatedAssetFees;
 
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -452,7 +495,15 @@ fn handle_failure_response_baln_coin_external_transfer() {
     use libraries::types::AccumulatedAssetFees;
 
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -486,7 +537,7 @@ fn handle_failure_response_baln_coin_external_transfer() {
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    contract.on_mint(900,token_id.clone(),baln.symbol().to_string(),chuck());
+    contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
 
     testing_env!(context(chuck(), 0));
     contract.transfer(token_id.clone(), destination.clone(), U128::from(800));
@@ -543,7 +594,15 @@ fn handle_failure_response_baln_coin_external_transfer() {
 #[cfg(feature = "testable")]
 fn reclaim_baln_coin() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -576,7 +635,7 @@ fn reclaim_baln_coin() {
 
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
-    contract.on_mint(900,token_id.clone(),baln.symbol().to_string(),chuck());
+    contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
 
     testing_env!(context(chuck(), 0));
     contract.transfer(token_id.clone(), destination.clone(), U128::from(800));
@@ -613,7 +672,15 @@ fn reclaim_baln_coin() {
 #[should_panic(expected = "BSHRevertNotMinimumDeposit")]
 fn external_transfer_higher_amount() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -640,7 +707,15 @@ fn external_transfer_higher_amount() {
 #[should_panic(expected = "BSHRevertNotExistsToken")]
 fn external_transfer_unregistered_coin() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
@@ -661,7 +736,15 @@ fn external_transfer_unregistered_coin() {
 #[should_panic(expected = "BSHRevertNotMinimumDeposit")]
 fn external_transfer_nil_balance() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
@@ -673,8 +756,6 @@ fn external_transfer_nil_balance() {
         "0x1.near".into(),
         1000.into(),
     );
-
-    
 
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -690,7 +771,15 @@ fn external_transfer_nil_balance() {
 #[cfg(feature = "testable")]
 fn external_transfer_batch() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
@@ -702,7 +791,6 @@ fn external_transfer_batch() {
         "0x1.near".into(),
         1000.into(),
     );
-    
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -726,7 +814,15 @@ fn external_transfer_batch() {
 #[should_panic(expected = "BSHRevertNotMinimumDeposit")]
 fn external_transfer_batch_higher_amount() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -752,7 +848,15 @@ fn external_transfer_batch_higher_amount() {
 #[should_panic(expected = "BSHRevertNotExistsToken")]
 fn external_transfer_batch_unregistered_coin() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
@@ -784,7 +888,15 @@ fn external_transfer_batch_unregistered_coin() {
 #[should_panic(expected = "BSHRevertNotMinimumDeposit")]
 fn external_transfer_batch_nil_balance() {
     let context = |account_id: AccountId, deposit: u128| {
-        get_context(vec![], false, account_id, deposit, env::storage_usage(), 0, 10u64.pow(18))
+        get_context(
+            vec![],
+            false,
+            account_id,
+            deposit,
+            env::storage_usage(),
+            0,
+            10u64.pow(18),
+        )
     };
     testing_env!(context(alice(), 0));
     let destination =
