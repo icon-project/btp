@@ -104,15 +104,35 @@ deploy_javascore_bmv() {
     ensure_file_exist $CONFIG_DIR bmv.icon
 }
 
-deploy_javascore_IRC31Token() {
-    echo "deploy_javascore_IRC31Token"
+deploy_javascore_IRC2Token() {
+    echo "deploy_javascore_IRC2Token"
     cd $CONFIG_DIR
 
-    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc31-0.1.0-optimized.jar \
-    --content_type application/java | jq -r . > tx.icon.deploy_irc31token
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/irc2-0.1.0-optimized.jar \
+    --content_type application/java \
+    --param _name=${TOKEN_NAME} \
+    --param _symbol=${TOKEN_SYM} \
+    --param _initialSupply=${TOKEN_SUPPLY} \
+    --param _decimals=${TOKEN_DECIMALS} | jq -r . > tx.icon.deploy_irc2token
 
-    extract_scoreAddress tx.icon.deploy_irc31token irc31token.icon
-    ensure_file_exist $CONFIG_DIR irc31token.icon
+    extract_scoreAddress tx.icon.deploy_irc2token irc2token.icon
+    ensure_file_exist $CONFIG_DIR irc2token.icon
+}
+
+deploy_javascore_NativeCoinIRC2BSH() {
+    echo "deploy_javascore_NativeCoinIRC2BSH"
+
+    cd $CONFIG_DIR
+
+    goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoinIRC2-0.1.0-optimized.jar \
+        --content_type application/java \
+        --param _bmc=$(cat bmc.icon) \
+        --param _irc2=$(cat irc2token.icon) \
+        --param _name=ICX \
+        --param _tokenName=${TOKEN_NAME} | jq -r . > tx.icon.deploy_nativeCoinIRC2Bsh
+
+    extract_scoreAddress tx.icon.deploy_nativeCoinIRC2Bsh nativeCoinIRC2Bsh.icon
+    ensure_file_exist $CONFIG_DIR nativeCoinIRC2Bsh.icon
 }
 
 deploy_javascore_IRC2Token() {
@@ -151,11 +171,12 @@ deploy_javascore_NativeCoinBSH() {
 
     cd $CONFIG_DIR
 
+    IRC2_SERIALIZED_SCORE=$(xxd -p $JAVASCORE_DIST_DIR/irc2Tradeable-0.1.0-optimized.jar | tr -d '\n')
     goloop rpc sendtx deploy $JAVASCORE_DIST_DIR/nativecoin-0.1.0-optimized.jar \
         --content_type application/java \
         --param _bmc=$(cat bmc.icon) \
-        --param _irc31=$(cat irc31token.icon) \
-        --param _name=ICX | jq -r . > tx.icon.deploy_nativeCoinBsh
+        --param _name=ICX \
+        --param _serializedIrc2=$IRC2_SERIALIZED_SCORE | jq -r . > tx.icon.deploy_nativeCoinBsh
 
     extract_scoreAddress tx.icon.deploy_nativeCoinBsh nativeCoinBsh.icon
     ensure_file_exist $CONFIG_DIR nativeCoinBsh.icon
@@ -269,8 +290,13 @@ goloop_bsh_config_native_coin() {
     goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
         --method register \
         --param _name=DEV \
-        | jq -r . > tx.icon.registerCoin
+        --param _symbol=DEV \
+        --param _decimals=18 | jq -r . > tx.icon.registerCoin
     ensure_txresult tx.icon.registerCoin
+
+    goloop rpc call --to $(cat nativeCoinBsh.icon) \
+        --method coinAddress --param _coinName=DEV | sed -e 's/^"//' -e 's/"$//' > irc2TradeableToken.icon
+    ensure_file_exist $CONFIG_DIR irc2TradeableToken.icon
 
     echo "goloop_bsh_setFeeRatio"
     goloop rpc sendtx call --to $(cat nativeCoinBsh.icon) \
@@ -278,13 +304,6 @@ goloop_bsh_config_native_coin() {
         --param _feeNumerator=100 \
         | jq -r . > tx.icon.setFeeRatio
     ensure_txresult tx.icon.setFeeRatio
-
-    echo "goloop_bsh_addOwner"
-    goloop rpc sendtx call --to $(cat irc31token.icon) \
-        --method addOwner \
-        --param _addr=$(cat nativeCoinBsh.icon) \
-        | jq -r . > tx.icon.addOwnerIrc31
-    ensure_txresult tx.icon.addOwnerIrc31
 }
 
 goloop_bsh_config_native_coin_IRC2() {

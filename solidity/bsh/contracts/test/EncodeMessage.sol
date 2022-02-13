@@ -32,12 +32,12 @@ contract EncodeMessage {
         return
             Types
                 .BMCMessage(
-                _fromBMC,
-                _toBMC,
-                _svc,
-                _sn,
-                encodeServiceMessage(_bsh.toString(), _to, _fees)
-            )
+                    _fromBMC,
+                    _toBMC,
+                    _svc,
+                    _sn,
+                    encodeServiceMessage(_bsh.toString(), _to, _fees)
+                )
                 .encodeBMCMessage();
     }
 
@@ -49,9 +49,9 @@ contract EncodeMessage {
         return
             Types
                 .BMCService(
-                "FeeGathering",
-                Types.GatherFeeMessage(_fa, _svcs).encodeGatherFeeMessage()
-            )
+                    "FeeGathering",
+                    Types.GatherFeeMessage(_fa, _svcs).encodeGatherFeeMessage()
+                )
                 .encodeBMCService();
     }
 
@@ -66,16 +66,16 @@ contract EncodeMessage {
         return
             Types
                 .BMCMessage(
-                _from,
-                _to,
-                _svc,
-                _sn,
-                this.encodeResponseMsg(
-                    Types.ServiceType.REPONSE_HANDLE_SERVICE,
-                    _code,
-                    _msg
+                    _from,
+                    _to,
+                    _svc,
+                    _sn,
+                    this.encodeResponseMsg(
+                        Types.ServiceType.REPONSE_HANDLE_SERVICE,
+                        _code,
+                        _msg
+                    )
                 )
-            )
                 .encodeBMCMessage();
     }
 
@@ -95,9 +95,9 @@ contract EncodeMessage {
         return
             Types
                 .ServiceMessage(
-                _serviceType,
-                Types.Response(_code, _msg).encodeResponse()
-            )
+                    _serviceType,
+                    Types.Response(_code, _msg).encodeResponse()
+                )
                 .encodeServiceMessage();
     }
 
@@ -147,11 +147,11 @@ contract EncodeMessage {
         return
             Types
                 .ServiceMessage(
-                Types
-                    .ServiceType
-                    .REQUEST_COIN_TRANSFER,
-                Types.TransferCoin(_from, _to, _asset).encodeTransferCoinMsg()
-            )
+                    Types.ServiceType.REQUEST_COIN_TRANSFER,
+                    Types
+                        .TransferCoin(_from, _to, _asset)
+                        .encodeTransferCoinMsg()
+                )
                 .encodeServiceMessage();
     }
 }

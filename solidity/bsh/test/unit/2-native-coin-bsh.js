@@ -6,17 +6,17 @@ const truffleAssert = require('truffle-assertions');
 
 contract('BSHCore Unit Tests', (accounts) => {
     let bsh_core;
-    let _native = 'PARA';       let _uri = 'https://github.com/icon-project/btp'              
+    let _native = 'PARA';            
     let _fee = 10;      let _fixed_fee = 500000;
 
     before(async () => {
         bsh_core = await MockBSHCore.new();
-        await bsh_core.initialize(_uri, _native, _fee, _fixed_fee);
+        await bsh_core.initialize(_native, _fee, _fixed_fee);
     });
 
     it(`Scenario 1: Should allow contract's owner to register a new coin`, async () => {
         let _name = "ICON";
-        await bsh_core.register(_name);
+        await bsh_core.register(_name, "", 18);
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON'
@@ -26,7 +26,7 @@ contract('BSHCore Unit Tests', (accounts) => {
     it('Scenario 2: Should revert when an arbitrary client tries to register a new coin', async () => {   
         let _name = "TRON";
         await truffleAssert.reverts(
-            bsh_core.register.call(_name, {from: accounts[1]}),
+            bsh_core.register.call(_name, "", 18, {from: accounts[1]}),
             "Unauthorized"
         );
     }); 
@@ -34,8 +34,8 @@ contract('BSHCore Unit Tests', (accounts) => {
     it('Scenario 3: Should revert when contract owner registers an existed coin', async () => {
         let _name = "ICON";
         await truffleAssert.reverts(
-            bsh_core.register.call(_name),
-            "ExistToken"
+            bsh_core.register.call(_name, "", 18),
+            "ExistCoin"
         );
     }); 
 
@@ -50,17 +50,12 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 6: Should allow contract owner to update a new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri);
+    it.skip('Scenario 6: Should allow contract owner to update a new URI', async () => {
+        // new URL in no longer available
     });
 
-    it('Scenario 7: Should revert when arbitrary client update a new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await truffleAssert.reverts(
-            bsh_core.updateUri.call(new_uri, {from: accounts[1]}),
-            "Unauthorized"
-        );
+    it.skip('Scenario 7: Should revert when arbitrary client update a new URI', async () => {
+        // new URL in no longer available
     });
 
     it('Scenario 8: Should allow contract owner to update fee ratio', async () => {
@@ -135,22 +130,23 @@ contract('BSHCore Unit Tests', (accounts) => {
 
     it('Scenario 14: Should receive an id of a given coin name when querying a valid supporting coin', async () => {
         let _name1 = "wBTC";    let _name2 = "Ethereum";
-        await bsh_core.register(_name1);
-        await bsh_core.register(_name2);
+        await bsh_core.register(_name1, "", 18);
+        await bsh_core.register(_name2, "", 18);
 
         let _query = "ICON";
         let id = web3.utils.keccak256(_query);
         let result = await bsh_core.coinId(_query);
         assert(
-            web3.utils.BN(result).toString() === web3.utils.toBN(id).toString()
+            web3.utils.toChecksumAddress(result) !== web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
         );
     }); 
 
-    it('Scenario 15: Should receive an id = 0 when querying an invalid supporting coin', async () => {
+    it('Scenario 15: Should receive an id = address(0) when querying an invalid supporting coin', async () => {
         let _query = "EOS";
         let result = await bsh_core.coinId(_query);
         assert(
-            web3.utils.BN(result).toNumber() === 0
+            web3.utils.toChecksumAddress(result) === web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
+
         );
     }); 
 
@@ -179,7 +175,7 @@ contract('BSHCore Unit Tests', (accounts) => {
     
     it('Scenario 18: Should allow old owner to register a new coin - After adding new Owner', async () => {
         let _name3 = "TRON";
-        await bsh_core.register(_name3);
+        await bsh_core.register(_name3, "", 18);
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -190,7 +186,7 @@ contract('BSHCore Unit Tests', (accounts) => {
 
     it('Scenario 19: Should allow new owner to register a new coin', async () => {   
         let _name3 = "BINANCE";
-        await bsh_core.register(_name3, {from: accounts[1]});
+        await bsh_core.register(_name3, "", 18, {from: accounts[1]});
         output = await bsh_core.coinNames();
         assert(
             output[0] === _native && output[1] === 'ICON' &&
@@ -215,14 +211,12 @@ contract('BSHCore Unit Tests', (accounts) => {
         await bsh_core.updateBSHPeriphery(accounts[3], {from: accounts[0]});
     });
 
-    it('Scenario 22: Should allow new owner to update the new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri, {from: accounts[1]});
+    it.skip('Scenario 22: Should allow new owner to update the new URI', async () => {
+        // new URI no longer available
     });
 
-    it('Scenario 23: Should also allow old owner to update the new URI - After adding new Owner', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await bsh_core.updateUri(new_uri, {from: accounts[0]});
+    it.skip('Scenario 23: Should also allow old owner to update the new URI - After adding new Owner', async () => {
+        // new URI no longer available
     });
 
     it('Scenario 24: Should allow new owner to update new fee ratio', async () => {
@@ -300,7 +294,7 @@ contract('BSHCore Unit Tests', (accounts) => {
     it('Scenario 31: Should revert when removed Owner tries to register a new coin', async () => {
         let _name3 = "KYBER";
         await truffleAssert.reverts(
-            bsh_core.register.call(_name3),
+            bsh_core.register.call(_name3, "", 18),
             'Unauthorized'
         );
         output = await bsh_core.coinNames();
@@ -322,12 +316,8 @@ contract('BSHCore Unit Tests', (accounts) => {
         );
     });
 
-    it('Scenario 33: Should revert when removed Owner tries to update the new URI', async () => {
-        let new_uri = 'https://1234.iconee/'
-        await truffleAssert.reverts(
-            bsh_core.updateUri.call(new_uri, {from: accounts[0]}),
-            'Unauthorized'
-        );
+    it.skip('Scenario 33: Should revert when removed Owner tries to update the new URI', async () => {
+        // new URI no longer available
     });
 
     it('Scenario 34: Should revert when removed Owner tries to update new fee ratio', async () => {

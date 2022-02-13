@@ -46,7 +46,8 @@ cd $SOURCE_CODE_DIR/bmv/parachain && gradle optimizedJar
 cd $SOURCE_CODE_DIR/fee_aggregation && gradle optimizedJar
 cd $SOURCE_CODE_DIR/lib && gradle build
 cd $SOURCE_CODE_DIR/bmc && gradle optimizedJar
-cd $SOURCE_CODE_DIR/nativecoin && gradle optimizedJar && gradle optimizedJarIRC31
+cd $SOURCE_CODE_DIR/nativecoin && gradle optimizedJar
+cd $SOURCE_CODE_DIR/irc2Tradeable && gradle optimizedJar
 cd $SOURCE_CODE_DIR/nativecoinIRC2 && gradle optimizedJar && gradle optimizedJarIRC2
 
 ### packing
@@ -57,7 +58,7 @@ cp $SOURCE_CODE_DIR/bmv/eventDecoder/build/libs/MoonriverEventDecoder-optimized.
 cp $SOURCE_CODE_DIR/fee_aggregation/build/libs/fee-aggregation-system-1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/bmc/build/libs/bmc-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/nativecoin/build/libs/nativecoin-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
-cp $SOURCE_CODE_DIR/nativecoin/build/libs/irc31-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
+cp $SOURCE_CODE_DIR/irc2Tradeable/build/libs/irc2Tradeable-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/nativecoinIRC2/build/libs/nativecoinIRC2-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 cp $SOURCE_CODE_DIR/nativecoinIRC2/build/libs/irc2-0.1.0-optimized.jar ${JAVASCORE_DIST_DIR}/
 

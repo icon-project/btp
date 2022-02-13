@@ -8,6 +8,7 @@ const NotPayable = artifacts.require("NotPayable");
 const NonRefundable = artifacts.require("NonRefundable");
 const Refundable = artifacts.require("Refundable");
 const EncodeMsg = artifacts.require("EncodeMessage");
+const ERC20Tradable = artifacts.require("ERC20Tradable");
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
@@ -29,13 +30,13 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     describe('PRA BSHCore Query and Management - After Upgrading Contract', () => {
         let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2;
         let _native = 'PARA';                   let _fee = 10;      let _fixed_fee = 500000;
-        let service = 'Coin/WrappedCoin';       let _uri = 'https://github.com/icon-project/btp'
+        let service = 'Coin/WrappedCoin';
         let _net = '1234.iconee';               let _bmcICON = 'btp://1234.iconee/0x1234567812345678';
         let REPONSE_HANDLE_SERVICE = 2;         let RC_OK = 0;
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -48,7 +49,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         it(`Scenario 1: Contract's owner to register a new coin`, async () => {
             let _name = "ICON";
-            await bsh_coreV2.register(_name);
+            await bsh_coreV2.register(_name,"" , 18);
             output = await bsh_coreV2.coinNames();
             assert(
                 output[0] === _native && output[1] === 'ICON'
@@ -58,7 +59,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         it('Scenario 2: Non-ownership role client registers a new coin', async () => {   
             let _name = "TRON";
             await truffleAssert.reverts(
-                bsh_coreV2.register.call(_name, {from: accounts[1]}),
+                bsh_coreV2.register.call(_name,"" , 18, {from: accounts[1]}),
                 "Unauthorized"
             );
         }); 
@@ -67,7 +68,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _name = "ICON";
             await truffleAssert.reverts(
                 bsh_coreV2.register.call(_name),
-                "ExistToken"
+                "ExistCoin"
             );
         }); 
 
@@ -95,17 +96,12 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         });
 
 
-        it('Scenario 7: Contract’s owner updates a new URI', async () => {
-            let new_uri = 'https://1234.iconee/'
-            await bsh_coreV2.updateUri(new_uri);
+        it.skip('Scenario 7: Contract’s owner updates a new URI', async () => {
+            // new URI no longer available
         });
 
-        it('Scenario 8: Non-ownership role client updates a new URI', async () => {
-            let new_uri = 'https://1234.iconee/'
-            await truffleAssert.reverts(
-                bsh_coreV2.updateUri.call(new_uri, {from: accounts[1]}),
-                "Unauthorized"
-            );
+        it.skip('Scenario 8: Non-ownership role client updates a new URI', async () => {
+            // new URI no longer available
         });
 
         it(`Scenario 9: Contract's owner updates fee ratio`, async () => {
@@ -180,14 +176,12 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         it('Scenario 15: Query a valid supporting coin', async () => {
             let _name1 = "wBTC";    let _name2 = "Ethereum";
-            await bsh_coreV2.register(_name1);
-            await bsh_coreV2.register(_name2);
-
+            await bsh_coreV2.register(_name1,"" , 18);
+            await bsh_coreV2.register(_name2,"" , 18);
             let _query = "ICON";
-            let id = web3.utils.keccak256(_query);
             let result = await bsh_coreV2.coinId(_query);
             assert(
-                web3.utils.BN(result).toString() === web3.utils.toBN(id).toString()
+                web3.utils.toChecksumAddress(result) !== web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
             );
         }); 
 
@@ -195,7 +189,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _query = "EOS";
             let result = await bsh_coreV2.coinId(_query);
             assert(
-                web3.utils.BN(result).toNumber() === 0
+                web3.utils.toChecksumAddress(result) === web3.utils.toChecksumAddress('0x0000000000000000000000000000000000000000')
             );
         }); 
 
@@ -224,7 +218,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         
         it('Scenario 19: After adding a new Owner, owner registers a new coin', async () => {
             let _name3 = "TRON";
-            await bsh_coreV2.register(_name3);
+            await bsh_coreV2.register(_name3,"" , 18);
             output = await bsh_coreV2.coinNames();
             assert(
                 output[0] === _native && output[1] === 'ICON' &&
@@ -235,7 +229,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         it('Scenario 20: New Owner registers a new coin', async () => {   
             let _name3 = "BINANCE";
-            await bsh_coreV2.register(_name3, {from: accounts[1]});
+            await bsh_coreV2.register(_name3,"" , 18, {from: accounts[1]});
             output = await bsh_coreV2.coinNames();
             assert(
                 output[0] === _native && output[1] === 'ICON' &&
@@ -254,14 +248,12 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bsh_coreV2.updateBSHPeriphery(newBSHPerif.address, {from: accounts[0]});
         });
 
-        it('Scenario 23: New owner updates the new URI', async () => {
-            let new_uri = 'https://1234.iconee/'
-            await bsh_coreV2.updateUri(new_uri, {from: accounts[1]});
+        it.skip('Scenario 23: New owner updates the new URI', async () => {
+            // new URI no longer available
         });
 
-        it('Scenario 24: Old owner updates the new URI', async () => {
-            let new_uri = 'https://1234.iconee/'
-            await bsh_coreV2.updateUri(new_uri, {from: accounts[0]});
+        it.skip('Scenario 24: Old owner updates the new URI', async () => {
+            // new URI no longer available
         });
 
         it('Scenario 25: New owner updates new fee ratio', async () => {
@@ -339,7 +331,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         it('Scenario 32: Removed Owner tries to register a new coin', async () => {
             let _name3 = "KYBER";
             await truffleAssert.reverts(
-                bsh_coreV2.register.call(_name3),
+                bsh_coreV2.register.call(_name3, "", 18),
                 'Unauthorized'
             );
             output = await bsh_coreV2.coinNames();
@@ -357,12 +349,8 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             );
         });
 
-        it('Scenario 34: Removed Owner tries to update the new URI', async () => {
-            let new_uri = 'https://1234.iconee/'
-            await truffleAssert.reverts(
-                bsh_coreV2.updateUri.call(new_uri, {from: accounts[0]}),
-                'Unauthorized'
-            );
+        it.skip('Scenario 34: Removed Owner tries to update the new URI', async () => {
+            // new URI no longer available
         });
 
         it('Scenario 35: Removed Owner tries to update new fee ratio', async () => {
@@ -385,7 +373,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -765,7 +753,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     });
 
     describe('As a user, I want to send ERC1155_ICX to ICON blockchain - After Upgrading Contract', () => {
-        let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder;
+        let bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, bmc, holder, coinId;
         let service = 'Coin/WrappedCoin';           let _uri = 'https://github.com/icon-project/btp';
         let _native = 'PARA';                       let _fee = 10;              let _fixed_fee = 500000;  
         let _name = 'ICON';                         let _bmcICON = 'btp://1234.iconee/0x1234567812345678';
@@ -774,7 +762,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -785,10 +773,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bmc.addVerifier(_net, accounts[1]);
             await bmc.addLink(_bmcICON);
             await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
-            await bsh_coreV2.register(_name);
+            await bsh_coreV2.register(_name,"" , 18);
             let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _name, _value);
             await bmc.receiveRequest(_bmcICON, "", service, 0, _msg);
-            id = await bsh_coreV2.coinId(_name);
+            coinId = await bsh_coreV2.coinId(_name);
         });
 
         it('Scenario 1: User has not yet set approval for token being transferred out by Operator', async () => {
@@ -797,7 +785,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, _value, _to),
-                "ERC1155: caller is not owner nor approved"
+                "ERC20: transfer amount exceeds allowance"
             ); 
             let balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
     
@@ -813,10 +801,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _to = 'btp://1234.iconee/0x12345678';
             let _value = 9999999999999999n;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,_value);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, _value, _to),
-                "ERC1155: insufficient balance for transfer"
+                "ERC20: transfer amount exceeds balance"
             ); 
             let balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
     
@@ -832,7 +820,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _to = 'btp://1234.iconee/0x12345678';
             let _value = 9999999999999999n;
             let _token = 'EOS';
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,_value);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_token, _value, _to),
                 "UnregisterCoin"
@@ -844,7 +832,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _to = '1234.iconee/0x12345678';
             let amount = 600000;
             let contract_balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, amount, _to),
                 "VM Exception while processing transaction: revert"
@@ -863,8 +851,9 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     
         it('Scenario 5: User requests to transfer zero Token', async () => {
             let _to = '1234.iconee/0x12345678';
+            let amount = 600000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, 0, _to),
                 "revert"
@@ -884,7 +873,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _name = 'ICON';
             let amount = 100000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, amount, _to),
                 "revert"
@@ -904,7 +893,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _name = 'ICON';
             let amount = 600000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             await truffleAssert.reverts(
                 holder.callTransfer.call(_name, amount, _to),
                 "BMCRevertNotExistsBMV"
@@ -925,7 +914,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _to = 'btp://1234.iconee/0x12345678';
             let amount = 600000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             let tx = await holder.callTransfer(_name, amount, _to);
             let balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let bsh_core_balance = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
@@ -1008,7 +997,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let amount = 100000000000000;
             let balanceBefore = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let bsh_core_balance_before = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
-            await holder.setApprove(bsh_coreV2.address);
+            await holder.setApprove(coinId, bsh_coreV2.address,amount);
             let tx = await holder.callTransfer(_name, amount, _to);
             let balanceAfter = await bsh_coreV2.getBalanceOf(holder.address, _name);
             let bsh_core_balance_after = await bsh_coreV2.getBalanceOf(bsh_coreV2.address, _name);
@@ -1096,7 +1085,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -1186,7 +1175,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         });
     });
 
-    describe('As a user, I want to receive ERC1155_ICX from ICON blockchain - After Upgrading Contract', () => {
+    describe.skip('As a user, I want to receive ERC1155_ICX from ICON blockchain - After Upgrading Contract', () => {
         let bmc, bsh_perifV1, bsh_perifV2, bsh_coreV1, bsh_coreV2, holder, notpayable;
         let service = 'Coin/WrappedCoin';                   let _uri = 'https://github.com/icon-project/btp';
         let _native = 'PARA';                               let _fee = 10;          let _fixed_fee = 500000;
@@ -1196,7 +1185,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -1208,8 +1197,8 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bmc.addVerifier(_net, accounts[1]);
             await bmc.addLink(_bmcICON);
             await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
-            await bsh_coreV2.register(_name);
-            id = await bsh_coreV2.coinId(_name);
+            await bsh_coreV2.register(_name,"" , 18);
+            coinId = await bsh_coreV2.coinId(_name);
             btpAddr = await bmc.bmcAddress();
         });
 
@@ -1226,11 +1215,11 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     
         it(`Scenario 2: Receiving contract does not implement ERC1155Holder / Receiver`, async () => {
             let _value = 1000;
-            let balanceBefore = await bsh_coreV2.balanceOf(notpayable.address, id);
+            let balanceBefore = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
             let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'TransferFailed');
             let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, notpayable.address, _name, _value);
             let output = await bmc.receiveRequest(_bmcICON, '', service, 10, _msg);
-            let balanceAfter = await bsh_coreV2.balanceOf(notpayable.address, id);
+            let balanceAfter = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
     
             assert.equal(web3.utils.BN(balanceAfter).toNumber(), web3.utils.BN(balanceBefore).toNumber());
             assert.equal(output.logs[0].args._next, _bmcICON);
@@ -1241,11 +1230,11 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _value = 3000;
             let _tokenName = 'Ethereum';
             let invalid_coin_id = await bsh_coreV2.coinId(_tokenName);
-            let balanceBefore = await bsh_coreV2.balanceOf(holder.address, invalid_coin_id);
+            let balanceBefore = (await bsh_coreV2.getBalanceOf(notpayable.address, _tokenName))[0];
             let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'UnregisteredCoin');
             let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _tokenName, _value);
             let output = await bmc.receiveRequest(_bmcICON, '', service, 10, _msg);
-            let balanceAfter = await bsh_coreV2.balanceOf(holder.address, invalid_coin_id);
+            let balanceAfter = (await bsh_coreV2.getBalanceOf(notpayable.address, _tokenName))[0];
     
             assert.equal(web3.utils.BN(balanceAfter).toNumber(), web3.utils.BN(balanceBefore).toNumber());
             assert.equal(output.logs[0].args._next, _bmcICON);
@@ -1254,11 +1243,11 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     
         it('Scenario 4: Receiver is a ERC1155Holder contract', async () => { 
             let _value = 2500;
-            let balanceBefore = await bsh_coreV2.balanceOf(holder.address, id);
+            let balanceBefore = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
             let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_OK, '');
             let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _name, _value);
             let output = await bmc.receiveRequest(_bmcICON, '', service, 10, _msg);
-            let balanceAfter = await bsh_coreV2.balanceOf(holder.address, id);
+            let balanceAfter = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
     
             assert.equal(
                 web3.utils.BN(balanceAfter).toNumber(),
@@ -1270,11 +1259,11 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
     
         it('Scenario 5: Receiver is an account client', async () => { 
             let _value = 5500;
-            let balanceBefore = await bsh_coreV2.balanceOf(accounts[1], id);
+            let balanceBefore = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
             let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_OK, '');
             let _msg = await encode_msg.encodeTransferMsgWithAddress(_from, accounts[1], _name, _value);
             let output = await bmc.receiveRequest(_bmcICON, '', service, 10, _msg);
-            let balanceAfter = await bsh_coreV2.balanceOf(accounts[1], id);
+            let balanceAfter = (await bsh_coreV2.getBalanceOf(notpayable.address, _name))[0];
     
             assert.equal(
                 web3.utils.BN(balanceAfter).toNumber(),
@@ -1301,7 +1290,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -1314,10 +1303,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bmc.addVerifier(_net2, accounts[2]);
             await bmc.addLink(_bmcICON);
             await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
-            await bsh_coreV2.register(_name1);
-            await bsh_coreV2.register(_name2);
-            await bsh_coreV2.register(_name3);
-            await bsh_coreV2.register(_name4);
+            await bsh_coreV2.register(_name1,"" , 18);
+            await bsh_coreV2.register(_name2,"" , 18);
+            await bsh_coreV2.register(_name3,"" , 18);
+            await bsh_coreV2.register(_name4,"" , 18);
             let _msg1 = await encode_msg.encodeTransferMsgWithAddress(_from1, holder.address, _name1, _value1);
             await bmc.receiveRequest(_bmcICON, "", service, _sn0, _msg1);
             let _msg2 = await encode_msg.encodeTransferMsgWithAddress(_from2, holder.address, _name2, _value2);
@@ -1325,7 +1314,14 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bsh_coreV2.transferNativeCoin(_to1, {from: accounts[0], value: _txAmt});
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
             await bmc.receiveResponse(_net1, service, _sn0, _responseMsg);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_name1);
+            coinId2 = await bsh_coreV2.coinId(_name2);
+            coinId3 = await bsh_coreV2.coinId(_name3);
+            coinId4 = await bsh_coreV2.coinId(_name4);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_txAmt1);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_txAmt2);
+            await holder.setApprove(coinId3, bsh_coreV2.address,_txAmt2);
+            await holder.setApprove(coinId4, bsh_coreV2.address,_txAmt2);
             await holder.callTransfer(_name1, _txAmt1, _to1);
             await bmc.receiveResponse(_net1, service, _sn1, _responseMsg);
             await holder.callTransfer(_name2, _txAmt2, _to2);
@@ -1467,6 +1463,8 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
         it('Scenario 5: Receiving an error response', async () => {
             let _sn4 = 5;   let _sn5 = 6;   let _sn6 = 7;
             let _amt1 = 2000000;                    let _amt2 = 6000000;
+            await holder.setApprove(coinId1, bsh_coreV2.address,_amt1);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_amt2);
             await holder.callTransfer(_name1, _amt1, _to1);
             let _responseMsg = await encode_msg.encodeResponseMsg(REPONSE_HANDLE_SERVICE, RC_OK, "");
             await bmc.receiveResponse(_net1, service, _sn4, _responseMsg);
@@ -1517,7 +1515,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -1530,10 +1528,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bmc.addVerifier(_net1, accounts[1]);
             await bmc.addLink(_bmcICON);
             await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
-            await bsh_coreV2.register(_name1);
-            await bsh_coreV2.register(_name2);
-            await bsh_coreV2.register(_name3);
-            await bsh_coreV2.register(_name4);
+            await bsh_coreV2.register(_name1,"" , 18);
+            await bsh_coreV2.register(_name2,"" , 18);
+            await bsh_coreV2.register(_name3,"" , 18);
+            await bsh_coreV2.register(_name4,"" , 18);
             await bsh_coreV2.transferNativeCoin(_to, {from: accounts[0], value: 10000000});
         });
 
@@ -1556,6 +1554,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let balance1Before = await bsh_coreV2.getBalanceOf(holder.address, _name1);
             let balance2Before = await bsh_coreV2.getBalanceOf(holder.address, _name2);
             let balance3Before = await bsh_coreV2.getBalanceOf(holder.address, _invalid_token);
+            
             let _eventMsg = await encode_msg.encodeResponseBMCMessage(btpAddr, _bmcICON, service, 10, RC_ERR, 'UnregisteredCoin');
             let _msg = await encode_msg.encodeBatchTransferMsgWithAddress(
                 _from1, holder.address, [[_name1, _value1], [_name2, _value2], [_invalid_token, _value3]]
@@ -1723,7 +1722,7 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
 
         before(async () => {    
             bmc = await BMC.new('1234.pra');
-            bsh_coreV1 = await deployProxy(BSHCoreV1, [_uri, _native, _fee, _fixed_fee]);
+            bsh_coreV1 = await deployProxy(BSHCoreV1, [_native, _fee, _fixed_fee]);
             bsh_perifV1 = await deployProxy(BSHPerifV1, [bmc.address, bsh_coreV1.address, service]);
             encode_msg = await EncodeMsg.new();
             await bsh_coreV1.updateBSHPeriphery(bsh_perifV1.address);
@@ -1734,9 +1733,9 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             await bmc.addVerifier(_net, accounts[1]);
             await bmc.addLink(_bmcICON);
             await holder.addBSHContract(bsh_perifV2.address, bsh_coreV2.address);
-            await bsh_coreV2.register(_coin1);
-            await bsh_coreV2.register(_coin2);
-            await bsh_coreV2.register(_coin3);
+            await bsh_coreV2.register(_coin1,"" , 18);
+            await bsh_coreV2.register(_coin2,"" , 18);
+            await bsh_coreV2.register(_coin3,"" , 18);
             await bsh_coreV2.transferNativeCoin('btp://1234.iconee/0x12345678', {from: accounts[0], value: initAmt});
             await holder.deposit({from: accounts[1], value: 100000000000000});
             let _msg1 = await encode_msg.encodeTransferMsgWithAddress(_from, holder.address, _coin1, _value);
@@ -1801,7 +1800,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _native_amt = 700000;
             let _query = [_native, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -1843,7 +1845,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _native_amt = 800000;
             let _query = [_native, _coin1, invalid_token];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coins[0]);
+            coinId2 = await bsh_coreV2.coinId(_coins[1]);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            // await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -1884,7 +1889,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _query = [_native, _coin1, _coin2];
             let _native_amt = 800000;
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coins[0]);
+            coinId2 = await bsh_coreV2.coinId(_coins[1]);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -1925,7 +1933,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _query = [_native, _coin1, _coin2];
             let _native_amt = 800000;
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -1966,7 +1977,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _query = [_native, _coin1, _coin2];
             let _native_amt = 800000;
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -2007,7 +2021,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _query = [_native, _coin1, _coin2];
             let _native_amt = 800000;
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, _native_amt),
                 "revert"
@@ -2071,7 +2088,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _coins = [_native, _coin1, _coin2];
             let _values = [600000, 700000];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             await truffleAssert.reverts(
                 holder.callTransferBatch.call(bsh_coreV2.address, _coins, _values, _to, 0),
                 "revert"
@@ -2112,7 +2132,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _values = [_value2, _value3];
             let _query = [_native, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coin1);
+            coinId2 = await bsh_coreV2.coinId(_coin2);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             let tx = await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to, _value1);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _query);
@@ -2248,7 +2271,15 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _value1 = 600000;     let _value2 = 700000;     let _value3 = 800000;
             let _values = [_value1, _value2, _value3];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
-            await bsh_coreV2.setApprovalForAll(bsh_coreV2.address, true, {from: accounts[1]});
+            coinId1 = await bsh_coreV2.coinId(_coins[0]);
+            coinId2 = await bsh_coreV2.coinId(_coins[1]);
+            coinId3 = await bsh_coreV2.coinId(_coins[2]);
+            let ERC20Tradable1 = await ERC20Tradable.at(coinId1);
+            let ERC20Tradable2 = await ERC20Tradable.at(coinId2);
+            let ERC20Tradable3 = await ERC20Tradable.at(coinId3);
+            await ERC20Tradable1.approve(bsh_coreV2.address,_values[0], {from: accounts[1]});
+            await ERC20Tradable2.approve(bsh_coreV2.address,_values[1], {from: accounts[1]});
+            await ERC20Tradable3.approve(bsh_coreV2.address,_values[2], {from: accounts[1]});
             let tx = await bsh_coreV2.transferBatch(_coins, _values, _to, {from: accounts[1]});
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(accounts[1], _coins);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
@@ -2394,7 +2425,12 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _value1 = 600000;     let _value2 = 700000;     let _value3 = 800000;
             let _values = [_value1, _value2, _value3];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coins[0]);
+            coinId2 = await bsh_coreV2.coinId(_coins[1]);
+            coinId3 = await bsh_coreV2.coinId(_coins[2]);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
+            await holder.setApprove(coinId3, bsh_coreV2.address,_values[2]);
             let tx = await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to, 0);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _coins);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _coins);
@@ -2545,7 +2581,10 @@ contract('NativeCoinBSH contracts - After Upgrading Contract', (accounts) => {
             let _values = [_value2, _value3];
             let _query = [_native, _coin1, _coin2];
             let balanceBefore = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
-            await holder.setApprove(bsh_coreV2.address);
+            coinId1 = await bsh_coreV2.coinId(_coins[0]);
+            coinId2 = await bsh_coreV2.coinId(_coins[1]);
+            await holder.setApprove(coinId1, bsh_coreV2.address,_values[0]);
+            await holder.setApprove(coinId2, bsh_coreV2.address,_values[1]);
             let tx = await holder.callTransferBatch(bsh_coreV2.address, _coins, _values, _to, _value1);
             let balanceAfter = await bsh_coreV2.getBalanceOfBatch(holder.address, _query);
             let bsh_core_balance = await bsh_coreV2.getBalanceOfBatch(bsh_coreV2.address, _query);

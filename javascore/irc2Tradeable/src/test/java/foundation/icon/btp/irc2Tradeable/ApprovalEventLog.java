@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.nativecoin.irc31;
-
+package foundation.icon.btp.irc2Tradeable;
 
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.IconJsonModule;
@@ -26,39 +25,46 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class URIEventLog {
-    static final String SIGNATURE = "URI(int,str)";
-    private BigInteger id;
-    private String value;
+public class ApprovalEventLog {
+    static final String SIGNATURE = "Approval(Address,Address,int)";
+    private Address owner;
+    private Address spender;
+    private BigInteger value;
 
-    public URIEventLog(TransactionResult.EventLog el) {
-        this.id = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getIndexed().get(1));
-        this.value = el.getData().get(0);
+    public ApprovalEventLog(TransactionResult.EventLog el) {
+        this.owner = new Address(el.getIndexed().get(1));
+        this.spender = new Address(el.getIndexed().get(2));
+        this.value = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(0));
     }
 
-    public BigInteger getId() {
-        return id;
+    public Address getOwner() {
+        return owner;
     }
 
-    public String getValue() {
+    public Address getSpender() {
+        return spender;
+    }
+
+    public BigInteger getValue() {
         return value;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("URIEventLog{");
-        sb.append("id=").append(id);
-        sb.append(", value='").append(value).append('\'');
+        final StringBuilder sb = new StringBuilder("ApprovalForAllEventLog{");
+        sb.append("owner=").append(owner);
+        sb.append(", spender=").append(spender);
+        sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<URIEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<URIEventLog> filter) {
+    public static List<ApprovalEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<ApprovalEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                URIEventLog.SIGNATURE,
+                ApprovalEventLog.SIGNATURE,
                 address,
-                URIEventLog::new,
+                ApprovalEventLog::new,
                 filter);
     }
 }

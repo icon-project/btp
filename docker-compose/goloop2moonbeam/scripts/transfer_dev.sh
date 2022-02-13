@@ -54,16 +54,11 @@ check_alice_balance_in_Goloop() {
     sleep 10
 
     cd $CONFIG_DIR
-    coin_id=$(goloop rpc call \
-        --to $(cat nativeCoinBsh.icon) \
-        --method coinId --param _coinName=DEV | jq -r )
-    echo "Alice coin_id: $coin_id"
 
     balance=$(goloop rpc call \
-        --to $(cat irc31token.icon) \
+        --to $(cat irc2TradeableToken.icon) \
         --method balanceOf \
-        --param _owner=$(get_alice_address) \
-        --param _id=$coin_id | jq -r )
+        --param _owner=$(get_alice_address) | jq -r )
     
     balance=$(hex2int $balance)
     balance=$(wei2coin $balance)

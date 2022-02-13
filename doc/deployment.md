@@ -206,7 +206,6 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bsh
 # BMC contract checks its service name whether it's already existed
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_COIN_URL="https://moonbeam.network/" \
 BSH_SERVICE="nativecoin" \
 BSH_COIN_NAME="DEV" \
 BSH_COIN_FEE="100" \
@@ -319,40 +318,6 @@ undefined
 truffle(moonbase)> bshCore.address
 '0x2a17B6814a172419a5E84d7B746aBEb95a84E76B'
 truffle(moonbase)> .exit
-```
-
-
-### Deploy nativecoinERC20_BSH
-
-```bash
-yarn install --production --cwd $SOLIDITY_DIST_DIR/nativecoinERC20
-rm -rf $SOLIDITY_DIST_DIR/nativecoinERC20/build
-
-truffle compile --all --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
-
-# @params:
-# - BSH_COIN_NAME: Native coin Name
-# - BSH_COIN_FEE: Fees to be charged
-# - BSH_FIXED_FEE: basic fixed fees
-# - BSH_TOKEN_NAME: ERC20_token Name same as symbol 
-# - BSH_TOKEN_SYMBOL:  ERC20_token Name
-# - BSH_INITIAL_SUPPLY: inital supply of the erc20 token
-# - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
-# This address is queried after deploying BMC contracts
-# For example: BMC_PERIPHERY_ADDRESS = 0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356
-# - BSH_SERVICE: a service name of BSH contract, e.g. 'NativeCoinIRC2BSH'
-# This service name is unique in one network. And it must be registered to BMC contract to activate
-# BMC contract checks its service name whether it's already existed
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-BSH_COIN_NAME="MOVR" \
-BSH_COIN_FEE="100" \
-BSH_FIXED_FEE="50000" \
-BSH_TOKEN_NAME="ICX" \
-BSH_TOKEN_SYMBOL="ICX" \
-BSH_INITIAL_SUPPLY="100000" \
-BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_SERVICE="NativeCoinIRC2BSH" \
-truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
 ```
 
 ### Deloy BMV
@@ -644,14 +609,9 @@ Using network 'moonbase'.
 
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-CURRENTLINK_BSH_SERVICENAME="NativeCoinIRC2BSH" \
-CURRENTLINK_BSH_ADDRESS="0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754" \
-truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
-```
-
-```bash
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_NAME="ICX" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="ICX" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh  
 
 ## Output
@@ -686,6 +646,8 @@ Register BTC
 ```
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="BTC" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 Using network 'moonbase'.
@@ -1070,24 +1032,17 @@ goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx11a5a
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdabca08cf388c374bf61e05dd32a2d6bde0f37e2d1225a447a144662ecc73b13
 ```
 
-#### Deploy IRC31 token contract:
-
-```bash
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy javascore/javaee-tokens/build/libs/irc31-0.1.0-optimized.jar --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719 --content_type application/java
-
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xbfb1c886274b972534d9cccd3e5b07f5ab6258428400d5de4e5b39232fa00236
-```
-
 #### Deploy BSH
 
 ```bash
+IRC2_SERIALIZED=$(xxd -p javascore/irc2Tradeable/build/libs/irc2Tradeable-0.1.0-optimized.jar | tr -d '\n')
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/nativecoin-0.1.0-optimized.jar \
     --key_store godWallet.json --key_password gochain \
     --nid 0x42 --step_limit 3519157719 \
     --content_type application/java \
     --param _irc31=cxc1e92e175e1e5f98edf62b192ae051caae994a97 \
-    --param _bmc=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
-    --param _name=ICX
+    --param _name=ICX \
+    --param _serializedIrc2=$IRC2_SERIALIZED
 
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
 ```
@@ -1126,9 +1081,13 @@ goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5
 #### Register coin names to BSH
 
 ```bash
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method register --param _name=DEV --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method register --param _name=DEV --param _symbol=DEV --param _decimals=18 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
 
+# get txresult and score address
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xa6cacdc4a8783f62dd981999f3ab7c08340618c8f01e8f5c84369e15c72831d9
+
+# get IRC2 address by coin name
+goloop rpc --uri http://127.0.0.1:9082/api/v3 call --to cxe737e1bcf7b2eb9a6c8dc96d59e0b8da26e57558 --method coinAddress --param _coinName=DEV
 
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method register --param _name=BTC --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
 
@@ -1178,75 +1137,128 @@ goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cxc1e92
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x3f2ec91804204a9e3e3faa5f40b4674b72b217257eb389b4ccc13c703ef5f5f7
 ```
 
-### Transfer ICX to DEV
+## Transfer coin using IRC2_BSH
+
+### Transfer ICX from ICON to Moonbeam
 
 ```bash
-PRIVATE_KEYS="${YOUR_USER_PRIVATE_KEY}" \
-truffle console --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a05039c1c1da936d279e276a25c4fa66154bebd --method transferNativeCoin --param _to=btp://0x507.pra/0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C --value 1000000000000000000 --key_store daniel111.ks.json --key_password abc12345 --nid 0x7 --step_limit 3519157719
+```
 
-> Warning: possible unsupported (undocumented in help) command line option: --working_directory
-truffle(moonbase)> let bshCore = await BSHCore.deployed()
-undefined
-truffle(moonbase)> await bshCore.setApprovalForAll(bshCore.address, true, {from: accounts[0]})
-{
-  tx: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
-  receipt: {
-    blockHash: '0x814fea05ae02c7d8cfcefe8028ad7780d64a5cf05f7d6046bcc7cfd5e7001151',
-    blockNumber: 1047774,
-    contractAddress: null,
-    cumulativeGasUsed: 48353,
-    from: '0xd07d078373be60dd10e35f352559ef1f25029daf',
-    gasUsed: 48353,
-    logs: [ [Object] ],
-    logsBloom: '0x00000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000400000000000000000000000000010000000100000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000025000000000000000000200800000000000000000000000000000000000000000000000000000000',
-    status: true,
-    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
-    transactionHash: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
-    transactionIndex: 0,
-    rawLogs: [ [Object] ]
-  },
-  logs: [
-    {
-      address: '0x2a17B6814a172419a5E84d7B746aBEb95a84E76B',
-      blockHash: '0x814fea05ae02c7d8cfcefe8028ad7780d64a5cf05f7d6046bcc7cfd5e7001151',
-      blockNumber: 1047774,
-      logIndex: 0,
-      removed: false,
-      transactionHash: '0xf8f96cefdfc83ef096ddd62e601c7c845733b09757731c1875fdb4715ef05b08',
-      transactionIndex: 0,
-      transactionLogIndex: '0x0',
-      id: 'log_38adde4c',
-      event: 'ApprovalForAll',
-      args: [Result]
-    }
-  ]
-}
-> truffle(moonbase)> await bshCore.transferNativeCoin("btp://0x42.icon/hxb6b5791be0b5ef67063b3c10b840fb81514db2fd", {value: 1000000000000000000})
-truffle(moonbase)> {
-  tx: '0xa61ae9e879d1b5e559e24032f4b9a7adc818ec5698e3bca754ca19da246c73e8',
-  receipt: {
-    blockHash: '0xdb7e464bdc03cce547232956cc46395115269acd104226b3a5987fd7dce63ce6',
-    blockNumber: 1047779,
-    contractAddress: null,
-    cumulativeGasUsed: 528972,
-    from: '0xd07d078373be60dd10e35f352559ef1f25029daf',
-    gasUsed: 528972,
-    logs: [],
-    logsBloom: '0x00000002000000400000010000000000000000000400000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000040000000000400000000000000000000000000000000000100000000000000000040000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000200000000000000000000000000020000000000000000000000000000000000200000000000000000000008000000000000000000000000000000000000000',
-    status: true,
-    to: '0x2a17b6814a172419a5e84d7b746abeb95a84e76b',
-    transactionHash: '0xa61ae9e879d1b5e559e24032f4b9a7adc818ec5698e3bca754ca19da246c73e8',
-    transactionIndex: 0,
-    rawLogs: [ [Object], [Object] ]
-  },
-  logs: []
-}
+### Transfer DEV from Moonbeam to ICON
+
+```bash
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'transferNativeCoin("btp://0x7.icon/hxdd7cc765bb90ef63fca515e362feb3cce3f63ec7")' --pk YOUR_PRIVATE_KEY --gas 6721975 --value 1000000000000000000
+```
+
+### Transfer ICX from Moonbeam to ICON
+
+1. Approve for Moonbeam BSH to transfer ICX token
+
+```bash
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'approve("0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec", "100000000000000000")' --pk YOUR_PRIVATE_KEY --gas 6721975
+```
+
+2. Transfer ERC20 ICX token to address on ICON
+
+```bash
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'transferWrappedCoin("ICX","1000000000000000000", "btp://0x7.icon/hxc00a6d2d1e9ee0686704e0b6eec75d0f2c095b39")' --pk YOUR_PRIVATE_KEY --gas 6721975
+```
+
+### Transfer DEV from ICON to Moonbeam
+
+1. Deposit IRC2 DEV token to BSH
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx824f3b2f2a8f59ac3d281b1b9bc295e051be5274 --method transfer --param _to=cx8a05039c1c1da936d279e276a25c4fa66154bebd --param _value=100000000000000000 --key_store daniel111.ks.json --nid 0x7 --step_limit 3519157719 --key_password abc12345
+```
+
+2. Transfer IRC2 DEV token to address on Moonbeam
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a05039c1c1da936d279e276a25c4fa66154bebd --method transfer --param _coinName=DEV --param _value=100000000000000000 --param _to=btp://0x507.pra/0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C --key_store daniel111.ks.json --nid 0x7 --step_limit 3519157719 --key_password abc12345
+```
+
+## Transfer coin using BSH factory
+
+### Check ICX balance on ICON
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 balance hxc00a6d2d1e9ee0686704e0b6eec75d0f2c095b39
+```
+
+### Check DEV balance on ICON
+
+1. Call BSH score to get IRC2 contract address of DEV token
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 call --to cx5bab2d3aa3eed9b0a2d9445d18ec5812155ff6f1 --method coinAddress --param _coinName=DEV
+"cxa7f01ce9e0901836eba39e243448837314b48549"
+```
+
+2. Call IRC2 score to get balance
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 call --to cxd815dd0290c1536ed11a94239d0219046b2a5c31 --method balanceOf --param _owner=hxc00a6d2d1e9ee0686704e0b6eec75d0f2c095b39
+```
+
+### Check DEV balance on Moonbeam
+
+```bash
+eth address:balance --network https://moonbeam-alpha.api.onfinality.io/public 0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C
+```
+
+### Check ICX balance on Moonbeam
+
+1. Call BSH contract to get ERC20 contract address of ICX token
+
+```bash
+eth contract:call --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0x7d4567B7257cf869B01a47E8cf0EDB3814bDb963 'coinId("ICX")'
+0xc994Cdd31F92b778b87d7CdeA77dA3Ffa2e4f3d6
+```
+
+2. Call ERC20 contract to get balance
 
 ```
-### Transfer ICX to Moonbeam Parachain
+eth contract:call --network https://moonbeam-alpha.api.onfinality.io/public ERC20@0xc994Cdd31F92b778b87d7CdeA77dA3Ffa2e4f3d6 'balanceOf("0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C")'
+```
+
+### Transfer ICX from ICON to Moonbeam
 
 ```
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx call --to cx047d8cd08015a75deab90ef5f9e0f6878d5563bd --method transferNativeCoin --param _to=btp://0x507.pra/0xD07d078373bE60dd10e35f352559ef1f25029DAf --value 1000000000000000000 --key_store godWallet.json --key_password gochain --nid 0x42 --step_limit 3519157719
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a05039c1c1da936d279e276a25c4fa66154bebd --method transferNativeCoin --param _to=btp://0x507.pra/0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C --value 1000000000000000000 --key_store daniel111.ks.json --key_password abc12345 --nid 0x7 --step_limit 3519157719
+```
 
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0x815271f1c27ebefa1936c282a998571ee5810221123058b37ab453435d9d92f0
+### Transfer DEV from Moonbeam to ICON
+
+```
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0x7d4567B7257cf869B01a47E8cf0EDB3814bDb963 'transferNativeCoin("btp://0x7.icon/hxdd7cc765bb90ef63fca515e362feb3cce3f63ec7")' --pk YOUR_PRIVATE_KEY --gas 6721975 --value 1000000000000000000
+```
+
+### Transfer ICX from Moonbeam to ICON
+
+1. Call ERC20 contract to approve for Moonbeam BSH to transfer ICX token
+
+```bash
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public ERC20@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'approve("0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec", "100000000000000000")' --pk YOUR_PRIVATE_KEY --gas 6721975
+```
+
+2. Call BSH Core to transfer ERC20 ICX token to address on ICON
+
+```bash
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'transfer("ICX","1000000000000000000", "btp://0x7.icon/hxc00a6d2d1e9ee0686704e0b6eec75d0f2c095b39")' --pk YOUR_PRIVATE_KEY --gas 6721975
+```
+
+### Transfer DEV from ICON to Moonbeam
+
+1. Call IRC2 score to aprove DEV token to BSH
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx824f3b2f2a8f59ac3d281b1b9bc295e051be5274 --method approve --param spender=cx8a05039c1c1da936d279e276a25c4fa66154bebd --param amount=100000000000000000 --key_store daniel111.ks.json --nid 0x7 --step_limit 3519157719 --key_password abc12345
+```
+
+2. Call BSH to transfer DEV to Moonbeam address
+
+```bash
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a05039c1c1da936d279e276a25c4fa66154bebd --method transfer --param _coinName=DEV --param _value=100000000000000000 --param _to=btp://0x507.pra/0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C --key_store daniel111.ks.json --nid 0x7 --step_limit 3519157719 --key_password abc12345
 ```

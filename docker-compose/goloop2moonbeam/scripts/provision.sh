@@ -16,7 +16,6 @@ provision() {
     deploy_solidity_bmv
 
     deploy_javascore_bmv
-    deploy_javascore_IRC31Token
     deploy_javascore_NativeCoinBSH
     deploy_javascore_FeeAggregation
     deploy_javascore_IRC2Token

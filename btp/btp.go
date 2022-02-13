@@ -292,6 +292,10 @@ func (b *BTP) relay() {
 	}
 
 	for _, rm := range b.rms {
+		if len(rm.BlockUpdates) != 0 && rm.BlockUpdates[len(rm.BlockUpdates)-1].Height < b.bmcLinkStatus.Verifier.Height {
+			b.log.Debugf("skip already relay message: %d~%d", rm.BlockUpdates[0].Height, rm.BlockUpdates[len(rm.BlockUpdates)-1].Height)
+			continue
+		}
 		if !b.canRelay(rm) {
 			break
 		} else {

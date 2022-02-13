@@ -143,7 +143,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 						}
 					}
 				}
-				if nextEp == 0 {
+				if nextEp == 0 && !r.isFoundOffsetBySeq {
 					continue RpLoop
 				}
 			}
@@ -247,7 +247,7 @@ func (r *receiver) ReceiveLoop(height int64, seq int64, cb chain.ReceiveCallback
 	}
 	r.evtLogRawFilter.signature = []byte(EventSignature)
 	r.evtLogRawFilter.next = []byte(s)
-	r.evtLogRawFilter.seq = common.NewHexInt(seq).Bytes()
+	r.evtLogRawFilter.seq = common.NewHexInt(seq + 1).Bytes()
 	return r.c.MonitorBlock(r.evtReq,
 		func(conn *jsonrpc.RecConn, v *BlockNotification) error {
 			var err error

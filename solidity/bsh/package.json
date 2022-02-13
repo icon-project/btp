@@ -6,7 +6,8 @@
     "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
     "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
     "@openzeppelin/truffle-upgrades": "^1.7.0",
-    "@truffle/hdwallet-provider": "^1.4.1"
+    "@truffle/hdwallet-provider": "^1.4.1",
+    "truffle-contract-size": "^2.0.1"
   },
   "devDependencies": {
     "chai": "^4.3.4",
@@ -22,10 +23,10 @@
     "linter": "./node_modules/.bin/solhint -f table ./contracts/**/*.sol -f table ./contracts/*.sol",
     "prettier": "./node_modules/.bin/prettier --write ./contracts -l",
     "contract:compile": "truffle compile --all",
+    "contract:size": "truffle run contract-size",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "rm -rf .openzeppelin && truffle test test/unit/*.js",
-    "test:integration" : "rm -rf .openzeppelin && truffle test test/integration/*.js"
-
+    "test:integration": "rm -rf .openzeppelin && truffle test test/integration/*.js"
   },
   "husky": {
     "hooks": {
