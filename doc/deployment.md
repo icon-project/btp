@@ -1150,6 +1150,19 @@ goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a0
 ```bash
 eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'transferNativeCoin("btp://0x7.icon/hxdd7cc765bb90ef63fca515e362feb3cce3f63ec7")' --pk YOUR_PRIVATE_KEY --gas 6721975 --value 1000000000000000000
 ```
+<<<<<<< HEAD
+=======
+eth contract:call --network https://moonbeam-alpha.api.onfinality.io/public ERC20@0xc994Cdd31F92b778b87d7CdeA77dA3Ffa2e4f3d6 'balanceOf("0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C")'
+```
+
+### Transfer ICX from ICON to Moonbeam
+
+```
+goloop rpc --uri https://berlin.net.solidwallet.io/api/v3 sendtx call --to cx8a05039c1c1da936d279e276a25c4fa66154bebd --method transferNativeCoin --param _to=btp://0x507.pra/0x0e367f147682237a0Bc1c839a2a4a1b2c28Bd77C --value 1000000000000000000 --key_store daniel111.ks.json --key_password abc12345 --nid 0x7 --step_limit 3519157719
+```
+
+### Transfer DEV from Moonbeam to ICON
+>>>>>>> icon/icondao_erc20_factory
 
 ### Transfer ICX from Moonbeam to ICON
 
@@ -1164,6 +1177,7 @@ eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2
 ```bash
 eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0xC0bDA7E7Cb3f0277748aF59F1c639BE7589bE4Ec 'transferWrappedCoin("ICX","1000000000000000000", "btp://0x7.icon/hxc00a6d2d1e9ee0686704e0b6eec75d0f2c095b39")' --pk YOUR_PRIVATE_KEY --gas 6721975
 ```
+<<<<<<< HEAD
 
 ### Transfer DEV from ICON to Moonbeam
 
@@ -1237,6 +1251,13 @@ eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2
 
 ### Transfer ICX from Moonbeam to ICON
 
+=======
+eth contract:send --network https://moonbeam-alpha.api.onfinality.io/public erc2Bshcore@0x7d4567B7257cf869B01a47E8cf0EDB3814bDb963 'transferNativeCoin("btp://0x7.icon/hxdd7cc765bb90ef63fca515e362feb3cce3f63ec7")' --pk YOUR_PRIVATE_KEY --gas 6721975 --value 1000000000000000000
+```
+
+### Transfer ICX from Moonbeam to ICON
+
+>>>>>>> icon/icondao_erc20_factory
 1. Call ERC20 contract to approve for Moonbeam BSH to transfer ICX token
 
 ```bash
