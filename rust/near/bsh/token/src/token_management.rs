@@ -10,7 +10,7 @@ impl TokenService {
 
     /// Register Token, Accept token meta(name, symbol, network, denominator) as parameters
     // TODO: Complete Documentation
-    pub fn register(&mut self, token: Token<WrappedFungibleToken>) {
+    pub fn register(&mut self, token: Token) {
         self.assert_have_permission();
         self.assert_token_does_not_exists(&token);
 
@@ -84,7 +84,7 @@ impl TokenService {
         &mut self,
         token_id: &TokenId,
         amount: u128,
-        token: &Token<WrappedFungibleToken>,
+        token: &Token,
         receiver_id: &AccountId,
     ) {
         //Review Required
@@ -105,7 +105,7 @@ impl TokenService {
         ));
     }
 
-    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedFungibleToken>) {
+    pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token) {
         ext_nep141::burn(
             amount.into(),
             token.metadata().uri().to_owned().unwrap(),

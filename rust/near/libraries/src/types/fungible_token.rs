@@ -1,4 +1,4 @@
-use crate::types::{btp_address::Network, token::TokenMetadata, TokenName};
+use crate::types::{btp_address::Network, asset::AssetMetadata};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde::{Deserialize, Deserializer, Serialize};
@@ -6,7 +6,7 @@ use near_sdk::AccountId;
 
 #[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
-pub struct FungibleTokenExtras {
+pub struct AssetMetadataExtras {
     pub spec: String,
     pub icon: Option<String>,
     pub reference: Option<String>,
@@ -20,7 +20,7 @@ pub struct FungibleToken {
     symbol: String,
     uri: Option<AccountId>,
     network: Network,
-    extras: Option<FungibleTokenExtras>
+    extras: Option<AssetMetadataExtras>
 }
 
 fn deserialize_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
@@ -32,11 +32,11 @@ where
 
 impl FungibleToken {
     pub fn new(
-        name: TokenName,
+        name: String,
         symbol: String,
         uri: Option<AccountId>,
         network: Network,
-        extras: Option<FungibleTokenExtras>
+        extras: Option<AssetMetadataExtras>
     ) -> FungibleToken {
         Self {
             name,
@@ -58,8 +58,8 @@ impl FungibleToken {
     }
 }
 
-impl TokenMetadata for FungibleToken {
-    fn name(&self) -> &TokenName {
+impl AssetMetadata for FungibleToken {
+    fn name(&self) -> &String {
         &self.name
     }
 
@@ -71,7 +71,7 @@ impl TokenMetadata for FungibleToken {
         &self.symbol
     }
 
-    fn extras(&self) -> &Option<FungibleTokenExtras>{
+    fn extras(&self) -> &Option<AssetMetadataExtras>{
         &self.extras
     }
 

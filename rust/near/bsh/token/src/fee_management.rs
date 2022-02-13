@@ -65,7 +65,7 @@ impl TokenService {
                     None
                 }
             })
-            .collect::<Vec<Asset>>();
+            .collect::<Vec<TransferableAsset>>();
 
         self.send_request(sender_id, fee_aggregator.clone(), assets);
     }

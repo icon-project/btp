@@ -4,13 +4,17 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, Math, MultiTokenCore, Token,
-    WrappedFungibleToken, WrappedI128,
+    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, Math, Asset,
+    WrappedFungibleToken, WrappedI128, AssetItem,
 };
 mod token;
-use libraries::types::{Asset, Request};
+use libraries::types::{TransferableAsset, Request};
 use std::convert::TryInto;
 use token::*;
+
+pub type TokenFee = AssetItem;
+pub type Token = Asset<WrappedFungibleToken>;
+
 
 fn get_context(
     input: Vec<u8>,
@@ -62,7 +66,7 @@ fn deposit_wnear() {
         1000.into(),
     );
 
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
 
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -97,7 +101,7 @@ fn withdraw_wnear() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -143,7 +147,7 @@ fn withdraw_wnear_higher_amount() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -183,7 +187,7 @@ fn external_transfer() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
 
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -209,7 +213,7 @@ fn external_transfer() {
         Request::new(
             chuck().to_string(),
             destination.account_id().to_string(),
-            vec![Asset::new(w_near.name().to_owned(), 900, 99)]
+            vec![TransferableAsset::new(w_near.name().to_owned(), 900, 99)]
         )
     )
 }
@@ -237,7 +241,7 @@ fn handle_success_response_wnear_external_transfer() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
 
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
@@ -323,7 +327,7 @@ fn handle_success_response_baln_external_transfer() {
         1000.into(),
     );
 
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
     let token_id = contract.token_id(baln.name().to_owned());
 
@@ -337,7 +341,7 @@ fn handle_success_response_baln_external_transfer() {
             TokenServiceType::RequestTokenTransfer {
                 sender: destination.account_id().to_string(),
                 receiver: chuck().to_string(),
-                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
+                assets: vec![TransferableAsset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
@@ -428,7 +432,7 @@ fn handle_failure_response_wnear_external_transfer() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -515,7 +519,7 @@ fn handle_failure_response_baln_coin_external_transfer() {
         1000.into(),
     );
 
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
     let token_id = contract.token_id(baln.name().to_owned());
 
@@ -529,7 +533,7 @@ fn handle_failure_response_baln_coin_external_transfer() {
             TokenServiceType::RequestTokenTransfer {
                 sender: destination.account_id().to_string(),
                 receiver: chuck().to_string(),
-                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
+                assets: vec![TransferableAsset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
@@ -614,7 +618,7 @@ fn reclaim_baln_coin() {
         1000.into(),
     );
 
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
     let token_id = contract.token_id(baln.name().to_owned());
 
@@ -628,7 +632,7 @@ fn reclaim_baln_coin() {
             TokenServiceType::RequestTokenTransfer {
                 sender: destination.account_id().to_string(),
                 receiver: chuck().to_string(),
-                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
+                assets: vec![TransferableAsset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
@@ -692,7 +696,7 @@ fn external_transfer_higher_amount() {
         1000.into(),
     );
 
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -718,7 +722,7 @@ fn external_transfer_unregistered_coin() {
         )
     };
     testing_env!(context(alice(), 0));
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -747,7 +751,7 @@ fn external_transfer_nil_balance() {
         )
     };
     testing_env!(context(alice(), 0));
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -782,7 +786,7 @@ fn external_transfer_batch() {
         )
     };
     testing_env!(context(alice(), 0));
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -833,7 +837,7 @@ fn external_transfer_batch_higher_amount() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
@@ -867,9 +871,9 @@ fn external_transfer_batch_unregistered_coin() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     let token_id = contract.token_id(w_near.name().to_owned());
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     let baln_token_id = contract.token_id(baln.name().to_owned());
     contract.register(w_near.clone());
 
@@ -908,8 +912,8 @@ fn external_transfer_batch_nil_balance() {
         1000.into(),
     );
 
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(w_near.clone());
     contract.register(baln.clone());
     let token_id = contract.token_id(w_near.name().to_owned());

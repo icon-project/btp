@@ -1,60 +1,50 @@
-use super::{Network, TokenName};
-use near_sdk::serde::{Deserialize, Serialize};
-use crate::rlp::{self, Decodable, Encodable};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::{Deserialize, Serialize};
+use crate::types::btp_address::Network;
 
-#[derive(Clone, Debug, PartialEq, Eq, BorshDeserialize, BorshSerialize)]
-pub struct Asset {
-    token: TokenName,
-    amount: u128,
-    fees: u128,
+use super::fungible_token::AssetMetadataExtras;
+
+pub type AssetId = Vec<u8>;
+
+pub trait AssetMetadata {
+    fn name(&self) -> &String;
+    fn network(&self) -> &Network;
+    fn symbol(&self) -> &String;
+    fn metadata(&self) -> &Self;
+    fn extras(&self) -> &Option<AssetMetadataExtras>;
 }
 
-impl Asset {
-    pub fn new(token: TokenName, amount: u128, fees: u128) -> Self {
+#[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Asset<T: AssetMetadata> {
+    pub metadata: T
+}
+
+impl<T: AssetMetadata> Asset<T>  {
+    pub fn new(asset: T) -> Self {
         Self {
-            token,
-            amount,
-            fees,
+            metadata: asset
         }
     }
 
-    pub fn token(&self) -> &TokenName {
-        &self.token
+    pub fn name(&self) -> &String {
+        self.metadata.name()
     }
 
-    pub fn amount(&self) -> u128 {
-        self.amount
+    pub fn network(&self) -> &String {
+        self.metadata.network()
     }
 
-    pub fn fees(&self) -> u128 {
-        self.fees
+    pub fn symbol(&self) -> &String {
+        self.metadata.symbol()
     }
-}
+    
+    pub fn metadata(&self) -> &T {
+        &self.metadata
+    }
 
-impl Encodable for Asset {
-    fn rlp_append(&self, stream: &mut rlp::RlpStream) {
-        stream
-            .begin_list(3)
-            .append(&self.token)
-            .append(&self.amount)
-            .append(&self.fees);
+    pub fn extras(&self) -> &Option<AssetMetadataExtras>{
+        &self.metadata.extras()
     }
 }
 
-impl Decodable for Asset {
-    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        Ok(Self::new(
-            rlp.val_at::<TokenName>(0)?,
-            rlp.val_at::<u128>(1)?,
-            rlp.val_at::<u128>(2).unwrap_or_default(),
-        ))
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AccumulatedAssetFees {
-    pub name: TokenName,
-    pub network: Network,
-    pub accumulated_fees: u128,
-}
