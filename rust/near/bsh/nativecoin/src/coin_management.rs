@@ -50,11 +50,30 @@ impl NativeCoinService {
         token_symbol: String,
         receiver_id: AccountId,
     ) {
-        let mut balance = self.balances.get(&receiver_id, &token_id).unwrap();
+        let mut balance = self
+            .balances
+            .get(&env::current_account_id(), &token_id)
+            .unwrap();
         balance.deposit_mut().add(amount).unwrap();
-        self.balances.set(&receiver_id, &token_id, balance);
+        self.balances
+            .set(&env::current_account_id(), &token_id, balance);
+
+        self.internal_transfer(&env::current_account_id(), &receiver_id, &token_id, amount);
 
         log!("[Mint] {} {}", amount, token_symbol);
+    }
+
+    #[private]
+    pub fn on_burn(&mut self, amount: u128, token_id: TokenId, token_symbol: String) {
+        let mut balance = self
+            .balances
+            .get(&env::current_account_id(), &token_id)
+            .unwrap();
+        balance.deposit_mut().sub(amount).unwrap();
+        self.balances
+            .set(&env::current_account_id(), &token_id, balance);
+
+        log!("[Burn] {} {}", amount, token_symbol);
     }
 }
 
@@ -84,16 +103,20 @@ impl NativeCoinService {
     }
 
     pub fn burn(&mut self, token_id: &TokenId, amount: u128, token: &Token<WrappedNativeCoin>) {
-        // TODO: Remove from supply
-        let mut balance = self
-            .balances
-            .get(&env::current_account_id(), token_id)
-            .unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances
-            .set(&env::current_account_id(), token_id, balance);
-
-        log!("[Burn] {} {}", amount, token.symbol());
+        ext_nep141::burn(
+            amount.into(),
+            token.metadata().uri().to_owned().unwrap(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_BURN,
+        )
+        .then(ext_self::on_burn(
+            amount,
+            token_id.to_owned(),
+            token.symbol().to_string(),
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_MT_TRANSFER_CALL,
+        ));
     }
 
     pub fn verify_mint(&self, token_id: &TokenId, amount: u128) -> Result<(), String> {

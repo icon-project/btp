@@ -55,10 +55,11 @@ fn handle_transfer_mint_registered_icx() {
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
     let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
-    let token_id = contract.token_id(baln.name().to_owned());
+    
 
     testing_env!(context(alice(), 0));
     contract.register(baln.clone());
+    let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
@@ -77,6 +78,9 @@ fn handle_transfer_mint_registered_icx() {
 
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
+
+    testing_env!(context(alice(), 0));
+    contract.on_mint(900,token_id.clone(),baln.symbol().to_string(),destination.account_id());
 
     let result = contract
         .account_balance(destination.account_id(), token_id.clone())

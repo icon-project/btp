@@ -66,10 +66,17 @@ impl TokenService {
     }
 
     //review_required
-    pub fn transfer_start(&self, from: AccountId, to: AccountId, serial_no: i128, token:Token<WrappedFungibleToken>) {}
+    pub fn transfer_start(
+        &self,
+        from: AccountId,
+        to: AccountId,
+        serial_no: i128,
+        token: Token<WrappedFungibleToken>,
+    ) {
+    }
 
     //review_required
-    pub fn transfer_end(&self, from: AccountId,) {}
+    pub fn transfer_end(&self, from: AccountId) {}
 }
 
 impl TokenService {

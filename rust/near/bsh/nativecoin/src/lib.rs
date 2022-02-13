@@ -10,14 +10,16 @@ use libraries::{
     types::Requests, types::StorageBalances, types::Token, types::TokenFees, types::Tokens,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::LazyOption;
 use near_sdk::serde_json::{to_value, Value};
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
-    env, json_types::U128, log, near_bindgen, require, Gas, PanicOnDefault, Promise, PromiseResult,
+    env,
+    json_types::{Base64VecU8, U128},
+    log, near_bindgen, require, Gas, PanicOnDefault, Promise, PromiseResult,
 };
-use near_sdk::json_types::Base64VecU8;
-use near_sdk::collections::LazyOption;
+
 use std::convert::TryFrom;
 use std::convert::TryInto;
 mod external;

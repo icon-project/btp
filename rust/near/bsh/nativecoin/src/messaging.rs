@@ -111,9 +111,8 @@ impl NativeCoinService {
         assets: Vec<Asset>,
     ) {
         let serial_no = self.serial_no.checked_add(1).unwrap();
-        self.serial_no
-            .clone_from(&serial_no);
-        
+        self.serial_no.clone_from(&serial_no);
+
         let message = TokenServiceMessage::new(TokenServiceType::RequestTokenTransfer {
             sender: sender_id.clone().into(),
             receiver: destination.account_id().into(),
@@ -128,7 +127,11 @@ impl NativeCoinService {
                 assets,
             ),
         );
-        self.send_message(serial_no, destination.network_address().unwrap(), message.into());
+        self.send_message(
+            serial_no,
+            destination.network_address().unwrap(),
+            message.into(),
+        );
     }
 
     pub fn send_response(

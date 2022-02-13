@@ -55,10 +55,12 @@ fn handle_fee_gathering() {
         1000.into(),
     );
     let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
-    let token_id = contract.token_id(w_near.name().to_owned());
+    
 
     testing_env!(context(alice(), 0));
     contract.register(w_near.clone());
+
+    let token_id = contract.token_id(w_near.name().to_owned());
 
     testing_env!(context(wnear(), 0));
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());

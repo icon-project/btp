@@ -19,4 +19,11 @@ pub trait NativeCoinService {
         token_symbol: String,
         receiver_id: AccountId,
     );
+
+    fn on_burn(
+        &mut self, 
+        amount: u128, 
+        token_id: TokenId,
+        token_symbol: String,
+    );
 }

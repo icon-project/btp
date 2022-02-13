@@ -37,7 +37,7 @@ impl NativeCoinService {
         self.fee_numerator.clone_from(&fee_numerator.into());
     }
 
-    pub fn calculate_token_transfer_fee(&self,amount: U128) -> u128 {
+    pub fn calculate_token_transfer_fee(&self, amount: U128) -> u128 {
         let fee = (u128::from(amount) * self.fee_numerator) / FEE_DENOMINATOR;
         fee
     }
