@@ -41,7 +41,7 @@ module.exports = {
       timeoutBlocks: 50000,
       deploymentPollingInterval: 5000,
       // Make deploy faster for deployment
-      gasPrice: web3.utils.toWei("2", "Gwei"),
+      // gasPrice: web3.utils.toWei("2", "Gwei"),
     },
     moonriver: {
       provider: () => new HDWalletProvider({

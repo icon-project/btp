@@ -37,7 +37,7 @@
 
 ### Ethereum SOLIDITY
 
-* Node.js v14.0.0, Yarn v1.22.0, Truffle v5.3.0
+* Node.js v14.0.0, Yarn v1.22.0, Truffle v5.3.13
 
   **Mac OSX**
     ```

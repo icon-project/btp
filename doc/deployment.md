@@ -206,7 +206,6 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bsh
 # BMC contract checks its service name whether it's already existed
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_COIN_URL="https://moonbeam.network/" \
 BSH_SERVICE="nativecoin" \
 BSH_COIN_NAME="DEV" \
 BSH_COIN_FEE="100" \
@@ -319,40 +318,6 @@ undefined
 truffle(moonbase)> bshCore.address
 '0x2a17B6814a172419a5E84d7B746aBEb95a84E76B'
 truffle(moonbase)> .exit
-```
-
-
-### Deploy nativecoinERC20_BSH
-
-```bash
-yarn install --production --cwd $SOLIDITY_DIST_DIR/nativecoinERC20
-rm -rf $SOLIDITY_DIST_DIR/nativecoinERC20/build
-
-truffle compile --all --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
-
-# @params:
-# - BSH_COIN_NAME: Native coin Name
-# - BSH_COIN_FEE: Fees to be charged
-# - BSH_FIXED_FEE: basic fixed fees
-# - BSH_TOKEN_NAME: ERC20_token Name same as symbol 
-# - BSH_TOKEN_SYMBOL:  ERC20_token Name
-# - BSH_INITIAL_SUPPLY: inital supply of the erc20 token
-# - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
-# This address is queried after deploying BMC contracts
-# For example: BMC_PERIPHERY_ADDRESS = 0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356
-# - BSH_SERVICE: a service name of BSH contract, e.g. 'NativeCoinIRC2BSH'
-# This service name is unique in one network. And it must be registered to BMC contract to activate
-# BMC contract checks its service name whether it's already existed
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-BSH_COIN_NAME="MOVR" \
-BSH_COIN_FEE="100" \
-BSH_FIXED_FEE="50000" \
-BSH_TOKEN_NAME="ICX" \
-BSH_TOKEN_SYMBOL="ICX" \
-BSH_INITIAL_SUPPLY="100000" \
-BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_SERVICE="NativeCoinIRC2BSH" \
-truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
 ```
 
 ### Deloy BMV
@@ -613,7 +578,7 @@ Using network 'moonbase'.
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 CURRENTLINK_BSH_SERVICENAME="nativecoin" \
-CURRENTLINK_BSH_ADDRESS="0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754" \
+CURRENTLINK_BSH_ADDRESS="0x71f28bb55c1b70688adc3832a781D29f260368ED" \
 truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
 
 ### Output
@@ -644,14 +609,9 @@ Using network 'moonbase'.
 
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-CURRENTLINK_BSH_SERVICENAME="NativeCoinIRC2BSH" \
-CURRENTLINK_BSH_ADDRESS="0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754" \
-truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
-```
-
-```bash
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_NAME="ICX" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="ICX" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh  
 
 ## Output
@@ -686,6 +646,8 @@ Register BTC
 ```
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="BTC" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 Using network 'moonbase'.
