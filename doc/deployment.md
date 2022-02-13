@@ -206,7 +206,6 @@ truffle compile --all --working_directory $SOLIDITY_DIST_DIR/bsh
 # BMC contract checks its service name whether it's already existed
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_COIN_URL="https://moonbeam.network/" \
 BSH_SERVICE="nativecoin" \
 BSH_COIN_NAME="DEV" \
 BSH_COIN_FEE="100" \
@@ -319,40 +318,6 @@ undefined
 truffle(moonbase)> bshCore.address
 '0x2a17B6814a172419a5E84d7B746aBEb95a84E76B'
 truffle(moonbase)> .exit
-```
-
-
-### Deploy nativecoinERC20_BSH
-
-```bash
-yarn install --production --cwd $SOLIDITY_DIST_DIR/nativecoinERC20
-rm -rf $SOLIDITY_DIST_DIR/nativecoinERC20/build
-
-truffle compile --all --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
-
-# @params:
-# - BSH_COIN_NAME: Native coin Name
-# - BSH_COIN_FEE: Fees to be charged
-# - BSH_FIXED_FEE: basic fixed fees
-# - BSH_TOKEN_NAME: ERC20_token Name same as symbol 
-# - BSH_TOKEN_SYMBOL:  ERC20_token Name
-# - BSH_INITIAL_SUPPLY: inital supply of the erc20 token
-# - BMC_PERIPHERY_ADDRESS: an address on chain of BMCPeriphery contract
-# This address is queried after deploying BMC contracts
-# For example: BMC_PERIPHERY_ADDRESS = 0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356
-# - BSH_SERVICE: a service name of BSH contract, e.g. 'NativeCoinIRC2BSH'
-# This service name is unique in one network. And it must be registered to BMC contract to activate
-# BMC contract checks its service name whether it's already existed
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-BSH_COIN_NAME="MOVR" \
-BSH_COIN_FEE="100" \
-BSH_FIXED_FEE="50000" \
-BSH_TOKEN_NAME="ICX" \
-BSH_TOKEN_SYMBOL="ICX" \
-BSH_INITIAL_SUPPLY="100000" \
-BMC_PERIPHERY_ADDRESS="0x3e525eD7a82B87bE30cdADE89d32204cA0F1C356" \
-BSH_SERVICE="NativeCoinIRC2BSH" \
-truffle migrate --network moonbase --working_directory $SOLIDITY_DIST_DIR/nativecoinERC20
 ```
 
 ### Deloy BMV
@@ -644,14 +609,9 @@ Using network 'moonbase'.
 
 ```bash
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-CURRENTLINK_BSH_SERVICENAME="NativeCoinIRC2BSH" \
-CURRENTLINK_BSH_ADDRESS="0xccf66A1a9D82EC13b0B2a5002EdA4dF411BE4754" \
-truffle exec $SOLIDITY_DIST_DIR/bmc/scripts/add_bsh_service.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bmc
-```
-
-```bash
-PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
-NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_NAME="ICX" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="ICX" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh  
 
 ## Output
@@ -686,6 +646,8 @@ Register BTC
 ```
 PRIVATE_KEYS="${YOUR_PRIVATE_KEY}" \
 NEXTLINK_BTP_NATIVECOIN_NAME="BTC" \
+NEXTLINK_BTP_NATIVECOIN_SYMBOL="BTC" \
+NEXTLINK_BTP_NATIVECOIN_DECIMAL=18 \
 truffle exec $SOLIDITY_DIST_DIR/bsh/scripts/register_coin.js --network moonbase --working_directory $SOLIDITY_DIST_DIR/bsh
 > Warning: possible unsupported (undocumented in help) command line option(s): --working_directory
 Using network 'moonbase'.
@@ -1081,37 +1043,6 @@ goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javasc
     --param _irc31=cxc1e92e175e1e5f98edf62b192ae051caae994a97 \
     --param _name=ICX \
     --param _serializedIrc2=$IRC2_SERIALIZED
-
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
-```
-
-#### Deploy IRC2 token Jar
-
-```bash
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/irc2-0.1.0-optimized.jar \
-    --key_store godWallet.json --key_password gochain \
-    --nid 0x42 --step_limit 3519157719 \
-    --content_type application/java \
-    --param _name=MOVR \
-    --param _symbol=MOVR \
-    --param _initialSupply=0x186A0 \
-    --param _decimals=0x12
-
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
-```
-
-
-#### Deploy IRC2_BSH
-
-```bash
-goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ sendtx deploy btp/javascore/nativecoin/build/libs/nativecoinIRC2-0.1.0-optimized.jar \
-    --key_store godWallet.json --key_password gochain \
-    --nid 0x42 --step_limit 3519157719 \
-    --content_type application/java \
-    --param _bmc=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
-    --param _irc2=cx11a5a7510b128e0ab16546e1493e38b2d7e299c3 \
-    --param _name=ICX \
-    --param _tokenName=MOVR
 
 goloop rpc --uri https://btp.net.solidwallet.io/api/v3/ txresult 0xdd53327a0f5b5e2b433c49ec43d8c9f45b54295de81b3cd74db99be75257810c
 ```

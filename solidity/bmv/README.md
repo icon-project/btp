@@ -6,7 +6,7 @@ v15.12.0
 ```
 Install tools
 ```
-$ npm install --global yarn truffle@5.3.0
+$ npm install --global yarn truffle@5.3.13
 ```
 Install dependencies
 ```
