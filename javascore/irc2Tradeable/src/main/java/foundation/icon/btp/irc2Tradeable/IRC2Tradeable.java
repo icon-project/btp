@@ -39,6 +39,7 @@ public class IRC2Tradeable extends IRC2Basic implements OwnerManager {
 
     @External
     public void burn(BigInteger _amount) {
+        requireOwnerAccess();
         _burn(Context.getCaller(), _amount);
     }
 
