@@ -264,3 +264,16 @@ pub static BOBS_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(C
         let owners = context.method_responses("get_owners");
         assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
     };
+
+pub static CHUCK_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+            .pipe(USER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_owner");
+        assert!(error.contains("BSHRevertNotExistsPermission"));
+    };
