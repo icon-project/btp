@@ -9,8 +9,4 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn register(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "register", method_params);
-        context
-    }
 }

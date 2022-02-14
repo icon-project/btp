@@ -118,4 +118,59 @@ mod manage_bsh_services {
                 .then(TOKEN_REGISTERED_SHOULD_BE_PRESENT);
         }
     }
+
+    mod token_bsh {
+        use super::*;
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn owner_can_update_fee_ratio_for_a_registered_token() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+                .when(BOB_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH)
+                .then(FEE_RATIO_SHOULD_BE_UPDATED_IN_TOKEN_BSH);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn non_owner_cannot_update_fee_ratio_for_a_registered_token() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(TOKEN_BSH_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
+                .and(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+                .when(CHUCK_INVOKES_SET_FEE_RATIO_IN_NATIVE_COIN_TOKEN_BSH)
+                .then(TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_SETTING_FEE_RATI0);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+       async fn  user_cannot_query_token_id_for_a_unregistered_token(){
+        Kitten::given(NEW_CONTEXT)
+        .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+        .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+        .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+        .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+        .when(USER_INVOKES_TOKEN_ID_FOR_UNREGISTERED_TOKEN)
+        .then(TOKEN_BSH_SHOULD_THROUGH_ERROR_ON_GETTING_TOKEN_ID);
+
+       }
+       
+       #[tokio::test(flavor = "multi_thread")]
+       async fn owner_can_query_token_id_for_a_registered_token(){
+        Kitten::given(NEW_CONTEXT)
+        .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+        .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+        .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+        .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+        .and(NEAR_TOKEN_IS_REGISTERED)
+        .when(USER_INVOKES_TOKEN_ID_IN_TOKEN_BSH)
+        .then(TOKEN_ID_SHOULD_BE_PRESENT_FOR_THE_REGISTERED_TOKEN);
+
+       }
+
+
+    }
 }

@@ -14,10 +14,22 @@ impl Contract<'_, contract_type> {
         context
     }
 
+    pub fn register(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "register", method_params);
+        context
+    }
+
+
     pub fn tokens(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "tokens", method_params);
         context
     }
+
+    pub fn tokens_id(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "token_id", method_params);
+        context
+    }
+
     pub fn token_id(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "token_id", method_params);
         context
