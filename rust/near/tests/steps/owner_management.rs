@@ -165,13 +165,14 @@ pub static ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context
         assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
     };
 
-    pub static BMC_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ON_REMOVING_OWNERS: fn(Context) =
+pub static BMC_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ON_REMOVING_OWNERS: fn(Context) =
     |context: Context| {
         let error = context.method_errors("remove_owner");
         assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
     };
 
-pub static CHARLIES_ACCOUNT_IS_CREATED_AND_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context = |context: Context| {
+pub static CHARLIES_ACCOUNT_IS_CREATED_AND_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM:
+    fn(Context) -> Context = |context: Context| {
     context
         .pipe(CHARLIES_ACCOUNT_IS_CREATED)
         .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
@@ -196,14 +197,44 @@ pub static CHARLIE_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context 
             .pipe(USER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
     };
 
-pub static ALICE_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(Context) = |context: Context| {
+pub static ALICE_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(Context) =
+    |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_NATIVE_COIN_BSH);
         let owners = context.method_responses("get_owners");
-    
+
         let result: HashSet<_> = from_value::<Vec<String>>(owners)
             .unwrap()
             .into_iter()
             .collect();
         let expected = context.accounts().get("alice").id().to_string();
         assert_eq!(result.contains(&expected), true);
+    };
+
+pub static CHARLIE_IS_AN_EXISTING_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| {
+        context
+            .pipe(CHARLIES_ACCOUNT_IS_CREATED)
+            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(NATIVE_COIN_BSH_OWNER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static NATIVE_COIN_BSH_OWNER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_NATIVE_COIN_BSH_OWNER)
+            .pipe(USER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
+            .pipe(USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(Context) =
+    |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_NATIVE_COIN_BSH);
+        let owners = context.method_responses("get_owners");
+        assert_eq!(owners, json!([context.accounts().get("bob").id()]));
     };
