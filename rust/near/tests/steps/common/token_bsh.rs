@@ -1,10 +1,10 @@
 use lazy_static::lazy_static;
 use serde_json::json;
-use test_helper::types::{Context, Contract, NativeCoinBsh, NativeCoinBshContract};
+use test_helper::types::{Context, Contract, TokenBsh, TokenBshContract};
 
 lazy_static! {
-    pub static ref TOKEN_BSH_CONTRACT: Contract<'static, NativeCoinBsh> =
-        NativeCoinBshContract::new("nativecoin", "res/NATIVE_COIN_BSH_CONTRACT.wasm");
+    pub static ref TOKEN_BSH_CONTRACT: Contract<'static, TokenBsh> =
+        NativeCoinBshContract::new("tokenbsh", "res/TOKEN_BSH_CONTRACT.wasm");
 }
 
 pub static TOKEN_BSH_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =
