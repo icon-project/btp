@@ -82,3 +82,6 @@ pub static USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context 
 
 pub static USER_INVOKES_TRANSFER_FEES_TO_FEE_AGGREGATOR_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.transfer_fees(context);
+
+pub static USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| NATIVE_COIN_BSH_CONTRACT.register(context);

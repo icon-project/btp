@@ -31,3 +31,6 @@ pub use messaging::*;
 
 mod fee_management;
 pub use fee_management::*;
+
+mod native_coin_bsh_management;
+pub use native_coin_bsh_management::*;
