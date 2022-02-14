@@ -138,13 +138,6 @@ pub static BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
             .pipe(USER_INVOKES_REGISTER_NEW_TOKEN_IN_NATIVE_COIN_BSH)
     };
 
-    pub static BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
-    |context: Context| -> Context {
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
-            .pipe(USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
-    };
-
     pub static CHARLIE_INVOKES_SET_FEE_RATIO_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         context.pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
