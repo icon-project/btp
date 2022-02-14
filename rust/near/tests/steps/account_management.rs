@@ -31,6 +31,11 @@ pub static RELAY_1_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Co
     context
 };
 
+pub static ALICES_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+    let alice = create_account(&context);
+    context.accounts_mut().add("alice", alice);
+    context
+};
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 // * * * *  Set Signer * * * *
