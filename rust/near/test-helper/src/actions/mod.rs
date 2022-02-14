@@ -12,4 +12,5 @@ mod messaging;
 mod manage_tokens;
 mod setup;
 mod initialize;
+mod manage_bsh;
 pub use setup::create_account;

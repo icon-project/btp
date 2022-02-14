@@ -28,3 +28,6 @@ pub use route_management::*;
 
 mod messaging;
 pub use messaging::*;
+
+mod fee_management;
+pub use fee_management::*;

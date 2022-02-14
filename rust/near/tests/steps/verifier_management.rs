@@ -99,24 +99,20 @@ pub static BMC_SHOULD_THROW_VERIFIER_ALREADY_EXISTS_ERROR_ON_ADDING_VERIFIER: fn
         assert!(error.to_string().contains("BMCRevertAlreadyExistsBMV"));
     };
 
-    pub static ICON_NETWORK_ADDRESS_IS_PROVIDED_AS_REMOVE_VERIFIER_PARAM: fn(Context) -> Context =
+pub static ICON_NETWORK_ADDRESS_IS_PROVIDED_AS_REMOVE_VERIFIER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
-        context.add_method_params(
-            "remove_verifier",
-            json!({
-                "network":ICON_NETWORK
-            }),
-        );
+        context.add_method_params("remove_verifier", json!({ "network": ICON_NETWORK }));
         context
     };
 
-    pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
-        context.
-        pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+pub static ALICE_INVOKES_REMOVE_VERIFIER_IN_BMC: fn(Context) -> Context = |mut context: Context| {
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
         .pipe(USER_INVOKES_REMOVE_VERIFIER_IN_BMC)
-    };
+};
 
-    pub static BMC_SHOULD_THROW_VERIFIER_DOES_NOT_EXISTS_ERROR_ON_REMOVING_VERIFIER: fn(Context) = |context: Context| {
+pub static BMC_SHOULD_THROW_VERIFIER_DOES_NOT_EXISTS_ERROR_ON_REMOVING_VERIFIER: fn(Context) =
+    |context: Context| {
         let error = context.method_errors("remove_verifier");
         assert!(error.to_string().contains("BMCRevertNotExistBMV"));
-        };
+    };

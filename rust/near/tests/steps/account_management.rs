@@ -37,11 +37,12 @@ pub static RELAY_1_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Co
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 
-pub static THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER: fn(Context) -> Context = |mut context: Context| {
-    let signer = context.contracts().get("bmc").as_account().clone();
-    context.set_signer(&signer);
-    context
-};
+pub static THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER: fn(Context) -> Context =
+    |mut context: Context| {
+        let signer = context.contracts().get("bmc").as_account().clone();
+        context.set_signer(&signer);
+        context
+    };
 
 pub static THE_TRANSACTION_IS_SIGNED_BY_ALICE: fn(Context) -> Context = |mut context: Context| {
     let signer = context.accounts().get("alice").to_owned();
@@ -84,3 +85,24 @@ pub static THE_TRANSACTION_IS_SIGNED_BY_CHARLIE: fn(Context) -> Context = |mut c
     context.set_signer(&signer);
     context
 };
+
+// * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * *
+// * * * * NATIVE_COIN_BSH * *
+// * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * *
+pub static NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB: fn(Context) -> Context =
+    |mut context: Context| {
+        let bsh_signer = context.contracts().get("nativecoin").as_account().clone();
+        context.accounts_mut().add("bob", bsh_signer);
+        context
+    };
+
+pub static NATIVE_COIN_BSH_CONTRACT_IS_NOT_OWNED_BY_CHUCK: fn(Context) -> Context =
+    |mut context: Context| (context).pipe(CHUCKS_ACCOUNT_IS_CREATED);
+
+// * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * *
+// * * * * TOKEN_BSH * *
+// * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * *

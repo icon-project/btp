@@ -1,6 +1,6 @@
 use super::*;
-use super::{BMC_CONTRACT, BMV_CONTRACT, BSH_CONTRACT};
-use serde_json::{from_value, json};
+use libraries::types::{HashedCollection, HashedValue};
+use serde_json::{from_value, json, Value};
 use test_helper::types::Context;
 
 pub static BOB_IS_BSH_CONTRACT_OWNER: fn(Context) -> Context = |mut context: Context| {
@@ -64,7 +64,7 @@ pub static NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_PARAM: fn(Context) -> Context =
             }),
         );
         context
-};
+    };
 
 pub static NEW_BSH_PERIPHERY_ADDRESS_IS_PROVIDED_AS_UPDATE_PERIPHERY_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -75,7 +75,7 @@ pub static NEW_BSH_PERIPHERY_ADDRESS_IS_PROVIDED_AS_UPDATE_PERIPHERY_PARAM: fn(C
             }),
         );
         context
-};
+    };
 
 pub static NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -86,7 +86,7 @@ pub static NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM: fn(Context) -> Context =
             }),
         );
         context
-};
+    };
 
 pub static FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -97,7 +97,7 @@ pub static FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM: fn(Context) -> Cont
             }),
         );
         context
-};
+    };
 
 pub static FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -108,8 +108,7 @@ pub static FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM: fn(Context) -> Context =
             }),
         );
         context
-};
-
+    };
 
 pub static COIN_NAME_IS_PROVIDED_AS_GET_BALANCE_PARAM: fn(Context) -> Context =
     |mut context: Context| {
@@ -336,17 +335,17 @@ pub static BOB_INVOKES_UPDATE_BSH_PERIPHERY_FORM_BSH: fn(Context) -> Context =
 pub static UPDATE_BSH_PERIPHERY_INVOKED_BY_BSH_OWNER: fn(Context) -> Context =
     |mut context: Context| {
         BOBS_ACCOUNT_IS_CREATED(context)
-        .pipe(BOB_IS_BSH_CONTRACT_OWNER)
-        .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
-        .pipe(BOB_INVOKES_UPDATE_BSH_PERIPHERY_FORM_BSH)
+            .pipe(BOB_IS_BSH_CONTRACT_OWNER)
+            .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+            .pipe(BOB_INVOKES_UPDATE_BSH_PERIPHERY_FORM_BSH)
     };
 
 pub static UPDATE_BSH_PERIPHERY_INVOKED_BY_NON_BSH_OWNER: fn(Context) -> Context =
     |mut context: Context| {
         CHUCKS_ACCOUNT_IS_CREATED(context)
-        .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
-        .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
-        .pipe(CHUCK_INVOKES_UPDATE_BSH_PERIPHERY_FORM_BSH)
+            .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
+            .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+            .pipe(CHUCK_INVOKES_UPDATE_BSH_PERIPHERY_FORM_BSH)
     };
 
 pub static BOB_INVOKES_UPDATE_URI_FORM_BSH: fn(Context) -> Context = |mut context: Context| {
@@ -363,16 +362,16 @@ pub static CHCUK_INVOKES_UPDATE_URI_FORM_BSH: fn(Context) -> Context = |mut cont
 
 pub static UPDATE_URI_INVOKED_BY_BSH_OWNER: fn(Context) -> Context = |mut context: Context| {
     BOBS_ACCOUNT_IS_CREATED(context)
-    .pipe(BOB_IS_BSH_CONTRACT_OWNER)
-    .pipe(NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM)
-    .pipe(BOB_INVOKES_UPDATE_URI_FORM_BSH)
+        .pipe(BOB_IS_BSH_CONTRACT_OWNER)
+        .pipe(NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM)
+        .pipe(BOB_INVOKES_UPDATE_URI_FORM_BSH)
 };
 
 pub static UPDATE_URI_INVOKED_BY_NON_BSH_OWNER: fn(Context) -> Context = |mut context: Context| {
     CHUCKS_ACCOUNT_IS_CREATED(context)
-    .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
-    .pipe(NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM)
-    .pipe(CHCUK_INVOKES_UPDATE_URI_FORM_BSH)
+        .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
+        .pipe(NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM)
+        .pipe(CHCUK_INVOKES_UPDATE_URI_FORM_BSH)
 };
 
 pub static BOB_INVOKES_SET_FEE_RATIO_FORM_BSH: fn(Context) -> Context = |mut context: Context| {
@@ -389,17 +388,17 @@ pub static CHCUK_INVOKES_SET_FEE_RATIO_FORM_BSH: fn(Context) -> Context = |mut c
 
 pub static SET_FEE_RATIO_INVOKED_BY_BSH_OWNER: fn(Context) -> Context = |mut context: Context| {
     BOBS_ACCOUNT_IS_CREATED(context)
-    .pipe(BOB_IS_BSH_CONTRACT_OWNER)
-    .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
-    .pipe(BOB_INVOKES_SET_FEE_RATIO_FORM_BSH)
+        .pipe(BOB_IS_BSH_CONTRACT_OWNER)
+        .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+        .pipe(BOB_INVOKES_SET_FEE_RATIO_FORM_BSH)
 };
 
 pub static SET_FEE_RATIO_INVOKED_BY_NON_BSH_OWNER: fn(Context) -> Context =
     |mut context: Context| {
         CHUCK_ACCOUNT_IS_CREATED(context)
-    .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
-    .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
-    .pipe(CHCUK_INVOKES_SET_FEE_RATIO_FORM_BSH)
+            .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
+            .pipe(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+            .pipe(CHCUK_INVOKES_SET_FEE_RATIO_FORM_BSH)
     };
 
 pub static BOB_INVOKES_SET_FIXED_FEE_FORM_BSH: fn(Context) -> Context = |mut context: Context| {
@@ -416,9 +415,9 @@ pub static CHCUK_INVOKES_SET_FIXED_FEE_FORM_BSH: fn(Context) -> Context = |mut c
 
 pub static SET_FIXED_FEE_INVOKED_BY_BSH_OWNER: fn(Context) -> Context = |mut context: Context| {
     BOBS_ACCOUNT_IS_CREATED(context)
-    .pipe(BOB_IS_BSH_CONTRACT_OWNER)
-    .pipe(FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM)
-    .pipe(BOB_INVOKES_SET_FIXED_FEE_FORM_BSH)
+        .pipe(BOB_IS_BSH_CONTRACT_OWNER)
+        .pipe(FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM)
+        .pipe(BOB_INVOKES_SET_FIXED_FEE_FORM_BSH)
 };
 
 pub static SET_FIXED_FEE_INVOKED_BY_NON_BSH_OWNER: fn(Context) -> Context =
@@ -427,4 +426,4 @@ pub static SET_FIXED_FEE_INVOKED_BY_NON_BSH_OWNER: fn(Context) -> Context =
             .pipe(CHUCK_IS_NOT_A_BSH_OWNER)
             .pipe(FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM)
             .pipe(CHCUK_INVOKES_SET_FIXED_FEE_FORM_BSH)
- };
+    };
