@@ -238,3 +238,30 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: 
         let owners = context.method_responses("get_owners");
         assert_eq!(owners, json!([context.accounts().get("bob").id()]));
     };
+
+pub static BOBS_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        let bob = context.accounts().get("bob").to_owned();
+        context.add_method_params(
+            "remove_owner",
+            json!({
+                "account": bob.id()
+            }),
+        );
+        context
+    };
+
+pub static CHARLIE_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static BOBS_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(Context) =
+    |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_NATIVE_COIN_BSH);
+        let owners = context.method_responses("get_owners");
+        // assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
+        println!("{}", owners);
+    };
