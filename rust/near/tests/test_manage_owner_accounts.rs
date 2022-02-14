@@ -184,5 +184,16 @@ mod manage_owner_accounts {
                 .when(CHARLIE_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
                 .then(BOBS_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn non_bsh_owner_cannot_add_new_owners() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
+                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(CHUCK_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_OWNERS);
+        }
     }
 }
