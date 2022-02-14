@@ -170,3 +170,40 @@ pub static ALICES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_BMC_OWNERS: fn(Context
         let error = context.method_errors("remove_owner");
         assert!(error.to_string().contains("BMCRevertNotExistsOwner"));
     };
+
+pub static CHARLIES_ACCOUNT_IS_CREATED_AND_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(CHARLIES_ACCOUNT_IS_CREATED)
+        .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+};
+
+pub static ALICES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        let alice = context.accounts().get("alice").to_owned();
+        context.add_method_params(
+            "add_owner",
+            json!({
+                "account": alice.id()
+            }),
+        );
+        context
+    };
+
+pub static CHARLIE_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static ALICE_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(Context) = |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_NATIVE_COIN_BSH);
+        let owners = context.method_responses("get_owners");
+    
+        let result: HashSet<_> = from_value::<Vec<String>>(owners)
+            .unwrap()
+            .into_iter()
+            .collect();
+        let expected = context.accounts().get("alice").id().to_string();
+        assert_eq!(result.contains(&expected), true);
+    };
