@@ -277,3 +277,16 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_ADDING_OWNERS: fn(
         let error = context.method_errors("add_owner");
         assert!(error.contains("BSHRevertNotExistsPermission"));
     };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.contains("BSHRevertNotExistsPermission"));
+    };
+
+pub static CHUCK_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+            .pipe(USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+    };
