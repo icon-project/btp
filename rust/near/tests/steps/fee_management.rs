@@ -119,18 +119,6 @@ pub static BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
             .pipe(USER_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
     };
 
-    pub static CAHRLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_NATIVE_COIN_BSH_OWNER_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        let charlie = context.accounts().get("charlie").to_owned();
-        context.add_method_params(
-            "add_owner",
-            json!({
-                "account": charlie.id()
-            }),
-        );
-        context
-    };
-
     pub static CHUCK_INVOKES_REGISTER_NEW_WRAPPED_TOKEN_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {
         (context)
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
