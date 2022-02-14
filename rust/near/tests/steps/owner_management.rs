@@ -262,6 +262,5 @@ pub static BOBS_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS: fn(C
     |context: Context| {
         let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_NATIVE_COIN_BSH);
         let owners = context.method_responses("get_owners");
-        // assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
-        println!("{}", owners);
+        assert_eq!(owners, json!([context.accounts().get("charlie").id()]));
     };
