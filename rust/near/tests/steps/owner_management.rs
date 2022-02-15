@@ -328,3 +328,38 @@ pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS_ADDED_BY_NATI
     let expected = context.accounts().get("charlie").id().to_string();
     assert_eq!(result.contains(&expected), true);
 };
+
+pub static BOB_INVOKES_REMOVE_OWNER_IN_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
+            .pipe(USER_INVOKES_REMOVE_OWNER_IN_TOKEN_BSH)
+    };
+
+    pub static TOKEN_BSH_SHOULD_THROW_LAST_OWNER_ERROR_ON_REMOVING_OWNER: fn(Context) = |context: Context| {
+        let error = context.method_errors("remove_owner");
+        
+         assert!(error.to_string().contains("BSHRevertLastOwner"));
+        
+    };
+
+    pub static  TOKEN_BSH_OWNER_INVOKES_ADD_OWNER_IN_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(USER_INVOKES_ADD_OWNER_IN_TOKEN_BSH)
+    };
+   
+    pub static CHARLIE_IS_AN_EXISTING_OWNER_IN_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| {
+        context
+            .pipe(CHARLIES_ACCOUNT_IS_CREATED)
+            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(TOKEN_BSH_OWNER_INVOKES_ADD_OWNER_IN_TOKEN_BSH)
+    };
+
+    pub static CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_TOKEN_BSH_OWNERS: fn(Context) =
+    |context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_TOKEN_BSH);
+        let owners = context.method_responses("get_owners");
+        assert_eq!(owners, json!([context.accounts().get("bob").id()]));
+    };
