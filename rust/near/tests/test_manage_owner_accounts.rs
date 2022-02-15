@@ -207,5 +207,64 @@ mod manage_owner_accounts {
                 .when(CHUCK_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_OWNERS);
         }
+        //1297
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bsh_owner_cannot_remove_non_existing_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNERS);
+        }
+        //1295
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bsh_owner_cannot_add_already_existing_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIE_IS_AN_EXISTING_OWNER_IN_NATIVE_COIN_BSH)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_OWNER_ALREADY_EXIST_ERROR_ON_REMOVING_OWNERS);
+        }
+        //1293
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bsh_owner_can_remove_self_from_owners_list() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIE_IS_AN_EXISTING_OWNER_IN_NATIVE_COIN_BSH)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(CHARLIE_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_NOT_BE_IN_THE_LIST_OF_NATIVE_COIN_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bsh_owner_cannot_remove_self_if_self_is_the_last_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(BOBS_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .when(BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_LAST_OWNER_ERROR_ON_REMOVING_OWNERS);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bsh_contract_account_owner_can_add_new_bmc_owner() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+                .when(NATIVE_COIN_BSH_OWNER_INVOKES_ADD_OWNER_IN_BMC)
+                .then(CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS_ADDED_BY_NATIVE_COIN_BSH);
+        }
     }
 }
