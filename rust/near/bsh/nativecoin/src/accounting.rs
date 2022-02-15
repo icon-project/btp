@@ -12,7 +12,7 @@ impl NativeCoinService {
         &mut self,
         sender_id: AccountId,
         amount: U128,
-        _msg: String,
+        #[allow(unused_variables)] msg: String,
     ) -> PromiseOrValue<U128> {
         let amount = amount.into();
         let coin_account = env::predecessor_account_id();
@@ -57,21 +57,19 @@ impl NativeCoinService {
         let account = env::predecessor_account_id();
 
         self.assert_have_minimum_amount(amount);
-
-        let native_coin_id = Self::hash_coin_id(&self.native_coin_name);
-        self.assert_have_sufficient_deposit(&account, &native_coin_id, amount, None);
+        self.assert_have_sufficient_deposit(&account, &coin_id, amount, None);
 
         // Check if current account have sufficient balance
         self.assert_have_sufficient_balance(1 + amount);
 
-        let native_coin = self.coins.get(&coin_id).unwrap();
+        let coin = self.coins.get(&coin_id).unwrap();
 
-        let transfer_promise = if native_coin.network() != &self.network {
+        let transfer_promise = if coin.network() != &self.network {
             ext_nep141::ft_transfer_with_storage_check(
                 account.clone(),
                 amount,
                 None,
-                native_coin.metadata().uri().to_owned().unwrap(),
+                coin.metadata().uri().to_owned().unwrap(),
                 estimate::NO_DEPOSIT,
                 estimate::GAS_FOR_MT_TRANSFER_CALL,
             )
@@ -82,8 +80,8 @@ impl NativeCoinService {
         transfer_promise.then(ext_self::on_withdraw(
             account.clone(),
             amount,
-            native_coin_id,
-            native_coin.symbol().to_owned(),
+            coin_id,
+            coin.symbol().to_owned(),
             env::current_account_id(),
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_MT_TRANSFER_CALL,
@@ -123,11 +121,7 @@ impl NativeCoinService {
     }
 
     #[cfg(feature = "testable")]
-    pub fn account_balance(
-        &self,
-        owner_id: AccountId,
-        coin_id: CoinId,
-    ) -> Option<AccountBalance> {
+    pub fn account_balance(&self, owner_id: AccountId, coin_id: CoinId) -> Option<AccountBalance> {
         self.balances.get(&owner_id, &coin_id)
     }
 
@@ -145,13 +139,13 @@ impl NativeCoinService {
         &mut self,
         account: AccountId,
         amount: u128,
-        native_coin_id: CoinId,
+        coin_id: CoinId,
         coin_symbol: String,
     ) {
-        let mut balance = self.balances.get(&account, &native_coin_id).unwrap();
+        let mut balance = self.balances.get(&account, &coin_id).unwrap();
         balance.deposit_mut().sub(amount).unwrap();
         self.balances
-            .set(&account.clone(), &native_coin_id, balance);
+            .set(&account.clone(), &coin_id, balance);
 
         log!(
             "[Withdrawn] Amount : {} by {}  {}",

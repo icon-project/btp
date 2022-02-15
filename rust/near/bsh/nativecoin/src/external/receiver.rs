@@ -7,7 +7,7 @@ pub trait MultiTokenReceiver {
     fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
-        token_ids: Vec<AssetId>,
+        coin_ids: Vec<AssetId>,
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>>;

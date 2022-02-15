@@ -15,7 +15,7 @@ pub trait NativeCoinService {
     fn on_mint(
         &mut self,
         amount: u128,
-        token_id: AssetId,
+        coin_id: AssetId,
         coin_symbol: String,
         receiver_id: AccountId,
     );
@@ -23,7 +23,7 @@ pub trait NativeCoinService {
     fn on_burn(
         &mut self, 
         amount: u128, 
-        token_id: AssetId,
+        coin_id: AssetId,
         coin_symbol: String,
     );
 }
