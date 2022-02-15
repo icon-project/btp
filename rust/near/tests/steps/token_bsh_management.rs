@@ -211,7 +211,7 @@ pub static BSH_SHOULD_THROW_FAIL_TO_TRANSFER_ERROR: fn(Context) -> Context =
 pub static BSH_OWNER_INVOKES_NATIVE_COIN_TRANSFER_TO_UNSUPPORTED_NETWORK: fn(Context) -> Context =
     |mut context: Context| context;
 
-pub static ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
+pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         let charlie = context.accounts().get("charlie").to_owned();
         context.add_method_params(
