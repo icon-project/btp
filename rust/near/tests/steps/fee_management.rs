@@ -269,3 +269,10 @@ pub static TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_TOKEN: fn(Co
      assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
     
 };
+
+pub static CHARLIE_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH)
+    };

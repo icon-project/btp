@@ -182,4 +182,19 @@ mod manage_bsh_services {
                 .then(TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_TOKEN);
         }
     }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn removed_bsh_owner_cannot_update_fee_ratio() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIE_IS_AN_EXISTING_OWNER_IN_TOKEN_BSH)
+                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
+                .and(BOB_INVOKES_REMOVE_OWNER_IN_TOKEN_BSH)
+                .and(FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM)
+                .when(CHARLIE_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH)
+                .then(TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_SETTING_FEE_RATI0);
+        }
 }
