@@ -290,3 +290,41 @@ pub static CHUCK_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
             .pipe(USER_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
     };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.contains("BSHRevertNotExistsOwner"));
+    };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_OWNER_ALREADY_EXIST_ERROR_ON_REMOVING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_owner");
+        assert!(error.contains("BSHRevertAlreadyExistsOwner"));
+    };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_LAST_OWNER_ERROR_ON_REMOVING_OWNERS: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("remove_owner");
+        assert!(error.to_string().contains("BSHRevertLastOwner"));
+    };
+
+pub static NATIVE_COIN_BSH_OWNER_INVOKES_ADD_OWNER_IN_BMC: fn(Context) -> Context =
+    |context: Context| -> Context {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_BMC_OWNER)
+            .pipe(USER_INVOKES_ADD_OWNER_IN_BMC)
+    };
+
+pub static CHARLIES_ACCOUNT_ID_SHOULD_BE_IN_THE_LIST_OF_BMC_OWNERS_ADDED_BY_NATIVE_COIN_BSH:
+    fn(Context) = |context: Context| {
+    let context = context.pipe(USER_INVOKES_GET_OWNERS_IN_BMC);
+
+    let owners = context.method_responses("get_owners");
+    let result: HashSet<_> = from_value::<Vec<String>>(owners.clone())
+        .unwrap()
+        .into_iter()
+        .collect();
+    let expected = context.accounts().get("charlie").id().to_string();
+    assert_eq!(result.contains(&expected), true);
+};
