@@ -207,7 +207,7 @@ mod manage_owner_accounts {
                 .when(CHUCK_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_OWNERS);
         }
-        //1297
+        
         #[tokio::test(flavor = "multi_thread")]
         async fn bsh_owner_cannot_remove_non_existing_owner() {
             Kitten::given(NEW_CONTEXT)
@@ -219,7 +219,7 @@ mod manage_owner_accounts {
                 .when(BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_OWNER_DOES_NOT_EXIST_ERROR_ON_REMOVING_OWNERS);
         }
-        //1295
+        
         #[tokio::test(flavor = "multi_thread")]
         async fn bsh_owner_cannot_add_already_existing_owner() {
             Kitten::given(NEW_CONTEXT)
@@ -231,7 +231,7 @@ mod manage_owner_accounts {
                 .when(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_OWNER_ALREADY_EXIST_ERROR_ON_REMOVING_OWNERS);
         }
-        //1293
+        
         #[tokio::test(flavor = "multi_thread")]
         async fn bsh_owner_can_remove_self_from_owners_list() {
             Kitten::given(NEW_CONTEXT)
