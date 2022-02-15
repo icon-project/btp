@@ -8,7 +8,7 @@ pub trait NativeCoinService {
         &mut self,
         account: AccountId,
         amount: u128,
-        native_coin_id: AssetId,
+        coin_id: AssetId,
         coin_symbol: String,
     );
 

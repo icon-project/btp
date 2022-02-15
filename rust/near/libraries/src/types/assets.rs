@@ -16,7 +16,6 @@ pub struct AssetItem {
 pub struct Assets<T: AssetMetadata> {
     list: UnorderedSet<AssetId>,
     metadata: Metadata<T>,
-    // supply: HashMap<AssetId, u128>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
