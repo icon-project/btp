@@ -1,7 +1,9 @@
-use super::{PartSetId, RlpBytes};
+use super::{PartSetId, RlpBytes, Nullable};
 use libraries::rlp::{self, Encodable};
 use std::convert::AsRef;
 use libraries::types::Hash;
+use hex::{decode, encode};
+
 pub static VOTE_TYPE_PRECOMMIT: u8 = 1;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -10,7 +12,7 @@ pub struct VoteMessage {
     round: u8,
     vote_type: u8,
     block_id: Hash,
-    part_set_id: PartSetId,
+    part_set_id: Nullable<PartSetId>,
     timestamp: u64,
 }
 
@@ -27,13 +29,13 @@ impl VoteMessage {
             round,
             vote_type,
             block_id,
-            part_set_id,
+            part_set_id: Nullable::new(Some(part_set_id)),
             timestamp: Default::default(),
         }
     }
 
-    pub fn timestamp_mut(&mut self) -> &u64 {
-        &self.timestamp
+    pub fn timestamp_mut(&mut self) -> &mut u64 {
+        &mut self.timestamp
     }
 }
 
@@ -45,7 +47,8 @@ impl Encodable for VoteMessage {
             .append(&self.round)
             .append(&self.vote_type)
             .append(&self.block_id)
-            .append(&self.part_set_id); // Confirm: Can this be null?
+            .append(&self.part_set_id)
+            .append(&self.timestamp);
     }
 }
 

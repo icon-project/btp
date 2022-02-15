@@ -22,6 +22,6 @@ impl Encodable for ExtensionData {
         self.data.iter().for_each(|value| {
             params.append(value);
         });
-        stream.append(&params.out());
+        stream.append_internal(&params.out());
     }
 }
