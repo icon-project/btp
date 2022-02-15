@@ -78,7 +78,7 @@ impl RlpStream {
 	pub fn append_null(&mut self) -> &mut Self {
 		// self push raw item
 		self.buffer.put_u8(0xf8);
-		self.buffer.put_u8(0);
+		self.buffer.put_u8(0x00);
 		// try to finish and prepend the length
 		self.note_appended(1);
 
@@ -86,6 +86,14 @@ impl RlpStream {
 		self
 	}
 
+	pub fn append_null_internal(&mut self) -> &mut Self {
+		// self push raw item
+		self.buffer.put_u8(0xf8);
+		self.buffer.put_u8(0x00);
+		// return chainable self
+		self
+	}
+	
 	/// Apends null to the end of stream, chainable.
 	///
 	/// ```

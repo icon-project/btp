@@ -34,9 +34,9 @@ impl<T: Decodable> Decodable for Nullable<T> {
 impl<T: Encodable> Encodable for Nullable<T> {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
         if self.is_none() {
-            stream.append_null();
+            stream.append_null_internal();
         } else {
-            stream.append(self.0.as_ref().unwrap());
+            stream.append_internal(self.get().unwrap());
         }
     }
 }

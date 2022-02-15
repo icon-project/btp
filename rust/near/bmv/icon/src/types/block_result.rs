@@ -1,13 +1,14 @@
 use super::{ExtensionData, Nullable};
+use hex::encode;
 use libraries::rlp::{self, Decodable, Encodable};
 use libraries::types::Hash;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct BlockResult {
-    state_hash: Hash,
+    state_hash: Nullable<Hash>,
     patch_receipt_hash: Nullable<Hash>,
     receipt_hash: Nullable<Hash>,
-    extension_data: ExtensionData,
+    extension_data: Nullable<ExtensionData>,
 }
 
 impl BlockResult {
@@ -31,12 +32,16 @@ impl Decodable for BlockResult {
 
 impl Encodable for BlockResult {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
-        let mut params = rlp::RlpStream::new_list(4);
+        let mut params = rlp::RlpStream::new();
         params
+            .begin_unbounded_list()
             .append(&self.state_hash)
             .append(&self.patch_receipt_hash)
-            .append(&self.receipt_hash)
-            .append(&self.extension_data);
-        stream.append(&params.out());
+            .append(&self.receipt_hash);
+        if self.extension_data.is_some() {
+            params.append(&self.extension_data);
+        }
+        params.finalize_unbounded_list();
+        stream.append_internal(&params.out());
     }
 }

@@ -11,13 +11,16 @@ impl BtpMessageVerifier {
     // * * * * * * * * * * * * * * * * *
 
     pub fn recover_address(hash: &Hash, signature: &[u8]) -> Vec<u8> {
-        Hash::new::<Sha256>(&env::ecrecover(
+        let mut hash = Hash::new::<Sha256>(&env::ecrecover(
             hash.deref(),
             &signature[..64],
             signature[64].into(),
             0,
-        ))[12..]
-            .to_vec()
+        ))[12..].to_vec();
+
+        let mut address_bytes = [0].to_vec();
+        address_bytes.append(&mut hash);
+        address_bytes
     }
 
     pub fn filter_source_events(event_log: &EventLog, source: &BTPAddress) -> bool {

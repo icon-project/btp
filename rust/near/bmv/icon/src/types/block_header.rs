@@ -7,13 +7,13 @@ pub struct BlockHeader {
     pub version: u8,
     pub height: u64,
     pub timestamp: u64,
-    pub proposer: Vec<u8>,
-    pub previous_hash: Hash,
-    pub vote_hash: Hash,
-    pub next_validator_hash: Hash,
+    pub proposer: Nullable<Vec<u8>>,
+    pub previous_hash: Nullable<Hash>,
+    pub vote_hash: Nullable<Hash>,
+    pub next_validator_hash: Nullable<Hash>,
     pub patch_tx_hash: Nullable<Hash>,
     pub tx_hash: Nullable<Hash>,
-    pub logs_bloom: Vec<u8>,
+    pub logs_bloom: Nullable<Vec<u8>>,
     pub block_result: Nullable<BlockResult>,
 }
 
@@ -26,7 +26,7 @@ impl BlockHeader {
         &self.block_result
     }
 
-    pub fn next_validator_hash(&self) -> &Hash {
+    pub fn next_validator_hash(&self) -> &Nullable<Hash> {
         &self.next_validator_hash
     }
 }
@@ -53,8 +53,7 @@ impl Decodable for BlockHeader {
 
 impl Encodable for BlockHeader {
     fn rlp_append(&self, stream: &mut rlp::RlpStream) {
-        let mut params = rlp::RlpStream::new_list(11);
-        params
+        stream.begin_list(11)
             .append(&self.version)
             .append(&self.height)
             .append(&self.timestamp)
@@ -66,7 +65,6 @@ impl Encodable for BlockHeader {
             .append(&self.tx_hash)
             .append(&self.logs_bloom)
             .append(&self.block_result);
-        stream.append(&params.out());
     }
 }
 

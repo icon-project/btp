@@ -6,7 +6,6 @@ pub mod accounts;
 use accounts::*;
 use std::convert::TryFrom;
 use std::ops::Deref;
-use bmv_icon::types::Receipt;
 
 #[cfg(feature = "testable")]
 use bmv_icon::types::{RelayMessage, Sha256};
@@ -65,4 +64,6 @@ fn new_mpt() {
         .deref();
 
     let data = <MerklePatriciaTree<Sha256>>::verify_proof(&receipt_hash, &rlp::encode(&(index as u32)).to_vec(), receipt_proofs);
+
+    println!("{:?}", data.unwrap().rlp_bytes());
 }
