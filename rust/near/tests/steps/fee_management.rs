@@ -254,3 +254,18 @@ pub static TOKEN_BSH_SHOULD_THROUGH_ERROR_ON_GETTING_TOKEN_ID: fn(Context) = |co
     
     assert!(error.to_string().contains("BSHRevertNotExistsToken"));
 };
+
+
+pub static CHUCK_INVOKES_REGISTER_NEW_WRAPPED_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context = |mut context: Context| {
+    (context)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+        .pipe(USER_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
+};
+
+pub static TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_TOKEN: fn(Context) =
+|context: Context| {
+    let error = context.method_errors("register");
+
+     assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+    
+};
