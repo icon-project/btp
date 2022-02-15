@@ -17,7 +17,9 @@ mod manage_bsh_services {
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH)
-                .when(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH)
+                .and(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH )
+                .and(COIN_NAME_IS_PROVIDED_AS_GET_COIN_ID_PARAM)
+                .when(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH)
                 .then(REGSITERED_COIN_IDS_ARE_QUERIED);
         }
 
