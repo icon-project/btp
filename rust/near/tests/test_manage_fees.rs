@@ -170,5 +170,16 @@ mod manage_bsh_services {
         .then(TOKEN_ID_SHOULD_BE_PRESENT_FOR_THE_REGISTERED_TOKEN);
 
        }
+       #[tokio::test(flavor = "multi_thread")]
+        async fn non_bsh_owner_cannot_register_new_wrapped_token() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHUCKS_ACCOUNT_IS_CREATED)
+                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .when(CHUCK_INVOKES_REGISTER_NEW_WRAPPED_TOKEN_IN_TOKEN_BSH)
+                .then(TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_TOKEN);
+        }
     }
 }
