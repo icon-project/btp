@@ -12,7 +12,8 @@ impl TokenService {
         &mut self,
         sender_id: AccountId,
         amount: U128,
-        _msg: String,
+        #[allow(unused_variables)]
+        msg: String,
     ) -> PromiseOrValue<U128> {
         let amount = amount.into();
         let token_account = env::predecessor_account_id();
