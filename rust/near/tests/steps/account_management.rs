@@ -118,3 +118,12 @@ pub static THE_TRANSACTION_IS_SIGNED_BY_NATIVE_COIN_BSH_OWNER: fn(Context) -> Co
 // * * * * TOKEN_BSH * *
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
+
+pub static TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB: fn(Context) -> Context = |mut context: Context| {
+    let bsh_signer = context.contracts().get("tokenbsh").as_account().clone();
+    context.accounts_mut().add("bob", bsh_signer);
+    context
+};
+
+pub static TOKEN_BSH_CONTRACT_IS_NOT_OWNED_BY_CHUCK: fn(Context) -> Context =
+    |mut context: Context| (context).pipe(CHUCKS_ACCOUNT_IS_CREATED);
