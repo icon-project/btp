@@ -77,3 +77,56 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_INVALID_COIN_ERROR_ON_GETTING_COIN_ID: f
     //  assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
 println!("{:?}",error);  
 };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGSITERING_NEW_COIN: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("register");
+
+        assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+    };
+
+    pub static CHARLIE_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {
+        (context)
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
+    };
+
+    pub static NATIVE_COIN_BSH_SHOULD_THROW_ALREADY_EXISTING_ERROR_ON_REGISTERING_COIN: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("register");
+
+       assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+        
+    };
+
+    pub static BOB_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {
+        (context)
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
+            .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
+    };
+
+    pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_NATIVE_COIN_BSH_OWNER_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        let charlie = context.accounts().get("charlie").to_owned();
+        context.add_method_params(
+            "add_owner",
+            json!({
+                "account": charlie.id()
+            }),
+        );
+        context
+    };
+
+    pub static CHUCK_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {
+        (context)
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHUCK)
+            .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
+    };
+
+    pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("register");
+
+         assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+        
+    };
