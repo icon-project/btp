@@ -1,4 +1,4 @@
-use crate::types::TokenId;
+use crate::types::AssetId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -42,47 +42,47 @@ impl AccountBalance {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Balances(LookupMap<(AccountId, TokenId), AccountBalance>);
+pub struct Balances(LookupMap<(AccountId, AssetId), AccountBalance>);
 
 impl Balances {
     pub fn new() -> Self {
         Self(LookupMap::new(b"balances".to_vec()))
     }
 
-    pub fn add(&mut self, account: &AccountId, token_id: &TokenId) {
-        if !self.contains(account, token_id) {
+    pub fn add(&mut self, account: &AccountId, asset_id: &AssetId) {
+        if !self.contains(account, asset_id) {
             self.0.insert(
-                &(account.to_owned(), token_id.to_owned()),
+                &(account.to_owned(), asset_id.to_owned()),
                 &AccountBalance::default(),
             );
         }
     }
 
-    pub fn remove(&mut self, account: &AccountId, token_id: &TokenId) {
-        self.0.remove(&(account.to_owned(), token_id.to_owned()));
+    pub fn remove(&mut self, account: &AccountId, asset_id: &AssetId) {
+        self.0.remove(&(account.to_owned(), asset_id.to_owned()));
     }
 
-    pub fn get(&self, account: &AccountId, token_id: &TokenId) -> Option<AccountBalance> {
-        if let Some(balance) = self.0.get(&(account.to_owned(), token_id.to_owned())) {
+    pub fn get(&self, account: &AccountId, asset_id: &AssetId) -> Option<AccountBalance> {
+        if let Some(balance) = self.0.get(&(account.to_owned(), asset_id.to_owned())) {
             return Some(balance);
         }
         None
     }
 
-    pub fn contains(&self, account: &AccountId, token_id: &TokenId) -> bool {
+    pub fn contains(&self, account: &AccountId, asset_id: &AssetId) -> bool {
         return self
             .0
-            .contains_key(&(account.to_owned(), token_id.to_owned()));
+            .contains_key(&(account.to_owned(), asset_id.to_owned()));
     }
 
     pub fn set(
         &mut self,
         account: &AccountId,
-        token_id: &TokenId,
+        asset_id: &AssetId,
         account_balance: AccountBalance,
     ) {
         self.0
-            .insert(&(account.to_owned(), token_id.to_owned()), &account_balance);
+            .insert(&(account.to_owned(), asset_id.to_owned()), &account_balance);
     }
 }
 

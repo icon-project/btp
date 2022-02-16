@@ -1,4 +1,4 @@
-use crate::types::{messages::BtpMessage, messages::Message, messages::SerializedMessage, Asset};
+use crate::types::{messages::BtpMessage, messages::Message, messages::SerializedMessage, TransferableAsset};
 use btp_common::errors::BshError;
 use near_sdk::base64::{self, URL_SAFE_NO_PAD};
 use crate::rlp::{self, Decodable, Encodable};
@@ -9,7 +9,7 @@ pub enum TokenServiceType {
     RequestTokenTransfer {
         sender: String,
         receiver: String,
-        assets: Vec<Asset>,
+        assets: Vec<TransferableAsset>,
     },
     RequestTokenRegister,
     ResponseHandleService {
@@ -188,7 +188,7 @@ pub struct TokenServiceMessage {
 
 #[cfg(test)]
 mod tests {
-    use super::{Asset, TokenServiceMessage, TokenServiceType};
+    use super::{TransferableAsset, TokenServiceMessage, TokenServiceType};
     use std::convert::TryFrom;
 
     #[test]
@@ -206,9 +206,9 @@ mod tests {
                         .to_string(),
                     receiver: "0x12345678".to_string(),
                     assets: vec![
-                        Asset::new("ICON".to_string(), 199300, 0),
-                        Asset::new("TRON".to_string(), 299200, 0),
-                        Asset::new("PARA".to_string(), 99400, 0)
+                        TransferableAsset::new("ICON".to_string(), 199300, 0),
+                        TransferableAsset::new("TRON".to_string(), 299200, 0),
+                        TransferableAsset::new("PARA".to_string(), 99400, 0)
                         ]
                 },
             },
@@ -224,9 +224,9 @@ mod tests {
                     .to_string(),
                 receiver: "0x12345678".to_string(),
                 assets: vec![
-                    Asset::new("ICON".to_string(), 199300, 0),
-                    Asset::new("TRON".to_string(), 299200, 0),
-                    Asset::new("PARA".to_string(), 99400, 0)
+                    TransferableAsset::new("ICON".to_string(), 199300, 0),
+                    TransferableAsset::new("TRON".to_string(), 299200, 0),
+                    TransferableAsset::new("PARA".to_string(), 99400, 0)
                     ]
             },
         };

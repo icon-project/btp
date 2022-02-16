@@ -4,12 +4,15 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    AccountBalance, AccumulatedAssetFees, BTPAddress, WrappedFungibleToken, Math, MultiTokenCore, Token,
+    AccountBalance, AccumulatedAssetFees, BTPAddress, WrappedFungibleToken, Math, Asset,AssetItem,
     WrappedI128,
 };
 mod token;
 use std::convert::TryInto;
 use token::*;
+
+pub type Token = Asset<WrappedFungibleToken>;
+pub type TokenItem = AssetItem;
 
 fn get_context(
     input: Vec<u8>,
@@ -54,7 +57,7 @@ fn handle_fee_gathering() {
         "0x1.near".into(),
         1000.into(),
     );
-    let w_near = <Token<WrappedFungibleToken>>::new(WNEAR.to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
     
 
     testing_env!(context(alice(), 0));

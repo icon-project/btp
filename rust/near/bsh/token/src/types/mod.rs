@@ -1,2 +1,2 @@
-mod registered_token;
-pub use registered_token::RegisteredTokens;
+mod registered_tokens;
+pub use registered_tokens::RegisteredTokens;

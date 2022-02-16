@@ -1,4 +1,4 @@
-use libraries::types::{AccountBalance, TokenId};
+use libraries::types::{AccountBalance, AssetId};
 use near_sdk::ext_contract;
 use near_sdk::json_types::U128;
 
@@ -7,7 +7,7 @@ pub trait TokenService {
     fn on_mint(
         &mut self,
         amount: u128,
-        token_id: TokenId,
+        token_id: AssetId,
         token_symbol: String,
         receiver_id: AccountId,
     );
@@ -16,9 +16,9 @@ pub trait TokenService {
         &mut self,
         account: AccountId,
         amount: u128,
-        token_id: TokenId,
+        token_id: AssetId,
         token_symbol: String,
     );
 
-    fn on_burn(&mut self, amount: u128, token_id: TokenId, token_symbol: String);
+    fn on_burn(&mut self, amount: u128, token_id: AssetId, token_symbol: String);
 }

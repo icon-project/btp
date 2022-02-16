@@ -12,7 +12,8 @@ impl TokenService {
         &mut self,
         sender_id: AccountId,
         amount: U128,
-        _msg: String,
+        #[allow(unused_variables)]
+        msg: String,
     ) -> PromiseOrValue<U128> {
         let amount = amount.into();
         let token_account = env::predecessor_account_id();
@@ -33,7 +34,7 @@ impl TokenService {
     }
 
     #[payable]
-    pub fn withdraw(&mut self, token_id: TokenId, amount: U128) {
+    pub fn withdraw(&mut self, token_id: AssetId, amount: U128) {
         // To Prevent Spam
         assert_one_yocto();
 

@@ -108,7 +108,7 @@ impl NativeCoinService {
         &mut self,
         sender_id: AccountId,
         destination: BTPAddress,
-        assets: Vec<Asset>,
+        assets: Vec<TransferableAsset>,
     ) {
         let serial_no = self.serial_no.checked_add(1).unwrap();
         self.serial_no.clone_from(&serial_no);

@@ -5,10 +5,13 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, Asset, BTPAddress, WrappedFungibleToken, Token, WrappedI128,
+    Account, TransferableAsset, BTPAddress, WrappedFungibleToken, Asset,AssetItem, WrappedI128,
 };
 mod token;
 use token::*;
+
+pub type Token = Asset<WrappedFungibleToken>;
+pub type TokenItem = AssetItem;
 
 fn get_context(
     input: Vec<u8>,
@@ -54,7 +57,7 @@ fn handle_transfer_mint_registered_icx() {
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     
 
     testing_env!(context(alice(), 0));
@@ -71,7 +74,7 @@ fn handle_transfer_mint_registered_icx() {
             TokenServiceType::RequestTokenTransfer {
                 sender: chuck().to_string(),
                 receiver: destination.account_id().to_string(),
-                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
+                assets: vec![TransferableAsset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
