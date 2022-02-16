@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
 )
@@ -52,26 +51,6 @@ type Sender struct {
 }
 
 func (s *Sender) newTransactionParam(prev string, rm *RelayMessage) (*RelayMessageParam, error) {
-	lastBlockIndex := len(rm.BlockUpdates) - 1
-
-	for i, bu := range rm.BlockUpdates {
-		if i >= lastBlockIndex {
-			break
-		}
-		proof := &icon.BlockUpdate{}
-		_, err := codec.RLP.UnmarshalFromBytes(bu, proof)
-		if err != nil {
-			s.log.Debugln("newTransactionParam Decode: %v\n", err)
-		}
-		proof.Votes = nil
-		encodedProof, err := codec.RLP.MarshalToBytes(proof)
-		if err != nil {
-			s.log.Debugln("newTransactionParam Decode: %v\n", err)
-		}
-
-		rm.BlockUpdates[i] = encodedProof
-	}
-
 	b, err := codec.RLP.MarshalToBytes(rm)
 	if err != nil {
 		return nil, err
