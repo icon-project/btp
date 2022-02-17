@@ -72,7 +72,7 @@ impl TokenService {
             amount,
             token_id,
             token.symbol().to_string(),
-            env::predecessor_account_id(),
+            env::current_account_id(),
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_ON_MINT,
         ));
