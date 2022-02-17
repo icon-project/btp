@@ -53,14 +53,14 @@ pub static USER_INVOKES_GET_COINS_IN_TOKEN_BSH: fn(Context) -> Context =
 pub static USER_HANDLES_FEE_GATHERING_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.handle_fee_gathering(context);
 
-pub static USER_INVOKES_SEND_BTP_MESSAGE_FROM_TOKEN_BSH: fn(Context) -> Context =
-    |context: Context| TOKEN_BSH_CONTRACT.handle_btp_message(context);
+    pub static USER_INVOKES_SEND_BTP_MESSAGE_FROM_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| TOKEN_BSH_CONTRACT.handle_btp_message(context, 300000000000000);
 
 pub static USER_INVOKES_CALCULATE_TOKEN_TRANFER_FEE_IN_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.calculate_token_transfer_fee(context);
 
 pub static USER_INVOKES_GET_BALANCE_IN_TOKEN_BSH: fn(Context) -> Context =
-    |context: Context| TOKEN_BSH_CONTRACT.get_balance_of(context);
+    |context: Context| TOKEN_BSH_CONTRACT.balance_of(context);
 
 pub static USER_INVOKES_GET_LOCKED_BALANCE_IN_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.locked_balance_of(context);

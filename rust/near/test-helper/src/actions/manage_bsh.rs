@@ -19,7 +19,6 @@ impl Contract<'_, contract_type> {
         context
     }
 
-
     pub fn tokens(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "tokens", method_params);
         context
@@ -49,7 +48,6 @@ impl Contract<'_, contract_type> {
         context
     }
 
-
     pub fn accumulated_fees(&self, mut context: Context) -> Context {
         invoke_call!(self, context, "accumulated_fees", method_params);
         context
@@ -58,16 +56,21 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "handle_fee_gathering", method_params);
         context
     }
-    pub fn handle_btp_message(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "handle_btp_message", method_params);
+
+    pub fn handle_btp_message(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(
+            self,
+            context,
+            "handle_btp_message",
+            method_params,
+            None,
+            Some(gas)
+        );
         context
     }
+
     pub fn calculate_token_transfer_fee(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "calculate_token_transfer_fee", method_params);
-        context
-    }
-    pub fn get_balance_of(&self, mut context: Context) -> Context {
-        invoke_view!(self, context, "get_balance_of", method_params);
         context
     }
     pub fn locked_balance_of(&self, mut context: Context) -> Context {
@@ -78,6 +81,31 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "transfer_fees", method_params);
         context
     }
+
+    pub fn withdraw(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(self, context, "withdraw", method_params, Some(1), Some(gas));
+        context
+    }
+
+    pub fn deposit(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(
+            self,
+            context,
+            "deposit",
+            method_params,
+            Some(1000),
+            Some(gas)
+        );
+        context
+    }
+
+    pub fn transfer(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(self, context, "transfer", method_params, None, Some(gas));
+        context
+    }
+
+    pub fn balance_of(&self, mut context: Context) -> Context {
+        invoke_view!(self, context, "balance_of", method_params);
+        context
+    }
 }
-
-
