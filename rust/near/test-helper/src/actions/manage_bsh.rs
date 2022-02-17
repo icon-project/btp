@@ -44,6 +44,12 @@ impl Contract<'_, contract_type> {
         context
     }
 
+    pub fn coin_id_error(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "coin_id", method_params);
+        context
+    }
+
+
     pub fn accumulated_fees(&self, mut context: Context) -> Context {
         invoke_call!(self, context, "accumulated_fees", method_params);
         context

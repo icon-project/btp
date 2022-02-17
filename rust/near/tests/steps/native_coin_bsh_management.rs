@@ -19,6 +19,7 @@ pub static COIN_REGISTERED_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
 pub static NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {
     (context)
         .pipe(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
         .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
 };
 
@@ -74,8 +75,8 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_INVALID_COIN_ERROR_ON_GETTING_COIN_ID: f
 |context: Context| {
     let error = context.method_errors("coin_id");
 
-    //  assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
-println!("{:?}",error);  
+    assert!(error.to_string().contains("BSHRevertNotExistsToken:"));
+ 
 };
 
 pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGSITERING_NEW_COIN: fn(Context) =
@@ -94,9 +95,7 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGSITERING_NEW_CO
     pub static NATIVE_COIN_BSH_SHOULD_THROW_ALREADY_EXISTING_ERROR_ON_REGISTERING_COIN: fn(Context) =
     |context: Context| {
         let error = context.method_errors("register");
-
-       assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
-        
+        assert!(error.to_string().contains("BSHRevertAlreadyExistsToken"));  
     };
 
     pub static BOB_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context = |mut context: Context| {

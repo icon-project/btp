@@ -50,8 +50,11 @@ pub static USER_INVOKES_REGISTER_NEW_TOKEN_IN_NATIVE_COIN_BSH: fn(Context) -> Co
 pub static USER_INVOKES_GET_ACCUMLATED_FEES_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.accumulated_fees(context);
 
-pub static USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+pub static USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH: fn(Context) -> Context = 
     |context: Context| NATIVE_COIN_BSH_CONTRACT.coin_id(context);
+
+    pub static USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH_CONTRACT: fn(Context) -> Context = 
+    |context: Context| NATIVE_COIN_BSH_CONTRACT.coin_id_error(context);
 
 pub static USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.coins(context);
