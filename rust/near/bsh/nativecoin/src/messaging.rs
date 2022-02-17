@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use libraries::types::Request;
 use libraries::types::WrappedI128;
 
@@ -63,6 +65,38 @@ impl NativeCoinService {
     #[cfg(feature = "testable")]
     pub fn last_request(&self) -> Option<Request> {
         self.requests().get(self.serial_no())
+    }
+
+    #[private]
+    pub fn handle_send_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128) {
+        match message.service_type() {
+            TokenServiceType::RequestTokenTransfer {
+                sender,
+                receiver,
+                assets,
+            } => match env::promise_result(0) {
+                PromiseResult::Successful(_) => log!(
+                    "TransferStart({}, {}, {}, {:?})",
+                    sender,
+                    receiver,
+                    serial_no,
+                    assets
+                ),
+                PromiseResult::NotReady => log!("Not Ready"),
+                PromiseResult::Failed => {
+                    log!(
+                        "TransferFailed({}, {}, {}, {:?})",
+                        sender,
+                        receiver,
+                        serial_no,
+                        assets
+                    );
+                    self.rollback_external_transfer(&AccountId::from_str(sender).unwrap(), assets)
+                }
+            },
+
+            _ => {}
+        }
     }
 }
 
@@ -179,7 +213,14 @@ impl NativeCoinService {
             self.bmc.clone(),
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
-        );
+        )
+        .then(ext_self::handle_send_message_callback(
+            message.clone().try_into().unwrap(),
+            serial_no,
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
+        ));
 
         #[cfg(feature = "testable")]
         self.message.set(&(message.data().clone().into()));
