@@ -1,6 +1,5 @@
-use libraries::types::AssetId;
+use libraries::types::{AssetId,messages::TokenServiceMessage};
 use near_sdk::ext_contract;
-use near_sdk::json_types::U128;
 
 #[ext_contract(ext_self)]
 pub trait NativeCoinService {
@@ -26,4 +25,6 @@ pub trait NativeCoinService {
         coin_id: AssetId,
         coin_symbol: String,
     );
+
+    fn handle_send_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128);
 }
