@@ -60,8 +60,10 @@ fn handle_transfer_mint_registered_icx() {
     let baln = <Token>::new(BALN.to_owned());
     
 
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+    
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(

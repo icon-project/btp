@@ -9,29 +9,53 @@ impl TokenService {
     // * * * * * * * * * * * * * * * * *
 
     /// Register Token, Accept token meta(name, symbol, network, denominator) as parameters
-    // TODO: Complete Documentation
+    #[payable]
     pub fn register(&mut self, token: Token) {
         self.assert_have_permission();
         self.assert_token_does_not_exists(&token);
 
+        if token.network() == &self.network {
+            self.register_token_callback(token);
+        } else {
+            let token_metadata = token.extras().clone().expect("Token Metadata Missing");
+            let promise_idx = env::promise_batch_create(
+                &token.metadata().uri_deref().expect("Token Account Missing"),
+            );
+            env::promise_batch_action_create_account(promise_idx);
+            env::promise_batch_action_transfer(promise_idx, env::attached_deposit());
+            env::promise_batch_action_deploy_contract(promise_idx, NEP141_CONTRACT);
+            env::promise_batch_action_function_call(promise_idx, "new", &json!({
+                "owner_id": env::current_account_id(),
+                "total_supply": U128(0),
+                "metadata": {
+                    "spec": token_metadata.spec.clone(),
+                    "name": token.name(),
+                    "symbol": token.symbol(),
+                    "icon": token_metadata.icon.clone(),
+                    "reference": token_metadata.reference.clone(),
+                    "reference_hash": token_metadata.reference_hash.clone(),
+                    "decimals": token_metadata.decimals.clone()
+                }
+            }).to_string().into_bytes(), 0, estimate::GAS_FOR_RESOLVE_TRANSFER);
+            env::promise_then(promise_idx, env::current_account_id(), "register_token_callback", &json!({
+                "token": token
+            }).to_string().into_bytes(), 0, estimate::GAS_FOR_RESOLVE_TRANSFER);
+        }
+    }
+
+    #[private]
+    pub fn register_token_callback(&mut self, token: Token) {
         let token_id = Self::hash_token_id(token.name());
-        // token id is hash(token_name)
         self.tokens.add(&token_id, &token);
         self.token_fees.add(&token_id);
 
-        if token.network() == &self.network {
-            self.registered_tokens.add(
-                &token.metadata().uri_deref().expect("Token Account Missing"),
-                &token_id,
-            );
-        };
+        self.registered_tokens.add(
+            &token.metadata().uri_deref().expect("Token Account Missing"),
+            &token_id,
+        );
 
-        // Add fungible token list
-        // Sets initial balance for self
         self.balances.add(&env::current_account_id(), &token_id);
     }
-
-    // TODO: Unregister Token
 
     pub fn tokens(&self) -> Value {
         to_value(self.tokens.to_vec()).unwrap()
