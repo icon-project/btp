@@ -316,7 +316,7 @@ fn handle_success_response_baln_external_transfer() {
             prepaid_gas,
         )
     };
-    testing_env!(context(alice(), 0, 10u64.pow(18)));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000, 10u64.pow(18)));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
@@ -329,6 +329,8 @@ fn handle_success_response_baln_external_transfer() {
 
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+    
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
@@ -509,7 +511,7 @@ fn handle_failure_response_baln_coin_external_transfer() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -521,6 +523,8 @@ fn handle_failure_response_baln_coin_external_transfer() {
 
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
@@ -608,7 +612,7 @@ fn reclaim_baln_coin() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -620,6 +624,8 @@ fn reclaim_baln_coin() {
 
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
@@ -902,7 +908,7 @@ fn external_transfer_batch_nil_balance() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -915,7 +921,10 @@ fn external_transfer_batch_nil_balance() {
     let w_near = <Token>::new(WNEAR.to_owned());
     let baln = <Token>::new(BALN.to_owned());
     contract.register(w_near.clone());
+
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     let token_id = contract.token_id(w_near.name().to_owned());
     let baln_token_id = contract.token_id(baln.name().to_owned());
 

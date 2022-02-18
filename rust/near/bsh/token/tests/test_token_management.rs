@@ -40,7 +40,7 @@ fn get_context(
 #[test]
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let mut contract = TokenService::new(
         "TokenBSH".to_string(),
         bmc(),
@@ -49,7 +49,8 @@ fn register_token() {
     );
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
-
+    contract.register_token_callback(baln.clone());
+    
     let result = contract.tokens();
     let expected = to_value(vec![TokenItem {
         name: baln.name().to_owned(),
@@ -64,7 +65,7 @@ fn register_token() {
 #[should_panic(expected = "BSHRevertAlreadyExistsToken")]
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let mut contract = TokenService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -73,6 +74,8 @@ fn register_existing_token() {
     );
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     contract.register(baln.clone());
 }
 
@@ -111,7 +114,7 @@ fn get_non_exist_token_id() {
 #[test]
 fn get_registered_token_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
     let mut contract = TokenService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -120,6 +123,8 @@ fn get_registered_token_id() {
     );
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     let token_id = contract.token_id("BALN".to_string());
     let expected = env::sha256(baln.name().as_bytes());
     assert_eq!(token_id, expected)

@@ -1,11 +1,13 @@
 use btp_common::btp_address::Address;
 use btp_common::errors::BshError;
-use libraries::types::{Account, AccountBalance, AccumulatedAssetFees, TransferableAsset, BTPAddress, AssetId,Asset,Assets,AssetFees, AssetMetadata};
+use libraries::types::{
+    Account, AccountBalance, AccumulatedAssetFees, Asset, AssetFees, AssetId, AssetMetadata,
+    Assets, BTPAddress, TransferableAsset,
+};
 use libraries::{
     types::messages::BtpMessage, types::messages::SerializedMessage,
     types::messages::TokenServiceMessage, types::messages::TokenServiceType, types::Balances,
-    types::Math, types::Network, types::Owners,
-    types::Requests, types::StorageBalances,
+    types::Math, types::Network, types::Owners, types::Requests, types::StorageBalances,
     types::WrappedFungibleToken,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -37,6 +39,7 @@ pub type TokenId = AssetId;
 pub type Token = Asset<WrappedFungibleToken>;
 pub type Tokens = Assets<WrappedFungibleToken>;
 
+pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../../../res/NEP141_CONTRACT.wasm");
 pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]
