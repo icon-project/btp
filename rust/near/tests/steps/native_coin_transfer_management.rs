@@ -287,3 +287,27 @@ pub static BALANCE_SHOULD_BE_UNLOCKED_AFTER_GETTING_SUCCESS_RESPONSE: fn(Context
         let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
         assert_eq!(balance, "900");
     };
+
+pub static CHARLIES_TRANSFERS_0_NATIVE_NEAR_COIN_TO_CROSS_CHAIN: fn(Context) -> Context =
+    |mut context: Context| {
+        let mut context =
+            context.pipe(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN);
+
+        context.add_method_params(
+            "transfer",
+            json!({
+                "coin_id": context.method_responses("coin_id"),
+                 "destination": BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "amount": "0"
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_TRANSFER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN: fn(Context) = |context: Context| {
+        let error =context.method_errors("transfer");
+        assert!(error.to_string().contains("BSHRevertNotMinimumAmount"));
+    };
