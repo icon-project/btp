@@ -12,4 +12,10 @@ impl Contract<'_, contract_type> {
         invoke_call!(self, context, "handle_relay_message", method_params, None, Some(gas));
         context
     }
+    
+    pub fn handle_relay_message_bmv_callback(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "handle_relay_message_bmv_callback", method_params);
+        context
+    }
+
 }

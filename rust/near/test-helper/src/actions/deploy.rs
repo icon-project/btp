@@ -3,7 +3,7 @@ use duplicate::duplicate;
 use std::path::Path;
 use tokio::runtime::Handle;
 use workspaces::prelude::*;
-use workspaces::{Contract as WorkspaceContract, Sandbox, Worker};
+use workspaces::{Contract as WorkspaceContract, Sandbox, Worker,DevNetwork};
 
 pub async fn deploy(path: &str, worker: Worker<Sandbox>) -> anyhow::Result<WorkspaceContract> {
     worker.dev_deploy(&std::fs::read(Path::new(path))?).await

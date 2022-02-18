@@ -27,3 +27,4 @@ impl Contract<'_, contract_type> {
         context
     }
 }
+
