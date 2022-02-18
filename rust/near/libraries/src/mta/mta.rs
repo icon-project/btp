@@ -132,7 +132,7 @@ impl MerkleTreeAccumulator {
     }
 
     /// Add
-    pub fn add(&mut self, mut hash: Hash) {
+    pub fn add<H: Hasher>(&mut self, mut hash: Hash) {
         self.set_cache(&hash);
         if self.height == 0 || self.roots.is_empty() {
             self.roots.push(hash);
@@ -149,13 +149,10 @@ impl MerkleTreeAccumulator {
                     self.offset += 2_usize.pow(i as u32) as u64;
                     break;
                 } else {
-                    let index = self
-                        .roots
-                        .iter()
-                        .position(|x| *x == hash)
-                        .expect("Error in lookup");
-                    hash = Hash::default();
-                    let _ = self.roots.remove(index);
+                    let mut root = self.roots[i].to_vec();
+                    root.append(&mut hash.to_vec());
+                    hash = Hash::new::<H>(&root);
+                    let _ = self.roots.remove(i);
                 }
             }
             if root.deref().is_empty() {

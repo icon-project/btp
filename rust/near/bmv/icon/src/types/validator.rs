@@ -1,7 +1,7 @@
 use libraries::rlp::{self, Decodable, Encodable};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::convert::TryFrom;
-
+use hex::encode;
 use super::RlpBytes;
 
 #[derive(Default, PartialEq, Eq, Debug, BorshDeserialize, BorshSerialize, Clone)]
