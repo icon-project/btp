@@ -1,0 +1,27 @@
+use crate::{invoke_call, invoke_view};
+use crate::types::{Contract,Nep141,Context};
+use duplicate::duplicate;
+
+#[duplicate(
+    contract_type;
+    [ Nep141 ];
+
+)]
+impl Contract<'_, contract_type> {
+    pub fn ft_transfer_call(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(
+            self,
+            context,
+            "ft_transfer_call",
+            method_params,
+            Some(1),
+            Some(gas)
+        );
+        context
+    }
+
+   pub fn ft_balance_of(&self, mut context: Context) -> Context {
+       invoke_view!(self,context,"ft_balance_of",method_params);
+       context
+   }
+}
