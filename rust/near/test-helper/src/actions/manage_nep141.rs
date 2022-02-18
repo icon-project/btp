@@ -24,4 +24,14 @@ impl Contract<'_, contract_type> {
        invoke_view!(self,context,"ft_balance_of",method_params);
        context
    }
+
+   pub fn mint(&self, mut context: Context) -> Context {
+    invoke_call!(self,context,"mint",method_params);
+    context
+    }
+
+    pub fn burn(&self, mut context: Context) -> Context {
+        invoke_call!(self,context,"burn",method_params);
+        context
+        }
 }

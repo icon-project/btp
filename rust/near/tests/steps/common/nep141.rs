@@ -43,3 +43,37 @@ pub static USER_INVOKES_FT_TRANSFER_CALL_IN_NEP141: fn(Context) -> Context =
 
 pub static USER_INVOKES_FT_BALANCE_OF_CALL_IN_NEP141: fn(Context) -> Context =
     |context: Context| NEP141_CONTRACT.ft_balance_of(context);
+
+    pub static USER_INVOKES_MINT_IN_NEP141: fn(Context) -> Context =
+    |context: Context| NEP141_CONTRACT.mint(context);
+
+    pub static USER_INVOKES_BURN_IN_NEP141: fn(Context) -> Context =
+    |context: Context| NEP141_CONTRACT.burn(context);
+
+    pub static NEP141_IS_INITIALZIED : fn(Context) -> Context = |mut context: Context| {
+        context.add_method_params(
+            "new",
+            json!({
+                "owner_id": context.accounts().get("charlie").id().to_string(),
+                "total_supply": "0",
+                "metadata": {
+                        "spec": "ft-1.0.0",
+                        "name" : "WrappedICX",
+                        "symbol": "nICX",
+                        "icon" : null,
+                        "reference": null,
+                        "reference_hash": null,
+                        "decimals": 0
+                },
+            }),
+        );
+    
+        NEP141_CONTRACT.initialize(context)
+    };
+
+    pub static NEP141_IS_DEPLOYED_AND_INITIALZIED: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(NEP141_CONTRACT_IS_DEPLOYED)
+            .pipe(NEP141_IS_INITIALZIED)
+    };

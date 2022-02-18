@@ -363,3 +363,9 @@ pub static BOB_INVOKES_REMOVE_OWNER_IN_TOKEN_BSH: fn(Context) -> Context =
         let owners = context.method_responses("get_owners");
         assert_eq!(owners, json!([context.accounts().get("bob").id()]));
     };
+
+    pub static NEP141_IS_OWNED_BY_ALICE: fn(Context) -> Context = |mut context: Context| {
+        let nep141_signer = context.contracts().get("nep141").as_account().clone();
+        context.accounts_mut().add("alice", nep141_signer);
+        context
+    };

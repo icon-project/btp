@@ -287,3 +287,84 @@ pub static BALANCE_SHOULD_BE_UNLOCKED_AFTER_GETTING_SUCCESS_RESPONSE: fn(Context
         let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
         assert_eq!(balance, "900");
     };
+
+
+    pub static CHARLIE_INVOKES_MINT_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(AMOUNT_IS_PROVIDED_AS_MINT_PARAM)
+            .pipe(USER_INVOKES_MINT_IN_NEP141)
+    };
+
+    pub static AMOUNT_IS_PROVIDED_AS_MINT_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "mint",
+            json!({
+                "amount": "1000",
+            }),
+        );
+        context
+    };
+
+    pub static AMOUNT_SHOULD_BE_MINTED:  fn(Context) = |context: Context| {
+        let context = context
+        .pipe(CHARLIE_INVOKES_FT_BALANCE_IN_NATIVE_COIN_BSH);
+    
+        let balance: Value = from_value(context.method_responses("ft_balance_of")).unwrap();
+
+        assert_eq!(balance, "1000");
+    };
+
+    pub static WRAPPED_ICX_COIN_IS_REGESITERED: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(NEP141_IS_DEPLOYED_AND_INITIALZIED)
+    };
+
+
+    pub static CHARLIE_INVOKES_FT_BALANCE_FROM_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(CHARLIE_INVOKES_FT_BALANCE_IN_NATIVE_COIN_BSH)
+    };
+
+    pub static CHARLIE_INVOKES_FT_BALANCE_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "ft_balance_of",
+            json!({
+                "account_id": context.accounts().get("charlie").id().to_string()
+            }),
+        );
+        context.pipe(USER_INVOKES_FT_BALANCE_OF_CALL_IN_NEP141)
+    };
+
+    pub static CHARLIE_INVOKES_BURN_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(AMOUNT_IS_PROVIDED_AS_BURN_PARAM)
+            .pipe(USER_INVOKES_BURN_IN_NEP141)
+    };
+
+    pub static AMOUNT_IS_PROVIDED_AS_BURN_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "burn",
+            json!({
+                "amount": "300",
+            }),
+        );
+        context
+    };
+
+    pub static AMOUNT_SHOULD_BE_BURNED:  fn(Context) = |context: Context| {
+        let context = context
+        .pipe(CHARLIE_INVOKES_FT_BALANCE_IN_NATIVE_COIN_BSH);
+    
+        let balance: Value = from_value(context.method_responses("ft_balance_of")).unwrap();
+
+        assert_eq!(balance, "700");
+    };
