@@ -26,5 +26,5 @@ pub trait NativeCoinService {
         coin_symbol: String,
     );
 
-    fn handle_send_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128);
+    fn send_service_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128);
 }
