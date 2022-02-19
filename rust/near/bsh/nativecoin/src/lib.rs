@@ -12,6 +12,7 @@ use libraries::{
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::serde_json::{to_value, Value};
+use near_sdk::serde_json::json;
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -40,7 +41,7 @@ pub type CoinId = AssetId;
 pub type Coin = Asset<WrappedNativeCoin>;
 pub type Coins = Assets<WrappedNativeCoin>;
 
-
+pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../../../res/NEP141_CONTRACT.wasm");
 pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]

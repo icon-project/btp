@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
-use libraries::types::{WrappedFungibleToken};
+use libraries::types::{WrappedFungibleToken,AssetMetadataExtras};
 use near_sdk::AccountId;
 
 lazy_static! {
@@ -18,6 +18,12 @@ lazy_static! {
         "BALN".into(),
         Some(AccountId::from_str("baln.icon").unwrap()),
         "0x1.icon".into(),
-        None
+        Some(AssetMetadataExtras {
+            spec: "ft-1.0.0".to_string(),
+            icon: None,
+            reference: None,
+            reference_hash: None,
+            decimals: 24
+        })
     );
 }
