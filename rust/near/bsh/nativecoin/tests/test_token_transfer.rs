@@ -285,6 +285,7 @@ fn handle_success_response_icx_coin_external_transfer() {
 
     let icx_coin = Coin::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
 
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
@@ -468,6 +469,8 @@ fn handle_failure_response_icx_coin_external_transfer() {
     let icx_coin = Coin::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
 
+    contract.register_coin_callback(icx_coin.clone());
+
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
         BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
@@ -571,6 +574,7 @@ fn reclaim_icx_coin() {
 
     let icx_coin = Coin::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
 
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
@@ -695,6 +699,7 @@ fn external_transfer_nil_balance() {
     );
 
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     testing_env!(context(chuck(), 1000));
 
     let icx_coin_id = contract.coin_id(icx_coin.name().to_owned());
@@ -810,6 +815,7 @@ fn external_transfer_batch_nil_balance() {
     );
 
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());
     let icx_coin_id = contract.coin_id(icx_coin.name().to_owned());

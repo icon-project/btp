@@ -48,6 +48,7 @@ fn register_token() {
     );
     let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     
     let result = contract.coins();
     let expected = to_value(vec![
@@ -80,6 +81,7 @@ fn register_existing_token() {
     );
     let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     contract.register(icx_coin.clone());
 }
 
@@ -99,6 +101,7 @@ fn register_token_permission() {
     testing_env!(context(chuck(), 0));
     let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
 }
 
 #[test]
