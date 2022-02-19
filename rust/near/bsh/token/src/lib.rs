@@ -14,6 +14,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde_json::{json, to_value, Value};
+use std::str::FromStr;
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{

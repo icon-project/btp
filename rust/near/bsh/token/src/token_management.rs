@@ -24,22 +24,35 @@ impl TokenService {
             env::promise_batch_action_create_account(promise_idx);
             env::promise_batch_action_transfer(promise_idx, env::attached_deposit());
             env::promise_batch_action_deploy_contract(promise_idx, NEP141_CONTRACT);
-            env::promise_batch_action_function_call(promise_idx, "new", &json!({
-                "owner_id": env::current_account_id(),
-                "total_supply": U128(0),
-                "metadata": {
-                    "spec": token_metadata.spec.clone(),
-                    "name": token.name(),
-                    "symbol": token.symbol(),
-                    "icon": token_metadata.icon.clone(),
-                    "reference": token_metadata.reference.clone(),
-                    "reference_hash": token_metadata.reference_hash.clone(),
-                    "decimals": token_metadata.decimals.clone()
-                }
-            }).to_string().into_bytes(), 0, estimate::GAS_FOR_RESOLVE_TRANSFER);
-            env::promise_then(promise_idx, env::current_account_id(), "register_token_callback", &json!({
-                "token": token
-            }).to_string().into_bytes(), 0, estimate::GAS_FOR_RESOLVE_TRANSFER);
+            env::promise_batch_action_function_call(
+                promise_idx,
+                "new",
+                &json!({
+                    "owner_id": env::current_account_id(),
+                    "total_supply": U128(0),
+                    "metadata": {
+                        "spec": token_metadata.spec.clone(),
+                        "name": token.name(),
+                        "symbol": token.symbol(),
+                        "icon": token_metadata.icon.clone(),
+                        "reference": token_metadata.reference.clone(),
+                        "reference_hash": token_metadata.reference_hash.clone(),
+                        "decimals": token_metadata.decimals.clone()
+                    }
+                })
+                .to_string()
+                .into_bytes(),
+                0,
+                estimate::GAS_FOR_RESOLVE_TRANSFER,
+            );
+            env::promise_then(
+                promise_idx,
+                env::current_account_id(),
+                "register_token_callback",
+                &json!({ "token": token }).to_string().into_bytes(),
+                0,
+                estimate::GAS_FOR_RESOLVE_TRANSFER,
+            );
         }
     }
 
