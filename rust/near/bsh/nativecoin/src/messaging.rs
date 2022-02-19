@@ -68,7 +68,7 @@ impl NativeCoinService {
     }
 
     #[private]
-    pub fn handle_send_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128) {
+    pub fn send_service_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128) {
         match message.service_type() {
             TokenServiceType::RequestTokenTransfer {
                 sender,
@@ -214,7 +214,7 @@ impl NativeCoinService {
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
         )
-        .then(ext_self::handle_send_message_callback(
+        .then(ext_self::send_service_message_callback(
             message.clone().try_into().unwrap(),
             serial_no,
             env::current_account_id(),

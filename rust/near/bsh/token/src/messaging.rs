@@ -1,5 +1,6 @@
 use libraries::types::Request;
 use libraries::types::WrappedI128;
+use std::str::FromStr;
 
 use super::*;
 
@@ -65,18 +66,36 @@ impl TokenService {
         self.requests().get(self.serial_no())
     }
 
-    //review_required
-    pub fn transfer_start(
-        &self,
-        from: AccountId,
-        to: AccountId,
-        serial_no: i128,
-        token: Token,
-    ) {
+    #[private]
+    pub fn send_service_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128) {
+        match message.service_type() {
+            TokenServiceType::RequestTokenTransfer {
+                sender,
+                receiver,
+                assets,
+            } => match env::promise_result(0) {
+                PromiseResult::Successful(_) => log!(
+                    "TransferStart({}, {}, {}, {:?})",
+                    sender,
+                    receiver,
+                    serial_no,
+                    assets
+                ),
+                PromiseResult::NotReady => log!("Not Ready"),
+                PromiseResult::Failed => {
+                    log!(
+                        "TransferFailed({}, {}, {}, {:?})",
+                        sender,
+                        receiver,
+                        serial_no,
+                        assets
+                    );
+                    self.rollback_external_transfer(&AccountId::from_str(sender).unwrap(), assets)
+                }
+            },
+            _ => {}
+        }
     }
-
-    //review_required
-    pub fn transfer_end(&self, from: AccountId) {}
 }
 
 impl TokenService {
@@ -192,7 +211,14 @@ impl TokenService {
             self.bmc.clone(),
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
-        );
+        )
+        .then(ext_self::send_service_message_callback(
+            message.clone().try_into().unwrap(),
+            serial_no,
+            env::current_account_id(),
+            estimate::NO_DEPOSIT,
+            estimate::GAS_FOR_SEND_SERVICE_MESSAGE,
+        ));
 
         #[cfg(feature = "testable")]
         self.message.set(&(message.data().clone().into()));

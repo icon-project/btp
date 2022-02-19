@@ -1,4 +1,4 @@
-use libraries::types::{AccountBalance, AssetId};
+use libraries::types::{AccountBalance, AssetId, messages::TokenServiceMessage};
 use near_sdk::ext_contract;
 use near_sdk::json_types::U128;
 
@@ -21,4 +21,5 @@ pub trait TokenService {
     );
 
     fn on_burn(&mut self, amount: u128, token_id: AssetId, token_symbol: String);
+    fn send_service_message_callback(&mut self, message: TokenServiceMessage, serial_no: i128);
 }
