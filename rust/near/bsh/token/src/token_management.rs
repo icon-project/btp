@@ -42,7 +42,7 @@ impl TokenService {
                 })
                 .to_string()
                 .into_bytes(),
-                0,
+                estimate::NO_DEPOSIT,
                 estimate::GAS_FOR_RESOLVE_TRANSFER,
             );
             env::promise_then(
