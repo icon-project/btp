@@ -15,3 +15,6 @@ pub use token_bsh::*;
 
 mod nep141;
 pub use nep141::*;
+
+mod wnear;
+pub use wnear::*;

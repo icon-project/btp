@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use serde_json::json;
 use test_helper::types::{Context, Contract, TokenBsh, TokenBshContract};
-use crate::steps::NEAR_NETWORK;
+use crate::steps::{NEAR_NETWORK};
 
 lazy_static! {
     pub static ref TOKEN_BSH_CONTRACT: Contract<'static, TokenBsh> =
@@ -76,3 +76,11 @@ pub static USER_INVOKES_REMOVE_OWNER_IN_TOKEN_BSH: fn(Context) -> Context =
 
 pub static USER_INVOKES_TRANSFER_FEES_TO_FEE_AGGREGATOR_IN_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.transfer_fees(context);
+
+
+
+    pub static USER_INVOKES_WITHDRAW_IN_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| TOKEN_BSH_CONTRACT.withdraw(context, 300000000000000);
+    
+pub static USER_INVOKES_TRANSFER_IN_TOKEN_BSH: fn(Context) -> Context =
+    |context: Context| TOKEN_BSH_CONTRACT.transfer(context, 300000000000000);

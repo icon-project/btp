@@ -15,7 +15,7 @@ pub static COIN_REGISTERED_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
 
     let expected = json!([
         {"name": "NEAR", "network": "0x1.near", "symbol": "NEAR"},
-        {"name": "coin_1", "network": "0x1.near", "symbol": "coin_1"}
+        {"name": "WrappedICX", "network": "0x1.icon", "symbol": "nICX"}
     ]);
 
     assert_eq!(coins, expected);
@@ -34,12 +34,12 @@ pub static NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM: fn(Context)
         context.add_method_params(
             "register",
             json!({
-                "token": {
+                "coin": {
                     "metadata": {
-                        "name": "coin_1",
-                        "symbol": "coin_1",
+                        "name": "WrappedICX",
+                        "symbol": "wicx",
                         "uri": null,
-                        "network": NEAR_NETWORK,
+                        "network": "0x1.icon",
                         "extras" : null
                     }
                 },
@@ -84,7 +84,7 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGSITERING_NEW_CO
     |context: Context| {
         let error = context.method_errors("register");
 
-        assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+        assert!(error.contains("BSHRevertNotExistsPermission"));
     };
 
 pub static CHARLIE_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
@@ -132,4 +132,62 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN: 
         let error = context.method_errors("register");
 
         assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
+    };
+
+    pub static EXISTING_COIN_IS_PROVIDED_AS_REGISTER_COIN_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "register",
+            json!({
+                "coin": {
+                    "metadata": {
+                        "name": "NEAR",
+                        "symbol": "NEAR",
+                        "uri": null,
+                        "network": super::NEAR_NETWORK,
+                        "extras": null,
+                    }
+                },
+            }),
+        );
+        context
+    };
+
+    pub static REGSITERED_COIN_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
+        let coins = context.method_responses("coins");
+
+        let expetced = json!([{"name":"NEAR","network":"0x1.near","symbol":"NEAR"}]);
+    
+        assert_eq!(expetced, coins);
+    
+       
+    };
+
+
+    pub static WRAPPED_ICX_PROVIDED_AS_REGSITER_PARAM_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        let account = context.contracts().get("nep141service").id().clone();
+
+        context.add_method_params(
+            "register",
+            json!({
+                "coin" : {
+                    "metadata": {
+                        "name": "WrappedICX",
+                        "symbol": "nICX",
+                        "uri":  account.to_string(),
+                        "network": "0x1.icon",
+                        "extras": {
+                            "spec": "ft-1.0.0",
+                            "icon" : null,
+                            "reference": null,
+                            "reference_hash": null,
+                            "decimals": 24
+                        },
+                    }
+                }
+            }),
+        );
+
+        context
     };

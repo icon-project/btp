@@ -16,11 +16,8 @@ mod manage_bsh_services {
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH)
-                .and(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH)
-                .and(COIN_NAME_IS_PROVIDED_AS_GET_COIN_ID_PARAM)
-                .when(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH)
-                .then(REGSITERED_COIN_IDS_ARE_QUERIED);
+                .when(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH)
+                .then(REGSITERED_COIN_SHOULD_BE_PRESENT);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -30,7 +27,6 @@ mod manage_bsh_services {
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH)
                 .and(COIN_NAME_IS_PROVIDED_AS_GET_COIN_ID_PARAM)
                 .when(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH)
                 .then(REGSITERED_COIN_IDS_ARE_QUERIED);
@@ -43,7 +39,6 @@ mod manage_bsh_services {
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH)
                 .and(UNREGISTERED_COIN_NAME_IS_PROVIDED_AS_GET_COIN_ID_PARAM)
                 .when(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH_CONTRACT)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_INVALID_COIN_ERROR_ON_GETTING_COIN_ID);
@@ -74,7 +69,7 @@ mod manage_bsh_services {
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH)
-                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .and(EXISTING_COIN_IS_PROVIDED_AS_REGISTER_COIN_PARAM)
                 .when(BOB_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_ALREADY_EXISTING_ERROR_ON_REGISTERING_COIN);
         }
@@ -85,8 +80,9 @@ mod manage_bsh_services {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .and(NEP141_CONTRACT_IS_DEPLOYED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .and(WRAPPED_ICX_PROVIDED_AS_REGSITER_PARAM_IN_NATIVE_COIN_BSH)
                 .when(BOB_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH)
                 .then(COIN_REGISTERED_SHOULD_BE_PRESENT);
         }
@@ -97,9 +93,10 @@ mod manage_bsh_services {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .and(NEP141_CONTRACT_IS_DEPLOYED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .and(WRAPPED_ICX_PROVIDED_AS_REGSITER_PARAM_IN_NATIVE_COIN_BSH)
                 .when(CHUCK_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN);
         }
@@ -110,11 +107,12 @@ mod manage_bsh_services {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_IS_REGISTERED)
+                .and(NEP141_CONTRACT_IS_DEPLOYED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
                 .and(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
-                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .and(WRAPPED_ICX_PROVIDED_AS_REGSITER_PARAM_IN_NATIVE_COIN_BSH)
                 .when(CHARLIE_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH)
                 .then(COIN_REGISTERED_SHOULD_BE_PRESENT);
         }
@@ -151,7 +149,7 @@ mod manage_bsh_services {
                 .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+                .and(NEW_TOKEN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_TOKEN_PARAM)
                 .when(CHUCK_INVOKES_REGISTER_NEW_WRAPPED_TOKEN_IN_TOKEN_BSH)
                 .then(TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_TOKEN);
         }
@@ -167,6 +165,18 @@ mod manage_bsh_services {
                 .and(NEAR_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH)
                 .when(BOB_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
                 .then(TOKEN_BSH_SHOULD_THROW_TOKEN_ALREADY_EXISTS_ERROR_ON_REGISTERING_TOKEN);
+        }
+
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_can_query_token_id_for_registered_wrapped_token() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(BALN_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
+                .and(TOKEN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(USER_INVOKES_GET_TOKEN_ID_FOR_BALN_FROM_TOKEN_BSH)
+                .and(BALN_TOKEN_ID_SHOULD_BE_PRESENT_IN_TOKEN_TOKEN_BSH);
         }
     }
 }

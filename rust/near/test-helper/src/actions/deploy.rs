@@ -1,4 +1,4 @@
-use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh,Nep141, WNear};
+use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh,Nep141, WNear,Nep141Testable};
 use duplicate::duplicate;
 use std::path::Path;
 use tokio::runtime::Handle;
@@ -20,6 +20,7 @@ pub async fn create_empty_contract(worker: Worker<impl DevNetwork>) -> anyhow::R
     [ TokenBsh ];
     [ NativeCoinBsh ];
     [ WNear ];
+    [ Nep141Testable ];
 
 )]
 impl Contract<'_, contract_type> {

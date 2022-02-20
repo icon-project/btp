@@ -1,12 +1,12 @@
 mod steps;
 
 #[cfg(test)]
-mod manage_token_transfer {
+mod manage_nep141{
     use super::*;
     use kitten::*;
     use steps::*;
 
-    mod native_coin_transfer {
+    mod nep141 {
         use super::*;
 
         #[tokio::test(flavor = "multi_thread")]

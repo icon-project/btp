@@ -37,3 +37,7 @@ pub use native_coin_bsh_management::*;
 
 mod native_coin_transfer_management;
 pub use native_coin_transfer_management::*;
+
+
+mod token_bsh_transfer_management;
+pub use token_bsh_transfer_management::*;

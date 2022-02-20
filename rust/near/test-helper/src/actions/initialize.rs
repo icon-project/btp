@@ -1,5 +1,5 @@
 use crate::invoke_call;
-use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh,Nep141};
+use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh,Nep141, Nep141Testable, WNear};
 use duplicate::duplicate;
 
 #[duplicate(
@@ -9,6 +9,8 @@ use duplicate::duplicate;
     [ NativeCoinBsh ];
     [ TokenBsh ];
     [ Nep141 ];
+    [ Nep141Testable ];
+    [ WNear ];
 )]
 impl Contract<'_, contract_type> {
     pub fn initialize(&self, mut context: Context) -> Context {

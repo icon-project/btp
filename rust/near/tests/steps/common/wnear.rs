@@ -38,8 +38,8 @@ pub static WNEAR_CONTRACT_IS_DEPLOYED_AND_INITIALZIED: fn(Context) -> Context =
             .pipe(WNEAR_CONTRACT_IS_INITIALZIED)
     };
 
-pub static USER_INVOKES_FT_TRANSFER_CALL_IN_NEP141: fn(Context) -> Context =
+pub static USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR: fn(Context) -> Context =
     |context: Context| WNEAR_CONTRACT.ft_transfer_call(context, 300000000000000);
 
-pub static USER_INVOKES_FT_BALANCE_OF_CALL_IN_NEP141: fn(Context) -> Context =
+pub static USER_INVOKES_FT_BALANCE_OF_CALL_IN_WNEAR: fn(Context) -> Context =
     |context: Context| WNEAR_CONTRACT.ft_balance_of(context);

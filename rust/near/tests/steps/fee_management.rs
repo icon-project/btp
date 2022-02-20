@@ -219,8 +219,8 @@ pub static NEAR_TOKEN_METADATA_IS_PROVIDED: fn(Context) -> Context = |mut contex
             "metadata": {
                 "name": "NEAR",
                 "symbol": "wNEAR",
-                "uri": null,
-                "network": "0x1.icon",
+                "uri": "node0",
+                "network": "0x1.near",
                 "extras": null,
             }
         }}),

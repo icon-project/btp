@@ -1,11 +1,12 @@
 use crate::{invoke_call, invoke_view};
-use crate::types::{Contract,Nep141,Context, WNear};
+use crate::types::{Contract,Nep141,Context, WNear, Nep141Testable};
 use duplicate::duplicate;
 
 #[duplicate(
     contract_type;
     [ Nep141 ];
     [ WNear ];
+    [ Nep141Testable ];
 
 )]
 impl Contract<'_, contract_type> {
