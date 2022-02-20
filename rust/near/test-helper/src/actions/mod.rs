@@ -12,4 +12,5 @@ mod messaging;
 mod manage_tokens;
 mod setup;
 mod initialize;
+mod view_state;
 pub use setup::create_account;
