@@ -33,6 +33,7 @@ pub struct Contract<'a, T> {
     [ NativeCoinBsh ];
     [ TokenBsh ];
     [ Nep141 ];
+    [ WNear ];
   )]
 impl Contract<'_, contract_type> {
     fn new(name: &'static str, source: &'static str) -> Contract<'static, contract_type> {
@@ -99,5 +100,15 @@ pub struct Nep141Contract{}
 impl Nep141Contract{
     pub fn new(name:&'static str, source: &'static str) -> Contract<'static,Nep141>{
         Contract::<Nep141>::new(name,source)
+    }
+}
+
+pub struct WNear{}
+
+pub struct WNearContract{}
+
+impl WNearContract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,WNear>{
+        Contract::<WNear>::new(name,source)
     }
 }

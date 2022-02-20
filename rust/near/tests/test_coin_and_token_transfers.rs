@@ -97,5 +97,49 @@ mod manage_token_transfer {
                 .when(CHARLIES_TRANSFERS_0_NATIVE_NEAR_COIN_TO_CROSS_CHAIN)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_can_withdraw_wrapped_native_coin(){
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
+                .when(CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH)
+                .then(AFTER_WITHDRAW_CHARLIES_AMOUNT_SHOULD_BE_DEDUCTED_AND_BALANCE_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT);      
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn users_can_query_withdrawble_balance_of_wrapped_native_coin(){
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_NAME_AND_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_SERVICE_PARAM)
+                .and(ALICE_INVOKES_ADD_SERVICE_IN_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(BSH_RECEIVES_BTP_MESSAGE_TO_MINT_AND_TRANSFER_WRAPPED_NATIVE_COIN)
+                .and(ALICE_INVOKES_HANDLE_SERVICE_MESSAGE_IN_NATIVE_COIN_BSH)
+                .and(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_WRAPPED_COIN)
+                .when(USER_INVOKES_BALANCE_OF_TOKEN_BSH)
+                .then(CHARLIES_WITHDRAWABLE_AMOUNT_IN_NATIVE_COIN_BSH_ACCOUNT);      
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn users_can_query_withdrawable_balance_of_near_native_coin() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_AMOUNT_DEPOSITED)
+                .and(CHARLIE_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN)
+                .when(CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH)
+                .then(BALANCE_OF_CHARLIES_ACCOUNT_SHOULD_BE_PRESENT_IN_THE_ACCOUNT);
+        }
     }
 }

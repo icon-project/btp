@@ -8,7 +8,7 @@ use libraries::types::{
 use serde_json::{from_value, json, Value};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
-use test_helper::{types::Context,actions::call};
+use test_helper::{actions::call, types::Context};
 use workspaces::{Contract as WorkspaceContract, Sandbox};
 
 pub static WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
@@ -21,9 +21,8 @@ pub static WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH: fn(Context) -> Co
 
 pub static REGISTER_WRAPPED_ICX_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
-
         let account = context.contracts().get("nep141service").id().clone();
-        
+
         context.add_method_params(
             "register",
             json!({
@@ -325,7 +324,36 @@ pub static CHARLIES_TRANSFERS_0_NATIVE_NEAR_COIN_TO_CROSS_CHAIN: fn(Context) -> 
             .pipe(USER_INVOKES_TRANSFER_IN_NATIVE_COIN_BSH)
     };
 
-pub static NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN: fn(Context) = |context: Context| {
-        let error =context.method_errors("transfer");
-        assert!(error.to_string().contains("BSHRevertNotMinimumAmount"));
+pub static NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN:
+    fn(Context) = |context: Context| {
+    let error = context.method_errors("transfer");
+    assert!(error.to_string().contains("BSHRevertNotMinimumAmount"));
+};
+
+pub static  AFTER_WITHDRAW_CHARLIES_AMOUNT_SHOULD_BE_DEDUCTED_AND_BALANCE_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT : fn(Context) = |context:Context|{
+
+        let balance:String = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance,"500");
     };
+pub static CHARLIES_WITHDRAWABLE_AMOUNT_IN_NATIVE_COIN_BSH_ACCOUNT: fn(Context) =
+    |context: Context| {
+        let balance: String = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance, "900");
+    };
+
+pub static BALANCE_OF_CHARLIES_ACCOUNT_SHOULD_BE_PRESENT_IN_THE_ACCOUNT: fn(Context) =
+    |mut context: Context| {
+        let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
+         assert_eq!(balance, "1000");
+    };
+pub static CHARLIE_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "coin_id",
+        json!({
+            "coin_name": "NEAR",
+        }),
+    );
+    context.pipe(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH)
+};
