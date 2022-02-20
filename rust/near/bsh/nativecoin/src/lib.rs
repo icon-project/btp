@@ -1,17 +1,18 @@
 use btp_common::btp_address::Address;
 use btp_common::errors::BshError;
 use libraries::types::{
-    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId, WrappedNativeCoin,
+    Account, AccountBalance, AccumulatedAssetFees, TransferableAsset, BTPAddress, AssetId, WrappedNativeCoin,
 };
 use libraries::{
     types::messages::BtpMessage, types::messages::SerializedMessage,
     types::messages::TokenServiceMessage, types::messages::TokenServiceType, types::Balances,
-    types::Math, types::MultiTokenCore, types::MultiTokenResolver, types::Network, types::Owners,
-    types::Requests, types::StorageBalances, types::Token, types::TokenFees, types::Tokens,
+    types::Math, types::Network, types::Owners,
+    types::Requests, types::StorageBalances, types::Asset, types::AssetFees, types::Assets,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::serde_json::{to_value, Value};
+use near_sdk::serde_json::json;
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -35,7 +36,12 @@ mod transfer;
 mod types;
 mod util;
 pub use types::RegisteredCoins;
+pub type CoinFees = AssetFees;
+pub type CoinId = AssetId;
+pub type Coin = Asset<WrappedNativeCoin>;
+pub type Coins = Assets<WrappedNativeCoin>;
 
+pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../../../res/NEP141_CONTRACT.wasm");
 pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]
@@ -44,10 +50,10 @@ pub struct NativeCoinService {
     native_coin_name: String,
     network: Network,
     owners: Owners,
-    tokens: Tokens<WrappedNativeCoin>,
+    coins: Coins,
     balances: Balances,
     storage_balances: StorageBalances,
-    token_fees: TokenFees,
+    coin_fees: CoinFees,
     requests: Requests,
     serial_no: i128,
     bmc: AccountId,
@@ -67,30 +73,30 @@ impl NativeCoinService {
         service_name: String,
         bmc: AccountId,
         network: String,
-        native_coin: Token<WrappedNativeCoin>,
+        native_coin: Coin,
         fee_numerator: U128,
     ) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
 
-        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
+        let mut coins = <Coins>::new();
         let mut balances = Balances::new();
-        let native_coin_id = Self::hash_token_id(native_coin.name());
+        let native_coin_id = Self::hash_coin_id(native_coin.name());
 
         balances.add(&env::current_account_id(), &native_coin_id);
-        tokens.add(&native_coin_id, &native_coin);
+        coins.add(&native_coin_id, &native_coin);
 
-        let mut token_fees = TokenFees::new();
-        token_fees.add(&native_coin_id);
+        let mut coin_fees = CoinFees::new();
+        coin_fees.add(&native_coin_id);
         Self {
             native_coin_name: native_coin.name().to_owned(),
             network,
             owners,
-            tokens,
+            coins,
             balances,
             storage_balances: StorageBalances::new(),
-            token_fees,
+            coin_fees,
             serial_no: Default::default(),
             requests: Requests::new(),
             bmc,

@@ -38,6 +38,6 @@ fn recover_address() {
 
     assert_eq!(
         encode(address),
-        "57b8365292c115d3b72d948272cc4d788fa91f64".to_string()
+        "0057b8365292c115d3b72d948272cc4d788fa91f64".to_string()
     );
 }

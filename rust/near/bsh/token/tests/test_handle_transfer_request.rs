@@ -1,14 +1,17 @@
-use near_sdk::{env, testing_env, AccountId, VMContext};
+use near_sdk::{env, testing_env, AccountId, VMContext, PromiseResult};
 use std::convert::TryInto;
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, Asset, BTPAddress, WrappedFungibleToken, Token, WrappedI128,
+    Account, Asset, AssetItem, BTPAddress, TransferableAsset, WrappedFungibleToken, WrappedI128,
 };
 mod token;
 use token::*;
+
+pub type Token = Asset<WrappedFungibleToken>;
+pub type TokenItem = AssetItem;
 
 fn get_context(
     input: Vec<u8>,
@@ -54,11 +57,18 @@ fn handle_transfer_mint_registered_icx() {
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
-    let baln = <Token<WrappedFungibleToken>>::new(BALN.to_owned());
-    
+    let baln = <Token>::new(BALN.to_owned());
 
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
@@ -71,7 +81,7 @@ fn handle_transfer_mint_registered_icx() {
             TokenServiceType::RequestTokenTransfer {
                 sender: chuck().to_string(),
                 receiver: destination.account_id().to_string(),
-                assets: vec![Asset::new(baln.name().to_owned(), 900, 99)],
+                assets: vec![TransferableAsset::new(baln.name().to_owned(), 900, 99)],
             },
         )),
     );
@@ -79,8 +89,19 @@ fn handle_transfer_mint_registered_icx() {
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    testing_env!(context(alice(), 0));
-    contract.on_mint(900,token_id.clone(),baln.symbol().to_string(),destination.account_id());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    contract.on_mint(
+        900,
+        token_id.clone(),
+        baln.symbol().to_string(),
+        destination.account_id(),
+    );
 
     let result = contract
         .account_balance(destination.account_id(), token_id.clone())

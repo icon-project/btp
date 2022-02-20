@@ -2,10 +2,10 @@ use super::*;
 
 #[near_bindgen]
 impl NativeCoinService {
-    pub fn transfer(&mut self, coin_id: TokenId, destination: BTPAddress, amount: U128) {
+    pub fn transfer(&mut self, coin_id: CoinId, destination: BTPAddress, amount: U128) {
         let sender_id = env::predecessor_account_id();
         self.assert_have_minimum_amount(amount.into());
-        self.assert_tokens_exists(&vec![coin_id.clone()]);
+        self.assert_coins_exists(&vec![coin_id.clone()]);
 
         let asset = self
             .process_external_transfer(&coin_id, &sender_id, amount.into())
@@ -16,12 +16,12 @@ impl NativeCoinService {
 
     pub fn transfer_batch(
         &mut self,
-        coin_ids: Vec<TokenId>,
+        coin_ids: Vec<CoinId>,
         destination: BTPAddress,
         amounts: Vec<U128>,
     ) {
         let sender_id = env::predecessor_account_id();
-        self.assert_tokens_exists(&coin_ids);
+        self.assert_coins_exists(&coin_ids);
 
         let assets = coin_ids
             .iter()
@@ -31,7 +31,7 @@ impl NativeCoinService {
                 self.process_external_transfer(coin_id, &sender_id, amounts[index].into())
                     .unwrap()
             })
-            .collect::<Vec<Asset>>();
+            .collect::<Vec<TransferableAsset>>();
 
         self.send_request(sender_id, destination, assets);
     }
@@ -40,12 +40,12 @@ impl NativeCoinService {
 impl NativeCoinService {
     pub fn process_external_transfer(
         &mut self,
-        coin_id: &TokenId,
+        coin_id: &CoinId,
         sender_id: &AccountId,
         mut amount: u128,
-    ) -> Result<Asset, String> {
-        let token = self.tokens.get(&coin_id).unwrap();
-        let fees = self.calculate_token_transfer_fee(amount.into());
+    ) -> Result<TransferableAsset, String> {
+        let coin = self.coins.get(&coin_id).unwrap();
+        let fees = self.calculate_coin_transfer_fee(amount.into());
 
         self.assert_have_sufficient_deposit(&sender_id, &coin_id, amount, Some(fees));
 
@@ -62,23 +62,23 @@ impl NativeCoinService {
 
         self.balances.set(&sender_id, &coin_id, balance);
 
-        Ok(Asset::new(token.name().clone(), amount, fees))
+        Ok(TransferableAsset::new(coin.name().clone(), amount, fees))
     }
 
     pub fn internal_transfer(
         &mut self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        token_id: &TokenId,
+        coin_id: &CoinId,
         amount: u128,
     ) {
         self.assert_sender_is_not_receiver(sender_id, receiver_id);
-        self.assert_have_sufficient_deposit(sender_id, token_id, amount, None);
+        self.assert_have_sufficient_deposit(sender_id, coin_id, amount, None);
 
-        let mut sender_balance = self.balances.get(sender_id, token_id).unwrap();
+        let mut sender_balance = self.balances.get(sender_id, coin_id).unwrap();
         sender_balance.deposit_mut().sub(amount).unwrap();
 
-        let receiver_balance = match self.balances.get(&receiver_id, token_id) {
+        let receiver_balance = match self.balances.get(&receiver_id, coin_id) {
             Some(mut balance) => {
                 balance.deposit_mut().add(amount).unwrap();
                 balance
@@ -92,22 +92,22 @@ impl NativeCoinService {
             }
         };
 
-        self.balances.set(sender_id, token_id, sender_balance);
-        self.balances.set(receiver_id, token_id, receiver_balance);
+        self.balances.set(sender_id, coin_id, sender_balance);
+        self.balances.set(receiver_id, coin_id, receiver_balance);
     }
 
     pub fn verify_internal_transfer(
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        token_id: &TokenId,
+        coin_id: &CoinId,
         amount: u128,
         sender_balance: &mut AccountBalance,
     ) -> Result<(), String> {
         self.assert_sender_is_not_receiver(sender_id, receiver_id);
         sender_balance.deposit_mut().sub(amount)?;
 
-        match self.balances.get(&receiver_id, token_id) {
+        match self.balances.get(&receiver_id, coin_id) {
             Some(mut balance) => {
                 balance.deposit_mut().add(amount)?;
                 balance
@@ -127,31 +127,31 @@ impl NativeCoinService {
         &mut self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        token_ids: &Vec<TokenId>,
+        coin_ids: &Vec<CoinId>,
         amounts: &Vec<U128>,
     ) {
-        token_ids.iter().enumerate().for_each(|(index, token_id)| {
-            self.internal_transfer(sender_id, receiver_id, token_id, amounts[index].into());
+        coin_ids.iter().enumerate().for_each(|(index, coin_id)| {
+            self.internal_transfer(sender_id, receiver_id, coin_id, amounts[index].into());
         });
     }
 
-    pub fn finalize_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<Asset>) {
+    pub fn finalize_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<TransferableAsset>) {
         assets.iter().for_each(|asset| {
-            let token_id = Self::hash_token_id(asset.token());
-            let token = self.tokens.get(&token_id).unwrap();
-            let mut token_fee = self.token_fees.get(&token_id).unwrap().to_owned();
+            let coin_id = Self::hash_coin_id(asset.name());
+            let coin = self.coins.get(&coin_id).unwrap();
+            let mut coin_fee = self.coin_fees.get(&coin_id).unwrap().to_owned();
 
-            let mut sender_balance = self.balances.get(&sender_id, &token_id).unwrap();
+            let mut sender_balance = self.balances.get(&sender_id, &coin_id).unwrap();
             sender_balance
                 .locked_mut()
                 .sub(asset.amount() + asset.fees())
                 .unwrap();
 
-            self.balances.set(&sender_id, &token_id, sender_balance);
+            self.balances.set(&sender_id, &coin_id, sender_balance);
 
             let mut current_account_balance = self
                 .balances
-                .get(&env::current_account_id(), &token_id)
+                .get(&env::current_account_id(), &coin_id)
                 .unwrap();
             current_account_balance
                 .deposit_mut()
@@ -160,34 +160,34 @@ impl NativeCoinService {
 
             self.balances.set(
                 &env::current_account_id(),
-                &token_id,
+                &coin_id,
                 current_account_balance,
             );
 
-            token_fee.add(asset.fees()).unwrap();
-            self.token_fees.set(&token_id, token_fee);
+            coin_fee.add(asset.fees()).unwrap();
+            self.coin_fees.set(&coin_id, coin_fee);
 
-            if token.network() != &self.network {
-                self.burn(&token_id, asset.amount(), &token);
+            if coin.network() != &self.network {
+                self.burn(&coin_id, asset.amount(), &coin);
             }
         });
     }
 
-    pub fn rollback_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<Asset>) {
+    pub fn rollback_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<TransferableAsset>) {
         assets.iter().for_each(|asset| {
-            let token_id = Self::hash_token_id(asset.token());
-            let mut token_fee = self.token_fees.get(&token_id).unwrap().to_owned();
-            let mut sender_balance = self.balances.get(&sender_id, &token_id).unwrap();
+            let coin_id = Self::hash_coin_id(asset.name());
+            let mut coin_fee = self.coin_fees.get(&coin_id).unwrap().to_owned();
+            let mut sender_balance = self.balances.get(&sender_id, &coin_id).unwrap();
             sender_balance
                 .locked_mut()
                 .sub(asset.amount() + asset.fees())
                 .unwrap();
             sender_balance.refundable_mut().add(asset.amount()).unwrap();
-            self.balances.set(&sender_id, &token_id, sender_balance);
+            self.balances.set(&sender_id, &coin_id, sender_balance);
 
             let mut current_account_balance = self
                 .balances
-                .get(&env::current_account_id(), &token_id)
+                .get(&env::current_account_id(), &coin_id)
                 .unwrap();
             current_account_balance
                 .deposit_mut()
@@ -195,12 +195,12 @@ impl NativeCoinService {
                 .unwrap();
             self.balances.set(
                 &env::current_account_id(),
-                &token_id,
+                &coin_id,
                 current_account_balance,
             );
 
-            token_fee.add(asset.fees()).unwrap();
-            self.token_fees.set(&token_id, token_fee);
+            coin_fee.add(asset.fees()).unwrap();
+            self.coin_fees.set(&coin_id, coin_fee);
         });
     }
 
@@ -208,7 +208,7 @@ impl NativeCoinService {
         &mut self,
         message_source: &BTPAddress,
         receiver_id: &String,
-        assets: &Vec<Asset>,
+        assets: &Vec<TransferableAsset>,
     ) -> Result<Option<TokenServiceMessage>, BshError> {
         let receiver_id = AccountId::try_from(receiver_id.to_owned()).map_err(|error| {
             BshError::InvalidAddress {
@@ -216,15 +216,15 @@ impl NativeCoinService {
             }
         })?;
 
-        let mut unregistered_tokens: Vec<String> = Vec::new();
+        let mut unregistered_coins: Vec<String> = Vec::new();
 
-        let token_ids: Vec<(usize, TokenId)> = assets
+        let coin_ids: Vec<(usize, CoinId)> = assets
             .iter()
-            .map(|asset| Self::hash_token_id(asset.token()))
+            .map(|asset| Self::hash_coin_id(asset.name()))
             .enumerate()
-            .filter(|(index, token_id)| {
-                return if !self.tokens.contains(token_id) {
-                    unregistered_tokens.push(assets[index.to_owned()].token().to_owned());
+            .filter(|(index, coin_id)| {
+                return if !self.coins.contains(coin_id) {
+                    unregistered_coins.push(assets[index.to_owned()].name().to_owned());
                     false
                 } else {
                     true
@@ -232,44 +232,44 @@ impl NativeCoinService {
             })
             .collect();
 
-        if unregistered_tokens.len() > 0 {
+        if unregistered_coins.len() > 0 {
             return Err(BshError::TokenNotExist {
-                message: unregistered_tokens.join(", "),
+                message: unregistered_coins.join(", "),
             });
         }
 
-        let tokens = token_ids
+        let coins = coin_ids
             .into_iter()
-            .map(|(asset_index, token_id)| {
+            .map(|(asset_index, coin_id)| {
                 (
                     asset_index,
-                    token_id.clone(),
-                    self.tokens.get(&token_id).unwrap(),
+                    coin_id.clone(),
+                    self.coins.get(&coin_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<WrappedNativeCoin>)>>();
+            .collect::<Vec<(usize, CoinId, Coin)>>();
 
         let transferable =
-            self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
+            self.is_coins_transferable(&env::current_account_id(), &receiver_id, &coins, assets);
         if transferable.is_err() {
             return Err(BshError::Reverted {
                 message: format!("Coins not transferable: {}", transferable.unwrap_err()),
             });
         }
 
-        tokens.iter().for_each(|(index, token_id, token)| {
-            if token.network() != &self.network {
+        coins.iter().for_each(|(index, coin_id, coin)| {
+            if coin.network() != &self.network {
                 self.mint(
-                    token_id,
+                    coin_id,
                     assets[index.to_owned()].amount(),
-                    &token,
+                    &coin,
                     receiver_id.clone(),
                 );
             } else {
                 self.internal_transfer(
                     &env::current_account_id(),
                     &receiver_id,
-                    token_id,
+                    coin_id,
                     assets[index.to_owned()].amount(),
                 );
             }
@@ -283,19 +283,19 @@ impl NativeCoinService {
         )))
     }
 
-    fn is_tokens_transferable(
+    fn is_coins_transferable(
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<WrappedNativeCoin>)>,
-        assets: &Vec<Asset>,
+        coins: &Vec<(usize, CoinId, Asset<WrappedNativeCoin>)>,
+        assets: &Vec<TransferableAsset>,
     ) -> Result<(), String> {
-        tokens
+        coins
             .iter()
-            .map(|(index, token_id, token)| -> Result<(), String> {
-                let mut sender_balance = self.balances.get(sender_id, token_id).unwrap();
-                if token.network() != &self.network {
-                    self.verify_mint(token_id, assets[index.to_owned()].amount())?;
+            .map(|(index, coin_id, coin)| -> Result<(), String> {
+                let mut sender_balance = self.balances.get(sender_id, coin_id).unwrap();
+                if coin.network() != &self.network {
+                    self.verify_mint(coin_id, assets[index.to_owned()].amount())?;
                     sender_balance
                         .deposit_mut()
                         .add(assets[index.to_owned()].amount())?;
@@ -303,7 +303,7 @@ impl NativeCoinService {
                 self.verify_internal_transfer(
                     &env::current_account_id(),
                     receiver_id,
-                    token_id,
+                    coin_id,
                     assets[index.to_owned()].amount(),
                     &mut sender_balance,
                 )?;
@@ -317,7 +317,7 @@ impl NativeCoinService {
         index: usize,
         amounts: &Vec<U128>,
         returned_amount: u128,
-        token_ids: &Vec<TokenId>,
+        coin_ids: &Vec<CoinId>,
         sender_id: &AccountId,
         receiver_id: &AccountId,
     ) -> U128 {
@@ -325,23 +325,23 @@ impl NativeCoinService {
             return U128::from(0);
         }
         let unused_amount = std::cmp::min(amounts[index].into(), returned_amount);
-        let token_id = &token_ids[index];
+        let coin_id = &coin_ids[index];
 
         let mut receiver_balance = self
             .balances
-            .get(receiver_id, token_id)
+            .get(receiver_id, coin_id)
             .expect("Token receiver no longer exists");
 
         if receiver_balance.deposit() > 0 {
             let refund_amount = std::cmp::min(receiver_balance.deposit(), unused_amount); // TODO: Revisit
             receiver_balance.deposit_mut().sub(refund_amount).unwrap();
             self.balances
-                .set(&receiver_id.clone(), token_id, receiver_balance);
+                .set(&receiver_id.clone(), coin_id, receiver_balance);
 
-            if let Some(mut sender_balance) = self.balances.get(sender_id, token_id) {
+            if let Some(mut sender_balance) = self.balances.get(sender_id, coin_id) {
                 sender_balance.deposit_mut().add(refund_amount).unwrap();
                 self.balances
-                    .set(&sender_id.clone(), token_id, sender_balance);
+                    .set(&sender_id.clone(), coin_id, sender_balance);
                 let amount: u128 = amounts[index].into();
                 return U128::from(amount - refund_amount);
             }

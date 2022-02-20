@@ -24,6 +24,7 @@ pub mod errors {
             match self {
                 BtpException::Base => 0,
                 BtpException::Bmc(error) => error.code() + 10,
+                BtpException::Bsh(error) => error.code() + 40,
                 _ => todo!(),
             }
         }
@@ -302,6 +303,7 @@ pub mod errors {
         VerifierExist,
         VerifierNotExist,
         Unauthorized { message: &'static str },
+        InternalEventHandleNotExists
     }
 
     impl Exception for BmcError {
@@ -393,6 +395,9 @@ pub mod errors {
                 }
                 BmcError::Unauthorized { message } => {
                     write!(f, "{}{}: {}", label, "Unauthorized", message)
+                },
+                BmcError::InternalEventHandleNotExists => {
+                    write!(f, "{}{}", label, "NotExistInternalEventHandle")
                 }
             }
         }
