@@ -1,12 +1,12 @@
 use nativecoin_service::NativeCoinService;
-use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
+use near_sdk::{env, json_types::U128, testing_env, AccountId, PromiseResult, VMContext};
 use std::{collections::HashSet, convert::TryInto};
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, TransferableAsset, BTPAddress, WrappedNativeCoin, Asset, Math,
-    WrappedI128,
+    Account, AccountBalance, Asset, BTPAddress, Math, TransferableAsset, WrappedI128,
+    WrappedNativeCoin,
 };
 mod token;
 use std::convert::TryFrom;
@@ -43,18 +43,29 @@ fn get_context(
 
 #[test]
 #[cfg(feature = "testable")]
+
 fn handle_transfer_mint_registered_icx() {
+    use std::vec;
+
     let context = |account_id: AccountId, deposit: u128| {
         get_context(vec![], false, account_id, deposit, env::storage_usage())
     };
-    testing_env!(context(alice(), 0));
+    
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    
     let nativecoin = Coin::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
-        1000.into()
+        1000.into(),
     );
 
     let destination =
@@ -84,14 +95,23 @@ fn handle_transfer_mint_registered_icx() {
     testing_env!(context(bmc(), 0));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    testing_env!(context(alice(), 0));
-    contract.on_mint(900,coin_id,icx_coin.symbol().to_string(),destination.account_id());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    contract.on_mint(
+        900,
+        coin_id,
+        icx_coin.symbol().to_string(),
+        destination.account_id(),
+    );
 
-
-    let result = contract
-        .balance_of(
-            destination.account_id(),
-            contract.coin_id(icx_coin.name().to_owned()),
-        );
+    let result = contract.balance_of(
+        destination.account_id(),
+        contract.coin_id(icx_coin.name().to_owned()),
+    );
     assert_eq!(result, U128::from(900));
 }

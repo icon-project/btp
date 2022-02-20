@@ -1,5 +1,5 @@
 use nativecoin_service::NativeCoinService;
-use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env};
+use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env, PromiseResult};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
@@ -37,7 +37,13 @@ fn get_context(
 #[test]
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
@@ -70,7 +76,13 @@ fn register_token() {
 #[should_panic(expected = "BSHRevertAlreadyExistsToken")]
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
@@ -89,7 +101,13 @@ fn register_existing_token() {
 #[should_panic(expected = "BSHRevertNotExistsPermission")]
 fn register_token_permission() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
