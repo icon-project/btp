@@ -25,6 +25,17 @@ pub static AMOUNT_USED_IS_PROVIDED_AS_CALCULATE_TOKEN_TRANSFER_FEE_PARAM: fn(Con
         context
     };
 
+    pub static AMOUNT_USED_IS_PROVIDED_AS_CALCULATE_TOKEN_TRANSFER_FEE_PARAM_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "calculate_token_transfer_fee",
+            json!({
+                "amount":"1000",
+            }),
+        );
+        context
+    };
+
 pub static FEE_RATIO_SHOULD_BE_UPDATED_IN_NATIVE_COIN_BSH: fn(Context) = |context: Context| {
     let context = context
         .pipe(AMOUNT_USED_IS_PROVIDED_AS_CALCULATE_TOKEN_TRANSFER_FEE_PARAM)
@@ -156,7 +167,7 @@ pub static BOB_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH: fn(Context) -> Context =
 
 pub static FEE_RATIO_SHOULD_BE_UPDATED_IN_TOKEN_BSH: fn(Context) = |context: Context| {
     let context = context
-        .pipe(AMOUNT_USED_IS_PROVIDED_AS_CALCULATE_TOKEN_TRANSFER_FEE_PARAM)
+        .pipe(AMOUNT_USED_IS_PROVIDED_AS_CALCULATE_TOKEN_TRANSFER_FEE_PARAM_TOKEN_BSH)
         .pipe(USER_INVOKES_CALCULATE_TOKEN_TRANFER_FEE_IN_TOKEN_BSH);
     let result: u128 =
         from_value(context.method_responses("calculate_token_transfer_fee")).unwrap();
