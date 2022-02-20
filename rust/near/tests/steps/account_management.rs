@@ -13,6 +13,12 @@ pub static CHARLIES_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: C
     context
 };
 
+pub static NEP_SERVICE_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
+    let nep141 = create_account(&context);
+    context.accounts_mut().add("nep141service", nep141);
+    context
+};
+
 pub static CHUCKS_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Context| {
     let chuck = create_account(&context);
     context.accounts_mut().add("chuck", chuck);

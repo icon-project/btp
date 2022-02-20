@@ -32,8 +32,8 @@ mod manage_token_transfer {
                 .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
-                .and(CHARLIE_WITHDRAWS_AMOUNT)
-                .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
+               .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN)
                 .when(USER_INVOKES_BALANCE_OF_TOKEN_BSH)
                 .then(AMOUNT_SHOULD_BE_PRESENT_IN_TOKEN_BSH_ACCOUNT_ON_DEPOSITING);
         }
@@ -42,7 +42,9 @@ mod manage_token_transfer {
         async fn user_can_transfer_native_near_coin_to_cross_chain() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
@@ -55,12 +57,14 @@ mod manage_token_transfer {
         async fn user_can_transfer_wrapped_native_coin_to_cross_chain() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
                 .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
-                .and(CHARLIE_WITHDRAWS_AMOUNT)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
                 .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN)
                 .when(CHARLIE_TRANSFER_WRAPPED_NATIVE_COIN_TO_CROSS_CHAIN)
                 .then(TRANSFERED_AMOUNT_SHOULD_BE_DEDUCTED_FROM_WRAPPED_TOKEN_BALANCE);

@@ -45,4 +45,4 @@ near-contract-standards = { git = "https://github.com/HugoByte/near-sdk-rs.git",
 near-jsonrpc-client = { branch = "fix/serde", git = "https://github.com/HugoByte/near-jsonrpc-client-rs", features = ["sandbox"] }
 
 [patch."crates-io"]
-workspaces = { git = "https://github.com/HugoByte/workspaces-rs.git", rev = "e91c125" }
+workspaces = { git = "https://github.com/HugoByte/workspaces-rs.git", rev = "b090189" }

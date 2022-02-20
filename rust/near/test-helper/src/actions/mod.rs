@@ -15,3 +15,4 @@ mod initialize;
 mod manage_bsh;
 mod manage_nep141;
 pub use setup::create_account;
+pub use invoke::call;
