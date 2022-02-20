@@ -14,6 +14,7 @@ near-sdk = { git = "https://github.com/near/near-sdk-rs.git" }
 
 [features]
 testable = []
+mockable = []
 
 [[test]]
 name = "test_link_management"

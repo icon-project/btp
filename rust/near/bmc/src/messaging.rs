@@ -80,6 +80,53 @@ impl BtpMessageCenter {
         };
     }
 
+    #[cfg(feature = "mockable")]
+    #[private]
+    pub fn handle_relay_message_bmv_callback_mockable(
+        &mut self,
+        source: BTPAddress,
+        verifier_response: VerifierResponse,
+    ) {
+        match verifier_response {
+            VerifierResponse::Success {
+                previous_height,
+                verifier_status,
+                messages,
+            } => {
+                if let Some(mut link) = self.links.get(&source) {
+                    let relay = match link
+                        .rotate_relay(verifier_status.last_height(), !messages.is_empty())
+                    {
+                        Some(relay) => {
+                            self.assert_relay_is_valid(relay);
+                            relay.clone()
+                        }
+                        None => env::predecessor_account_id(),
+                    };
+
+                    let mut relay_status = match link.relays().status(&relay) {
+                        Some(status) => status,
+                        None => RelayStatus::default(),
+                    };
+                    relay_status
+                        .block_count_mut()
+                        .add(verifier_status.mta_height())
+                        .unwrap()
+                        .sub(previous_height)
+                        .unwrap();
+                    relay_status
+                        .message_count_mut()
+                        .add(messages.len().try_into().unwrap())
+                        .unwrap();
+                    link.relays_mut().set_status(&relay, &relay_status);
+                    self.links.set(&source, &link);
+                    self.handle_btp_messages(source, messages)
+                }
+            }
+            VerifierResponse::Failed(code) => (env::panic_str(format!("{}", code).as_str())),
+        };
+    }
+
     #[cfg(feature = "testable")]
     pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
         self.event.get_message()
