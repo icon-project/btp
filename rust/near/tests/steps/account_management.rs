@@ -42,6 +42,7 @@ pub static ALICES_ACCOUNT_IS_CREATED: fn(Context) -> Context = |mut context: Con
     context.accounts_mut().add("alice", alice);
     context
 };
+
 // * * * * * * * * * * * * * *
 // * * * * * * * * * * * * * *
 // * * * *  Set Signer * * * *
