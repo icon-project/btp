@@ -183,7 +183,7 @@ impl TokenService {
         &mut self,
         serial_no: &WrappedI128,
         code: u128,
-        _message: &str,
+        message: &str,
     ) -> Result<Option<TokenServiceMessage>, BshError> {
         if let Some(request) = self.requests().get(*serial_no.get()) {
             let sender_id = AccountId::try_from(request.sender().to_owned()).unwrap();
@@ -193,6 +193,14 @@ impl TokenService {
                 self.rollback_external_transfer(&sender_id, request.assets());
             }
             self.requests_mut().remove(*serial_no.get());
+
+            log!(
+                "TransferEnd({}, {}, {}, {:?})",
+                sender_id,
+                serial_no.get(),
+                code,
+                message
+            )
         }
         Ok(None)
     }
