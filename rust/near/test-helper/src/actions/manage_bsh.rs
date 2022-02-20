@@ -15,7 +15,14 @@ impl Contract<'_, contract_type> {
     }
 
     pub fn register(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "register", method_params);
+        invoke_call!(
+            self,
+            context,
+            "register",
+            method_params,
+            Some(7_000_000_000_000_000_000_000_000),
+            Some(300000000000000)
+        );
         context
     }
 

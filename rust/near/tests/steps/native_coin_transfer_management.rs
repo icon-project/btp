@@ -6,29 +6,39 @@ use libraries::types::{
     WrappedI128, WrappedNativeCoin,
 };
 use serde_json::{from_value, json, Value};
-use std::convert::TryFrom;
-use test_helper::types::Context;
+use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
+use test_helper::{actions::call, types::Context};
+use workspaces::{Contract as WorkspaceContract, Sandbox};
 
 pub static WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         context
             .pipe(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .pipe(NEP141_CONTRACT_IS_DEPLOYED_AND_INITIALZIED)
+            .pipe(NEP141_CONTRACT_IS_DEPLOYED)
             .pipe(REGISTER_WRAPPED_ICX_IN_NATIVE_COIN_BSH)
     };
 
 pub static REGISTER_WRAPPED_ICX_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
+        let account = context.contracts().get("nep141service").id().clone();
+
         context.add_method_params(
             "register",
             json!({
-                "token" : {
+                "coin" : {
                     "metadata": {
                         "name": "WrappedICX",
                         "symbol": "nICX",
-                        "uri":  context.contracts().get("nep141service").id(),
+                        "uri":  account.to_string(),
                         "network": "0x1.icon",
-                        "extras": null,
+                        "extras": {
+                            "spec": "ft-1.0.0",
+                            "icon" : null,
+                            "reference": null,
+                            "reference_hash": null,
+                            "decimals": 24
+                        },
                     }
                 }
             }),
@@ -107,7 +117,7 @@ pub static USER_INVOKES_BALANCE_OF_TOKEN_BSH: fn(Context) -> Context = |mut cont
         "balance_of",
         json!({
             "owner_id": context.accounts().get("charlie").id().to_string() ,
-            "token_id": context.method_responses("coin_id") ,
+            "coin_id": context.method_responses("coin_id") ,
         }),
     );
     context.pipe(USER_INVOKES_GET_BALANCE_IN_NATIVE_COIN_BSH)
@@ -118,20 +128,22 @@ pub static AMOUNT_SHOULD_BE_PRESENT_IN_TOKEN_BSH_ACCOUNT: fn(Context) = |context
     assert_eq!(balance, "900");
 };
 
-pub static CHARLIE_WITHDRAWS_AMOUNT: fn(Context) -> Context = |mut context: Context| {
-    let mut context = context.pipe(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_WRAPPED_COIN);
+pub static CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        let mut context =
+            context.pipe(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_WRAPPED_COIN);
 
-    context.add_method_params(
-        "withdraw",
-        json!({
-            "token_id": context.method_responses("coin_id"),
-            "amount": "400",
-        }),
-    );
-    context
-        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
-        .pipe(USER_INVOKES_WITHDRAW_IN_NATIVE_COIN_BSH)
-};
+        context.add_method_params(
+            "withdraw",
+            json!({
+                "coin_id": context.method_responses("coin_id"),
+                "amount": "400",
+            }),
+        );
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_WITHDRAW_IN_NATIVE_COIN_BSH)
+    };
 
 pub static CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN: fn(Context) -> Context =
     |mut context: Context| {
@@ -152,6 +164,8 @@ pub static CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN: fn(Context) -> Context =
 
 pub static AMOUNT_SHOULD_BE_PRESENT_IN_TOKEN_BSH_ACCOUNT_ON_DEPOSITING: fn(Context) =
     |context: Context| {
+        //let error = context.method_errors("ft_transfer_call");
+        //println!("{}",error);
         let balance: String = from_value(context.method_responses("balance_of")).unwrap();
         assert_eq!(balance, "800");
     };
@@ -173,7 +187,7 @@ pub static CHARLIES_TRANSFERS_NATIVE_NEAR_COIN_TO_CROSS_CHAIN: fn(Context) -> Co
             "transfer",
             json!({
                 "coin_id": context.method_responses("coin_id"),
-                 "destination": BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "destination": BTPAddress::new(format!("btp://{}/{}", ICON_NETWORK, ICON_BMC)),
                  "amount": "200"
             }),
         );
@@ -190,7 +204,10 @@ pub static TRANSFERED_AMOUNT_SHOULD_BE_DEDUCTED_FROM_ACCOUNT_ON_TRANSFERING_NATI
 
     let response: Value = from_value(context.method_responses("balance_of")).unwrap();
 
-    assert_eq!(response, "800")
+    assert_eq!(response, "800");
+
+    // let error = context.method_responses("balance_of");
+    // println!("{}",error);
 };
 
 pub static USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN: fn(Context) -> Context =
@@ -211,7 +228,7 @@ pub static CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
             "balance_of",
             json!({
                 "owner_id": context.accounts().get("charlie").id().to_string() ,
-                "token_id": context.method_responses("coin_id") ,
+                "coin_id": context.method_responses("coin_id") ,
             }),
         );
         context.pipe(USER_INVOKES_GET_BALANCE_IN_NATIVE_COIN_BSH)
@@ -226,7 +243,7 @@ pub static CHARLIE_TRANSFER_WRAPPED_NATIVE_COIN_TO_CROSS_CHAIN: fn(Context) -> C
             "transfer",
             json!({
                 "coin_id": context.method_responses("coin_id"),
-                 "destination": BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "destination": BTPAddress::new(format!("btp://{}/{}", ICON_NETWORK, ICON_BMC)),
                  "amount": "500"
             }),
         );
@@ -368,3 +385,55 @@ pub static BALANCE_SHOULD_BE_UNLOCKED_AFTER_GETTING_SUCCESS_RESPONSE: fn(Context
 
         assert_eq!(balance, "700");
     };
+pub static CHARLIES_TRANSFERS_0_NATIVE_NEAR_COIN_TO_CROSS_CHAIN: fn(Context) -> Context =
+    |mut context: Context| {
+        let mut context =
+            context.pipe(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN);
+
+        context.add_method_params(
+            "transfer",
+            json!({
+                "coin_id": context.method_responses("coin_id"),
+                 "destination": BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "amount": "0"
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_TRANSFER_IN_NATIVE_COIN_BSH)
+    };
+
+pub static NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN:
+    fn(Context) = |context: Context| {
+    let error = context.method_errors("transfer");
+    assert!(error.to_string().contains("BSHRevertNotMinimumAmount"));
+};
+
+pub static  AFTER_WITHDRAW_CHARLIES_AMOUNT_SHOULD_BE_DEDUCTED_AND_BALANCE_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT : fn(Context) = |context:Context|{
+
+        let balance:String = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance,"500");
+    };
+pub static CHARLIES_WITHDRAWABLE_AMOUNT_IN_NATIVE_COIN_BSH_ACCOUNT: fn(Context) =
+    |context: Context| {
+        let balance: String = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance, "900");
+    };
+
+pub static BALANCE_OF_CHARLIES_ACCOUNT_SHOULD_BE_PRESENT_IN_THE_ACCOUNT: fn(Context) =
+    |mut context: Context| {
+        let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
+         assert_eq!(balance, "1000");
+    };
+pub static CHARLIE_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_NATIVE_COIN: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "coin_id",
+        json!({
+            "coin_name": "NEAR",
+        }),
+    );
+    context.pipe(USER_INVOKES_GET_COIN_ID_IN_NATIVE_COIN_BSH)
+};
