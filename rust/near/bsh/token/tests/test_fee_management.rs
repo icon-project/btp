@@ -1,4 +1,4 @@
-use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
+use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext, PromiseResult};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
@@ -60,12 +60,24 @@ fn handle_fee_gathering() {
     let w_near = <Token>::new(WNEAR.to_owned());
     
 
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.register(w_near.clone());
 
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));

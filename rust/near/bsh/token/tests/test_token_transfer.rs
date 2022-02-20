@@ -1,20 +1,19 @@
-use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
+use near_sdk::{env, json_types::U128, testing_env, AccountId, PromiseResult, VMContext};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, BTPAddress, Math, Asset,
-    WrappedFungibleToken, WrappedI128, AssetItem,
+    Account, AccountBalance, AccumulatedAssetFees, Asset, AssetItem, BTPAddress, Math,
+    WrappedFungibleToken, WrappedI128,
 };
 mod token;
-use libraries::types::{TransferableAsset, Request};
+use libraries::types::{Request, TransferableAsset};
 use std::convert::TryInto;
 use token::*;
 
 pub type TokenFee = AssetItem;
 pub type Token = Asset<WrappedFungibleToken>;
-
 
 fn get_context(
     input: Vec<u8>,
@@ -58,7 +57,14 @@ fn deposit_wnear() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "TokenBSH".to_string(),
         bmc(),
@@ -71,7 +77,13 @@ fn deposit_wnear() {
 
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(100), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -94,7 +106,13 @@ fn withdraw_wnear() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "TokenBSH".to_string(),
         bmc(),
@@ -105,7 +123,13 @@ fn withdraw_wnear() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -117,7 +141,13 @@ fn withdraw_wnear() {
     testing_env!(context(chuck(), 1));
     contract.withdraw(token_id.clone(), U128::from(999));
 
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.on_withdraw(chuck(), 999, token_id.clone(), w_near.symbol().to_owned());
 
     let result = contract.balance_of(chuck(), token_id.clone());
@@ -140,7 +170,13 @@ fn withdraw_wnear_higher_amount() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "TokenBSH".to_string(),
         bmc(),
@@ -178,7 +214,13 @@ fn external_transfer() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -192,7 +234,13 @@ fn external_transfer() {
 
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -232,7 +280,13 @@ fn handle_success_response_wnear_external_transfer() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -246,7 +300,13 @@ fn handle_success_response_wnear_external_transfer() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -316,7 +376,13 @@ fn handle_success_response_baln_external_transfer() {
             prepaid_gas,
         )
     };
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000, 10u64.pow(18)));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000, 10u64.pow(18)),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
@@ -330,7 +396,7 @@ fn handle_success_response_baln_external_transfer() {
     let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
     contract.register_token_callback(baln.clone());
-    
+
     let token_id = contract.token_id(baln.name().to_owned());
 
     let btp_message = &BtpMessage::new(
@@ -351,7 +417,13 @@ fn handle_success_response_baln_external_transfer() {
     testing_env!(context(bmc(), 0, 10u64.pow(18)));
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    testing_env!(context(alice(), 0, 10u64.pow(18)));
+    testing_env!(
+        context(alice(), 0, 10u64.pow(18)),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
 
     testing_env!(context(chuck(), 0, 10u64.pow(18)));
@@ -385,7 +457,13 @@ fn handle_success_response_baln_external_transfer() {
 
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
-    testing_env!(context(alice(), 0, 10u64.pow(18)));
+    testing_env!(
+        context(alice(), 0, 10u64.pow(18)),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.on_burn(720, token_id.clone(), baln.symbol().to_string());
 
     let result = contract.balance_of(alice(), token_id.clone());
@@ -425,7 +503,13 @@ fn handle_failure_response_wnear_external_transfer() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -438,7 +522,13 @@ fn handle_failure_response_wnear_external_transfer() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -511,7 +601,13 @@ fn handle_failure_response_baln_coin_external_transfer() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -542,7 +638,13 @@ fn handle_failure_response_baln_coin_external_transfer() {
         )),
     );
 
-    testing_env!(context(bmc(), 0));
+    testing_env!(
+        context(bmc(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.handle_btp_message(btp_message.try_into().unwrap());
 
     contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
@@ -612,7 +714,13 @@ fn reclaim_baln_coin() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -643,7 +751,13 @@ fn reclaim_baln_coin() {
         )),
     );
 
-    testing_env!(context(bmc(), 0));
+    testing_env!(
+        context(bmc(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.handle_btp_message(btp_message.try_into().unwrap());
     contract.on_mint(900, token_id.clone(), baln.symbol().to_string(), chuck());
 
@@ -692,7 +806,14 @@ fn external_transfer_higher_amount() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -706,7 +827,13 @@ fn external_transfer_higher_amount() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 1000));
@@ -727,7 +854,13 @@ fn external_transfer_unregistered_coin() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
@@ -756,7 +889,14 @@ fn external_transfer_nil_balance() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
@@ -770,7 +910,13 @@ fn external_transfer_nil_balance() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -791,7 +937,14 @@ fn external_transfer_batch() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+
     let w_near = <Token>::new(WNEAR.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
@@ -804,7 +957,13 @@ fn external_transfer_batch() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -834,7 +993,15 @@ fn external_transfer_batch_higher_amount() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -847,7 +1014,13 @@ fn external_transfer_batch_higher_amount() {
     contract.register(w_near.clone());
     let token_id = contract.token_id(w_near.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -868,7 +1041,14 @@ fn external_transfer_batch_unregistered_coin() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -883,7 +1063,13 @@ fn external_transfer_batch_unregistered_coin() {
     let baln_token_id = contract.token_id(baln.name().to_owned());
     contract.register(w_near.clone());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -908,7 +1094,14 @@ fn external_transfer_batch_nil_balance() {
             10u64.pow(18),
         )
     };
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = TokenService::new(
@@ -922,13 +1115,26 @@ fn external_transfer_batch_nil_balance() {
     let baln = <Token>::new(BALN.to_owned());
     contract.register(w_near.clone());
 
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.register(baln.clone());
     contract.register_token_callback(baln.clone());
 
     let token_id = contract.token_id(w_near.name().to_owned());
     let baln_token_id = contract.token_id(baln.name().to_owned());
 
-    testing_env!(context(wnear(), 0));
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));

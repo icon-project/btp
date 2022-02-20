@@ -142,16 +142,28 @@ impl NativeCoinService {
         coin_id: CoinId,
         coin_symbol: String,
     ) {
-        let mut balance = self.balances.get(&account, &coin_id).unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances
-            .set(&account.clone(), &coin_id, balance);
+        match env::promise_result(0) {
+            PromiseResult::Successful(_) => {
+                let mut balance = self.balances.get(&account, &coin_id).unwrap();
+                balance.deposit_mut().sub(amount).unwrap();
+                self.balances.set(&account.clone(), &coin_id, balance);
 
-        log!(
-            "[Withdrawn] Amount : {} by {}  {}",
-            amount,
-            account,
-            coin_symbol
-        );
+                log!(
+                    "[Withdrawn] Amount : {} by {}  {}",
+                    amount,
+                    account,
+                    coin_symbol
+                );
+            }
+            PromiseResult::NotReady => log!("Not Ready"),
+            PromiseResult::Failed => {
+                log!(
+                    "[Withdraw Failed] Amount : {} by {}  {}",
+                    amount,
+                    account,
+                    coin_symbol
+                );
+            }
+        }
     }
 }

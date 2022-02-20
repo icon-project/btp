@@ -14,9 +14,9 @@ impl NativeCoinService {
     pub fn register(&mut self, coin: Coin) {
         self.assert_have_permission();
         self.assert_coin_does_not_exists(&coin);
-        
+
         if coin.network() == &self.network {
-            self.register_coin_callback(coin);
+            self.register_coin(coin);
         } else {
             let coin_metadata = coin.extras().clone().expect("Coin Metadata Missing");
             let promise_idx = env::promise_batch_create(
@@ -78,45 +78,57 @@ impl NativeCoinService {
         coin_symbol: String,
         receiver_id: AccountId,
     ) {
-        let mut balance = self
-            .balances
-            .get(&env::current_account_id(), &coin_id)
-            .unwrap();
-        balance.deposit_mut().add(amount).unwrap();
-        self.balances
-            .set(&env::current_account_id(), &coin_id, balance);
+        match env::promise_result(0) {
+            PromiseResult::Successful(_) => {
+                let mut balance = self
+                    .balances
+                    .get(&env::current_account_id(), &coin_id)
+                    .unwrap();
+                balance.deposit_mut().add(amount).unwrap();
+                self.balances
+                    .set(&env::current_account_id(), &coin_id, balance);
 
-        self.internal_transfer(&env::current_account_id(), &receiver_id, &coin_id, amount);
+                self.internal_transfer(&env::current_account_id(), &receiver_id, &coin_id, amount);
 
-        log!("[Mint] {} {}", amount, coin_symbol);
+                log!("[Mint] {} {}", amount, coin_symbol);
+            }
+            PromiseResult::NotReady => log!("Not Ready"),
+            PromiseResult::Failed => {
+                log!("[Mint Failed] {} {}", amount, coin_symbol);
+            }
+        }
     }
 
     #[private]
     pub fn on_burn(&mut self, amount: u128, coin_id: CoinId, coin_symbol: String) {
-        let mut balance = self
-            .balances
-            .get(&env::current_account_id(), &coin_id)
-            .unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances
-            .set(&env::current_account_id(), &coin_id, balance);
+        match env::promise_result(0) {
+            PromiseResult::Successful(_) => {
+                let mut balance = self
+                    .balances
+                    .get(&env::current_account_id(), &coin_id)
+                    .unwrap();
+                balance.deposit_mut().sub(amount).unwrap();
+                self.balances
+                    .set(&env::current_account_id(), &coin_id, balance);
 
-        log!("[Burn] {} {}", amount, coin_symbol);
+                log!("[Burn] {} {}", amount, coin_symbol);
+            }
+            PromiseResult::NotReady => log!("Not Ready"),
+            PromiseResult::Failed => {
+                log!("[Burn Failed] {} {}", amount, coin_symbol);
+            }
+        }
     }
 
     #[private]
     pub fn register_coin_callback(&mut self, coin: Coin) {
-        let coin_id = Self::hash_coin_id(coin.name());
-
-        self.coins.add(&coin_id, &coin);
-        self.coin_fees.add(&coin_id);
-
-        self.registered_coins.add(
-            &coin.metadata().uri_deref().expect("Coin Account Missing"),
-            &coin_id,
-        );
-
-        self.balances.add(&env::current_account_id(), &coin_id);
+        match env::promise_result(0) {
+            PromiseResult::Successful(_) => self.register_coin(coin),
+            PromiseResult::NotReady => log!("Not Ready"),
+            PromiseResult::Failed => {
+                log!("Faild to register the coin")
+            }
+        }
     }
 }
 
@@ -163,5 +175,19 @@ impl NativeCoinService {
             .unwrap();
         balance.deposit_mut().add(amount)?;
         Ok(())
+    }
+
+    pub fn register_coin(&mut self, coin: Coin) {
+        let coin_id = Self::hash_coin_id(coin.name());
+
+        self.coins.add(&coin_id, &coin);
+        self.coin_fees.add(&coin_id);
+
+        self.registered_coins.add(
+            &coin.metadata().uri_deref().expect("Coin Account Missing"),
+            &coin_id,
+        );
+
+        self.balances.add(&env::current_account_id(), &coin_id);
     }
 }
