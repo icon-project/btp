@@ -75,6 +75,12 @@ impl Contract<'_, contract_type> {
         );
         context
     }
+    
+
+    pub fn calculate_coin_transfer_fee(&self, mut context: Context) -> Context {
+        invoke_view!(self, context, "calculate_coin_transfer_fee", method_params);
+        context
+    }
 
     pub fn calculate_token_transfer_fee(&self, mut context: Context) -> Context {
         invoke_view!(self, context, "calculate_token_transfer_fee", method_params);

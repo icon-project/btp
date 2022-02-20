@@ -66,7 +66,7 @@ pub static USER_HANDLES_FEE_GATHERING_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.handle_btp_message(context, 300000000000000);
 
 pub static USER_INVOKES_CALCULATE_TOKEN_TRANFER_FEE_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
-    |context: Context| NATIVE_COIN_BSH_CONTRACT.calculate_token_transfer_fee(context);
+    |context: Context| NATIVE_COIN_BSH_CONTRACT.calculate_coin_transfer_fee(context);
 
 pub static USER_INVOKES_GET_BALANCE_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.balance_of(context);
