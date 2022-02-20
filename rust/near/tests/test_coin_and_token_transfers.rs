@@ -84,5 +84,18 @@ mod manage_token_transfer {
                 .when(CHARLIE_INVOKES_BALANCE_FROM_NATIVE_COIN_BSH)
                 .then(BALANCE_SHOULD_BE_UNLOCKED_AFTER_GETTING_SUCCESS_RESPONSE);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_cannot_transfer_0_native_near_coin_to_cross_chain() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED_AND_AMOUNT_DEPOSITED)
+                .when(CHARLIES_TRANSFERS_0_NATIVE_NEAR_COIN_TO_CROSS_CHAIN)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN);
+        }
     }
 }
