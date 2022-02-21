@@ -331,3 +331,36 @@ pub static CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT: fn(Context) -> 
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
             .pipe(USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR)
     };
+
+  
+
+    pub static USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "token_id",
+            json!({
+                "token_name": "WNear",
+            }),
+        );
+
+        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+    };
+    
+    pub static CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN: fn(Context) -> Context =
+    |mut context: Context| {
+        let mut context =
+            context.pipe(USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT);
+
+        context.add_method_params(
+            "transfer",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "destination": BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "amount": "0"
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_TRANSFER_IN_TOKEN_BSH)
+    };
