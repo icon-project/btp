@@ -4,7 +4,7 @@ use test_helper::types::{Context, Contract, WNear, WNearContract};
 
 lazy_static! {
     pub static ref WNEAR_CONTRACT: Contract<'static, WNear> =
-    WNearContract::new("wnercontract", "res/NEP141_CONTRACT.wasm");
+    WNearContract::new("wnearcontract", "res/NEP141_CONTRACT.wasm");
 }
 
 pub static WNEAR_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =
@@ -14,7 +14,7 @@ pub static WNEAR_CONTRACT_IS_INITIALZIED: fn(Context) -> Context = |mut context:
     context.add_method_params(
         "new",
         json!({
-            "owner_id": context.contracts().get("tokenbsh").id(),
+            "owner_id": context.accounts().get("charlie").id().to_string(),
             "total_supply": "10000000000000000",
             "metadata": {
                     "spec": "ft-1.0.0",
@@ -43,3 +43,6 @@ pub static USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR: fn(Context) -> Context =
 
 pub static USER_INVOKES_FT_BALANCE_OF_CALL_IN_WNEAR: fn(Context) -> Context =
     |context: Context| WNEAR_CONTRACT.ft_balance_of(context);
+
+pub static USER_INVOKES_FT_TRANSFER_IN_WNEAR: fn(Context) -> Context =
+    |context: Context| WNEAR_CONTRACT.ft_transfer(context, 1);

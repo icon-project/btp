@@ -22,6 +22,18 @@ impl Contract<'_, contract_type> {
         context
     }
 
+    pub fn ft_transfer(&self, mut context: Context, amount: u128) -> Context {
+        invoke_call!(
+            self,
+            context,
+            "ft_transfer",
+            method_params,
+            Some(amount),
+            None
+        );
+        context
+    }
+
    pub fn ft_balance_of(&self, mut context: Context) -> Context {
        invoke_view!(self,context,"ft_balance_of",method_params);
        context

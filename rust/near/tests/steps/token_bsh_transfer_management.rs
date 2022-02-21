@@ -216,7 +216,7 @@ pub static REGISTER_WNEAR_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context = |mut cont
                     "name": "WNear",
                     "symbol": "wNear",
                     "uri":  context.contracts().get("wnearcontract").id(),
-                    "network": "0x1.icon",
+                    "network": "0x1.near",
                     "extras": {
                         "spec": "ft-1.0.0",
                         "icon" : null,
@@ -281,3 +281,53 @@ pub static REGISTER_BALN_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context = |mut conte
         .pipe(THE_TRANSACTION_IS_SIGNED_BY_TOKEN_BSH_OWNER)
         .pipe(USER_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
 };
+
+pub static USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "token_id",
+            json!({
+                "token_name": "WNear",
+            }),
+        );
+
+        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+    };
+
+pub static CHARLIE_INVOKES_FT_TRANSFER_BALCE_OF: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "ft_balance_of",
+            json!({
+                "account_id":  context.accounts().get("charlie").id(),
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_FT_BALANCE_OF_CALL_IN_WNEAR)
+    };
+
+pub static BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_AFTER_DEPOSIT: fn(
+        Context,
+    ) = |context: Context| {
+        let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance, "500");
+    };
+
+pub static CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "ft_transfer_call",
+            json!({
+                "receiver_id":  context.contracts().get("tokenbsh").id(),
+                "amount": "500",
+                "memo": null,
+                "msg" : "transfer",
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR)
+    };
