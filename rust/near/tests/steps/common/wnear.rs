@@ -4,7 +4,7 @@ use test_helper::types::{Context, Contract, WNear, WNearContract};
 
 lazy_static! {
     pub static ref WNEAR_CONTRACT: Contract<'static, WNear> =
-    WNearContract::new("wnercontract", "res/NEP141_CONTRACT.wasm");
+    WNearContract::new("wnearcontract", "res/NEP141_CONTRACT.wasm");
 }
 
 pub static WNEAR_CONTRACT_IS_DEPLOYED: fn(Context) -> Context =

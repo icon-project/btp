@@ -216,7 +216,7 @@ pub static REGISTER_WNEAR_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context = |mut cont
                     "name": "WNear",
                     "symbol": "wNear",
                     "uri":  context.contracts().get("wnearcontract").id(),
-                    "network": "0x1.icon",
+                    "network": "0x1.near",
                     "extras": {
                         "spec": "ft-1.0.0",
                         "icon" : null,
@@ -281,3 +281,32 @@ pub static REGISTER_BALN_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context = |mut conte
         .pipe(THE_TRANSACTION_IS_SIGNED_BY_TOKEN_BSH_OWNER)
         .pipe(USER_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
 };
+
+pub static USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "token_id",
+            json!({
+                "token_name": "WNear",
+            }),
+        );
+
+        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+    };
+
+pub static CHARLIE_DEPOSITS_WNEAR_TO_ACCOUNT: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "ft_transfer",
+            json!({
+                "receiver_id" : context.accounts().get("charlie").id().to_string(),
+                "amount": "300",
+                "memo": null,
+            }),
+        );
+
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_TOKEN_BSH_OWNER)
+            .pipe(USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR)
+    };
+
