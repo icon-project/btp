@@ -18,7 +18,7 @@ impl TokenService {
             env::promise_create(
                 token.metadata().uri_deref().unwrap(),
                 "storage_deposit",
-                &Vec::new(),
+                &json!({}).to_string().as_bytes(),
                 env::attached_deposit(),
                 estimate::GAS_FOR_TOKEN_STORAGE_DEPOSIT,
             );
