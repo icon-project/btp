@@ -2,7 +2,7 @@ use super::*;
 use libraries::types::LinkStatus;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, Math, MultiTokenCore, Token,
+    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, Math, TransferableAsset,
     WrappedI128, WrappedNativeCoin,
 };
 use serde_json::{from_value, json, Value};

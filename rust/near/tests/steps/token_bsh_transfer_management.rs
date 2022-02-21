@@ -2,7 +2,7 @@ use super::*;
 use libraries::types::LinkStatus;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, Math, MultiTokenCore, Token,
+    Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, Math, TransferableAsset,
     WrappedI128, WrappedNativeCoin,
 };
 use serde_json::{from_value, json, Value};
@@ -36,7 +36,7 @@ pub static BSH_RECEIVES_BTP_MESSAGE_TO_MINT_AND_TRANSFER_WRAPPED_TOKEN: fn(Conte
                 TokenServiceType::RequestTokenTransfer {
                     sender: destination.account_id().to_string(),
                     receiver: context.accounts().get("charlie").id().to_string(),
-                    assets: vec![Asset::new("BALN".to_string(), 900, 99)],
+                    assets: vec![TransferableAsset::new("BALN".to_string(), 900, 99)],
                 },
             )),
         );
