@@ -1,17 +1,17 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 
-use super::Asset;
+use super::TransferableAsset;
 
 #[derive(Debug, Eq, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct Request {
     sender: String,
     receiver: String,
-    assets: Vec<Asset>,
+    assets: Vec<TransferableAsset>,
 }
 
 impl Request {
-    pub fn new(sender: String, receiver: String, assets: Vec<Asset>) -> Self {
+    pub fn new(sender: String, receiver: String, assets: Vec<TransferableAsset>) -> Self {
         Self {
             sender,
             receiver,
@@ -27,7 +27,7 @@ impl Request {
         &self.receiver
     }
 
-    pub fn assets(&self) -> &Vec<Asset> {
+    pub fn assets(&self) -> &Vec<TransferableAsset> {
         &self.assets
     }
 }
@@ -64,7 +64,7 @@ impl Requests {
 mod tests {
     use super::*;
     use crate::types::{
-        Asset,
+        TransferableAsset,
     };
     use near_sdk::{testing_env, VMContext};
 
@@ -97,7 +97,7 @@ mod tests {
         let request = Request::new(
             "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
             "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
-            vec![Asset::new("ABC".to_string(), 100, 1)],
+            vec![TransferableAsset::new("ABC".to_string(), 100, 1)],
         );
         requests.add(1, &request);
         let result = requests.get(1).unwrap();
@@ -112,7 +112,7 @@ mod tests {
         let request = Request::new(
             "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
             "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
-            vec![Asset::new("ABC".to_string(), 100, 1)],
+            vec![TransferableAsset::new("ABC".to_string(), 100, 1)],
         );
         requests.add(1, &request);
         requests.add(1, &request);
@@ -128,7 +128,7 @@ mod tests {
         let request = Request::new(
             "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".to_string(),
             "78bd0675686be0a5df7da33b6f1089eghea3769b19dbb2477fe0cd6e0f12667".to_string(),
-            vec![Asset::new("ABC".to_string(), 100, 1)],
+            vec![TransferableAsset::new("ABC".to_string(), 100, 1)],
         );
         requests.add(1, &request);
         requests.remove(1);

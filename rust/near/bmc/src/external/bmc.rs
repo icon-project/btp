@@ -13,4 +13,5 @@ pub trait BmcContract {
         #[callback] verifier_status: VerifierStatus,
     );
     fn handle_relay_message_bmv_callback(source: BTPAddress, #[callback] verifier_response: VerifierResponse);
+    fn handle_external_service_message_callback(source: BTPAddress, btp_message: BtpMessage<SerializedMessage>);
 }

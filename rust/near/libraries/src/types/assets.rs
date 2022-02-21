@@ -1,4 +1,4 @@
-use crate::types::{token::TokenMetadata, Token, TokenId};
+use crate::types::{asset::AssetMetadata, Asset, AssetId};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedSet};
 use near_sdk::serde::Serialize;
@@ -6,44 +6,43 @@ use near_sdk::serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq, Serialize, Hash)]
 #[serde(crate = "near_sdk::serde")]
-pub struct TokenItem {
+pub struct AssetItem {
     pub name: String,
     pub network: String,
     pub symbol: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Tokens<T: TokenMetadata> {
-    list: UnorderedSet<TokenId>,
+pub struct Assets<T: AssetMetadata> {
+    list: UnorderedSet<AssetId>,
     metadata: Metadata<T>,
-    // supply: HashMap<TokenId, u128>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Metadata<T: TokenMetadata>(LookupMap<TokenId, Token<T>>);
+pub struct Metadata<T: AssetMetadata>(LookupMap<AssetId, Asset<T>>);
 
-impl<T: BorshDeserialize + BorshSerialize + TokenMetadata> Metadata<T> {
+impl<T: BorshDeserialize + BorshSerialize + AssetMetadata> Metadata<T> {
     fn new() -> Self {
         Self(LookupMap::new(b"tokens_metadata".to_vec()))
     }
 
-    fn add(&mut self, token_id: &TokenId, token: &Token<T>) {
-        self.0.insert(token_id, token);
+    fn add(&mut self, asset_id: &AssetId, asset: &Asset<T>) {
+        self.0.insert(asset_id, asset);
     }
 
-    fn remove(&mut self, token_id: &TokenId) {
-        self.0.remove(token_id);
+    fn remove(&mut self, asset_id: &AssetId) {
+        self.0.remove(asset_id);
     }
 
-    fn get(&self, token_id: &TokenId) -> Option<Token<T>> {
-        if let Some(token) = self.0.get(token_id) {
-            return Some(token);
+    fn get(&self, asset_id: &AssetId) -> Option<Asset<T>> {
+        if let Some(asset) = self.0.get(asset_id) {
+            return Some(asset);
         }
         None
     }
 }
 
-impl<T: BorshDeserialize + BorshSerialize + TokenMetadata> Tokens<T> {
+impl<T: BorshDeserialize + BorshSerialize + AssetMetadata> Assets<T> {
     pub fn new() -> Self {
         Self {
             list: UnorderedSet::new(b"tokens_list".to_vec()),
@@ -52,47 +51,47 @@ impl<T: BorshDeserialize + BorshSerialize + TokenMetadata> Tokens<T> {
         }
     }
 
-    pub fn add(&mut self, token_id: &TokenId, token: &Token<T>) {
-        self.list.insert(token_id);
-        self.metadata.add(token_id, token);
+    pub fn add(&mut self, asset_id: &AssetId, asset: &Asset<T>) {
+        self.list.insert(asset_id);
+        self.metadata.add(asset_id, asset);
     }
 
-    pub fn remove(&mut self, token_id: &TokenId) {
-        self.list.remove(token_id);
-        self.metadata.remove(token_id);
+    pub fn remove(&mut self, asset_id: &AssetId) {
+        self.list.remove(asset_id);
+        self.metadata.remove(asset_id);
     }
 
-    pub fn contains(&self, token_id: &TokenId) -> bool {
-        self.list.contains(token_id)
+    pub fn contains(&self, asset_id: &AssetId) -> bool {
+        self.list.contains(asset_id)
     }
 
-    pub fn get(&self, token_id: &TokenId) -> Option<Token<T>> {
-        self.metadata.get(token_id)
+    pub fn get(&self, asset_id: &AssetId) -> Option<Asset<T>> {
+        self.metadata.get(asset_id)
     }
 
-    pub fn set(&mut self, token_id: &TokenId, token: &Token<T>) {
-        self.metadata.add(token_id, token)
+    pub fn set(&mut self, asset_id: &AssetId, asset: &Asset<T>) {
+        self.metadata.add(asset_id, asset)
     }
 
-    pub fn to_vec(&self) -> Vec<TokenItem> {
+    pub fn to_vec(&self) -> Vec<AssetItem> {
         self.list
             .to_vec()
             .iter()
-            .map(|token_id| {
-                let metdata = self.metadata.get(token_id).unwrap();
-                TokenItem {
+            .map(|asset_id| {
+                let metdata = self.metadata.get(asset_id).unwrap();
+                AssetItem {
                     name: metdata.name().clone(),
                     network: metdata.network().clone(),
                     symbol: metdata.symbol().clone(),
                 }
             })
-            .collect::<Vec<TokenItem>>()
+            .collect::<Vec<AssetItem>>()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::types::{asset::*,assets::*};
     use crate::types::WrappedNativeCoin;
     use near_sdk::{serde_json, testing_env, VMContext};
     use std::{collections::HashSet};
@@ -122,9 +121,9 @@ mod tests {
     fn add_token() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = Tokens::new();
+        let mut tokens = Assets::new();
         let native_coin = WrappedNativeCoin::new(
-            "ABC Token".to_string(),
+            "ABC Asset".to_string(),
             "ABC".to_string(),
             None,
             "0x1.near".to_string(),
@@ -132,37 +131,37 @@ mod tests {
         );
 
         tokens.add(
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<WrappedNativeCoin>>::new(native_coin.clone()),
+            &"ABC Asset".to_string().as_bytes().to_vec(),
+            &<Asset<WrappedNativeCoin>>::new(native_coin.clone()),
         );
 
-        let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
+        let result = tokens.contains(&"ABC Asset".to_string().as_bytes().to_vec());
         assert_eq!(result, true);
 
-        let result = tokens.get(&"ABC Token".to_string().as_bytes().to_vec());
-        assert_eq!(result, Some(<Token<WrappedNativeCoin>>::new(native_coin)));
+        let result = tokens.get(&"ABC Asset".to_string().as_bytes().to_vec());
+        assert_eq!(result, Some(<Asset<WrappedNativeCoin>>::new(native_coin)));
     }
 
     #[test]
     fn add_existing_token() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = Tokens::new();
+        let mut tokens = Assets::new();
         let native_coin = WrappedNativeCoin::new(
-            "ABC Token".to_string(),
+            "ABC Asset".to_string(),
             "ABC".to_string(),
             None,
             "0x1.near".to_string(),
             None
         );
 
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Asset".to_string().as_bytes().to_vec(), &<Asset<WrappedNativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Asset".to_string().as_bytes().to_vec(), &<Asset<WrappedNativeCoin>>::new(native_coin.clone()));
         
         let result = tokens.to_vec();
 
-        let expected: Vec<TokenItem> = vec![TokenItem {
-            name: "ABC Token".to_string(),
+        let expected: Vec<AssetItem> = vec![AssetItem {
+            name: "ABC Asset".to_string(),
             network: "0x1.near".to_string(),
             symbol: "ABC".to_string(),
         }];
@@ -173,22 +172,22 @@ mod tests {
     fn remove_token() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = Tokens::new();
+        let mut tokens = Assets::new();
         let native_coin = WrappedNativeCoin::new(
-           "ABC Token".to_string(),
+           "ABC Asset".to_string(),
             "ABC".to_string(),
             None,
             "0x1.near".to_string(),
             None
         );
 
-        tokens.add(&"ABC Token".to_string().as_bytes().to_vec(), &<Token<WrappedNativeCoin>>::new(native_coin.clone()));
+        tokens.add(&"ABC Asset".to_string().as_bytes().to_vec(), &<Asset<WrappedNativeCoin>>::new(native_coin.clone()));
 
-        tokens.remove(&"ABC Token".to_string().as_bytes().to_vec());
-        let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
+        tokens.remove(&"ABC Asset".to_string().as_bytes().to_vec());
+        let result = tokens.contains(&"ABC Asset".to_string().as_bytes().to_vec());
         assert_eq!(result, false);
 
-        let result = tokens.get(&"ABC Token".to_string().as_bytes().to_vec());
+        let result = tokens.get(&"ABC Asset".to_string().as_bytes().to_vec());
         assert_eq!(result, None);
     }
 
@@ -196,9 +195,9 @@ mod tests {
     fn remove_token_non_existing() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
-        tokens.remove(&"ABC Token".to_string().as_bytes().to_vec());
-        let result = tokens.contains(&"ABC Token".to_string().as_bytes().to_vec());
+        let mut tokens = <Assets<WrappedNativeCoin>>::new();
+        tokens.remove(&"ABC Asset".to_string().as_bytes().to_vec());
+        let result = tokens.contains(&"ABC Asset".to_string().as_bytes().to_vec());
         assert_eq!(result, false);
     }
 
@@ -206,16 +205,16 @@ mod tests {
     fn to_vec_tokens() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
+        let mut tokens = <Assets<WrappedNativeCoin>>::new();
         let native_coin_1 = WrappedNativeCoin::new(
-            "ABC Token".to_string(),
+            "ABC Asset".to_string(),
             "ABC".to_string(),
             None,
             "0x1.near".to_string(),
             None
         );
         let native_coin_2 = WrappedNativeCoin::new(
-            "DEF Token".to_string(),
+            "DEF Asset".to_string(),
             "DEF".to_string(),
             None,
             "0x1.bsc".to_string(),
@@ -223,22 +222,22 @@ mod tests {
         );
 
         tokens.add(
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<WrappedNativeCoin>>::new(native_coin_1),
+            &"ABC Asset".to_string().as_bytes().to_vec(),
+            &<Asset<WrappedNativeCoin>>::new(native_coin_1),
         );
         tokens.add(
-            &"DEF Token".to_string().as_bytes().to_vec(),
-            &<Token<WrappedNativeCoin>>::new(native_coin_2),
+            &"DEF Asset".to_string().as_bytes().to_vec(),
+            &<Asset<WrappedNativeCoin>>::new(native_coin_2),
         );
         let tokens = tokens.to_vec();
-        let expected_tokens: Vec<TokenItem> = vec![
-            TokenItem {
-                name: "ABC Token".to_string(),
+        let expected_tokens: Vec<AssetItem> = vec![
+            AssetItem {
+                name: "ABC Asset".to_string(),
                 network: "0x1.near".to_string(),
                 symbol: "ABC".to_string(),
             },
-            TokenItem {
-                name: "DEF Token".to_string(),
+            AssetItem {
+                name: "DEF Asset".to_string(),
                 network: "0x1.bsc".to_string(),
                 symbol: "DEF".to_string(),
             },
@@ -252,17 +251,17 @@ mod tests {
     fn to_vec_tokens_value() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut tokens = <Tokens<WrappedNativeCoin>>::new();
+        let mut tokens = <Assets<WrappedNativeCoin>>::new();
         let native_coin = WrappedNativeCoin::new(
-            "ABC Token".to_string(),
+            "ABC Asset".to_string(),
             "ABC".to_string(),
             None,
             "0x1.near".to_string(),
             None
         );
         tokens.add(
-            &"ABC Token".to_string().as_bytes().to_vec(),
-            &<Token<WrappedNativeCoin>>::new(native_coin),
+            &"ABC Asset".to_string().as_bytes().to_vec(),
+            &<Asset<WrappedNativeCoin>>::new(native_coin),
         );
         let tokens = serde_json::to_value(tokens.to_vec()).unwrap();
         assert_eq!(
@@ -270,7 +269,7 @@ mod tests {
             serde_json::json!(
                 [
                     {
-                        "name": "ABC Token",
+                        "name": "ABC Asset",
                         "network": "0x1.near",
                         "symbol": "ABC"
                     }

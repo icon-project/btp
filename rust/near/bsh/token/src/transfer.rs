@@ -31,7 +31,7 @@ impl TokenService {
                 self.process_external_transfer(token_id, &sender_id, amounts[index].into())
                     .unwrap()
             })
-            .collect::<Vec<Asset>>();
+            .collect::<Vec<TransferableAsset>>();
 
         self.send_request(sender_id, destination, assets);
     }
@@ -43,7 +43,7 @@ impl TokenService {
         token_id: &TokenId,
         sender_id: &AccountId,
         mut amount: u128,
-    ) -> Result<Asset, String> {
+    ) -> Result<TransferableAsset, String> {
         let token = self.tokens.get(&token_id).unwrap();
         let fees = self.calculate_token_transfer_fee(amount.into());
 
@@ -62,7 +62,7 @@ impl TokenService {
 
         self.balances.set(&sender_id, &token_id, balance);
 
-        Ok(Asset::new(token.name().clone(), amount, fees))
+        Ok(TransferableAsset::new(token.name().clone(), amount, fees))
     }
 
     pub fn internal_transfer(
@@ -135,9 +135,9 @@ impl TokenService {
         });
     }
 
-    pub fn finalize_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<Asset>) {
+    pub fn finalize_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<TransferableAsset>) {
         assets.iter().for_each(|asset| {
-            let token_id = Self::hash_token_id(asset.token());
+            let token_id = Self::hash_token_id(asset.name());
             let token = self.tokens.get(&token_id).unwrap();
             let mut token_fee = self.token_fees.get(&token_id).unwrap().to_owned();
 
@@ -173,9 +173,9 @@ impl TokenService {
         });
     }
 
-    pub fn rollback_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<Asset>) {
+    pub fn rollback_external_transfer(&mut self, sender_id: &AccountId, assets: &Vec<TransferableAsset>) {
         assets.iter().for_each(|asset| {
-            let token_id = Self::hash_token_id(asset.token());
+            let token_id = Self::hash_token_id(asset.name());
             let mut token_fee = self.token_fees.get(&token_id).unwrap().to_owned();
             let mut sender_balance = self.balances.get(&sender_id, &token_id).unwrap();
             sender_balance
@@ -208,7 +208,7 @@ impl TokenService {
         &mut self,
         message_source: &BTPAddress,
         receiver_id: &String,
-        assets: &Vec<Asset>,
+        assets: &Vec<TransferableAsset>,
     ) -> Result<Option<TokenServiceMessage>, BshError> {
         let receiver_id = AccountId::try_from(receiver_id.to_owned()).map_err(|error| {
             BshError::InvalidAddress {
@@ -220,11 +220,11 @@ impl TokenService {
 
         let token_ids: Vec<(usize, TokenId)> = assets
             .iter()
-            .map(|asset| Self::hash_token_id(asset.token()))
+            .map(|asset| Self::hash_token_id(asset.name()))
             .enumerate()
             .filter(|(index, token_id)| {
                 return if !self.tokens.contains(token_id) {
-                    unregistered_tokens.push(assets[index.to_owned()].token().to_owned());
+                    unregistered_tokens.push(assets[index.to_owned()].name().to_owned());
                     false
                 } else {
                     true
@@ -247,7 +247,7 @@ impl TokenService {
                     self.tokens.get(&token_id).unwrap(),
                 )
             })
-            .collect::<Vec<(usize, TokenId, Token<WrappedFungibleToken>)>>();
+            .collect::<Vec<(usize, TokenId, Token)>>();
 
         let transferable =
             self.is_tokens_transferable(&env::current_account_id(), &receiver_id, &tokens, assets);
@@ -287,8 +287,8 @@ impl TokenService {
         &self,
         sender_id: &AccountId,
         receiver_id: &AccountId,
-        tokens: &Vec<(usize, TokenId, Token<WrappedFungibleToken>)>,
-        assets: &Vec<Asset>,
+        tokens: &Vec<(usize, TokenId, Token)>,
+        assets: &Vec<TransferableAsset>,
     ) -> Result<(), String> {
         tokens
             .iter()

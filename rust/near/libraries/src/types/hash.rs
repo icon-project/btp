@@ -74,6 +74,6 @@ impl Decodable for Hash {
 
 impl Encodable for Hash {
     fn rlp_append(&self, stream: &mut crate::rlp::RlpStream) {
-        stream.append(&self.deref().to_vec());
+        stream.append_internal::<Vec<u8>>(&(self.deref().to_vec()));
     }
 }

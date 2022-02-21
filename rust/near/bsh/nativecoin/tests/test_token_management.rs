@@ -1,11 +1,12 @@
 use nativecoin_service::NativeCoinService;
-use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env};
+use near_sdk::{json_types::U128, testing_env, AccountId, VMContext, serde_json::to_value, env, PromiseResult};
 use std::collections::HashSet;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{AccountBalance, MultiTokenCore, WrappedNativeCoin, Token, Math, TokenItem};
+use libraries::types::{AccountBalance, WrappedNativeCoin, Asset, Math, AssetItem};
 mod token;
 use token::*;
+pub type Coin = Asset<WrappedNativeCoin>;
 
 fn get_context(
     input: Vec<u8>,
@@ -36,8 +37,14 @@ fn get_context(
 #[test]
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
-    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -45,17 +52,18 @@ fn register_token() {
         nativecoin.clone(),
         1000.into()
     );
-    let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
+    let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     
     let result = contract.coins();
     let expected = to_value(vec![
-        TokenItem {
+        AssetItem {
             name: nativecoin.name().to_owned(),
             network: nativecoin.network().to_owned(),
             symbol: nativecoin.symbol().to_owned()
         },
-        TokenItem {
+        AssetItem {
             name: icx_coin.name().to_owned(),
             network: icx_coin.network().to_owned(),
             symbol: icx_coin.symbol().to_owned()
@@ -68,8 +76,14 @@ fn register_token() {
 #[should_panic(expected = "BSHRevertAlreadyExistsToken")]
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
-    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -77,8 +91,9 @@ fn register_existing_token() {
         nativecoin.clone(),
         1000.into()
     );
-    let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
+    let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
     contract.register(icx_coin.clone());
 }
 
@@ -86,8 +101,14 @@ fn register_existing_token() {
 #[should_panic(expected = "BSHRevertNotExistsPermission")]
 fn register_token_permission() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
-    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -96,15 +117,16 @@ fn register_token_permission() {
         1000.into()
     );
     testing_env!(context(chuck(), 0));
-    let icx_coin = <Token<WrappedNativeCoin>>::new(ICON_COIN.to_owned());
+    let icx_coin = <Coin>::new(ICON_COIN.to_owned());
     contract.register(icx_coin.clone());
+    contract.register_coin_callback(icx_coin.clone());
 }
 
 #[test]
 fn get_registered_coin_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -122,7 +144,7 @@ fn get_registered_coin_id() {
 fn get_non_exist_coin_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<WrappedNativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = <Coin>::new(NATIVE_COIN.to_owned());
     let mut contract = NativeCoinService::new(
         "nativecoin".to_string(),
         bmc(),

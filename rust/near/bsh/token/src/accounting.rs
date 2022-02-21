@@ -12,7 +12,7 @@ impl TokenService {
         &mut self,
         sender_id: AccountId,
         amount: U128,
-        _msg: String,
+        #[allow(unused_variables)] msg: String,
     ) -> PromiseOrValue<U128> {
         let amount = amount.into();
         let token_account = env::predecessor_account_id();
@@ -33,7 +33,7 @@ impl TokenService {
     }
 
     #[payable]
-    pub fn withdraw(&mut self, token_id: TokenId, amount: U128) {
+    pub fn withdraw(&mut self, token_id: AssetId, amount: U128) {
         // To Prevent Spam
         assert_one_yocto();
 
@@ -71,7 +71,7 @@ impl TokenService {
             amount,
             token_id,
             token.symbol().to_string(),
-            env::predecessor_account_id(),
+            env::current_account_id(),
             estimate::NO_DEPOSIT,
             estimate::GAS_FOR_ON_MINT,
         ));
@@ -126,16 +126,29 @@ impl TokenService {
         token_id: TokenId,
         token_symbol: String,
     ) {
-        let mut balance = self.balances.get(&account, &token_id).unwrap();
-        balance.deposit_mut().sub(amount).unwrap();
-        self.balances.set(&account.clone(), &token_id, balance);
+        match env::promise_result(0) {
+            PromiseResult::Successful(_) => {
+                let mut balance = self.balances.get(&account, &token_id).unwrap();
+                balance.deposit_mut().sub(amount).unwrap();
+                self.balances.set(&account.clone(), &token_id, balance);
 
-        log!(
-            "[Withdrawn] Amount : {} by {}  {}",
-            amount,
-            account,
-            token_symbol
-        );
+                log!(
+                    "[Withdrawn] Amount : {} by {}  {}",
+                    amount,
+                    account,
+                    token_symbol
+                );
+            }
+            PromiseResult::NotReady => log!("Not Ready"),
+            PromiseResult::Failed => {
+                log!(
+                    "[Withdraw Failed] Amount : {} by {}  {}",
+                    amount,
+                    account,
+                    token_symbol
+                );
+            }
+        }
     }
 
     pub fn balance_of(&self, owner_id: AccountId, token_id: TokenId) -> U128 {

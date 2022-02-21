@@ -14,17 +14,17 @@ impl NativeCoinService {
         )
     }
 
-    pub fn assert_token_id_len_match_amount_len(
+    pub fn assert_coin_id_len_match_amount_len(
         &self,
-        token_ids: &Vec<TokenId>,
+        coin_ids: &Vec<CoinId>,
         amounts: &Vec<U128>,
     ) {
         require!(
-            token_ids.len() == amounts.len(),
+            coin_ids.len() == amounts.len(),
             format!(
                 "{}",
                 BshError::InvalidCount {
-                    message: "Token Ids and amounts".to_string()
+                    message: "Coin Ids and amounts".to_string()
                 }
             ),
         );
@@ -87,12 +87,12 @@ impl NativeCoinService {
     pub fn assert_have_sufficient_deposit(
         &self,
         account: &AccountId,
-        token_id: &TokenId,
+        coin_id: &CoinId,
         amount: u128,
         fees: Option<u128>,
     ) {
         let amount = std::cmp::max(amount, fees.unwrap_or_default());
-        if let Some(balance) = self.balances.get(&account, &token_id) {
+        if let Some(balance) = self.balances.get(&account, &coin_id) {
             require!(
                 balance.deposit() >= amount,
                 format!("{}", BshError::NotMinimumDeposit)
@@ -105,10 +105,10 @@ impl NativeCoinService {
     pub fn assert_have_sufficient_refundable(
         &self,
         account: &AccountId,
-        token_id: &TokenId,
+        coin_id: &CoinId,
         amount: u128,
     ) {
-        if let Some(balance) = self.balances.get(&account, &token_id) {
+        if let Some(balance) = self.balances.get(&account, &coin_id) {
             require!(
                 balance.refundable() >= amount,
                 format!("{}", BshError::NotMinimumRefundable)
@@ -143,27 +143,27 @@ impl NativeCoinService {
         require!(self.owners.len() > 1, format!("{}", BshError::LastOwner));
     }
 
-    pub fn assert_token_does_not_exists(&self, token: &Token<WrappedNativeCoin>) {
-        let token = self.tokens.get(&Self::hash_token_id(token.name()));
-        require!(token.is_none(), format!("{}", BshError::TokenExist))
+    pub fn assert_coin_does_not_exists(&self, coin: &Coin) {
+        let coin = self.coins.get(&Self::hash_coin_id(coin.name()));
+        require!(coin.is_none(), format!("{}", BshError::TokenExist))
     }
 
-    pub fn assert_tokens_exists(&self, token_ids: &Vec<TokenId>) {
-        let mut unregistered_tokens: Vec<TokenId> = vec![];
-        token_ids.iter().for_each(|token_id| {
-            if !self.tokens.contains(&token_id) {
-                unregistered_tokens.push(token_id.to_owned())
+    pub fn assert_coins_exists(&self, coin_ids: &Vec<CoinId>) {
+        let mut unregistered_coins: Vec<CoinId> = vec![];
+        coin_ids.iter().for_each(|coin_id| {
+            if !self.coins.contains(&coin_id) {
+                unregistered_coins.push(coin_id.to_owned())
             }
         });
 
         require!(
-            unregistered_tokens.len() == 0,
+            unregistered_coins.len() == 0,
             format!(
                 "{}",
                 BshError::TokenNotExist {
-                    message: unregistered_tokens
+                    message: unregistered_coins
                         .iter()
-                        .map(|token_id| format!("{:x?}", token_id))
+                        .map(|coin_id| format!("{:x?}", coin_id))
                         .collect::<Vec<String>>()
                         .join(", "),
                 }
