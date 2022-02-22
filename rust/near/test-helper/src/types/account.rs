@@ -1,15 +1,15 @@
 use std::collections::HashMap;
-use super::*;
+use workspaces::Account as WorkspaceAccount;
 
 #[derive(Default, Clone)]
-pub struct Accounts(HashMap<String, Signer>);
+pub struct Accounts(HashMap<String, WorkspaceAccount>);
 
 impl Accounts {
-    pub fn add(&mut self, name: &str, signer: &Signer) {
-        self.0.insert(name.to_owned(), signer.to_owned());
+    pub fn add(&mut self, name: &str, account: WorkspaceAccount) {
+        self.0.insert(name.to_owned(), account);
     }
 
-    pub fn get(&self, name: &str) -> &Signer {
+    pub fn get(&self, name: &str) -> &WorkspaceAccount {
         self.0.get(name).unwrap()
     }
 

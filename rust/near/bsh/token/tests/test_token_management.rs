@@ -1,10 +1,15 @@
-use near_sdk::{serde_json::to_value, testing_env, AccountId, VMContext};
+use near_sdk::{env, serde_json::to_value, testing_env, AccountId, VMContext,PromiseResult};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
-use libraries::types::{FungibleToken, Token, TokenItem};
+use libraries::types::{Asset, AssetItem, WrappedFungibleToken};
 mod token;
 use token::*;
+
+
+pub type Token = Asset<WrappedFungibleToken>;
+pub type TokenItem = AssetItem;
+
 
 fn get_context(
     input: Vec<u8>,
@@ -35,11 +40,23 @@ fn get_context(
 #[test]
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("TokenBSH".to_string(), bmc(), "0x1.near".into());
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let mut contract = TokenService::new(
+        "TokenBSH".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
-
+    contract.register_token_callback(baln.clone());
+    
     let result = contract.tokens();
     let expected = to_value(vec![TokenItem {
         name: baln.name().to_owned(),
@@ -54,10 +71,23 @@ fn register_token() {
 #[should_panic(expected = "BSHRevertAlreadyExistsToken")]
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    testing_env!(
+        context(alice(),  1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
     contract.register(baln.clone());
 }
 
@@ -66,8 +96,54 @@ fn register_existing_token() {
 fn register_token_permission() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
     testing_env!(context(alice(), 0));
-    let mut contract = TokenService::new("nativecoin".to_string(), bmc(), "0x1.near".into());
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
     testing_env!(context(chuck(), 0));
-    let baln = <Token<FungibleToken>>::new(BALN.to_owned());
+    let baln = <Token>::new(BALN.to_owned());
     contract.register(baln.clone());
+}
+
+#[test]
+#[should_panic(
+    expected = "BSHRevertNotExistsToken: [38, 6b, d, cf, f4, cf, 7b, f0, f7, 91, 97, 88, ec, 8f, f2, d6, 98, e5, 32, 16, 2a, e4, 5, 3d, 32, 3b, 8d, 4f, e0, bd, ae, 94]"
+)]
+fn get_non_exist_token_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(context(alice(), 0));
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let token_id = contract.token_id("ICON".to_string());
+}
+
+#[test]
+fn get_registered_token_id() {
+    let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
+    let mut contract = TokenService::new(
+        "nativecoin".to_string(),
+        bmc(),
+        "0x1.near".into(),
+        1000.into(),
+    );
+    let baln = <Token>::new(BALN.to_owned());
+    contract.register(baln.clone());
+    contract.register_token_callback(baln.clone());
+
+    let token_id = contract.token_id("BALN".to_string());
+    let expected = env::sha256(baln.name().as_bytes());
+    assert_eq!(token_id, expected)
 }

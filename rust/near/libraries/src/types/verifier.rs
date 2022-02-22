@@ -9,10 +9,10 @@ use super::messages::SerializedBtpMessages;
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Bmv(UnorderedMap<String, AccountId>);
 
-#[derive(Serialize, Debug, Eq, PartialEq, Hash)]
+#[derive(Serialize, Debug, Eq, PartialEq, Hash, Deserialize)]
 pub struct Verifier {
-    network: String,
-    verifier: AccountId,
+    pub network: String,
+    pub verifier: super::AccountId,
 }
 
 #[derive(
@@ -47,13 +47,10 @@ impl VerifierStatus {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum VerifierResponse {
-    Success {
-        previous_height: u64,
-        verifier_status: VerifierStatus,
-        messages: SerializedBtpMessages,
-    },
-    Failed(BmvError),
+pub struct VerifierResponse {
+    pub previous_height: u64,
+    pub verifier_status: VerifierStatus,
+    pub messages: SerializedBtpMessages,
 }
 
 impl Bmv {

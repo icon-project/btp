@@ -1,15 +1,18 @@
-use crate::types::{messages::BtpMessage, messages::Message, messages::SerializedMessage, Asset};
+use crate::rlp::{self, Decodable, Encodable};
+use crate::types::{
+    messages::BtpMessage, messages::Message, messages::SerializedMessage, TransferableAsset,
+};
 use btp_common::errors::BshError;
 use near_sdk::base64::{self, URL_SAFE_NO_PAD};
-use crate::rlp::{self, Decodable, Encodable};
+use near_sdk::serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub enum TokenServiceType {
     RequestTokenTransfer {
         sender: String,
         receiver: String,
-        assets: Vec<Asset>,
+        assets: Vec<TransferableAsset>,
     },
     RequestTokenRegister,
     ResponseHandleService {
@@ -181,14 +184,14 @@ impl From<&TokenServiceMessage> for String {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct TokenServiceMessage {
     service_type: TokenServiceType,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Asset, TokenServiceMessage, TokenServiceType};
+    use super::{TokenServiceMessage, TokenServiceType, TransferableAsset};
     use std::convert::TryFrom;
 
     #[test]
@@ -202,14 +205,13 @@ mod tests {
             service_message,
             TokenServiceMessage {
                 service_type: TokenServiceType::RequestTokenTransfer {
-                    sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5"
-                        .to_string(),
+                    sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string(),
                     receiver: "0x12345678".to_string(),
                     assets: vec![
-                        Asset::new("ICON".to_string(), 199300, 0),
-                        Asset::new("TRON".to_string(), 299200, 0),
-                        Asset::new("PARA".to_string(), 99400, 0)
-                        ]
+                        TransferableAsset::new("ICON".to_string(), 199300, 0),
+                        TransferableAsset::new("TRON".to_string(), 299200, 0),
+                        TransferableAsset::new("PARA".to_string(), 99400, 0)
+                    ]
                 },
             },
         );
@@ -220,14 +222,13 @@ mod tests {
     fn serialize_transfer_request_message() {
         let service_message = TokenServiceMessage {
             service_type: TokenServiceType::RequestTokenTransfer {
-                sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5"
-                    .to_string(),
+                sender: "0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string(),
                 receiver: "0x12345678".to_string(),
                 assets: vec![
-                    Asset::new("ICON".to_string(), 199300, 0),
-                    Asset::new("TRON".to_string(), 299200, 0),
-                    Asset::new("PARA".to_string(), 99400, 0)
-                    ]
+                    TransferableAsset::new("ICON".to_string(), 199300, 0),
+                    TransferableAsset::new("TRON".to_string(), 299200, 0),
+                    TransferableAsset::new("PARA".to_string(), 99400, 0),
+                ],
             },
         };
 

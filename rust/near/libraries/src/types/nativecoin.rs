@@ -8,10 +8,6 @@ use near_sdk::json_types::U128;
 pub struct NativeCoin {
     name: String,
     symbol: String,
-    #[serde(deserialize_with = "deserialize_u128")]
-    fee_numerator: u128,
-    #[serde(deserialize_with = "deserialize_u128")]
-    denominator: u128,
     network: Network
 }
 
@@ -26,15 +22,11 @@ impl NativeCoin {
     pub fn new(
         name: String,
         symbol: String,
-        fee_numerator: u128,
-        denominator: u128,
         network: Network
     ) -> NativeCoin {
         Self {
             name,
             symbol,
-            fee_numerator,
-            denominator,
             network
         }
     }
@@ -53,19 +45,10 @@ impl TokenMetadata for NativeCoin {
         &self.symbol
     }
 
-    fn fee_numerator(&self) -> u128 {
-        self.fee_numerator
-    }
-
-    fn fee_numerator_mut(&mut self) -> &u128 {
-        &self.fee_numerator
-    }
-
-    fn denominator(&self) -> u128 {
-        self.denominator
-    }
-
     fn metadata(&self) -> &Self {
         self
+    }
+    fn extras(&self) -> &super::Extras {
+        self.extras()
     }
 }

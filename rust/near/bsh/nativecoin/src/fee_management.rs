@@ -9,17 +9,17 @@ impl NativeCoinService {
     // * * * * * * * * * * * * * * * * *
 
     pub fn accumulated_fees(&self) -> Vec<AccumulatedAssetFees> {
-        self.tokens
+        self.coins
             .to_vec()
             .iter()
-            .map(|token| {
-                let token_id = Self::hash_token_id(&token.name);
-                let token_fee = self.token_fees.get(&token_id).unwrap();
-                let token = self.tokens.get(&token_id).unwrap();
+            .map(|coin| {
+                let coin_id = Self::hash_coin_id(&coin.name);
+                let coin_fee = self.coin_fees.get(&coin_id).unwrap();
+                let coin = self.coins.get(&coin_id).unwrap();
                 AccumulatedAssetFees {
-                    name: token.name().clone(),
-                    network: token.network().clone(),
-                    accumulated_fees: *token_fee,
+                    name: coin.name().clone(),
+                    network: coin.network().clone(),
+                    accumulated_fees: *coin_fee,
                 }
             })
             .collect()
@@ -30,31 +30,42 @@ impl NativeCoinService {
         self.assert_valid_service(&service);
         self.transfer_fees(&fee_aggregator);
     }
+
+    pub fn set_fee_ratio(&mut self, fee_numerator: U128) {
+        self.assert_have_permission();
+        self.assert_valid_fee_ratio(fee_numerator.into());
+        self.fee_numerator.clone_from(&fee_numerator.into());
+    }
+
+    pub fn calculate_coin_transfer_fee(&self, amount: U128) -> u128 {
+        let fee = (u128::from(amount) * self.fee_numerator) / FEE_DENOMINATOR;
+        fee
+    }
 }
 
 impl NativeCoinService {
     pub fn transfer_fees(&mut self, fee_aggregator: &BTPAddress) {
         let sender_id = env::current_account_id();
         let assets = self
-            .tokens
+            .coins
             .to_vec()
             .iter()
-            .filter_map(|token| {
-                let token_id = Self::hash_token_id(&token.name);
-                let token_fee = self.token_fees.get(&token_id).unwrap().clone();
+            .filter_map(|coin| {
+                let coin_id = Self::hash_coin_id(&coin.name);
+                let coin_fee = self.coin_fees.get(&coin_id).unwrap().clone();
 
-                if token_fee > 0 {
-                    self.token_fees.set(&token_id, 0);
+                if coin_fee > 0 {
+                    self.coin_fees.set(&coin_id, 0);
 
                     Some(
-                        self.process_external_transfer(&token_id, &sender_id, token_fee)
+                        self.process_external_transfer(&coin_id, &sender_id, coin_fee)
                             .unwrap(),
                     )
                 } else {
                     None
                 }
             })
-            .collect::<Vec<Asset>>();
+            .collect::<Vec<TransferableAsset>>();
 
         self.send_request(sender_id, fee_aggregator.clone(), assets);
     }

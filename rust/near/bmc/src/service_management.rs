@@ -26,7 +26,7 @@ impl BtpMessageCenter {
 
     /// Get registered services
     /// Returns an array of services
-    pub fn get_services(&self) -> String {
-        to_value(self.services.to_vec()).unwrap().to_string()
+    pub fn get_services(&self) -> Vec<Service> {
+        self.services.to_vec()
     }
 }

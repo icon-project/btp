@@ -1,6 +1,6 @@
 //! BTP Message Center
 
-use btp_common::errors::{BmcError, BtpException, Exception};
+use btp_common::errors::{BmcError, BtpException, Exception, BshError};
 use libraries::{
     emit_message,
     types::{
@@ -8,6 +8,8 @@ use libraries::{
             BmcServiceMessage, BmcServiceType, BtpMessage, ErrorMessage, SerializedBtpMessages,
             SerializedMessage,
         },
+        Service,
+        Verifier,
         Address, BTPAddress, BmcEvent, Bmv, Connection, Connections, HashedCollection, Links, RelayStatus,
         Network, Owners, Routes, Services, VerifierStatus, Math, LinkStatus, Link, VerifierResponse
     },

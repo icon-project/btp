@@ -1,13 +1,18 @@
+use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext, PromiseResult};
 use token_service::TokenService;
-use near_sdk::{env, json_types::U128, testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
 use libraries::types::{
-    messages::{BtpMessage, TokenServiceMessage, TokenServiceType}, AccumulatedAssetFees, FungibleToken, AccountBalance, BTPAddress, MultiTokenCore, Token, Math, WrappedI128,
+    messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
+    AccountBalance, AccumulatedAssetFees, BTPAddress, WrappedFungibleToken, Math, Asset,AssetItem,
+    WrappedI128,
 };
 mod token;
 use std::convert::TryInto;
 use token::*;
+
+pub type Token = Asset<WrappedFungibleToken>;
+pub type TokenItem = AssetItem;
 
 fn get_context(
     input: Vec<u8>,
@@ -50,14 +55,29 @@ fn handle_fee_gathering() {
         "TokenBSH".to_string(),
         bmc(),
         "0x1.near".into(),
+        1000.into(),
     );
-    let w_near = <Token<FungibleToken>>::new(WNEAR.to_owned());
-    let token_id = contract.token_id(w_near.name().to_owned());
+    let w_near = <Token>::new(WNEAR.to_owned());
+    
 
-    testing_env!(context(alice(), 0));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.register(w_near.clone());
 
-    testing_env!(context(wnear(), 0));
+    let token_id = contract.token_id(w_near.name().to_owned());
+
+    testing_env!(
+        context(wnear(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     contract.ft_on_transfer(chuck(), U128::from(1000), "".to_string());
 
     testing_env!(context(chuck(), 0));
@@ -103,26 +123,29 @@ fn handle_fee_gathering() {
 
     let accumulted_fees = contract.accumulated_fees();
 
-    assert_eq!(accumulted_fees, vec![
-        AccumulatedAssetFees{
+    assert_eq!(
+        accumulted_fees,
+        vec![AccumulatedAssetFees {
             name: w_near.name().to_string(),
             network: w_near.network().to_string(),
             accumulated_fees: 99
-        }
-    ]);
+        }]
+    );
 
-    let fee_aggregator = BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let fee_aggregator =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     contract.handle_fee_gathering(fee_aggregator, "TokenBSH".to_string());
 
     let accumulted_fees = contract.accumulated_fees();
 
-    assert_eq!(accumulted_fees, vec![
-        AccumulatedAssetFees{
+    assert_eq!(
+        accumulted_fees,
+        vec![AccumulatedAssetFees {
             name: w_near.name().to_string(),
             network: w_near.network().to_string(),
             accumulated_fees: 0
-        }
-    ]);
+        }]
+    );
 
     let result = contract.balance_of(alice(), token_id.clone());
     assert_eq!(result, U128::from(900));

@@ -1,20 +1,27 @@
-use crate::types::{btp_address::Network, token::TokenMetadata, TokenName};
+use crate::types::{btp_address::Network, asset::AssetMetadata};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize, Deserializer};
+use near_sdk::json_types::{Base64VecU8, U128};
+use near_sdk::serde::{Deserialize, Deserializer, Serialize};
 use near_sdk::AccountId;
-use near_sdk::json_types::U128;
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Deserialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct AssetMetadataExtras {
+    pub spec: String,
+    pub icon: Option<String>,
+    pub reference: Option<String>,
+    pub reference_hash: Option<Base64VecU8>,
+    pub decimals: u8,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FungibleToken {
     name: String,
     symbol: String,
-    #[serde(deserialize_with = "deserialize_u128")]
-    fee_numerator: u128,
-    #[serde(deserialize_with = "deserialize_u128")]
-    denominator: u128,
     uri: Option<AccountId>,
     network: Network,
+    extras: Option<AssetMetadataExtras>
 }
 
 fn deserialize_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
@@ -26,20 +33,18 @@ where
 
 impl FungibleToken {
     pub fn new(
-        name: TokenName,
+        name: String,
         symbol: String,
         uri: Option<AccountId>,
-        fee_numerator: u128,
-        denominator: u128,
         network: Network,
+        extras: Option<AssetMetadataExtras>
     ) -> FungibleToken {
         Self {
             name,
             symbol,
-            fee_numerator,
             uri,
-            denominator,
             network,
+            extras
         }
     }
 }
@@ -54,8 +59,8 @@ impl FungibleToken {
     }
 }
 
-impl TokenMetadata for FungibleToken {
-    fn name(&self) -> &TokenName {
+impl AssetMetadata for FungibleToken {
+    fn name(&self) -> &String {
         &self.name
     }
 
@@ -66,17 +71,9 @@ impl TokenMetadata for FungibleToken {
     fn symbol(&self) -> &String {
         &self.symbol
     }
-    
-    fn fee_numerator(&self) -> u128 {
-        self.fee_numerator
-    }
 
-    fn fee_numerator_mut(&mut self) -> &u128 {
-        &self.fee_numerator
-    }
-
-    fn denominator(&self) -> u128 {
-        self.denominator
+    fn extras(&self) -> &Option<AssetMetadataExtras>{
+        &self.extras
     }
 
     fn metadata(&self) -> &Self {

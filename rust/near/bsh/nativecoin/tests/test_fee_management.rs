@@ -4,12 +4,15 @@ pub mod accounts;
 use accounts::*;
 use libraries::types::{
     messages::{BtpMessage, TokenServiceMessage, TokenServiceType},
-    Account, AccountBalance, BTPAddress, MultiTokenCore, NativeCoin, Token, Math, WrappedI128,
+    Account, AccountBalance, BTPAddress, WrappedNativeCoin, Asset, Math, WrappedI128,
 };
 mod token;
-use libraries::types::{Asset, Request};
+use libraries::types::{TransferableAsset, Request};
 use std::convert::TryInto;
 use token::*;
+
+pub type Coin = Asset<WrappedNativeCoin>;
+
 
 fn get_context(
     input: Vec<u8>,
@@ -48,7 +51,7 @@ fn handle_fee_gathering() {
         get_context(vec![], false, account_id, deposit, env::storage_usage(), 0)
     };
     testing_env!(context(alice(), 0));
-    let nativecoin = <Token<NativeCoin>>::new(NATIVE_COIN.to_owned());
+    let nativecoin = Coin::new(NATIVE_COIN.to_owned());
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let mut contract = NativeCoinService::new(
@@ -56,6 +59,7 @@ fn handle_fee_gathering() {
         bmc(),
         "0x1.near".into(),
         nativecoin.clone(),
+        1000.into()
     );
     testing_env!(context(chuck(), 1000));
     let coin_id = contract.coin_id(nativecoin.name().to_owned());

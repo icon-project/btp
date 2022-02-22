@@ -14,7 +14,11 @@ impl TokenService {
         )
     }
 
-    pub fn assert_token_id_len_match_amount_len(&self, token_ids: &Vec<TokenId>, amounts: &Vec<U128>) {
+    pub fn assert_token_id_len_match_amount_len(
+        &self,
+        token_ids: &Vec<TokenId>,
+        amounts: &Vec<U128>,
+    ) {
         require!(
             token_ids.len() == amounts.len(),
             format!(
@@ -42,9 +46,9 @@ impl TokenService {
         );
     }
 
-    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128, token: &Token<FungibleToken>) {
+    pub fn assert_valid_fee_ratio(&self, fee_numerator: u128) {
         require!(
-            fee_numerator <= token.denominator(),
+            fee_numerator <= FEE_DENOMINATOR,
             format!("{}", BshError::InvalidSetting),
         );
     }
@@ -65,10 +69,7 @@ impl TokenService {
     }
 
     pub fn assert_have_minimum_amount(&self, amount: u128) {
-        require!(
-            amount > 0,
-            format!("{}", BshError::NotMinimumAmount)
-        );
+        require!(amount > 0, format!("{}", BshError::NotMinimumAmount));
     }
 
     pub fn assert_have_sufficient_balance(&self, amount: u128) {
@@ -142,7 +143,7 @@ impl TokenService {
         require!(self.owners.len() > 1, format!("{}", BshError::LastOwner));
     }
 
-    pub fn assert_token_does_not_exists(&self, token: &Token<FungibleToken>) {
+    pub fn assert_token_does_not_exists(&self, token: &Token) {
         let token = self.tokens.get(&Self::hash_token_id(token.name()));
         require!(token.is_none(), format!("{}", BshError::TokenExist))
     }
@@ -173,10 +174,7 @@ impl TokenService {
     pub fn assert_token_registered(&self, token_account: &AccountId) {
         require!(
             self.registered_tokens.contains(token_account),
-            format!(
-                "{}",
-                BshError::TokenNotRegistered
-            )
+            format!("{}", BshError::TokenNotRegistered)
         )
     }
 }

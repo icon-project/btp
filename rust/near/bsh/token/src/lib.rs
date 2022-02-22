@@ -1,17 +1,20 @@
 use btp_common::btp_address::Address;
 use btp_common::errors::BshError;
-use libraries::types::{Account, AccountBalance, AccumulatedAssetFees, Asset, BTPAddress, TokenId};
+use libraries::types::{
+    Account, AccountBalance, AccumulatedAssetFees, Asset, AssetFees, AssetId, AssetMetadata,
+    Assets, BTPAddress, TransferableAsset,
+};
 use libraries::{
-    types::messages::BtpMessage, types::messages::TokenServiceMessage,
-    types::messages::TokenServiceType, types::messages::SerializedMessage, types::Balances,
-    types::FungibleToken, types::MultiTokenCore, types::MultiTokenResolver, types::Network,
-    types::Owners, types::Requests, types::StorageBalances, types::Token, types::TokenFees,
-    types::Tokens, types::Math,
+    types::messages::BtpMessage, types::messages::SerializedMessage,
+    types::messages::TokenServiceMessage, types::messages::TokenServiceType, types::Balances,
+    types::Math, types::Network, types::Owners, types::Requests, types::StorageBalances,
+    types::WrappedFungibleToken,
 };
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::Base64VecU8;
-use near_sdk::serde_json::{to_value, Value, json};
+use near_sdk::serde_json::{json, to_value, Value};
+use std::str::FromStr;
 use near_sdk::PromiseOrValue;
 use near_sdk::{assert_one_yocto, AccountId};
 use near_sdk::{
@@ -19,35 +22,41 @@ use near_sdk::{
 };
 use std::convert::TryFrom;
 use std::convert::TryInto;
-use tiny_keccak::{Hasher, Sha3};
 mod external;
 use external::*;
 mod accounting;
 mod assertion;
-mod token_management;
 mod estimate;
 mod fee_management;
 mod messaging;
-mod multi_token;
 mod owner_management;
+mod token_management;
 mod transfer;
-mod util;
 mod types;
+mod util;
 pub use types::RegisteredTokens;
+pub type TokenFee = AssetFees;
+pub type TokenId = AssetId;
+pub type Token = Asset<WrappedFungibleToken>;
+pub type Tokens = Assets<WrappedFungibleToken>;
+
+pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../../../res/NEP141_CONTRACT.wasm");
+pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct TokenService {
     network: Network,
     owners: Owners,
-    tokens: Tokens<FungibleToken>,
+    tokens: Tokens,
     balances: Balances,
     storage_balances: StorageBalances,
-    token_fees: TokenFees,
+    token_fees: TokenFee,
     requests: Requests,
     serial_no: i128,
     bmc: AccountId,
     name: String,
+    fee_numerator: u128,
     registered_tokens: RegisteredTokens,
 
     #[cfg(feature = "testable")]
@@ -57,21 +66,22 @@ pub struct TokenService {
 #[near_bindgen]
 impl TokenService {
     #[init]
-    pub fn new(service_name: String, bmc: AccountId, network: String) -> Self {
+    pub fn new(service_name: String, bmc: AccountId, network: String, fee_numerator: U128) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mut owners = Owners::new();
         owners.add(&env::current_account_id());
         Self {
             network,
             owners,
-            tokens: <Tokens<FungibleToken>>::new(),
+            tokens: <Tokens>::new(),
             balances: Balances::new(),
             storage_balances: StorageBalances::new(),
-            token_fees: TokenFees::new(),
+            token_fees: TokenFee::new(),
             serial_no: Default::default(),
             requests: Requests::new(),
             bmc,
             name: service_name,
+            fee_numerator: fee_numerator.into(),
             registered_tokens: RegisteredTokens::new(),
 
             #[cfg(feature = "testable")]

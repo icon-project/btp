@@ -1,11 +1,12 @@
 use super::*;
+use hex::{decode, encode};
+use libraries::rlp::Encodable;
 
 impl BtpMessageVerifier {
     pub fn process_block_updates(
         &mut self,
         block_updates: &Vec<BlockUpdate>,
         last_block_header: &mut BlockHeader,
-        state_changes: &mut StateChanges,
     ) -> Result<(), BmvError> {
         let mut validator_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(self.validators.as_ref()));
 
@@ -15,7 +16,6 @@ impl BtpMessageVerifier {
             .map(|(index, block_update)| -> Result<(), BmvError> {
                 let next_height = self.mta.height() + 1;
                 self.ensure_have_valid_block_height(next_height, &block_update)?;
-
                 let block_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(block_update.block_header()));
 
                 self.verify_votes(
@@ -24,16 +24,21 @@ impl BtpMessageVerifier {
                     &block_hash,
                 )?;
 
-                if &validator_hash != block_update.block_header().next_validator_hash() {
+                let next_validator_hash = block_update
+                    .block_header()
+                    .next_validator_hash()
+                    .get()
+                    .map_err(|message| BmvError::InvalidBlockUpdate {
+                    message: message.to_string(),
+                })?;
+                if &validator_hash != next_validator_hash {
                     self.ensure_have_valid_next_validators(&block_update)?;
 
-                    validator_hash.clone_from(&block_update.block_header().next_validator_hash());
-                    state_changes.push(StateChange::SetValidators {
-                        validators: block_update.next_validators().get().clone(),
-                    });
+                    validator_hash.clone_from(&next_validator_hash);
+                    self.validators.set(block_update.next_validators().get());
                 }
 
-                state_changes.push(StateChange::MtaAddBlockHash { block_hash });
+                self.mta.add::<Sha256>(block_hash);
                 if block_updates.len() - index == 1 {
                     last_block_header.clone_from(block_update.block_header());
                 }
@@ -56,14 +61,18 @@ impl BtpMessageVerifier {
                 block_proof
                     .block_witness()
                     .get()
-                    .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })?
+                    .map_err(|message| BmvError::InvalidBlockProof {
+                        message: message.to_string(),
+                    })?
                     .witnesses(),
                 &block_hash,
                 block_proof.block_header().height(),
                 block_proof
                     .block_witness()
                     .get()
-                    .map_err(|message| BmvError::InvalidBlockProof { message: message.to_string() })?
+                    .map_err(|message| BmvError::InvalidBlockProof {
+                        message: message.to_string(),
+                    })?
                     .height(),
             )
             .map_err(|error| error.to_bmv_error())?;
@@ -91,7 +100,9 @@ impl BtpMessageVerifier {
             .iter()
             .map(|vote| -> Result<(), BmvError> {
                 vote_message.timestamp_mut().clone_from(&&vote.timestamp());
-                let vote_message_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(vote_message.as_ref()));
+                let vote_message_hash =
+                    Hash::new::<Sha256>(&<Vec<u8>>::from(vote_message.as_ref()));
+
                 let address = Self::recover_address(&vote_message_hash, vote.signature());
 
                 self.ensure_validator_is_valid(&address)?;

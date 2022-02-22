@@ -1,17 +1,17 @@
-use super::*;
 use duplicate::duplicate;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use workspaces::Contract as WorkspaceContract;
 
-#[derive(Default, Clone)]
-pub struct Contracts(HashMap<String, Signer>);
+#[derive(Default)]
+pub struct Contracts(HashMap<String, WorkspaceContract>);
 
 impl Contracts {
-    pub fn add(&mut self, name: &str, signer: &Signer) {
-        self.0.insert(name.to_owned(), signer.to_owned());
+    pub fn add(&mut self, name: &str, contract: WorkspaceContract) {
+        self.0.insert(name.to_owned(), contract);
     }
 
-    pub fn get(&self, name: &str) -> &Signer {
+    pub fn get(&self, name: &str) -> &WorkspaceContract {
         self.0.get(name).unwrap()
     }
 
@@ -32,6 +32,9 @@ pub struct Contract<'a, T> {
     [ Bmv ];
     [ NativeCoinBsh ];
     [ TokenBsh ];
+    [ Nep141 ];
+    [ WNear ];
+    [ Nep141Testable ];
   )]
 impl Contract<'_, contract_type> {
     fn new(name: &'static str, source: &'static str) -> Contract<'static, contract_type> {
@@ -88,5 +91,35 @@ pub struct TokenBshContract {}
 impl TokenBshContract {
     pub fn new(name: &'static str, source: &'static str) -> Contract<'static, TokenBsh> {
         Contract::<TokenBsh>::new(name, source)
+    }
+}
+
+pub struct Nep141{}
+
+pub struct Nep141Contract{}
+
+impl Nep141Contract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,Nep141>{
+        Contract::<Nep141>::new(name,source)
+    }
+}
+
+pub struct WNear{}
+
+pub struct WNearContract{}
+
+impl WNearContract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,WNear>{
+        Contract::<WNear>::new(name,source)
+    }
+}
+
+pub struct Nep141Testable{}
+
+pub struct Nep141TestableContract{}
+
+impl Nep141TestableContract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,Nep141Testable>{
+        Contract::<Nep141Testable>::new(name,source)
     }
 }

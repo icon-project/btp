@@ -1,11 +1,15 @@
 mod context;
 pub use context::Context;
-mod signer;
-pub use signer::Signer;
+
 mod contract;
-pub use contract::{Bmc, BmcContract, Bmv, BmvContract, NativeCoinBsh, NativeCoinBshContract, TokenBsh, TokenBshContract, Contract};
 pub(crate) use contract::Contracts;
+pub use contract::{
+    Bmc, BmcContract, Bmv, BmvContract, Contract, NativeCoinBsh, NativeCoinBshContract, Nep141,
+    Nep141Contract, TokenBsh, TokenBshContract, WNear, WNearContract,Nep141TestableContract,Nep141Testable
+};
 mod account;
 pub(crate) use account::Accounts;
 
 pub use near_crypto::SecretKey;
+
+pub use workspaces::{sandbox, testnet, Sandbox, Testnet};

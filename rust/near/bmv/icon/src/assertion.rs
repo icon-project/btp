@@ -99,7 +99,13 @@ impl BtpMessageVerifier {
         };
 
         if &Hash::new::<Sha256>(&<Vec<u8>>::from(block_update.next_validators()))
-            != block_update.block_header().next_validator_hash()
+            != block_update
+                .block_header()
+                .next_validator_hash()
+                .get()
+                .map_err(|message| BmvError::InvalidBlockUpdate {
+                    message: message.to_string(),
+                })?
         {
             return Err(BmvError::InvalidBlockUpdate {
                 message: "invalid next validator hash".to_string(),

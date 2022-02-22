@@ -1,5 +1,5 @@
-use crate::types::{Bmc, NativeCoinBsh, TokenBsh, Context, Contract};
-use crate::{invoke_call, invoke_view};
+use crate::invoke_call;
+use crate::types::{Context, Contract, NativeCoinBsh, TokenBsh};
 use duplicate::duplicate;
 
 #[duplicate(
@@ -9,8 +9,4 @@ use duplicate::duplicate;
 )]
 
 impl Contract<'_, contract_type> {
-    pub fn register(&self, mut context: Context) -> Context {
-        invoke_call!(self, context, "register", method_params);
-        context
-    }
 }

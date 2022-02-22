@@ -136,4 +136,39 @@ impl BtpMessageCenter {
             format!("{}", BmcError::InvalidParam)
         );
     }
+
+    pub fn assert_relay_not_exists(&self, link: &BTPAddress, relay: &AccountId) {
+        if let Some(link_property) = self.links.get(&link) {
+            require!(
+                !link_property.relays().contains(&relay),
+                format!(
+                    "{}",
+                    BmcError::RelayExist {
+                        link: link.to_string()
+                    }
+                )
+            );
+        }
+    }
+
+    pub fn assert_relay_exists(&self, link: &BTPAddress, relay: &AccountId) {
+        if let Some(link_property) = self.links.get(&link).as_mut() {
+            require!(
+                link_property.relays().contains(&relay),
+                format!(
+                    "{}",
+                    BmcError::RelayNotExist {
+                        link: link.to_string()
+                    }
+                )
+            );
+        }
+    }
+
+    pub fn ensure_service_exists(&self, name: &str) -> Result<(), BmcError> {
+        if !self.services.contains(name) {
+            return Err(BmcError::ServiceNotExist);
+        }
+        Ok(())
+    }
 }

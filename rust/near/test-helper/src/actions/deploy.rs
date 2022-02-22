@@ -1,11 +1,16 @@
-use crate::types::{Bmc, Bmv, TokenBsh, NativeCoinBsh, Context, Contract, Signer};
+use crate::types::{Bmc, Bmv, Context, Contract, NativeCoinBsh, TokenBsh,Nep141, WNear,Nep141Testable};
 use duplicate::duplicate;
-use futures::executor::LocalPool;
-use workspaces::{dev_deploy, AccountId, InMemorySigner};
 use std::path::Path;
+use tokio::runtime::Handle;
+use workspaces::prelude::*;
+use workspaces::{Contract as WorkspaceContract, Sandbox, Worker,DevNetwork};
 
-pub async fn deploy(path: &str) -> anyhow::Result<(AccountId, InMemorySigner)> {
-    dev_deploy(Path::new(path)).await
+pub async fn deploy(path: &str, worker: Worker<impl DevNetwork>) -> anyhow::Result<WorkspaceContract> {
+    worker.dev_deploy(&std::fs::read(Path::new(path))?).await
+}
+
+pub async fn create_empty_contract(worker: Worker<impl DevNetwork>) -> anyhow::Result<WorkspaceContract> {
+    worker.create_empty_contract().await
 }
 
 #[duplicate(
@@ -14,14 +19,39 @@ pub async fn deploy(path: &str) -> anyhow::Result<(AccountId, InMemorySigner)> {
     [ Bmv ];
     [ TokenBsh ];
     [ NativeCoinBsh ];
+    [ WNear ];
+    [ Nep141Testable ];
+
 )]
 impl Contract<'_, contract_type> {
     pub fn deploy(&self, mut context: Context) -> Context {
-        let mut pool = LocalPool::new();
-        let (account_id, signer) = pool.run_until(async { deploy(self.source()).await.unwrap() });
-        let contract_owner = Signer::new(signer);
-        context.contracts_mut().add(self.name(), &contract_owner);
-        context.set_signer(&contract_owner);
+        let worker = context.worker().clone();
+        let handle = Handle::current();
+        let contract = tokio::task::block_in_place(move || {
+            handle.block_on(async { deploy(self.source(), worker).await.unwrap() })
+        });
+        context.set_signer(contract.as_account());
+        context.contracts_mut().add(self.name(), contract);
+        context
+    }
+}
+
+
+
+#[duplicate(
+    contract_type;
+    [ Nep141 ];
+    
+)]
+impl Contract<'_, contract_type> {
+    pub fn deploy(&self, mut context: Context) -> Context {
+        let worker = context.worker().clone();
+        let handle = Handle::current();
+        let contract = tokio::task::block_in_place(move || {
+            handle.block_on(async { create_empty_contract(worker).await.unwrap() })
+        });
+        context.set_signer(contract.as_account());
+        context.contracts_mut().add(self.name(), contract);
         context
     }
 }
