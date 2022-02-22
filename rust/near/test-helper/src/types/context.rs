@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use workspaces::{Worker, Account as WorkspaceAccount, Sandbox, sandbox,Testnet,testnet};
 
 pub struct Context {
-    worker: Worker<Testnet>,
+    worker: Worker<Sandbox>,
     contracts: Contracts,
     accounts: Accounts,
     signer: Option<WorkspaceAccount>,
@@ -16,7 +16,7 @@ pub struct Context {
 impl Context {
     pub fn new() -> Context {
         Context {
-            worker: testnet(),
+            worker: sandbox(),
             contracts: Contracts::default(),
             accounts: Accounts::default(),
             signer: None,
@@ -26,7 +26,7 @@ impl Context {
         }
     }
 
-    pub fn worker(&self) -> &Worker<Testnet> {
+    pub fn worker(&self) -> &Worker<Sandbox> {
         &self.worker
     }
 
