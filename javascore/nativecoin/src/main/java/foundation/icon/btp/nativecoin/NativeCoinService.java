@@ -147,6 +147,10 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         return balances;
     }
 
+    // Do nothing, just to receive IRC2 token
+    @External
+    public void tokenFallback(Address _from, BigInteger _value, byte[] _data) { }
+
     @External
     public void reclaim(String _coinName, BigInteger _value) {
         require(_value.compareTo(BigInteger.ZERO) > 0, "_value must be positive");
