@@ -265,7 +265,22 @@ mod manage_token_transfer {
                 .when(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
                 .then(BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_AFTER_DEPOSIT);
         }
-    }
 
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_cannot_transfer_0_native_near_tokens_to_cross_chain() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(WNEAR_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
+                .and(TOKEN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH)
+                .and(CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT)
+                .when(CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN);
+        }
+     
+    }
+    
 }
 
