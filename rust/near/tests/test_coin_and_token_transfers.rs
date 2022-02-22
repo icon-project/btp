@@ -253,7 +253,7 @@ mod manage_token_transfer {
         }
 
         #[tokio::test(flavor = "multi_thread")]
-        async fn user_can_query_token_id_for_registered_wrapped_token() {
+        async fn users_can_deposit_native_near_token() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
