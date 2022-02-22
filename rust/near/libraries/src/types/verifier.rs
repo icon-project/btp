@@ -47,13 +47,10 @@ impl VerifierStatus {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum VerifierResponse {
-    Success {
-        previous_height: u64,
-        verifier_status: VerifierStatus,
-        messages: SerializedBtpMessages,
-    },
-    Failed(BmvError),
+pub struct VerifierResponse {
+    pub previous_height: u64,
+    pub verifier_status: VerifierStatus,
+    pub messages: SerializedBtpMessages,
 }
 
 impl Bmv {
