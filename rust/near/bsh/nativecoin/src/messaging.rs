@@ -149,7 +149,7 @@ impl NativeCoinService {
 
         let message = TokenServiceMessage::new(TokenServiceType::RequestTokenTransfer {
             sender: sender_id.clone().into(),
-            receiver: destination.account_id().into(),
+            receiver: destination.contract_address().unwrap(),
             assets: assets.clone(),
         });
 
@@ -157,7 +157,7 @@ impl NativeCoinService {
             serial_no,
             &Request::new(
                 sender_id.clone().into(),
-                destination.account_id().into(),
+                destination.contract_address().unwrap(),
                 assets,
             ),
         );

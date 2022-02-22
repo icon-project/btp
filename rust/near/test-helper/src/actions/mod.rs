@@ -14,3 +14,6 @@ mod setup;
 mod initialize;
 mod view_state;
 pub use setup::create_account;
+mod manage_bsh;
+mod manage_nep141;
+pub use invoke::call;

@@ -3153,7 +3153,7 @@ dependencies = [
 [[package]]
 name = "workspaces"
 version = "0.1.1"
-source = "git+https://github.com/HugoByte/workspaces-rs.git?rev=e91c125#e91c125323e922db109d4ded01cc48e2708d016b"
+source = "git+https://github.com/HugoByte/workspaces-rs.git?rev=b090189#b0901896488cd51c750bfb37fc366881d8b32e74"
 dependencies = [
  "anyhow",
  "async-trait",

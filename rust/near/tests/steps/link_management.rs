@@ -264,8 +264,54 @@ pub static BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_ADDING_LINK: fn(Context) = |c
     assert!(error.to_string().contains("InvalidBtpAddress"));
 };
 
-pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context) = |context: Context| {
-    let error = context.method_errors("add_link");
+pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("add_link");
 
-    assert!(error.to_string().contains("BMCRevertAlreadyExistsLink"));
-};
+        assert!(error.to_string().contains("BMCRevertAlreadyExistsLink"));
+    };
+
+    pub static ICON_LINK_IS_ADDED_AND_INITIALIZED_IN_BMC: fn(Context) -> Context = |context: Context| {
+        context
+            .pipe(ICON_LINK_IS_ADDED_IN_BMC)
+            .pipe(ICON_LINK_IS_INITIALIZED_IN_BMC)
+    };
+
+    pub static ICON_LINK_IS_ADDED_IN_BMC: fn(Context) -> Context = |context: Context| {
+        context
+            .pipe(VERIFIER_FOR_ICON_IS_ADDED)
+            .pipe(LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+            .pipe(BMC_OWNER_INVOKES_ADD_LINK_IN_BMC)
+    };
+
+  pub static LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "add_link",
+            json!({ "link": "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b" }),
+        );
+
+        context
+    };
+
+    pub static ICON_LINK_IS_INITIALIZED_IN_BMC: fn(Context) -> Context = |context: Context| {
+        context
+            .pipe(    ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC)
+            .pipe(BMC_OWNER_INVOKES_SET_LINK_IN_BMC)
+    };
+
+    pub static 
+    ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "set_link",
+            json!({
+                "link": "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b",
+                "block_interval": 15000,
+                "max_aggregation": 5,
+                "delay_limit": 4
+            }),
+        );
+
+        context
+    };

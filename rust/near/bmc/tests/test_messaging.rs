@@ -285,7 +285,6 @@ fn handle_external_service_message_existing_service() {
 
 #[test]
 #[cfg(feature = "testable")]
-#[should_panic(expected = "BMCRevertNotExistBSH")]
 fn handle_external_service_message_non_existing_service() {
     let context = |v: AccountId| (get_context(vec![], false, v));
     let link =
@@ -311,4 +310,22 @@ fn handle_external_service_message_non_existing_service() {
     contract.add_verifier(link.network_address().unwrap(), verifier());
     contract.add_link(link.clone());
     contract.handle_service_message_testable(link.clone(), <BtpMessage<SerializedMessage>>::try_from(&btp_message).unwrap());
+    let btp_message: BtpMessage<ErrorMessage> = contract.get_message().unwrap().try_into().unwrap();
+    let error_message = ErrorMessage::new(16, "BMCRevertNotExistBSH".to_string());
+    assert_eq!(
+        btp_message,
+        BtpMessage::new(
+            BTPAddress::new(
+                "btp://0x1.near/88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4"
+                    .to_string()
+            ),
+            BTPAddress::new(
+                "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd675b".to_string()
+            ),
+            "nativecoin".to_string(),
+            WrappedI128::new(-1),
+            error_message.clone().into(),
+            Some(error_message)
+        )
+    );
 }

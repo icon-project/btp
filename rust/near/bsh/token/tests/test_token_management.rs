@@ -1,4 +1,4 @@
-use near_sdk::{env, serde_json::to_value, testing_env, AccountId, VMContext};
+use near_sdk::{env, serde_json::to_value, testing_env, AccountId, VMContext,PromiseResult};
 use token_service::TokenService;
 pub mod accounts;
 use accounts::*;
@@ -40,7 +40,13 @@ fn get_context(
 #[test]
 fn register_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+    testing_env!(
+        context(alice(), 0),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "TokenBSH".to_string(),
         bmc(),
@@ -65,7 +71,13 @@ fn register_token() {
 #[should_panic(expected = "BSHRevertAlreadyExistsToken")]
 fn register_existing_token() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+    testing_env!(
+        context(alice(),  1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "nativecoin".to_string(),
         bmc(),
@@ -114,7 +126,13 @@ fn get_non_exist_token_id() {
 #[test]
 fn get_registered_token_id() {
     let context = |v: AccountId, d: u128| (get_context(vec![], false, v, d));
-    testing_env!(context(alice(), 1_000_000_000_000_000_000_000_000));
+    testing_env!(
+        context(alice(), 1_000_000_000_000_000_000_000_000),
+        Default::default(),
+        Default::default(),
+        Default::default(),
+        vec![PromiseResult::Successful(vec![1_u8])]
+    );
     let mut contract = TokenService::new(
         "nativecoin".to_string(),
         bmc(),

@@ -140,7 +140,7 @@ mod manage_links {
         }
 
         #[tokio::test(flavor = "multi_thread")]
-        async fn non_bmc_owner_cannor_remove_a_link_connecting_cross_chain_bmc() {
+        async fn non_bmc_owner_cannot_remove_a_link_connecting_cross_chain_bmc() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)

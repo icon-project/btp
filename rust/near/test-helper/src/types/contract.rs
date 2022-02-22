@@ -32,6 +32,9 @@ pub struct Contract<'a, T> {
     [ Bmv ];
     [ NativeCoinBsh ];
     [ TokenBsh ];
+    [ Nep141 ];
+    [ WNear ];
+    [ Nep141Testable ];
   )]
 impl Contract<'_, contract_type> {
     fn new(name: &'static str, source: &'static str) -> Contract<'static, contract_type> {
@@ -88,5 +91,35 @@ pub struct TokenBshContract {}
 impl TokenBshContract {
     pub fn new(name: &'static str, source: &'static str) -> Contract<'static, TokenBsh> {
         Contract::<TokenBsh>::new(name, source)
+    }
+}
+
+pub struct Nep141{}
+
+pub struct Nep141Contract{}
+
+impl Nep141Contract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,Nep141>{
+        Contract::<Nep141>::new(name,source)
+    }
+}
+
+pub struct WNear{}
+
+pub struct WNearContract{}
+
+impl WNearContract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,WNear>{
+        Contract::<WNear>::new(name,source)
+    }
+}
+
+pub struct Nep141Testable{}
+
+pub struct Nep141TestableContract{}
+
+impl Nep141TestableContract{
+    pub fn new(name:&'static str, source: &'static str) -> Contract<'static,Nep141Testable>{
+        Contract::<Nep141Testable>::new(name,source)
     }
 }

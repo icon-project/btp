@@ -7,7 +7,6 @@ impl BtpMessageVerifier {
         &mut self,
         block_updates: &Vec<BlockUpdate>,
         last_block_header: &mut BlockHeader,
-        state_changes: &mut StateChanges,
     ) -> Result<(), BmvError> {
         let mut validator_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(self.validators.as_ref()));
 
@@ -36,13 +35,10 @@ impl BtpMessageVerifier {
                     self.ensure_have_valid_next_validators(&block_update)?;
 
                     validator_hash.clone_from(&next_validator_hash);
-                    state_changes.push(StateChange::SetValidators {
-                        validators: block_update.next_validators().get().clone(),
-                    });
+                    self.validators.set(block_update.next_validators().get());
                 }
 
                 self.mta.add::<Sha256>(block_hash);
-                // state_changes.push(StateChange::MtaAddBlockHash { block_hash });
                 if block_updates.len() - index == 1 {
                     last_block_header.clone_from(block_update.block_header());
                 }
