@@ -14,7 +14,7 @@ mod types;
 #[cfg(feature = "testable")]
 pub mod types;
 
-use types::{Validator, Validators, RelayMessage, BlockHeader, StateChange, StateChanges, BlockProof, BlockUpdate, VoteMessage, Votes, VOTE_TYPE_PRECOMMIT, ReceiptProof, Sha256, Receipt, ToBmvError, EventLog};
+use types::{Validator, Validators, RelayMessage, BlockHeader, BlockProof, BlockUpdate, VoteMessage, Votes, VOTE_TYPE_PRECOMMIT, ReceiptProof, Sha256, Receipt, ToBmvError, EventLog};
 mod assertion;
 mod messaging;
 mod management;
