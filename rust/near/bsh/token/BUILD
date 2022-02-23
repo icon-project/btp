@@ -12,18 +12,20 @@ rust_shared_library(
         "src/external/bmc.rs",
         "src/external/fungible_token.rs",
         "src/external/mod.rs",
-        "src/external/receiver.rs",
+        "src/external/nep141.rs",
         "src/external/token_bsh.rs",
         "src/fee_management.rs",
         "src/lib.rs",
         "src/messaging.rs",
-        "src/multi_token.rs",
         "src/owner_management.rs",
         "src/token_management.rs",
         "src/transfer.rs",
         "src/types/mod.rs",
-        "src/types/registered_token.rs",
+        "src/types/registered_tokens.rs",
         "src/util.rs",
+    ],
+    data = [
+        "res/NEP141_CONTRACT.wasm",
     ],
     rustc_flags = [
         "--codegen=link-arg=-s",
@@ -37,14 +39,13 @@ rust_shared_library(
     deps = [
         "@rules_rust//wasm_bindgen/raze:wasm_bindgen",
         "@rust//btp-common:btp_common",
-        "@rust//near/bmv/icon/cargo:hex",
-        "@rust//near/bmv/icon/cargo:near_sdk",
-        "@rust//near/bmv/icon/cargo:tiny_keccak",
+        "@rust//near/bsh/token/cargo:near_contract_standards",
+        "@rust//near/bsh/token/cargo:near_sdk",
         "@rust//near/libraries",
     ],
 )
 
 rust_wasm_generator(
-    name = "bmv_icon_wasm",
-    wasm_file = ":bmv_icon",
+    name = "token_bsh_wasm",
+    wasm_file = ":token_bsh",
 )

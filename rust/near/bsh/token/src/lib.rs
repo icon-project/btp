@@ -40,7 +40,7 @@ pub type TokenId = AssetId;
 pub type Token = Asset<WrappedFungibleToken>;
 pub type Tokens = Assets<WrappedFungibleToken>;
 
-pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../../../res/NEP141_CONTRACT.wasm");
+pub static NEP141_CONTRACT: &'static [u8] = include_bytes!("../res/NEP141_CONTRACT.wasm");
 pub static FEE_DENOMINATOR: u128 = 10_u128.pow(4);
 
 #[near_bindgen]

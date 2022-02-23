@@ -49,6 +49,15 @@ alias(
     ],
 )
 
+alias(
+    name = "near_contract_standards",
+    actual = "@raze__near_contract_standards__4_0_0_pre_4//:near_contract_standards",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
 exports_files(
     [
         "crates.bzl",

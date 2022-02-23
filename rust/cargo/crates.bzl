@@ -1488,3 +1488,13 @@ def raze_fetch_remote_crates():
         strip_prefix = "zeroize_derive-1.2.2",
         build_file = Label("//cargo/remote:BUILD.zeroize_derive-1.2.2.bazel"),
     )
+
+    maybe(
+        new_git_repository,
+        name = "raze__near_contract_standards__4_0_0_pre_4",
+        remote = "https://github.com/HugoByte/near-sdk-rs.git",
+        commit = "b18b4751c556e6da7dbbab678b3ec981f48a406d",
+        build_file = Label("//cargo/remote:BUILD.near-contract-standards-4.0.0-pre.4.bazel"),
+        init_submodules = True,
+    )
+

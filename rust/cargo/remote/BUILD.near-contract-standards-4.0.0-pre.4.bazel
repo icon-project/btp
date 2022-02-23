@@ -1,0 +1,55 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "restricted",  # GPL-3.0 from expression "GPL-3.0"
+])
+
+# Generated Targets
+
+rust_library(
+    name = "near_contract_standards",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+    ],
+    crate_root = "near-contract-standards/src/lib.rs",
+    data = [],
+    edition = "2018",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "manual",
+        "crate-name=near-contract-standards"
+    ],
+    version = "4.0.0-pre.4",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__near_sdk__4_0_0_pre_4//:near_sdk",
+    ],
+)
