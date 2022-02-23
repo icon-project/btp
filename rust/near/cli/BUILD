@@ -37,7 +37,11 @@ create_account(
 )
 
 create_account(
-    name= "iconbmv",
+    name = "iconbmv",
+)
+
+create_account(
+    name = "nep141",
 )
 
 genrule(
@@ -56,7 +60,6 @@ genrule(
         "@near//cli:near_binary",
     ],
 )
-
 
 genrule(
     name = "deploy_icon_bmv",
@@ -81,13 +84,16 @@ genrule(
         "@near//bsh/nativecoin:native_coin_wasm",
     ],
     outs = ["deploy_natvie_coin_bsh.out"],
-    cmd = "$(execpath :near_binary) deploy $$(cat $(location @near//cli:encode_public_key_nativecoinbsh)) --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --wasmFile $(locations @near//bsh/nativecoin:native_coin_wasm) --accountId nativecoinbsh.node0 --initFunction \"new\" --initArgs '{\"service_name\":\"nativecoin\",\"bmc\":\"bmc.node0\",\"network\":\"0x1.near\",\"native_coin\":{\"metadata\":{\"name\":\"NEAR\",\"symbol\":\"NEAR\",\"uri\":null,\"network\":\"\",\"extras\":null}},\"fee_numerator\":\"1000\"}' > $@",
+    cmd = "$(execpath :near_binary) deploy $$(cat $(location @near//cli:encode_public_key_nativecoinbsh)) --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --wasmFile $(locations @near//bsh/nativecoin:native_coin_wasm) --accountId $$(cat $(location @near//cli:encode_public_key_nativecoinbsh)) --initFunction \"new\" --initArgs '{\"service_name\":\"nativecoin\",\"bmc\":\"%s\",\"network\":\"0x1.near\",\"native_coin\":{\"metadata\":{\"name\":\"NEAR\",\"symbol\":\"NEAR\",\"uri\":null,\"network\":\"0x1.near\",\"extras\":null}},\"fee_numerator\":\"1000\"}' > $@",
     executable = True,
     local = True,
     tools = [
         "@near//:wait_until_near_up",
+        "@near//cli:create_account_bmc",
         "@near//cli:create_account_nativecoinbsh",
+        "@near//cli:encode_public_key_bmc",
         "@near//cli:encode_public_key_nativecoinbsh",
+        "@near//cli:encode_public_key_nep141",
         "@near//cli:near_binary",
     ],
 )
@@ -102,7 +108,7 @@ genrule(
     executable = True,
     local = True,
     tools = [
-         "@near//:wait_until_near_up",
+        "@near//:wait_until_near_up",
         "@near//cli:create_account_tokenbsh",
         "@near//cli:encode_public_key_tokenbsh",
         "@near//cli:near_binary",

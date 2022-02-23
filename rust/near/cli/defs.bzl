@@ -2,7 +2,7 @@ def create_account(name):
     native.genrule(
         name = "account_key_%s" % name,
         outs = ["account_key_%s.out" % name],
-        cmd = "echo 'tmp' > $@",
+        cmd = "echo \"%s_tmp\" > $@" % name,
         executable = True,
     )
 
