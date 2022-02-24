@@ -5,7 +5,7 @@ use test_helper::types::Context;
 
 pub static ICON_LINK_IS_ADDED: fn(Context) -> Context = |context: Context| {
     context
-        .pipe(VERIFIER_FOR_ICON_IS_ADDED)
+        .pipe(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
         .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
         .pipe(BMC_OWNER_INVOKES_ADD_LINK_IN_BMC)
 };
@@ -279,7 +279,7 @@ pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context
 
     pub static ICON_LINK_IS_ADDED_IN_BMC: fn(Context) -> Context = |context: Context| {
         context
-            .pipe(VERIFIER_FOR_ICON_IS_ADDED)
+            .pipe(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
             .pipe(LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
             .pipe(BMC_OWNER_INVOKES_ADD_LINK_IN_BMC)
     };

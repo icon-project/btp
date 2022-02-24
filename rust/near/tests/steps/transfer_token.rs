@@ -90,7 +90,7 @@ pub static CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH: fn(Context) -> Context =
         context.add_method_params(
             "balance_of",
             json!({
-                "owner_id": context.accounts().get("charlie").id().to_string() ,
+                "owner_id": context.accounts().get("charlie").id().to_string(),
                 "token_id": context.method_responses("token_id") ,
             }),
         );
