@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+apk add --no-cache jq
+
 if [ "$GOLOOP_CONFIG" != "" ] && [ ! -f "$GOLOOP_CONFIG" ]; then
     UNSET="GOLOOP_CONFIG"
     CMD="goloop server save $GOLOOP_CONFIG"
