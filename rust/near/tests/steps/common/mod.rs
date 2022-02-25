@@ -18,3 +18,6 @@ pub use nep141::*;
 
 mod wnear;
 pub use wnear::*;
+
+mod macros;
+pub use macros::*;

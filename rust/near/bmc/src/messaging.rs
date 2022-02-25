@@ -40,44 +40,36 @@ impl BtpMessageCenter {
         source: BTPAddress,
         #[callback] verifier_response: VerifierResponse,
     ) {
-        match verifier_response {
-            VerifierResponse::Success {
-                previous_height,
-                verifier_status,
-                messages,
-            } => {
-                if let Some(mut link) = self.links.get(&source) {
-                    let relay = match link
-                        .rotate_relay(verifier_status.last_height(), !messages.is_empty())
-                    {
-                        Some(relay) => {
-                            self.assert_relay_is_valid(relay);
-                            relay.clone()
-                        }
-                        None => env::predecessor_account_id(),
-                    };
-
-                    let mut relay_status = match link.relays().status(&relay) {
-                        Some(status) => status,
-                        None => RelayStatus::default(),
-                    };
-                    relay_status
-                        .block_count_mut()
-                        .add(verifier_status.mta_height())
-                        .unwrap()
-                        .sub(previous_height)
-                        .unwrap();
-                    relay_status
-                        .message_count_mut()
-                        .add(messages.len().try_into().unwrap())
-                        .unwrap();
-                    link.relays_mut().set_status(&relay, &relay_status);
-                    self.links.set(&source, &link);
-                    self.handle_btp_messages(source, messages)
+        if let Some(mut link) = self.links.get(&source) {
+            let relay = match link.rotate_relay(
+                verifier_response.verifier_status.last_height(),
+                !verifier_response.messages.is_empty(),
+            ) {
+                Some(relay) => {
+                    self.assert_relay_is_valid(relay);
+                    relay.clone()
                 }
-            }
-            VerifierResponse::Failed(code) => (env::panic_str(format!("{}", code).as_str())),
-        };
+                None => env::predecessor_account_id(),
+            };
+
+            let mut relay_status = match link.relays().status(&relay) {
+                Some(status) => status,
+                None => RelayStatus::default(),
+            };
+            relay_status
+                .block_count_mut()
+                .add(verifier_response.verifier_status.mta_height())
+                .unwrap()
+                .sub(verifier_response.previous_height)
+                .unwrap();
+            relay_status
+                .message_count_mut()
+                .add(verifier_response.messages.len().try_into().unwrap())
+                .unwrap();
+            link.relays_mut().set_status(&relay, &relay_status);
+            self.links.set(&source, &link);
+            self.handle_btp_messages(source, verifier_response.messages)
+        }
     }
 
     #[cfg(feature = "mockable")]
@@ -87,44 +79,36 @@ impl BtpMessageCenter {
         source: BTPAddress,
         verifier_response: VerifierResponse,
     ) {
-        match verifier_response {
-            VerifierResponse::Success {
-                previous_height,
-                verifier_status,
-                messages,
-            } => {
-                if let Some(mut link) = self.links.get(&source) {
-                    let relay = match link
-                        .rotate_relay(verifier_status.last_height(), !messages.is_empty())
-                    {
-                        Some(relay) => {
-                            self.assert_relay_is_valid(relay);
-                            relay.clone()
-                        }
-                        None => env::predecessor_account_id(),
-                    };
-
-                    let mut relay_status = match link.relays().status(&relay) {
-                        Some(status) => status,
-                        None => RelayStatus::default(),
-                    };
-                    relay_status
-                        .block_count_mut()
-                        .add(verifier_status.mta_height())
-                        .unwrap()
-                        .sub(previous_height)
-                        .unwrap();
-                    relay_status
-                        .message_count_mut()
-                        .add(messages.len().try_into().unwrap())
-                        .unwrap();
-                    link.relays_mut().set_status(&relay, &relay_status);
-                    self.links.set(&source, &link);
-                    self.handle_btp_messages(source, messages)
+        if let Some(mut link) = self.links.get(&source) {
+            let relay = match link.rotate_relay(
+                verifier_response.verifier_status.last_height(),
+                !verifier_response.messages.is_empty(),
+            ) {
+                Some(relay) => {
+                    self.assert_relay_is_valid(relay);
+                    relay.clone()
                 }
-            }
-            VerifierResponse::Failed(code) => (env::panic_str(format!("{}", code).as_str())),
-        };
+                None => env::predecessor_account_id(),
+            };
+
+            let mut relay_status = match link.relays().status(&relay) {
+                Some(status) => status,
+                None => RelayStatus::default(),
+            };
+            relay_status
+                .block_count_mut()
+                .add(verifier_response.verifier_status.mta_height())
+                .unwrap()
+                .sub(verifier_response.previous_height)
+                .unwrap();
+            relay_status
+                .message_count_mut()
+                .add(verifier_response.messages.len().try_into().unwrap())
+                .unwrap();
+            link.relays_mut().set_status(&relay, &relay_status);
+            self.links.set(&source, &link);
+            self.handle_btp_messages(source, verifier_response.messages)
+        }
     }
 
     #[cfg(feature = "testable")]
@@ -296,8 +280,12 @@ impl BtpMessageCenter {
 
             if outcome.is_err() {
                 match outcome.as_ref().unwrap_err() {
-                    BmcError::ServiceNotExist => self.send_error(source, &BtpException::Bmc(BmcError::ServiceNotExist), message.to_owned()),
-                    _ => panic!("{}", outcome.unwrap_err())
+                    BmcError::ServiceNotExist => self.send_error(
+                        source,
+                        &BtpException::Bmc(BmcError::ServiceNotExist),
+                        message.to_owned(),
+                    ),
+                    _ => panic!("{}", outcome.unwrap_err()),
                 }
             }
             false

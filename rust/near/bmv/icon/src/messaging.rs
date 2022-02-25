@@ -15,20 +15,15 @@ impl BtpMessageVerifier {
         self.assert_have_block_updates_or_block_proof(&relay_message);
 
         let previous_height = self.mta.height();
-        let mut state_changes = StateChanges::new();
         let mut last_block_header = BlockHeader::default();
         let mut btp_messages = SerializedBtpMessages::new();
 
         let outcome = self.process_block_updates(
             relay_message.block_updates(),
             &mut last_block_header,
-            &mut state_changes,
         );
         if outcome.is_err() {
-            #[cfg(feature = "testable")]
             outcome.clone().unwrap();
-
-            return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
         }
 
         if relay_message.block_proof().is_some() {
@@ -43,10 +38,7 @@ impl BtpMessageVerifier {
                 &mut last_block_header,
             );
             if outcome.is_err() {
-                #[cfg(feature = "testable")]
                 outcome.clone().unwrap();
-
-                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
             }
         }
 
@@ -60,22 +52,15 @@ impl BtpMessageVerifier {
                 &mut btp_messages,
             );
             if outcome.is_err() {
-                #[cfg(feature = "testable")]
                 outcome.clone().unwrap();
-
-                return PromiseOrValue::Value(VerifierResponse::Failed(outcome.unwrap_err()));
             }
         }
 
         if !btp_messages.is_empty() {
-            state_changes.push(StateChange::SetLastHeight {
-                height: last_block_header.height(),
-            });
+            self.last_height.clone_from(&last_block_header.height());
         }
 
-        self.update_state(&mut state_changes);
-
-        PromiseOrValue::Value(VerifierResponse::Success {
+        PromiseOrValue::Value(VerifierResponse {
             previous_height,
             messages: btp_messages,
             verifier_status: self.status(),

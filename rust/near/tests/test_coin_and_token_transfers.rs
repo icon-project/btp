@@ -13,14 +13,17 @@ mod manage_token_transfer {
         ) {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
                 .and(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_WRAPPED_COIN)
-                .when(USER_INVOKES_BALANCE_OF_TOKEN_BSH)
-                .then(AMOUNT_SHOULD_BE_PRESENT_IN_TOKEN_BSH_ACCOUNT);
+                .when(CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH)
+                .then(AMOUNT_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -28,13 +31,16 @@ mod manage_token_transfer {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
                 .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
                 .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
                 .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
-               .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN)
-                .when(USER_INVOKES_BALANCE_OF_TOKEN_BSH)
+                .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_COIN)
+                .when(CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH)
                 .then(AMOUNT_SHOULD_BE_PRESENT_IN_TOKEN_BSH_ACCOUNT_ON_DEPOSITING);
         }
 
@@ -99,7 +105,7 @@ mod manage_token_transfer {
         }
 
         #[tokio::test(flavor = "multi_thread")]
-        async fn user_can_withdraw_wrapped_native_coin(){
+        async fn user_can_withdraw_wrapped_native_coin() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
@@ -109,11 +115,11 @@ mod manage_token_transfer {
                 .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
                 .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
                 .when(CHARLIE_INVOKES_BALANCE_IN_NATIVE_COIN_BSH)
-                .then(AFTER_WITHDRAW_CHARLIES_AMOUNT_SHOULD_BE_DEDUCTED_AND_BALANCE_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT);      
+                .then(AFTER_WITHDRAW_CHARLIES_AMOUNT_SHOULD_BE_DEDUCTED_AND_BALANCE_SHOULD_BE_PRESENT_IN_NATIVE_COIN_BSH_ACCOUNT);
         }
 
         #[tokio::test(flavor = "multi_thread")]
-        async fn users_can_query_withdrawble_balance_of_wrapped_native_coin(){
+        async fn users_can_query_withdrawble_balance_of_wrapped_native_coin() {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
@@ -125,7 +131,7 @@ mod manage_token_transfer {
                 .and(ALICE_INVOKES_HANDLE_SERVICE_MESSAGE_IN_NATIVE_COIN_BSH)
                 .and(USER_INVOKES_GET_COIN_ID_FROM_NATIVE_COIN_BSH_FOR_WRAPPED_COIN)
                 .when(USER_INVOKES_BALANCE_OF_TOKEN_BSH)
-                .then(CHARLIES_WITHDRAWABLE_AMOUNT_IN_NATIVE_COIN_BSH_ACCOUNT);      
+                .then(CHARLIES_WITHDRAWABLE_AMOUNT_IN_NATIVE_COIN_BSH_ACCOUNT);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -160,14 +166,14 @@ mod manage_token_transfer {
         #[tokio::test(flavor = "multi_thread")]
         async fn user_cannot_withdraw_more_than_available_deposit_to_wallet() {
             Kitten::given(NEW_CONTEXT)
-            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-            .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
-            .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
-            .and(CHARLIES_ACCOUNT_IS_CREATED)
-            .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
-            .when(CHARLIE_WITHDRAWS_AMOUNT_MORE_THAN_AVAILABLE_DEPOSIT)
-            .then(NATIVE_COIN_BSH_SHOULD_THROW_ERROR_ON_WITHDRAWAL);
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
+                .when(CHARLIE_WITHDRAWS_AMOUNT_MORE_THAN_AVAILABLE_DEPOSIT)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_ERROR_ON_WITHDRAWAL);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -186,22 +192,19 @@ mod manage_token_transfer {
         }
 
         #[tokio::test(flavor = "multi_thread")]
-        async fn user_cannot_deposit_more_than_available_balance() {       
+        async fn user_cannot_deposit_more_than_available_balance() {
             Kitten::given(NEW_CONTEXT)
-               .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-               .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-               .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
-               .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
-               .and(CHARLIES_ACCOUNT_IS_CREATED)
-               .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
-               .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
-               .when(CHARLIE_DEPOSITS_MORE_THAN_AVAILABLE_BALANCE)
-               .then(BSH_SHOULD_THROW_NOT_ENOUGH_BALANCE_ERROR_ON_DEPOSITING_AMOUNT);
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
+                .when(CHARLIE_DEPOSITS_MORE_THAN_AVAILABLE_BALANCE)
+                .then(BSH_SHOULD_THROW_NOT_ENOUGH_BALANCE_ERROR_ON_DEPOSITING_AMOUNT);
         }
-
-    
     }
-
 
     mod token_bsh_transfer {
 
@@ -234,7 +237,7 @@ mod manage_token_transfer {
                 .and(CHARLIE_DEPOSITS_TO_WRAPPED_FUNGIBLE_TOKEN)
                 .when(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
                 .then(AFTER_DEPOSIT_AMOUNT_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT);
-        } 
+        }
 
         #[tokio::test(flavor = "multi_thread")]
         async fn bsh_can_respond_back_with_response_message_if_the_transfer_has_been_completed() {
@@ -265,7 +268,19 @@ mod manage_token_transfer {
                 .when(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
                 .then(BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_AFTER_DEPOSIT);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_cannot_transfer_0_native_near_tokens_to_cross_chain() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(WNEAR_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
+                .and(TOKEN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH)
+                .and(CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT)
+                .when(CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN);
+        }
     }
-
 }
-

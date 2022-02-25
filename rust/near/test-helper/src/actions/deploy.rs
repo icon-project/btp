@@ -36,8 +36,6 @@ impl Contract<'_, contract_type> {
     }
 }
 
-
-
 #[duplicate(
     contract_type;
     [ Nep141 ];

@@ -61,7 +61,7 @@ impl TokenService {
                 U128::from(amount),
                 None,
                 token.metadata().uri_deref().unwrap(),
-                estimate::NO_DEPOSIT,
+                estimate::ONE_YOCTO,
                 estimate::GAS_FOR_FT_TRANSFER,
             )
         };
