@@ -1,10 +1,18 @@
-package(default_visibility = ["//visibility:public"])
-
 load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_image",
 )
 load("@btp//utils:defs.bzl", "open_port")
+
+package(default_visibility = ["//visibility:public"])
+
+genrule(
+    name = "goloop_config_dir",
+    outs = ["goloop_config_dir.out"],
+    executable = True,
+    local = True,
+    cmd = "mkdir \"$$PWD/config\"; echo \"$$PWD/goloop_config\" > $@"
+)
 
 container_image(
     name = "icon_node_image",
@@ -28,10 +36,11 @@ genrule(
     name = "deploy_node",
     outs = ["goloop_node"],
     cmd = """
-            docker run -d -v ~/.goloop/config:/goloop/config -p $$(cat $(location :open_port_icon)):9080 bazel:icon_node_image
+            docker run -d -v $$(cat $(location :goloop_config_dir)):/goloop/config -p $$(cat $(location :open_port_icon)):9080 bazel:icon_node_image
             cat $(location :open_port_icon) > \"$@\" """,
     executable = True,
     tools = [
+        ":goloop_config_dir",
         ":icon_node_image",
         ":open_port_icon",
     ],
@@ -57,6 +66,9 @@ genrule(
     outs = ["wait_until_icon_up.out"],
     cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:$$(cat $(location :deploy_node)) admin/system 300 > $@",
     executable = True,
+    tags = [
+        "no-cache",
+    ],
     tools = [
         ":deploy_node",
         "@btp//utils:wait_until_curl_script",
