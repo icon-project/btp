@@ -103,8 +103,7 @@ mod manage_coins_and_tokens {
                 .and(NEP141_CONTRACT_IS_DEPLOYED)
                 .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
                 .and(CHARLIES_ACCOUNT_IS_CREATED)
-                .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
-                .and(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+                .and(BOB_ADDED_CHARLIE_AS_A_NEW_OWNER_IN_NATIVE_COIN_BSH)
                 .and(WRAPPED_ICX_METADATA_IS_PROVIDED_AS_REGISTER_PARAM)
                 .when(CHARLIE_INVOKES_REGISTER_IN_NATIVE_COIN_BSH)
                 .then(WRAPPED_ICX_SHOULD_BE_PRESENT);
@@ -113,19 +112,16 @@ mod manage_coins_and_tokens {
         #[tokio::test(flavor = "multi_thread")]
         async fn removed_bsh_owner_cannot_register_new_wrapped_native_coin() {
             Kitten::given(NEW_CONTEXT)
-            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-            .and(NATIVE_COIN_BSH_IS_REGISTERED_IN_BMC)
-            .and(CHARLIES_ACCOUNT_IS_CREATED)
-            .and(NEP141_CONTRACT_IS_DEPLOYED)
-            .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-            .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_NATIVE_COIN_BSH_OWNER_PARAM)
-            .and(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
-            .and(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM)
-            .and(BOB_INVOKES_REMOVE_OWNER_IN_NATIVE_COIN_BSH)
-            .and(WRAPPED_ICX_METADATA_IS_PROVIDED_AS_REGISTER_PARAM)
-            .when(CHARLIE_INVOKES_REGISTER_IN_NATIVE_COIN_BSH)
-            .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN);
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_IS_REGISTERED_IN_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NEP141_CONTRACT_IS_DEPLOYED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_OWNED_BY_BOB)
+                .and(CHARLIE_WAS_AN_OWNER_IN_NATIVE_COIN_BSH)
+                .and(WRAPPED_ICX_METADATA_IS_PROVIDED_AS_REGISTER_PARAM)
+                .when(CHARLIE_INVOKES_REGISTER_IN_NATIVE_COIN_BSH)
+                .then(NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN);
         }
     }
 
@@ -148,8 +144,8 @@ mod manage_coins_and_tokens {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEAR_TOKEN_IS_REGISTERED)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(WNEAR_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
                 .when(USER_INVOKES_TOKEN_ID_IN_TOKEN_BSH)
                 .then(TOKEN_ID_SHOULD_BE_PRESENT_FOR_THE_REGISTERED_TOKEN);
         }
@@ -172,8 +168,9 @@ mod manage_coins_and_tokens {
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
                 .and(TOKEN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(TOKEN_BSH_CONTRACT_IS_OWNED_BY_BOB)
-                .and(NEAR_TOKEN_IS_REGISTERED)
-                .and(NEAR_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(BALN_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
+                .and(BALN_TOKEN_METADATA_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH)
                 .when(BOB_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
                 .then(TOKEN_BSH_SHOULD_THROW_TOKEN_ALREADY_EXISTS_ERROR_ON_REGISTERING_TOKEN);
         }

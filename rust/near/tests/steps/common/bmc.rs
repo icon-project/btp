@@ -85,6 +85,8 @@ pub static USER_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context =
 pub static USER_INVOKES_GET_RELAYS_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_relays(context);
 
+pub static USER_INVOKES_GET_RELAYS_IN_BMC_CONTRACT: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.get_relays_error(context);
 /*  * * * * * * * * * * * *
 * * * * * * * * * * * * * *
 *   Verifiers     * * * * *

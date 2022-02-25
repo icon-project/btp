@@ -91,20 +91,6 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_INVALID_NUMERATOR_ERROR_ON_SETTING_FEE_R
         assert!(error.to_string().contains("BSHRevertInvalidSetting"));
     };
 
-pub static TOKEN_REGISTERED_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
-    let context = context
-        // .pipe(TOKEN_NAME_IS_PROVIDED_AS_GET_COIN_ID_PARAM)
-        .pipe(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH);
-    let coins = context.method_responses("coins");
-
-    let expected = json!([
-        {"name": "NEAR", "network": "0x1.near", "symbol": "NEAR"},
-        {"name": "token_1", "network": "0x1.near", "symbol": "token_1"}
-    ]);
-
-    assert_eq!(coins, expected);
-};
-
 pub static CHARLIE_INVOKES_REGISTER_NEW_WRAPPED_TOKEN_IN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         (context)
@@ -199,7 +185,7 @@ pub static TOKEN_NAME_IS_PROVIDED_AS_GET_TOKEN_ID_PARAM: fn(Context) -> Context 
         context.add_method_params(
             "token_id",
             json!({
-                "token_name": "NEAR"
+                "token_name": "WNear"
             }),
         );
         context
@@ -229,30 +215,6 @@ pub static USER_INVOKES_TOKEN_ID_FOR_UNREGISTERED_TOKEN: fn(Context) -> Context 
             .pipe(USER_INVOKES_GET_COIN_ID_ERRORS_IN_TOKEN_BSH)
     };
 
-pub static NEAR_TOKEN_METADATA_IS_PROVIDED: fn(Context) -> Context = |mut context: Context| {
-    context.add_method_params(
-        "register",
-        json!( {
-            "token": {
-            "metadata": {
-                "name": "NEAR",
-                "symbol": "wNEAR",
-                "uri": "node0",
-                "network": "0x1.near",
-                "extras": null,
-            }
-        }}),
-    );
-    context
-};
-
-pub static NEAR_TOKEN_IS_REGISTERED: fn(Context) -> Context = |mut context: Context| {
-    context
-        .pipe(NEAR_TOKEN_METADATA_IS_PROVIDED)
-        .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
-        .pipe(USER_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH)
-};
-
 pub static BOB_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         context
@@ -263,8 +225,8 @@ pub static BOB_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH: fn(Context) -> Context =
 pub static TOKEN_ID_SHOULD_BE_PRESENT_FOR_THE_REGISTERED_TOKEN: fn(Context) = |context: Context| {
     let token_id = context.method_responses("token_id");
     let expected = json!([
-        169, 251, 132, 88, 218, 49, 26, 238, 101, 25, 214, 174, 76, 238, 27, 82, 101, 204, 224,
-        247, 162, 64, 40, 41, 146, 253, 223, 28, 217, 19, 87, 150
+        155, 207, 249, 185, 9, 163, 13, 226, 228, 184, 223, 189, 88, 74, 124, 209, 91, 69, 218,
+        156, 181, 253, 214, 0, 228, 209, 0, 29, 170, 135, 179, 55
     ]);
     assert_eq!(token_id, expected);
 };
@@ -295,9 +257,6 @@ pub static CHARLIE_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH: fn(Context) -> Context =
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
             .pipe(USER_INVOKES_SET_FEE_RATIO_IN_TOKEN_BSH)
     };
-pub static NEAR_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH: fn(
-    Context,
-) -> Context = |mut context: Context| (context).pipe(NEAR_TOKEN_METADATA_IS_PROVIDED);
 
 pub static BOB_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context =
     |mut context: Context| {

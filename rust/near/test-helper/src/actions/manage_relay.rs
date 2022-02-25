@@ -26,5 +26,10 @@ impl Contract<'_, contract_type> {
         invoke_view!(self, context, "get_relays", method_params);
         context
     }
+
+    pub fn get_relays_error(&self, mut context: Context) -> Context {
+        invoke_call!(self, context, "get_relays", method_params);
+        context
+    }
 }
 
