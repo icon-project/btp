@@ -14,4 +14,6 @@ provision() {
     goloop chain join --genesis_template genesis.json --channel icon --auto_start > chain_id
     goloop chain start icon
     server_stop
+
+    chmod 777 -R .
 }

@@ -9,9 +9,9 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "goloop_config_dir",
     outs = ["goloop_config_dir.out"],
+    cmd = "mkdir \"$$PWD/goloop_config\"; echo \"$$PWD/goloop_config\" > $@",
     executable = True,
     local = True,
-    cmd = "mkdir \"$$PWD/config\"; echo \"$$PWD/goloop_config\" > $@"
 )
 
 container_image(
@@ -29,14 +29,14 @@ container_image(
 )
 
 open_port(
-    name = "icon"
+    name = "icon",
 )
 
 genrule(
     name = "deploy_node",
     outs = ["goloop_node"],
     cmd = """
-            docker run -d -v $$(cat $(location :goloop_config_dir)):/goloop/config -p $$(cat $(location :open_port_icon)):9080 bazel:icon_node_image
+            docker run -d -v $$(cat $(location :goloop_config_dir)):/goloop/config -p $$(cat $(location :open_port_icon)):9080 bazel:icon_node_image 
             cat $(location :open_port_icon) > \"$@\" """,
     executable = True,
     tools = [
@@ -75,3 +75,14 @@ genrule(
     ],
 )
 
+genrule(
+    name = "btp_address",
+    outs = ["btp_address.out"],
+    cmd = "echo \"btp://$$(cat $(location @icon//:wait_for_channel_up)).icon/$$(cat $(location @icon//cli:get_score_address_bmc))\" > $@",
+    executable = True,
+    local = True,
+    tools = [
+        "@icon//:wait_for_channel_up",
+        "@icon//cli:get_score_address_bmc",
+    ],
+)
