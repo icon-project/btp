@@ -6,6 +6,14 @@ load("@btp//utils:defs.bzl", "open_port")
 
 package(default_visibility = ["//visibility:public"])
 
+genrule(
+    name = "near_config_dir",
+    outs = ["near_config_dir.out"],
+    cmd = "mkdir \"$$PWD/near_config_dir\"; echo \"$$PWD/near_config_dir\" > $@",
+    executable = True,
+    local = True,
+)
+
 container_image(
     name = "near_node_image",
     base = "@nearup_base//image",
@@ -21,20 +29,14 @@ genrule(
     name = "deploy_node",
     outs = ["near_node"],
     cmd = """
-            docker run -d -v ~/.near:/root/.near -p $$(cat $(location :open_port_near)):3030 bazel:near_node_image
+            docker run -d -v $$(cat $(location :near_config_dir)):/root/.near -p $$(cat $(location :open_port_near)):3030 bazel:near_node_image
             cat $(location :open_port_near) > \"$@\" """,
     executable = True,
     tools = [
-        ":home",
+        ":near_config_dir",
         ":near_node_image",
         ":open_port_near",
     ],
-)
-
-genrule(
-    name = "home_dir",
-    outs = ["home"],
-    cmd = "echo 'home' > $@",
 )
 
 genrule(
