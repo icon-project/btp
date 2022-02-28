@@ -16,6 +16,10 @@ get_score_address(
 )
 
 get_score_address(
+    name = "bmv"
+)
+
+get_score_address(
     name = "irc"
 )
 
@@ -40,13 +44,15 @@ genrule(
 )
 
 genrule(
-    name = "deploy_bmv",
-    outs = ["deploy_bmv.out"],
-    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon  sendtx deploy $(location @javascore//bmv:javascore) --key_store ~/.goloop/config/keystore.json --key_secret ~/.goloop/config/keysecret --nid $$(cat $(location @icon//:wait_for_channel_up)) --content_type application/java --step_limit 13610920001 --param _net=\"$$(cat $(location @icon//:wait_for_channel_up)).icon\" | echo $$(tr -d '\"') > $@",
+    name = "deploy_near_bmv",
+    outs = ["deploy_near_bmv.out"],
+    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx deploy \"$(location @javascore//bmv/near/verifier:javascore)\" --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --content_type application/java --step_limit 13610920001 --param _bmc=\"$$(cat $(location @icon//cli:get_score_address_bmc))\" --param _validators=\"\" --param _offset=10 --param _proofDecoder=\"\" --param _net=\"0x1.near\" | echo $$(tr -d '\"') > $@",
     executable = True,
     local = True,
     tools = [
-        "@javascore//bmv:javascore",
+        "@icon//:goloop_config_dir",
+        "@icon//cli:get_score_address_bmc",
+        "@javascore//bmv/near/verifier:javascore",
         "@com_github_icon_project_goloop//cmd/goloop:goloop",
         "@icon//:wait_for_channel_up",
         "@icon//:wait_until_icon_up",
@@ -85,55 +91,4 @@ genrule(
         "@icon//:wait_for_channel_up",
         "@icon//:wait_until_icon_up",
     ],
-)
-
-genrule(
-    name = "get_address_bmc",
-    outs = ["bmc_address.out"],
-    cmd = "$$(cat $(location @icon//cli:get_score_address_bmc))> $@",
-    executable = True,
-    local = True,
-    tools = [
-        "@icon//cli:deploy_bmc",
-        "@icon//cli:get_score_address_bmc",
-        "@javascore//bmc:javascore",
-        "@com_github_icon_project_goloop//cmd/goloop:goloop",
-        "@icon//:wait_for_channel_up",
-        "@icon//:wait_until_icon_up",
-    ],
-
-) 
-
-genrule(
-    name = "get_address_irc",
-    outs = ["irc_address.out"],
-    cmd = "$$(cat $(location @icon//cli:get_score_address_irc))> $@",
-    executable = True,
-    local = True,
-    tools = [
-        "@icon//cli:deploy_irc",
-        "@icon//cli:get_score_address_",
-        "@javascore//bmc:javascore",
-        "@com_github_icon_project_goloop//cmd/goloop:goloop",
-        "@icon//:wait_for_channel_up",
-        "@icon//:wait_until_icon_up",
-    ],
-
-) 
-
-genrule(
-    name = "get_address_nativecoin",
-    outs = ["nativecoin_address.out"],
-    cmd = "$$(cat $(location @icon//cli:get_score_address_nativecoin))> $@",
-    executable = True,
-    local = True,
-    tools = [
-        "@icon//cli:deploy_nativecoin",
-        "@icon//cli:get_score_address_nativecoin",
-        "@javascore//bmc:javascore",
-        "@com_github_icon_project_goloop//cmd/goloop:goloop",
-        "@icon//:wait_for_channel_up",
-        "@icon//:wait_until_icon_up",
-    ],
-
 )
