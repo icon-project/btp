@@ -45,7 +45,7 @@ def create_account(name):
     native.genrule(
         name = "create_account_%s" % name,
         outs = ["create_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) send node0 $$(cat $(location @near//cli:encode_public_key_%s)) 10 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json > $@" % name,
+        cmd = "$(execpath :near_binary) send node0 $$(cat $(location @near//cli:encode_public_key_%s)) 50 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json > $@" % name,
         executable = True,
         local = True,
         output_to_bindir = True,
@@ -56,3 +56,18 @@ def create_account(name):
             "@near//cli:rename_account_%s" % name,
         ],
     )
+
+def create_sub_account(name):
+    native.genrule(
+        name = "create_sub_account_%s" % name,
+        outs = ["create_sub_account_%s.out" % name],
+        cmd = "$(execpath :near_binary) create-account %s.node0 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; $(execpath :near_binary) send node0 %s.node0 50 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json ; echo '%s.node0' > $@" % (name,name,name) ,
+        executable = True,
+        local = True,
+        output_to_bindir = True,
+        tools = [
+            "@near//:wait_until_near_up",
+            "@near//cli:near_binary",
+        ],
+    )
+

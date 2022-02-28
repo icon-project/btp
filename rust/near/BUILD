@@ -51,3 +51,16 @@ genrule(
         "@btp//utils:wait_until_curl_script",
     ],
 )
+
+genrule(
+    name = "btp_address_near",
+    srcs = ["@near//cli:deploy_bmc"]
+    outs = ["btp_address_near.out"],
+    cmd = "echo \"btp://0x1.near/$$(cat $(location @near//cli:encode_public_key_bmc))\" > $@",
+    executable = True,
+    local = True,
+    tools = [
+        "@near//:wait_until_near_up",
+        "@near//cli:encode_public_key_bmc",
+    ],
+)
