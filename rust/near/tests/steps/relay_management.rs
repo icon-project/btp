@@ -223,8 +223,7 @@ pub static NON_EXISTING_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAY_PARAM: fn(Context)
 pub static BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS: fn(Context) =
     |context: Context| {
         let error = context.method_errors("get_relays");
-        // assert!(error.to_string().contains("BMCRevertNotExistsRelay"));
-        println!("{}", error);
+        assert!(error.to_string().contains("BMCRevertNotExistsLink"));
     };
 
 pub static NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM:
