@@ -9,8 +9,9 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "goloop_config_dir",
     outs = ["goloop_config_dir.out"],
-    cmd = "mkdir \"$$PWD/goloop_config\"; echo \"$$PWD/goloop_config\" > $@",
+    cmd = "mkdir -p \"$$PWD/goloop_config\"; echo ~/.goloop/goloop_config > $@",
     executable = True,
+    output_to_bindir = True,
     local = True,
 )
 
@@ -39,6 +40,7 @@ genrule(
             docker run -d -v $$(cat $(location :goloop_config_dir)):/goloop/config -p $$(cat $(location :open_port_icon)):9080 bazel:icon_node_image 
             cat $(location :open_port_icon) > \"$@\" """,
     executable = True,
+    output_to_bindir = True,
     tools = [
         ":goloop_config_dir",
         ":icon_node_image",

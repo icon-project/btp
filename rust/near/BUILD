@@ -56,7 +56,7 @@ genrule(
 
 genrule(
     name = "btp_address_near",
-    srcs = ["@near//cli:deploy_bmc"]
+    srcs = ["@near//cli:deploy_bmc"],
     outs = ["btp_address_near.out"],
     cmd = "echo \"btp://0x1.near/$$(cat $(location @near//cli:encode_public_key_bmc))\" > $@",
     executable = True,

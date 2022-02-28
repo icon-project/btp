@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "javascore",
     outs = ["bmv-near-verifier-0.1.0-optimized.jar"],
-    cmd = "gradle -q -b $$PWD/external/javascore/bmv/near/verifier/build.gradle build; cp $$PWD/external/javascore/bmv/near/verifier/build/libs/bmv-near-verifier-0.1.0-optimized.jar $@",
+    cmd = "gradle -q -b $$PWD/external/javascore/bmv/near/verifier/build.gradle optimizedJar; cp $$PWD/external/javascore/bmv/near/verifier/build/libs/bmv-near-verifier-0.1.0-optimized.jar $@",
     executable = True,
     local = True,
     tools = [
