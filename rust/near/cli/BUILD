@@ -20,7 +20,7 @@ nodejs_binary(
     ],
     entry_point = "@near_npm//:node_modules/near-cli/bin/near",
     env = {
-        "NODE_ENV": "local",
+        "NODE_ENV": "testnet",
     },
 )
 
@@ -72,12 +72,12 @@ genrule(
     executable = True,
     local = True,
     tools = [
+        "@icon//:wait_for_channel_up",
         "@near//:wait_until_near_up",
         "@near//cli:create_account_iconbmv",
-        "@near//cli:encode_public_key_iconbmv",
         "@near//cli:encode_public_key_bmc",
+        "@near//cli:encode_public_key_iconbmv",
         "@near//cli:near_binary",
-        "@icon//:wait_for_channel_up"
     ],
 )
 
@@ -127,19 +127,21 @@ genrule(
     executable = True,
     local = True,
     tools = [
-        "@near//cli:encode_public_key_iconbmv",
+        "@icon//:wait_for_channel_up",
         "@near//:wait_until_near_up",
         "@near//cli:encode_public_key_bmc",
+        "@near//cli:encode_public_key_iconbmv",
         "@near//cli:near_binary",
-        "@icon//:wait_for_channel_up"
     ],
-
 )
 
 genrule(
     name = "add_link_icon",
-    srcs = ["@near//cli:deploy_bmc","@near//cli:add_icon_verifier"],
-    outs = ["add_link_near.out"],
+    srcs = [
+        "@near//cli:deploy_bmc",
+        "@near//cli:add_icon_verifier",
+    ],
+    outs = ["add_link_icon.out"],
     cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
     executable = True,
     local = True,
@@ -147,6 +149,61 @@ genrule(
         "@icon//:btp_address",
         "@near//:wait_until_near_up",
         "@near//cli:encode_public_key_bmc",
+        "@near//cli:near_binary",
+    ],
+)
+
+genrule(
+    name = "set_link_icon",
+    srcs = [
+        "@near//cli:deploy_bmc",
+        "@near//cli:add_icon_verifier",
+        "@near//cli:add_link_icon",
+    ],
+    outs = ["set_link_icon.out"],
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) set_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\,\\"block_interval\\":6000\\,\\"max_aggregation\\":8\\,\\"delay_limit\\":100\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
+    executable = True,
+    local = True,
+    tools = [
+        "@icon//:btp_address",
+        "@near//:wait_until_near_up",
+        "@near//cli:encode_public_key_bmc",
+        "@near//cli:near_binary",
+    ],
+)
+
+genrule(
+    name = "add_service_bmc_near",
+    srcs = [
+        "@near//cli:deploy_bmc",
+        "@near//cli:add_icon_verifier",
+        "@near//cli:add_link_icon",
+        "@near//cli:set_link_icon",
+        "@near//cli:deploy_native_coin_bsh",
+    ],
+    outs = ["add_service_bmc_near.out"],
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_service \\'\\{\\"name\\":\\"nativecoin\\"\\,\\"service\\":\\"$$(cat $(location @near//cli:encode_public_key_nativecoinbsh))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@ """,
+    executable = True,
+    local = True,
+    tools = [
+        "@near//:wait_until_near_up",
+        "@near//cli:encode_public_key_bmc",
+        "@near//cli:encode_public_key_nativecoinbsh",
+        "@near//cli:near_binary",
+    ],
+)
+
+genrule(
+    name = "register_wrapped_coin_native_coin_bsh",
+    srcs = ["@near//cli:deploy_native_coin_bsh"],
+    outs = ["regsiter_new_wrapped_coin.out"],
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_nativecoinbsh)) register \\'\\{\\"coin\\":\\{\\"metadata\\":\\{\\"name\\":\\"WrappedICX\\"\\,\\"symbol\\":\\"wICX\\",\\"uri\\":\\"$$(cat $(location @near//cli:encode_public_key_nep141))\\"\\,\\"network\\":\\"0x1.icon\\"\\,\\"extras\\":\\{\\"spec\\":\\"ft-1.0.0\\",\\"icon\\":null,\\"reference\\":null,\\"reference_hash\\":null,\\"decimals\\":24\\}\\}\\}\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_nativecoinbsh)) --amount 6 >$@""",
+    executable = True,
+    local = True,
+    tools = [
+        "@near//:wait_until_near_up",
+        "@near//cli:encode_public_key_nativecoinbsh",
+        "@near//cli:encode_public_key_nep141",
         "@near//cli:near_binary",
     ],
 )
