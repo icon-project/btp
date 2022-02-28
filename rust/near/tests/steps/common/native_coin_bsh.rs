@@ -97,3 +97,6 @@ pub static USER_INVOKES_DEPOSIT_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
 
 pub static USER_INVOKES_TRANSFER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.transfer(context, 300000000000000);
+
+pub static USER_INVOKES_RECLAIM_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| NATIVE_COIN_BSH_CONTRACT.reclaim(context, 300000000000000);

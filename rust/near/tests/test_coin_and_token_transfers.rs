@@ -208,6 +208,23 @@ mod manage_token_transfer {
                 .when(CHARLIE_DEPOSITS_MORE_THAN_AVAILABLE_BALANCE)
                 .then(BSH_SHOULD_THROW_NOT_ENOUGH_BALANCE_ERROR_ON_DEPOSITING_AMOUNT);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_cannot_reclaim_more_than_failed_amount_to_deposit() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_HANDLES_RECEIVED_SERVICE_MESSAGE)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_FROM_NATIVE_COIN_BSH)
+                .and(CHARLIE_TRANSFERS_WRAPPED_NATIVE_COINS_INVALID_LINK_TO_CROSS_CHAIN)
+                .and(BSH_RECEIVES_AND_HANDLE_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_NATIVE_COIN_BSH)
+                .and(CHARLIE_INVOKES_RECLAIM_MORE_THAN_FAILED_AMOUNT_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SHOULD_THROW_NO_MINIMUM_REFUNDABLE_AMOUNT_ON_RECLAIMING_AMOUNT);
+        }
     }
 
     mod token_bsh_transfer {
@@ -282,6 +299,22 @@ mod manage_token_transfer {
                 .and(CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT)
                 .when(CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN)
                 .then(NATIVE_COIN_BSH_SHOULD_THROW_USER_CANNOT_TRANSFER_0_COIN_ERROR_ON_TRANSFERRING_COIN);
+        }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn user_cannot_reclaim_more_than_failed_amount_to_deposit() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(BALN_TOKEN_IS_REGISTERED_IN_TOKEN_BSH)
+                .and(TOKEN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(TOKEN_BSH_HANDLES_RECIEVED_SERVICE_MESSAGE)
+                .and(CHARLIE_WITHDRAWS_AMOUNT_TOKEN_BSH)
+                .and(CHARLIE_TRANSFERS_BALN_TOKENS_TO_INVALID_DESTINATION_IN_CROSS_CHAIN)
+                .and(BSH_RECEIVES_AND_HANDLE_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH)
+                .when(CHARLIE_INVOKES_RECLAIM_MORE_THAN_FAILED_AMOUNT_IN_TOKEN_BSH)
+                .then(TOKEN_BSH_SHOULD_THROW_NO_MINIMUM_REFUNDABLE_AMOUNT_ON_RECLAIMING_AMOUNT);
         }
     }
 }
