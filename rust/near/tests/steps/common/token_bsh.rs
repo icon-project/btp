@@ -41,7 +41,7 @@ pub static USER_INVOKES_REGISTER_NEW_TOKEN_IN_TOKEN_BSH: fn(Context) -> Context 
 pub static USER_INVOKES_GET_ACCUMLATED_FEES_IN_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.accumulated_fees(context);
 
-pub static USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH: fn(Context) -> Context =
+pub static USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH: fn(Context) -> Context =
     |context: Context| TOKEN_BSH_CONTRACT.token_id(context);
 
     pub static USER_INVOKES_GET_COIN_ID_ERRORS_IN_TOKEN_BSH: fn(Context) -> Context =

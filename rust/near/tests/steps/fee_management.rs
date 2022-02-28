@@ -180,7 +180,7 @@ pub static TOKEN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_SETTING_FEE_RATIO: fn(Co
         assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
     };
 
-pub static TOKEN_NAME_IS_PROVIDED_AS_GET_TOKEN_ID_PARAM: fn(Context) -> Context =
+pub static WNEAR_TOKEN_NAME_IS_PROVIDED_AS_GET_TOKEN_ID_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "token_id",
@@ -204,8 +204,7 @@ pub static INVALID_TOKEN_NAME_IS_PROVIDED_AS_GET_TOKEN_ID_PARAM: fn(Context) -> 
 
 pub static USER_INVOKES_TOKEN_ID_IN_TOKEN_BSH: fn(Context) -> Context = |mut context: Context| {
     context
-        .pipe(TOKEN_NAME_IS_PROVIDED_AS_GET_TOKEN_ID_PARAM)
-        .pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        .pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
 };
 
 pub static USER_INVOKES_TOKEN_ID_FOR_UNREGISTERED_TOKEN: fn(Context) -> Context =
@@ -219,7 +218,7 @@ pub static BOB_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         context
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
-            .pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+            .pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static TOKEN_ID_SHOULD_BE_PRESENT_FOR_THE_REGISTERED_TOKEN: fn(Context) = |context: Context| {

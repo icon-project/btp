@@ -82,7 +82,7 @@ pub static USER_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -> Con
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH: fn(Context) -> Context =
@@ -242,7 +242,7 @@ pub static USER_INVOKES_GET_TOKEN_ID_FOR_BALN_FROM_TOKEN_BSH: fn(Context) -> Con
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static BALN_TOKEN_ID_SHOULD_BE_PRESENT_IN_TOKEN_TOKEN_BSH: fn(Context) = |context: Context| {
@@ -290,7 +290,7 @@ pub static USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH: fn(Context) -> Co
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static CHARLIE_INVOKES_FT_TRANSFER_BALCE_OF: fn(Context) -> Context = |mut context: Context| {
@@ -338,7 +338,7 @@ pub static USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN: fn(Context) -> Context =
@@ -373,7 +373,7 @@ pub static CHARLIE_INVOKES_WNEAR_TOKEN_BALANCE_IN_TOKEN_BSH: fn(Context) -> Cont
             .pipe(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
     };
 
-pub static BALN_TOKEN_METADATA_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH:
+pub static BALN_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH:
     fn(Context) -> Context = |mut context: Context| {
     context.add_method_params(
         "register",
