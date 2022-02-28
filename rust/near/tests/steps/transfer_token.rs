@@ -373,8 +373,9 @@ pub static CHARLIE_INVOKES_WNEAR_TOKEN_BALANCE_IN_TOKEN_BSH: fn(Context) -> Cont
             .pipe(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
     };
 
-pub static BALN_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH:
-    fn(Context) -> Context = |mut context: Context| {
+pub static BALN_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH: fn(
+    Context,
+) -> Context = |mut context: Context| {
     context.add_method_params(
         "register",
         json!({
@@ -396,4 +397,79 @@ pub static BALN_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH:
         }),
     );
     context
+};
+
+pub static CHARLIE_TRANSFERS_BALN_TOKENS_TO_INVALID_DESTINATION_IN_CROSS_CHAIN: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    let mut context = context.pipe(USER_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT);
+
+    context.add_method_params(
+            "transfer",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "destination": BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "amount": "200"
+            }),
+        );
+
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+        .pipe(USER_INVOKES_TRANSFER_IN_TOKEN_BSH)
+};
+
+pub static BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH:
+    fn(Context) -> Context = |mut context: Context| {
+    let destination =
+        BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "token".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(TokenServiceMessage::new(
+            TokenServiceType::ResponseHandleService {
+                code: 1,
+                message: "Transfer Failed".to_string(),
+            },
+        )),
+    );
+
+    let serialized_message = BtpMessage::try_from(btp_message).unwrap();
+
+    context.add_method_params(
+        "handle_btp_message",
+        json!({
+            "message": String::from(&serialized_message),
+        }),
+    );
+    context
+};
+
+pub static CHARLIE_INVOKES_RECLAIM_MORE_THAN_FAILED_AMOUNT_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "reclaim",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "amount": "200"
+            }),
+        );
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_RECLAIM_IN_TOKEN_BSH)
+    };
+
+pub static TOKEN_BSH_SHOULD_THROW_NO_MINIMUM_REFUNDABLE_AMOUNT_ON_RECLAIMING_AMOUNT: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("reclaim");
+        assert!(error.contains("BSHRevertNotMinimumRefundable"));
+    };
+
+pub static BSH_RECEIVES_AND_HANDLE_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH:
+    fn(Context) -> Context = |mut context: Context| {
+    context
+        .pipe(BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH)
+        .pipe(ALICE_INVOKES_HANDLE_SERVICE_MESSAGE_IN_TOKEN_BSH)
 };
