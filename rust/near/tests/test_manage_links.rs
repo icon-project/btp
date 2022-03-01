@@ -15,7 +15,7 @@ mod manage_links {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
                 .when(ALICE_INVOKES_ADD_LINK_IN_BMC)
                 .then(ICON_LINK_SHOULD_BE_ADDED_TO_THE_LIST_OF_LINKS);
@@ -28,7 +28,7 @@ mod manage_links {
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
                 .when(CHUCK_INVOKES_ADD_LINK_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_ADDING_LINK);
@@ -84,7 +84,7 @@ mod manage_links {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_REMOVE_LINK_PARAM)
                 .when(ALICE_INVOKES_REMOVE_LINK_IN_BMC)
                 .then(BMC_SHOULD_THROW_LINK_NOT_EXISTING_ERROR);
@@ -133,7 +133,7 @@ mod manage_links {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
                 .and(INVALID_LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
                 .when(ALICE_INVOKES_ADD_LINK_IN_BMC)
                 .then(BMC_SHOULD_THROW_INVALID_PARAM_ERROR_ON_ADDING_LINK);
@@ -146,14 +146,12 @@ mod manage_links {
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
                 .and(BMC_CONTRACT_IS_NOT_OWNED_BY_CHUCK)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
-                .and(ICON_LINK_IS_ADDED)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_REMOVE_LINK_PARAM)
                 .when(CHUCK_INVOKES_REMOVE_LINK_IN_BMC)
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_LINK);
         }
 
-        #[ignore]
         #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_set_max_aggregation_to_link_status() {
             Kitten::given(NEW_CONTEXT)

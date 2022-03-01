@@ -85,6 +85,8 @@ pub static USER_INVOKES_REMOVE_RELAY_IN_BMC: fn(Context) -> Context =
 pub static USER_INVOKES_GET_RELAYS_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.get_relays(context);
 
+pub static USER_INVOKES_GET_RELAYS_IN_BMC_CONTRACT: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.get_relays_error(context);
 /*  * * * * * * * * * * * *
 * * * * * * * * * * * * * *
 *   Verifiers     * * * * *
@@ -144,5 +146,5 @@ pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.handle_relay_message(context, 300_000_000_000_000);
 
 pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC: fn(Context) -> Context =
-    |context: Context| BMC_CONTRACT.handle_relay_message_bmv_callback(context);
+    |context: Context| BMC_CONTRACT.handle_relay_message_bmv_callback_mockable(context, 300_000_000_000_000);
 

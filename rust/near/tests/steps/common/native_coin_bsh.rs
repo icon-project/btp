@@ -44,7 +44,7 @@ pub static NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED: fn(Context) -> 
 pub static USER_INVOKES_SET_FEE_RATIO_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.set_fee_ratio(context);
 
-pub static USER_INVOKES_REGISTER_NEW_TOKEN_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+pub static USER_INVOKES_REGISTER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.register(context);
 
 pub static USER_INVOKES_GET_ACCUMLATED_FEES_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
@@ -97,3 +97,6 @@ pub static USER_INVOKES_DEPOSIT_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
 
 pub static USER_INVOKES_TRANSFER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |context: Context| NATIVE_COIN_BSH_CONTRACT.transfer(context, 300000000000000);
+
+pub static USER_INVOKES_RECLAIM_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |context: Context| NATIVE_COIN_BSH_CONTRACT.reclaim(context, 300000000000000);

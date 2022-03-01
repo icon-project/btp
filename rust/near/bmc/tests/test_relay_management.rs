@@ -2,7 +2,7 @@ use bmc::BtpMessageCenter;
 use near_sdk::{serde_json::json, testing_env, AccountId, VMContext};
 pub mod accounts;
 use accounts::*;
-use libraries::types::{Address, BTPAddress};
+use libraries::types::{Address, BTPAddress, VerifierStatus};
 
 //TODO
 fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId) -> VMContext {
@@ -281,8 +281,30 @@ fn remove_relay_non_existing_relay() {
     );
 }
 
-#[ignore]
 #[test]
 fn rotate_relay() {
-    unimplemented!()
+    let context = |v: AccountId| (get_context(vec![], false, v));
+    testing_env!(context(alice()));
+    let mut contract = BtpMessageCenter::new("0x1.near".into(), 1);
+    let link =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+
+    contract.add_verifier(link.network_address().unwrap(), verifier());
+    contract.add_link(link.clone());
+    contract.set_link_bmv_callback(link.clone(), 1500, 71, 15, VerifierStatus::new(0, 0, 0));
+    contract.add_relays(
+        link.clone(),
+        vec![
+            "verifier_1.near".parse::<AccountId>().unwrap(),
+            "verifier_2.near".parse::<AccountId>().unwrap(),
+            "verifier_3.near".parse::<AccountId>().unwrap(),
+            "verifier_4.near".parse::<AccountId>().unwrap(),
+            "verifier_5.near".parse::<AccountId>().unwrap(),
+            "verifier_6.near".parse::<AccountId>().unwrap(),
+            "verifier_7.near".parse::<AccountId>().unwrap(),
+        ],
+    );
+
+    let mut link_property = contract.get_link(link.clone());
+    println!("{:?}", link_property.rotate_relay(7010, true));
 }

@@ -82,7 +82,7 @@ pub static USER_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -> Con
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH: fn(Context) -> Context =
@@ -90,7 +90,7 @@ pub static CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH: fn(Context) -> Context =
         context.add_method_params(
             "balance_of",
             json!({
-                "owner_id": context.accounts().get("charlie").id().to_string() ,
+                "owner_id": context.accounts().get("charlie").id().to_string(),
                 "token_id": context.method_responses("token_id") ,
             }),
         );
@@ -125,7 +125,6 @@ pub static BOB_INVOKES_FT_TRANSFER_BALCE_OF_CHARLIE: fn(Context) -> Context =
         context.add_method_params(
             "ft_balance_of",
             json!({
-                // "account_id":  context.accounts().get("tokenbsh").id(),
                 "account_id":  context.contracts().get("tokenbsh").id(),
             }),
         );
@@ -243,7 +242,7 @@ pub static USER_INVOKES_GET_TOKEN_ID_FOR_BALN_FROM_TOKEN_BSH: fn(Context) -> Con
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
 pub static BALN_TOKEN_ID_SHOULD_BE_PRESENT_IN_TOKEN_TOKEN_BSH: fn(Context) = |context: Context| {
@@ -291,26 +290,24 @@ pub static USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH: fn(Context) -> Co
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
 
-pub static CHARLIE_INVOKES_FT_TRANSFER_BALCE_OF: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "ft_balance_of",
-            json!({
-                "account_id":  context.accounts().get("charlie").id(),
-            }),
-        );
+pub static CHARLIE_INVOKES_FT_TRANSFER_BALCE_OF: fn(Context) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "ft_balance_of",
+        json!({
+            "account_id":  context.accounts().get("charlie").id(),
+        }),
+    );
 
-        context
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
-            .pipe(USER_INVOKES_FT_BALANCE_OF_CALL_IN_WNEAR)
-    };
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+        .pipe(USER_INVOKES_FT_BALANCE_OF_CALL_IN_WNEAR)
+};
 
-pub static BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_AFTER_DEPOSIT: fn(
-        Context,
-    ) = |context: Context| {
+pub static BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_AFTER_DEPOSIT: fn(Context) =
+    |context: Context| {
         let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
         assert_eq!(balance, "500");
     };
@@ -332,9 +329,7 @@ pub static CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT: fn(Context) -> 
             .pipe(USER_INVOKES_FT_TRANSFER_CALL_IN_WNEAR)
     };
 
-  
-
-    pub static USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -> Context =
+pub static USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "token_id",
@@ -343,13 +338,12 @@ pub static CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT: fn(Context) -> 
             }),
         );
 
-        context.pipe(USER_INVOKES_GET_COIN_ID_IN_TOKEN_BSH)
+        context.pipe(USER_INVOKES_GET_TOKEN_ID_IN_TOKEN_BSH)
     };
-    
-    pub static CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN: fn(Context) -> Context =
+
+pub static CHARLIE_TRANSFERS_0_NATIVE_NEAR_TOKENS_TO_CROSS_CHAIN: fn(Context) -> Context =
     |mut context: Context| {
-        let mut context =
-            context.pipe(USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT);
+        let mut context = context.pipe(USER_INVOKES_GET_NEAR_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT);
 
         context.add_method_params(
             "transfer",
@@ -364,3 +358,118 @@ pub static CHARLIE_DEPOSITS_WNEAR_TO_CHARLIES_TOKEN_BSH_ACCOUNT: fn(Context) -> 
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
             .pipe(USER_INVOKES_TRANSFER_IN_TOKEN_BSH)
     };
+
+pub static CHARLIE_INVOKES_BALN_TOKEN_BALANCE_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(USER_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT)
+            .pipe(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
+    };
+
+pub static CHARLIE_INVOKES_WNEAR_TOKEN_BALANCE_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(USER_INVOKES_GET_TOKEN_ID_FOR_WNEAR_FROM_TOKEN_BSH)
+            .pipe(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH)
+    };
+
+pub static BALN_TOKEN_METADATA_IS_PROVIDED_AS_REGISTER_TOKEN_PARAM_IN_TOKEN_BSH: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    context.add_method_params(
+        "register",
+        json!({
+            "token" : {
+                "metadata": {
+                    "name": "BALN",
+                    "symbol": "baln",
+                    "uri":  context.contracts().get("nep141service").id(),
+                    "network": "0x1.icon",
+                    "extras": {
+                        "spec": "ft-1.0.0",
+                        "icon" : null,
+                        "reference": null,
+                        "reference_hash": null,
+                        "decimals": 24
+                    },
+                }
+            }
+        }),
+    );
+    context
+};
+
+pub static CHARLIE_TRANSFERS_BALN_TOKENS_TO_INVALID_DESTINATION_IN_CROSS_CHAIN: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    let mut context = context.pipe(USER_INVOKES_GET_TOKEN_ID_FROM_TOKEN_BSH_CONTRACT);
+
+    context.add_method_params(
+            "transfer",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "destination": BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+                 "amount": "200"
+            }),
+        );
+
+    context
+        .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+        .pipe(USER_INVOKES_TRANSFER_IN_TOKEN_BSH)
+};
+
+pub static BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH:
+    fn(Context) -> Context = |mut context: Context| {
+    let destination =
+        BTPAddress::new("btp://0x2.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "token".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(TokenServiceMessage::new(
+            TokenServiceType::ResponseHandleService {
+                code: 1,
+                message: "Transfer Failed".to_string(),
+            },
+        )),
+    );
+
+    let serialized_message = BtpMessage::try_from(btp_message).unwrap();
+
+    context.add_method_params(
+        "handle_btp_message",
+        json!({
+            "message": String::from(&serialized_message),
+        }),
+    );
+    context
+};
+
+pub static CHARLIE_INVOKES_RECLAIM_MORE_THAN_FAILED_AMOUNT_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "reclaim",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "amount": "200"
+            }),
+        );
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_RECLAIM_IN_TOKEN_BSH)
+    };
+
+pub static TOKEN_BSH_SHOULD_THROW_NO_MINIMUM_REFUNDABLE_AMOUNT_ON_RECLAIMING_AMOUNT: fn(Context) =
+    |context: Context| {
+        let error = context.method_errors("reclaim");
+        assert!(error.contains("BSHRevertNotMinimumRefundable"));
+    };
+
+pub static BSH_RECEIVES_AND_HANDLE_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH:
+    fn(Context) -> Context = |mut context: Context| {
+    context
+        .pipe(BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH)
+        .pipe(ALICE_INVOKES_HANDLE_SERVICE_MESSAGE_IN_TOKEN_BSH)
+};

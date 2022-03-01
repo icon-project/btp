@@ -20,7 +20,7 @@ mod manage_relays {
             .and(RELAY_2_ACCOUNT_IS_CREATED)
             .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM)
             .when(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
-            .then(ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS);
+            .then(RELAY_1_AND_RELAY_2_SHOULD_BE_ADDED_TO_THE_LIST_OF_RELAYS);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -55,7 +55,7 @@ mod manage_relays {
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(CHUCKS_ACCOUNT_IS_CREATED)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
+                .and(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
                 .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(RELAY_1_ACCOUNT_IS_CREATED)
                 .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM)
@@ -68,12 +68,10 @@ mod manage_relays {
             Kitten::given(NEW_CONTEXT)
                 .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
                 .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
-                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
-                .and(VERIFIER_FOR_ICON_IS_ADDED)
                 .and(ICON_LINK_IS_PRESENT_IN_BMC)
                 .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
                 .and(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAYS_PARAM)
-                .when(ALICE_INVOKES_GET_RELAY_IN_BMC)
+                .when(USER_INVOKES_GET_RELAYS_IN_BMC)
                 .then(LIST_OF_RELAYS_SHOULD_EXIST_FOR_THE_GIVEN_LINK);
         }
 
@@ -101,7 +99,7 @@ mod manage_relays {
                 .and(RELAY_2_ACCOUNT_IS_CREATED)
                 .and(ICON_LINK_ADDRESS_AND_RELAY_1_ACCOUNT_ID_AND_RELAY_2_ACCOUNT_ID_ARE_PROVIDED_AS_ADD_RELAYS_PARAM)
                 .when(ALICE_INVOKES_ADD_RELAYS_IN_BMC)
-                .then(ADDED_RELAYS_SHOULD_BE_IN_THE_LIST_OF_RELAYS);
+                .then(RELAY_1_AND_RELAY_2_SHOULD_BE_ADDED_TO_THE_LIST_OF_RELAYS);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -152,7 +150,7 @@ mod manage_relays {
                 .and(RELAY_1_ACCOUNT_IS_CREATED)
                 .and(ICON_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_ADD_RELAY_PARAM)
                 .when(ALICE_INVOKES_ADD_RELAY_IN_BMC)
-                .then(ADDED_RELAY_SHOULD_BE_IN_THE_LIST_OF_RELAYS);
+                .then(RELAY_1_SHOULD_BE_ADDED_TO_THE_LIST_OF_RELAYS);
         }
 
         #[tokio::test(flavor = "multi_thread")]
@@ -162,8 +160,8 @@ mod manage_relays {
               .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
               .and(ICON_LINK_IS_PRESENT_IN_BMC)
               .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
-              .and(NON_EXISTING_LINK_ADDRESS_PROVIDED_AS_GET_RELAY_PARAM)
-              .when(USER_INVOKES_GET_RELAY_METHOD_WITH_NON_EXISTING_LINK)
+              .and(NON_EXISTING_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAY_PARAM)
+              .when(USER_INVOKES_GET_RELAYS_IN_BMC_CONTRACT)
               .then(BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS);
           }
 
@@ -174,7 +172,7 @@ mod manage_relays {
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(ICON_LINK_IS_PRESENT_IN_BMC)
             .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
-            .and(NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_IS_PROVIDED_AS_REMOVE_RELAY_PARAM_IN_BMC)
+            .and(NON_EXISTING_LINK_ADDRESS_AND_RELAY_1_ARE_PROVIDED_AS_REMOVE_RELAY_PARAM)
             .when(BMC_OWNER_INVOKES_REMOVE_RELAY_IN_BMC)
             .then(BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_REMOVING_RELAY);
           }

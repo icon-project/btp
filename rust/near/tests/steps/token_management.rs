@@ -88,17 +88,6 @@ pub static NEW_URI_IS_PROVIDED_AS_UPDATE_URI_PARAM: fn(Context) -> Context =
         context
     };
 
-pub static FEE_NUMERATOR_IS_PROVIDED_AS_SET_FEE_RATIO_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        context.add_method_params(
-            "set_fee_ratio",
-            json!({
-                "fee_numerator":"valueinu64"
-            }),
-        );
-        context
-    };
-
 pub static FIXED_FEE_IS_PROVIDED_AS_SET_FIXED_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
@@ -210,18 +199,6 @@ pub static BSH_SHOULD_THROW_FAIL_TO_TRANSFER_ERROR: fn(Context) -> Context =
 
 pub static BSH_OWNER_INVOKES_NATIVE_COIN_TRANSFER_TO_UNSUPPORTED_NETWORK: fn(Context) -> Context =
     |mut context: Context| context;
-
-pub static CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM: fn(Context) -> Context =
-    |mut context: Context| {
-        let charlie = context.accounts().get("charlie").to_owned();
-        context.add_method_params(
-            "add_owner",
-            json!({
-                "owner": charlie.account_id()
-            }),
-        );
-        context
-    };
 
 pub static ACCOUNT_ID_IS_PROVIDED_AS_REMOVE_OWNER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
