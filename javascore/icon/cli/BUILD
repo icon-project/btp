@@ -96,7 +96,7 @@ genrule(
     srcs = [
         "@near//:btp_address_near",
         "@icon//:goloop_config_dir",
-        "@icon//cli:add_near_verifier_bmc"
+        "@icon//cli:add_near_verifier_bmc",
     ],
     outs = ["add_link_icon.out"],
     cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc))  --method addLink --param _link=$$(cat $(location @near//:btp_address_near)) --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@ """,
@@ -117,7 +117,7 @@ genrule(
         "@near//:btp_address_near",
         "@icon//:goloop_config_dir",
         "@icon//cli:get_score_address_bmc",
-        "@icon//cli:get_score_address_near_bmv"
+        "@icon//cli:get_score_address_near_bmv",
     ],
     outs = ["add_near_verifier_bmc.out"],
     cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon  sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addVerifier --param _net=\"0x1.near\" --param _addr=\"$$(cat $(location @icon//cli:get_score_address_near_bmv))\" --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@""",
@@ -126,5 +126,56 @@ genrule(
         "@icon//:wait_for_channel_up",
         "@icon//:wait_until_icon_up",
     ],
+)
 
+genrule(
+    name = "set_link_rotate_term_icon",
+    srcs = [
+        "@near//:btp_address_near",
+        "@icon//:goloop_config_dir",
+        "@icon//cli:add_link_icon",
+    ],
+    outs = ["set_link_rotate_term_icon.out"],
+    cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc))  --method setLinkRotateTerm --param _link=$$(cat $(location @near//:btp_address_near)) --param _block_interval=0x1770 --param _max_agg=0x08 --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@ """,
+    executable = True,
+    local = True,
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+        "@icon//:wait_for_channel_up",
+        "@icon//:wait_until_icon_up",
+        "@icon//cli:get_score_address_bmc",
+        "@javascore//bmc:javascore",
+    ],
+)
+
+genrule(
+    name = "set_link_delay_limit_icon",
+    srcs = [
+        "@near//:btp_address_near",
+        "@icon//:goloop_config_dir",
+        "@icon//cli:add_link_icon",
+    ],
+    outs = ["set_link_delay_limit_icon.out"],
+    cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method setLinkDelayLimit --param _link=$$(cat $(location @near//:btp_address_near)) --param _value=4 --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@ """,
+    executable = True,
+    local = True,
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+        "@icon//:wait_for_channel_up",
+        "@icon//:wait_until_icon_up",
+        "@icon//cli:get_score_address_bmc",
+        "@javascore//bmc:javascore",
+    ],
+)
+
+genrule(
+    name = "set_link_icon",
+    srcs = [
+        "@icon//cli:set_link_rotate_term_icon",
+        "@icon//cli:set_link_delay_limit_icon"
+    ],
+    outs = ["set_link_icon.out"],
+    cmd = "echo 'set_link_completed' >$@",
+    executable = True,
+    local = True,
 )
