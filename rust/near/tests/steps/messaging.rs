@@ -41,9 +41,8 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
         <Vec<u8>>::from(bmc_service_message.clone()),
         None,
     );
-    // let serialize_message = BtpMessage::try_from(btp_message).unwrap();
 
-    let verifier_response = VerifierResponse::Success {
+    let verifier_response = VerifierResponse {
         messages: vec![btp_message],
         verifier_status: VerifierStatus::new(10, 10, 10),
         previous_height: 10,
@@ -57,18 +56,6 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
         }),
     );
     context
-};
-
-pub static RELAY_MESSAGES_ARE_HANDLED: fn(Context) = |context: Context| {
-    let context = context
-        .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
-        .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC);
-    let response = context.method_errors("handle_relay_message_bmv_callback");
-
-    // let expected = json!([]);
-
-    // assert_eq!(response,expected);
-    println!("{:?}", response);
 };
 
 pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM_FOR_NON_EXISTING_LINK: fn(Context) -> Context = |mut context: Context| {

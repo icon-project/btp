@@ -7,17 +7,27 @@ mod manage_routes {
     use steps::*;
 
     #[tokio::test(flavor = "multi_thread")]
-    async fn bmc_owner_can_remove_a_registered_route_to_the_next_bmc() {
+    async fn bmc_owner_can_add_a_route_to_the_linked_bmc_of_the_connected_cross_chain_bmc() {
         Kitten::given(NEW_CONTEXT)
             .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
             .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
             .and(ICON_LINK_IS_PRESENT_IN_BMC)
             .and(BSC_LINK_ADDRESS_AS_DESTINATION_AND_ICON_LINK_ADDRESS_AS_LINK_ARE_PROVIDED_AS_ADD_ROUTE_PARAM)
-            .and(ALICE_INVOKES_ADD_ROUTE_IN_BMC)
+            .when(ALICE_INVOKES_ADD_ROUTE_IN_BMC)
+            .then(BSC_LINK_ADDRESS_SHOULD_BE_ADDED_TO_THE_LIST_OF_ROUTES);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn bmc_owner_can_remove_a_registered_route_to_the_next_bmc() {
+        Kitten::given(NEW_CONTEXT)
+            .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+            .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+            .and(ROUTE_TO_BSC_IS_PRESENT_IN_BMC)
             .and(BSC_LINK_ADDRESS_IS_PROVIDED_AS_REMOVE_ROUTE_PARAM)
             .when(ALICE_INVOKES_REMOVE_ROUTE_IN_BMC)
-            .then(THE_REMOVED_ROUTE_SHOULD_NOT_BE_PRESENT_IN_THE_LIST_OF_ROUTES);
+            .then(THE_REMOVED_ROUTE_SHOULD_NOT_BE_IN_THE_LIST_OF_ROUTES);
     }
 
     #[tokio::test(flavor = "multi_thread")]

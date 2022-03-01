@@ -32,12 +32,15 @@ pub use messaging::*;
 mod fee_management;
 pub use fee_management::*;
 
-mod native_coin_bsh_management;
-pub use native_coin_bsh_management::*;
+mod nativecoin_management;
+pub use nativecoin_management::*;
 
-mod native_coin_transfer_management;
-pub use native_coin_transfer_management::*;
+// mod token_management;
+// pub use token_management::*;
+
+mod transfer_nativecoin;
+pub use transfer_nativecoin::*;
 
 
-mod token_bsh_transfer_management;
-pub use token_bsh_transfer_management::*;
+mod transfer_token;
+pub use transfer_token::*;

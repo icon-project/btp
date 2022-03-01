@@ -9,7 +9,9 @@ use serde_json::{from_value, json, Value};
 use std::convert::TryFrom;
 use test_helper::types::Context;
 
-pub static COIN_REGISTERED_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
+crate::user_call!(REGISTER_IN_NATIVE_COIN_BSH; NATIVE_COIN_BSH_OWNER, ALICE, BOB, CHUCK, CHARLIE);
+
+pub static WRAPPED_ICX_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
     let context = context.pipe(USER_INVOKES_GET_COINS_IN_NATIVE_COIN_BSH);
     let coins = context.method_responses("coins");
 
@@ -21,34 +23,42 @@ pub static COIN_REGISTERED_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
     assert_eq!(coins, expected);
 };
 
-pub static NEW_WRAPPED_COIN_IS_REGISTERED_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+pub static WRAPPED_ICX_IS_REGISTERED_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
         (context)
-            .pipe(NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM)
+            .pipe(WRAPPED_ICX_METADATA_IS_PROVIDED_AS_REGISTER_PARAM)
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_BOB)
             .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
     };
 
-pub static NEW_COIN_NAME_IS_PROVIDED_AS_REGISTER_WARPPED_COIN_PARAM: fn(Context) -> Context =
+pub static WRAPPED_ICX_METADATA_IS_PROVIDED_AS_REGISTER_PARAM: fn(Context) -> Context =
     |mut context: Context| {
+        let account = context.contracts().get("nep141service").id().clone();
         context.add_method_params(
             "register",
             json!({
-                "coin": {
+                "coin" : {
                     "metadata": {
                         "name": "WrappedICX",
-                        "symbol": "wicx",
-                        "uri": null,
+                        "symbol": "nICX",
+                        "uri":  account.to_string(),
                         "network": "0x1.icon",
-                        "extras" : null
+                        "extras": {
+                            "spec": "ft-1.0.0",
+                            "icon" : null,
+                            "reference": null,
+                            "reference_hash": null,
+                            "decimals": 24
+                        },
                     }
-                },
+                }
             }),
         );
+
         context
     };
 
-pub static REGSITERED_COIN_IDS_ARE_QUERIED: fn(Context) = |context: Context| {
+pub static USER_SHOULD_GET_THE_QUERIED_COIN_ID: fn(Context) = |context: Context| {
     let coin_id = context.method_responses("coin_id");
 
     let expected = json!([
@@ -85,13 +95,6 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGSITERING_NEW_CO
         let error = context.method_errors("register");
 
         assert!(error.contains("BSHRevertNotExistsPermission"));
-    };
-
-pub static CHARLIE_INVOKES_REGISTER_NEW_WRAPPED_COIN_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
-    |mut context: Context| {
-        (context)
-            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
-            .pipe(USER_INVOKES_REGISTER_NEW_COIN_IN_NATIVE_COIN_BSH)
     };
 
 pub static NATIVE_COIN_BSH_SHOULD_THROW_ALREADY_EXISTING_ERROR_ON_REGISTERING_COIN: fn(Context) =
@@ -134,7 +137,7 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN: 
         assert!(error.to_string().contains("BSHRevertNotExistsPermission"));
     };
 
-    pub static EXISTING_COIN_IS_PROVIDED_AS_REGISTER_COIN_PARAM: fn(Context) -> Context =
+pub static EXISTING_COIN_IS_PROVIDED_AS_REGISTER_COIN_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "register",
@@ -153,41 +156,15 @@ pub static NATIVE_COIN_BSH_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REGISTERING_COIN: 
         context
     };
 
-    pub static REGSITERED_COIN_SHOULD_BE_PRESENT: fn(Context) = |context: Context| {
-        let coins = context.method_responses("coins");
+pub static USER_SHOULD_GET_THE_REGISTERED_COIN: fn(Context) = |context: Context| {
+    let coins = context.method_responses("coins");
+    let expetced = json!([{"name":"NEAR","network":"0x1.near","symbol":"NEAR"}]);
+    assert_eq!(expetced, coins);
+};
 
-        let expetced = json!([{"name":"NEAR","network":"0x1.near","symbol":"NEAR"}]);
-    
-        assert_eq!(expetced, coins);
-    
-       
-    };
-
-
-    pub static WRAPPED_ICX_PROVIDED_AS_REGSITER_PARAM_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+pub static BOB_ADDED_CHARLIE_AS_A_NEW_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
     |mut context: Context| {
-        let account = context.contracts().get("nep141service").id().clone();
-
-        context.add_method_params(
-            "register",
-            json!({
-                "coin" : {
-                    "metadata": {
-                        "name": "WrappedICX",
-                        "symbol": "nICX",
-                        "uri":  account.to_string(),
-                        "network": "0x1.icon",
-                        "extras": {
-                            "spec": "ft-1.0.0",
-                            "icon" : null,
-                            "reference": null,
-                            "reference_hash": null,
-                            "decimals": 24
-                        },
-                    }
-                }
-            }),
-        );
-
         context
+            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
     };
