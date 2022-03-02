@@ -144,22 +144,26 @@ impl Link {
             let (rotate_count, base_height) = match has_message {
                 true => {
                     let mut guess_height = self.rx_height
-                        + ((last_height - self.rx_height_src()).div_ceil(self.scale() - 1)).deref();
+                        + ((last_height - self.rx_height_src()).div_ceil(self.scale())).deref() - 1;
                     if guess_height > current_height {
                         guess_height = current_height;
                     };
 
                     let mut rotate_count = {
-                        let mut count = guess_height - self.rotate_height;
+                        let mut count = if guess_height < self.rotate_height {
+                            self.rotate_height - guess_height
+                        } else {
+                            guess_height - self.rotate_height
+                        };
                         let rotate_count = count.div_ceil(rotate_term);
                         rotate_count.deref().clone()
                     };
-                    let mut base_height = self.rotate_height + (rotate_count * rotate_term);
-                    let skip_count = (current_height - guess_height)
+                    let mut base_height = self.rotate_height + (rotate_count  * rotate_term);
+                    let mut skip_count = (current_height - guess_height)
                         .div_ceil(self.delay_limit)
-                        .deref()
-                        - 1;
+                        .deref().to_owned();
                     if skip_count > 0 {
+                        skip_count = skip_count -1 ;
                         rotate_count.add(skip_count).unwrap();
                         base_height = current_height;
                     }
@@ -168,12 +172,17 @@ impl Link {
                     (rotate_count, base_height)
                 }
                 false => {
-                    let mut count = current_height - self.rotate_height;
+                    let mut count = if current_height < self.rotate_height {
+                        self.rotate_height - current_height
+                    } else {
+                        current_height - self.rotate_height
+                    };
                     let rotate_count = count.div_ceil(rotate_term);
                     let base_height = self.rotate_height + ((*rotate_count - 1) * rotate_term);
                     (*rotate_count, base_height)
                 }
             };
+
             if rotate_count > 0 {
                 self.rotate_height_mut()
                     .add(base_height + rotate_term)
