@@ -149,13 +149,13 @@ genrule(
 )
 
 genrule(
-    name = "set_link_near",
+    name = "set_icon_link",
     srcs = [
         "@near//cli:deploy_bmc",
         "@near//cli:add_icon_verifier",
         "@near//cli:add_link_icon",
     ],
-    outs = ["set_link_near.out"],
+    outs = ["set_icon_link.out"],
     cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) set_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\,\\"block_interval\\":6000\\,\\"max_aggregation\\":8\\,\\"delay_limit\\":100\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
     executable = True,
     local = True,
