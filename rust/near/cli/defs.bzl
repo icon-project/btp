@@ -76,7 +76,7 @@ def configure_link(name):
     name = "add_%s_verifier" % name,
     srcs = ["@near//cli:deploy_%s_bmv" % name],
     outs = ["add_%s_verifier.out" % name],
-    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % name,
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % (name,name),
     executable = True,
     local = True,
     tools = [

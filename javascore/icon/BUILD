@@ -85,6 +85,7 @@ genrule(
     local = True,
     tools = [
         "@icon//cli:get_score_address_bmc",
+        "@icon//:network_address"
     ],
 )
 
