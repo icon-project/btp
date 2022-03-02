@@ -381,7 +381,7 @@ func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[str
 	if err = json.Unmarshal(b, &s.opt); err != nil {
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
-	s.c = NewClient(endpoint, dst.ContractAddress(), l)
+	s.c = NewClient(endpoint, dst.Account(), l)
 
 	return s
 }

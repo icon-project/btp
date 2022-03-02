@@ -46,7 +46,7 @@ func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]inte
 	if err = json.Unmarshal(b, &r.opt); err != nil {
 		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
 	}
-	r.c = NewClient(endpoint, src.ContractAddress(), l)
+	r.c = NewClient(endpoint, src.Account(), l)
 	paraId, err := r.c.subClient.GetParachainId()
 	if err != nil {
 		l.Panicf("fail to get parachainId %v", err)
@@ -137,7 +137,7 @@ func (r *Receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof
 
 		r.l.Tracef("filter evm log event")
 		for _, e := range els {
-			if !e.CompareAddressCaseInsensitive(r.src.ContractAddress()) {
+			if !e.CompareAddressCaseInsensitive(r.src.Account()) {
 				continue
 			}
 
