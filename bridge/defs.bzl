@@ -18,11 +18,11 @@ def bridge(name, chains):
     native.genrule(
         name = "%s_and_%s" % (chains[0], chains[1]),
         outs = ["%s_and_%s.out" % (chains[0], chains[1])],
+        srcs = [
+            ":set_link_%s" % chains[0],
+            ":set_link_%s" % chains[1],
+        ],
         cmd = "echo 'done' > $@",
         local = True,
         executable = True,
-        tools = [
-            ":set_link_%s" % chains[0],
-            ":set_link_%s" % chains[1]
-        ]
     )
