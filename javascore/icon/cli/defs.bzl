@@ -29,13 +29,13 @@ def configure_link(name):
         name = "add_%s_verifier" % name,
         srcs = [
             "@%s//:btp_address" % name,
-            "@%s//:network_address" % (name, name),
+            "@%s//:network_address" % name,
             "@icon//:goloop_config_dir",
             "@icon//cli:get_score_address_bmc",
             "@icon//cli:get_score_address_%s_bmv" % name,
         ],
         outs = ["add_%s_verifier.out" % name ],
-        cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon  sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addVerifier --param _net=\""$$(cat $(location @icon//cli:get_score_address_%s_bmv))\" --param _addr=\"$$(cat $(location @icon//cli:get_score_address_%s_bmv))\" --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@""",
+        cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon  sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addVerifier --param _net=\""$$(cat $(location @%s//:network_address))\" --param _addr=\"$$(cat $(location @icon//cli:get_score_address_%s_bmv))\" --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . > $@ """ % (name, name),
         tools = [
             "@com_github_icon_project_goloop//cmd/goloop",
             "@icon//:wait_for_channel_up",

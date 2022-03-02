@@ -11,8 +11,8 @@ genrule(
     outs = ["goloop_config_dir.out"],
     cmd = "mkdir -p \"$$PWD/goloop_config\"; echo ~/.goloop/goloop_config > $@",
     executable = True,
-    output_to_bindir = True,
     local = True,
+    output_to_bindir = True,
 )
 
 container_image(
@@ -80,11 +80,21 @@ genrule(
 genrule(
     name = "btp_address",
     outs = ["btp_address.out"],
-    cmd = "echo \"btp://$$(cat $(location @icon//:wait_for_channel_up)).icon/$$(cat $(location @icon//cli:get_score_address_bmc))\" > $@",
+    cmd = "echo \"btp://$$(cat $(location @icon//:network_address))/$$(cat $(location @icon//cli:get_score_address_bmc))\" > $@",
+    executable = True,
+    local = True,
+    tools = [
+        "@icon//cli:get_score_address_bmc",
+    ],
+)
+
+genrule(
+    name = "network_address",
+    outs = ["network_address.out"],
+    cmd = "echo \"$$(cat $(location @icon//:wait_for_channel_up)).icon\" > $@",
     executable = True,
     local = True,
     tools = [
         "@icon//:wait_for_channel_up",
-        "@icon//cli:get_score_address_bmc",
     ],
 )

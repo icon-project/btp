@@ -1,5 +1,5 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary", "npm_package_bin")
-load("@near//cli:defs.bzl", "create_account", "create_sub_account")
+load("@near//cli:defs.bzl", "create_account", "create_sub_account", "configure_link")
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@near_cli_util_python_deps//:requirements.bzl", "requirement")
 
@@ -115,45 +115,11 @@ genrule(
 )
 
 genrule(
-    name = "add_icon_verifier",
-    srcs = ["@near//cli:deploy_icon_bmv"],
-    outs = ["add_icon_verifier.out"],
-    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @icon//:wait_for_channel_up)).icon\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_iconbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
-    executable = True,
-    local = True,
-    tools = [
-        "@icon//:wait_for_channel_up",
-        "@near//:wait_until_near_up",
-        "@near//cli:encode_public_key_bmc",
-        "@near//cli:encode_public_key_iconbmv",
-        "@near//cli:near_binary",
-    ],
-)
-
-genrule(
-    name = "add_link_icon",
-    srcs = [
-        "@near//cli:deploy_bmc",
-        "@near//cli:add_icon_verifier",
-    ],
-    outs = ["add_link_icon.out"],
-    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
-    executable = True,
-    local = True,
-    tools = [
-        "@icon//:btp_address",
-        "@near//:wait_until_near_up",
-        "@near//cli:encode_public_key_bmc",
-        "@near//cli:near_binary",
-    ],
-)
-
-genrule(
     name = "set_icon_link",
     srcs = [
         "@near//cli:deploy_bmc",
         "@near//cli:add_icon_verifier",
-        "@near//cli:add_link_icon",
+        "@near//cli:add_icon_link",
     ],
     outs = ["set_icon_link.out"],
     cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) set_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\,\\"block_interval\\":6000\\,\\"max_aggregation\\":8\\,\\"delay_limit\\":100\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
@@ -172,7 +138,6 @@ genrule(
     srcs = [
         "@near//cli:deploy_bmc",
         "@near//cli:add_icon_verifier",
-        "@near//cli:add_link_icon",
         "@near//cli:set_link_near",
         "@near//cli:deploy_native_coin_bsh",
     ],
@@ -200,4 +165,8 @@ genrule(
         "@near//cli:create_sub_account_nativecoinbsh",
         "@near//cli:near_binary",
     ],
+)
+
+configure_link(
+    name = "icon"
 )

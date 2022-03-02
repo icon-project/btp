@@ -61,7 +61,7 @@ def create_sub_account(name):
     native.genrule(
         name = "create_sub_account_%s" % name,
         outs = ["create_sub_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) create-account %s.node0 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; $(execpath :near_binary) send node0 %s.node0 50 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json ; echo '%s.node0' > $@" % (name,name,name) ,
+        cmd = "$(execpath :near_binary) create-account %s.node0 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; $(execpath :near_binary) send node0 %s.node0 50 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json ; echo '%s.node0' > $@" % (name, name, name),
         executable = True,
         local = True,
         output_to_bindir = True,
@@ -71,3 +71,36 @@ def create_sub_account(name):
         ],
     )
 
+def configure_link(name):
+    native.genrule(
+    name = "add_%s_verifier" % name,
+    srcs = ["@near//cli:deploy_%s_bmv" % name],
+    outs = ["add_%s_verifier.out" % name],
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % name,
+    executable = True,
+    local = True,
+    tools = [
+        "@%s//:network_address" % name,
+        "@near//:wait_until_near_up",
+        "@near//cli:encode_public_key_bmc",
+        "@near//cli:encode_public_key_%sbmv" % name,
+        "@near//cli:near_binary",
+    ],
+)
+    native.genrule(
+        name = "add_%s_link" % name,
+        srcs = [
+            "@near//cli:deploy_bmc",
+            "@near//cli:add_%s_verifier" % name,
+        ],
+        outs = ["add_%s_link.out" % name],
+        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_link \\'\\{\\"link\\":\\"$$(cat $(location @%s//:btp_address))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % name,
+        executable = True,
+        local = True,
+        tools = [
+            "@%s//:btp_address" % name,
+            "@near//:wait_until_near_up",
+            "@near//cli:encode_public_key_bmc",
+            "@near//cli:near_binary",
+        ],
+    )

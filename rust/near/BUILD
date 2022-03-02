@@ -22,7 +22,7 @@ container_image(
 )
 
 open_port(
-    name = "near"
+    name = "near",
 )
 
 genrule(
@@ -55,14 +55,23 @@ genrule(
 )
 
 genrule(
-    name = "btp_address_near",
+    name = "btp_address",
     srcs = ["@near//cli:deploy_bmc"],
-    outs = ["btp_address_near.out"],
-    cmd = "echo \"btp://0x1.near/$$(cat $(location @near//cli:encode_public_key_bmc))\" > $@",
+    outs = ["btp_address.out"],
+    cmd = "echo \"btp://$$(cat $(location @near//:network_address))/$$(cat $(location @near//cli:encode_public_key_bmc))\" > $@",
     executable = True,
     local = True,
     tools = [
+        "@near//:network_address",
         "@near//:wait_until_near_up",
         "@near//cli:encode_public_key_bmc",
     ],
+)
+
+genrule(
+    name = "network_address",
+    outs = ["network_address.out"],
+    cmd = "echo \"0x1.near\" > $@",
+    executable = True,
+    local = True,
 )
