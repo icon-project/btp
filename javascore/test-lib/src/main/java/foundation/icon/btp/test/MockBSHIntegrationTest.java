@@ -35,10 +35,4 @@ public interface MockBSHIntegrationTest {
                 mockBSHClient._address(), supplier, consumer);
     }
 
-    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
-            ScoreIntegrationTest.EventLogsSupplier<T> supplier) {
-        return ScoreIntegrationTest.notExistsEventLogChecker(
-                mockBSHClient._address(), supplier);
-    }
-
 }

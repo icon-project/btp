@@ -72,6 +72,5 @@ RUN { \
         echo 'exec "$@"'; \
     } > /entrypoint \
     && chmod +x /entrypoint
-    
 RUN chmod +x /btpsimple/run
 ENTRYPOINT ["/btpsimple/run"]

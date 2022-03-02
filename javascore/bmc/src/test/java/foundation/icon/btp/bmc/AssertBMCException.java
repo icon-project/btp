@@ -72,8 +72,4 @@ public class AssertBMCException {
     public static void assertUnreachable(Executable executable) {
         AssertBTPException.assertBTPException(BMCException.unreachable(), executable);
     }
-
-    public static void assertDrop(Executable executable) {
-        AssertBTPException.assertBTPException(BMCException.drop(), executable);
-    }
 }

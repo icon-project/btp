@@ -1,0 +1,29 @@
+{
+    "prev_block_hash": "49mQNPbpCb8BFxRPS74Wm2PbX6vDHYcD4kAaY4x2pK9D",
+    "next_block_inner_hash": "5h21PfeGXK2ryVo2gvLEYWSaSXK6WmghtidqS6u1H9AG",
+    "inner_lite": {
+        "height": 377942,
+        "epoch_id": "84toXNMo2p5ttdjkV6RHdJFrgxrnTLRkCTjb7aA8Dh95",
+        "next_epoch_id": "dnEuAkgrB1VE49zGBYqjZkdJZdrWcCxEtn61MNZyD97",
+        "prev_state_root": "2p3JeR6xfykhKCJB1Bcp4ihPAYfWQonA16UC91hjjVkr",
+        "outcome_root": "7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t",
+        "timestamp": 1638429011753201954,
+        "timestamp_nanosec": "1638429011753201954",
+        "next_bp_hash": "C4zVnMf27hRJYoWEC816Pttyz122TWZN7zjUMoZCNkuw",
+        "block_merkle_root": "7DS4ian9ASYXSg7w4BnuMhZnsrnDJ2XVNS2FBQ1eLNX"
+    },
+    "inner_rest_hash": "sXZ3Y5onKanbkUcFxYJSfbzvgcZ42uuhbqBDAbcDsyN",
+    "next_bps": [
+        {
+            "validator_stake_struct_version": "V1",
+            "account_id": "node2",
+            "public_key": "ed25519:GkDv7nSMS3xcqA45cpMvFmfV1o4fRF6zYo1JRR6mNqg5",
+            "stake": "50902386756263328030239719089112"
+        }
+    ],
+    "approvals_after_next": [
+        "ed25519:5M5hvT5JZVB7nKe3P7F7HmmzbdLEzyJFUYDLA17oNDwqHjXfnMkte2boDtBZMEcUvULevvwaCPpySx9rUu722Bvg",
+        "ed25519:3BScVPRpUHXsTpznSVqNKFvgV1WQjS9imNcJbQ5DPjz4eAMDKBLn1VffT92SGtpZ43PusTE3KJYd1iY5sPNNuJRV",
+        "ed25519:2rX5V7vHyXdNpsWRjDouukYWRxX218YPgZSpKQvqT5jA1S84V9Jpm6dPpCioN3G4hBmA9G2S3FqL52ux4kBgmDaA"
+    ]
+}

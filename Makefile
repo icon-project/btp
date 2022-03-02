@@ -51,11 +51,15 @@ $(foreach M,$(CMDS),$(eval $(call CMD_template,$(M))))
 # Build flags for each command
 btpsimple_LDFLAGS = -X 'main.version=$(GL_VERSION)' -X 'main.build=$(BUILD_INFO)'
 BUILD_TARGETS += btpsimple
+BUILD_TARGETS += iconvalidators
 
 linux : $(addsuffix -linux,$(BUILD_TARGETS))
 
-CONTRACTS_DIST_DIR = $(BUILD_ROOT)/build/contracts
-PYSCORE_DIST_DIR = $(CONTRACTS_DIST_DIR)/pyscore
+export CONTRACT_DIST_DIR=$(BUILD_ROOT)/build/contracts
+export PYSCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/pyscore
+export JAVASCORE_DIST_DIR=$(CONTRACT_DIST_DIR)/javascore
+export SOLIDITY_DIST_DIR=$(CONTRACT_DIST_DIR)/solidity
+export PYSCORE_TESTNET_DIR=${BUILD_ROOT}/testnet/goloop2goloop/pyscore
 
 $(PYSCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(PYSCORE_DIST_DIR)/%.zip,%,$@))
@@ -74,24 +78,27 @@ dist-py-bmv: $(PYSCORE_DIST_DIR)/bmv.zip
 ifeq (,$(wildcard $(PYSCORE_DIST_DIR)/bmv.zip))
 	cd $(PYSCORE_DIST_DIR)/bmv ; \
 	echo '{"version": "0.0.1","main_module": "bmv.icon.icon","main_score": "BTPMessageVerifier"}' > package.json ; \
-	zip -r -v $(PYSCORE_DIST_DIR)/bmv.zip bmv lib package.json -x *__pycache__* -x *tests* ; \
-	rm -rf $(PYSCORE_DIST_DIR)/bmv ;
-endif
+	zip -r -v $(PYSCORE_DIST_DIR)/bmv.zip bmv lib package.json -x *__pycache__* -x *tests*
 
-dist-py-token: $(PYSCORE_DIST_DIR)/token.zip
-ifeq (,$(wildcard $(PYSCORE_DIST_DIR)/token.zip))
-	cd $(PYSCORE_DIST_DIR)/token ; \
-	echo '{"version": "0.0.1","main_module": "token.token_bsh","main_score": "TokenBSH"}' > package.json ; \
-	zip -r -v $(PYSCORE_DIST_DIR)/token.zip token lib package.json -x *__pycache__* -x *tests* -x *sample* ; \
-	cd token/sample/irc2 ; \
-    zip -r -v $(PYSCORE_DIST_DIR)/irc2.zip * -x *__pycache__* -x *tests* ; \
-    rm -rf $(PYSCORE_DIST_DIR)/token ;
-endif
+dist-py-irc2: $(PYSCORE_DIST_DIR)/token_bsh
+	cd $(PYSCORE_DIST_DIR)/token_bsh ; \
+	echo '{"version": "0.0.1","main_module": "token_bsh.token_bsh","main_score": "TokenBSH"}' > package.json ; \
+	zip -r -v $(PYSCORE_DIST_DIR)/token_bsh.zip token_bsh lib package.json -x *__pycache__* -x *tests* -x *sample* ; \
+	cd token_bsh/sample/irc2_token ; \
+    zip -r -v $(PYSCORE_DIST_DIR)/irc2_token.zip * -x *__pycache__* -x *tests*
 
-dist-py: dist-py-bmc dist-py-bmv dist-py-token
+dist-py: dist-py-bmc dist-py-bmv dist-py-irc2
+dist-java: 
+	bash ./scripts/dist_javascore.sh
+dist-sol:
+	bash ./scripts/dist_solidity.sh
 
 clean-dist-py:
 	rm -rf $(PYSCORE_DIST_DIR)/*
+clean-dist-sol:
+	rm -rf $(SOLIDITY_DIST_DIR)
+clean-dist-java:
+	rm -rf $(JAVASCORE_DIST_DIR)
 
 JAVASCORE_DIST_DIR = $(CONTRACTS_DIST_DIR)/javascore
 
@@ -147,17 +154,18 @@ clean-dist:
 BTPSIMPLE_IMAGE = btpsimple:$(GL_TAG)
 BTPSIMPLE_DOCKER_DIR = $(BUILD_ROOT)/build/btpsimple
 
-btpsimple-image: btpsimple-linux dist-py dist-java
+btpsimple-image: btpsimple-linux dist-py dist-java dist-sol
 	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
 	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
 	@ \
 	BIN_DIR=$(abspath $(LINUX_BIN_DIR)) \
 	BIN_VERSION=$(GL_VERSION) \
 	BUILD_TAGS="$(GOBUILD_TAGS)" \
-	CONTRACTS_DIST_DIR="$(CONTRACTS_DIST_DIR)" \
+	DIST_DIR="$(CONTRACT_DIST_DIR)" \
 	$(BUILD_ROOT)/docker/btpsimple/build.sh $(BTPSIMPLE_IMAGE) $(BUILD_ROOT) $(BTPSIMPLE_DOCKER_DIR)
 
-btpsimple-debug: btpsimple-linux dist-py
+
+btpsimple-debug: btpsimple-linux dist-py dist-java 
 	@ echo "[#] Building image $(BTPSIMPLE_IMAGE) for $(GL_VERSION)"
 	@ rm -rf $(BTPSIMPLE_DOCKER_DIR)
 	@ \

@@ -649,19 +649,25 @@ Balance of Bob from Token-BSH
 
 ## Docker-compose
 
-Tutorial with [Docker-compose](https://docs.docker.com/compose/)
-Using javascore/bmc instead of pyscore/bmc
+Tutorial with [Docker-compose](https://docs.docker.com/compose/).   
+
+To demonstrate chain integration, we utilize docker-compose. The docker-compose files are kept in the [docker-compose](https://github.com/icon-project/btp/tree/master/docker-compose) folder's child folders. As the name suggests, each child folder has a docker-compose file that isolates an integration between two chains.
+
+- [goloop2goloop](https://github.com/icon-project/btp/tree/master/docker-compose/goloop2goloop): integration between 2 goloop chains.
+- [goloop2moonbeam](https://github.com/icon-project/btp/tree/master/docker-compose/goloop2moonbeam): ingration betwwen goloop and moonbeam.
 
 ### Preparation
-Prepare 'btpsimple' docker image via `make btpsimple-image` and Copy files from project source to `/path/to/tutorial`
-```console
-$ make btpsimple-image
-$ mkdir -p /path/to/tutorial
-$ cp docker-compose/* /path/to/tutorial/
-```
+Prepare 'btpsimple' docker image via `make btpsimple-image` and Copy files from project source to `/path/to/tutorial`.   
+
+````shell
+make btpsimple-image
+mkdir -p /path/to/tutorial
+cp docker-compose/goloop2goloop/* /path/to/tutorial/
+cd /path/to/tutorial/
+```` 
 
 ### Run chain and relay
-`docker-compose up` will build `tutorial_goloop` docker image that provisioned of belows
+`make run` will build `tutorial_goloop` docker image that provisioned of belows
 
 * scripts files in `/goloop/bin`
 * source chain and destination chain (channel name : `src`, `dst`)

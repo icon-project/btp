@@ -1,0 +1,66 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  goloop:
+    container_name: g2g_goloop
+    build:
+      context: ./goloop
+      args:
+        BTPSIMPLE_VERSION: latest
+        GOLOOP_IMAGE: iconloop/goloop:0.9.5
+    logging:
+        driver: none
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./config:/goloop/config
+      - ./data:/goloop/data
+    environment:
+      - GOLOOP_NODE_DIR=/goloop/data/goloop
+      - GOLOOP_LOG_WRITER_FILENAME=/goloop/data/log/goloop.log
+  btpsimple_src:
+    container_name: g2g_btp_src
+    image: btpsimple:latest
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "10080:40000"
+    volumes:
+      - ../cmd:/btpsimple/cmd
+      - ../common:/btpsimple/common
+      - ./config:/btpsimple/config
+      - ./data:/btpsimple/data
+      - ./logs:/btpsimple/data/log
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_src
+      - BTPSIMPLE_CONFIG=/btpsimple/config/src.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.src
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/src.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/src.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_src.log
+    depends_on: 
+      goloop: 
+        condition: service_healthy
+  btpsimple_dst:
+    container_name: g2g_btp_dst
+    image: btpsimple:latest
+    volumes:
+      - ./config:/btpsimple/config
+      - ./data:/btpsimple/data
+    environment:
+      - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_dst
+      - BTPSIMPLE_CONFIG=/btpsimple/config/dst.config.json
+      - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.dst
+      - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/dst
+      - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.src
+      - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/src
+      - BTPSIMPLE_OFFSET=/btpsimple/config/offset.dst
+      - BTPSIMPLE_KEY_STORE=/btpsimple/config/dst.ks.json
+      - BTPSIMPLE_KEY_SECRET=/btpsimple/config/dst.secret
+      - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/log/btpsimple_dst.log
+    depends_on: 
+      goloop: 
+        condition: service_healthy

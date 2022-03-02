@@ -34,7 +34,7 @@ public interface NCS {
      * @param _name A coin name.
      */
     @External
-    void register(String _name);
+    void register(String _name, String _symbol, int _decimals);
 
     /**
      * Return all supported coins names in other networks by the BSH contract
@@ -44,16 +44,14 @@ public interface NCS {
     @External(readonly = true)
     String[] coinNames();
 
+
     /**
-     * Return an _id number and a symbol of Coin whose name is the same with given _coinName.
+     * Return address of IRC2 SCORE corresponding to _coinName
      *
-     * @implSpec Return nullempty if not found.
-     *
-     * @param _coinName Coin name.
-     * @return id of Native Coin Token.
+     * @return SCORE address
      */
     @External(readonly = true)
-    String coinId(String _coinName);
+    Address coinAddress(String _coinName);
 
     /**
      * Return a usable/locked balance of an account based on coinName.

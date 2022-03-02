@@ -1,0 +1,154 @@
+{
+    "block_header_lite": {
+        "inner_lite": {
+            "block_merkle_root": "HZsF2tVjoVnVQBokGNYyUCdc8cvWbfe8bCy9R94fdCnq",
+            "epoch_id": "FpxMgCMY533wxSQv7GRjre2qemdzBS6wHpfptRQCXFeb",
+            "height": 70096077,
+            "next_bp_hash": "DVNXiaDSyscYNXVJTtUrr7do83jfeo85GpYBoEVF2uyC",
+            "next_epoch_id": "6b8WJEkQnqNARSpFKqTHJBWrNcbcARdE6QANqY8Bj48g",
+            "outcome_root": "9MwPzDjanVv8oTk3Tb2wSDL8SfeG7UrUbFAUVWXg12i3",
+            "prev_state_root": "B2ssTi9H76esSxSDKFyx5hxCnYBL3wXZP5dzMj9cNf3z",
+            "timestamp": 1636079303784029966,
+            "timestamp_nanosec": "1636079303784029966"
+        },
+        "inner_rest_hash": "7PV4ygtbfh81Vnou7qz3GhnZpNvf5eBMBK3aTKMWqrHa",
+        "prev_block_hash": "7FMoS5Q7WQ8hEYz4EANoTxzhmWQ8ywfFiQgWiby6c5bx"
+    },
+    "block_proof": [],
+    "outcome_proof": {
+        "block_hash": "DqDHTSWjqfzoEnYRjbJw44rUcmjA7tq1YuoVYRxFoZQh",
+        "id": "2VWWEfyg5BzyDBVRsHRXApQJdZ37Bdtj8GtkH7UvNm7G",
+        "outcome": {
+            "executor_id": "alice.node1",
+            "gas_burnt": 6484927719095,
+            "logs": [],
+            "metadata": {
+                "gas_profile": [
+                    {
+                        "cost": "BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "7148738997"
+                    },
+                    {
+                        "cost": "CONTRACT_COMPILE_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "35445963"
+                    },
+                    {
+                        "cost": "CONTRACT_COMPILE_BYTES",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "94777405500"
+                    },
+                    {
+                        "cost": "READ_MEMORY_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "26098632000"
+                    },
+                    {
+                        "cost": "READ_MEMORY_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "3930578322"
+                    },
+                    {
+                        "cost": "WRITE_MEMORY_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "25234153749"
+                    },
+                    {
+                        "cost": "WRITE_MEMORY_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "3037005780"
+                    },
+                    {
+                        "cost": "READ_REGISTER_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "20137321488"
+                    },
+                    {
+                        "cost": "READ_REGISTER_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "108319638"
+                    },
+                    {
+                        "cost": "WRITE_REGISTER_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "28655224860"
+                    },
+                    {
+                        "cost": "WRITE_REGISTER_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "6508277568"
+                    },
+                    {
+                        "cost": "STORAGE_WRITE_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "192590208000"
+                    },
+                    {
+                        "cost": "STORAGE_WRITE_KEY_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "1832554542"
+                    },
+                    {
+                        "cost": "STORAGE_WRITE_VALUE_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "26520850845"
+                    },
+                    {
+                        "cost": "STORAGE_WRITE_EVICTED_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "26817951345"
+                    },
+                    {
+                        "cost": "STORAGE_READ_BASE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "225427383000"
+                    },
+                    {
+                        "cost": "STORAGE_READ_KEY_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "4735737549"
+                    },
+                    {
+                        "cost": "STORAGE_READ_VALUE_BYTE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "2799891495"
+                    },
+                    {
+                        "cost": "TOUCHING_TRIE_NODE",
+                        "cost_category": "WASM_HOST_COST",
+                        "gas_used": "2544109036308"
+                    }
+                ],
+                "version": 1
+            },
+            "receipt_ids": [
+                "G4BqecLxdFY6jZBCQgToePR8bhtsiW1NaEUJLwAZ5aJg"
+            ],
+            "status": {
+                "SuccessValue": ""
+            },
+            "tokens_burnt": "648492771909500000000"
+        },
+        "proof": [
+            {
+                "direction": "Right",
+                "hash": "DGBvNMANQH73V55xYSZ9eZtqKkGR9WaYqUpSssdGSjMW"
+            },
+            {
+                "direction": "Right",
+                "hash": "FDJGYqs9aCdGzJrkGHiLXgzPoFm7bcMiSrAfLcZuyVkB"
+            }
+        ]
+    },
+    "outcome_root_proof": [
+        {
+            "direction": "Right",
+            "hash": "7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t"
+        },
+        {
+            "direction": "Right",
+            "hash": "4A9zZ1umpi36rXiuaKYJZgAjhUH9WoTrnSBXtA3wMdV2"
+        }
+    ]
+}

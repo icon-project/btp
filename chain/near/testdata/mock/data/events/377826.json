@@ -1,0 +1,29 @@
+{
+    "block_hash": "5YqjrSoiQjqrmrMHQJVZB25at7yQ2BZEC2exweLFmc6w",
+    "changes": [
+        {
+            "cause": {
+                "receipt_hash": "2VWWEfyg5BzyDBVRsHRXApQJdZ37Bdtj8GtkH7UvNm7G",
+                "type": "receipt_processing"
+            },
+            "change": {
+                "account_id": "alice.node1",
+                "key_base64": "bWVzc2FnZQ==",
+                "value_base64": "cAEAAHsibmV4dCI6ImJ0cDovLzB4MS5pY29uL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1YiIsInNlcXVlbmNlIjoiMCIsIm1lc3NhZ2UiOiIrTW1hWW5Sd09pOHZNSGd4TG01bFlYSXZZV3hwWTJVdWJtOWtaVEc0T1dKMGNEb3ZMekI0TVM1cFkyOXVMMk40T0RkbFpEa3dORGhpTlRrMFlqazFNVGs1WmpNeU5tWmpOelpsTnpaaE9XUXpNMlJrTmpZMVlvTmliV09CZ0xocitHa1Z1R1pDVFVOU1pYWmxjblJWYm5KbFlXTm9ZV0pzWlNCaGRDQmlkSEE2THk4d2VEVXVjSEpoTHpnNFltUXdOVFEwTWpZNE5tSmxNR0UxWkdZM1pHRXpNMkkyWmpFd09EbGxZbVpsWVRNM05qbGlNVGxrWW1JeU5EYzNabVV3WTJRMlpUQm1NVEkyWlRRPSJ9"
+            },
+            "type": "data_update"
+        },
+        {
+            "cause": {
+                "receipt_hash": "3QQeZHZxs8N4gVhoj8nAKrMQfN1L3n4jU7wSAULoww8y",
+                "type": "receipt_processing"
+            },
+            "change": {
+                "account_id": "alice.node1",
+                "key_base64": "bWVzc2FnZQ==",
+                "value_base64": "cAEAAHsibmV4dCI6ImJ0cDovLzB4MS5pY29uL2N4ODdlZDkwNDhiNTk0Yjk1MTk5ZjMyNmZjNzZlNzZhOWQzM2RkNjY1YiIsInNlcXVlbmNlIjoiMCIsIm1lc3NhZ2UiOiIrTW1hWW5Sd09pOHZNSGd4TG01bFlYSXZZV3hwWTJVdWJtOWtaVEc0T1dKMGNEb3ZMekI0TVM1cFkyOXVMMk40T0RkbFpEa3dORGhpTlRrMFlqazFNVGs1WmpNeU5tWmpOelpsTnpaaE9XUXpNMlJrTmpZMVlvTmliV09CZ0xocitHa1Z1R1pDVFVOU1pYWmxjblJWYm5KbFlXTm9ZV0pzWlNCaGRDQmlkSEE2THk4d2VEVXVjSEpoTHpnNFltUXdOVFEwTWpZNE5tSmxNR0UxWkdZM1pHRXpNMkkyWmpFd09EbGxZbVpsWVRNM05qbGlNVGxrWW1JeU5EYzNabVV3WTJRMlpUQm1NVEkyWlRRPSJ9"
+            },
+            "type": "data_update"
+        }
+    ]
+}

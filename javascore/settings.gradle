@@ -5,9 +5,9 @@ include (
         'test-lib',
         'bmc',
         'bmv:icon',
-        'bsh',
         'nativecoin',
-        'fee-aggregation',
+        'irc2Tradeable',
+        'nativecoinIRC2',
         'bmv:near:verifier',
         'bmv:near:proof-decoder'
 )

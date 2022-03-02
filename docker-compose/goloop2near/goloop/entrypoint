@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+GOLOOP_CONFIG_DIR=$(dirname ${GOLOOP_CONFIG})
+if [ "${GOLOOP_PROVISION_CONFIG}" != "" ] && [ "${GOLOOP_PROVISION_CONFIG}" != "${GOLOOP_CONFIG_DIR}" ]; then
+  echo "Provisioning config ${GOLOOP_PROVISION_CONFIG} to ${GOLOOP_CONFIG_DIR}"
+  mkdir -p ${GOLOOP_CONFIG_DIR}
+  cp -u -r ${GOLOOP_PROVISION_CONFIG}/* ${GOLOOP_CONFIG_DIR}/
+fi
+
+if [ "${GOLOOP_PROVISION_DATA}" != "" ] && [ "${GOLOOP_PROVISION_DATA}" != "${GOLOOP_NODE_DIR}" ]; then
+  echo "Provisioning data ${GOLOOP_PROVISION_DATA} to ${GOLOOP_NODE_DIR}"
+  mkdir -p ${GOLOOP_NODE_DIR}
+  cp -u -r ${GOLOOP_PROVISION_DATA}/* ${GOLOOP_NODE_DIR}/
+fi
+
+source server.sh
+ensure_config
+
+source /goloop/venv/bin/activate
+exec "$@"

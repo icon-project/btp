@@ -12,8 +12,15 @@ LABEL BTPSIMPLE_VERSION="$VERSION"
 COPY dist/bin/btpsimple /btpsimple/bin/btpsimple
 ENV PATH $PATH:/btpsimple/bin
 
-# copy contracts
-ADD dist/contracts.tar /btpsimple/
+# copy extras
+COPY dist/contracts/pyscore/*.zip /btpsimple/contracts/pyscore/
+COPY dist/contracts/javascore /btpsimple/contracts/javascore
+COPY dist/contracts/solidity /btpsimple/contracts/solidity
+
+ENV JAVASCORE_DIST_DIR=/btpsimple/contracts/javascore
+ENV SOLIDITY_DIST_DIR=/btpsimple/contracts/solidity
+ENV PYSCORE_DIST_DIR=/btpsimple/contracts/pyscore
+
 WORKDIR /btpsimple
 
 # container configuration
@@ -27,40 +34,8 @@ ENV BTPSIMPLE_KEY_SECRET=/btpsimple/config/keysecret
 ENV BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple.log
 
 # entrypoint
-RUN { \
-        echo '#!/bin/sh'; \
-        echo 'set -e'; \
-        echo 'if [ "$BTPSIMPLE_CONFIG" != "" ] && [ ! -f "$BTPSIMPLE_CONFIG" ]; then'; \
-        echo '  UNSET="BTPSIMPLE_CONFIG"' ; \
-        echo '  CMD="btpsimple save $BTPSIMPLE_CONFIG"'; \
-        echo '  if [ "$BTPSIMPLE_KEY_SECRET" != "" ] && [ ! -f "$BTPSIMPLE_KEY_SECRET" ]; then'; \
-        echo '    mkdir -p $(dirname $BTPSIMPLE_KEY_SECRET)'; \
-        echo '    echo -n $(date|md5sum|head -c16) > $BTPSIMPLE_KEY_SECRET' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_KEY_STORE" != "" ] && [ ! -f "$BTPSIMPLE_KEY_STORE" ]; then'; \
-        echo '    UNSET="$UNSET BTPSIMPLE_KEY_STORE"' ; \
-        echo '    CMD="$CMD --save_key_store=$BTPSIMPLE_KEY_STORE"' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_SRC_ADDRESS_FILE" != "" ] && [ -f "$BTPSIMPLE_SRC_ADDRESS_FILE" ]; then'; \
-        echo '    export BTPSIMPLE_SRC_ADDRESS=$(cat ${BTPSIMPLE_SRC_ADDRESS_FILE})' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_SRC_ENDPOINT_FILE" != "" ] && [ -f "$BTPSIMPLE_SRC_ENDPOINT_FILE" ]; then'; \
-        echo '    export BTPSIMPLE_SRC_ENDPOINT=$(cat ${BTPSIMPLE_SRC_ENDPOINT_FILE})' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_DST_ADDRESS_FILE" != "" ] && [ -f "$BTPSIMPLE_DST_ADDRESS_FILE" ]; then'; \
-        echo '    export BTPSIMPLE_DST_ADDRESS=$(cat ${BTPSIMPLE_DST_ADDRESS_FILE})' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_DST_ENDPOINT_FILE" != "" ] && [ -f "$BTPSIMPLE_DST_ENDPOINT_FILE" ]; then'; \
-        echo '    export BTPSIMPLE_DST_ENDPOINT=$(cat ${BTPSIMPLE_DST_ENDPOINT_FILE})' ; \
-        echo '  fi'; \
-        echo '  if [ "$BTPSIMPLE_OFFSET_FILE" != "" ] && [ -f "$BTPSIMPLE_OFFSET_FILE" ]; then'; \
-        echo '    export BTPSIMPLE_OFFSET=$(cat ${BTPSIMPLE_OFFSET_FILE})' ; \
-        echo '  fi'; \
-        echo '  sh -c "unset $UNSET ; $CMD"' ; \
-        echo 'fi'; \
-        echo 'exec "$@"'; \
-    } > /entrypoint \
-    && chmod +x /entrypoint
-ENTRYPOINT ["/entrypoint"]
+ADD entrypoint.sh /entrypoint.sh
+RUN chmod u+x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 CMD btpsimple start

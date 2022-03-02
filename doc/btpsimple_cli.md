@@ -35,7 +35,8 @@ Command Line Interface of Relay for Blockchain Transmission Protocol
 | --offset | BTPSIMPLE_OFFSET | false | 0 |  Offset of MTA |
 | --src.address | BTPSIMPLE_SRC_ADDRESS | true |  |  BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC) |
 | --src.endpoint | BTPSIMPLE_SRC_ENDPOINT | true |  |  Endpoint of source blockchain |
-| --src.options | BTPSIMPLE_SRC_OPTIONS | false | [] |  Options, comma-separated 'key=value' |
+| --sentry.dns | BTPSIMPLE_SENTRY_DSN | false |  |  Sentry DSN for monitor bug and alerts |
+| --sentry.env | BTPSIMPLE_SENTRY_ENV | false |  |  Sentry environment to distinguish between stages |
 
 ### Child commands
 |Command | Description|
@@ -85,6 +86,7 @@ Save configuration
 | --src.address | BTPSIMPLE_SRC_ADDRESS | true |  |  BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC) |
 | --src.endpoint | BTPSIMPLE_SRC_ENDPOINT | true |  |  Endpoint of source blockchain |
 | --src.options | BTPSIMPLE_SRC_OPTIONS | false | [] |  Options, comma-separated 'key=value' |
+| --sentry.dns | BTPSIMPLE_SENTRY_DSN | false |  |  Options, comma-separated 'key=value' |
 
 ### Parent command
 |Command | Description|

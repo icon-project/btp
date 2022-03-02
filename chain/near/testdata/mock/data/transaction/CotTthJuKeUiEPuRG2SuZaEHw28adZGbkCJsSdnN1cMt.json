@@ -1,0 +1,96 @@
+{
+    "receipts_outcome": [
+        {
+            "block_hash": "7iAm1t1A7s2bQrqqNH3mVLTwTE3dvA9MWoy1PQqHoKmh",
+            "id": "6UZoXvuhNDZW4P1sTXJjzJ9E7HH7MyBufynVsrTfhkJU",
+            "outcome": {
+                "executor_id": "alice.node0",
+                "gas_burnt": 6379401533341,
+                "logs": [],
+                "metadata": {
+                    "gas_profile": null,
+                    "version": 1
+                },
+                "receipt_ids": [
+                    "CYnH1J9sHrAUpQuvvCN56kkavNxQtxYrrBm8oiTU9i3T"
+                ],
+                "status": {
+                    "SuccessValue": ""
+                },
+                "tokens_burnt": "637940153334100000000"
+            },
+            "proof": [
+                {
+                    "direction": "Left",
+                    "hash": "7MBU3mrbam7WJuy9wbfVNFeYzPGYoDitLdqefPgRZNAk"
+                }
+            ]
+        },
+        {
+            "block_hash": "Hzm4pMPood5uJwqwUjutugMmzZCuk3iD3bmi87rP7fHG",
+            "id": "CYnH1J9sHrAUpQuvvCN56kkavNxQtxYrrBm8oiTU9i3T",
+            "outcome": {
+                "executor_id": "alice.node0",
+                "gas_burnt": 223182562500,
+                "logs": [],
+                "metadata": {
+                    "gas_profile": null,
+                    "version": 1
+                },
+                "receipt_ids": [],
+                "status": {
+                    "SuccessValue": ""
+                },
+                "tokens_burnt": "0"
+            },
+            "proof": []
+        }
+    ],
+    "status": {
+        "SuccessValue": ""
+    },
+    "transaction": {
+        "actions": [
+            {
+                "FunctionCall": {
+                    "args": "eyJsaW5rIjoiYnRwOi8vMHgxLmljb24vY3g4N2VkOTA0OGI1OTRiOTUxOTlmMzI2ZmM3NmU3NmE5ZDMzZGQ2NjViIn0=",
+                    "deposit": "0",
+                    "gas": 30000000000000,
+                    "method_name": "add_link"
+                }
+            }
+        ],
+        "hash": "CotTthJuKeUiEPuRG2SuZaEHw28adZGbkCJsSdnN1cMt",
+        "nonce": 66835160000006,
+        "public_key": "ed25519:5rsVhAhEqJTYn1Nfzf1hZMBPgX4VBXRT3RuA9kui6M4n",
+        "receiver_id": "alice.node0",
+        "signature": "ed25519:3rN9Zchf3GPUxYm2GQihppWTCX3drBeDBjmLL1P1Hg83x8Y4HnUxD3QvKHVNTKLysgFWiNDFy6PdJXgWBCUHKP7i",
+        "signer_id": "alice.node0"
+    },
+    "transaction_outcome": {
+        "block_hash": "7iAm1t1A7s2bQrqqNH3mVLTwTE3dvA9MWoy1PQqHoKmh",
+        "id": "CotTthJuKeUiEPuRG2SuZaEHw28adZGbkCJsSdnN1cMt",
+        "outcome": {
+            "executor_id": "alice.node0",
+            "gas_burnt": 2428090930984,
+            "logs": [],
+            "metadata": {
+                "gas_profile": null,
+                "version": 1
+            },
+            "receipt_ids": [
+                "6UZoXvuhNDZW4P1sTXJjzJ9E7HH7MyBufynVsrTfhkJU"
+            ],
+            "status": {
+                "SuccessReceiptId": "6UZoXvuhNDZW4P1sTXJjzJ9E7HH7MyBufynVsrTfhkJU"
+            },
+            "tokens_burnt": "242809093098400000000"
+        },
+        "proof": [
+            {
+                "direction": "Right",
+                "hash": "7pS35PNmmbWqQKpXA3NPsrq7y1ASwPmVfVhhuqVbXfNV"
+            }
+        ]
+    }
+}

@@ -19,7 +19,7 @@
 |:--------------------|:--------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
 | BlockHeader         | Bytes         | fips-sha3-256(BlockHeader) → *BlockID* <br/>BlockHeader.Result.ReceiptRootHash → *ReceiptRootHash* <br/>BlockHeader.Height → *BlockHeight* <br/> |
 | Votes               | Bytes         | [Prove with Votes](#prove-with-votes)                                                                                                                  |
-| NextVaidators       | Bytes         | Validators = decode(NextValidators).ToAddress()                                                                                                  |
+| NextValidators       | Bytes         | Validators = decode(NextValidators).ToAddress()                                                                                                  |
 | *BlockHeight*       | Integer       | Check BlockHeight == LastHeight                                                                                                                  |
 | *BlockID*           | Bytes         | [Prove with MTA](#prove-with-mta)                                                                                                                      |
 | BlockProof          | List of Bytes | [Prove with MTA](#prove-with-mta)                                                                                                                      |

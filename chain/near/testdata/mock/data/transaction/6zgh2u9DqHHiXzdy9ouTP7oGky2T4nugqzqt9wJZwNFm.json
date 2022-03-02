@@ -1,0 +1,72 @@
+{
+    "receipts_outcome": [
+        {
+            "block_hash": "6K8SzhwtzZ6wrrTmbKcNCfvqVW5xuEze6yFZBMeWh3a7",
+            "id": "GLRBG8eXbdn7UFQUm9QuBwgEVB772XmBAK4XXyg8Tykg",
+            "outcome": {
+                "executor_id": "alice.node0",
+                "gas_burnt": 3280025539544,
+                "logs": [],
+                "metadata": {
+                    "gas_profile": [],
+                    "version": 1
+                },
+                "receipt_ids": [],
+                "status": {
+                    "SuccessValue": ""
+                },
+                "tokens_burnt": "328002553954400000000"
+            },
+            "proof": [
+                {
+                    "direction": "Left",
+                    "hash": "98evkBr3E3o2PukJMp4eqkDT7ssEL77kMgBgEcWYQjtz"
+                }
+            ]
+        }
+    ],
+    "status": {
+        "SuccessValue": ""
+    },
+    "transaction": {
+        "actions": [
+            {
+                "DeployContract": {
+                    "code": "hctiB5FxZn0CHrTuOkJXOjw0y3whj0uv/6DCCtUw0EI="
+                }
+            }
+        ],
+        "hash": "689ziDgHzcxCVdfeBvUimay3TGteJy6CbyFbT3i8t4At",
+        "nonce": 66835160000040,
+        "public_key": "ed25519:5rsVhAhEqJTYn1Nfzf1hZMBPgX4VBXRT3RuA9kui6M4n",
+        "receiver_id": "alice.node0",
+        "signature": "ed25519:2tw21Gh6zCFgrYs4hBVUHuRxDA4G4kLj3vxWMwCtqxbn5AU7Zq7jwd7C9QAAzr3WbkFfM4YaFzhwUaJwE2gKA592",
+        "signer_id": "alice.node0"
+    },
+    "transaction_outcome": {
+        "block_hash": "6K8SzhwtzZ6wrrTmbKcNCfvqVW5xuEze6yFZBMeWh3a7",
+        "id": "689ziDgHzcxCVdfeBvUimay3TGteJy6CbyFbT3i8t4At",
+        "outcome": {
+            "executor_id": "alice.node0",
+            "gas_burnt": 3280025539544,
+            "logs": [],
+            "metadata": {
+                "gas_profile": null,
+                "version": 1
+            },
+            "receipt_ids": [
+                "GLRBG8eXbdn7UFQUm9QuBwgEVB772XmBAK4XXyg8Tykg"
+            ],
+            "status": {
+                "SuccessReceiptId": "GLRBG8eXbdn7UFQUm9QuBwgEVB772XmBAK4XXyg8Tykg"
+            },
+            "tokens_burnt": "328002553954400000000"
+        },
+        "proof": [
+            {
+                "direction": "Right",
+                "hash": "4iNBvPejsXuHbeacZv6kPWY91UxN7ft18cBtiVfCSB4h"
+            }
+        ]
+    }
+}

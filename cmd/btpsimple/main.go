@@ -21,19 +21,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	stdlog "log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/spf13/cobra"
-
-	"github.com/icon-project/btp/cmd/btpsimple/chain"
+	"github.com/getsentry/sentry-go"
+	"github.com/icon-project/btp/btp"
 	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -46,10 +48,10 @@ const (
 )
 
 type Config struct {
-	chain.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData json.RawMessage `json:"key_store"`
-	KeyStorePass string          `json:"key_password,omitempty"`
-	KeySecret    string          `json:"key_secret,omitempty"`
+	btp.Config   `json:",squash"` //instead of `mapstructure:",squash"`
+	KeyStoreData json.RawMessage  `json:"key_store"`
+	KeyStorePass string           `json:"key_password,omitempty"`
+	KeySecret    string           `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -62,12 +64,12 @@ func (c *Config) Wallet() (wallet.Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wallet.NewFromKeyStore(c.KeyStoreData, pw)
+	return wallet.DecryptKeyStore(c.KeyStoreData, pw)
 }
 
 func (c *Config) resolvePassword() ([]byte, error) {
 	if c.KeySecret != "" {
-		return ioutil.ReadFile(c.KeySecret)
+		return ioutil.ReadFile(cfg.ResolveAbsolute(c.KeySecret))
 	} else {
 		if c.KeyStorePass == "" {
 			return []byte(DefaultKeyStorePass), nil
@@ -106,63 +108,31 @@ var logoLines = []string{
 	"                                       |___/ ",
 }
 
+var rootCmd, rootVc = cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
+var cfg = &Config{}
+
 func main() {
-	rootCmd, rootVc := cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
-	cfg := &Config{}
+	go profiling()
+
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
-	//rootVc.Debug()
-
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Print btpsimple version",
-		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("btpsimple version", version, build)
-		},
-	})
-
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		baseDir := rootVc.GetString("base_dir")
-		logfile := rootVc.GetString("log_writer.filename")
-		cfg.FilePath = rootVc.GetString("config")
-		if cfg.FilePath != "" {
-			f, err := os.Open(cfg.FilePath)
-			if err != nil {
-				return fmt.Errorf("fail to open config file=%s err=%+v", cfg.FilePath, err)
-			}
-			rootVc.SetConfigType("json")
-			err = rootVc.ReadConfig(f)
-			if err != nil {
-				return fmt.Errorf("fail to read config file=%s err=%+v", cfg.FilePath, err)
-			}
-			cfg.FilePath, _ = filepath.Abs(cfg.FilePath)
-		}
-		if err := rootVc.Unmarshal(&cfg, cli.ViperDecodeOptJson); err != nil {
-			return fmt.Errorf("fail to unmarshall config from env err=%+v", err)
-		}
-		if baseDir != "" {
-			cfg.BaseDir = cfg.ResolveRelative(baseDir)
-		}
-		if logfile != "" {
-			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
-		}
-		return nil
-	}
+	// rootVc.Debug()
+	//
 	rootPFlags := rootCmd.PersistentFlags()
+	rootPFlags.String("base_dir", "", "Base directory for data")
+	rootPFlags.StringP("config", "c", "", "Parsing configuration file")
+
 	rootPFlags.String("src.address", "", "BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("src.endpoint", "", "Endpoint of source blockchain")
 	rootPFlags.StringToString("src.options", nil, "Options, comma-separated 'key=value'")
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
+
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
 	rootPFlags.String("key_store", "", "KeyStore")
 	rootPFlags.String("key_password", "", "Password of KeyStore")
 	rootPFlags.String("key_secret", "", "Secret(password) file for KeyStore")
-	//
-	rootPFlags.String("base_dir", "", "Base directory for data")
-	rootPFlags.StringP("config", "c", "", "Parsing configuration file")
 	//
 	rootPFlags.String("log_level", "debug", "Global log level (trace,debug,info,warn,error,fatal,panic)")
 	rootPFlags.String("console_level", "trace", "Console log level (trace,debug,info,warn,error,fatal,panic)")
@@ -179,93 +149,59 @@ func main() {
 	rootPFlags.Int("log_writer.maxbackups", 0, "Maximum number of backups")
 	rootPFlags.Bool("log_writer.localtime", false, "Use localtime on rotated log file instead of UTC")
 	rootPFlags.Bool("log_writer.compress", false, "Use gzip on rotated log file")
+	//
+	rootPFlags.String("sentry.dsn", "", "Sentry DSN for monitor bug and alerts")
+	rootPFlags.String("sentry.env", "", "Sentry environment to distinguish between stages")
 	cli.BindPFlags(rootVc, rootPFlags)
-	cli.MarkAnnotationCustom(rootPFlags, "src.address", "dst.address", "src.endpoint", "dst.endpoint")
-	saveCmd := &cobra.Command{
-		Use:   "save [file]",
-		Short: "Save configuration",
-		Args:  cli.ArgsWithDefaultErrorFunc(cobra.ExactArgs(1)),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := cfg.EnsureWallet(); err != nil {
-				return fmt.Errorf("fail to ensure src wallet err:%+v", err)
-			} else {
-				cfg.KeyStorePass = ""
-			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			saveFilePath := args[0]
-			cfg.FilePath, _ = filepath.Abs(saveFilePath)
-			cfg.BaseDir = cfg.ResolveRelative(cfg.BaseDir)
 
-			if cfg.LogWriter != nil {
-				cfg.LogWriter.Filename = cfg.ResolveRelative(cfg.LogWriter.Filename)
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		baseDir := rootVc.GetString("base_dir")
+		logfile := rootVc.GetString("log_writer.filename")
+		cfg.FilePath = rootVc.GetString("config")
+		sentryDsn := rootVc.GetString("sentry.dsn")
+		if cfg.FilePath != "" {
+			f, err := os.Open(cfg.ResolveAbsolute(cfg.FilePath))
+			if err != nil {
+				return fmt.Errorf("fail to open config file=%s err=%+v", cfg.FilePath, err)
 			}
-
-			if err := cli.JsonPrettySaveFile(saveFilePath, 0644, cfg); err != nil {
+			// rootVc.SetConfigType("json")
+			// if err = rootVc.ReadConfig(f); err != nil {
+			// 	return fmt.Errorf("fail to read config file=%s err=%+v", cfg.FilePath, err)
+			// }
+			if err := json.NewDecoder(f).Decode(cfg); err != nil {
 				return err
 			}
-			cmd.Println("Save configuration to", saveFilePath)
-			if saveKeyStore, _ := cmd.Flags().GetString("save_key_store"); saveKeyStore != "" {
-				if err := cli.JsonPrettySaveFile(saveKeyStore, 0600, cfg.KeyStoreData); err != nil {
-					return err
-				}
+
+			cfg.FilePath, _ = filepath.Abs(cfg.FilePath)
+		} else {
+			if err := rootVc.Unmarshal(cfg, cli.ViperDecodeOptJson); err != nil {
+				return fmt.Errorf("fail to unmarshall config from env err=%+v", err)
 			}
-			return nil
-		},
+		}
+
+		if baseDir != "" {
+			cfg.BaseDir = cfg.ResolveRelative(baseDir)
+		}
+		if logfile != "" {
+			cfg.LogWriter.Filename = cfg.ResolveRelative(logfile)
+		}
+
+		if sentryDsn != "" {
+			sentryInit()
+		}
+
+		return nil
 	}
-	rootCmd.AddCommand(saveCmd)
-	saveCmd.Flags().String("save_key_store", "", "KeyStore File path to save")
-
-	startCmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start server",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return cli.ValidateFlagsWithViper(rootVc, cmd.Flags())
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			for _, l := range logoLines {
-				log.Println(l)
-			}
-			log.Printf("Version : %s", version)
-			log.Printf("Build   : %s", build)
-
-			var (
-				err error
-				w   wallet.Wallet
-			)
-			if w, err = cfg.Wallet(); err != nil {
-				return err
-			}
-			modLevels, _ := cmd.Flags().GetStringToString("mod_level")
-			l := setLogger(cfg, w, modLevels)
-			l.Debugln(cfg.FilePath, cfg.BaseDir)
-			if cfg.BaseDir == "" {
-				cfg.BaseDir = path.Join(".", ".btpsimple", cfg.Src.Address.NetworkAddress())
-			}
-
-			var sr *chain.SimpleChain
-			if sr, err = chain.NewSimpleChain(&cfg.Config, w, l); err != nil {
-				return err
-			}
-			return sr.Serve()
-		},
-	}
-	rootCmd.AddCommand(startCmd)
-	startFlags := startCmd.Flags()
-	startFlags.StringToString("mod_level", nil, "Set console log level for specific module ('mod'='level',...)")
-	startFlags.String("cpuprofile", "", "CPU Profiling data file")
-	startFlags.String("memprofile", "", "Memory Profiling data file")
-	startFlags.MarkHidden("mod_level")
-
-	cli.BindPFlags(rootVc, startFlags)
 
 	genMdCmd := cli.NewGenerateMarkdownCommand(rootCmd, rootVc)
 	genMdCmd.Hidden = true
 
 	rootCmd.SilenceUsage = true
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("%+v",err)
+		fmt.Printf("%+v", err)
+		if rootVc.GetString("sentry.dsn") != "" {
+			sentry.Flush(2 * time.Second)
+		}
 		os.Exit(1)
 	}
 }
@@ -322,4 +258,24 @@ func setLogger(cfg *Config, w wallet.Wallet, modLevels map[string]string) log.Lo
 	}
 
 	return l
+}
+
+func profiling() {
+	http.ListenAndServe(":6060", nil)
+}
+
+func sentryInit() {
+	err := sentry.Init(sentry.ClientOptions{
+		// Either set your DSN here or set the SENTRY_DSN environment variable.
+		Dsn: rootVc.GetString("sentry.dsn"),
+		// Either set environment and release here or set the SENTRY_ENVIRONMENT
+		// and SENTRY_RELEASE environment variables.
+		Environment: rootVc.GetString("sentry.env"),
+		Release:     build,
+		DebugWriter: log.GlobalLogger().Writer(),
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
 }

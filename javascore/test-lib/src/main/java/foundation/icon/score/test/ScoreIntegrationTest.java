@@ -117,11 +117,10 @@ public interface ScoreIntegrationTest {
         return stream.collect(Collectors.toList());
     }
 
-    Wallet defaultWallet = getOrGenerateWallet("", System.getProperties());
     DefaultScoreClient client = new DefaultScoreClient(
             DefaultScoreClient.url(System.getProperties()),
             DefaultScoreClient.nid(System.getProperties()),
-            defaultWallet,
+            null,
             null
     );
 
@@ -171,14 +170,6 @@ public interface ScoreIntegrationTest {
             if (consumer != null) {
                 consumer.accept(eventLogs.get(0));
             }
-        };
-    }
-
-    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
-            Address address, EventLogsSupplier<T> supplier) {
-        return (txr) -> {
-            List<T> eventLogs = supplier.apply(txr, address, null);
-            assertEquals(0, eventLogs.size());
         };
     }
 

@@ -1,0 +1,21 @@
+{
+    "rx_seq": 0,
+    "tx_seq": 1,
+    "verifier": "dev-20211205172325-28827597417784",
+    "relays": [
+      {
+        "account_id": "dev-20211205172426-13718608403006",
+        "block_count": 0,
+        "message_count": 0
+      }
+    ],
+    "relay_index": 0,
+    "rotate_height": 73935506,
+    "rotate_term": 5,
+    "delay_limit": 4,
+    "rx_height_src": 1846537,
+    "rx_height": 73935501,
+    "block_interval_dst": 15000,
+    "block_interval_src": 1500,
+    "current_height": 73998396
+  }

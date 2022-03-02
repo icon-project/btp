@@ -1,0 +1,37 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+        }
+    }
+    dependencies {
+        classpath 'foundation.icon:gradle-javaee-plugin:0.7.8'
+    }
+}
+
+subprojects {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+        }
+        // polkaj public repo
+        maven { url  "https://dl.bintray.com/emerald/polkaj" }
+        // required for com.github.multiformats:java-multibase library
+        maven { url 'https://jitpack.io' }
+    }
+
+    apply plugin: 'java'
+    apply plugin: 'foundation.icon.javaee'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    // need to add this option to retrieve formal parameter names
+    compileJava {
+        options.compilerArgs += ['-parameters']
+    }
+}

@@ -1,0 +1,65 @@
+{
+    "author": "node1",
+    "header": {
+        "height": 377840,
+        "prev_height": 377839,
+        "epoch_id": "FtrJuAXqH5oXDVADh6QkUyacf2MGmLHYbHCHKSZ8C7KS",
+        "next_epoch_id": "84toXNMo2p5ttdjkV6RHdJFrgxrnTLRkCTjb7aA8Dh95",
+        "hash": "Ces24iuv4FmYVzA2yrqwVpqeNKhDiEwhCPhApoWz6Guh",
+        "prev_hash": "EnSLRQbXQX7UuJNi2UhD15xrKdQK1uwKTm7vN9iH3o7s",
+        "prev_state_root": "AzTQzvukpcmkqT5WMYdxsu6krRF6EEWsfMgDMAAyoD94",
+        "chunk_receipts_root": "9ETNjrt6MkwTgSVMMbpukfxRshSD1avBUUa4R4NuqwHv",
+        "chunk_headers_root": "4sHzgwVeECq5WMXokZ8ub86vm4aaqFRYgxtLVrFgkAw2",
+        "chunk_tx_root": "7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t",
+        "outcome_root": "7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t",
+        "chunks_included": 1,
+        "challenges_root": "11111111111111111111111111111111",
+        "timestamp": 1638428949823942688,
+        "timestamp_nanosec": "1638428949823942688",
+        "random_value": "GBSw6LnbrR1keZBpzoKqQPq84Gkc6iwziKTngHt4SS7F",
+        "validator_proposals": [],
+        "chunk_mask": [
+            true
+        ],
+        "gas_price": "1000000000",
+        "block_ordinal": 377822,
+        "rent_paid": "0",
+        "validator_reward": "0",
+        "total_supply": "5003673794148887474407700002282032",
+        "challenges_result": [],
+        "last_final_block": "GkmCfRKaggfo69SUQ9GedsBRJh7C1MRCtqgikvRb51Xr",
+        "last_ds_final_block": "EnSLRQbXQX7UuJNi2UhD15xrKdQK1uwKTm7vN9iH3o7s",
+        "next_bp_hash": "5QouG4ceHjyARjVTaySWXcXdsQduDqExVRKdwLjeANi",
+        "block_merkle_root": "5VXhVj86oYkNMZKV848QxXGwWXdhLyP4nGdcyB7Yrzz8",
+        "epoch_sync_data_hash": null,
+        "approvals": [
+            "ed25519:23S612meGdZt6YfXRDJrU7mrnZC1p3gSG86Cw8smGsHFotLm4BztcahqQ9Dekw4PF7dWBo9XbnRHmzwaQz4xhzay",
+            "ed25519:G9MPp1kRSghJhWQx1bVAU5zLEAtnRXsPxd3H1wYegUB9Duog1QEHhw3uMo25nRK5E2UpQPV41RthU61Yz66q6H2",
+            "ed25519:5KGJFQWMvxxcp8WmAphX9EkqNb4ZzRJfAfAhyUx6vtG8mBCB9ffu4B3M5pTgk27ZFG5g7c45Ybgj3xxjTH8gweeq"
+        ],
+        "signature": "ed25519:2cG9r9PM4UDc9vM1haJwuquSqo8bNYpAq6HohY5TvG8GDPtZSrs9NY6GeWWP3KbShAcWPrkvEqkjftv5VcHppEU9",
+        "latest_protocol_version": 49
+    },
+    "chunks": [
+        {
+            "chunk_hash": "u8xnkSF9D5ARvCqnoLoKf5UFQN7SAYtgGLpMsd6NDub",
+            "prev_block_hash": "EnSLRQbXQX7UuJNi2UhD15xrKdQK1uwKTm7vN9iH3o7s",
+            "outcome_root": "11111111111111111111111111111111",
+            "prev_state_root": "8W4YABs2HFGU4fRrDBbsEqSQrKDzjX6hTp4MNyPuzvuH",
+            "encoded_merkle_root": "9srVYfJrbXTjPeS9FHTFZ3eTBELazGheajZyhGzF16fg",
+            "encoded_length": 8,
+            "height_created": 377840,
+            "height_included": 377840,
+            "shard_id": 0,
+            "gas_used": 0,
+            "gas_limit": 1000000000000000,
+            "rent_paid": "0",
+            "validator_reward": "0",
+            "balance_burnt": "0",
+            "outgoing_receipts_root": "H4Rd6SGeEBTbxkitsCdzfu9xL9HtZ2eHoPCQXUeZ6bW4",
+            "tx_root": "11111111111111111111111111111111",
+            "validator_proposals": [],
+            "signature": "ed25519:5SJb4jJDW7fTzada5vcWy9e8REHfWD5NRLhAab21qBqUw3yay1Sdm3Xp966FN5Ch8mMWoDTdzvvc71jXAMxNqE7h"
+        }
+    ]
+}

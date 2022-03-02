@@ -42,7 +42,9 @@ Terminologies
   - Send BTP Relay Message
 
 ### Blockchain specifics
+
 * [ICON](doc/icon.md)
+* [Polkadot parachain with frontier](doc/polkadot_parachain_with_frontier.md)
 
 ## BTP Project
 
@@ -58,12 +60,12 @@ Terminologies
 |:--------------------|:-------|
 | /cmd           |   Root of implement of BMR |
 | /cmd/btpsimple           |   Reference implement of BMR. only provide unidirectional relay. (golang) |
-| /cmd/btpsimple/chain    |   Implement of common logic of BMR, use module |
-| /cmd/btpsimple/module    |   BMR module interface and common codes |
-| /cmd/btpsimple/module/`<chain>`    | Implement of BMR module (`Sender`,`Receiver`), `<chain>` is name of blockchain |
+| /chain/   |   BMR module interface and common codes |
+| /chain/`<chain>`    | Implement of BMR module (`Sender`,`Receiver`), `<chain>` is name of blockchain |
 | /common | Common codes (golang) |
 | /doc | Documents |
 | /docker | Docker related resources |
+| /docker-compose | Setup of local network for running e2e of BTP |
 | /`<env>` | Root of implement of BTP smart contracts, `<env>` is name of smart contract execution environment |
 | /`<env>`/bmc | Implement of BMC smart contract |
 | /`<env>`/bmv | Root of implement of BMV smart contract |
@@ -76,7 +78,10 @@ Terminologies
 #### BMR module
 | Directory                | Description  |
 |:--------------------|:-------|
-| /cmd/btpsimple/module/icon    | BMR module for ICON blockchain |
+| /chain/icon    | BMR module for ICON blockchain |
+| /chain/pra    | BMR module for Polkadot Parachain blockchain |
+| /chain/pra/receiver_relay*    | BMR module to listen for Polkadot Relay blockchain |
+| *_test.go    | BMR files to perform unit test for the *.go file |
 
 #### Python SCORE of ICON
 | Directory                | Description  |
@@ -86,8 +91,6 @@ Terminologies
 | /pyscore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
 | /pyscore/lib | BTP interface and common codes for Python SCORE |
 | /pyscore/lib/icon | ICON related common codes |
-| /pyscore/token_bsh | Reference implement of BSH smart contract for Interchain-Token transfer service |
-| /pyscore/token_bsh/sample/irc2_token | Implement of IRC-2.0 smart contract, example for support legacy smart contract |
 
 #### Java SCORE of ICON
 | Directory                | Description  |
@@ -95,4 +98,23 @@ Terminologies
 | /javascore | Implement of BTP smart contracts for Java SCORE of ICON blockchain |
 | /javascore/bmc | Implement of BMC smart contract |
 | /javascore/bmv/icon | Implement of BMV smart contract for ICON blockchain |
-| /javascore/lib | BTP interface and common codes for Python SCORE |
+| /javascore/lib | BTP interface and common codes for Java SCORE |
+
+#### Java SCORE of Parachain
+
+| Directory                | Description  |
+|:--------------------|:-------|
+| /javascore/bmv/parachain | Implement of BMV smart contract for moonbeam parachain |
+| /javascore/bmv/sovereignChain | Implement of BMV smart contract for edgeware parachain |
+| /javascore/bmv/eventDecoder | Implement of event decoder for substrate chain |
+| /javascore/bmv/helper | Script to get parachain initialize parameters and deploy contract |
+| /javascore/lib | BTP interface and common codes for Java SCORE |
+
+#### Solidity of ICON
+
+| Directory                | Description  |
+|:--------------------|:-------|
+| /solidity | Implement of BTP solidity smart contracts of ICON blockchain |
+| /solidity/bmc | Implement of BMC solidity smart contract |
+| /solidity/bmv | Implement of BMV solidity smart contract for ICON blockchain |
+| /solidity/bsh | Implement of BMC solidity smart contract |

@@ -1,0 +1,90 @@
+version: "3.9"
+x-common-args: &common-args
+    GOLOOP_IMAGE: iconloop/goloop-icon:v0.9.9
+services:
+    goloop:
+        container_name: g2m_goloop
+        env_file: ./btp.share.env
+        build:
+            context: ./goloop
+            args: *common-args
+        logging:
+                driver: none
+        volumes:
+            - ./config:/goloop/config
+            - ./data/goloop:/goloop/data
+        ports:
+            - 9080:9080
+    moonbeam:
+        container_name: g2m_moonbeam
+        build:
+            context: ./moonbeam
+            args:
+                MOONBEAM_VERSION: v0.13.2-upgrade-hotfix
+        logging:
+            driver: none
+        volumes:
+            - ./data/moonbase_dev:/data/chains/moonbase_dev
+            - ./data/moonbase_dev/wasm:/data/moonbase_dev/wasm
+        ports:
+            - "9933:9933"
+            - "9944:9944"
+        command: ['--dev', '--ws-external', '--rpc-external', '--rpc-cors', 'all', '--base-path', '/data', '--ethapi', 'debug', '--wasm-runtime-overrides', '/data/moonbase_dev/wasm', '--sealing', '3000']
+    btp_icon:
+        container_name: g2m_btp_icon
+        build:
+            context: .
+            args: *common-args
+        depends_on:
+            goloop:
+                condition: service_healthy
+            moonbeam:
+                condition: service_healthy
+        volumes:
+            - ./scripts:/btpsimple/scripts
+            - ./config:/btpsimple/config
+            - ./data/btpsimple_icon:/btpsimple/data
+        env_file: ./btp.share.env
+        healthcheck:
+            test: ["CMD", "test",  "-f", "/btpsimple/config/provision.started"]
+            interval: 3s
+            timeout: 3s
+            retries: 10
+        environment:
+            - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_icon
+            - BTPSIMPLE_CONFIG=/btpsimple/config/config.icon.json
+            - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.icon
+            - BTPSIMPLE_SRC_ENDPOINT=http://goloop:9080/api/v3/icon
+            - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.moonbeam
+            - BTPSIMPLE_DST_ENDPOINT=http://moonbeam:9933
+            - BTPSIMPLE_OFFSET=/btpsimple/config/offset.icon
+            - BTPSIMPLE_KEY_STORE=/btpsimple/config/moonbeam.keystore.json
+            - BTPSIMPLE_KEY_SECRET=/btpsimple/config/moonbeam.keysecret
+            - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_icon/btp.icon.log
+            - BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
+    btp_moonbeam:
+        container_name: g2m_btp_moonbeam
+        build:
+            context: .
+            args: *common-args
+        depends_on:
+            btp_icon:
+                condition: service_healthy
+        volumes:
+            - ./scripts:/btpsimple/scripts
+            - ./config:/btpsimple/config
+            - ./data/btpsimple_moonbeam:/btpsimple/data
+        env_file: ./btp.share.env
+        environment:
+            - BTPSIMPLE_BASE_DIR=/btpsimple/data/btpsimple_moonbeam
+            - BTPSIMPLE_CONFIG=/btpsimple/config/config.moonbeam.json
+            - BTPSIMPLE_SRC_ADDRESS=/btpsimple/config/btp.moonbeam
+            - BTPSIMPLE_SRC_ENDPOINT=http://moonbeam:9933
+            - BTPSIMPLE_DST_ADDRESS=/btpsimple/config/btp.icon
+            - BTPSIMPLE_DST_ENDPOINT=http://goloop:9080/api/v3/icon
+            - BTPSIMPLE_DST_OPTIONS="stepLimit=5000000000"
+            - BTPSIMPLE_OFFSET=/btpsimple/config/offset.moonbeam_parachain
+            - BTPSIMPLE_KEY_STORE=/btpsimple/config/goloop.keystore.json
+            - BTPSIMPLE_KEY_SECRET=/btpsimple/config/goloop.keysecret
+            - BTPSIMPLE_LOG_WRITER_FILENAME=/btpsimple/data/btpsimple_moonbeam/btpsimple_moonbeam.log
+            - BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=16]

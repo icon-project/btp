@@ -21,6 +21,7 @@ const (
 	stateDirty State = iota
 	stateHashed
 	stateFlushed
+	stateDeleted
 )
 
 type Direction int
@@ -53,6 +54,7 @@ func (w Witness) String() string {
 type Node interface {
 	Hash() []byte
 	Flush() error
+	Delete() error
 	WitnessFor(depth int, idx int64, w []Witness) (Node, []Witness, error)
 }
 
@@ -69,6 +71,10 @@ func (n *hashNode) Hash() []byte {
 }
 
 func (n *hashNode) Flush() error {
+	return nil
+}
+
+func (n *hashNode) Delete() error {
 	return nil
 }
 
@@ -161,6 +167,27 @@ func (n *branchNode) Flush() error {
 	return nil
 }
 
+func (n *branchNode) Delete() error {
+	if n == nil {
+		return nil
+	}
+	if err := n.left.Delete(); err != nil {
+		return err
+	}
+	if err := n.right.Delete(); err != nil {
+		return err
+	}
+	hv := n.Hash()
+	if !n.bucket.Has(hv) {
+		return nil
+	}
+	if err := n.bucket.Delete(hv); err != nil {
+		return err
+	}
+	n.state = stateDeleted
+	return nil
+}
+
 func (n *branchNode) WitnessFor(depth int, idx int64, w []Witness) (Node, []Witness, error) {
 	if depth < 1 {
 		return n, nil, errors.New("InvalidDepth")
@@ -218,6 +245,18 @@ func (n *dataNode) Flush() error {
 		}
 		n.state = stateFlushed
 	}
+	return nil
+}
+
+func (n *dataNode) Delete() error {
+	hash := n.Hash()
+	if !n.bucket.Has(hash) {
+		return nil
+	}
+	if err := n.bucket.Delete(hash); err != nil {
+		return err
+	}
+	n.state = stateDeleted
 	return nil
 }
 
@@ -294,6 +333,15 @@ func (a *Accumulator) Flush() error {
 	}
 }
 
+func (a *Accumulator) RootSize() int {
+	for i, r := range a.roots {
+		if r == nil {
+			return i
+		}
+	}
+	return len(a.roots)
+}
+
 func (a *Accumulator) Recover() error {
 	bs, err := a.Bucket.Get(a.KeyForState)
 	if err != nil {
@@ -351,6 +399,11 @@ func (a *Accumulator) WitnessFor(idx int64) (w []Witness, err error) {
 		return nil, errors.ErrNotFound
 	}
 	offset := len(a.roots)
+
+	// FIXME fix this case MTA root := a.roots[0]
+	// if offset == 0 {
+	// }
+
 	for offset > 0 {
 		offset -= 1
 		if a.roots[offset] == nil {
@@ -507,13 +560,13 @@ func GetDepthByHeightAndAccLength(height, accLength int64) int {
 	depth := 0
 	v := accLength
 	//calculate max depth
-	for ; 0 < v ; v >>= 1 {
+	for ; 0 < v; v >>= 1 {
 		depth++
 	}
-	for ; depth > 0; {
+	for depth > 0 {
 		depth--
 		bitFlag := int64(1) << uint(depth)
-		if accLength & bitFlag == bitFlag {
+		if accLength&bitFlag == bitFlag {
 			if height < bitFlag {
 				return depth
 			}

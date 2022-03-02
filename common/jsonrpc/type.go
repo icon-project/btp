@@ -33,11 +33,25 @@ const (
 )
 
 type Error struct {
+	Name    string      `json:"name,omitempty"`
+	Cause   Causes      `json:"cause,omitempty"`
 	Code    ErrorCode   `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
+type Causes struct {
+	Name string      `json:"name,omitempty"`
+	Info interface{} `json:"info,omitempty"`
+}
+
 func (e *Error) Error() string {
+
+	var Empty = Causes{}
+
+	if e.Name != "" && e.Cause != Empty {
+		return fmt.Sprintf("jsonrpc: name: %s, cause: %+v  code: %d, message: %s, data: %+v", e.Name, e.Cause, e.Code, e.Message, e.Data)
+	}
+
 	return fmt.Sprintf("jsonrpc: code: %d, message: %s, data: %+v", e.Code, e.Message, e.Data)
 }

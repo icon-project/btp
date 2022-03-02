@@ -6,6 +6,7 @@ import (
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
+	"github.com/icon-project/btp/common/log"
 )
 
 type ExtAccumulator struct {
@@ -97,19 +98,27 @@ func (a *ExtAccumulator) Recover() error {
 	}
 	a.length = s.Height - s.Offset
 	a.serialized = b
-	if a.offset < s.Offset {
-		return errors.New("not support recover to lower offset")
-	} else if a.offset > s.Offset {
-		//TODO rebuild node
-		//a.offset = s.Offset
-		return errors.New("not support recover to higher offset")
+	if a.offset != s.Offset {
+		a.length = 0
+		a.Clear()
+		log.Debugf("resync with new offset:%d, height:%d", a.Offset(), a.Height())
 	}
 	return nil
 }
 
 func (a *ExtAccumulator) addNode(h int, n Node, w []Witness) []Witness {
+	//limitRoots, offset calculate
+	var rootSize = a.RootSize()
+	if a.limitRoots > 0 && rootSize == a.limitRoots {
+		log.Debugf("limitRoots, offset calculate:%d, rootSize:%d", a.Offset(), rootSize)
+		a.roots[rootSize-1].Delete()
+		a.roots[rootSize-1] = nil
+		var change = int64(1) << (a.limitRoots - 1)
+		a.offset += change
+		a.length -= change
+		log.Debugf("new offset:%d", a.Offset())
+	}
 	w = a.Accumulator.addNode(h, n, w)
-	//TODO limitRoots, offset calculate
 	return w
 }
 
@@ -134,6 +143,16 @@ func (a *ExtAccumulator) AddData(d []byte) []Witness {
 		data:      d,
 	}
 	return a.AddNode(l)
+}
+
+func (a *ExtAccumulator) Clear() {
+	for _, rn := range a.roots {
+		if rn != nil {
+			rn.Delete()
+		}
+	}
+	a.roots = make([]Node, a.limitRoots)
+	a.length = 0
 }
 
 func (a *ExtAccumulator) WitnessForAt(height, at, offset int64) (int64, []Witness, error) {
@@ -175,9 +194,10 @@ func (a *ExtAccumulator) GetNode(height int64) (Node, error) {
 	return a.Accumulator.GetNode(height - 1 - a.offset)
 }
 
-func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64) *ExtAccumulator {
+func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64, limitRoots int) *ExtAccumulator {
 	return &ExtAccumulator{
-		offset: offset,
+		offset:     offset,
+		limitRoots: limitRoots,
 		Accumulator: Accumulator{
 			KeyForState: keyForState,
 			Bucket:      bk,

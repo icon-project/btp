@@ -1,0 +1,671 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity >=0.5.0 <0.8.0;
+pragma experimental ABIEncoderV2;
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "./interfaces/IBSHPeriphery.sol";
+import "./interfaces/IBSHCore.sol";
+import "./libraries/String.sol";
+import "./libraries/Types.sol";
+import "./ERC20Tradable.sol";
+import "./interfaces/IERC20Tradable.sol";
+
+/**
+   @title BSHCore contract
+   @dev This contract is used to handle coin transferring service
+   Note: The coin of following contract can be:
+   Native Coin : The native coin of this chain
+   Wrapped Native Coin : A tokenized ERC1155 version of another native coin like ICX
+*/
+contract BSHCore is Initializable, IBSHCore, ReentrancyGuardUpgradeable {
+    using SafeMathUpgradeable for uint256;
+    using String for string;
+    event SetOwnership(address indexed promoter, address indexed newOwner);
+    event RemoveOwnership(address indexed remover, address indexed formerOwner);
+
+    modifier onlyOwner() {
+        require(owners[msg.sender] == true, "Unauthorized");
+        _;
+    }
+
+    modifier onlyBSHPeriphery() {
+        require(msg.sender == address(bshPeriphery), "Unauthorized");
+        _;
+    }
+
+    uint256 private constant FEE_DENOMINATOR = 10**4;
+    uint256 public feeNumerator;
+    uint256 public fixedFee;
+    uint256 private constant RC_OK = 0;
+    uint256 private constant RC_ERR = 1;
+
+    IBSHPeriphery internal bshPeriphery;
+
+    address[] private listOfOwners;
+    uint256[] private chargedAmounts; //   a list of amounts have been charged so far (use this when Fee Gathering occurs)
+    string[] internal coinsName; // a string array stores names of supported coins
+    string[] private chargedCoins; //   a list of coins' names have been charged so far (use this when Fee Gathering occurs)
+    string internal nativeCoinName;
+
+    mapping(address => bool) internal owners;
+    mapping(string => uint256) internal aggregationFee; // storing Aggregation Fee in state mapping variable.
+    mapping(address => mapping(string => Types.Balance)) internal balances;
+    mapping(string => address) internal coins; //  a list of all supported coins
+
+    function initialize(
+        string calldata _nativeCoinName,
+        uint256 _feeNumerator,
+        uint256 _fixedFee
+    ) public initializer {
+        owners[msg.sender] = true;
+        listOfOwners.push(msg.sender);
+        emit SetOwnership(address(0), msg.sender);
+        nativeCoinName = _nativeCoinName;
+        coins[_nativeCoinName] = address(0);
+        feeNumerator = _feeNumerator;
+        fixedFee = _fixedFee;
+        coinsName.push(_nativeCoinName);
+    }
+
+    /**
+       @notice Adding another Onwer.
+       @dev Caller must be an Onwer of BTP network
+       @param _owner    Address of a new Onwer.
+   */
+    function addOwner(address _owner) external override onlyOwner {
+        require(owners[_owner] == false, "ExistedOwner");
+        owners[_owner] = true;
+        listOfOwners.push(_owner);
+        emit SetOwnership(msg.sender, _owner);
+    }
+
+    /**
+       @notice Removing an existing Owner.
+       @dev Caller must be an Owner of BTP network
+       @dev If only one Owner left, unable to remove the last Owner
+       @param _owner    Address of an Owner to be removed.
+   */
+    function removeOwner(address _owner) external override onlyOwner {
+        require(listOfOwners.length > 1, "Unable to remove last Owner");
+        require(owners[_owner] == true, "Removing Owner not found");
+        delete owners[_owner];
+        _remove(_owner);
+        emit RemoveOwnership(msg.sender, _owner);
+    }
+
+    function _remove(address _addr) internal {
+        for (uint256 i = 0; i < listOfOwners.length; i++)
+            if (listOfOwners[i] == _addr) {
+                listOfOwners[i] = listOfOwners[listOfOwners.length - 1];
+                listOfOwners.pop();
+                break;
+            }
+    }
+
+    /**
+       @notice Checking whether one specific address has Owner role.
+       @dev Caller can be ANY
+       @param _owner    Address needs to verify.
+    */
+    function isOwner(address _owner) external view override returns (bool) {
+        return owners[_owner];
+    }
+
+    /**
+       @notice Get a list of current Owners
+       @dev Caller can be ANY
+       @return      An array of addresses of current Owners
+    */
+    function getOwners() external view override returns (address[] memory) {
+        return listOfOwners;
+    }
+
+    /**
+        @notice update BSH Periphery address.
+        @dev Caller must be an Owner of this contract
+        _bshPeriphery Must be different with the existing one.
+        @param _bshPeriphery    BSHPeriphery contract address.
+    */
+    function updateBSHPeriphery(address _bshPeriphery)
+        external
+        override
+        onlyOwner
+    {
+        require(_bshPeriphery != address(0), "InvalidSetting");
+        if (address(bshPeriphery) != address(0)) {
+            require(
+                bshPeriphery.hasPendingRequest() == false,
+                "HasPendingRequest"
+            );
+        }
+        bshPeriphery = IBSHPeriphery(_bshPeriphery);
+    }
+
+    /**
+        @notice set fee ratio.
+        @dev Caller must be an Owner of this contract
+        The transfer fee is calculated by feeNumerator/FEE_DEMONINATOR. 
+        The feeNumetator should be less than FEE_DEMONINATOR
+        _feeNumerator is set to `10` in construction by default, which means the default fee ratio is 0.1%.
+        @param _feeNumerator    the fee numerator
+    */
+    function setFeeRatio(uint256 _feeNumerator) external override onlyOwner {
+        require(_feeNumerator <= FEE_DENOMINATOR, "InvalidSetting");
+        feeNumerator = _feeNumerator;
+    }
+
+    /**
+        @notice set Fixed Fee.
+        @dev Caller must be an Owner
+        @param _fixedFee    A new value of Fixed Fee
+    */
+    function setFixedFee(uint256 _fixedFee) external override onlyOwner {
+        require(_fixedFee > 0, "InvalidSetting");
+        fixedFee = _fixedFee;
+    }
+
+    /**
+        @notice Registers a wrapped coin and id number of a supporting coin.
+        @dev Caller must be an Owner of this contract
+        _name Must be different with the native coin name.
+        _symbol symbol name for wrapped coin.
+        _decimals decimal number
+        @param _name    Coin name. 
+    */
+    function register(
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals
+    ) external override onlyOwner {
+        require(!_name.compareTo(nativeCoinName), "ExistNativeCoin");
+        require(coins[_name] == address(0), "ExistCoin");
+        address deployedERC20 = address(
+            new ERC20Tradable(_name, _symbol, _decimals)
+        );
+        coins[_name] = deployedERC20;
+        coinsName.push(_name);
+    }
+
+    /**
+       @notice Return all supported coins names
+       @dev 
+       @return _names   An array of strings.
+    */
+    function coinNames()
+        external
+        view
+        override
+        returns (string[] memory _names)
+    {
+        return coinsName;
+    }
+
+    /**
+       @notice  Return an _id number of Coin whose name is the same with given _coinName.
+       @dev     Return nullempty if not found.
+       @return  _coinId     An ID number of _coinName.
+    */
+    function coinId(string calldata _coinName)
+        external
+        view
+        override
+        returns (address)
+    {
+        return coins[_coinName];
+    }
+
+    /**
+       @notice  Check Validity of a _coinName
+       @dev     Call by BSHPeriphery contract to validate a requested _coinName
+       @return  _valid     true of false
+    */
+    function isValidCoin(string calldata _coinName)
+        external
+        view
+        override
+        returns (bool _valid)
+    {
+        return (coins[_coinName] != address(0) ||
+            _coinName.compareTo(nativeCoinName));
+    }
+
+    /**
+        @notice Return a usable/locked/refundable balance of an account based on coinName.
+        @return _usableBalance the balance that users are holding.
+        @return _lockedBalance when users transfer the coin, 
+                it will be locked until getting the Service Message Response.
+        @return _refundableBalance refundable balance is the balance that will be refunded to users.
+    */
+    function getBalanceOf(address _owner, string memory _coinName)
+        external
+        view
+        override
+        returns (
+            uint256 _usableBalance,
+            uint256 _lockedBalance,
+            uint256 _refundableBalance
+        )
+    {
+        if (_coinName.compareTo(nativeCoinName)) {
+            return (
+                address(_owner).balance,
+                balances[_owner][_coinName].lockedBalance,
+                balances[_owner][_coinName].refundableBalance
+            );
+        }
+        address _erc20Address = coins[_coinName];
+        _usableBalance = _erc20Address != address(0)? IERC20Tradable(_erc20Address).balanceOf(_owner) : 0;
+        return (
+            _usableBalance,
+            balances[_owner][_coinName].lockedBalance,
+            balances[_owner][_coinName].refundableBalance
+        );
+    }
+
+    /**
+        @notice Return a list Balance of an account.
+        @dev The order of request's coinNames must be the same with the order of return balance
+        Return 0 if not found.
+        @return _usableBalances         An array of Usable Balances
+        @return _lockedBalances         An array of Locked Balances
+        @return _refundableBalances     An array of Refundable Balances
+    */
+    function getBalanceOfBatch(address _owner, string[] calldata _coinNames)
+        external
+        view
+        override
+        returns (
+            uint256[] memory _usableBalances,
+            uint256[] memory _lockedBalances,
+            uint256[] memory _refundableBalances
+        )
+    {
+        _usableBalances = new uint256[](_coinNames.length);
+        _lockedBalances = new uint256[](_coinNames.length);
+        _refundableBalances = new uint256[](_coinNames.length);
+        for (uint256 i = 0; i < _coinNames.length; i++) {
+            (
+                _usableBalances[i],
+                _lockedBalances[i],
+                _refundableBalances[i]
+            ) = this.getBalanceOf(_owner, _coinNames[i]);
+        }
+        return (_usableBalances, _lockedBalances, _refundableBalances);
+    }
+
+    /**
+        @notice Return a list accumulated Fees.
+        @dev only return the asset that has Asset's value greater than 0
+        @return _accumulatedFees An array of Asset
+    */
+    function getAccumulatedFees()
+        external
+        view
+        override
+        returns (Types.Asset[] memory _accumulatedFees)
+    {
+        _accumulatedFees = new Types.Asset[](coinsName.length);
+        for (uint256 i = 0; i < coinsName.length; i++) {
+            _accumulatedFees[i] = (
+                Types.Asset(coinsName[i], aggregationFee[coinsName[i]])
+            );
+        }
+        return _accumulatedFees;
+    }
+
+    /**
+       @notice Allow users to deposit `msg.value` native coin into a BSHCore contract.
+       @dev MUST specify msg.value
+       @param _to  An address that a user expects to receive an amount of tokens.
+    */
+    function transferNativeCoin(string calldata _to) external payable override {
+        //  Aggregation Fee will be charged on BSH Contract
+        //  A new charging fee has been proposed. `fixedFee` is introduced
+        //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+        //  Thus, it's likely that _chargeAmt is always greater than 0
+        //  require(_chargeAmt > 0) can be omitted
+        //  If msg.value less than _chargeAmt, it likely fails when calculating
+        //  _amount = _value - _chargeAmt
+        uint256 _chargeAmt = msg
+            .value
+            .mul(feeNumerator)
+            .div(FEE_DENOMINATOR)
+            .add(fixedFee);
+
+        //  @dev msg.value is an amount request to transfer (include fee)
+        //  Later on, it will be calculated a true amount that should be received at a destination
+        _sendServiceMessage(
+            msg.sender,
+            _to,
+            coinsName[0],
+            msg.value,
+            _chargeAmt
+        );
+    }
+
+    /**
+       @notice Allow users to deposit an amount of wrapped native coin `_coinName` from the `msg.sender` address into the BSHCore contract.
+       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
+       It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
+       @param _coinName    A given name of a wrapped coin 
+       @param _value       An amount request to transfer from a Requester (include fee)
+       @param _to          Target BTP address.
+    */
+    function transfer(
+        string calldata _coinName,
+        uint256 _value,
+        string calldata _to
+    ) external override {
+        require(!_coinName.compareTo(nativeCoinName), "InvalidWrappedCoin");
+        address _erc20Address = coins[_coinName];
+        require(_erc20Address != address(0), "UnregisterCoin");
+        //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+        //  Thus, it's likely that _chargeAmt is always greater than 0
+        //  require(_chargeAmt > 0) can be omitted
+        //  If _value less than _chargeAmt, it likely fails when calculating
+        //  _amount = _value - _chargeAmt
+        uint256 _chargeAmt = _value.mul(feeNumerator).div(FEE_DENOMINATOR).add(
+            fixedFee
+        );
+
+        //  Transfer and Lock Token processes:
+        //  BSHCore contract calls safeTransferFrom() to transfer the Token from Caller's account (msg.sender)
+        //  Before that, Caller must approve (setApproveForAll) to accept
+        //  token being transfer out by an Operator
+        //  If this requirement is failed, a transaction is reverted.
+        //  After transferring token, BSHCore contract updates Caller's locked balance
+        //  as a record of pending transfer transaction
+        //  When a transaction is completed without any error on another chain,
+        //  Locked Token amount (bind to an address of caller) will be reset/subtract,
+        //  then emit a successful TransferEnd event as a notification
+        //  Otherwise, the locked amount will also be updated
+        //  but BSHCore contract will issue a refund to Caller before emitting an error TransferEnd event
+        IERC20Tradable(_erc20Address).transferFrom(
+            msg.sender,
+            address(this),
+            _value
+        );
+        //  @dev _value is an amount request to transfer (include fee)
+        //  Later on, it will be calculated a true amount that should be received at a destination
+        _sendServiceMessage(msg.sender, _to, _coinName, _value, _chargeAmt);
+    }
+
+    /**
+       @notice This private function handles overlapping procedure before sending a service message to BSHPeriphery
+       @param _from             An address of a Requester
+       @param _to               BTP address of of Receiver on another chain
+       @param _coinName         A given name of a requested coin 
+       @param _value            A requested amount to transfer from a Requester (include fee)
+       @param _chargeAmt        An amount being charged for this request
+    */
+    function _sendServiceMessage(
+        address _from,
+        string calldata _to,
+        string memory _coinName,
+        uint256 _value,
+        uint256 _chargeAmt
+    ) private {
+        //  Lock this requested _value as a record of a pending transferring transaction
+        //  @dev `_value` is a requested amount to transfer, from a Requester, including charged fee
+        //  The true amount to receive at a destination receiver is calculated by
+        //  _amounts[0] = _value.sub(_chargeAmt);
+        lockBalance(_from, _coinName, _value);
+        string[] memory _coins = new string[](1);
+        _coins[0] = _coinName;
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = _value.sub(_chargeAmt);
+        uint256[] memory _fees = new uint256[](1);
+        _fees[0] = _chargeAmt;
+
+        //  @dev `_amounts` is a true amount to receive at a destination after deducting a charged fee
+        bshPeriphery.sendServiceMessage(_from, _to, _coins, _amounts, _fees);
+    }
+
+    /**
+       @notice Allow users to transfer multiple coins/wrapped coins to another chain
+       @dev Caller must set to approve that the wrapped tokens can be transferred out of the `msg.sender` account by BSHCore contract.
+       It MUST revert if the balance of the holder for token `_coinName` is lower than the `_value` sent.
+       In case of transferring a native coin, it also checks `msg.value`
+       The number of requested coins MUST be as the same as the number of requested values
+       The requested coins and values MUST be matched respectively
+       @param _coinNames    A list of requested transferring wrapped coins
+       @param _values       A list of requested transferring values respectively with its coin name
+       @param _to          Target BTP address.
+    */
+    function transferBatch(
+        string[] calldata _coinNames,
+        uint256[] memory _values,
+        string calldata _to
+    ) external payable override {
+        require(_coinNames.length == _values.length, "InvalidRequest");
+        uint256 size = msg.value != 0
+            ? _coinNames.length.add(1)
+            : _coinNames.length;
+        string[] memory _coins = new string[](size);
+        uint256[] memory _amounts = new uint256[](size);
+        uint256[] memory _chargeAmts = new uint256[](size);
+
+        for (uint256 i = 0; i < _coinNames.length; i++) {
+            address _erc20Addresses = coins[_coinNames[i]];
+            //  Does not need to check if _coinNames[i] == native_coin
+            //  If _coinNames[i] is a native_coin, coins[_coinNames[i]] = 0
+            require(_erc20Addresses != address(0), "UnregisterCoin");
+
+            IERC20Tradable(_erc20Addresses).transferFrom(
+                msg.sender,
+                address(this),
+                _values[i]
+            );
+
+            //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+            //  Thus, it's likely that _chargeAmt is always greater than 0
+            //  require(_chargeAmt > 0) can be omitted
+            _coins[i] = _coinNames[i];
+            _chargeAmts[i] = _values[i]
+                .mul(feeNumerator)
+                .div(FEE_DENOMINATOR)
+                .add(fixedFee);
+            _amounts[i] = _values[i].sub(_chargeAmts[i]);
+
+            //  Lock this requested _value as a record of a pending transferring transaction
+            //  @dev Note that: _value is a requested amount to transfer from a Requester including charged fee
+            //  The true amount to receive at a destination receiver is calculated by
+            //  _amounts[i] = _values[i].sub(_chargeAmts[i]);
+            lockBalance(msg.sender, _coinNames[i], _values[i]);
+        }
+
+        if (msg.value != 0) {
+            //  _chargeAmt = fixedFee + msg.value * feeNumerator / FEE_DENOMINATOR
+            //  Thus, it's likely that _chargeAmt is always greater than 0
+            //  require(_chargeAmt > 0) can be omitted
+            _coins[size - 1] = nativeCoinName; // push native_coin at the end of request
+            _chargeAmts[size - 1] = msg
+                .value
+                .mul(feeNumerator)
+                .div(FEE_DENOMINATOR)
+                .add(fixedFee);
+            _amounts[size - 1] = msg.value.sub(_chargeAmts[size - 1]);
+            lockBalance(msg.sender, coinsName[0], msg.value);
+        }
+
+        //  @dev `_amounts` is true amounts to receive at a destination after deducting charged fees
+        bshPeriphery.sendServiceMessage(
+            msg.sender,
+            _to,
+            _coins,
+            _amounts,
+            _chargeAmts
+        );
+    }
+
+    /**
+        @notice Reclaim the token's refundable balance by an owner.
+        @dev Caller must be an owner of coin
+        The amount to claim must be smaller or equal than refundable balance
+        @param _coinName   A given name of coin
+        @param _value       An amount of re-claiming tokens
+    */
+    function reclaim(string calldata _coinName, uint256 _value)
+        external
+        override
+        nonReentrant
+    {
+        require(
+            balances[msg.sender][_coinName].refundableBalance >= _value,
+            "Imbalance"
+        );
+
+        balances[msg.sender][_coinName].refundableBalance = balances[
+            msg.sender
+        ][_coinName].refundableBalance.sub(_value);
+
+        this.refund(msg.sender, _coinName, _value);
+    }
+
+    //  Solidity does not allow using try_catch with interal/private function
+    //  Thus, this function would be set as 'external`
+    //  But, it has restriction. It should be called by this contract only
+    //  In addition, there are only two functions calling this refund()
+    //  + handleRequestService(): this function only called by BSHPeriphery
+    //  + reclaim(): this function can be called by ANY
+    //  In case of reentrancy attacks, the chance happenning on BSHPeriphery
+    //  since it requires a request from BMC which requires verification fron BMV
+    //  reclaim() has higher chance to have reentrancy attacks.
+    //  So, it must be prevented by adding 'nonReentrant'
+    function refund(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external {
+        require(msg.sender == address(this), "Unauthorized");
+        if (_coinName.compareTo(nativeCoinName)) {
+            paymentTransfer(payable(_to), _value);
+        } else {
+            address _erc20Address = coins[_coinName];
+            IERC20Tradable(_erc20Address).transfer(_to, _value);
+        }
+    }
+
+    function paymentTransfer(address payable _to, uint256 _amount) private {
+        (bool sent, ) = _to.call{value: _amount}("");
+        require(sent, "Payment transfer failed");
+    }
+
+    /**
+        @notice mint the wrapped coin.
+        @dev Caller must be an BSHPeriphery contract
+        Invalid _coinName will have an _id = 0. However, _id = 0 is also dedicated to Native Coin
+        Thus, BSHPeriphery will check a validity of a requested _coinName before calling
+        for the _coinName indicates with id = 0, it should send the Native Coin (Example: PRA) to user account
+        @param _to    the account receive the minted coin
+        @param _coinName    coin name
+        @param _value    the minted amount   
+    */
+    function mint(
+        address _to,
+        string calldata _coinName,
+        uint256 _value
+    ) external override onlyBSHPeriphery {
+        if (_coinName.compareTo(nativeCoinName)) {
+            paymentTransfer(payable(_to), _value);
+        } else {
+            address _erc20Address = coins[_coinName];
+            IERC20Tradable(_erc20Address).mint(_to, _value);
+        }
+    }
+
+    /**
+        @notice Handle a response of a requested service
+        @dev Caller must be an BSHPeriphery contract
+        @param _requester   An address of originator of a requested service
+        @param _coinName    A name of requested coin
+        @param _value       An amount to receive on a destination chain
+        @param _fee         An amount of charged fee
+    */
+    function handleResponseService(
+        address _requester,
+        string calldata _coinName,
+        uint256 _value,
+        uint256 _fee,
+        uint256 _rspCode
+    ) external override onlyBSHPeriphery {
+        //  Fee Gathering and Transfer Coin Request use the same method
+        //  and both have the same response
+        //  In case of Fee Gathering's response, `_requester` is this contract's address
+        //  Thus, check that first
+        //  -- If `_requester` is this contract's address, then check whethere response's code is RC_ERR
+        //  In case of RC_ERR, adding back charged fees to `aggregationFee` state variable
+        //  In case of RC_OK, ignore and return
+        //  -- Otherwise, handle service's response as normal
+        if (_requester == address(this)) {
+            if (_rspCode == RC_ERR) {
+                aggregationFee[_coinName] = aggregationFee[_coinName].add(
+                    _value
+                );
+            }
+            return;
+        }
+        uint256 _amount = _value.add(_fee);
+        balances[_requester][_coinName].lockedBalance = balances[_requester][
+            _coinName
+        ].lockedBalance.sub(_amount);
+
+        //  A new implementation has been proposed to prevent spam attacks
+        //  In receiving error response, BSHCore refunds `_value`, not including `_fee`, back to Requestor
+        if (_rspCode == RC_ERR) {
+            try this.refund(_requester, _coinName, _value) {} catch {
+                balances[_requester][_coinName].refundableBalance = balances[
+                    _requester
+                ][_coinName].refundableBalance.add(_value);
+            }
+        } else if (_rspCode == RC_OK) {
+            address _erc20Address = coins[_coinName];
+            if (!_coinName.compareTo(nativeCoinName)) {
+                IERC20Tradable(_erc20Address).burn(address(this), _value);
+            }
+        }
+        aggregationFee[_coinName] = aggregationFee[_coinName].add(_fee);
+    }
+
+    /**
+        @notice Handle a request of Fee Gathering
+            Usage: Copy all charged fees to an array
+        @dev Caller must be an BSHPeriphery contract
+    */
+    function transferFees(string calldata _fa)
+        external
+        override
+        onlyBSHPeriphery
+    {
+        //  @dev Due to uncertainty in identifying a size of returning memory array
+        //  and Solidity does not allow to use 'push' with memory array (only storage)
+        //  thus, must use 'temp' storage state variable
+        for (uint256 i = 0; i < coinsName.length; i++) {
+            if (aggregationFee[coinsName[i]] != 0) {
+                chargedCoins.push(coinsName[i]);
+                chargedAmounts.push(aggregationFee[coinsName[i]]);
+                delete aggregationFee[coinsName[i]];
+            }
+        }
+        bshPeriphery.sendServiceMessage(
+            address(this),
+            _fa,
+            chargedCoins,
+            chargedAmounts,
+            new uint256[](chargedCoins.length) //  chargedFees is an array of 0 since this is a fee gathering request
+        );
+        delete chargedCoins;
+        delete chargedAmounts;
+    }
+
+    function lockBalance(
+        address _to,
+        string memory _coinName,
+        uint256 _value
+    ) private {
+        balances[_to][_coinName].lockedBalance = balances[_to][_coinName]
+            .lockedBalance
+            .add(_value);
+    }
+}
