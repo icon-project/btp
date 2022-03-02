@@ -61,60 +61,60 @@ public class OwnershipTest implements NCSIntegrationTest {
         }
     }
 
-    // @Test
-    // void addOwnerShouldSuccess() {
-    //     addOwner(address);
-    // }
+    @Test
+    void addOwnerShouldSuccess() {
+        addOwner(address);
+    }
 
-    // static void assertAlreadyExists(Executable executable) {
-    //     AssertNCSException.assertUnknown(executable);
-    // }
+    static void assertAlreadyExists(Executable executable) {
+        AssertNCSException.assertUnknown(executable);
+    }
 
-    // @Test
-    // void addOwnerShouldRevertAlreadyExists() {
-    //     addOwner(address);
+    @Test
+    void addOwnerShouldRevertAlreadyExists() {
+        addOwner(address);
 
-    //     assertAlreadyExists(() -> addOwner(address));
-    // }
+        assertAlreadyExists(() -> addOwner(address));
+    }
 
-    // @Test
-    // void removeOwnerShouldSuccess() {
-    //     addOwner(address);
+    @Test
+    void removeOwnerShouldSuccess() {
+        addOwner(address);
 
-    //     removeOwner(address);
-    // }
+        removeOwner(address);
+    }
 
-    // static void assertNotExists(Executable executable) {
-    //     AssertNCSException.assertUnknown(executable);
-    // }
+    static void assertNotExists(Executable executable) {
+        AssertNCSException.assertUnknown(executable);
+    }
 
-    // @Test
-    // void removeOwnerShouldRevertNotExists() {
-    //     assertNotExists(() -> removeOwner(address));
-    // }
+    @Test
+    void removeOwnerShouldRevertNotExists() {
+        assertNotExists(() -> removeOwner(address));
+    }
 
-    // static void assertUnauthorized(Executable executable) {
-    //     AssertNCSException.assertUnauthorized(executable);
-    // }
+    static void assertUnauthorized(Executable executable) {
+        AssertNCSException.assertUnauthorized(executable);
+    }
 
-    // @Test
-    // void addOwnerShouldRevertUnauthorized() {
-    //     assertUnauthorized(() -> ncsOwnerManagerWithTester.addOwner(address));
-    // }
+    @Test
+    void addOwnerShouldRevertUnauthorized() {
+        assertUnauthorized(() -> ncsOwnerManagerWithTester.addOwner(address));
+    }
 
-    // @Test
-    // void removeOwnerShouldRevertUnauthorized() {
-    //     assertUnauthorized(() -> ncsOwnerManagerWithTester.removeOwner(address));
-    // }
+    @Test
+    void removeOwnerShouldRevertUnauthorized() {
+        assertUnauthorized(() -> ncsOwnerManagerWithTester.removeOwner(address));
+    }
 
-    // @Test
-    // void registerShouldRevertUnauthorized() {
-    //     assertUnauthorized(() -> ncsWithTester.register(string));
-    // }
+    @Test
+    void registerShouldRevertUnauthorized() {
+        assertUnauthorized(() -> ncsWithTester.register(string));
+    }
 
-    // @Test
-    // void setFeeRateShouldRevertUnauthorized() {
-    //     assertUnauthorized(() -> ncsWithTester.setFeeRatio(bigInteger));
-    // }
+    @Test
+    void setFeeRateShouldRevertUnauthorized() {
+        assertUnauthorized(() -> ncsWithTester.setFeeRatio(bigInteger));
+    }
 
 }

@@ -18,6 +18,8 @@ package foundation.icon.btp.nativecoin;
 
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.mock.MockBMCScoreClient;
+import foundation.icon.btp.nativecoin.irc31.IRC31IntegrationTest;
+import foundation.icon.btp.nativecoin.irc31.IRC31SupplierTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.btp.test.SendMessageEventLog;
@@ -36,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.security.MessageDigest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,60 +64,60 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
     static BTPAddress linkFa = new BTPAddress(BTPAddress.PROTOCOL_BTP, linkNet, testerAddress.toString());
     static BigInteger feeRatio = BigInteger.TEN;
 
-    // static boolean isExistsCoin(String name) {
-    //     return ScoreIntegrationTest.indexOf(ncs.coinNames(), name) >= 0;
-    // }
+    static boolean isExistsCoin(String name) {
+        return ScoreIntegrationTest.indexOf(ncs.coinNames(), name) >= 0;
+    }
 
-    // static void register(String name) {
-    //     ncs.register(name);
-    //     assertTrue(isExistsCoin(name));
-    // }
+    static void register(String name) {
+        ncs.register(name);
+        assertTrue(isExistsCoin(name));
+    }
 
-    // static BigInteger transferBatch(TransferTransaction transaction) {
-    //     BigInteger nativeCoinValue = nativeCoinValue(transaction.getAssets());
-    //     List<Asset> assets = coinAssets(transaction.getAssets());
-    //     BigInteger[] coinIds = coinIds(assets);
-    //     String[] coinNames = coinNames(assets);
-    //     BigInteger[] coinValues = coinValues(assets);
-    //     Address from = new Address(transaction.getFrom());
-    //     BigInteger[] snContainer = new BigInteger[1];
-    //     Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
-    //             .andThen(sendMessageEventLogChecker(transaction, snContainer))
-    //             .andThen(IRC31SupplierTest.transferFromBatchChecker(
-    //                     ncsAddress, from, ncsAddress, coinIds, coinValues));
-    //     Executable executable = () -> ((NCSScoreClient) ncs).transferBatch(
-    //             checker,
-    //             nativeCoinValue,
-    //             coinNames, coinValues, to.toString());
-    //     ScoreIntegrationTest.balanceCheck(ncsAddress, nativeCoinValue, () ->
-    //             IRC31SupplierTest.balanceBatchCheck(ncsAddress, coinIds, coinValues, () ->
-    //                     balanceBatchCheck(from, transaction.getAssets(), executable,
-    //                             BalanceCheckType.lock)));
-    //     return snContainer[0];
-    // }
+    static BigInteger transferBatch(TransferTransaction transaction) {
+        BigInteger nativeCoinValue = nativeCoinValue(transaction.getAssets());
+        List<Asset> assets = coinAssets(transaction.getAssets());
+        BigInteger[] coinIds = coinIds(assets);
+        String[] coinNames = coinNames(assets);
+        BigInteger[] coinValues = coinValues(assets);
+        Address from = new Address(transaction.getFrom());
+        BigInteger[] snContainer = new BigInteger[1];
+        Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
+                .andThen(sendMessageEventLogChecker(transaction, snContainer))
+                .andThen(IRC31SupplierTest.transferFromBatchChecker(
+                        ncsAddress, from, ncsAddress, coinIds, coinValues));
+        Executable executable = () -> ((NCSScoreClient) ncs).transferBatch(
+                checker,
+                nativeCoinValue,
+                coinNames, coinValues, to.toString());
+        ScoreIntegrationTest.balanceCheck(ncsAddress, nativeCoinValue, () ->
+                IRC31SupplierTest.balanceBatchCheck(ncsAddress, coinIds, coinValues, () ->
+                        balanceBatchCheck(from, transaction.getAssets(), executable,
+                                BalanceCheckType.lock)));
+        return snContainer[0];
+    }
 
 
-    // static void handleTransferResponse(TransferTransaction transaction, BigInteger sn) {
-    //     TransferResponse response = new TransferResponse();
-    //     response.setCode(TransferResponse.RC_OK);
-    //     response.setMessage(TransferResponse.OK_MSG);
-    //     NCSMessage ncsMessage = new NCSMessage();
-    //     ncsMessage.setServiceType(NCSMessage.REPONSE_HANDLE_SERVICE);
-    //     ncsMessage.setData(response.toBytes());
+    static void handleTransferResponse(TransferTransaction transaction, BigInteger sn) {
+        TransferResponse response = new TransferResponse();
+        response.setCode(TransferResponse.RC_OK);
+        response.setMessage(TransferResponse.OK_MSG);
+        NCSMessage ncsMessage = new NCSMessage();
+        ncsMessage.setServiceType(NCSMessage.REPONSE_HANDLE_SERVICE);
+        ncsMessage.setData(response.toBytes());
 
-    //     List<Asset> assets = coinAssets(transferRequest(transaction).getAssets());
-    //     BigInteger[] coinIds = coinIds(assets);
-    //     BigInteger[] coinValues = coinValues(assets);
-    //     Address from = new Address(transaction.getFrom());
-    //     Consumer<TransactionResult> checker = IRC31SupplierTest.burnBatchChecker(
-    //             ncsAddress, ncsAddress, coinIds, coinValues)
-    //             .andThen(transferEndEventLogChecker(from, sn, response));
-    //     balanceBatchCheck(from, transaction.getAssets(), () ->
-    //                     ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
-    //                             checker,
-    //                             ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes()),
-    //             BalanceCheckType.unlock);
-    // }
+        List<Asset> assets = coinAssets(transferRequest(transaction).getAssets());
+        BigInteger[] coinIds = coinIds(assets);
+        BigInteger[] coinValues = coinValues(assets);
+        Address from = new Address(transaction.getFrom());
+        Consumer<TransactionResult> checker = IRC31SupplierTest.burnBatchChecker(
+                ncsAddress, ncsAddress, coinIds, coinValues)
+                .andThen(transferEndEventLogChecker(from, sn, response));
+        balanceBatchCheck(from, transaction.getAssets(), () ->
+                        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+                                checker,
+                                ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes()),
+                BalanceCheckType.unlock);
+    }
 
     static void handleBTPError(TransferTransaction transaction, BigInteger sn, long code, String msg) {
         TransferResponse response = new TransferResponse();
@@ -283,10 +286,16 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 .collect(Collectors.toList());
     }
 
-    // static BigInteger[] coinIds(List<Asset> assets) {
-    //     return assets.stream()
-    //             .map((a) -> ncs.coinId(a.getCoinName())).toArray(BigInteger[]::new);
-    // }
+    static BigInteger[] coinIds(List<Asset> assets) {
+        BigInteger[] res = new BigInteger[assets.size()];
+        for(int i = 0 ; i < assets.size() ; i++ ) {
+            String coinName = assets.get(i).getCoinName();
+            String coinId = ncs.coinId(coinName);
+            res[i] = new BigInteger(coinId, 16);
+        }
+
+        return res;
+    }
 
     static String[] coinNames(List<Asset> assets) {
         return assets.stream()
@@ -312,253 +321,267 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         return feeAssets.toArray(Asset[]::new);
     }
 
-    // @BeforeAll
-    // static void beforeAll() {
-    //     if (!isExistsCoin(coinName)) {
-    //         register(coinName);
-    //         coinId = ncs.coinId(coinName);
-    //     }
-    //     if (!ncs.feeRatio().equals(feeRatio)) {
-    //         ncs.setFeeRatio(feeRatio);
-    //     }
-    // }
+    @BeforeAll
+    static void beforeAll() {
+        if (!IRC31IntegrationTest.irc31OwnerManager.isOwner(ncsAddress)) {
+            IRC31IntegrationTest.irc31OwnerManager.addOwner(ncsAddress);
+        }
+        IRC31SupplierTest.setApprovalForAll(ncsAddress, true);
+        if (!isExistsCoin(coinName)) {
+            register(coinName);
+            System.out.println(ncs.coinId(coinName));
+            coinId = new BigInteger(ncs.coinId(coinName), 16);
+        }
+        if (!ncs.feeRatio().equals(feeRatio)) {
+            ncs.setFeeRatio(feeRatio);
+        }
+    }
 
-    // @Test
-    // void registerShouldSuccess() {
-    //     register(ScoreIntegrationTest.Faker.faker.name().name());
-    // }
+    @Test
+    void registerShouldSuccess() {
+        register(ScoreIntegrationTest.Faker.faker.name().name());
+    }
 
-    // @Test
-    // void transferNativeCoinShouldMakeEventLogAndLockBalance() {
-    //     Asset asset = new Asset(nativeCoinName, nativeValue);
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio, asset);
-    //     Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
-    //             .andThen(sendMessageEventLogChecker(transaction));
-    //     ScoreIntegrationTest.balanceCheck(ncsAddress, asset.getAmount(), () ->
-    //             lockedBalanceCheck(new Address(transaction.getFrom()), asset, () ->
-    //                     ((NCSScoreClient) ncs).transferNativeCoin(
-    //                             checker,
-    //                             asset.getAmount(),
-    //                             transaction.getTo())));
-    // }
+    @Test
+    void transferNativeCoinShouldMakeEventLogAndLockBalance() {
+        Asset asset = new Asset(nativeCoinName, nativeValue);
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio, asset);
+        Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
+                .andThen(sendMessageEventLogChecker(transaction));
+        ScoreIntegrationTest.balanceCheck(ncsAddress, asset.getAmount(), () ->
+                lockedBalanceCheck(new Address(transaction.getFrom()), asset, () ->
+                        ((NCSScoreClient) ncs).transferNativeCoin(
+                                checker,
+                                asset.getAmount(),
+                                transaction.getTo())));
+    }
 
-    // @Test
-    // void transferShouldMakeEventLogAndLockBalance() {
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void transferShouldMakeEventLogAndLockBalance() {
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     Asset asset = new Asset(coinName, coinValue);
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio, asset);
-    //     Address from = new Address(transaction.getFrom());
-    //     Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
-    //             .andThen(sendMessageEventLogChecker(transaction))
-    //             .andThen(IRC31SupplierTest.transferFromChecker(
-    //                     ncsAddress, from, ncsAddress, coinId, asset.getAmount()));
-    //     IRC31SupplierTest.balanceCheck(ncsAddress, coinId, coinValue, () ->
-    //             lockedBalanceCheck(from, asset, () ->
-    //                     ((NCSScoreClient) ncs).transfer(
-    //                             checker,
-    //                             asset.getCoinName(), asset.getAmount(), transaction.getTo())
-    //             )
-    //     );
-    // }
+        Asset asset = new Asset(coinName, coinValue);
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio, asset);
+        Address from = new Address(transaction.getFrom());
+        Consumer<TransactionResult> checker = transferStartEventLogChecker(transaction)
+                .andThen(sendMessageEventLogChecker(transaction))
+                .andThen(IRC31SupplierTest.transferFromChecker(
+                        ncsAddress, from, ncsAddress, coinId, asset.getAmount()));
+        IRC31SupplierTest.balanceCheck(ncsAddress, coinId, coinValue, () ->
+                lockedBalanceCheck(from, asset, () ->
+                        ((NCSScoreClient) ncs).transfer(
+                                checker,
+                                asset.getCoinName(), asset.getAmount(), transaction.getTo())
+                )
+        );
+    }
 
-    // @Test
-    // void transferBatchShouldShouldMakeEventLogAndLockBalance() {
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void transferBatchShouldShouldMakeEventLogAndLockBalance() {
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
 
-    //     transferBatch(transaction);
-    // }
+        transferBatch(transaction);
+    }
 
-    // @Test
-    // void handleTransferRequestShouldIRC31MintBatchAndResponse() {
-    //     //mint to tester
-    //     IRC31SupplierTest.mint(testerAddress, coinId, coinValue);
+    @Test
+    void handleTransferRequestShouldIRC31MintBatchAndResponse() {
+        //mint to tester
+        IRC31SupplierTest.mint(testerAddress, coinId, coinValue);
 
-    //     //transfer owner to tester
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     TransferRequest request = transferRequest(transaction);
-    //     List<Asset> assets = coinAssets(request.getAssets());
+        //transfer owner to tester
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        TransferRequest request = transferRequest(transaction);
+        List<Asset> assets = coinAssets(request.getAssets());
 
-    //     BigInteger[] coinIds = coinIds(assets);
-    //     BigInteger[] coinValues = coinValues(assets);
+        BigInteger[] coinIds = coinIds(assets);
+        BigInteger[] coinValues = coinValues(assets);
 
-    //     NCSMessage ncsMessage = new NCSMessage();
-    //     ncsMessage.setServiceType(NCSMessage.REQUEST_COIN_TRANSFER);
-    //     ncsMessage.setData(request.toBytes());
+        NCSMessage ncsMessage = new NCSMessage();
+        ncsMessage.setServiceType(NCSMessage.REQUEST_COIN_TRANSFER);
+        ncsMessage.setData(request.toBytes());
 
-    //     Address to = new Address(BTPAddress.valueOf(transaction.getTo()).account());
+        Address to = new Address(BTPAddress.valueOf(transaction.getTo()).account());
 
-    //     BigInteger sn = BigInteger.ONE;
-    //     Consumer<TransactionResult> checker = IRC31SupplierTest.mintBatchChecker(
-    //             ncsAddress, to, coinIds, coinValues).andThen(
-    //             MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
-    //                 assertEquals(linkNet, el.getTo());
-    //                 assertEquals(NativeCoinService.SERVICE, el.getSvc());
-    //                 assertEquals(sn, el.getSn());
-    //                 NCSMessage ncsMsg = NCSMessage.fromBytes(el.getMsg());
-    //                 assertEquals(NCSMessage.REPONSE_HANDLE_SERVICE, ncsMsg.getServiceType());
-    //                 TransferResponse response = TransferResponse.fromBytes(ncsMsg.getData());
-    //                 assertEquals(TransferResponse.RC_OK, response.getCode());
-    //                 assertEquals(TransferResponse.OK_MSG, response.getMessage());
-    //             }));
-    //     Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
-    //             .intercallHandleBTPMessage(
-    //                     checker,
-    //                     ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
-    //     ScoreIntegrationTest.balanceCheck(to, nativeCoinValue(request.getAssets()), () ->
-    //             IRC31SupplierTest.balanceBatchCheck(to, coinIds, coinValues, executable));
-    // }
+        BigInteger sn = BigInteger.ONE;
+        Consumer<TransactionResult> checker = IRC31SupplierTest.mintBatchChecker(
+                ncsAddress, to, coinIds, coinValues).andThen(
+                MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
+                    assertEquals(linkNet, el.getTo());
+                    assertEquals(NativeCoinService.SERVICE, el.getSvc());
+                    assertEquals(sn, el.getSn());
+                    NCSMessage ncsMsg = NCSMessage.fromBytes(el.getMsg());
+                    assertEquals(NCSMessage.REPONSE_HANDLE_SERVICE, ncsMsg.getServiceType());
+                    TransferResponse response = TransferResponse.fromBytes(ncsMsg.getData());
+                    assertEquals(TransferResponse.RC_OK, response.getCode());
+                    assertEquals(TransferResponse.OK_MSG, response.getMessage());
+                }));
+        Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+                .intercallHandleBTPMessage(
+                        checker,
+                        ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
+        ScoreIntegrationTest.balanceCheck(to, nativeCoinValue(request.getAssets()), () ->
+                IRC31SupplierTest.balanceBatchCheck(to, coinIds, coinValues, executable));
+    }
 
-    // @Test
-    // void handleTransferResponseShouldIRC31BurnBatchAndMakeEventLog() {
-    //     //mint
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void handleTransferResponseShouldIRC31BurnBatchAndMakeEventLog() {
+        //mint
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     //transferBatch
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     BigInteger sn = transferBatch(transaction);
+        //transferBatch
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        BigInteger sn = transferBatch(transaction);
 
-    //     //
-    //     handleTransferResponse(transaction, sn);
-    // }
+        //
+        handleTransferResponse(transaction, sn);
+    }
 
-    // @Test
-    // void handleUnknownResponseShouldMakeEventLog() {
-    //     TransferResponse response = new TransferResponse();
-    //     response.setCode(TransferResponse.RC_ERR);
-    //     response.setMessage(TransferResponse.ERR_MSG_UNKNOWN_TYPE);
-    //     NCSMessage ncsMessage = new NCSMessage();
-    //     ncsMessage.setServiceType(NCSMessage.UNKNOWN_TYPE);
-    //     ncsMessage.setData(response.toBytes());
+    @Test
+    void handleUnknownResponseShouldMakeEventLog() {
+        TransferResponse response = new TransferResponse();
+        response.setCode(TransferResponse.RC_ERR);
+        response.setMessage(TransferResponse.ERR_MSG_UNKNOWN_TYPE);
+        NCSMessage ncsMessage = new NCSMessage();
+        ncsMessage.setServiceType(NCSMessage.UNKNOWN_TYPE);
+        ncsMessage.setData(response.toBytes());
 
-    //     BigInteger sn = BigInteger.ONE;
-    //     ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
-    //             NCSIntegrationTest.eventLogChecker(UnknownResponseEventLog::eventLogs, (el) -> {
-    //                 assertEquals(linkNet, el.getFrom());
-    //                 assertEquals(sn, el.getSn());
-    //             }),
-    //             ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
-    // }
+        BigInteger sn = BigInteger.ONE;
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+                NCSIntegrationTest.eventLogChecker(UnknownResponseEventLog::eventLogs, (el) -> {
+                    assertEquals(linkNet, el.getFrom());
+                    assertEquals(sn, el.getSn());
+                }),
+                ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
+    }
 
-    // @Test
-    // void handleBTPMessageShouldRevert() {
-    //     AssertNCSException.assertUnknown(() ->
-    //             ncsBSH.handleBTPMessage(linkNet, NativeCoinService.SERVICE, BigInteger.ONE, new byte[]{}));
-    // }
+    @Test
+    void handleBTPMessageShouldRevert() {
+        AssertNCSException.assertUnknown(() ->
+                ncsBSH.handleBTPMessage(linkNet, NativeCoinService.SERVICE, BigInteger.ONE, new byte[]{}));
+    }
 
-    // @Test
-    // void handleBTPErrorShouldMakeEventLogAndAddRefundableBalance() {
-    //     //mint
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void handleBTPErrorShouldMakeEventLogAndAddRefundableBalance() {
+        //mint
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     //transferBatch
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     BigInteger sn = transferBatch(transaction);
+        //transferBatch
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        BigInteger sn = transferBatch(transaction);
 
-    //     //handleBTPError
-    //     handleBTPError(transaction, sn, code, msg);
-    // }
+        //handleBTPError
+        handleBTPError(transaction, sn, code, msg);
+    }
 
-    // @Test
-    // void reclaim() {
-    //     //mint
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void reclaim() {
+        //mint
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     //transferBatch
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     BigInteger sn = transferBatch(transaction);
+        //transferBatch
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        BigInteger sn = transferBatch(transaction);
 
-    //     //handleBTPError for make refundable balance
-    //     handleBTPError(transaction, sn, code, msg);
+        //handleBTPError for make refundable balance
+        handleBTPError(transaction, sn, code, msg);
 
-    //     //reclaim
-    //     ScoreIntegrationTest.balanceCheck(owner, nativeValue, () ->
-    //             ncs.reclaim(nativeCoinName, nativeValue));
-    //     IRC31SupplierTest.balanceCheck(owner, coinId, coinValue, () ->
-    //             ncs.reclaim(coinName, coinValue));
-    // }
+        //reclaim
+        ScoreIntegrationTest.balanceCheck(owner, nativeValue, () ->
+                ncs.reclaim(nativeCoinName, nativeValue));
+        IRC31SupplierTest.balanceCheck(owner, coinId, coinValue, () ->
+                ncs.reclaim(coinName, coinValue));
+    }
 
-    // @Test
-    // void handleBTPErrorShouldRevert() {
-    //     AssertNCSException.assertUnknown(() ->
-    //             ncsBSH.handleBTPError(linkNet,
-    //                     NativeCoinService.SERVICE, BigInteger.ONE, 0, ""));
-    // }
+    @Test
+    void handleBTPErrorShouldRevert() {
+        AssertNCSException.assertUnknown(() ->
+                ncsBSH.handleBTPError(linkNet,
+                        NativeCoinService.SERVICE, BigInteger.ONE, 0, ""));
+    }
 
-    // @Test
-    // void handleFeeGatheringShouldIRC31Transfer() {//how to clear feeBalances as zero?
-    //     //mint
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void handleFeeGatheringShouldIRC31Transfer() {//how to clear feeBalances as zero?
+        //mint
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     //transferBatch
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     BigInteger sn = transferBatch(transaction);
+        //transferBatch
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        BigInteger sn = transferBatch(transaction);
 
-    //     //handleTransferResponse
-    //     handleTransferResponse(transaction, sn);
+        //handleTransferResponse
+        handleTransferResponse(transaction, sn);
 
-    //     //
-    //     Asset[] feeAssets = feeAssets();
-    //     System.out.println(Arrays.toString(feeAssets));
-    //     BigInteger nativeFee = nativeCoinValue(feeAssets);
-    //     List<Asset> coinAssets = coinAssets(feeAssets);
-    //     BigInteger[] coinIds = coinIds(coinAssets);
-    //     BigInteger[] coinValues = coinValues(coinAssets);
+        //
+        Asset[] feeAssets = feeAssets();
+        System.out.println(Arrays.toString(feeAssets));
+        BigInteger nativeFee = nativeCoinValue(feeAssets);
+        List<Asset> coinAssets = coinAssets(feeAssets);
+        BigInteger[] coinIds = coinIds(coinAssets);
+        BigInteger[] coinValues = coinValues(coinAssets);
 
-    //     Address faAddr = new Address(fa.account());
-    //     Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
-    //             .intercallHandleFeeGathering(
-    //                     IRC31SupplierTest.transferFromBatchChecker(
-    //                             ncsAddress, ncsAddress, faAddr, coinIds, coinValues),
-    //                     ncsAddress, fa.toString(), NativeCoinService.SERVICE);
-    //     ScoreIntegrationTest.balanceCheck(faAddr, nativeFee, () ->
-    //             IRC31SupplierTest.balanceBatchCheck(faAddr, coinIds, coinValues, executable));
-    // }
+        Address faAddr = new Address(fa.account());
+        Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+                .intercallHandleFeeGathering(
+                        IRC31SupplierTest.transferFromBatchChecker(
+                                ncsAddress, ncsAddress, faAddr, coinIds, coinValues),
+                        ncsAddress, fa.toString(), NativeCoinService.SERVICE);
+        ScoreIntegrationTest.balanceCheck(faAddr, nativeFee, () ->
+                IRC31SupplierTest.balanceBatchCheck(faAddr, coinIds, coinValues, executable));
+    }
 
-    // @Test
-    // void handleFeeGatheringShouldTransferStart() {
-    //     //mint
-    //     IRC31SupplierTest.mint(owner, coinId, coinValue);
+    @Test
+    void handleFeeGatheringShouldTransferStart() {
+        //mint
+        IRC31SupplierTest.mint(owner, coinId, coinValue);
 
-    //     //transferBatch
-    //     TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
-    //             new Asset(nativeCoinName, nativeValue),
-    //             new Asset(coinName, coinValue));
-    //     BigInteger sn = transferBatch(transaction);
+        //transferBatch
+        TransferTransaction transaction = transferTransaction(owner, to, feeRatio,
+                new Asset(nativeCoinName, nativeValue),
+                new Asset(coinName, coinValue));
+        BigInteger sn = transferBatch(transaction);
 
-    //     //handleTransferResponse
-    //     handleTransferResponse(transaction, sn);
+        //handleTransferResponse
+        handleTransferResponse(transaction, sn);
 
-    //     //
-    //     Asset[] feeAssets = feeAssets();
-    //     System.out.println(Arrays.toString(feeAssets));
+        //
+        Asset[] feeAssets = feeAssets();
+        System.out.println(Arrays.toString(feeAssets));
 
-    //     TransferTransaction feeTransaction = transferTransaction(
-    //             ncsAddress, linkFa, BigInteger.ZERO, feeAssets);
-    //     ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
-    //             .intercallHandleFeeGathering(
-    //                     transferStartEventLogChecker(feeTransaction)
-    //                             .andThen(sendMessageEventLogChecker(feeTransaction)),
-    //                     ncsAddress, linkFa.toString(), NativeCoinService.SERVICE);
-    // }
+        TransferTransaction feeTransaction = transferTransaction(
+                ncsAddress, linkFa, BigInteger.ZERO, feeAssets);
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+                .intercallHandleFeeGathering(
+                        transferStartEventLogChecker(feeTransaction)
+                                .andThen(sendMessageEventLogChecker(feeTransaction)),
+                        ncsAddress, linkFa.toString(), NativeCoinService.SERVICE);
+    }
 
-    // @Test
-    // void handleFeeGatheringShouldRevert() {
-    //     AssertNCSException.assertUnknown(() ->
-    //             ncsBSH.handleFeeGathering(link.toString(), NativeCoinService.SERVICE));
-    // }
+    @Test
+    void handleFeeGatheringShouldRevert() {
+        AssertNCSException.assertUnknown(() ->
+                ncsBSH.handleFeeGathering(link.toString(), NativeCoinService.SERVICE));
+    }
+
+    @Test
+    void coinIdShouldReturnFullValue() {
+        ncs.register("DEV");
+        String res = ncs.coinId("DEV");
+        System.out.println(res);
+
+        assertEquals("08f7ce30203eb1ff1d26492c94d9ab04d63f4e54f1f9e677e8d4a0d6daaab2dd", res);
+    }
 }

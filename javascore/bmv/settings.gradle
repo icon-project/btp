@@ -1,2 +1,0 @@
-rootProject.name = 'bmv'
-include 'lib', 'sovereignChain', 'parachain', 'testsvc', 'testinteg', 'eventDecoder'
