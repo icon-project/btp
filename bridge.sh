@@ -16,5 +16,4 @@ fi
 bazel run "@${SOURCE}//:${SOURCE}_node_image"
 bazel run "@${DESTINATION}//:${DESTINATION}_node_image"
 
-bazel run "@${SOURCE}//cli:deploy_bmc"
-bazel run "@${DESTINATION}//cli:deploy_bmc"
+bazel run "@btp//bridge:${SOURCE}_and_${DESTINATION}"
