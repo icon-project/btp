@@ -320,3 +320,12 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC: fn(Context) -
 
         context
     };
+
+    pub static ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) = |context: Context| {
+        let context = context
+            .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
+            .pipe(USER_INVOKES_GET_STATUS_IN_BMC);
+        let result: LinkStatus = from_value(context.method_responses("get_status")).unwrap();
+        // assert_eq!(result.delay_limit(), 4);
+        println!("{:?}",result);
+    };

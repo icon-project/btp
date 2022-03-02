@@ -21,8 +21,8 @@ pub static RELAY_1_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(
     Context,
 ) -> Context = |mut context: Context| {
-    let link =
-        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    // let link =
+    //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
     let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Init {
         links: vec![
@@ -36,7 +36,7 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
             "btp://0x1.near/{}",
             context.contracts().get("bmc").id()
         )),
-        "nativecoin".to_string(),
+        "bmc".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message.clone()),
         None,
@@ -49,7 +49,7 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
     };
 
     context.add_method_params(
-        "handle_btp_message",
+        "handle_relay_message_bmv_callback_mockable",
         json!({
             "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
             "verifier_response": verifier_response,
@@ -81,4 +81,11 @@ pub static RELAY_2_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
             .pipe(RELAY_2_ACCOUNT_IS_CREATED)
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_RELAY_2)
             .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC)
+    };
+
+    pub static ALICE_INVOKES_HANDLE_INIT_LINK_MESSAGE_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+            .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC)
     };
