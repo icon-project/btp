@@ -143,8 +143,12 @@ impl Link {
         if rotate_term > 0 {
             let (rotate_count, base_height) = match has_message {
                 true => {
-                    let mut guess_height = self.rx_height
-                        + ((last_height - self.rx_height_src()).div_ceil(self.scale())).deref() - 1;
+                    let mut guess_height = (self.rx_height
+                        + ((last_height.checked_sub(self.rx_height_src()).unwrap())
+                            .div_ceil(self.scale()))
+                        .deref())
+                    .checked_sub(1)
+                    .unwrap();
                     if guess_height > current_height {
                         guess_height = current_height;
                     };
@@ -158,12 +162,13 @@ impl Link {
                         let rotate_count = count.div_ceil(rotate_term);
                         rotate_count.deref().clone()
                     };
-                    let mut base_height = self.rotate_height + (rotate_count  * rotate_term);
+                    let mut base_height = self.rotate_height + (rotate_count * rotate_term);
                     let mut skip_count = (current_height - guess_height)
                         .div_ceil(self.delay_limit)
-                        .deref().to_owned();
+                        .deref()
+                        .to_owned();
                     if skip_count > 0 {
-                        skip_count = skip_count -1 ;
+                        skip_count = skip_count - 1;
                         rotate_count.add(skip_count).unwrap();
                         base_height = current_height;
                     }
@@ -217,7 +222,7 @@ impl Link {
             block_interval_dst: self.block_interval_dst,
             block_interval_src: self.block_interval_src,
             current_height: env::block_height(),
-            max_aggregation: self.max_aggregation()
+            max_aggregation: self.max_aggregation(),
         }
     }
 }
@@ -238,7 +243,7 @@ pub struct LinkStatus {
     block_interval_dst: u64,
     block_interval_src: u64,
     current_height: BlockHeight,
-    max_aggregation: u64
+    max_aggregation: u64,
 }
 
 impl LinkStatus {
