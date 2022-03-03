@@ -58,6 +58,7 @@ const (
 
 const (
 	ResultStatusSuccess           = "0x1"
+	ResultStatusSkipTransaction   = 14
 	ResultStatusFailureCodeRevert = 32
 	ResultStatusFailureCodeEnd    = 99
 )

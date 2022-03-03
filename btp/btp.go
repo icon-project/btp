@@ -503,6 +503,8 @@ func (b *BTP) updateResult(rm *chain.RelayMessage, segment *chain.Segment) (err 
 					segment.GetResultParam = nil
 				case chain.BMCRevertUnauthorized:
 					segment.GetResultParam = nil
+				case chain.ICONSkipTransaction:
+					segment.GetResultParam = nil
 				default:
 					b.log.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v", segment.GetResultParam, ec)
 				}

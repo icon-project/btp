@@ -351,8 +351,6 @@ func (s *sender) sendFragmentations(tps []*TransactionParam, idxs []int) (chain.
 		if err != nil {
 			s.l.Panicf("sendFragmentations: fails result %+v error%+v", grp, err)
 		}
-		// TODO use (finalizelatency * blockinterval / appropriateratio) * time.Second
-		time.Sleep(time.Duration(s.FinalizeLatency()) * time.Second)
 	}
 
 	s.l.Tracef("sendFragmentations: end")
@@ -602,6 +600,8 @@ func mapErrorWithTransactionResult(txr *TransactionResult, err error) error {
 		if fc < ResultStatusFailureCodeRevert || fc > ResultStatusFailureCodeEnd {
 			err = fmt.Errorf("failure with code:%s, message:%s",
 				txr.Failure.CodeValue, txr.Failure.MessageValue)
+		} else if fc == ResultStatusSkipTransaction {
+			err = chain.NewRetryable(int(chain.ICONSkipTransaction))
 		} else {
 			err = chain.NewRevertError(int(fc - ResultStatusFailureCodeRevert))
 		}
