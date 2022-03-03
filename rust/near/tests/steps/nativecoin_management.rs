@@ -161,3 +161,10 @@ pub static USER_SHOULD_GET_THE_REGISTERED_COIN: fn(Context) = |context: Context|
     let expetced = json!([{"name":"NEAR","network":"0x1.near","symbol":"NEAR"}]);
     assert_eq!(expetced, coins);
 };
+
+pub static BOB_ADDED_CHARLIE_AS_A_NEW_OWNER_IN_NATIVE_COIN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(CHARLIES_ACCOUNT_ID_IS_PROVIDED_AS_ADD_OWNER_PARAM)
+            .pipe(BOB_INVOKES_ADD_OWNER_IN_NATIVE_COIN_BSH)
+    };

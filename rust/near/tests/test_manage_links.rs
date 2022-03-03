@@ -152,7 +152,6 @@ mod manage_links {
                 .then(BMC_SHOULD_THROW_UNAUTHORIZED_ERROR_ON_REMOVING_LINK);
         }
 
-        #[ignore]
         #[tokio::test(flavor = "multi_thread")]
         async fn bmc_owner_can_set_max_aggregation_to_link_status() {
             Kitten::given(NEW_CONTEXT)

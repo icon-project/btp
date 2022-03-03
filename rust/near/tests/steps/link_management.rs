@@ -172,7 +172,10 @@ pub static MAX_AGGREGATION_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Context
         context.add_method_params(
             "set_link",
             json!({
+                "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "block_interval": 15000,
                 "max_aggregation": 10,
+                "delay_limit": 4,
             }),
         );
 
@@ -185,6 +188,8 @@ pub static MAX_AGGREGATION_IN_ICON_LINK_STATUS_SHOULD_BE_UPDATED: fn(Context) =
             .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_GET_STATUS_PARAM)
             .pipe(USER_INVOKES_GET_STATUS_IN_BMC);
         let result: LinkStatus = from_value(context.method_responses("get_status")).unwrap();
+        // println!("{:?}", result.max_aggregation());
+        assert_eq!(10,result.max_aggregation());
         // TODO: complete test case
     };
 
@@ -271,20 +276,21 @@ pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context
         assert!(error.to_string().contains("BMCRevertAlreadyExistsLink"));
     };
 
-    pub static ICON_LINK_IS_ADDED_AND_INITIALIZED_IN_BMC: fn(Context) -> Context = |context: Context| {
+pub static ICON_LINK_IS_ADDED_AND_INITIALIZED_IN_BMC: fn(Context) -> Context =
+    |context: Context| {
         context
             .pipe(ICON_LINK_IS_ADDED_IN_BMC)
             .pipe(ICON_LINK_IS_INITIALIZED_IN_BMC)
     };
 
-    pub static ICON_LINK_IS_ADDED_IN_BMC: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
-            .pipe(LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
-            .pipe(BMC_OWNER_INVOKES_ADD_LINK_IN_BMC)
-    };
+pub static ICON_LINK_IS_ADDED_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(VERIFIER_FOR_ICON_IS_PRESENT_IN_BMC)
+        .pipe(LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM)
+        .pipe(BMC_OWNER_INVOKES_ADD_LINK_IN_BMC)
+};
 
-  pub static LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Context =
+pub static LINK_ADDRESS_IS_PROVIDED_AS_ADD_LINK_PARAM: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "add_link",
@@ -294,14 +300,13 @@ pub static BMC_SHOULD_THROW_LINK_ALREADY_EXISTS_ERROR_ON_ADDING_LINK: fn(Context
         context
     };
 
-    pub static ICON_LINK_IS_INITIALIZED_IN_BMC: fn(Context) -> Context = |context: Context| {
-        context
-            .pipe(    ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC)
-            .pipe(BMC_OWNER_INVOKES_SET_LINK_IN_BMC)
-    };
+pub static ICON_LINK_IS_INITIALIZED_IN_BMC: fn(Context) -> Context = |context: Context| {
+    context
+        .pipe(ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC)
+        .pipe(BMC_OWNER_INVOKES_SET_LINK_IN_BMC)
+};
 
-    pub static 
-    ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC: fn(Context) -> Context =
+pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM_IN_BMC: fn(Context) -> Context =
     |mut context: Context| {
         context.add_method_params(
             "set_link",

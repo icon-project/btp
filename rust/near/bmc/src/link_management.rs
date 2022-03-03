@@ -137,4 +137,8 @@ impl BtpMessageCenter {
             self.links.set(&link, &link_property);
         }
     }
+
+    pub fn get_link(&self, link: BTPAddress) -> Link {
+        self.links.get(&link).unwrap()
+    }
 }

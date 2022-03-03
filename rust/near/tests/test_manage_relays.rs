@@ -161,7 +161,7 @@ mod manage_relays {
               .and(ICON_LINK_IS_PRESENT_IN_BMC)
               .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
               .and(NON_EXISTING_LINK_ADDRESS_IS_PROVIDED_AS_GET_RELAY_PARAM)
-              .when(USER_INVOKES_GET_RELAYS_IN_BMC)
+              .when(USER_INVOKES_GET_RELAYS_IN_BMC_CONTRACT)
               .then(BMC_SHOULD_THROW_LINK_DOES_NOT_EXIST_ERROR_ON_GETTING_RELAYS);
           }
 

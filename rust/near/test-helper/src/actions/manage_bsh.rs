@@ -121,4 +121,9 @@ impl Contract<'_, contract_type> {
         invoke_view!(self, context, "balance_of", method_params);
         context
     }
+
+    pub fn reclaim(&self, mut context: Context, gas: u64) -> Context {
+        invoke_call!(self, context, "reclaim", method_params, None, Some(gas));
+        context
+    }
 }
