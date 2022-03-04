@@ -75,3 +75,11 @@ genrule(
     executable = True,
     local = True,
 )
+
+genrule(
+    name = "bmr_config_dir",
+    outs = ["bmr_config_dir.out"],
+    cmd = "mkdir \"$$PWD/bmr_config_dir\"; echo \"$$PWD/bmr_config_dir\" > $@",
+    executable = True,
+    local = True,
+)

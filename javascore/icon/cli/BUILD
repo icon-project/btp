@@ -1,4 +1,4 @@
-load("@icon//cli:defs.bzl", "create_keystore", "get_score_address", "configure_link")
+load("@icon//cli:defs.bzl", "configure_link", "create_keystore", "get_score_address")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,22 +12,22 @@ create_keystore(
 
 get_score_address(
     name = "get_score_address_bmc",
-    contract = "bmc"
+    contract = "bmc",
 )
 
 get_score_address(
     name = "get_score_address_near_bmv",
-    contract = "near_bmv"
+    contract = "near_bmv",
 )
 
 get_score_address(
     name = "get_score_address_irc",
-    contract = "irc"
+    contract = "irc",
 )
 
 get_score_address(
     name = "get_score_address_nativecoin",
-    contract = "nativecoin"
+    contract = "nativecoin",
 )
 
 genrule(
@@ -139,7 +139,7 @@ genrule(
     name = "set_near_link",
     srcs = [
         "@icon//cli:set_near_link_rotate_term",
-        "@icon//cli:set_near_link_delay_limit"
+        "@icon//cli:set_near_link_delay_limit",
     ],
     outs = ["set_near_link.out"],
     cmd = "echo 'set_link_completed' >$@",
@@ -148,5 +148,26 @@ genrule(
 )
 
 configure_link(
-    name = "near"
+    name = "near",
+)
+
+genrule(
+    name = "keysecret",
+    outs = [
+        "keysecret.out",
+    ],
+    cmd = "echo 'gochain' > $@",
+    executable = True,
+    local = True,
+)
+
+genrule(
+    name = "generate_icon_keystore",
+    srcs = ["@com_github_icon_project_goloop//cmd/goloop", ":keysecret"],
+    outs = [
+        "keystore.json",
+    ],
+    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) ks gen -p $$(cat $(location :keysecret)) -o $@",
+    executable = True,
+    local = True,
 )
