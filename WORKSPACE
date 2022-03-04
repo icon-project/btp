@@ -133,6 +133,9 @@ load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 
 container_deps()
 
+load("//cmd/btpsimple:dependencies.bzl", btpsimple_dependencies = "dependencies")
+btpsimple_dependencies()
+
 load("//chain_repositories:repositories.bzl", "chain_repositories")
 
 chain_repositories()

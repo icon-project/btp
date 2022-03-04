@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "wallet",
+    srcs = [
+        "encrypted.go",
+        "keystore.go",
+        "keystore_evm.go",
+        "keystore_near.go",
+        "wallet.go",
+        "wallet_evm.go",
+        "wallet_near.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/wallet",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common",
+        "//common/crypto",
+        "//common/errors",
+        "@com_github_ethereum_go_ethereum//accounts/keystore:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//crypto:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_hugobyte_keygen//keystore/near:go_default_library",
+        "@org_golang_x_crypto//ed25519",
+        "@org_golang_x_crypto//scrypt",
+        "@org_golang_x_crypto//sha3",
+    ],
+)

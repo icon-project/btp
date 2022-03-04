@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdata",
+    srcs = [
+        "compute_block_hash.go",
+        "create_transaction.go",
+        "get_block.go",
+        "get_block_header.go",
+        "get_block_proof.go",
+        "get_bmc_relay_method_transaction.go",
+        "get_bmc_status.go",
+        "get_events.go",
+        "get_nonce.go",
+        "get_receipt_proof.go",
+        "get_transaction_result.go",
+        "monitor_block_height.go",
+        "monitor_receiver_block.go",
+        "monitor_sender_block.go",
+        "send_transaction.go",
+        "send_transaction_async.go",
+        "tests.go",
+    ],
+    importpath = "github.com/icon-project/btp/chain/near/testdata",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//chain",
+        "//chain/base",
+        "//chain/near/testdata/mock",
+        "//chain/near/types",
+        "//common/wallet",
+        "@com_github_btcsuite_btcutil//base58:go_default_library",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

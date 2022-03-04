@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "log",
+    srcs = [
+        "filter.go",
+        "formatter.go",
+        "forwarder.go",
+        "log.go",
+        "writer.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/log",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/errors",
+        "@com_github_bshuster_repo_logrus_logstash_hook//:logrus-logstash-hook",
+        "@com_github_evalphobia_logrus_fluent//:logrus_fluent",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@in_gopkg_natefinch_lumberjack_v2//:lumberjack_v2",
+    ],
+)
+
+go_test(
+    name = "log_test",
+    srcs = ["forwarder_test.go"],
+    embed = [":log"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "base",
+    srcs = [
+        "adapter.go",
+        "error.go",
+        "receiver.go",
+        "sender.go",
+        "type.go",
+    ],
+    importpath = "github.com/icon-project/btp/chain/base",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//chain",
+        "//common/codec",
+        "//common/log",
+        "@com_github_reactivex_rxgo_v2//:rxgo",
+    ],
+)

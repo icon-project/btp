@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "common",
+    srcs = [
+        "address.go",
+        "hexbytes.go",
+        "hexint.go",
+        "http.go",
+        "string.go",
+    ],
+    importpath = "github.com/icon-project/btp/common",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/codec",
+        "//common/crypto",
+        "//common/errors",
+        "//common/intconv",
+        "//common/log",
+        "@com_github_labstack_echo_v4//:echo",
+    ],
+)

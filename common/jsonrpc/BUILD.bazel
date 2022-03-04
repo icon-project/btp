@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "jsonrpc",
+    srcs = [
+        "client.go",
+        "keepalive.go",
+        "reconws.go",
+        "type.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/jsonrpc",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common",
+        "//common/log",
+        "@com_github_gorilla_websocket//:websocket",
+        "@com_github_jpillora_backoff//:go_default_library",
+        "@com_github_labstack_echo_v4//:echo",
+    ],
+)

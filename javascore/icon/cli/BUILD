@@ -11,19 +11,23 @@ create_keystore(
 )
 
 get_score_address(
-    name = "bmc",
+    name = "get_score_address_bmc",
+    contract = "bmc"
 )
 
 get_score_address(
-    name = "near_bmv",
+    name = "get_score_address_near_bmv",
+    contract = "near_bmv"
 )
 
 get_score_address(
-    name = "irc",
+    name = "get_score_address_irc",
+    contract = "irc"
 )
 
 get_score_address(
-    name = "nativecoin",
+    name = "get_score_address_nativecoin",
+    contract = "nativecoin"
 )
 
 genrule(

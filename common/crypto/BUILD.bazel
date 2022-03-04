@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "crypto",
+    srcs = [
+        "hash.go",
+        "key.go",
+        "signature.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/crypto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_haltingstate_secp256k1_go//:secp256k1-go",
+        "@org_golang_x_crypto//hkdf",
+        "@org_golang_x_crypto//sha3",
+    ],
+)
+
+go_test(
+    name = "crypto_test",
+    srcs = ["crypto_test.go"],
+    embed = [":crypto"],
+)

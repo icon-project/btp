@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "mta",
+    srcs = [
+        "accumulator.go",
+        "extaccumulator.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/mta",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common",
+        "//common/codec",
+        "//common/crypto",
+        "//common/db",
+        "//common/errors",
+        "//common/log",
+    ],
+)
+
+go_test(
+    name = "mta_test",
+    srcs = [
+        "accumulator_test.go",
+        "extaccumulator_test.go",
+    ],
+    embed = [":mta"],
+    deps = [
+        "//common/codec",
+        "//common/crypto",
+        "//common/db",
+        "//common/errors",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

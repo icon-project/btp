@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "substrate",
+    srcs = [
+        "client.go",
+        "mock_SubstrateClient.go",
+        "serialize.go",
+        "storage_key.go",
+        "type.go",
+        "types.go",
+    ],
+    importpath = "github.com/icon-project/btp/chain/pra/substrate",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/go-ethereum/rpc",
+        "//common/log",
+        "@com_github_centrifuge_go_substrate_rpc_client_v3//scale:go_default_library",
+        "@com_github_centrifuge_go_substrate_rpc_client_v3//types:go_default_library",
+        "@com_github_gammazero_workerpool//:go_default_library",
+        "@com_github_itering_scale_go//:go_default_library",
+        "@com_github_itering_scale_go//source:go_default_library",
+        "@com_github_itering_scale_go//types:go_default_library",
+        "@com_github_itering_scale_go//utiles:go_default_library",
+        "@com_github_itering_substrate_api_rpc//hasher:go_default_library",
+        "@com_github_itering_substrate_api_rpc//util:go_default_library",
+        "@com_github_stretchr_testify//mock",
+    ],
+)
+
+go_test(
+    name = "substrate_test",
+    srcs = [
+        "client_test.go",
+        "serialize_test.go",
+        "type_test.go",
+    ],
+    embed = [":substrate"],
+    deps = [
+        "@com_github_centrifuge_go_substrate_rpc_client_v3//types:go_default_library",
+        "@com_github_itering_scale_go//:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "codec",
+    srcs = [
+        "bytes.go",
+        "codec.go",
+        "msgpack.go",
+        "rlp.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/codec",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/errors",
+        "//common/intconv",
+        "//common/log",
+        "@com_github_vmihailenco_msgpack_v4//:msgpack",
+        "@com_github_vmihailenco_msgpack_v4//codes",
+    ],
+)

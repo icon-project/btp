@@ -1,0 +1,33 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "db",
+    srcs = [
+        "badger_db.go",
+        "bucket.go",
+        "database.go",
+        "go_level_db.go",
+        "layer_db.go",
+        "map_db.go",
+    ],
+    importpath = "github.com/icon-project/btp/common/db",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/errors",
+        "//common/log",
+        "@com_github_dgraph_io_badger//:badger",
+        "@com_github_syndtr_goleveldb//leveldb",
+        "@com_github_syndtr_goleveldb//leveldb/opt",
+    ],
+)
+
+go_test(
+    name = "db_test",
+    srcs = [
+        "badger_db_test.go",
+        "go_level_db_test.go",
+        "map_db_test.go",
+    ],
+    embed = [":db"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

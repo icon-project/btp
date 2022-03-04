@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cli",
+    srcs = ["helper.go"],
+    importpath = "github.com/icon-project/btp/common/cli",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/errors",
+        "//common/log",
+        "@com_github_jroimartin_gocui//:gocui",
+        "@com_github_mitchellh_mapstructure//:mapstructure",
+        "@com_github_spf13_cobra//:cobra",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+    ],
+)
