@@ -168,10 +168,20 @@ genrule(
 )
 
 genrule(
-    name = "generate_near_keystore",
-    srcs = ["@com_github_hugobyte_keygen//:keygen"],
+    name = "generate_keystore",
+    srcs = ["@com_github_hugobyte_keygen//:keygen", ":keysecret"],
     outs = ["keystore.json"],
-    cmd = "$(execpath @com_github_hugobyte_keygen//:keygen) generate -p nearprotocol -o $@",
+    cmd = "$(execpath @com_github_hugobyte_keygen//:keygen) generate -p $$(cat $(location :keysecret)) -o $@",
+    executable = True,
+    local = True,
+)
+
+genrule(
+    name = "keysecret",
+    outs = [
+        "keysecret.out",
+    ],
+    cmd = "echo 'nearprotocol' > $@",
     executable = True,
     local = True,
 )

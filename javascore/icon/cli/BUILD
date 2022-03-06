@@ -162,7 +162,7 @@ genrule(
 )
 
 genrule(
-    name = "generate_icon_keystore",
+    name = "generate_keystore",
     srcs = ["@com_github_icon_project_goloop//cmd/goloop", ":keysecret"],
     outs = [
         "keystore.json",
