@@ -123,18 +123,18 @@ func (b *BTP) init() error {
 	}
 
 	options := &receiverOptions{}
-
 	bt, err := json.Marshal(b.cfg.Src.Options)
 	if err != nil {
 		b.log.Panicf("fail to marshal opt:%#v err:%+v", b.cfg.Src.Options, err)
 	}
+
 	if err = json.Unmarshal(bt, &options); err != nil {
 		b.log.Panicf("fail to unmarshal opt:%#v err:%+v", b.cfg.Src.Options, err)
 	}
-
 	if err := b.prepareDatabase(b.bmcLinkStatus.Verifier.Offset, options.MtaRootSize); err != nil {
 		return err
 	}
+
 	atomic.StoreInt64(&b.heightOfDst, b.bmcLinkStatus.CurrentHeight)
 	b.relayLoop()
 	b.newRelayMessage()
@@ -234,6 +234,7 @@ func (b *BTP) refreshStatus() error {
 	if err != nil {
 		return err
 	}
+
 	b.bmcLinkStatus = bmcStatus
 	return nil
 }

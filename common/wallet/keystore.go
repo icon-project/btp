@@ -23,6 +23,7 @@ const (
 	coinTypeEVM     = "evm"
 	cipherAES128CTR = "aes-128-ctr"
 	kdfScrypt       = "scrypt"
+	coinTypeNear    = "near"
 )
 
 type AES128CTRParams struct {
@@ -162,6 +163,12 @@ func DecryptKeyStore(data, pw []byte) (Wallet, error) {
 			return nil, err
 		}
 		return NewEvmWalletFromPrivateKey(key)
+	case coinTypeNear:
+		key, err := DecryptNearKeyStore(data, pw)
+		if err != nil {
+			return nil, err
+		}
+		return NewNearwalletFromPrivateKey(key)
 	default:
 		return nil, errors.Errorf("InvalidCoinType(coin=%s)", ksdata.CoinType)
 	}

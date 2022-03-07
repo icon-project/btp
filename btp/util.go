@@ -29,6 +29,7 @@ func (b *BTP) prepareDatabase(offset int64, rootSize int) error {
 	if offset < 0 {
 		offset = 0
 	}
+
 	b.store = mta.NewExtAccumulator(k, bk, offset, rootSize)
 	if bk.Has(k) {
 		if err = b.store.Recover(); err != nil {

@@ -2,13 +2,17 @@ package near
 
 import (
 	"encoding/json"
+	"net/http"
 	"strconv"
 	"testing"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/base"
 	"github.com/icon-project/btp/chain/near/testdata"
 	"github.com/icon-project/btp/chain/near/types"
+	"github.com/icon-project/btp/common/jsonrpc"
+	"github.com/icon-project/btp/common/log"
 	"github.com/reactivex/rxgo/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -136,14 +140,24 @@ func TestNearClient(t *testing.T) {
 		t.Run(test.Description(), func(f *testing.T) {
 			for _, testData := range test.TestDatas() {
 				f.Run(testData.Description, func(f *testing.T) {
-					mockApi := NewMockApi(testData.MockStorage)
+					retryClient := retryablehttp.NewClient()
+					retryClient.RetryMax = 10
+					standardClient := retryClient.StandardClient()
+					standardClient.Transport = &http.Transport{MaxIdleConnsPerHost: 1000}
+					// mockApi := NewMockApi(testData.MockStorage)
+					// client := &Client{
+					// 	api: &mockApi,
+					// }
 					client := &Client{
-						api: &mockApi,
+						api: &api{
+							jsonrpc.NewJsonRpcClient(standardClient, "http://172.17.0.1:39649"),
+							log.New(),
+						},
 					}
-					input, Ok := (testData.Input).([]chain.BtpAddress)
-					assert.True(f, Ok)
+					//input, Ok := (testData.Input).([]chain.BtpAddress)
+					//assert.True(f, Ok)
 
-					actual, err := client.GetBMCLinkStatus(input[0], input[1])
+					actual, err := client.GetBMCLinkStatus(chain.BtpAddress("btp://0x1.near/652f49790e0a01ad648c6871f44313d8b33c4cfd79177dddf91755d2c729c5c0"), chain.BtpAddress("btp://0x9cd2a2.icon/cx24ac780250865a76ee44896d5b0042c90b981caf"))
 					if testData.Expected.Success != nil {
 						expected, Ok := (testData.Expected.Success).(int)
 						assert.True(f, Ok)

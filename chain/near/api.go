@@ -22,7 +22,6 @@ type RequestParams struct {
 
 func (api *api) getNonce(accountId string, publicKey string) (int64, error) {
 	var response types.NonceResponse
-
 	params := struct {
 		AccountId    string `json:"account_id"`
 		PublicKey    string `json:"public_key"`
@@ -38,7 +37,8 @@ func (api *api) getNonce(accountId string, publicKey string) (int64, error) {
 	if _, err := api.Do("query", params, &response); err != nil {
 		return -1, err
 	}
-	if response.Error == "" {
+
+	if response.Error != "" {
 
 		return -1, fmt.Errorf(response.Error)
 	}
@@ -58,6 +58,7 @@ func (api *api) broadcastTransaction(base64EncodedData string) (string, error) {
 	}
 	// Return Transaction ID
 	transactionId := transactionStatus.Transaction.Txid
+
 	return transactionId, nil
 }
 
@@ -162,7 +163,7 @@ func (api *api) getContractStateChange(height int64, accountId string, keyPrefix
 func (api *api) getNextBlockProducers(blockHash *types.CryptoHash) (types.NextBlockProducers, error) {
 	var nextBlockProducers types.NextBlockProducers
 
-	if _, err := api.Do("next_light_client_block", blockHash.Base58Encode(), &nextBlockProducers); err != nil {
+	if _, err := api.Do("next_light_client_block", []string{blockHash.Base58Encode()}, &nextBlockProducers); err != nil {
 		return nil, err
 	}
 
@@ -170,6 +171,7 @@ func (api *api) getNextBlockProducers(blockHash *types.CryptoHash) (types.NextBl
 }
 
 func (api *api) getBmcLinkStatus(accountId string, link *chain.BtpAddress) (types.BmcStatus, error) {
+	var response CallFunctionResult
 	var bmcStatus types.BmcStatus
 
 	methodParam, err := json.Marshal(struct {
@@ -187,9 +189,14 @@ func (api *api) getBmcLinkStatus(accountId string, link *chain.BtpAddress) (type
 		Finality:     "final",
 		AccountId:    types.AccountId(accountId),
 		MethodName:   "get_status",
-		ArgumentsB64: base64.StdEncoding.EncodeToString(methodParam),
+		ArgumentsB64: base64.URLEncoding.EncodeToString(methodParam),
 	}
-	if _, err := api.Do("query", &param, &bmcStatus); err != nil {
+
+	if _, err := api.Do("query", &param, &response); err != nil {
+		return bmcStatus, err
+	}
+	err = json.Unmarshal(response.Result, &bmcStatus)
+	if err != nil {
 		return bmcStatus, err
 	}
 
@@ -197,6 +204,7 @@ func (api *api) getBmcLinkStatus(accountId string, link *chain.BtpAddress) (type
 }
 
 func (api *api) getBmvStatus(accountId string) (types.BmvStatus, error) {
+	var response CallFunctionResult
 	var bmvStatus types.BmvStatus
 
 	param := &types.CallFunction{
@@ -207,7 +215,12 @@ func (api *api) getBmvStatus(accountId string) (types.BmvStatus, error) {
 		ArgumentsB64: base64.StdEncoding.EncodeToString(nil),
 	}
 
-	if _, err := api.Do("query", &param, &bmvStatus); err != nil {
+	if _, err := api.Do("query", &param, &response); err != nil {
+		return bmvStatus, err
+	}
+
+	err := json.Unmarshal(response.Result, &bmvStatus)
+	if err != nil {
 		return bmvStatus, err
 	}
 

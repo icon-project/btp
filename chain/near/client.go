@@ -95,7 +95,6 @@ func init() {
 func (c *Client) Initialize(uri string, logger log.Logger) {
 	transport := &http.Transport{MaxIdleConnsPerHost: 1000}
 	httpClient := jsonrpc.NewJsonRpcClient(&http.Client{Transport: transport}, uri)
-
 	c.api = &api{
 		Client: httpClient,
 		logger: logger,
@@ -243,7 +242,6 @@ Output  : error
 
 func (c *Client) CreateTransaction(wallet base.Wallet, p *chain.TransactionParam) error {
 	if nearWallet, Ok := (wallet).(*w.NearWallet); Ok {
-
 		publicKey := account.PublicKeyToString(*nearWallet.Pkey)
 		accountId := nearWallet.Address()
 		blockHash, err := c.api.getLatestBlockHash()
@@ -253,6 +251,7 @@ func (c *Client) CreateTransaction(wallet base.Wallet, p *chain.TransactionParam
 
 		blockHashDecoded := base58.Decode(blockHash)
 		nonce, err := c.GetNonce(publicKey, accountId)
+
 		if nonce == -1 || err != nil {
 			return err
 		}
@@ -295,7 +294,6 @@ func (c *Client) CreateTransaction(wallet base.Wallet, p *chain.TransactionParam
 			if err := c.SignTransaction(&newTransactionParam); err != nil {
 				return err
 			}
-
 			signedTransaction, err := c.CreateSignatureTransaction(&newTransactionParam, transaction)
 			if err != nil {
 				return err
@@ -459,7 +457,7 @@ func (c *Client) SendTransaction(param *chain.TransactionParam) ([]byte, error) 
 		var response string
 		var err error
 
-		response, err = c.api.broadcastTransactionAsync(transaction.Base64encodedData)
+		response, err = c.api.broadcastTransaction(transaction.Base64encodedData)
 		if err != nil {
 			return nil, err
 		}
@@ -527,6 +525,7 @@ func (c *Client) GetNonce(publicKey string, accountId string) (int64, error) {
 	if !strings.HasPrefix(publicKey, "ed25519:") {
 		var publicKeyBytes []byte
 		if len(publicKey) == 64 {
+
 			publicKeyBytes, err = hex.DecodeString(publicKey)
 			if err != nil {
 				return -1, err
@@ -534,6 +533,7 @@ func (c *Client) GetNonce(publicKey string, accountId string) (int64, error) {
 
 			publicKeyString = account.PublicKeyToString(publicKeyBytes)
 		} else {
+
 			publicKeyBytes = base58.Decode(publicKey)
 			if len(publicKeyBytes) == 0 {
 				return -1, fmt.Errorf("b58 decode public key error, %s", publicKey)
@@ -549,7 +549,6 @@ func (c *Client) GetNonce(publicKey string, accountId string) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-
 	return nonce, nil
 }
 
@@ -575,7 +574,6 @@ Output  : bmc link status
 */
 
 func (c *Client) GetBMCLinkStatus(destination, source chain.BtpAddress) (*chain.BMCLinkStatus, error) {
-
 	bmcStatus, err := c.api.getBmcLinkStatus(destination.Account(), &source)
 	if err != nil {
 		return nil, err
