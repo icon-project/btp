@@ -158,8 +158,8 @@ pub static RELAY_2_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
     
         let verifier_response = VerifierResponse {
             messages: vec![serialized_message],
-            verifier_status: VerifierStatus::new(10, 10, 10),
-            previous_height: 9,
+            verifier_status: VerifierStatus::new(11, 10, 11),
+            previous_height: 10,
         };
     
         context.add_method_params(

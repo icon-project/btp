@@ -34,7 +34,7 @@ pub static ICON_LINK_ADDRESS_IS_PROVIDED_AS_SET_LINK_PARAM: fn(Context) -> Conte
             "set_link",
             json!({
                 "link": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-                "block_interval": 15000,
+                "block_interval": 1500,
                 "max_aggregation": 5,
                 "delay_limit": 4
             }),
