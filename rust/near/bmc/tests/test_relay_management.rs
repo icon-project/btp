@@ -307,11 +307,12 @@ fn rotate_relay() {
 
     let mut link_property = contract.get_link(link.clone());
 
-    testing_env!(context("verifier_2.near".parse::<AccountId>().unwrap()));
+    testing_env!(context(alice()));
 
     contract.handle_relay_message_bmv_callback(link.clone(), VerifierResponse {
         messages: vec![],
         verifier_status: VerifierStatus::new(10, 10, 11),
         previous_height: 10
-    });
+    },
+    "verifier_2.near".parse::<AccountId>().unwrap());
 }

@@ -12,6 +12,6 @@ pub trait BmcContract {
         delay_limit: u64,
         #[callback] verifier_status: VerifierStatus,
     );
-    fn handle_relay_message_bmv_callback(source: BTPAddress, #[callback] verifier_response: VerifierResponse);
+    fn handle_relay_message_bmv_callback(source: BTPAddress, #[callback] verifier_response: VerifierResponse, relay: AccountId);
     fn handle_external_service_message_callback(source: BTPAddress, btp_message: BtpMessage<SerializedMessage>);
 }
