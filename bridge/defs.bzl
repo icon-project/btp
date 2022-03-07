@@ -59,7 +59,7 @@ def bridge(name, chains):
         name = "deploy_%s_bmr" % (chains[0]),
         outs = ["deploy_%s_bmr.out" % (chains[0])],
         cmd = """
-            docker run -d -v $$(cat $(location @%s//:bmr_config_dir)):/config bazel/cmd/btpsimple:btpsimple_image  start --config "/config/btpsimple_%s_configuration.json" --key_password $$(cat $(location @%s//cli:keysecret))
+            docker run -d -v $$(cat $(location @%s//:bmr_config_dir)):/config bazel/cmd/btpsimple:btpsimple_image start --config "/config/btpsimple_%s_configuration.json" --key_password $$(cat $(location @%s//cli:keysecret))
             echo 'done'> \"$@\" """ % (chains[0], chains[0], chains[1]),
         executable = True,
         output_to_bindir = True,
@@ -74,7 +74,7 @@ def bridge(name, chains):
         name = "deploy_%s_bmr" % (chains[1]),
         outs = ["deploy_%s_bmr.out" % (chains[1])],
         cmd = """
-            docker run -d -v $$(cat $(location @%s//:bmr_config_dir)):/config bazel/cmd/btpsimple:btpsimple_image  start --config "/config/btpsimple_%s_configuration.json" --key_password $$(cat $(location @%s//cli:keysecret))
+            docker run -d -v $$(cat $(location @%s//:bmr_config_dir)):/config bazel/cmd/btpsimple:btpsimple_image start --config "/config/btpsimple_%s_configuration.json" --key_password $$(cat $(location @%s//cli:keysecret))
             echo 'done'> \"$@\" """ % (chains[1], chains[1], chains[0]),
         executable = True,
         output_to_bindir = True,
