@@ -119,6 +119,11 @@ impl BtpMessageCenter {
         self.event.get_message()
     }
 
+    #[cfg(feature = "mockable")]
+    pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
+        self.event.get_message()
+    }
+
     #[cfg(feature = "testable")]
     pub fn send_message(
         &mut self,
