@@ -69,9 +69,9 @@ impl BtpMessageCenter {
         )
     }
 
-    pub fn assert_relay_is_valid(&self, accepted_relay: &AccountId) {
+    pub fn assert_relay_is_valid(&self, accepted_relay: &AccountId, relay: &AccountId) {
         require!(
-            &env::predecessor_account_id() == accepted_relay,
+            relay == accepted_relay,
             format!(
                 "{}",
                 BmcError::Unauthorized {
