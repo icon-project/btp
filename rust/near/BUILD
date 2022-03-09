@@ -9,7 +9,9 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "near_config_dir",
     outs = ["near_config_dir.out"],
-    cmd = "mkdir \"$$PWD/near_config_dir\"; echo \"$$PWD/near_config_dir\" > $@",
+    cmd = """mkdir -p \"$$PWD/near_config_dir/localnet/node0\"
+    cp -t $$PWD/near_config_dir/localnet/node0 -r ~/.near/localnet/node0/{config.json,genesis.json,node_key.json,validator_key.json} ;
+    echo \"$$PWD/near_config_dir\" > $@""",
     executable = True,
     local = True,
 )
@@ -79,7 +81,18 @@ genrule(
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir \"$$PWD/bmr_config_dir\"; echo \"$$PWD/bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$PWD/near_bmr_config_dir\"; echo \"$$PWD/near_bmr_config_dir\" > $@",
     executable = True,
     local = True,
+)
+
+genrule(
+    name = "endpoint_docker",
+    outs = ["endpoint.out"],
+    cmd = "echo \"http://172.17.0.1:$$(cat $(location :deploy_node))\" > $@",
+    executable = True,
+    local = True,
+    tools = [
+        ":deploy_node",
+    ],
 )

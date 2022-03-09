@@ -181,7 +181,7 @@ genrule(
     outs = [
         "keysecret.out",
     ],
-    cmd = "echo 'nearprotocol' > $@",
+    cmd = "echo 'btpsimple' > $@",
     executable = True,
     local = True,
 )

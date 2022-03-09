@@ -73,20 +73,20 @@ def create_sub_account(name):
 
 def configure_link(name):
     native.genrule(
-    name = "add_%s_verifier" % name,
-    srcs = ["@near//cli:deploy_%s_bmv" % name],
-    outs = ["add_%s_verifier.out" % name],
-    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % (name,name),
-    executable = True,
-    local = True,
-    tools = [
-        "@%s//:network_address" % name,
-        "@near//:wait_until_near_up",
-        "@near//cli:encode_public_key_bmc",
-        "@near//cli:encode_public_key_%sbmv" % name,
-        "@near//cli:near_binary",
-    ],
-)
+        name = "add_%s_verifier" % name,
+        srcs = ["@near//cli:deploy_%s_bmv" % name, "@near//cli:deploy_bmc"],
+        outs = ["add_%s_verifier.out" % name],
+        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % (name, name),
+        executable = True,
+        local = True,
+        tools = [
+            "@%s//:network_address" % name,
+            "@near//:wait_until_near_up",
+            "@near//cli:encode_public_key_bmc",
+            "@near//cli:encode_public_key_%sbmv" % name,
+            "@near//cli:near_binary",
+        ],
+    )
     native.genrule(
         name = "add_%s_link" % name,
         srcs = [
