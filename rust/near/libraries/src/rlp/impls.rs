@@ -174,9 +174,6 @@ macro_rules! impl_decodable_for_u {
 				rlp.decoder().decode_value(|bytes| match bytes.len() {
 					0 | 1 => u8::decode(rlp).map(|v| v as $name),
 					l if l <= mem::size_of::<$name>() => {
-						if bytes[0] == 0 {
-							return Err(DecoderError::RlpInvalidIndirection)
-						}
 						let mut res = 0 as $name;
 						for (i, byte) in bytes.iter().enumerate().take(l) {
 							let shift = (l - 1 - i) * 8;
