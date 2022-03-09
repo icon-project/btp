@@ -28,6 +28,7 @@ impl BtpMessageCenter {
         )
         .then(bmc_contract::handle_relay_message_bmv_callback(
             source,
+            env::predecessor_account_id(),
             env::current_account_id(),
             estimate::NO_DEPOSIT,
             estimate::HANDLE_RELAY_MESSAGE_BMV_CALLBACK,
@@ -39,20 +40,21 @@ impl BtpMessageCenter {
         &mut self,
         source: BTPAddress,
         #[callback] verifier_response: VerifierResponse,
+        relay: AccountId,
     ) {
         if let Some(mut link) = self.links.get(&source) {
-            let relay = match link.rotate_relay(
+            let accepted_relay = match link.rotate_relay(
                 verifier_response.verifier_status.last_height(),
                 !verifier_response.messages.is_empty(),
             ) {
-                Some(relay) => {
-                    self.assert_relay_is_valid(relay);
-                    relay.clone()
+                Some(accepted_relay) => {
+                    self.assert_relay_is_valid(&relay, accepted_relay);
+                    relay
                 }
-                None => env::predecessor_account_id(),
+                None => relay,
             };
 
-            let mut relay_status = match link.relays().status(&relay) {
+            let mut relay_status = match link.relays().status(&accepted_relay) {
                 Some(status) => status,
                 None => RelayStatus::default(),
             };
@@ -66,7 +68,7 @@ impl BtpMessageCenter {
                 .message_count_mut()
                 .add(verifier_response.messages.len().try_into().unwrap())
                 .unwrap();
-            link.relays_mut().set_status(&relay, &relay_status);
+            link.relays_mut().set_status(&accepted_relay, &relay_status);
             self.links.set(&source, &link);
             self.handle_btp_messages(source, verifier_response.messages)
         }
@@ -78,20 +80,21 @@ impl BtpMessageCenter {
         &mut self,
         source: BTPAddress,
         verifier_response: VerifierResponse,
+        relay: AccountId,
     ) {
         if let Some(mut link) = self.links.get(&source) {
-            let relay = match link.rotate_relay(
+            let accepted_relay = match link.rotate_relay(
                 verifier_response.verifier_status.last_height(),
                 !verifier_response.messages.is_empty(),
             ) {
-                Some(relay) => {
-                    self.assert_relay_is_valid(relay);
-                    relay.clone()
+                Some(accepted_relay) => {
+                    self.assert_relay_is_valid(&relay, accepted_relay);
+                    relay
                 }
-                None => env::predecessor_account_id(),
+                None => relay,
             };
 
-            let mut relay_status = match link.relays().status(&relay) {
+            let mut relay_status = match link.relays().status(&accepted_relay) {
                 Some(status) => status,
                 None => RelayStatus::default(),
             };
@@ -105,13 +108,18 @@ impl BtpMessageCenter {
                 .message_count_mut()
                 .add(verifier_response.messages.len().try_into().unwrap())
                 .unwrap();
-            link.relays_mut().set_status(&relay, &relay_status);
+            link.relays_mut().set_status(&accepted_relay, &relay_status);
             self.links.set(&source, &link);
             self.handle_btp_messages(source, verifier_response.messages)
         }
     }
 
     #[cfg(feature = "testable")]
+    pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
+        self.event.get_message()
+    }
+
+    #[cfg(feature = "mockable")]
     pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
         self.event.get_message()
     }

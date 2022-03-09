@@ -1,4 +1,4 @@
-use bmv_icon::BtpMessageVerifier;
+use bmv_icon::{BtpMessageVerifier};
 use hex::{decode, encode};
 use libraries::{rlp, types::BTPAddress, MerklePatriciaTree};
 use near_sdk::{testing_env, VMContext};
@@ -11,7 +11,7 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 
 #[cfg(feature = "testable")]
-use bmv_icon::types::{RelayMessage, Sha256};
+use bmv_icon::types::{RelayMessage, Sha256, Validators};
 
 fn get_context(
     input: Vec<u8>,
@@ -50,7 +50,9 @@ fn handle_relay_message() {
     let mut contract = BtpMessageVerifier::new(
         alice(),
         "0x58eb1c.icon".to_string(),
-        vec![decode("00b6b5791be0b5ef67063b3c10b840fb81514db2fd").unwrap()],
+        Validators::from(&vec![hex::decode(
+            "00b6b5791be0b5ef67063b3c10b840fb81514db2fd",
+        ).unwrap()]),
         U64(16546),
     );
 
