@@ -26,7 +26,7 @@ impl BtpMessageVerifier {
     // TODO: fix cx
     pub fn filter_source_events(event_log: &EventLog, source: &BTPAddress) -> bool {
         let address = event_log.address().get();
-        if address.is_ok() && (encode(address.unwrap()) == source.contract_address().unwrap().replace("cx", "00")) {
+        if address.is_ok() && (encode(address.unwrap()) == source.contract_address().unwrap().replace("cx", "01")) {
             true
         } else {
             false
