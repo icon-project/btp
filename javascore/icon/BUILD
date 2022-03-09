@@ -118,3 +118,18 @@ genrule(
         ":deploy_node",
     ],
 )
+
+genrule(
+    name = "latest_block_height",
+    srcs = [
+        "@icon//:wait_for_channel_up",
+        "@icon//:wait_until_icon_up",
+    ],
+    outs = ["latest_block_height.out"],
+    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon lastblock | jq .height >$@",
+    executable = True,
+    local = True,
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+    ],
+)

@@ -140,6 +140,7 @@ genrule(
     srcs = [
         "@icon//cli:set_near_link_rotate_term",
         "@icon//cli:set_near_link_delay_limit",
+        "@icon//cli:add_service_icon",
     ],
     outs = ["set_near_link.out"],
     cmd = "echo 'set_link_completed' >$@",
@@ -163,7 +164,10 @@ genrule(
 
 genrule(
     name = "generate_keystore",
-    srcs = ["@com_github_icon_project_goloop//cmd/goloop", ":keysecret"],
+    srcs = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+        ":keysecret",
+    ],
     outs = [
         "keystore.json",
     ],
@@ -171,3 +175,21 @@ genrule(
     executable = True,
     local = True,
 )
+
+genrule(
+    name = "add_service_icon",
+    srcs = ["@icon//cli:deploy_nativecoin"],
+    outs = ["add_service_icon.out"],
+    cmd = """$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addService --param _addr=$$(cat $(location @icon//cli:get_score_address_nativecoin)) --param _svc=nativecoin --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@ """,
+    executable = True,
+    local = True,
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+        "@icon//:goloop_config_dir",
+        "@icon//:wait_for_channel_up",
+        "@icon//:wait_until_icon_up",
+        "@icon//cli:get_score_address_bmc",
+        "@icon//cli:get_score_address_nativecoin",
+    ],
+)
+

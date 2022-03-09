@@ -96,3 +96,17 @@ genrule(
         ":deploy_node",
     ],
 )
+
+genrule(
+    name = "latest_block_height",
+    outs = ["latest_block_height.out"],
+    cmd = "curl http://localhost:$$(cat $(location :deploy_node))/status | jq .sync_info.latest_block_height >$@",
+    tools = [
+        "@near//cli:near_binary",
+        "@near//:wait_until_near_up",
+        ":deploy_node"
+    ],
+    executable = True,
+    local = True,
+
+)
