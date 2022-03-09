@@ -156,7 +156,7 @@ genrule(
     outs = [
         "keysecret.out",
     ],
-    cmd = "echo 'gochain' > $@",
+    cmd = "echo 'btpsimple' > $@",
     executable = True,
     local = True,
 )

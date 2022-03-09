@@ -103,7 +103,18 @@ genrule(
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir \"$$PWD/bmr_config_dir\"; echo \"$$PWD/bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$PWD/icon_bmr_config_dir\"; echo \"$$PWD/icon_bmr_config_dir\" > $@",
     executable = True,
     local = True,
+)
+
+genrule(
+    name = "endpoint_docker",
+    outs = ["endpoint.out"],
+    cmd = "echo \"http://172.17.0.1:$$(cat $(location :deploy_node))/api/v3/icon\" > $@",
+    executable = True,
+    local = True,
+    tools = [
+        ":deploy_node",
+    ],
 )
