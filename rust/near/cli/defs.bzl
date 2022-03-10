@@ -104,3 +104,41 @@ def configure_link(name):
             "@near//cli:near_binary",
         ],
     )
+
+def configure_bmr(name):
+    native.genrule(
+        name = "generate_%s_keystore" % name,
+        srcs = [
+            "@com_github_hugobyte_keygen//:keygen",
+            "@near//cli:keysecret",
+        ],
+        outs = ["generate_%s_keystore.json" % name],
+        cmd = "$(execpath @com_github_hugobyte_keygen//:keygen) generate -p $$(cat $(location :keysecret)) -o $@",
+        executable = True,
+        local = True,
+    )
+    native.genrule(
+        name = "get_wallet_%s_keystore" % name,
+        srcs = [
+            "@near//cli:generate_%s_keystore" % name,
+        ],
+        outs = ["get_wallet_%s_keystore.out" % name],
+        cmd = "echo \"$$(cat $(location :generate_%s_keystore))\" | jq .address | echo $$(tr -d '\"') >$@" % name,
+        executable = True,
+        local = True,
+    )
+    native.genrule(
+        name = "transfer_amount_%s_address" % name,
+        srcs = [
+            "@near//cli:get_wallet_%s_keystore" % name,
+            "@near//cli:generate_%s_keystore" % name,
+        ],
+        outs = ["%s_keystore.json" % name],
+        cmd = "$(execpath @near//cli:near_binary) send node0 $$(cat $(location @near//cli:get_wallet_%s_keystore)) 50 --masterAccount node0 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; echo \"$$(cat $(location @near//cli:generate_%s_keystore))\"| jq -r . > $@" % (name,name),
+        executable = True,
+        local = True,
+        tools = [
+            "@near//:wait_until_near_up",
+            "@near//cli:near_binary",
+        ]
+    )

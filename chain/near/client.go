@@ -33,9 +33,10 @@ import (
 )
 
 const (
-	transactionMaxDataSize                           = 524288
-	functionCallMethod                               = "handle_relay_message"
-	gas                                              = uint64(300000000000000)
+	transactionMaxDataSize = 524288
+	functionCallMethod     = "handle_relay_message"
+	gas                    = uint64(300000000000000)
+
 	DefaultSendTransactionInterval                   = time.Second //same as parent variable
 	ErrorMessagecode               jsonrpc.ErrorCode = -32000
 	BmcContractMessageStateKey                       = "bWVzc2FnZQ=="
@@ -257,6 +258,7 @@ func (c *Client) CreateTransaction(wallet base.Wallet, p *chain.TransactionParam
 		}
 
 		if transactionParam, ok := (*p).(*types.TransactionParam); ok {
+			log.Debugln("RelayMessage", transactionParam.RelayMessage)
 			var err error
 			relayMessage := &Data{
 				Source:  transactionParam.RelayMessage.Previous,

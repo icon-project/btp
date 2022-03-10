@@ -17,4 +17,4 @@ bazel run "@${SOURCE}//:${SOURCE}_node_image"
 bazel run "@${DESTINATION}//:${DESTINATION}_node_image"
 bazel run @btp//cmd/btpsimple:btpsimple_image
 
-bazel run "@btp//bridge:${SOURCE}_and_${DESTINATION}"
+bazel run "@btp//bridge:${SOURCE}_and_${DESTINATION}" --verbose_failures

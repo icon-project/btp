@@ -35,25 +35,27 @@ def bridge(name, chains):
         srcs = [
             "@btp//cmd/btpsimple:btpsimple",
             "@%s//:bmr_config_dir" % (chains[0]),
-            "@%s//cli:generate_keystore" % (chains[1]),
+            "@%s//cli:add_%s_bmr" % (chains[0], chains[1]),
+            "@%s//cli:transfer_amount_%s_address" % (chains[1], chains[1]),
             "@%s//cli:keysecret" % chains[1],
             "@%s//:endpoint_docker" % chains[0],
             "@%s//:endpoint_docker" % chains[1],
             "@%s//:btp_address" % chains[0],
             "@%s//:btp_address" % chains[1],
-            "@%s//:latest_block_height" % chains[1]
+            "@%s//:latest_block_height" % chains[1],
         ],
-        cmd = """echo $$(cat $(location @%s//cli:generate_keystore)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
+        cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
+        export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_DST_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_BASE_DIR=\"./config/data\"
+        export BTPSIMPLE_OFFSET=$$(cat $(location @%s//:latest_block_height))
+        export BTPSIMPLE_LOG_WRITER_FILENAME=\"./config/log/btpsimple.log\"
         $(execpath @btp//cmd/btpsimple:btpsimple) --key_password $$(cat $(location @%s//cli:keysecret)) --key_store $$(cat $(location @%s//:bmr_config_dir))/keystore.json \
-            --base_dir $$(cat $(location @%s//:bmr_config_dir)):/data \
-            --offset $$(cat $(location @%s//:latest_block_height)) \
             --src.address $$(cat $(location @%s//:btp_address)) \
             --src.endpoint $$(cat $(location @%s//:endpoint_docker)) \
             --dst.address $$(cat $(location @%s//:btp_address)) \
             --dst.endpoint $$(cat $(location @%s//:endpoint_docker)) \
-            --dst.options "mtaRootSize"=8 \
-            --src.options "mtaRootSize"=8 \
-        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[1], chains[0], chains[1], chains[0],chains[0],chains[1], chains[0], chains[0], chains[1], chains[1], chains[0]),
+        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[1], chains[1], chains[0], chains[1], chains[1], chains[0], chains[0], chains[0], chains[1], chains[1], chains[0]),
         local = True,
         executable = True,
     )
@@ -64,25 +66,27 @@ def bridge(name, chains):
         srcs = [
             "@btp//cmd/btpsimple:btpsimple",
             "@%s//:bmr_config_dir" % (chains[1]),
-            "@%s//cli:generate_keystore" % (chains[0]),
+            "@%s//cli:add_%s_bmr" % (chains[1], chains[0]),
+            "@%s//cli:transfer_amount_%s_address" % (chains[0], chains[0]),
             "@%s//cli:keysecret" % chains[0],
             "@%s//:endpoint_docker" % chains[1],
             "@%s//:endpoint_docker" % chains[0],
             "@%s//:btp_address" % chains[0],
             "@%s//:btp_address" % chains[1],
-            "@%s//:latest_block_height" % chains[1]
+            "@%s//:latest_block_height" % chains[0],
         ],
-        cmd = """echo $$(cat $(location @%s//cli:generate_keystore)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
+        cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
+        export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_DST_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_BASE_DIR=\"./config/data\"
+        export BTPSIMPLE_OFFSET=$$(cat $(location @%s//:latest_block_height))
+        export BTPSIMPLE_LOG_WRITER_FILENAME=\"./config/log/btpsimple.log\"
         $(execpath @btp//cmd/btpsimple:btpsimple) --key_password $$(cat $(location @%s//cli:keysecret)) --key_store $$(cat $(location @%s//:bmr_config_dir))/keystore.json \
-            --base_dir $$(cat $(location @%s//:bmr_config_dir)):/data \
-            --offset $$(cat $(location @%s//:latest_block_height)) \
             --src.address $$(cat $(location @%s//:btp_address)) \
             --src.endpoint $$(cat $(location @%s//:endpoint_docker)) \
             --dst.address $$(cat $(location @%s//:btp_address)) \
             --dst.endpoint $$(cat $(location @%s//:endpoint_docker)) \
-            --dst.options "mtaRootSize"=8 \
-            --src.options "mtaRootSize"=8 \
-        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[0], chains[1], chains[0], chains[1],chains[1],chains[0] chains[1], chains[1], chains[0], chains[0], chains[1]),
+        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[0], chains[0], chains[1], chains[0], chains[0], chains[1], chains[1], chains[1], chains[0], chains[0], chains[1]),
         local = True,
         executable = True,
     )

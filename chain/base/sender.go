@@ -158,6 +158,7 @@ SignLoop:
 	SendLoop:
 		for {
 			transactionHash, err := s.client.SendTransaction(&transactionParams)
+			log.Debugln("transaction hash", string(transactionHash))
 			if transactionHash != nil {
 				if err := s.client.AssignHash(s.wallet, transactionHashParam, transactionHash); err != nil {
 					return nil, err

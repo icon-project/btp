@@ -1,4 +1,4 @@
-load("@icon//cli:defs.bzl", "configure_link", "create_keystore", "get_score_address")
+load("@icon//cli:defs.bzl", "configure_link", "create_keystore", "get_score_address","configure_bmr")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,6 +28,10 @@ get_score_address(
 get_score_address(
     name = "get_score_address_nativecoin",
     contract = "nativecoin",
+)
+
+configure_bmr(
+    name = "icon",
 )
 
 genrule(
@@ -162,19 +166,19 @@ genrule(
     local = True,
 )
 
-genrule(
-    name = "generate_keystore",
-    srcs = [
-        "@com_github_icon_project_goloop//cmd/goloop",
-        ":keysecret",
-    ],
-    outs = [
-        "keystore.json",
-    ],
-    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) ks gen -p $$(cat $(location :keysecret)) -o $@",
-    executable = True,
-    local = True,
-)
+# genrule(
+#     name = "generate_keystore",
+#     srcs = [
+#         "@com_github_icon_project_goloop//cmd/goloop",
+#         ":keysecret",
+#     ],
+#     outs = [
+#         "keystore.json",
+#     ],
+#     cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) ks gen -p $$(cat $(location :keysecret)) -o $@",
+#     executable = True,
+#     local = True,
+# )
 
 genrule(
     name = "add_service_icon",
@@ -193,3 +197,34 @@ genrule(
     ],
 )
 
+genrule(
+    name = "get_icon_validators",
+    srcs = ["@btp//cmd/iconvalidators:iconvalidators"],
+    outs = ["get_icon_validators.out"],
+    cmd = """ GOLOOP_RPC_URI=\"$$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon\" $(execpath @btp//cmd/iconvalidators:iconvalidators) build $$(cat $(location @icon//:latest_block_height)) | echo $$(tr -d '\"') >$@""",
+    tools = [
+        "@icon//:wait_until_icon_up",
+        "@icon//:latest_block_height"
+    ],
+    executable = True,
+    local = True,
+)
+
+genrule(
+    name = "add_near_bmr",
+    srcs = [":set_near_link","@icon//cli:get_wallet_icon_keystore","@near//:btp_address"],
+    outs = ["add_near_bmr.out"],
+    cmd = """
+    $(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addRelay  --param _link=$$(cat $(location @near//:btp_address)) --param _addr=$$(cat $(location @icon//cli:get_wallet_icon_keystore))  --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001  | jq -r . >$@
+    """,
+    tools = [
+        "@icon//cli:get_score_address_bmc",
+        "@icon//:wait_for_channel_up",
+        "@icon//:wait_until_icon_up",
+        "@com_github_icon_project_goloop//cmd/goloop:goloop",
+        "@icon//:goloop_config_dir",
+    ],
+    executable = True,
+    local = True,
+
+)
