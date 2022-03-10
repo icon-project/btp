@@ -5,14 +5,14 @@ use accounts::*;
 use libraries::types::{Address, BTPAddress, VerifierResponse, VerifierStatus};
 
 //TODO
-fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId, storage_usage: u64) -> VMContext {
+fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId, storage_usage: u64, block_index: u64) -> VMContext {
     VMContext {
         current_account_id: alice().to_string(),
         signer_account_id: signer_account_id.to_string(),
         signer_account_pk: vec![0, 1, 2],
         predecessor_account_id: signer_account_id.to_string(),
         input,
-        block_index: 0,
+        block_index,
         block_timestamp: 0,
         account_balance: 0,
         account_locked_balance: 0,
@@ -28,7 +28,7 @@ fn get_context(input: Vec<u8>, is_view: bool, signer_account_id: AccountId, stor
 
 #[test]
 fn add_relay_new_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -50,7 +50,7 @@ fn add_relay_new_relay() {
 
 #[test]
 fn add_relays_new_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -79,7 +79,7 @@ fn add_relays_new_relay() {
 #[test]
 #[should_panic(expected = "BMCRevertRelayExist")]
 fn add_relay_existing_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -103,7 +103,7 @@ fn add_relay_existing_relay() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsLink")]
 fn add_relay_non_existing_link() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -120,7 +120,7 @@ fn add_relay_non_existing_link() {
 
 #[test]
 fn get_relays() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -149,7 +149,7 @@ fn get_relays() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
 fn add_relays_permission() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -170,7 +170,7 @@ fn add_relays_permission() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
 fn add_relay_permission() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -194,7 +194,7 @@ fn add_relay_permission() {
 
 #[test]
 fn remove_relay_existing_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -220,7 +220,7 @@ fn remove_relay_existing_relay() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsLink")]
 fn remove_relay_non_existing_link() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -234,7 +234,7 @@ fn remove_relay_non_existing_link() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistsPermission")]
 fn remove_relay_permission() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -260,7 +260,7 @@ fn remove_relay_permission() {
 #[test]
 #[should_panic(expected = "BMCRevertNotExistRelay")]
 fn remove_relay_non_existing_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, 0));
+    let context = |v: AccountId| (get_context(vec![], false, v, 0, 0));
     testing_env!(context(alice()));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
@@ -283,15 +283,15 @@ fn remove_relay_non_existing_relay() {
 
 #[test]
 fn rotate_relay() {
-    let context = |v: AccountId| (get_context(vec![], false, v, env::storage_usage()));
-    testing_env!(context(alice()));
+    let context = |v: AccountId, block_index: u64| (get_context(vec![], false, v, env::storage_usage(), block_index));
+    testing_env!(context(alice(), 0));
     let mut contract = BtpMessageCenter::new("0x1.near".into(), 1500);
     let link =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
     contract.add_verifier(link.network_address().unwrap(), verifier());
     contract.add_link(link.clone());
-    contract.set_link_bmv_callback(link.clone(), 2000, 100, 1, VerifierStatus::new(10, 10, 10));
+    contract.set_link_bmv_callback(link.clone(), 2000, 50, 1, VerifierStatus::new(10, 0, 10));
     contract.add_relays(
         link.clone(),
         vec![
@@ -307,11 +307,11 @@ fn rotate_relay() {
 
     let mut link_property = contract.get_link(link.clone());
 
-    testing_env!(context(alice()));
+    testing_env!(context(alice(), 51));
 
     contract.handle_relay_message_bmv_callback(link.clone(), VerifierResponse {
         messages: vec![],
-        verifier_status: VerifierStatus::new(10, 10, 11),
+        verifier_status: VerifierStatus::new(10, 0, 11),
         previous_height: 10
     },
     "verifier_2.near".parse::<AccountId>().unwrap());
