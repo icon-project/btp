@@ -33,6 +33,7 @@ pub mod errors {
             match self {
                 BtpException::Base => todo!(),
                 BtpException::Bmc(error) => error.message(),
+                BtpException::Bsh(error) => error.message(),
                 _ => todo!(),
             }
         }
@@ -266,6 +267,9 @@ pub mod errors {
                 }
                 BshError::TokenNotRegistered => {
                     write!(f, "{}{}", label, "TokenNotRegistered")
+                }
+                BshError::Unknown => {
+                    write!(f, "{}", "Unknown")
                 }
                 _ => todo!(),
             }
