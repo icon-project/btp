@@ -44,8 +44,8 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
 
     let verifier_response = VerifierResponse {
         messages: vec![btp_message],
-        verifier_status: VerifierStatus::new(10, 10, 10),
-        previous_height: 10,
+        verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+        previous_height: 84644027,
     };
 
     context.add_method_params(
@@ -53,6 +53,7 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
         json!({
             "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
             "verifier_response": verifier_response,
+            "relay": context.accounts().get("relay_1").id()
         }),
     );
     context
@@ -158,8 +159,46 @@ pub static RELAY_2_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
     
         let verifier_response = VerifierResponse {
             messages: vec![serialized_message],
-            verifier_status: VerifierStatus::new(11, 10, 11),
-            previous_height: 10,
+            verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+        previous_height: 84644027,
+    };
+
+    context.add_method_params(
+        "handle_relay_message_bmv_callback_mockable",
+        json!({
+            "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "verifier_response": verifier_response,
+            "relay": context.accounts().get("relay_1").id()
+            }),
+        );
+        context
+    };
+
+    pub static BMC_LINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(
+        Context,
+    ) -> Context = |mut context: Context| {
+        // let link =
+        //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Link {
+            link: BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+        });
+        let btp_message = <BtpMessage<SerializedMessage>>::new(
+            BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+            BTPAddress::new(format!(
+                "btp://0x1.near/{}",
+                context.contracts().get("bmc").id()
+            )),
+            "bmc".to_string(),
+            WrappedI128::new(1),
+            <Vec<u8>>::from(bmc_service_message.clone()),
+            None,
+        );
+    
+        let verifier_response = VerifierResponse {
+            messages: vec![btp_message],
+            verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+            previous_height: 84644027,
         };
     
         context.add_method_params(
@@ -167,6 +206,45 @@ pub static RELAY_2_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
             json!({
                 "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
                 "verifier_response": verifier_response,
+                "relay": context.accounts().get("relay_1").id()
+            }),
+        );
+        context
+    };
+
+    pub static BMC_UNLINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(
+        Context,
+    ) -> Context = |mut context: Context| {
+        // let link =
+        //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Unlink {
+            link: BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+        });
+        let btp_message = <BtpMessage<SerializedMessage>>::new(
+            BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
+            BTPAddress::new(format!(
+                "btp://0x1.near/{}",
+                context.contracts().get("bmc").id()
+            )),
+            "bmc".to_string(),
+            WrappedI128::new(1),
+            <Vec<u8>>::from(bmc_service_message.clone()),
+            None,
+        );
+    
+        let verifier_response = VerifierResponse {
+            messages: vec![btp_message],
+            verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+            previous_height: 84644027,
+        };
+    
+        context.add_method_params(
+            "handle_relay_message_bmv_callback_mockable",
+            json!({
+                "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "verifier_response": verifier_response,
+                "relay": context.accounts().get("relay_1").id()
             }),
         );
         context
