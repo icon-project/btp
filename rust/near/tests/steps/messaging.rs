@@ -3,6 +3,7 @@ use std::convert::TryFrom;
 use super::*;
 use libraries::types::{
     messages::{
+        ErrorMessage,
         BmcServiceMessage, BmcServiceType, BtpMessage, SerializedBtpMessages, SerializedMessage,
         TokenServiceMessage, TokenServiceType,
     },
@@ -25,9 +26,6 @@ pub static RELAY_1_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(
     Context,
 ) -> Context = |mut context: Context| {
-    // let link =
-    //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
     let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Init {
         links: vec![
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
@@ -144,8 +142,12 @@ pub static UNREGISTERED_BSH_RECEIVES_BTP_MESSAGE_TO_MINT_AND_TRANSFER_WRAPPED_NA
     let destination =
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
     let btp_message = &BtpMessage::new(
-        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
-        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string()),
+        BTPAddress::new(format!(
+            "btp://{}/{}",
+            NEAR_NETWORK,
+            context.contracts().get("bmc").id()
+        )),
         "nativecoin_2".to_string(),
         WrappedI128::new(1),
         vec![],
@@ -218,8 +220,6 @@ pub static BMC_SENDS_BTP_MESSAGE_TO_MINT_AND_TRANSFER_IN_WRAPPED_NATIVE_COIN: fn
 
 pub static BMC_LINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context =
     |mut context: Context| {
-        // let link =
-        //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
 
         let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Link {
             link: BTPAddress::new(
@@ -259,9 +259,7 @@ pub static BMC_LINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Contex
 
 pub static BMC_UNLINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context =
     |mut context: Context| {
-        // let link =
-        //     BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
+    
         let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Unlink {
             link: BTPAddress::new(
                 "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
@@ -342,23 +340,20 @@ pub static BSH_SHOULD_RECIEVE_INVALID_BSH_MESSAGE_FROM_BMC: fn(Context) = |mut c
     let context = context.pipe(USER_INVOKES_GET_MESSAGES_IN_BMC);
     let message: Result<Result<BtpMessage<SerializedMessage>, String>, serde_json::Error> =
         serde_json::from_value(context.method_responses("get_message"));
-    let service_message = <BtpMessage<TokenServiceMessage>>::try_from(message.unwrap().unwrap());
+    let service_message = <BtpMessage<ErrorMessage>>::try_from(message.unwrap().unwrap());
 
     let expected_message = &BtpMessage::new(
         BTPAddress::new(format!(
             "btp://0x1.near/{}",
             context.contracts().get("bmc").id()
         )),
-        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string()),
         "nativecoin_2".to_string(),
         WrappedI128::new(-1),
         vec![
-            246, 21, 180, 66, 77, 67, 82, 101, 118, 101, 114, 116, 85, 110, 114, 101, 97, 99, 104,
-            97, 98, 108, 101, 32, 97, 116, 32, 98, 116, 112, 58, 47, 47, 49, 50, 51, 52, 46, 105,
-            99, 111, 110, 101, 101, 47, 48, 120, 49, 50, 51, 52, 53, 54, 55, 56,
+          214, 16, 148, 66, 77, 67, 82, 101, 118, 101, 114, 116, 78, 111, 116, 69, 120, 105, 115, 116, 66, 83, 72
         ],
-        Some(TokenServiceMessage::new(TokenServiceType::UnhandledType)),
+        Some(ErrorMessage::new(16, "BMCRevertNotExistBSH".to_string())),
     );
-
     assert_eq!(service_message.unwrap(), expected_message.to_owned());
 };
