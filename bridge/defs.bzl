@@ -47,6 +47,7 @@ def bridge(name, chains):
         cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
         export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
         export BTPSIMPLE_DST_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_LOG_WRITER_MAXSIZE=1024
         export BTPSIMPLE_BASE_DIR=\"./config/data\"
         export BTPSIMPLE_OFFSET=$$(cat $(location @%s//:latest_block_height))
         export BTPSIMPLE_LOG_WRITER_FILENAME=\"./config/log/btpsimple.log\"
@@ -78,6 +79,7 @@ def bridge(name, chains):
         cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
         export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
         export BTPSIMPLE_DST_OPTIONS=[mtaRootSize=8]
+        export BTPSIMPLE_LOG_WRITER_MAXSIZE=1024
         export BTPSIMPLE_BASE_DIR=\"./config/data\"
         export BTPSIMPLE_OFFSET=$$(cat $(location @%s//:latest_block_height))
         export BTPSIMPLE_LOG_WRITER_FILENAME=\"./config/log/btpsimple.log\"
