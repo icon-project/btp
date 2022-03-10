@@ -35,10 +35,8 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
     let btp_message = <BtpMessage<SerializedMessage>>::new(
         BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
         BTPAddress::new(format!(
-            "btp://0x1.near/{}",
-            context.contracts().get("bmc").id()
-        )),
-        "bmc".to_string(),
+            "btp://{}/{}",NEAR_NETWORK, context.contracts().get("bmc").id())),
+        "nativecoin".to_string(),
         WrappedI128::new(1),
         <Vec<u8>>::from(bmc_service_message.clone()),
         None,
@@ -182,8 +180,7 @@ pub static BMC_SENDS_BTP_MESSAGE_TO_MINT_AND_TRANSFER_IN_WRAPPED_NATIVE_COIN: fn
     Context,
 ) -> Context = |mut context: Context| {
     let destination = BTPAddress::new(format!(
-        "btp://0x1.near/{}",
-        context.contracts().get("bmc").id()
+        "btp://{}/{}",NEAR_NETWORK,context.contracts().get("bmc").id()
     ));
     let btp_message = &BtpMessage::new(
         BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
@@ -344,9 +341,8 @@ pub static BSH_SHOULD_RECIEVE_INVALID_BSH_MESSAGE_FROM_BMC: fn(Context) = |mut c
 
     let expected_message = &BtpMessage::new(
         BTPAddress::new(format!(
-            "btp://0x1.near/{}",
-            context.contracts().get("bmc").id()
-        )),
+            "btp://{}/{}",NEAR_NETWORK, context.contracts().get("bmc").id()
+            )),
         BTPAddress::new("btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string()),
         "nativecoin_2".to_string(),
         WrappedI128::new(-1),
