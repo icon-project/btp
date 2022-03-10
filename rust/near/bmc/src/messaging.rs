@@ -345,7 +345,7 @@ impl BtpMessageCenter {
                 message.to_owned(),
                 serivce_account_id.to_owned(),
                 estimate::NO_DEPOSIT,
-                estimate::SEND_MESSAGE,
+                estimate::BSH_HANDLE_BTP_MESSAGE,
             )
             .then(bmc_contract::handle_external_service_message_callback(
                 source.to_owned(),
