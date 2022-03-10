@@ -103,7 +103,7 @@ genrule(
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir -p \"$$PWD/icon_bmr_config_dir\"; echo \"$$PWD/icon_bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$PWD/icon_bmr_config_dir\"  && echo \"$$PWD/icon_bmr_config_dir\" > $@",
     executable = True,
     local = True,
 )

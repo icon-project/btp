@@ -201,6 +201,7 @@ type TransactionResult struct {
 	Status             TransactionResultStatus `json:"status"`
 	Transaction        NearTransaction         `json:"transaction"`
 	TransactionOutcome NearTransactionOutcome  `json:"transaction_outcome"`
+	ReceiptsOutcome
 }
 
 type NearTransaction struct {

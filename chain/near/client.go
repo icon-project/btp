@@ -484,6 +484,9 @@ func (c *Client) GetTransactionResult(param *chain.GetResultParam) (chain.Transa
 				return nil, err
 			}
 
+			if err := handleTransactionError(&response); err != nil {
+				return nil, err
+			}
 			return response, nil
 		}
 		return nil, fmt.Errorf("failed to cast paramteres")
@@ -1040,6 +1043,20 @@ func (c *Client) MonitorBlock(blockRequestPointer *base.BlockRequest, singleCall
 		}
 		return nil, nil
 	}, rxgo.WithCPUPool())
+}
+
+func handleTransactionError(response *types.TransactionResult) error {
+	fmt.Printf("%#v", response)
+	actionerror := types.Failure{}
+	for _, outcome := range response.ReceiptsOutcome {
+		if outcome.Outcome.Status.Failure != actionerror {
+
+			return fmt.Errorf("Action Error %v", outcome.Outcome.Status.Failure)
+		}
+	}
+
+	return nil
+
 }
 
 /*

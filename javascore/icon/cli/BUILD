@@ -228,3 +228,24 @@ genrule(
     local = True,
 
 )
+
+genrule(
+    name = "send_icx_to_near",
+    outs = ["send_icx_to_near.out"],
+    srcs = [
+        "@com_github_icon_project_goloop//cmd/goloop:goloop",
+        "@icon//:goloop_config_dir",
+        "@icon//cli:get_score_address_nativecoin",
+        "@near//cli:encode_public_key_alice"
+    ],
+    cmd = """
+     $(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon sendtx  call --to $$(cat $(location get_score_address_nativecoin)) --method transferNativeCoin  --param _to=\"btp://0x1.near/$$(cat $(location @near//cli:encode_public_key_alice))\"  --value 1000 --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:wait_for_channel_up))\" --step_limit 13610920001 >$@
+    """,
+    tools = [
+        "@icon//:wait_until_icon_up",
+        "@icon//:wait_for_channel_up",
+    ],
+    executable = True,
+    local = True,
+
+)

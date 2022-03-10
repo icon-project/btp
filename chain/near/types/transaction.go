@@ -1,9 +1,10 @@
 package types
 
 type TransactionResult struct {
-	Status             ExecutionStatus            `json:"status"`
-	Transaction        TransactionView            `json:"transaction"`
-	TransactionOutcome ExecutionOutcomeWithIdView `json:"transaction_outcome"`
+	Status             ExecutionStatus              `json:"status"`
+	Transaction        TransactionView              `json:"transaction"`
+	TransactionOutcome ExecutionOutcomeWithIdView   `json:"transaction_outcome"`
+	ReceiptsOutcome    []ExecutionOutcomeWithIdView `json:"receipts_outcome"`
 }
 
 type TransactionView struct {

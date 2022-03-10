@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcutil/base58"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/btcsuite/btcutil/base58"
 )
 
 type AccountId string
@@ -147,7 +148,12 @@ type ActionError struct {
 }
 
 type Kind struct {
+	FunctionCallError   FunctionCallError   `json:"FunctionCallError"`
 	AccountDoesNotExist AccountDoesNotExist `json:"AccountDoesNotExist"`
+}
+
+type FunctionCallError struct {
+	ExecutionError string `json:"ExecutionError"`
 }
 
 type AccountDoesNotExist struct {

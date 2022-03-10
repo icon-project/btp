@@ -44,14 +44,13 @@ genrule(
 genrule(
     name = "wait_until_near_up",
     outs = ["wait_until_near_up.out"],
-    cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:$$(cat $(location :deploy_node)) status 300 > $@",
+    cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:49363 status 300 > $@",
     executable = True,
     output_to_bindir = True,
     tags = [
         "no-cache",
     ],
     tools = [
-        ":deploy_node",
         "@btp//utils:wait_until_curl_script",
     ],
 )
@@ -81,7 +80,8 @@ genrule(
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir -p \"$$PWD/near_bmr_config_dir\"; echo \"$$PWD/near_bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$PWD/near_bmr_config_dir\"  && echo \"$$PWD/near_bmr_config_dir\" > $@",
+    output_to_bindir = True,
     executable = True,
     local = True,
 )
@@ -89,24 +89,21 @@ genrule(
 genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
-    cmd = "echo \"http://172.17.0.1:$$(cat $(location :deploy_node))\" > $@",
+    cmd = "echo \"http://172.17.0.1:49363\" > $@",
     executable = True,
     local = True,
     tools = [
-        ":deploy_node",
     ],
 )
 
 genrule(
     name = "latest_block_height",
     outs = ["latest_block_height.out"],
-    cmd = "curl http://localhost:$$(cat $(location :deploy_node))/status | jq .sync_info.latest_block_height >$@",
-    tools = [
-        "@near//cli:near_binary",
-        "@near//:wait_until_near_up",
-        ":deploy_node"
-    ],
+    cmd = "curl http://localhost:49363/status | jq .sync_info.latest_block_height >$@",
     executable = True,
     local = True,
-
+    tools = [
+        "@near//:wait_until_near_up",
+        "@near//cli:near_binary",
+    ],
 )
