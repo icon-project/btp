@@ -155,14 +155,21 @@ impl Link {
 
                     let mut rotate_count = {
                         let mut count = if guess_height < self.rotate_height {
-                            self.rotate_height - guess_height
+                            0
                         } else {
                             guess_height - self.rotate_height
                         };
                         let rotate_count = count.div_ceil(rotate_term);
                         rotate_count.deref().clone()
                     };
-                    let mut base_height = self.rotate_height + (rotate_count * rotate_term);
+
+                    let mut base_height: u64 = 0;
+                    if rotate_count > 0_u64 {
+                        base_height = self.rotate_height + ((rotate_count - 1) * rotate_term);
+                    } else {
+                        base_height = self.rotate_height - rotate_term;
+                    }
+
                     let mut skip_count = (current_height - guess_height)
                         .div_ceil(self.delay_limit)
                         .deref()
@@ -178,12 +185,17 @@ impl Link {
                 }
                 false => {
                     let mut count = if current_height < self.rotate_height {
-                        self.rotate_height - current_height
+                        0
                     } else {
                         current_height - self.rotate_height
                     };
                     let rotate_count = count.div_ceil(rotate_term);
-                    let base_height = self.rotate_height + ((*rotate_count - 1) * rotate_term);
+                    let mut base_height: u64 = 0;
+                    if *rotate_count > 0_u64 {
+                        base_height = self.rotate_height + ((*rotate_count - 1) * rotate_term);
+                    } else {
+                        base_height = self.rotate_height - rotate_term;
+                    }
                     (*rotate_count, base_height)
                 }
             };
