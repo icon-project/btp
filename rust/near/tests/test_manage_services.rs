@@ -90,5 +90,21 @@ mod manage_bsh_services {
                 .then(BMC_SHOULD_THROW_UNAUTHORISED_ERROR_ON_REMOVING_SERVICE);
         }
 
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_can_send_error_messge_if_sevice_message_is_intended_to_unregistered_bsh() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
+                .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(UNREGISTERED_BSH_RECEIVES_BTP_MESSAGE_TO_MINT_AND_TRANSFER_WRAPPED_NATIVE_COIN)
+                .when(ALICE_INVOKES_HANDLE_BTP_MESSAGE_IN_BMC)
+                .then(BSH_SHOULD_RECIEVE_INVALID_BSH_MESSAGE_FROM_BMC);
+        }
     }
 }

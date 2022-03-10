@@ -94,3 +94,10 @@ pub static BMC_SHOULD_THROW_SERVICE_ALREADY_EXISTS_ON_ADDING_SERVICE: fn(Context
     let error = context.method_errors("add_service");
     assert!(error.to_string().contains("BMCRevertAlreadyExistsBSH"));
 };
+
+pub static BMC_SHOULD_THROW_SERVICE_DOES_NOT_EXIST_ON_SENDING_SERVICE_MESSAGE: fn(Context) =
+|context: Context| {
+    let error = context.method_errors("handle_relay_message_bmv_callback_mockable");
+    // assert!(error.to_string().contains("BMCRevertAlreadyExistsBSH"));
+    println!("{:?}",error);
+};
