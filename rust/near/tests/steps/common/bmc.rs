@@ -148,3 +148,9 @@ pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 pub static USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC: fn(Context) -> Context =
     |context: Context| BMC_CONTRACT.handle_relay_message_bmv_callback_mockable(context, 300_000_000_000_000);
 
+
+pub static USER_INVOKES_VIEW_STATE_IN_BMC: fn(Context) -> Vec<u8> =
+    |context: Context| BMC_CONTRACT.view_state(context, "message".to_string());
+
+pub static USER_INVOKES_GET_MESSAGES_IN_BMC: fn(Context) -> Context =
+    |context: Context| BMC_CONTRACT.get_message(context);
