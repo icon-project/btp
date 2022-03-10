@@ -62,5 +62,22 @@ mod handle_relay_message {
                 .when(ALICE_INVOKES_HANDLE_BTP_MESSAGE_IN_BMC)
                 .then(ICON_LINK_STATUS_SHOULD_BE_UPDATED);
         }
+
+        #[tokio::test(flavor = "multi_thread")]
+        async fn bmc_can_receive_btp_messages_from_a_registered_bsh() {
+            Kitten::given(NEW_CONTEXT)
+                .and(BMC_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(BMV_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(NATIVE_COIN_BSH_CONTRACT_IS_DEPLOYED_AND_INITIALIZED)
+                .and(ICON_LINK_IS_PRESENT_IN_BMC)
+                .and(BMC_CONTRACT_IS_OWNED_BY_ALICE)
+                .and(WRAPPED_ICX_COIN_IS_REGESITERED_IN_NATIVE_COIN_BSH)
+                .and(NATIVE_COIN_BSH_SERVICE_IS_ADDED_TO_BMC)
+                .and(RELAY_1_IS_REGISTERED_FOR_ICON_LINK)
+                .and(CHARLIES_ACCOUNT_IS_CREATED)
+                .and(BMC_SENDS_BTP_MESSAGE_TO_MINT_AND_TRANSFER_IN_WRAPPED_NATIVE_COIN)
+                .when(ALICE_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC)
+                .then(BMC_SHOULD_RECIEVE_THE_TRANSACTION_RESPONCE_MESSAGE_FROM_BSH);
+        }
     }
 }
