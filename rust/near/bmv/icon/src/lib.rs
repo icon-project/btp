@@ -35,12 +35,9 @@ pub struct BtpMessageVerifier {
 #[near_bindgen]
 impl BtpMessageVerifier {
     #[init]
-    pub fn new(bmc: AccountId, network: Network, validators: Vec<Validator>, offset: U64) -> Self {
+    pub fn new(bmc: AccountId, network: Network, validators: Validators, offset: U64) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mta = MerkleTreeAccumulator::new(offset.into());
-        let validator_list = validators;
-        let mut validators = Validators::new();
-        validators.set(&validator_list);
         Self {
             bmc,
             network,

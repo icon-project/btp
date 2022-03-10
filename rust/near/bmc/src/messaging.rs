@@ -119,6 +119,11 @@ impl BtpMessageCenter {
         self.event.get_message()
     }
 
+    #[cfg(feature = "mockable")]
+    pub fn get_message(&self) -> Result<BtpMessage<SerializedMessage>, String> {
+        self.event.get_message()
+    }
+
     #[cfg(feature = "testable")]
     pub fn send_message(
         &mut self,
@@ -340,7 +345,7 @@ impl BtpMessageCenter {
                 message.to_owned(),
                 serivce_account_id.to_owned(),
                 estimate::NO_DEPOSIT,
-                estimate::SEND_MESSAGE,
+                estimate::BSH_HANDLE_BTP_MESSAGE,
             )
             .then(bmc_contract::handle_external_service_message_callback(
                 source.to_owned(),

@@ -165,7 +165,7 @@ mod tests {
         let mut contract = BtpMessageVerifier::new(
             "alice.testnet".parse::<AccountId>().unwrap(),
             "0x1.icon".to_string(),
-            vec![],
+            Validators::from(&vec![]),
             U64(16546),
         );
 
