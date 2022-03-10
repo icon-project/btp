@@ -3,6 +3,7 @@ use std::convert::TryFrom;
 use super::*;
 use libraries::types::{
     messages::{
+        ErrorMessage,
         BmcServiceMessage, BmcServiceType, BtpMessage, SerializedBtpMessages, SerializedMessage,
         TokenServiceMessage, TokenServiceType,
     },
@@ -25,9 +26,6 @@ pub static RELAY_1_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
 pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(
     Context,
 ) -> Context = |mut context: Context| {
-    let link =
-        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
-
     let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Init {
         links: vec![
             BTPAddress::new("btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string()),
@@ -46,15 +44,16 @@ pub static BMC_INIT_LINK_RELAY_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM
 
     let verifier_response = VerifierResponse {
         messages: vec![btp_message],
-        verifier_status: VerifierStatus::new(10, 10, 10),
-        previous_height: 10,
+        verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+        previous_height: 84644027,
     };
 
     context.add_method_params(
-        "handle_btp_message",
+        "handle_relay_message_bmv_callback_mockable",
         json!({
             "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
             "verifier_response": verifier_response,
+            "relay": context.accounts().get("relay_1").id()
         }),
     );
     context
@@ -84,6 +83,98 @@ pub static RELAY_2_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC: fn(Context) -> Context =
             .pipe(THE_TRANSACTION_IS_SIGNED_BY_RELAY_2)
             .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_IN_BMC)
     };
+
+pub static ALICE_INVOKES_HANDLE_INIT_LINK_MESSAGE_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+            .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC)
+    };
+
+pub static ALICE_INVOKES_HANDLE_BTP_MESSAGE_IN_BMC: fn(Context) -> Context =
+    |mut context: Context| {
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_ALICE)
+            .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC)
+    };
+
+pub static UNREGISTERED_BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_TO_NATIVE_COIN: fn(
+    Context,
+) -> Context = |mut context: Context| {
+    let destination =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0x12345678".to_string()),
+        BTPAddress::new("btp://1234.iconee/0x12345678".to_string()),
+        "nativecoin_2".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(TokenServiceMessage::new(
+            TokenServiceType::ResponseHandleService {
+                code: 0,
+                message: "Transfer Success".to_string(),
+            },
+        )),
+    );
+
+    let serialized_message = BtpMessage::try_from(btp_message).unwrap();
+
+    let verifier_response = VerifierResponse {
+        messages: vec![serialized_message],
+        verifier_status: VerifierStatus::new(10, 10, 10),
+        previous_height: 10,
+    };
+
+    context.add_method_params(
+        "handle_relay_message_bmv_callback_mockable",
+        json!({
+            "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+            "verifier_response": verifier_response,
+        }),
+    );
+    context
+};
+
+pub static UNREGISTERED_BSH_RECEIVES_BTP_MESSAGE_TO_MINT_AND_TRANSFER_WRAPPED_NATIVE_COIN:
+    fn(Context) -> Context = |mut context: Context| {
+    let destination =
+        BTPAddress::new("btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string());
+    let btp_message = &BtpMessage::new(
+        BTPAddress::new("btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string()),
+        BTPAddress::new(format!(
+            "btp://{}/{}",
+            NEAR_NETWORK,
+            context.contracts().get("bmc").id()
+        )),
+        "nativecoin_2".to_string(),
+        WrappedI128::new(1),
+        vec![],
+        Some(TokenServiceMessage::new(
+            TokenServiceType::RequestTokenTransfer {
+                sender: destination.account_id().to_string(),
+                receiver: context.accounts().get("charlie").id().to_string(),
+                assets: vec![TransferableAsset::new("WrappedICX".to_string(), 900, 99)],
+            },
+        )),
+    );
+
+    let serialized_message = BtpMessage::try_from(btp_message).unwrap();
+
+    let verifier_response = VerifierResponse {
+        messages: vec![serialized_message],
+        verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+        previous_height: 84644027,
+    };
+    context.add_method_params(
+        "handle_relay_message_bmv_callback_mockable",
+        json!({
+        "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+        "verifier_response": verifier_response,
+        "relay": context.accounts().get("relay_1").id()
+        }),
+    );
+    context
+};
 
 pub static BMC_SENDS_BTP_MESSAGE_TO_MINT_AND_TRANSFER_IN_WRAPPED_NATIVE_COIN: fn(
     Context,
@@ -116,13 +207,91 @@ pub static BMC_SENDS_BTP_MESSAGE_TO_MINT_AND_TRANSFER_IN_WRAPPED_NATIVE_COIN: fn
     context.add_method_params(
         "handle_relay_message_bmv_callback_mockable",
         json!({
-            "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
-            "verifier_response": verifier_response,
-            "relay":context.accounts().get("relay_1").id()
+        "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+        "verifier_response": verifier_response,
+        "relay": context.accounts().get("relay_1").id()
         }),
     );
     context
 };
+
+pub static BMC_LINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Link {
+            link: BTPAddress::new(
+                "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+            ),
+        });
+        let btp_message = <BtpMessage<SerializedMessage>>::new(
+            BTPAddress::new(
+                "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+            ),
+            BTPAddress::new(format!(
+                "btp://0x1.near/{}",
+                context.contracts().get("bmc").id()
+            )),
+            "bmc".to_string(),
+            WrappedI128::new(1),
+            <Vec<u8>>::from(bmc_service_message.clone()),
+            None,
+        );
+
+        let verifier_response = VerifierResponse {
+            messages: vec![btp_message],
+            verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+            previous_height: 84644027,
+        };
+
+        context.add_method_params(
+            "handle_relay_message_bmv_callback_mockable",
+            json!({
+                "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "verifier_response": verifier_response,
+                "relay": context.accounts().get("relay_1").id()
+            }),
+        );
+        context
+    };
+
+pub static BMC_UNLINK_MESSAGE_IS_PROVIDED_AS_HANDLE_RELAY_MESSAGE_PARAM: fn(Context) -> Context =
+    |mut context: Context| {
+    
+        let bmc_service_message = BmcServiceMessage::new(BmcServiceType::Unlink {
+            link: BTPAddress::new(
+                "btp://0x1.pra/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+            ),
+        });
+        let btp_message = <BtpMessage<SerializedMessage>>::new(
+            BTPAddress::new(
+                "btp://0x1.icon/cx87ed9048b594b95199f326fc76e76a9d33dd665b".to_string(),
+            ),
+            BTPAddress::new(format!(
+                "btp://0x1.near/{}",
+                context.contracts().get("bmc").id()
+            )),
+            "bmc".to_string(),
+            WrappedI128::new(1),
+            <Vec<u8>>::from(bmc_service_message.clone()),
+            None,
+        );
+
+        let verifier_response = VerifierResponse {
+            messages: vec![btp_message],
+            verifier_status: VerifierStatus::new(84644028, 0, 84644028),
+            previous_height: 84644027,
+        };
+
+        context.add_method_params(
+            "handle_relay_message_bmv_callback_mockable",
+            json!({
+                "source": format!("btp://{}/{}", ICON_NETWORK, ICON_BMC),
+                "verifier_response": verifier_response,
+                "relay": context.accounts().get("relay_1").id()
+            }),
+        );
+        context
+    };
 
 pub static ALICE_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC: fn(Context) -> Context =
     |mut context: Context| {
@@ -131,30 +300,56 @@ pub static ALICE_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC: fn(Context) -
             .pipe(USER_INVOKES_HANDLE_RELAY_MESSAGE_BMV_CALLBACK_IN_BMC)
     };
 
-pub static BMC_SHOULD_RECIEVE_THE_TRANSACTION_RESPONCE_MESSAGE_FROM_BSH: fn(Context) = |mut context: Context| {
+pub static BMC_SHOULD_RECIEVE_THE_TRANSACTION_RESPONCE_MESSAGE_FROM_BSH: fn(Context) =
+    |mut context: Context| {
+        let context = context.pipe(USER_INVOKES_GET_MESSAGES_IN_BMC);
+        let message: Result<Result<BtpMessage<SerializedMessage>, String>, serde_json::Error> =
+            serde_json::from_value(context.method_responses("get_message"));
+        let service_message =
+            <BtpMessage<TokenServiceMessage>>::try_from(message.unwrap().unwrap());
+
+        let expected_message = &BtpMessage::new(
+            BTPAddress::new(format!(
+                "btp://0x1.near/{}",
+                context.contracts().get("bmc").id()
+            )),
+            BTPAddress::new(
+                "btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string(),
+            ),
+            "nativecoin".to_string(),
+            WrappedI128::new(1),
+            vec![
+                213, 2, 147, 210, 128, 144, 84, 114, 97, 110, 115, 102, 101, 114, 32, 83, 117, 99,
+                99, 101, 115, 115,
+            ],
+            Some(TokenServiceMessage::new(
+                TokenServiceType::ResponseHandleService {
+                    code: 0,
+                    message: "Transfer Success".to_string(),
+                },
+            )),
+        );
+
+        assert_eq!(service_message.unwrap(), expected_message.to_owned());
+    };
+
+pub static BSH_SHOULD_RECIEVE_INVALID_BSH_MESSAGE_FROM_BMC: fn(Context) = |mut context: Context| {
     let context = context.pipe(USER_INVOKES_GET_MESSAGES_IN_BMC);
     let message: Result<Result<BtpMessage<SerializedMessage>, String>, serde_json::Error> =
         serde_json::from_value(context.method_responses("get_message"));
-    let service_message = <BtpMessage<TokenServiceMessage>>::try_from(message.unwrap().unwrap());
+    let service_message = <BtpMessage<ErrorMessage>>::try_from(message.unwrap().unwrap());
 
     let expected_message = &BtpMessage::new(
         BTPAddress::new(format!(
             "btp://{}/{}",NEAR_NETWORK, context.contracts().get("bmc").id()
             )),
         BTPAddress::new("btp://0x1.icon/0xc294b1A62E82d3f135A8F9b2f9cAEAA23fbD6Cf5".to_string()),
-        "nativecoin".to_string(),
-        WrappedI128::new(1),
+        "nativecoin_2".to_string(),
+        WrappedI128::new(-1),
         vec![
-            213, 2, 147, 210, 128, 144, 84, 114, 97, 110, 115, 102, 101, 114, 32, 83, 117, 99, 99,
-            101, 115, 115,
+          214, 16, 148, 66, 77, 67, 82, 101, 118, 101, 114, 116, 78, 111, 116, 69, 120, 105, 115, 116, 66, 83, 72
         ],
-        Some(TokenServiceMessage::new(
-            TokenServiceType::ResponseHandleService {
-                code: 0,
-                message: "Transfer Success".to_string(),
-            },
-        )),
+        Some(ErrorMessage::new(16, "BMCRevertNotExistBSH".to_string())),
     );
-
     assert_eq!(service_message.unwrap(), expected_message.to_owned());
 };

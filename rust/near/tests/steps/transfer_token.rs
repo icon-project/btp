@@ -473,3 +473,26 @@ pub static BSH_RECEIVES_AND_HANDLE_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSF
         .pipe(BSH_RECEIVES_RESPONSE_HANDLE_BTP_MESSAGE_FOR_FAILED_TRANSFER_TO_TOKEN_BSH)
         .pipe(ALICE_INVOKES_HANDLE_SERVICE_MESSAGE_IN_TOKEN_BSH)
 };
+
+pub static CHARLIE_INVOKES_RECLAIM_FAILED_AMOUNT_IN_TOKEN_BSH: fn(Context) -> Context =
+    |mut context: Context| {
+        context.add_method_params(
+            "reclaim",
+            json!({
+                "token_id": context.method_responses("token_id"),
+                 "amount": "150"
+            }),
+        );
+        context
+            .pipe(THE_TRANSACTION_IS_SIGNED_BY_CHARLIE)
+            .pipe(USER_INVOKES_RECLAIM_IN_TOKEN_BSH)
+    };
+
+    pub static BALANCE_SHOULD_BE_PRESENT_IN_CHARLIES_ACCOUNT_RECLAIM: fn(Context) = |context: Context| {
+        let context = context
+        .pipe(CHARLIE_INVOKES_BALANCE_OF_IN_TOKEN_BSH);
+    
+        let balance: Value = from_value(context.method_responses("balance_of")).unwrap();
+        assert_eq!(balance, "450");
+        
+    };
