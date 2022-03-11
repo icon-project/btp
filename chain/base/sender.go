@@ -251,7 +251,7 @@ func (s *sender) Segment(relayMessage *chain.RelayMessage, height int64) ([]*cha
 		}
 
 		size += len(receiptProof.Proof)
-		transationReecieptProof := &chain.ReceiptProof{
+		transationRecieptProof := &ReceiptProof{
 			Index:       receiptProof.Index,
 			Proof:       receiptProof.Proof,
 			EventProofs: make([]*chain.EventProof, 0),
@@ -290,19 +290,19 @@ func (s *sender) Segment(relayMessage *chain.RelayMessage, height int64) ([]*cha
 				size += len(receiptProof.Proof)
 				size += len(blockProof)
 
-				transationReecieptProof = &chain.ReceiptProof{
+				transationRecieptProof = &ReceiptProof{
 					Index:       receiptProof.Index,
 					Proof:       receiptProof.Proof,
 					EventProofs: make([]*chain.EventProof, 0),
 				}
 			}
 
-			transationReecieptProof.EventProofs = append(transationReecieptProof.EventProofs, eventProof)
+			transationRecieptProof.EventProofs = append(transationRecieptProof.EventProofs, eventProof)
 			clientRelayMessage.eventSequence = receiptProof.Events[index].Sequence
 			clientRelayMessage.numberOfEvent += 1
 		}
 
-		if byteData, err = codec.RLP.MarshalToBytes(transationReecieptProof); err != nil {
+		if byteData, err = codec.RLP.MarshalToBytes(transationRecieptProof); err != nil {
 			return nil, err
 		}
 

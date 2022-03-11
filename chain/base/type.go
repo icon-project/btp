@@ -76,3 +76,9 @@ type RelayMessageClient struct {
 	eventSequence       int64
 	numberOfEvent       int
 }
+
+type ReceiptProof struct {
+	Index       int
+	Proof       []byte
+	EventProofs []*chain.EventProof
+}
