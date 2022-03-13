@@ -30,12 +30,13 @@ pub struct BtpMessageVerifier {
     last_height: u64,
     validators: Validators,
     mta: MerkleTreeAccumulator,
+    last_known_block_hash: Hash
 }
 
 #[near_bindgen]
 impl BtpMessageVerifier {
     #[init]
-    pub fn new(bmc: AccountId, network: Network, validators: Validators, offset: U64) -> Self {
+    pub fn new(bmc: AccountId, network: Network, validators: Validators, offset: U64, last_known_block_hash: Hash) -> Self {
         require!(!env::state_exists(), "Already initialized");
         let mta = MerkleTreeAccumulator::new(offset.into());
         Self {
@@ -44,6 +45,7 @@ impl BtpMessageVerifier {
             last_height: offset.into(),
             validators,
             mta,
+            last_known_block_hash
         }
     }
 

@@ -167,6 +167,7 @@ mod tests {
             "0x1.icon".to_string(),
             Validators::from(&vec![]),
             U64(16546),
+            Hash::try_from("0xc5d6c454e4d7a8e8a654f5ef96e8efe41d21a65b171b298925414aa3dc061e37".to_string()).unwrap()
         );
 
         let receipt = contract

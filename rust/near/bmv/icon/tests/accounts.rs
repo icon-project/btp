@@ -1,7 +1,7 @@
 use near_sdk::AccountId;
 
 pub fn alice() -> AccountId {
-    "88bd05442686be0a5df7da33b6f1089ebfea3769b19dbb2477fe0cd6e0f126e4".parse::<AccountId>().unwrap()
+    "7448a64f98a7f2ca3e4e292dd18984ef4466e0e7739fbc7add59f7a580630c6d".parse::<AccountId>().unwrap()
 }
 
 pub fn bob() -> AccountId {
