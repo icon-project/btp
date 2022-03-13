@@ -1,8 +1,9 @@
 use std::ops::Deref;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSchema, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
-// use tiny_keccak::{Hasher, Sha3};
-
+use near_sdk::serde::{Deserialize, Serialize, de};
+use rustc_hex::FromHex;
+use near_sdk::base64::{self, URL_SAFE_NO_PAD};
+use std::convert::TryFrom;
 use crate::rlp::{Decodable, Encodable};
 
 pub trait Hasher {
@@ -21,7 +22,6 @@ pub trait Hasher {
     PartialOrd,
     Ord,
     Serialize,
-    Deserialize,
     Hash,
     Copy,
 )]
@@ -75,5 +75,32 @@ impl Decodable for Hash {
 impl Encodable for Hash {
     fn rlp_append(&self, stream: &mut crate::rlp::RlpStream) {
         stream.append_internal::<Vec<u8>>(&(self.deref().to_vec()));
+    }
+}
+
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as de::Deserializer<'de>>::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        <String as Deserialize>::deserialize(deserializer)
+            .and_then(|s| Self::try_from(s).map_err(de::Error::custom))
+    }
+}
+
+impl TryFrom<String> for Hash {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let decoded = match value.starts_with("0x") {
+            true => value.strip_prefix("0x").unwrap().from_hex().map_err(|error| {
+                format!("Failed to decode hash from Hex: {}", error)
+            })?,
+            _ => base64::decode_config(value, URL_SAFE_NO_PAD).map_err(|error| {
+                format!("Failed to decode hash from Base 64: {}", error)
+            })?,
+        };
+
+        Ok(Hash::from_hash(&decoded))
     }
 }
