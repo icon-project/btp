@@ -1,6 +1,7 @@
 use super::*;
 use hex::{decode, encode};
 use libraries::rlp::Encodable;
+use crate::types::Nullable;
 
 impl BtpMessageVerifier {
     pub fn process_block_updates(
@@ -16,13 +17,11 @@ impl BtpMessageVerifier {
             .map(|(index, block_update)| -> Result<(), BmvError> {
                 let next_height = self.mta.height() + 1;
                 self.ensure_have_valid_block_height(next_height, &block_update)?;
-                let block_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(block_update.block_header()));
+                let mut block_header = block_update.block_header().to_owned();
 
-                self.verify_votes(
-                    block_update.votes(),
-                    block_update.block_header().height(),
-                    &block_hash,
-                )?;
+                block_header.previous_hash_mut().clone_from(&Nullable::new(Some(self.last_known_block_hash.clone())));
+                
+                let block_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(block_header.clone()));
 
                 let next_validator_hash = block_update
                     .block_header()
@@ -36,12 +35,26 @@ impl BtpMessageVerifier {
 
                     validator_hash.clone_from(&next_validator_hash);
                     self.validators.set(block_update.next_validators().get());
+
+                    self.verify_votes(
+                        block_update.votes(),
+                        block_update.block_header().height(),
+                        &block_hash,
+                    )?;
                 }
 
                 self.mta.add::<Sha256>(block_hash);
-                if block_updates.len() - index == 1 {
+
+                if block_updates.len().clone() - index == 1 {
+                    self.verify_votes(
+                        block_update.votes(),
+                        block_update.block_header().height(),
+                        &block_hash,
+                    )?;
+
                     last_block_header.clone_from(block_update.block_header());
                 }
+                self.last_known_block_hash.clone_from(&block_hash);
                 Ok(())
             })
             .collect()
@@ -55,7 +68,11 @@ impl BtpMessageVerifier {
         self.ensure_have_block_witness(&block_proof)?;
         self.ensure_block_proof_height_is_valid(&block_proof)?;
 
-        let block_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(block_proof.block_header()));
+        let mut block_header = block_proof.block_header().to_owned();
+
+        block_header.previous_hash_mut().clone_from(&Nullable::new(Some(self.last_known_block_hash.clone())));
+        
+        let block_hash = Hash::new::<Sha256>(&<Vec<u8>>::from(block_header));
         self.mta
             .verify::<Sha256>(
                 block_proof
