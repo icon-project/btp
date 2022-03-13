@@ -2,9 +2,10 @@ use near_sdk::serde_json::Value;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
+use near_sdk::serde::Serialize;
 
-#[derive(Debug)]
-pub struct HashedCollection<T>(pub HashSet<T>);
+#[derive(Debug , Serialize)]
+pub struct HashedCollection<T: PartialEq + Hash + Eq >(pub HashSet<T>);
 
 impl<T: PartialEq + Hash + Eq> HashedCollection<T> {
     pub fn new() -> HashedCollection<T> {

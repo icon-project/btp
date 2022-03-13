@@ -29,6 +29,14 @@ impl BlockHeader {
     pub fn next_validator_hash(&self) -> &Nullable<Hash> {
         &self.next_validator_hash
     }
+
+    pub fn previous_hash_mut(&mut self) -> &mut Nullable<Hash> {
+        &mut self.previous_hash
+    }
+
+    pub fn vote_hash(&self) -> &Nullable<Hash> {
+        &self.vote_hash
+    }
 }
 
 impl Decodable for BlockHeader {
@@ -64,12 +72,13 @@ impl Encodable for BlockHeader {
             .append(&self.patch_tx_hash)
             .append(&self.tx_hash)
             .append(&self.logs_bloom)
-            .append(&self.block_result);
+            .append(&self.block_result)
+            ;
     }
 }
 
-impl From<&BlockHeader> for RlpBytes {
-    fn from(block_header: &BlockHeader) -> Self {
-        rlp::encode(block_header).to_vec()
+impl From<BlockHeader> for RlpBytes {
+    fn from(block_header: BlockHeader) -> Self {
+        rlp::encode(&block_header).to_vec()
     }
 }

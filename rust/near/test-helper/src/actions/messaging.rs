@@ -1,5 +1,5 @@
-use crate::invoke_call;
 use crate::types::{Bmc, Context, Contract};
+use crate::{invoke_call, invoke_view};
 use duplicate::duplicate;
 use near_primitives::types::Gas;
 
@@ -33,6 +33,11 @@ impl Contract<'_, contract_type> {
             None,
             Some(gas)
         );
+        context
+    }
+
+    pub fn get_message(&self, mut context: Context) -> Context {
+        invoke_view!(self, context, "get_message");
         context
     }
 }
