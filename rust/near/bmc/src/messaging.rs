@@ -352,7 +352,7 @@ impl BtpMessageCenter {
                 message.to_owned(),
                 env::current_account_id(),
                 estimate::NO_DEPOSIT,
-                estimate::SEND_MESSAGE,
+                estimate::HANDLE_EXTERNAL_SERVICE_MESSAGE_CALLBACK,
             ));
         } else {
             // Handle Error
