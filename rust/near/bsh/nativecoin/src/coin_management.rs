@@ -138,7 +138,7 @@ impl NativeCoinService {
             amount.into(),
             coin.metadata().uri().to_owned().unwrap(),
             estimate::NO_DEPOSIT,
-            estimate::GAS_FOR_MT_TRANSFER_CALL,
+            estimate::GAS_FOR_MINT,
         )
         .then(ext_self::on_mint(
             amount,
@@ -147,7 +147,7 @@ impl NativeCoinService {
             receiver_id,
             env::current_account_id(),
             estimate::NO_DEPOSIT,
-            estimate::GAS_FOR_MT_TRANSFER_CALL,
+            estimate::GAS_FOR_ON_MINT,
         ));
     }
 
