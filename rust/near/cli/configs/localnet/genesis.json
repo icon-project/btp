@@ -1,0 +1,115 @@
+{
+  "protocol_version": 52,
+  "genesis_time": "2022-03-07T12:40:59.589005919Z",
+  "chain_id": "test-chain-p9n1d",
+  "genesis_height": 0,
+  "num_block_producer_seats": 1,
+  "num_block_producer_seats_per_shard": [
+    1
+  ],
+  "avg_hidden_validator_seats_per_shard": [
+    0
+  ],
+  "dynamic_resharding": false,
+  "protocol_upgrade_stake_threshold": [
+    4,
+    5
+  ],
+  "protocol_upgrade_num_epochs": 2,
+  "epoch_length": 60,
+  "gas_limit": 1000000000000000,
+  "min_gas_price": "1000000000",
+  "max_gas_price": "10000000000000000000000",
+  "block_producer_kickout_threshold": 90,
+  "chunk_producer_kickout_threshold": 90,
+  "online_min_threshold": [
+    9,
+    10
+  ],
+  "online_max_threshold": [
+    99,
+    100
+  ],
+  "gas_price_adjustment_rate": [
+    1,
+    100
+  ],
+  "validators": [
+    {
+      "account_id": "node0",
+      "public_key": "ed25519:7PGseFbWxvYVgZ89K1uTJKYoKetWs7BJtbyXDzfbAcqX",
+      "amount": "50000000000000000000000000000000"
+    }
+  ],
+  "transaction_validity_period": 100,
+  "protocol_reward_rate": [
+    1,
+    10
+  ],
+  "max_inflation_rate": [
+    1,
+    20
+  ],
+  "total_supply": "2000000000000000000000000000000000",
+  "num_blocks_per_year": 31536000,
+  "protocol_treasury_account": "near",
+  "fishermen_threshold": "10000000000000000000000000",
+  "minimum_stake_divisor": 10,
+  "shard_layout": {
+    "V0": {
+      "num_shards": 1,
+      "version": 0
+    }
+  },
+  "simple_nightshade_shard_layout": null,
+  "minimum_stake_ratio": [
+    1,
+    6250
+  ],
+  "records": [
+    {
+      "Account": {
+        "account_id": "node0",
+        "account": {
+          "amount": "950000000000000000000000000000000",
+          "locked": "50000000000000000000000000000000",
+          "code_hash": "11111111111111111111111111111111",
+          "storage_usage": 0,
+          "version": "V1"
+        }
+      }
+    },
+    {
+      "AccessKey": {
+        "account_id": "node0",
+        "public_key": "ed25519:7PGseFbWxvYVgZ89K1uTJKYoKetWs7BJtbyXDzfbAcqX",
+        "access_key": {
+          "nonce": 0,
+          "permission": "FullAccess"
+        }
+      }
+    },
+    {
+      "Account": {
+        "account_id": "near",
+        "account": {
+          "amount": "1000000000000000000000000000000000",
+          "locked": "0",
+          "code_hash": "11111111111111111111111111111111",
+          "storage_usage": 0,
+          "version": "V1"
+        }
+      }
+    },
+    {
+      "AccessKey": {
+        "account_id": "near",
+        "public_key": "ed25519:546XB2oHhj7PzUKHiH9Xve3Ze5q1JiW2WTh6abXFED3c",
+        "access_key": {
+          "nonce": 0,
+          "permission": "FullAccess"
+        }
+      }
+    }
+  ]
+}

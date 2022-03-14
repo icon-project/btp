@@ -9,10 +9,13 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "goloop_config_dir",
     outs = ["goloop_config_dir.out"],
-    cmd = "mkdir -p \"$$PWD/goloop_config\"; echo ~/.goloop/goloop_config > $@",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\";  cp -LR $$PWD/javascore/icon/cli/configs/"+ select({"@icon//:localnet":"localnet","@icon//:testnet": "testnet"}) +"/* -t $$(cat $(location @btp//:tmp_dir))/goloop_config_dir/  ; echo $$(cat $(location @btp//:tmp_dir))/goloop_config_dir > $@",
     executable = True,
     local = True,
     output_to_bindir = True,
+    tools = [
+        "@btp//:tmp_dir",
+    ],
 )
 
 container_image(
@@ -84,52 +87,116 @@ genrule(
     executable = True,
     local = True,
     tools = [
+        "@icon//:network_address",
         "@icon//cli:get_score_address_bmc",
-        "@icon//:network_address"
     ],
 )
 
 genrule(
     name = "network_address",
     outs = ["network_address.out"],
-    cmd = "echo \"$$(cat $(location @icon//:wait_for_channel_up)).icon\" > $@",
+    cmd = "echo \"$$(cat $(location @icon//:network_id)).icon\" > $@",
     executable = True,
     local = True,
     tools = [
-        "@icon//:wait_for_channel_up",
+        "@icon//:network_id",
     ],
 )
 
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir -p \"$$PWD/icon_bmr_config_dir\"  && echo \"$$PWD/icon_bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/icon_bmr_config_dir\"  && echo \"$$(cat $(location @btp//:tmp_dir))/icon_bmr_config_dir\" > $@",
     executable = True,
     local = True,
+    tools = [
+        "@btp//:tmp_dir"
+    ],
 )
 
 genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
-    cmd = "echo \"http://172.17.0.1:$$(cat $(location :deploy_node))/api/v3/icon\" > $@",
+    cmd = "echo \"$$(cat $(location :node_url))\" > $@",
     executable = True,
     local = True,
     tools = [
-        ":deploy_node",
+        ":node_url"
     ],
 )
 
 genrule(
     name = "latest_block_height",
     srcs = [
-        "@icon//:wait_for_channel_up",
-        "@icon//:wait_until_icon_up",
+        "@icon//:node_url",
     ],
     outs = ["latest_block_height.out"],
-    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon lastblock | jq .height >$@",
+    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:node_url)) lastblock | jq .height >$@",
     executable = True,
     local = True,
     tools = [
         "@com_github_icon_project_goloop//cmd/goloop",
     ],
+)
+
+genrule(
+    name = "previous_known_block_hash",
+    srcs = [
+        ":latest_block_height",
+        "@icon//:node_url",
+    ],
+    outs = ["previous_known_block_hash.out"],
+    cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:node_url)) blockbyheight $$(($$(cat $(location :latest_block_height))-1)) | jq .block_hash | echo $$(tr -d '\"')  >$@",
+    executable = True,
+    local = True,
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+    ],
+)
+
+config_setting(
+    name = "testnet",
+    define_values = {"network": "testnet"},
+)
+
+config_setting(
+    name = "localnet",
+    define_values = {"network": "localnet"},
+)
+
+genrule(
+    name = "node_url",
+    srcs = select({
+        ":localnet": [
+            "@icon//:wait_for_channel_up",
+            "@icon//:wait_until_icon_up",
+        ],
+        ":testnet": [
+            
+        ],
+    }),
+    outs = ["node_url.out"],
+    cmd = "echo " + select({
+        ":testnet": "https://lisbon.net.solidwallet.io/api/v3/icon_dex",
+        ":localnet": "$$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon",
+    }) + " > $@",
+    executable = True,
+    local = True,
+)
+
+genrule (
+    name = "network_id",
+    srcs = select({
+        ":localnet": [
+            "@icon//:wait_for_channel_up",
+        ],
+        ":testnet": [],
+    }),
+    outs = ["network_id.out"],
+    cmd = "echo " + select({
+        ":testnet": "0x2",
+        ":localnet": "$$(cat $(location @icon//:wait_for_channel_up))",
+    }) + " > $@",
+    executable = True,
+    local = True,
 )

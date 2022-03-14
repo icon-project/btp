@@ -196,11 +196,16 @@ func (c *Client) GetBlock(offset int64) rxgo.Observable {
 
 		newOffset := i.V.(int64)
 		blockResponse, err := c.api.getBlockByHeight(newOffset)
-		if err != nil {
-			return rxgo.Just(
-				errors.New(err.Error()),
-			)()
+		if err == nil {
+			block := &MonitorBlockData{}
+			// TODO: Fix
+			block.BlockHash = string(blockResponse.Header.Hash.Base58Encode())
+			block.BlockId = newOffset
+
+			return rxgo.Just(block)()
 		}
+
+		return rxgo.Just("")()
 
 		// if blockResponse == nil {
 		// 	e := fmt.Sprintf("DATA FOR THE PROVIDED BLCOK HEIGHT IS NOT AVAILABLE%v", newOffset)
@@ -210,12 +215,8 @@ func (c *Client) GetBlock(offset int64) rxgo.Observable {
 		// 	)()
 		// }
 
-		block := &MonitorBlockData{}
-		// TODO: Fix
-		block.BlockHash = string(blockResponse.Header.Hash.Base58Encode())
-		block.BlockId = newOffset
-
-		return rxgo.Just(block)()
+	}, rxgo.WithCPUPool()).Filter(func(i interface{}) bool {
+		return i != ""
 	}, rxgo.WithCPUPool())
 }
 
@@ -258,7 +259,6 @@ func (c *Client) CreateTransaction(wallet base.Wallet, p *chain.TransactionParam
 		}
 
 		if transactionParam, ok := (*p).(*types.TransactionParam); ok {
-			log.Debugln("RelayMessage", transactionParam.RelayMessage)
 			var err error
 			relayMessage := &Data{
 				Source:  transactionParam.RelayMessage.Previous,
@@ -430,7 +430,7 @@ func (c *Client) SendTransactionAndWait(param *chain.TransactionParam) ([]byte, 
 
 			if err != nil {
 				if jsonError, ok := err.(*jsonrpc.Error); ok {
-					switch jsonError.Message {
+					switch jsonError.Data {
 					case "Timeout":
 						<-time.After(DefaultSendTransactionInterval)
 						continue
@@ -459,11 +459,22 @@ func (c *Client) SendTransaction(param *chain.TransactionParam) ([]byte, error) 
 		var response string
 		var err error
 
-		response, err = c.api.broadcastTransaction(transaction.Base64encodedData)
-		if err != nil {
-			return nil, err
-		}
+		for {
+			response, err = c.api.broadcastTransaction(transaction.Base64encodedData)
 
+			if err != nil {
+				if jsonError, ok := err.(*jsonrpc.Error); ok {
+					switch jsonError.Data {
+					case "Timeout":
+						<-time.After(DefaultSendTransactionInterval)
+						continue
+					default:
+						return nil, err
+					}
+				}
+			}
+			break
+		}
 		result = []byte(response)
 		return result, nil
 	}
@@ -617,7 +628,6 @@ func (c *Client) GetBMCLinkStatus(destination, source chain.BtpAddress) (*chain.
 	linkstatus.RxHeightSrc = bmcStatus.RxHeightSrc
 	linkstatus.BlockIntervalSrc = bmcStatus.BlockIntervalSrc
 	linkstatus.BlockIntervalDst = bmcStatus.BlockIntervalDst
-
 	return linkstatus, nil
 }
 
@@ -1046,7 +1056,6 @@ func (c *Client) MonitorBlock(blockRequestPointer *base.BlockRequest, singleCall
 }
 
 func handleTransactionError(response *types.TransactionResult) error {
-	fmt.Printf("%#v", response)
 	actionerror := types.Failure{}
 	for _, outcome := range response.ReceiptsOutcome {
 		if outcome.Outcome.Status.Failure != actionerror {

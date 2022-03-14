@@ -158,9 +158,10 @@ SignLoop:
 	SendLoop:
 		for {
 			transactionHash, err := s.client.SendTransaction(&transactionParams)
-			log.Debugln("transaction hash", string(transactionHash))
+
 			if transactionHash != nil {
 				if err := s.client.AssignHash(s.wallet, transactionHashParam, transactionHash); err != nil {
+					log.Debugln("timeout", string(transactionHash))
 					return nil, err
 				}
 			}
@@ -178,6 +179,7 @@ SignLoop:
 				case chain.ErrSendFailByExpired:
 					continue SignLoop
 				}
+				log.Debugln("error", err)
 				return nil, err
 			}
 			return transactionHashParam, nil

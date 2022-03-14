@@ -32,7 +32,7 @@ def create_account(name):
     native.genrule(
         name = "rename_account_%s" % name,
         outs = ["rename_account_%s.out" % name],
-        cmd = "mv ~/.near-credentials/local/$$(cat $(location @near//cli:account_key_%s)).json  ~/.near-credentials/local/$$(cat $(location @near//cli:encode_public_key_%s)).json;  echo 'copied' > $@" % (name, name),
+        cmd = "mv ~/.near-credentials/" + select({"@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:account_key_%s)).json  ~/.near-credentials/" % name + select({"@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:encode_public_key_%s)).json;  echo 'copied' > $@" % name,
         executable = True,
         local = True,
         output_to_bindir = True,
@@ -45,15 +45,16 @@ def create_account(name):
     native.genrule(
         name = "create_account_%s" % name,
         outs = ["create_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) send test.near $$(cat $(location @near//cli:encode_public_key_%s)) 50 --masterAccount test.near --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json > $@" % name,
+        cmd = "$(execpath :near_binary) send " + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " $$(cat $(location @near//cli:encode_public_key_%s)) 50 --masterAccount " % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json > $@",
         executable = True,
         local = True,
         output_to_bindir = True,
         tools = [
-            "@near//:wait_until_near_up",
+            "@near//:node_url",
             "@near//cli:near_binary",
             "@near//cli:encode_public_key_%s" % name,
             "@near//cli:rename_account_%s" % name,
+            "@near//:near_config_dir",
         ],
     )
 
@@ -61,13 +62,14 @@ def create_sub_account(name):
     native.genrule(
         name = "create_sub_account_%s" % name,
         outs = ["create_sub_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) create-account %s.test.near --masterAccount test.near --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; $(execpath :near_binary) send test.near %s.test.near 50 --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json ; echo '%s.test.near' > $@" % (name, name, name),
+        cmd = "$(execpath :near_binary) create-account %s." % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " --masterAccount "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json; $(execpath :near_binary) send "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " %s." % name  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " 50 --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json ; echo '%s." % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + "' > $@",
         executable = True,
         local = True,
         output_to_bindir = True,
         tools = [
-            "@near//:wait_until_near_up",
+            "@near//:node_url",
             "@near//cli:near_binary",
+            "@near//:near_config_dir",
         ],
     )
 
@@ -76,12 +78,12 @@ def configure_link(name):
         name = "add_%s_verifier" % name,
         srcs = ["@near//cli:deploy_%s_bmv" % name, "@near//cli:deploy_bmc"],
         outs = ["add_%s_verifier.out" % name],
-        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % (name, name),
+        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_verifier \\'\\{\\"network\\":\\"$$(cat $(location @%s//:network_address))\\"\\,\\"verifier\\":\\"$$(cat $(location @near//cli:encode_public_key_%sbmv))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:node_url)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % (name, name),
         executable = True,
         local = True,
         tools = [
             "@%s//:network_address" % name,
-            "@near//:wait_until_near_up",
+            "@near//:node_url",
             "@near//cli:encode_public_key_bmc",
             "@near//cli:encode_public_key_%sbmv" % name,
             "@near//cli:near_binary",
@@ -94,12 +96,12 @@ def configure_link(name):
             "@near//cli:add_%s_verifier" % name,
         ],
         outs = ["add_%s_link.out" % name],
-        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_link \\'\\{\\"link\\":\\"$$(cat $(location @%s//:btp_address))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % name,
+        cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) add_link \\'\\{\\"link\\":\\"$$(cat $(location @%s//:btp_address))\\"\\}\\' --nodeUrl $$(cat $(locations @near//:node_url)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""" % name,
         executable = True,
         local = True,
         tools = [
             "@%s//:btp_address" % name,
-            "@near//:wait_until_near_up",
+            "@near//:node_url",
             "@near//cli:encode_public_key_bmc",
             "@near//cli:near_binary",
         ],
@@ -132,13 +134,14 @@ def configure_bmr(name):
         srcs = [
             "@near//cli:get_wallet_%s_keystore" % name,
             "@near//cli:generate_%s_keystore" % name,
+            "@near//:near_config_dir",
         ],
         outs = ["%s_keystore.json" % name],
-        cmd = "$(execpath @near//cli:near_binary) send test.near $$(cat $(location @near//cli:get_wallet_%s_keystore)) 50 --masterAccount test.near --nodeUrl $$(cat $(locations @near//:wait_until_near_up)) --keyPath ~/.near/localnet/node0/validator_key.json; echo \"$$(cat $(location @near//cli:generate_%s_keystore))\"| jq -r . > $@" % (name,name),
+        cmd = "$(execpath @near//cli:near_binary) send "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " $$(cat $(location @near//cli:get_wallet_%s_keystore)) 50 --masterAccount " % name  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json; echo \"$$(cat $(location @near//cli:generate_%s_keystore))\"| jq -r . > $@" % name,
         executable = True,
         local = True,
         tools = [
-            "@near//:wait_until_near_up",
+            "@near//:node_url",
             "@near//cli:near_binary",
-        ]
+        ],
     )

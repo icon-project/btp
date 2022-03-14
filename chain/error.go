@@ -28,6 +28,7 @@ var (
 	ErrSendFailByFuture       = fmt.Errorf("reject by future")
 	ErrSendFailByOverflow     = fmt.Errorf("reject by overflow")
 	ErrGetResultFailByPending = fmt.Errorf("fail to getresult by pending")
+	ErrTimeOut                = fmt.Errorf("TIMEOUT_ERROR")
 )
 
 const (

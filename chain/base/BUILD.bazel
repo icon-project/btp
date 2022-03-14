@@ -15,6 +15,7 @@ go_library(
         "//chain",
         "//common/codec",
         "//common/log",
+        "//common/errors",
         "@com_github_reactivex_rxgo_v2//:rxgo",
     ],
 )

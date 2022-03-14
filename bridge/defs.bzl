@@ -23,6 +23,7 @@ def bridge(name, chains):
             ":set_link_%s" % chains[1],
             ":deploy_%s_bmr" % chains[0],
             ":deploy_%s_bmr" % chains[1],
+            "@%s//cli:send_icx_to_%s" % (chains[0],chains[1])
         ],
         cmd = "echo 'done' > $@",
         local = True,

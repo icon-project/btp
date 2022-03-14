@@ -9,9 +9,10 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "near_config_dir",
     outs = ["near_config_dir.out"],
-    cmd = """mkdir -p \"$$PWD/near_config_dir/localnet/node0\"
-    cp -t $$PWD/near_config_dir/localnet/node0 -r ~/.near/localnet/node0/{config.json,genesis.json,node_key.json,validator_key.json} ;
-    echo \"$$PWD/near_config_dir\" > $@""",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\"; cp -LR $$PWD/rust/near/cli/configs/"+ select({"@near//:localnet":"localnet","@near//:testnet": "testnet"}) +"/* -t $$(cat $(location @btp//:tmp_dir))/near_config_dir/;echo \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\" > $@",
+    tools = [
+        "@btp//:tmp_dir"
+    ],
     executable = True,
     local = True,
 )
@@ -44,7 +45,7 @@ genrule(
 genrule(
     name = "wait_until_near_up",
     outs = ["wait_until_near_up.out"],
-    cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:49363 status 300 > $@",
+    cmd = "$(location @btp//utils:wait_until_curl_script) http://localhost:$$(cat $(location :deploy_node)) status 300 > $@",
     executable = True,
     output_to_bindir = True,
     tags = [
@@ -52,6 +53,7 @@ genrule(
     ],
     tools = [
         "@btp//utils:wait_until_curl_script",
+        ":deploy_node"
     ],
 )
 
@@ -64,7 +66,7 @@ genrule(
     local = True,
     tools = [
         "@near//:network_address",
-        "@near//:wait_until_near_up",
+        "@near//:node_url",
         "@near//cli:encode_public_key_bmc",
     ],
 )
@@ -80,30 +82,63 @@ genrule(
 genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
-    cmd = "mkdir -p \"$$PWD/near_bmr_config_dir\"  && echo \"$$PWD/near_bmr_config_dir\" > $@",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_bmr_config_dir\"  && echo \"$$(cat $(location @btp//:tmp_dir))/near_bmr_config_dir\" > $@",
     output_to_bindir = True,
     executable = True,
     local = True,
+    tools = [
+        "@btp//:tmp_dir"
+    ],
 )
 
 genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
-    cmd = "echo \"http://172.17.0.1:49363\" > $@",
+    cmd = "echo \"$$(cat $(location :node_url))\" > $@",
     executable = True,
     local = True,
     tools = [
+        ":node_url"
     ],
 )
 
 genrule(
     name = "latest_block_height",
     outs = ["latest_block_height.out"],
-    cmd = "curl http://localhost:49363/status | jq .sync_info.latest_block_height >$@",
+    cmd = "curl $$(cat $(location :node_url))/status | jq .sync_info.latest_block_height >$@",
     executable = True,
     local = True,
     tools = [
-        "@near//:wait_until_near_up",
+        "@near//:node_url",
         "@near//cli:near_binary",
     ],
 )
+
+
+config_setting(
+    name = "testnet",
+    define_values = {"network": "testnet"},
+)
+
+config_setting(
+    name = "localnet",
+    define_values = {"network": "localnet"},
+)
+
+genrule(
+    name = "node_url",
+
+    outs = ["node_url.out"],
+    srcs = select({
+        ":localnet": ["@near//:wait_until_near_up"],
+        ":testnet": []
+    }),
+    cmd = "echo " + select({
+        ":testnet":"https://rpc.testnet.near.org",
+        ":localnet":"$$(cat $(locations @near//:wait_until_near_up))"
+    }) + " > $@",
+    executable = True,
+    local = True,
+)
+
+
