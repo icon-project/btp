@@ -9,12 +9,15 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "near_config_dir",
     outs = ["near_config_dir.out"],
-    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\"; cp -LR $$PWD/rust/near/cli/configs/"+ select({"@near//:localnet":"localnet","@near//:testnet": "testnet"}) +"/* -t $$(cat $(location @btp//:tmp_dir))/near_config_dir/;echo \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\" > $@",
-    tools = [
-        "@btp//:tmp_dir"
-    ],
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\"; cp -LR $$PWD/rust/near/cli/configs/" + select({
+        "@near//:localnet": "localnet",
+        "@near//:testnet": "testnet",
+    }) + "/* -t $$(cat $(location @btp//:tmp_dir))/near_config_dir/;echo \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\" > $@",
     executable = True,
     local = True,
+    tools = [
+        "@btp//:tmp_dir",
+    ],
 )
 
 container_image(
@@ -52,8 +55,8 @@ genrule(
         "no-cache",
     ],
     tools = [
+        ":deploy_node",
         "@btp//utils:wait_until_curl_script",
-        ":deploy_node"
     ],
 )
 
@@ -83,23 +86,27 @@ genrule(
     name = "bmr_config_dir",
     outs = ["bmr_config_dir.out"],
     cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_bmr_config_dir\"  && echo \"$$(cat $(location @btp//:tmp_dir))/near_bmr_config_dir\" > $@",
-    output_to_bindir = True,
     executable = True,
     local = True,
+    output_to_bindir = True,
     tools = [
-        "@btp//:tmp_dir"
+        "@btp//:tmp_dir",
     ],
 )
 
 genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
-    cmd = "echo \"$$(cat $(location :node_url))\" > $@",
+    cmd = "echo \"" + select({
+        ":testnet": "$$(cat $(location :node_url))",
+        ":localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
+    }) + "\" > $@",
     executable = True,
     local = True,
-    tools = [
-        ":node_url"
-    ],
+    tools = select({
+        ":localnet": [":deploy_node"],
+        ":testnet": [":node_url"],
+    }),
 )
 
 genrule(
@@ -114,7 +121,6 @@ genrule(
     ],
 )
 
-
 config_setting(
     name = "testnet",
     define_values = {"network": "testnet"},
@@ -127,18 +133,15 @@ config_setting(
 
 genrule(
     name = "node_url",
-
-    outs = ["node_url.out"],
     srcs = select({
         ":localnet": ["@near//:wait_until_near_up"],
-        ":testnet": []
+        ":testnet": [],
     }),
+    outs = ["node_url.out"],
     cmd = "echo " + select({
-        ":testnet":"https://rpc.testnet.near.org",
-        ":localnet":"$$(cat $(locations @near//:wait_until_near_up))"
+        ":testnet": "https://rpc.testnet.near.org",
+        ":localnet": "$$(cat $(locations @near//:wait_until_near_up))",
     }) + " > $@",
     executable = True,
     local = True,
 )
-
-

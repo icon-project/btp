@@ -9,7 +9,10 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "goloop_config_dir",
     outs = ["goloop_config_dir.out"],
-    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\";  cp -LR $$PWD/javascore/icon/cli/configs/"+ select({"@icon//:localnet":"localnet","@icon//:testnet": "testnet"}) +"/* -t $$(cat $(location @btp//:tmp_dir))/goloop_config_dir/  ; echo $$(cat $(location @btp//:tmp_dir))/goloop_config_dir > $@",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\";  cp -LR $$PWD/javascore/icon/cli/configs/" + select({
+        "@icon//:localnet": "localnet",
+        "@icon//:testnet": "testnet",
+    }) + "/* -t $$(cat $(location @btp//:tmp_dir))/goloop_config_dir/  ; echo $$(cat $(location @btp//:tmp_dir))/goloop_config_dir > $@",
     executable = True,
     local = True,
     output_to_bindir = True,
@@ -110,19 +113,23 @@ genrule(
     executable = True,
     local = True,
     tools = [
-        "@btp//:tmp_dir"
+        "@btp//:tmp_dir",
     ],
 )
 
 genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
-    cmd = "echo \"$$(cat $(location :node_url))\" > $@",
+    cmd = "echo \"" + select({
+        ":testnet": "$$(cat $(location :node_url))",
+        ":localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
+    }) + "\" > $@",
     executable = True,
     local = True,
-    tools = [
-        ":node_url"
-    ],
+    tools = select({
+        ":localnet": [":deploy_node"],
+        ":testnet": [":node_url"],
+    }),
 )
 
 genrule(
@@ -172,7 +179,6 @@ genrule(
             "@icon//:wait_until_icon_up",
         ],
         ":testnet": [
-            
         ],
     }),
     outs = ["node_url.out"],
@@ -184,7 +190,7 @@ genrule(
     local = True,
 )
 
-genrule (
+genrule(
     name = "network_id",
     srcs = select({
         ":localnet": [
