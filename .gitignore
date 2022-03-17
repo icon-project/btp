@@ -35,6 +35,5 @@ relayMetaData.json
 sovereignMetaData.json
 
 
-/rust/near/cli/configs/testnet/**.*
-/rust/near/cli/configs/mainnet/**.*
+/rust/near/cli/configs/**/**.*
 /javascore/icon/cli/configs/**/**.*
