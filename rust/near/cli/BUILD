@@ -21,8 +21,8 @@ nodejs_binary(
     ],
     entry_point = "@near_npm//:node_modules/near-cli/bin/near",
     env = select({
-        "@near//:localnet": {"NEAR_ENV":"local"},
-        "@near//:testnet": {}
+        "@near//:localnet": {"NEAR_ENV": "local"},
+        "@near//:testnet": {},
     }),
 )
 
@@ -69,7 +69,7 @@ genrule(
         "@near//bmv/icon:bmv_icon_wasm",
         "@icon//cli:get_icon_validators",
         "@icon//:latest_block_height",
-        "@icon//:previous_known_block_hash"
+        "@icon//:previous_known_block_hash",
     ],
     outs = ["deploy_icon_bmv.out"],
     cmd = """
@@ -225,4 +225,20 @@ configure_link(
 
 configure_bmr(
     name = "near",
+)
+
+genrule(
+    name = "get_master_account",
+    srcs = select({
+        "@near//:localnet": ["@near//cli:configs/localnet/master_key.json"],
+        "@near//:testnet": ["@near//cli:configs/testnet/master_key.json"],
+        "@near//:mainnet": ["@near//cli:configs/mainnet/master_key.json"],
+    }),
+    outs = [
+        "master_account.out",
+    ],
+    cmd = "echo $$(cat $(SRCS)) | jq -r .account_id > $@",
+    output_to_bindir = True,
+    executable = True,
+    local = True,
 )

@@ -16,14 +16,23 @@ def bridge(name, chains):
         executable = True,
     )
     native.genrule(
-        name = "%s_and_%s" % (chains[0], chains[1]),
-        outs = ["%s_and_%s.out" % (chains[0], chains[1])],
+        name = "%s_to_%s" % (chains[0], chains[1]),
+        outs = ["%s_to_%s.out" % (chains[0], chains[1])],
         srcs = [
             ":set_link_%s" % chains[0],
-            ":set_link_%s" % chains[1],
             ":deploy_%s_bmr" % chains[0],
+        ],
+        cmd = "echo 'done' > $@",
+        local = True,
+        executable = True,
+    )
+
+    native.genrule(
+        name = "%s_to_%s" % (chains[1], chains[0]),
+        outs = ["%s_to_%s.out" % (chains[1], chains[0])],
+        srcs = [
+            ":set_link_%s" % chains[1],
             ":deploy_%s_bmr" % chains[1],
-            "@%s//cli:send_icx_to_%s" % (chains[0],chains[1])
         ],
         cmd = "echo 'done' > $@",
         local = True,

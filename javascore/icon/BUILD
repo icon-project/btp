@@ -3,16 +3,36 @@ load(
     "container_image",
 )
 load("@btp//utils:defs.bzl", "open_port")
+load(
+    ":variables.bzl",
+    "ICON_BERLIN_TESTNET",
+    "ICON_LISBON_TESTNET",
+    "ICON_LOCALNET",
+    "ICON_MAINNET",
+    "ICON_NETWORK_ID_BERLIN_TESTNET",
+    "ICON_NETWORK_ID_LISBON_TESTNET",
+    "ICON_NETWORK_ID_LOCALNET",
+    "ICON_NETWORK_ID_MAINNET",
+)
 
 package(default_visibility = ["//visibility:public"])
 
 genrule(
     name = "goloop_config_dir",
+    srcs = select({
+        "@icon//:localnet": ["@icon//cli:configs/localnet/keystore.json"],
+        "@icon//:docker_localnet": [
+            "@icon//cli:configs/localnet/keystore.json",
+            "@icon//cli:configs/localnet/keysecret",
+            "@icon//cli:configs/localnet/genesis.json",
+            "@icon//cli:configs/localnet/server.json",
+        ],
+        "@icon//:lisbon": ["@icon//cli:configs/lisbon/keystore.json"],
+        "@icon//:berlin": ["@icon//cli:configs/berlin/keystore.json"],
+        "@icon//:mainnet": ["@icon//cli:configs/mainnet/keystore.json"],
+    }),
     outs = ["goloop_config_dir.out"],
-    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\";  cp -LR $$PWD/javascore/icon/cli/configs/" + select({
-        "@icon//:localnet": "localnet",
-        "@icon//:testnet": "testnet",
-    }) + "/* -t $$(cat $(location @btp//:tmp_dir))/goloop_config_dir/  ; echo $$(cat $(location @btp//:tmp_dir))/goloop_config_dir > $@",
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\"; cp -R $(SRCS) \"$$(cat $(location @btp//:tmp_dir))/goloop_config_dir\"; echo $$(cat $(location @btp//:tmp_dir))/goloop_config_dir > $@",
     executable = True,
     local = True,
     output_to_bindir = True,
@@ -121,14 +141,14 @@ genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
     cmd = "echo \"" + select({
-        ":testnet": "$$(cat $(location :node_url))",
-        ":localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
+        "//conditions:default": "$$(cat $(location :node_url))",
+        ":docker_localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
     }) + "\" > $@",
     executable = True,
     local = True,
     tools = select({
-        ":localnet": [":deploy_node"],
-        ":testnet": [":node_url"],
+        ":docker_localnet": [":deploy_node"],
+        "//conditions:default": [":node_url"],
     }),
 )
 
@@ -162,29 +182,49 @@ genrule(
 )
 
 config_setting(
-    name = "testnet",
-    define_values = {"network": "testnet"},
+    name = "lisbon",
+    define_values = {"icon_network": "lisbon"},
+)
+
+config_setting(
+    name = "berlin",
+    define_values = {"icon_network": "berlin"},
 )
 
 config_setting(
     name = "localnet",
-    define_values = {"network": "localnet"},
+    define_values = {"icon_network": "localnet"},
+)
+
+config_setting(
+    name = "docker_localnet",
+    define_values = {
+        "icon_network": "localnet",
+        "docker": "true",
+    },
+)
+
+config_setting(
+    name = "mainnet",
+    define_values = {"icon_network": "mainnet"},
 )
 
 genrule(
     name = "node_url",
     srcs = select({
-        ":localnet": [
+        ":docker_localnet": [
             "@icon//:wait_for_channel_up",
             "@icon//:wait_until_icon_up",
         ],
-        ":testnet": [
-        ],
+        "//conditions:default": [],
     }),
     outs = ["node_url.out"],
     cmd = "echo " + select({
-        ":testnet": "https://lisbon.net.solidwallet.io/api/v3/icon_dex",
-        ":localnet": "$$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon",
+        ":mainnet": ICON_MAINNET,
+        ":lisbon": ICON_LISBON_TESTNET,
+        ":berlin": ICON_BERLIN_TESTNET,
+        ":docker_localnet": "$$(cat $(location @icon//:wait_until_icon_up))/api/v3/icon",
+        ":localnet": ICON_LOCALNET,
     }) + " > $@",
     executable = True,
     local = True,
@@ -193,15 +233,18 @@ genrule(
 genrule(
     name = "network_id",
     srcs = select({
-        ":localnet": [
+        ":docker_localnet": [
             "@icon//:wait_for_channel_up",
         ],
-        ":testnet": [],
+        "//conditions:default": [],
     }),
     outs = ["network_id.out"],
     cmd = "echo " + select({
-        ":testnet": "0x2",
-        ":localnet": "$$(cat $(location @icon//:wait_for_channel_up))",
+        ":mainnet": ICON_NETWORK_ID_MAINNET,
+        ":lisbon": ICON_NETWORK_ID_LISBON_TESTNET,
+        ":berlin": ICON_NETWORK_ID_BERLIN_TESTNET,
+        ":localnet": ICON_NETWORK_ID_LOCALNET,
+        ":docker_localnet": "$$(cat $(location @icon//:wait_for_channel_up))",
     }) + " > $@",
     executable = True,
     local = True,

@@ -3,16 +3,25 @@ load(
     "container_image",
 )
 load("@btp//utils:defs.bzl", "open_port")
+load(":variables.bzl", "NEAR_MAINNET", "NEAR_LOCALNET", "NEAR_TESTNET")
 
 package(default_visibility = ["//visibility:public"])
 
 genrule(
     name = "near_config_dir",
     outs = ["near_config_dir.out"],
-    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\"; cp -LR $$PWD/rust/near/cli/configs/" + select({
-        "@near//:localnet": "localnet",
-        "@near//:testnet": "testnet",
-    }) + "/* -t $$(cat $(location @btp//:tmp_dir))/near_config_dir/;echo \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\" > $@",
+    srcs = select({
+        "@near//:mainnet": ["@near//cli:configs/mainnet/master_key.json"],
+        "@near//:testnet": ["@near//cli:configs/testnet/master_key.json"],
+        "@near//:localnet": ["@near//cli:configs/localnet/master_key.json"],
+        "@near//:docker_localnet": [
+            "@near//cli:configs/localnet/config.json",
+            "@near//cli:configs/localnet/genesis.json",
+            "@near//cli:configs/localnet/master_key.json",
+            "@near//cli:configs/localnet/node_key.json"
+        ]
+    }),
+    cmd = "mkdir -p \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\"; cp -LR $(SRCS) $$(cat $(location @btp//:tmp_dir))/near_config_dir/;echo \"$$(cat $(location @btp//:tmp_dir))/near_config_dir/\" > $@",
     executable = True,
     local = True,
     tools = [
@@ -98,14 +107,14 @@ genrule(
     name = "endpoint_docker",
     outs = ["endpoint.out"],
     cmd = "echo \"" + select({
-        ":testnet": "$$(cat $(location :node_url))",
-        ":localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
+        "//conditions:default": "$$(cat $(location :node_url))",
+        ":docker_localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
     }) + "\" > $@",
     executable = True,
     local = True,
     tools = select({
-        ":localnet": [":deploy_node"],
-        ":testnet": [":node_url"],
+        ":docker_localnet": [":deploy_node"],
+        "//conditions:default": [":node_url"],
     }),
 )
 
@@ -123,24 +132,39 @@ genrule(
 
 config_setting(
     name = "testnet",
-    define_values = {"network": "testnet"},
+    define_values = {"near_network": "testnet"},
 )
 
 config_setting(
     name = "localnet",
-    define_values = {"network": "localnet"},
+    define_values = {"near_network": "localnet"},
+)
+
+config_setting(
+    name = "mainnet",
+    define_values = {"near_network": "mainnet"},
+)
+
+config_setting(
+    name = "docker_localnet",
+    define_values = {
+        "near_network": "localnet",
+        "docker": "true",
+    },
 )
 
 genrule(
     name = "node_url",
     srcs = select({
-        ":localnet": ["@near//:wait_until_near_up"],
-        ":testnet": [],
+        ":docker_localnet": ["@near//:wait_until_near_up"],
+        "//conditions:default": [],
     }),
     outs = ["node_url.out"],
     cmd = "echo " + select({
-        ":testnet": "https://rpc.testnet.near.org",
-        ":localnet": "$$(cat $(locations @near//:wait_until_near_up))",
+        ":mainnet": NEAR_MAINNET,
+        ":testnet": NEAR_TESTNET,
+        ":localnet": NEAR_LOCALNET,
+        ":docker_localnet": "$$(cat $(locations @near//:wait_until_near_up))",
     }) + " > $@",
     executable = True,
     local = True,

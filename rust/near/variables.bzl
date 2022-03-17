@@ -1,0 +1,7 @@
+NEAR_TESTNET = "https://rpc.testnet.near.org"
+NEAR_MAINNET = "https://rpc.mainnet.near.org"
+NEAR_LOCALNET = ""
+NEAR_BMC_MAINNET = ""
+NEAR_ICON_BMV_MAINNET = ""
+NEAR_NATIVE_COIN_BSH_MAINNET = ""
+NEAR_TOKEN_BSH_MAINNET = ""

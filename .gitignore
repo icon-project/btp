@@ -33,3 +33,8 @@ BMVInitializeData.json
 paraMetaData.json
 relayMetaData.json
 sovereignMetaData.json
+
+
+/rust/near/cli/configs/testnet/**.*
+/rust/near/cli/configs/mainnet/**.*
+/javascore/icon/cli/configs/**/**.*

@@ -45,7 +45,7 @@ def create_account(name):
     native.genrule(
         name = "create_account_%s" % name,
         outs = ["create_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) send " + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " $$(cat $(location @near//cli:encode_public_key_%s)) 50 --masterAccount " % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json > $@",
+        cmd = "$(execpath :near_binary) send $$(cat $(location @near//cli:get_master_account)) $$(cat $(location @near//cli:encode_public_key_%s)) 50 --masterAccount $$(cat $(location @near//cli:get_master_account)) --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json > $@" % name,
         executable = True,
         local = True,
         output_to_bindir = True,
@@ -55,6 +55,7 @@ def create_account(name):
             "@near//cli:encode_public_key_%s" % name,
             "@near//cli:rename_account_%s" % name,
             "@near//:near_config_dir",
+            "@near//cli:get_master_account"
         ],
     )
 
@@ -62,7 +63,7 @@ def create_sub_account(name):
     native.genrule(
         name = "create_sub_account_%s" % name,
         outs = ["create_sub_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) create-account %s." % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " --masterAccount "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json; $(execpath :near_binary) send "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " %s." % name  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + " 50 --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json ; echo '%s." % name + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) + "' > $@",
+        cmd = "$(execpath :near_binary) create-account %s.$$(cat $(location @near//cli:get_master_account)) --masterAccount $$(cat $(location @near//cli:get_master_account)) --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json; $(execpath :near_binary) send $$(cat $(location :@near//cli:get_master_account)) %s.$$(cat $(location :@near//cli:get_master_account)) 50 --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json ; echo '%s.$$(cat $(location :@near//cli:get_master_account))' > $@" % (name, name, name),
         executable = True,
         local = True,
         output_to_bindir = True,
@@ -70,6 +71,7 @@ def create_sub_account(name):
             "@near//:node_url",
             "@near//cli:near_binary",
             "@near//:near_config_dir",
+            "@near//cli:get_master_account"
         ],
     )
 
@@ -137,11 +139,12 @@ def configure_bmr(name):
             "@near//:near_config_dir",
         ],
         outs = ["%s_keystore.json" % name],
-        cmd = "$(execpath @near//cli:near_binary) send "  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " $$(cat $(location @near//cli:get_wallet_%s_keystore)) 50 --masterAccount " % name  + select({"@near//:localnet": "test.near", "@near//:testnet": "btp.hugobyte.testnet"}) +  " --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/validator_key.json; echo \"$$(cat $(location @near//cli:generate_%s_keystore))\"| jq -r . > $@" % name,
+        cmd = "$(execpath @near//cli:near_binary) send $$(cat $(location @near//cli:get_master_account)) $$(cat $(location @near//cli:get_wallet_%s_keystore)) 50 --masterAccount $$(cat $(location @near//cli:get_master_account)) --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json; echo \"$$(cat $(location @near//cli:generate_%s_keystore))\"| jq -r . > $@" % (name, name),
         executable = True,
         local = True,
         tools = [
             "@near//:node_url",
             "@near//cli:near_binary",
+            "@near//cli:get_master_account"
         ],
     )

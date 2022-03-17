@@ -5,7 +5,7 @@ genrule(
     outs = [
         "nativecoin-0.1.0-optimized.jar",
     ],
-    cmd = "gradle -q -b $$PWD/external/javascore/nativecoin/build.gradle build; cp $$PWD/external/javascore/nativecoin/build/libs/nativecoin-0.1.0-optimized.jar $@",
+    cmd = "gradle -q -b $$PWD/external/javascore/nativecoin/build.gradle optimizedJar; cp $$PWD/external/javascore/nativecoin/build/libs/nativecoin-0.1.0-optimized.jar $@",
     executable = True,
     local = True,
     tools = [

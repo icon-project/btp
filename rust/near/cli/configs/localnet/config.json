@@ -1,7 +1,7 @@
 {
   "genesis_file": "genesis.json",
   "genesis_records_file": null,
-  "validator_key_file": "validator_key.json",
+  "validator_key_file": "master_key.json",
   "node_key_file": "node_key.json",
   "rpc": {
     "addr": "0.0.0.0:3030",

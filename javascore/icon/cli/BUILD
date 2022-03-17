@@ -1,4 +1,4 @@
-load("@icon//cli:defs.bzl", "configure_link", "create_keystore", "get_score_address","configure_bmr")
+load("@icon//cli:defs.bzl", "configure_bmr", "configure_link", "create_keystore", "get_score_address")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,9 +43,9 @@ genrule(
     local = True,
     tools = [
         "@com_github_icon_project_goloop//cmd/goloop",
+        "@icon//:network_address",
         "@icon//:network_id",
         "@icon//:node_url",
-        "@icon//:network_address",
         "@javascore//bmc:javascore",
     ],
 )
@@ -186,55 +186,65 @@ genrule(
 
 genrule(
     name = "get_icon_validators",
-    srcs = ["@btp//cmd/iconvalidators:iconvalidators"],
+    srcs = ["@btp//cmd/iconvalidators"],
     outs = ["get_icon_validators.out"],
     cmd = """ GOLOOP_RPC_URI=\"$$(cat $(location @icon//:node_url))\" $(execpath @btp//cmd/iconvalidators:iconvalidators) build $$(cat $(location @icon//:latest_block_height)) | echo $$(tr -d '\"') >$@""",
-    tools = [
-        "@icon//:node_url",
-        "@icon//:latest_block_height"
-    ],
     executable = True,
     local = True,
+    tools = [
+        "@icon//:latest_block_height",
+        "@icon//:node_url",
+    ],
 )
 
 genrule(
     name = "add_near_bmr",
-    srcs = [":set_near_link","@icon//cli:get_wallet_icon_keystore","@near//:btp_address"],
+    srcs = [
+        ":set_near_link",
+        "@icon//cli:get_wallet_icon_keystore",
+        "@near//:btp_address",
+    ],
     outs = ["add_near_bmr.out"],
     cmd = """
     $(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:node_url)) sendtx  call --to $$(cat $(location @icon//cli:get_score_address_bmc)) --method addRelay  --param _link=$$(cat $(location @near//:btp_address)) --param _addr=$$(cat $(location @icon//cli:get_wallet_icon_keystore))  --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:network_id))\" --step_limit 13610920001  | jq -r . >$@
     """,
-    tools = [
-        "@icon//cli:get_score_address_bmc",
-        "@icon//:network_id",
-        "@icon//:node_url",
-        "@com_github_icon_project_goloop//cmd/goloop:goloop",
-        "@icon//:goloop_config_dir",
-    ],
     executable = True,
     local = True,
-
+    tools = [
+        "@com_github_icon_project_goloop//cmd/goloop",
+        "@icon//:goloop_config_dir",
+        "@icon//:network_id",
+        "@icon//:node_url",
+        "@icon//cli:get_score_address_bmc",
+    ],
 )
 
 genrule(
     name = "send_icx_to_near",
-    outs = ["send_icx_to_near.out"],
     srcs = [
         ":add_service_icon",
         ":set_near_link",
-        "@com_github_icon_project_goloop//cmd/goloop:goloop",
+        "@com_github_icon_project_goloop//cmd/goloop",
         "@icon//:goloop_config_dir",
         "@icon//cli:get_score_address_nativecoin",
-        "@near//cli:encode_public_key_alice"
+        "@near//cli:encode_public_key_alice",
     ],
+    outs = ["send_icx_to_near.out"],
     cmd = """
      $(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:node_url)) sendtx  call --to $$(cat $(location get_score_address_nativecoin)) --method transferNativeCoin  --param _to=\"btp://0x1.near/$$(cat $(location @near//cli:encode_public_key_alice))\"  --value 1000000000000000000000000 --key_store $$(cat $(location @icon//:goloop_config_dir))/keystore.json --key_secret $$(cat $(location @icon//:goloop_config_dir))/keysecret --nid \"$$(cat $(location @icon//:network_id))\" --step_limit 13610920001 >$@
     """,
-    tools = [
-        "@icon//:node_url",
-        "@icon//:network_id",
-    ],
     executable = True,
     local = True,
-
+    tools = [
+        "@icon//:network_id",
+        "@icon//:node_url",
+    ],
 )
+
+select({
+    "@icon//:localnet": exports_files(glob(["configs/localnet/*"])),
+    "@icon//:docker_localnet": exports_files(glob(["configs/localnet/*"])),
+    "@icon//:lisbon": exports_files(["configs/lisbon/keystore.json"]),
+    "@icon//:berlin": exports_files(["configs/berlin/keystore.json"]),
+    "//conditions:default": []
+})
