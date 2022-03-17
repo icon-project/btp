@@ -19,7 +19,7 @@ def bridge(name, chains):
         name = "%s_to_%s" % (chains[0], chains[1]),
         outs = ["%s_to_%s.out" % (chains[0], chains[1])],
         srcs = [
-            ":set_link_%s" % chains[0],
+            ":set_link_%s" % chains[1],
             ":deploy_%s_bmr" % chains[0],
         ],
         cmd = "echo 'done' > $@",
@@ -31,7 +31,7 @@ def bridge(name, chains):
         name = "%s_to_%s" % (chains[1], chains[0]),
         outs = ["%s_to_%s.out" % (chains[1], chains[0])],
         srcs = [
-            ":set_link_%s" % chains[1],
+            ":set_link_%s" % chains[0],
             ":deploy_%s_bmr" % chains[1],
         ],
         cmd = "echo 'done' > $@",
@@ -45,7 +45,7 @@ def bridge(name, chains):
         srcs = [
             "@btp//cmd/btpsimple:btpsimple",
             "@%s//:bmr_config_dir" % (chains[0]),
-            "@%s//cli:add_%s_bmr" % (chains[0], chains[1]),
+            "@%s//cli:add_%s_bmr" % (chains[1], chains[0]),
             "@%s//cli:transfer_amount_%s_address" % (chains[1], chains[1]),
             "@%s//cli:keysecret" % chains[1],
             "@%s//:endpoint_docker" % chains[0],
@@ -77,7 +77,7 @@ def bridge(name, chains):
         srcs = [
             "@btp//cmd/btpsimple:btpsimple",
             "@%s//:bmr_config_dir" % (chains[1]),
-            "@%s//cli:add_%s_bmr" % (chains[1], chains[0]),
+            "@%s//cli:add_%s_bmr" % (chains[0], chains[1]),
             "@%s//cli:transfer_amount_%s_address" % (chains[0], chains[0]),
             "@%s//cli:keysecret" % chains[0],
             "@%s//:endpoint_docker" % chains[1],

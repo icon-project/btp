@@ -142,7 +142,7 @@ genrule(
     outs = ["endpoint.out"],
     cmd = "echo \"" + select({
         "//conditions:default": "$$(cat $(location :node_url))",
-        ":docker_localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))",
+        ":docker_localnet": "http://172.17.0.1:$$(cat $(location :deploy_node))/api/v3/icon",
     }) + "\" > $@",
     executable = True,
     local = True,

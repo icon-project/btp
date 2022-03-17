@@ -63,7 +63,7 @@ def create_sub_account(name):
     native.genrule(
         name = "create_sub_account_%s" % name,
         outs = ["create_sub_account_%s.out" % name],
-        cmd = "$(execpath :near_binary) create-account %s.$$(cat $(location @near//cli:get_master_account)) --masterAccount $$(cat $(location @near//cli:get_master_account)) --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json; $(execpath :near_binary) send $$(cat $(location :@near//cli:get_master_account)) %s.$$(cat $(location :@near//cli:get_master_account)) 50 --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json ; echo '%s.$$(cat $(location :@near//cli:get_master_account))' > $@" % (name, name, name),
+        cmd = "$(execpath :near_binary) create-account %s.$$(cat $(location @near//cli:get_master_account)) --masterAccount $$(cat $(location @near//cli:get_master_account)) --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json; $(execpath :near_binary) send $$(cat $(location @near//cli:get_master_account)) %s.$$(cat $(location @near//cli:get_master_account)) 50 --nodeUrl $$(cat $(locations @near//:node_url)) --keyPath $$(cat $(location @near//:near_config_dir))/master_key.json ; echo \"%s.$$(cat $(location @near//cli:get_master_account))\" > $@" % (name, name, name),
         executable = True,
         local = True,
         output_to_bindir = True,
