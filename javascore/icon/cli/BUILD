@@ -244,7 +244,8 @@ genrule(
 select({
     "@icon//:localnet": exports_files(glob(["configs/localnet/*"])),
     "@icon//:docker_localnet": exports_files(glob(["configs/localnet/*"])),
-    "@icon//:lisbon": exports_files(["configs/lisbon/*"]),
-    "@icon//:berlin": exports_files(["configs/berlin/*"]),
+    "@icon//:lisbon": exports_files(glob(["configs/lisbon/*"])),
+    "@icon//:berlin": exports_files(glob(["configs/berlin/*"])),
+    "@icon//:mainnet": exports_files(glob(["configs/mainnet/*"])),
     "//conditions:default": []
 })
