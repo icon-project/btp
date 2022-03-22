@@ -594,6 +594,10 @@ def go_repositories():
         name = "com_github_ethereum_go_ethereum",
         importpath = "github.com/ethereum/go-ethereum",
         replace = "github.com/ethereum/go-ethereum",
+        patch_args = ["-p1"],
+        patches = [
+            "//patches:com_github_ethereum_go_ethereum.patch",
+        ],
         sum = "h1:JPZPL2MHbegfFStcaOrrggMVIcf57OQHQ0J3UhjQ+xQ=",
         version = "v1.10.4",
     )
@@ -1282,6 +1286,10 @@ def go_repositories():
     go_repository(
         name = "com_github_karalabe_usb",
         importpath = "github.com/karalabe/usb",
+        patch_args = ["-p1"],
+        patches = [
+            "//patches:com_github_karalabe_usb.patch"
+        ],
         sum = "h1:I/yrLt2WilKxlQKCM52clh5rGzTKpVctGT1lH4Dc8Jw=",
         version = "v0.0.0-20190919080040-51dc0efba356",
     )

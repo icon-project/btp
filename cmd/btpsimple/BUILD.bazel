@@ -30,6 +30,12 @@ go_library(
 go_binary(
     name = "btpsimple",
     embed = [":btpsimple_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "btpsimple_linux",
+    embed = [":btpsimple_lib"],
     goarch = "amd64",
     goos = "linux",
     visibility = ["//visibility:public"],
@@ -39,5 +45,5 @@ container_image(
     name = "btpsimple_image",
     base = "@golang_base//image",
     entrypoint = ["/btpsimple"],
-    files = [":btpsimple"],
+    files = [":btpsimple_linux"],
 )

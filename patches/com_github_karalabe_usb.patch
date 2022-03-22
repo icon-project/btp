@@ -1,0 +1,122 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index a30c8b4..334d871 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -4,70 +4,10 @@ go_library(
+     name = "usb",
+     srcs = [
+         "hid_disabled.go",
+-        "hid_enabled.go",
+-        "libs.go",
+         "raw_disabled.go",
+-        "raw_enabled.go",
+-        "raw_errors.go",
+         "usb.go",
+         "usb_disabled.go",
+-        "usb_enabled.go",
+-        "wchar.go",
+     ],
+-    cgo = True,
+-    clinkopts = select({
+-        "@io_bazel_rules_go//go/platform:darwin": [
+-            "-framework CoreFoundation -framework IOKit -lobjc",
+-        ],
+-        "@io_bazel_rules_go//go/platform:freebsd": [
+-            "-lusb",
+-        ],
+-        "@io_bazel_rules_go//go/platform:linux": [
+-            "-lrt",
+-        ],
+-        "@io_bazel_rules_go//go/platform:windows": [
+-            "-lsetupapi",
+-        ],
+-        "//conditions:default": [],
+-    }),
+-    copts = select({
+-        "@io_bazel_rules_go//go/platform:android": [
+-            "-DDEFAULT_VISIBILITY=",
+-            "-DOS_LINUX -D_GNU_SOURCE -DHAVE_SYS_TIME_H",
+-            "-DPOLL_NFDS_TYPE=int",
+-            "-Ihidapi/hidapi",
+-            "-Ilibusb/libusb",
+-        ],
+-        "@io_bazel_rules_go//go/platform:darwin": [
+-            "-DDEFAULT_VISIBILITY=",
+-            "-DOS_DARWIN -DHAVE_SYS_TIME_H",
+-            "-DPOLL_NFDS_TYPE=int",
+-            "-Ihidapi/hidapi",
+-            "-Ilibusb/libusb",
+-        ],
+-        "@io_bazel_rules_go//go/platform:freebsd": [
+-            "-DDEFAULT_VISIBILITY=",
+-            "-DOS_FREEBSD",
+-            "-DPOLL_NFDS_TYPE=int",
+-            "-Ihidapi/hidapi",
+-            "-Ilibusb/libusb",
+-        ],
+-        "@io_bazel_rules_go//go/platform:linux": [
+-            "-DDEFAULT_VISIBILITY=",
+-            "-DOS_LINUX -D_GNU_SOURCE -DHAVE_SYS_TIME_H",
+-            "-DPOLL_NFDS_TYPE=int",
+-            "-Ihidapi/hidapi",
+-            "-Ilibusb/libusb",
+-        ],
+-        "@io_bazel_rules_go//go/platform:windows": [
+-            "-DDEFAULT_VISIBILITY=",
+-            "-DOS_WINDOWS",
+-            "-DPOLL_NFDS_TYPE=int",
+-            "-Ihidapi/hidapi",
+-            "-Ilibusb/libusb",
+-        ],
+-        "//conditions:default": [],
+-    }),
+     importpath = "github.com/karalabe/usb",
+     visibility = ["//visibility:public"],
+ )
+@@ -82,7 +22,6 @@ go_test(
+     name = "usb_test",
+     srcs = [
+         "usb_test.go",
+-        "wchar_test.go",
+     ],
+     embed = [":usb"],
+ )
+diff --git a/hid_disabled.go b/hid_disabled.go
+index a85964b..e8134ec 100644
+--- a/hid_disabled.go
++++ b/hid_disabled.go
+@@ -13,8 +13,6 @@
+ // You should have received a copy of the GNU Lesser General Public License along
+ // with the library. If not, see <http://www.gnu.org/licenses/>.
+ 
+-// +build !freebsd,!linux,!darwin,!windows ios !cgo
+-
+ package usb
+ 
+ // HidDevice is a live HID USB connected device handle. On platforms that this file
+diff --git a/raw_disabled.go b/raw_disabled.go
+index a05ef8e..e00fa58 100644
+--- a/raw_disabled.go
++++ b/raw_disabled.go
+@@ -13,8 +13,6 @@
+ // You should have received a copy of the GNU Lesser General Public License along
+ // with the library. If not, see <http://www.gnu.org/licenses/>.
+ 
+-// +build !freebsd,!linux,!darwin,!windows ios !cgo
+-
+ package usb
+ 
+ // RawDevice is a live raw USB connected device handle. On platforms that this file
+diff --git a/usb_disabled.go b/usb_disabled.go
+index 77c9007..be75a87 100644
+--- a/usb_disabled.go
++++ b/usb_disabled.go
+@@ -13,8 +13,6 @@
+ // You should have received a copy of the GNU Lesser General Public License along
+ // with the library. If not, see <http://www.gnu.org/licenses/>.
+ 
+-// +build !freebsd,!linux,!darwin,!windows ios !cgo
+-
+ package usb
+ 
+ // Supported returns whether this platform is supported by the USB library or not.

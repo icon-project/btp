@@ -1,0 +1,64 @@
+diff --git a/crypto/secp256k1/BUILD.bazel b/crypto/secp256k1/BUILD.bazel
+index a132aa30d..03614f553 100644
+--- a/crypto/secp256k1/BUILD.bazel
++++ b/crypto/secp256k1/BUILD.bazel
+@@ -2,6 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+ 
+ go_library(
+     name = "secp256k1",
++    cdeps = ["//crypto/secp256k1/libsecp256k1:hdrs"],
+     srcs = [
+         "curve.go",
+         "ext.h",
+@@ -12,8 +13,8 @@ go_library(
+     ],
+     cgo = True,
+     copts = [
+-        "-Icrypto/secp256k1/libsecp256k1",
+-        "-Icrypto/secp256k1/libsecp256k1/src",
++        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1",
++        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1/src"
+     ],
+     importpath = "github.com/ethereum/go-ethereum/crypto/secp256k1",
+     visibility = ["//visibility:public"],
+diff --git a/crypto/secp256k1/libsecp256k1/BUILD b/crypto/secp256k1/libsecp256k1/BUILD
+index e69de29bb..379b6f5bc 100644
+--- a/crypto/secp256k1/libsecp256k1/BUILD
++++ b/crypto/secp256k1/libsecp256k1/BUILD
+@@ -0,0 +1,36 @@
++cc_library(
++    name = "hdrs",
++    hdrs = [
++        "include/secp256k1.h",
++        "include/secp256k1_recovery.h",
++        "src/ecdsa.h",
++        "src/ecdsa_impl.h",
++        "src/eckey.h",
++        "src/eckey_impl.h",
++        "src/ecmult.h",
++        "src/ecmult_const.h",
++        "src/ecmult_const_impl.h",
++        "src/ecmult_gen.h",
++        "src/ecmult_gen_impl.h",
++        "src/ecmult_impl.h",
++        "src/field.h",
++        "src/field_5x52.h",
++        "src/field_5x52_impl.h",
++        "src/field_5x52_int128_impl.h",
++        "src/field_impl.h",
++        "src/group.h",
++        "src/group_impl.h",
++        "src/hash.h",
++        "src/hash_impl.h",
++        "src/modules/recovery/main_impl.h",
++        "src/num.h",
++        "src/num_impl.h",
++        "src/scalar.h",
++        "src/scalar_4x64.h",
++        "src/scalar_4x64_impl.h",
++        "src/scalar_impl.h",
++        "src/secp256k1.c",
++        "src/util.h",
++    ],
++    visibility = ["//visibility:public"],
++)
