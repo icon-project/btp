@@ -3,6 +3,7 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_image",
 )
+
 package(default_visibility = ["//visibility:public"])
 
 go_library(
@@ -30,6 +31,14 @@ go_library(
 go_binary(
     name = "btpsimple",
     embed = [":btpsimple_lib"],
+    goarch = select({
+        "@io_bazel_rules_go//go/platform:darwin": "auto",
+        "//conditions:default": "amd64",
+    }),
+    goos = select({
+        "@io_bazel_rules_go//go/platform:darwin": "auto",
+        "//conditions:default": "linux",
+    }),
     visibility = ["//visibility:public"],
 )
 

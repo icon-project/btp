@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 go_library(
     name = "iconvalidators_lib",
     srcs = [
-        "main.go"
+        "main.go",
     ],
     importpath = "github.com/icon-project/btp/cmd/btpsimple",
     visibility = ["//visibility:private"],
@@ -13,9 +13,9 @@ go_library(
         "//btp",
         "//chain/icon",
         "//common/cli",
-        "//common/log",
         "//common/codec",
         "//common/intconv",
+        "//common/log",
         "@com_github_getsentry_sentry_go//:go_default_library",
         "@com_github_spf13_cobra//:cobra",
     ],
@@ -24,6 +24,13 @@ go_library(
 go_binary(
     name = "iconvalidators",
     embed = [":iconvalidators_lib"],
+    goarch = select({
+        "@io_bazel_rules_go//go/platform:darwin": "auto",
+        "//conditions:default": "amd64",
+    }),
+    goos = select({
+        "@io_bazel_rules_go//go/platform:darwin": "auto",
+        "//conditions:default": "linux",
+    }),
     visibility = ["//visibility:public"],
 )
-
