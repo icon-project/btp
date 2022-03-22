@@ -1,8 +1,8 @@
 diff --git a/crypto/secp256k1/BUILD.bazel b/crypto/secp256k1/BUILD.bazel
-index a132aa30d..6adcb8cc4 100644
+index a132aa30d..d1b71da40 100644
 --- a/crypto/secp256k1/BUILD.bazel
 +++ b/crypto/secp256k1/BUILD.bazel
-@@ -10,10 +10,14 @@ go_library(
+@@ -10,11 +10,21 @@ go_library(
          "scalar_mult_nocgo.go",
          "secp256.go",
      ],
@@ -11,14 +11,23 @@ index a132aa30d..6adcb8cc4 100644
 +        "//conditions:default": [],
 +    }),
      cgo = True,
-     copts = [
+-    copts = [
 -        "-Icrypto/secp256k1/libsecp256k1",
 -        "-Icrypto/secp256k1/libsecp256k1/src",
-+        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1",
-+        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1/src",
-     ],
+-    ],
++    copts = select({
++        "@io_bazel_rules_go//go/platform:darwin": [
++            "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1",
++            "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1/src",
++        ],
++        "//conditions:default": [
++            "-Icrypto/secp256k1/libsecp256k1",
++            "-Icrypto/secp256k1/libsecp256k1/src",
++        ],
++    }),
      importpath = "github.com/ethereum/go-ethereum/crypto/secp256k1",
      visibility = ["//visibility:public"],
+ )
 diff --git a/crypto/secp256k1/libsecp256k1/BUILD b/crypto/secp256k1/libsecp256k1/BUILD
 index e69de29bb..379b6f5bc 100644
 --- a/crypto/secp256k1/libsecp256k1/BUILD
