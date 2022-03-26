@@ -16,6 +16,7 @@ bazel-*
 **/.idea
 **/**/.idea
 **/**/node_modules/
+!.bazelrc
 
 
 /docker-compose/goloop2goloop/config

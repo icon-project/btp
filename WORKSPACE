@@ -133,13 +133,21 @@ load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 
 container_deps()
 
+http_archive(
+    name = "bazel-zig-cc",
+    sha256 = "7d7e2bcfe15fce3a6d46ab1ed6f06e36a4729ff5e75916023a09b425ef6f32dd",
+    strip_prefix = "bazel-zig-cc-v0.5.0",
+    urls = ["https://git.sr.ht/~motiejus/bazel-zig-cc/archive/v0.5.0.tar.gz"],
+)
+
+load("@bazel-zig-cc//toolchain:defs.bzl", zig_register_toolchains = "register_toolchains")
+zig_register_toolchains()
+
 load("//cmd/btpsimple:dependencies.bzl", btpsimple_dependencies = "dependencies")
 btpsimple_dependencies()
 
 load("//chain_repositories:repositories.bzl", "chain_repositories")
-
 chain_repositories()
 
 load("//chain_repositories:dependencies.bzl", "chain_dependencies")
-
 chain_dependencies()

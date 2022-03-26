@@ -24,13 +24,5 @@ go_library(
 go_binary(
     name = "iconvalidators",
     embed = [":iconvalidators_lib"],
-    goarch = select({
-        "@io_bazel_rules_go//go/platform:darwin": "auto",
-        "//conditions:default": "amd64",
-    }),
-    goos = select({
-        "@io_bazel_rules_go//go/platform:darwin": "auto",
-        "//conditions:default": "linux",
-    }),
     visibility = ["//visibility:public"],
 )

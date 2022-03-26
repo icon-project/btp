@@ -31,14 +31,6 @@ go_library(
 go_binary(
     name = "btpsimple",
     embed = [":btpsimple_lib"],
-    goarch = select({
-        "@io_bazel_rules_go//go/platform:darwin": "auto",
-        "//conditions:default": "amd64",
-    }),
-    goos = select({
-        "@io_bazel_rules_go//go/platform:darwin": "auto",
-        "//conditions:default": "linux",
-    }),
     visibility = ["//visibility:public"],
 )
 
@@ -53,6 +45,6 @@ go_binary(
 container_image(
     name = "btpsimple_image",
     base = "@golang_base//image",
-    entrypoint = ["/btpsimple"],
+    entrypoint = ["/btpsimple_linux"],
     files = [":btpsimple_linux"],
 )
