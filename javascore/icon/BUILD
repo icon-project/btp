@@ -154,14 +154,12 @@ genrule(
 
 genrule(
     name = "latest_block_height",
-    srcs = [
-        "@icon//:node_url",
-    ],
     outs = ["latest_block_height.out"],
     cmd = "$(execpath @com_github_icon_project_goloop//cmd/goloop:goloop) rpc --uri $$(cat $(location @icon//:node_url)) lastblock | jq .height >$@",
     executable = True,
     local = True,
     tools = [
+        "@icon//:node_url",
         "@com_github_icon_project_goloop//cmd/goloop",
     ],
 )
@@ -219,7 +217,7 @@ genrule(
         "//conditions:default": [],
     }),
     outs = ["node_url.out"],
-    cmd = "echo " + select({
+    cmd = "sleep 20  && echo " + select({
         ":mainnet": ICON_MAINNET,
         ":lisbon": ICON_LISBON_TESTNET,
         ":berlin": ICON_BERLIN_TESTNET,

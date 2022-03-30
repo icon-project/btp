@@ -5,7 +5,3 @@ build --disk_cache=~/.cache/bazel-disk-cache
 
 # Bazel picks up host-OS-specific config lines from bazelrc files
 build --enable_platform_specific_config
-
-
-build --incompatible_enable_cc_toolchain_resolution
-build --extra_toolchains @zig_sdk//:linux_amd64_gnu.2.19_toolchain
