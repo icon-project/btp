@@ -17,8 +17,10 @@
 package foundation.icon.btp.mock;
 
 import foundation.icon.btp.lib.BMCScoreInterface;
+import foundation.icon.btp.lib.BTPException;
 import foundation.icon.score.util.Logger;
 import score.Address;
+import score.UserRevertedException;
 import score.annotation.EventLog;
 import score.annotation.External;
 
@@ -48,7 +50,11 @@ public class MockBSHImpl implements MockBSH {
     @External
     public void intercallSendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
         BMCScoreInterface bmc = new BMCScoreInterface(_bmc);
-        bmc.sendMessage(_to, _svc, _sn, _msg);
+        try {
+            bmc.sendMessage(_to, _svc, _sn, _msg);
+        } catch (UserRevertedException e) {
+            throw BTPException.of(e);
+        }
     }
 
     @EventLog

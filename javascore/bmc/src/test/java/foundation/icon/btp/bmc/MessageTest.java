@@ -16,7 +16,10 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.*;
+import foundation.icon.btp.lib.BMCScoreClient;
+import foundation.icon.btp.lib.BMCStatus;
+import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.lib.BTPException;
 import foundation.icon.btp.mock.MockBSH;
 import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.btp.mock.MockRelayMessage;
@@ -413,7 +416,7 @@ public class MessageTest implements BMCIntegrationTest {
         //BSHMock.sendMessage -> BMC.Message(str,int,bytes)
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
-        //BTPAddress netBTPAddress = BTPAddress.parse(net);
+
         BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
         ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
                 BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
@@ -435,13 +438,9 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
 
-        try {
-            MockBSHIntegrationTest.mockBSH.intercallSendMessage(
-                    ((BMCScoreClient) bmc)._address(),
-                    Faker.btpNetwork(), svc, sn, payload);
-        } catch (Exception e){
-            assertEquals("UnknownFailure", e.getMessage());
-        }
+        AssertBMCException.assertUnreachable(() -> MockBSHIntegrationTest.mockBSH.intercallSendMessage(
+                ((BMCScoreClient) bmc)._address(),
+                Faker.btpNetwork(), svc, sn, payload));
     }
 
     @Test
