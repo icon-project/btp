@@ -193,6 +193,15 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     @Test
+    void addLinkShouldRevertAlreadyExistsIfRegisteredNetwork() {
+        addLink(link);
+
+        BTPAddress registeredNetworkLink = new BTPAddress(BTPAddress.PROTOCOL_BTP, linkBtpAddress.net(),
+                ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString());
+        AssertBMCException.assertAlreadyExistsLink(() -> addLink(registeredNetworkLink.toString()));
+    }
+
+    @Test
     void addLinkShouldRevertNotExistsBMV() {
         AssertBMCException.assertNotExistsBMV(
                 () -> addLink(BTPIntegrationTest.Faker.btpLink().toString()));

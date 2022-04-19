@@ -176,18 +176,21 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (links.containsKey(target)) {
             throw BMCException.alreadyExistsLink();
         }
+
+        BTPAddress[] prevLinks = new BTPAddress[links.size()];
+        int i = 0;
+        for (BTPAddress link : links.keySet()) {
+            if (link.net().equals(target.net())) {
+                throw BMCException.alreadyExistsLink();
+            }
+            prevLinks[i++] = link;
+        }
+        InitMessage initMsg = new InitMessage();
+        initMsg.setLinks(prevLinks);
+
         LinkMessage linkMsg = new LinkMessage();
         linkMsg.setLink(target);
         propagateInternal(Internal.Link, linkMsg.toBytes());
-
-        List<BTPAddress> list = this.links.keySet();
-        int size = list.size();
-        BTPAddress[] links = new BTPAddress[size];
-        for (int i = 0; i < size; i++) {
-            links[i] = list.get(i);
-        }
-        InitMessage initMsg = new InitMessage();
-        initMsg.setLinks(links);
 
         Link link = new Link();
         link.setAddr(target);
@@ -276,65 +279,72 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     @External
     public void addRoute(String _dst, String _link) {
         requireOwnerAccess();
-        if (routes.containsKey(_dst)) {
+        BTPAddress dst = BTPAddress.valueOf(_dst);
+        if (routes.containsKey(dst)) {
             throw BMCException.unknown("already exists route");
         }
         BTPAddress target = BTPAddress.valueOf(_link);
         requireLink(target);
-        routes.put(_dst, target);
+        routes.put(dst, target);
     }
 
     @External
     public void removeRoute(String _dst) {
         requireOwnerAccess();
-        if (!routes.containsKey(_dst)) {
+        BTPAddress dst = BTPAddress.valueOf(_dst);
+        if (!routes.containsKey(dst)) {
             throw BMCException.unknown("not exists route");
         }
-        routes.remove(_dst);
+        routes.remove(dst);
     }
 
     @External(readonly = true)
     public Map getRoutes() {
         Map<String, String> stringMap = new HashMap<>();
-        for (Map.Entry<String, BTPAddress> entry : routes.toMap().entrySet()) {
-            stringMap.put(entry.getKey(), entry.getValue().toString());
+        for (Map.Entry<BTPAddress, BTPAddress> entry : routes.toMap().entrySet()) {
+            stringMap.put(entry.getKey().toString(), entry.getValue().toString());
         }
         return stringMap;
     }
 
-    private BTPAddress resolveRoute(String _net) {
-        if (routes.containsKey(_net)) {
-            return routes.get(_net);
-        } else {
-            for (String key : routes.keySet()) {
-                if (_net.equals(BTPAddress.parse(key).net())) {
-                    return routes.get(key);
+    private Map.Entry<BTPAddress, BTPAddress> resolveRoutePath(String _net) throws BMCException {
+        for (BTPAddress key : routes.keySet()) {
+            if (_net.equals(key.net())) {
+                return Map.entry(key, routes.get(key));
+            }
+        }
+        for (BTPAddress key : links.keySet()) {
+            if (_net.equals(key.net())) {
+                return Map.entry(key, key);
+            }
+        }
+        for (BTPAddress key : links.keySet()) {
+            Link link = links.get(key);
+            for (BTPAddress reachable : link.getReachable()) {
+                if (_net.equals(reachable.net())) {
+                    return Map.entry(reachable, key);
                 }
             }
         }
-        return null;
+        throw BMCException.unreachable();
     }
 
-    private Link resolveNext(String _net) throws BMCException {
-        BTPAddress next = resolveRoute(_net);
-        if (next == null) {
-            for (BTPAddress key : links.keySet()) {
-                if (_net.equals(key.net())) {
-                    return links.get(key);
-                }
-            }
-            for (BTPAddress key : links.keySet()) {
-                Link link = links.get(key);
-                for (BTPAddress reachable : link.getReachable()) {
-                    if (_net.equals(reachable.net())) {
-                        return link;
-                    }
-                }
-            }
-            throw BMCException.unreachable();
-        } else {
-            return getLink(next);
+    private BTPAddress resolveNext(BTPAddress dst) throws BMCException {
+        if (routes.containsKey(dst)) {
+            return routes.get(dst);
         }
+        if (links.containsKey(dst)) {
+            return dst;
+        }
+        for (BTPAddress key : links.keySet()) {
+            Link link = links.get(key);
+            for (BTPAddress reachable : link.getReachable()) {
+                if (dst.equals(reachable)) {
+                    return key;
+                }
+            }
+        }
+        throw BMCException.unreachable();
     }
 
     @External
@@ -407,8 +417,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                         handleMessage(prev, msg);
                     } else {
                         try {
-                            Link next = resolveNext(msg.getDst().net());
-                            sendMessage(next.getAddr(), msg);
+                            BTPAddress next = resolveNext(msg.getDst());
+                            sendMessage(next, msg);
                         } catch (BTPException e) {
                             sendError(prev, msg, e);
                         }
@@ -659,18 +669,19 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (_sn.compareTo(BigInteger.ZERO) < 1) {
             throw BMCException.invalidSn();
         }
-        Link link = resolveNext(_to);
+
+        Map.Entry<BTPAddress, BTPAddress> routePath = resolveRoutePath(_to);
 
         //TODO (txSeq > sackSeq && (currentHeight - sackHeight) > THRESHOLD) ? revert
         //  THRESHOLD = (delayLimit * NUM_OF_ROTATION)
         BTPMessage btpMsg = new BTPMessage();
         btpMsg.setSrc(btpAddr);
-        btpMsg.setDst(link.getAddr());
+        btpMsg.setDst(routePath.getKey());
         btpMsg.setSvc(_svc);
         btpMsg.setSn(_sn);
         btpMsg.setPayload(_msg);
-        logger.println("sendMessage", "to = ", link.getAddr(), ", btpMsg = ", btpMsg);
-        sendMessage(link.getAddr(), btpMsg);
+        logger.println("sendMessage", "to = ", routePath.getValue(), ", btpMsg = ", btpMsg);
+        sendMessage(routePath.getValue(), btpMsg);
     }
 
     private void sendMessage(BTPAddress to, BTPMessage msg) {
