@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "account",
+    srcs = [
+        "account.go",
+        "keystore.go",
+    ],
+    importpath = "github.com/icon-project/btp/cmd/btpsimple/module/near/account",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_btcsuite_btcutil//base58:go_default_library"],
+)

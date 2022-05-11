@@ -6,7 +6,6 @@ import (
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
-	"github.com/icon-project/btp/common/log"
 )
 
 type ExtAccumulator struct {
@@ -98,27 +97,19 @@ func (a *ExtAccumulator) Recover() error {
 	}
 	a.length = s.Height - s.Offset
 	a.serialized = b
-	if a.offset != s.Offset {
-		a.length = 0
-		a.Clear()
-		log.Debugf("resync with new offset:%d, height:%d", a.Offset(), a.Height())
+	if a.offset < s.Offset {
+		return errors.New("not support recover to lower offset")
+	} else if a.offset > s.Offset {
+		//TODO rebuild node
+		//a.offset = s.Offset
+		return errors.New("not support recover to higher offset")
 	}
 	return nil
 }
 
 func (a *ExtAccumulator) addNode(h int, n Node, w []Witness) []Witness {
-	//limitRoots, offset calculate
-	var rootSize = a.RootSize()
-	if a.limitRoots > 0 && rootSize == a.limitRoots {
-		log.Debugf("limitRoots, offset calculate:%d, rootSize:%d", a.Offset(), rootSize)
-		a.roots[rootSize-1].Delete()
-		a.roots[rootSize-1] = nil
-		var change = int64(1) << (a.limitRoots - 1)
-		a.offset += change
-		a.length -= change
-		log.Debugf("new offset:%d", a.Offset())
-	}
 	w = a.Accumulator.addNode(h, n, w)
+	//TODO limitRoots, offset calculate
 	return w
 }
 
@@ -145,16 +136,6 @@ func (a *ExtAccumulator) AddData(d []byte) []Witness {
 	return a.AddNode(l)
 }
 
-func (a *ExtAccumulator) Clear() {
-	for _, rn := range a.roots {
-		if rn != nil {
-			rn.Delete()
-		}
-	}
-	a.roots = make([]Node, a.limitRoots)
-	a.length = 0
-}
-
 func (a *ExtAccumulator) WitnessForAt(height, at, offset int64) (int64, []Witness, error) {
 	if a.offset > offset {
 		return -1, nil, errors.New("not support lower offset")
@@ -171,7 +152,7 @@ func (a *ExtAccumulator) WitnessForAt(height, at, offset int64) (int64, []Witnes
 	}
 
 	w, err := a.Accumulator.WitnessForWithAccLength(idx, accLength)
-	fmt.Printf("at:%d, idx:%d, accLength:%d, offset:%d\n", at, idx, accLength, offset)
+	fmt.Printf("at:%d, idx:%d, accLength:%d\n", at, idx, accLength)
 	return at, w, err
 }
 
@@ -194,10 +175,9 @@ func (a *ExtAccumulator) GetNode(height int64) (Node, error) {
 	return a.Accumulator.GetNode(height - 1 - a.offset)
 }
 
-func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64, limitRoots int) *ExtAccumulator {
+func NewExtAccumulator(keyForState []byte, bk db.Bucket, offset int64) *ExtAccumulator {
 	return &ExtAccumulator{
-		offset:     offset,
-		limitRoots: limitRoots,
+		offset: offset,
 		Accumulator: Accumulator{
 			KeyForState: keyForState,
 			Bucket:      bk,

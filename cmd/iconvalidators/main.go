@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/icon-project/btp/chain/icon"
+	"github.com/icon-project/btp/cmd/btpsimple/module/icon"
 	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/intconv"

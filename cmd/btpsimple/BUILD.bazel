@@ -10,14 +10,11 @@ go_library(
     name = "btpsimple_lib",
     srcs = [
         "main.go",
-        "save.go",
-        "start.go",
-        "version.go",
     ],
     importpath = "github.com/icon-project/btp/cmd/btpsimple",
     visibility = ["//visibility:private"],
     deps = [
-        "//btp",
+        "//cmd/btpsimple/chain",
         "//common/cli",
         "//common/crypto",
         "//common/errors",

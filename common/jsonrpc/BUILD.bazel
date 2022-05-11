@@ -4,8 +4,6 @@ go_library(
     name = "jsonrpc",
     srcs = [
         "client.go",
-        "keepalive.go",
-        "reconws.go",
         "type.go",
     ],
     importpath = "github.com/icon-project/btp/common/jsonrpc",

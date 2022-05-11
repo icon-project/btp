@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "bsc",
+    srcs = [
+        "client.go",
+        "receiver.go",
+        "sender.go",
+        "type.go",
+    ],
+    importpath = "github.com/icon-project/btp/cmd/btpsimple/module/bsc",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cmd/btpsimple/module/base",
+        "//cmd/btpsimple/module/bsc/binding",
+        "//cmd/btpsimple/module/bsc/systemcontracts",
+        "//common",
+        "//common/codec",
+        "//common/crypto",
+        "//common/jsonrpc",
+        "//common/log",
+        "//common/mpt",
+        "//common/wallet",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_ethereum_go_ethereum//core/types:go_default_library",
+        "@com_github_ethereum_go_ethereum//crypto:go_default_library",
+        "@com_github_ethereum_go_ethereum//ethclient:go_default_library",
+        "@com_github_ethereum_go_ethereum//ethdb/memorydb:go_default_library",
+        "@com_github_ethereum_go_ethereum//light:go_default_library",
+        "@com_github_ethereum_go_ethereum//rlp:go_default_library",
+        "@com_github_ethereum_go_ethereum//rpc:go_default_library",
+        "@com_github_ethereum_go_ethereum//trie:go_default_library",
+        "@com_github_gorilla_websocket//:websocket",
+        "@com_github_hashicorp_go_retryablehttp//:go_default_library",
+    ],
+)

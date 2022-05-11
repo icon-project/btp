@@ -26,7 +26,7 @@ bazel-*
 
 .gradle/*
 javascore/bmv/godWallet.json
-**/**/Module/*
+
 EventDecoder.java
 TypeDecoder.java
 metaData.json

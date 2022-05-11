@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "types",
+    srcs = [
+        "block.go",
+        "block_producer.go",
+        "bmc_status.go",
+        "bmv_status.go",
+        "chain_status.go",
+        "chunk.go",
+        "common.go",
+        "contract_state_change.go",
+        "header.go",
+        "nonce.go",
+        "receipt_proof.go",
+        "relay_status.go",
+        "transaction.go",
+    ],
+    importpath = "github.com/icon-project/btp/cmd/btpsimple/module/near/types",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common/codec",
+        "@com_github_btcsuite_btcutil//base58:go_default_library",
+        "@com_github_near_borsh_go//:go_default_library",
+    ],
+)

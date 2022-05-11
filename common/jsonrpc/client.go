@@ -16,7 +16,7 @@ type Client struct {
 	hc           *http.Client
 	Endpoint     string
 	CustomHeader map[string]string
-	Pre          func(req *http.Request) error
+	Pre func(req *http.Request) error
 }
 
 func NewJsonRpcClient(hc *http.Client, endpoint string) *Client {
@@ -73,7 +73,7 @@ func (c *Client) Do(method string, reqPtr, respPtr interface{}) (jrResp *Respons
 	var resp *http.Response
 	resp, err = c._do(req)
 	if err != nil {
-		if hErr, ok := err.(*common.HttpError); ok && len(hErr.Response()) > 0 {
+		if hErr, ok := err.(*common.HttpError); ok && len(hErr.Response()) > 0{
 			if resp != nil && common.HasContentType(resp.Header, echo.MIMEApplicationJSON) {
 				if dErr := json.Unmarshal(hErr.Response(), &jrResp); dErr != nil {
 					err = fmt.Errorf("fail to decode response body err:%+v, httpErr:%+v, httpResp:%+v, responseBody:%s",
