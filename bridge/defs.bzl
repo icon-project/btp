@@ -52,7 +52,7 @@ def bridge(name, chains):
             "@%s//:endpoint_docker" % chains[1],
             "@%s//:btp_address" % chains[0],
             "@%s//:btp_address" % chains[1],
-            "@%s//:latest_block_height" % chains[1],
+            "@%s//:latest_block_height" % chains[0],
         ],
         cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
         export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
@@ -66,7 +66,7 @@ def bridge(name, chains):
             --src.endpoint $$(cat $(location @%s//:endpoint_docker)) \
             --dst.address $$(cat $(location @%s//:btp_address)) \
             --dst.endpoint $$(cat $(location @%s//:endpoint_docker)) \
-        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[1], chains[1], chains[0], chains[1], chains[1], chains[0], chains[0], chains[0], chains[1], chains[1], chains[0]),
+        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[1], chains[1], chains[0], chains[0], chains[1], chains[0], chains[0], chains[0], chains[1], chains[1], chains[0]),
         local = True,
         executable = True,
     )
@@ -84,7 +84,7 @@ def bridge(name, chains):
             "@%s//:endpoint_docker" % chains[0],
             "@%s//:btp_address" % chains[0],
             "@%s//:btp_address" % chains[1],
-            "@%s//:latest_block_height" % chains[0],
+            "@%s//:latest_block_height" % chains[1],
         ],
         cmd = """echo $$(cat $(location @%s//cli:transfer_amount_%s_address)) > $$(cat $(location @%s//:bmr_config_dir))/keystore.json
         export BTPSIMPLE_SRC_OPTIONS=[mtaRootSize=8]
@@ -98,7 +98,7 @@ def bridge(name, chains):
             --src.endpoint $$(cat $(location @%s//:endpoint_docker)) \
             --dst.address $$(cat $(location @%s//:btp_address)) \
             --dst.endpoint $$(cat $(location @%s//:endpoint_docker)) \
-        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[0], chains[0], chains[1], chains[0], chains[0], chains[1], chains[1], chains[1], chains[0], chains[0], chains[1]),
+        save $@; cp $@ $$(cat $(location @%s//:bmr_config_dir))""" % (chains[0], chains[0], chains[1], chains[1], chains[0], chains[1], chains[1], chains[1], chains[0], chains[0], chains[1]),
         local = True,
         executable = True,
     )

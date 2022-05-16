@@ -22,6 +22,7 @@ nodejs_binary(
     entry_point = "@near_npm//:node_modules/near-cli/bin/near",
     env = select({
         "@near//:localnet": {"NEAR_ENV": "local"},
+        "@near//:docker_localnet": {"NEAR_ENV": "local"},
         "@near//:testnet": {},
     }),
 )
@@ -73,7 +74,7 @@ genrule(
     ],
     outs = ["deploy_icon_bmv.out"],
     cmd = """
-    $(execpath :near_binary) deploy $$(cat $(location @near//cli:encode_public_key_iconbmv))  --nodeUrl $$(cat $(locations @near//:node_url)) --wasmFile $(locations @near//bmv/icon:bmv_icon_wasm) --accountId $$(cat $(location @near//cli:encode_public_key_iconbmv)) --initFunction \"new\" --initArgs \\'\\{\\"bmc\\":\\"$$(cat $(location @near//cli:encode_public_key_bmc))\\"\\,\\"network\\":\\"$$(cat $(location @icon//:network_address))\\"\\,\\"validators\\":\\"$$(cat $(location @icon//cli:get_icon_validators))\\"\\,\\"offset\\":\\"$$(($$(cat $(location  @icon//:latest_block_height))-1))\\"\\,\\"last_known_block_hash\\":\\"0x$$(cat $(location  @icon//:previous_known_block_hash))\\"\\}\\' > $@""",
+    $(execpath :near_binary) deploy $$(cat $(location @near//cli:encode_public_key_iconbmv))  --nodeUrl $$(cat $(locations @near//:node_url)) --wasmFile $(locations @near//bmv/icon:bmv_icon_wasm) --accountId $$(cat $(location @near//cli:encode_public_key_iconbmv)) --initFunction \"new\" --initArgs \\'\\{\\"bmc\\":\\"$$(cat $(location @near//cli:encode_public_key_bmc))\\"\\,\\"network\\":\\"$$(cat $(location @icon//:network_address))\\"\\,\\"validators\\":\\"$$(cat $(location @icon//cli:get_icon_validators))\\"\\,\\"offset\\":\\"$$(cat $(location  @icon//:latest_block_height))\\"\\,\\"last_known_block_hash\\":\\"0x$$(cat $(location  @icon//:previous_known_block_hash))\\"\\}\\' > $@""",
     executable = True,
     local = True,
     tools = [
@@ -131,7 +132,7 @@ genrule(
         ":register_wrapped_coin_native_coin_bsh",
     ],
     outs = ["set_icon_link.out"],
-    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) set_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\,\\"block_interval\\":10\\,\\"max_aggregation\\":30\\,\\"delay_limit\\":2\\}\\' --nodeUrl $$(cat $(locations @near//:node_url)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
+    cmd = """$(execpath :near_binary) call $$(cat $(location @near//cli:encode_public_key_bmc)) set_link \\'\\{\\"link\\":\\"$$(cat $(location @icon//:btp_address))\\"\\,\\"block_interval\\":2000\\,\\"max_aggregation\\":10\\,\\"delay_limit\\":2\\}\\' --nodeUrl $$(cat $(locations @near//:node_url)) --accountId $$(cat $(location @near//cli:encode_public_key_bmc)) > $@""",
     executable = True,
     local = True,
     tools = [
@@ -231,6 +232,7 @@ genrule(
     name = "get_master_account",
     srcs = select({
         "@near//:localnet": ["@near//cli:configs/localnet/master_key.json"],
+        "@near//:docker_localnet": ["@near//cli:configs/localnet/master_key.json"],
         "@near//:testnet": ["@near//cli:configs/testnet/master_key.json"],
         "@near//:mainnet": ["@near//cli:configs/mainnet/master_key.json"],
     }),
@@ -242,3 +244,12 @@ genrule(
     executable = True,
     local = True,
 )
+
+
+select({
+    "@near//:localnet": exports_files(glob(["configs/localnet/*"])),
+    "@near//:docker_localnet": exports_files(glob(["configs/localnet/*"])),
+    "@near//:testnet": exports_files(glob(["configs/testnet/*"])),
+    "@near//:mainnet": exports_files(glob(["configs/mainnet/*"])),
+    "//conditions:default": []
+})

@@ -32,7 +32,7 @@ def create_account(name):
     native.genrule(
         name = "rename_account_%s" % name,
         outs = ["rename_account_%s.out" % name],
-        cmd = "mv ~/.near-credentials/" + select({"@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:account_key_%s)).json  ~/.near-credentials/" % name + select({"@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:encode_public_key_%s)).json;  echo 'copied' > $@" % name,
+        cmd = "mv ~/.near-credentials/" + select({"@near//:docker_localnet": "local", "@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:account_key_%s)).json  ~/.near-credentials/" % name + select({"@near//:docker_localnet": "local", "@near//:localnet": "local", "@near//:testnet": "testnet"}) + "/$$(cat $(location @near//cli:encode_public_key_%s)).json;  echo 'copied' > $@" % name,
         executable = True,
         local = True,
         output_to_bindir = True,

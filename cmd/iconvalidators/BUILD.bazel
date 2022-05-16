@@ -10,8 +10,7 @@ go_library(
     importpath = "github.com/icon-project/btp/cmd/btpsimple",
     visibility = ["//visibility:private"],
     deps = [
-        "//btp",
-        "//chain/icon",
+        "//cmd/btpsimple/module/icon",
         "//common/cli",
         "//common/codec",
         "//common/intconv",
