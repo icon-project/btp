@@ -20,8 +20,9 @@ dependencies {
 }
 
 optimizedJar {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.bmc.BTPMessageCenter'
-//    archivesBaseName = 'bmc'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } { exclude "score/*" }
