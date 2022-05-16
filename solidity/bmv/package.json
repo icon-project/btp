@@ -1,0 +1,23 @@
+{
+  "name": "bmv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "ethereumjs-util": "^7.1.4",
+    "rlp": "^3.0.0",
+    "web3": "^1.7.3"
+  },
+  "dependencies": {
+    "solidity-bytes-utils": "^0.8.0"
+  }
+}
