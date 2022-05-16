@@ -9,30 +9,21 @@ repositories {
 version '0.1.0'
 
 dependencies {
-    compileOnly 'foundation.icon:javaee-api:0.9.0'
-    compileOnly 'foundation.icon:javaee-rt:0.9.0'
-    compileOnly 'foundation.icon:icon-sdk:2.0.0'
-    compileOnly 'foundation.icon:javaee-tooling:0.8.7'
-
-    implementation 'com.github.sink772:javaee-scorex:0.5.2'
+    compileOnly "foundation.icon:javaee-api:$javaeeVersion"
+    implementation "foundation.icon:javaee-scorex:$scorexVersion"
     implementation 'org.msgpack:msgpack-core:0.8.17'
 
-    testImplementation 'foundation.icon:javaee-api:0.9.0'
-    testImplementation 'foundation.icon:javaee-rt:0.9.0'
-    testImplementation 'foundation.icon:icon-sdk:2.0.0'
-    testImplementation 'foundation.icon:javaee-tooling:0.9.0'
+    testImplementation "foundation.icon:javaee-rt:$javaeeVersion"
+    testImplementation "foundation.icon:icon-sdk:$iconsdkVersion"
+    testImplementation "foundation.icon:javaee-unittest:$javaeeUnittestVersion"
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
     testImplementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testImplementation 'org.bouncycastle:bcprov-jdk15on:1.60'
-
-    testImplementation fileTree(dir: '../lib', include: 'goloop-testsuite.jar')
-    testImplementation fileTree(dir: '../lib', include: 'testsvc.jar')
+    testImplementation 'org.bouncycastle:bcprov-jdk15on:1.69'
 
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
-
 
 optimizedJar {
     mainClassName = 'foundation.icon.btp.bsh.ServiceHandler'

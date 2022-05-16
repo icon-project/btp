@@ -1,28 +1,33 @@
 package foundation.icon.btp.bsh.test;
 
-import com.iconloop.testsvc.Account;
-import com.iconloop.testsvc.Score;
-import com.iconloop.testsvc.ServiceManager;
-import com.iconloop.testsvc.TestBase;
-import foundation.icon.btp.bsh.HashMock;
-import foundation.icon.btp.irc2.IRC2Basic;
+import com.iconloop.score.test.Account;
+import com.iconloop.score.test.Score;
+import com.iconloop.score.test.ServiceManager;
+import com.iconloop.score.test.TestBase;
 import foundation.icon.ee.util.Strings;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import score.Context;
+import score.annotation.External;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-
-import static java.math.BigInteger.TEN;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HashTest extends TestBase {
 
     private static final ServiceManager sm = getServiceManager();
     private static final Account owner = sm.createAccount();
     private static Score hashScore;
+
+    public static class HashMock {
+        @External(readonly = true)
+        public byte[] check(byte[] msg) {
+            return Context.hash("keccak-256", msg);
+        }
+    }
+
     @BeforeAll
     public static void setup() throws Exception {
         hashScore = sm.deploy(owner, HashMock.class);

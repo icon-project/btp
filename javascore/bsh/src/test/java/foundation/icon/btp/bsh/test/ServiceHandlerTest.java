@@ -16,18 +16,21 @@
 
 package foundation.icon.btp.bsh.test;
 
-import com.iconloop.testsvc.Account;
-import com.iconloop.testsvc.Score;
-import com.iconloop.testsvc.ServiceManager;
-import com.iconloop.testsvc.TestBase;
+import com.iconloop.score.test.Account;
+import com.iconloop.score.test.Score;
+import com.iconloop.score.test.ServiceManager;
+import com.iconloop.score.test.TestBase;
 import foundation.icon.btp.bsh.BMCMock;
 import foundation.icon.btp.bsh.ServiceHandler;
 import foundation.icon.btp.bsh.types.Asset;
 import foundation.icon.btp.bsh.types.Balance;
 import foundation.icon.btp.bsh.types.TransferAsset;
 import foundation.icon.btp.irc2.IRC2Basic;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import scorex.util.ArrayList;
@@ -39,7 +42,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.math.BigInteger.TEN;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ServiceHandlerTest extends TestBase {
