@@ -46,8 +46,8 @@ public class ProofContext {
         return obj;
     }
 
-    public static Proofs fromBytes(byte[] bytes) {
+    public static ProofContext fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return Proofs.readObject(reader);
+        return ProofContext.readObject(reader);
     }
 }

@@ -24,14 +24,15 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class BlockUpdate {
+    private static final int HASH_LEN = 32;
     private BigInteger mainHeight;
     private BigInteger round;
     private byte[] nextProofContextHash;
-    private byte[][] networkSectionToRoot;
-    private BigInteger nid;
+    private NetworkSectionToRoot[] networkSectionToRoot;
+    private int nid;
     private BigInteger updateNumber;
     private byte[] prev;
-    private BigInteger messageCount;
+    private int messageCount;
     private byte[] messageRoot;
     private byte[] proof;
 
@@ -47,11 +48,11 @@ public class BlockUpdate {
         return nextProofContextHash;
     }
 
-    public byte[][] getNetworkSectionToRoot() {
+    public NetworkSectionToRoot[] getNetworkSectionToRoot() {
         return networkSectionToRoot;
     }
 
-    public BigInteger getNid() {
+    public int getNid() {
         return nid;
     }
 
@@ -63,7 +64,7 @@ public class BlockUpdate {
         return prev;
     }
 
-    public BigInteger getMessageCount() {
+    public int getMessageCount() {
         return messageCount;
     }
 
@@ -79,11 +80,11 @@ public class BlockUpdate {
             BigInteger mainHeight,
             BigInteger round,
             byte[] nextProofContextHash,
-            byte[][] networkSectionToRoot,
-            BigInteger nid,
+            NetworkSectionToRoot[] networkSectionToRoot,
+            int nid,
             BigInteger updateNumber,
             byte[] prev,
-            BigInteger messageCount,
+            int messageCount,
             byte[] messageRoot,
             byte[] proof
     ) {
@@ -105,20 +106,20 @@ public class BlockUpdate {
         var round = r.readNullable(BigInteger.class);
         var nextProofContextHash = r.readNullable(byte[].class);
         r.beginList();
-        byte[][] networkSectionToRoot;
-        List<byte[]> nstoRootList = new ArrayList<>();
+        NetworkSectionToRoot[] networkSectionToRoot;
+        List<NetworkSectionToRoot> nstoRootList = new ArrayList<>();
         while(r.hasNext()) {
-            nstoRootList.add(r.readByteArray());
+            nstoRootList.add(r.read(NetworkSectionToRoot.class));
         }
-        networkSectionToRoot = new byte[nstoRootList.size()][];
+        networkSectionToRoot = new NetworkSectionToRoot[nstoRootList.size()];
         for(int i = 0; i < nstoRootList.size(); i++) {
             networkSectionToRoot[i] = nstoRootList.get(i);
         }
         r.end();
-        var nid = r.readBigInteger();
+        var nid = r.readInt();
         var updateNumber = r.readBigInteger();
         var prev = r.readNullable(byte[].class);
-        var messageCount = r.readBigInteger();
+        var messageCount = r.readInt();
         var messageRoot = r.readNullable(byte[].class);
         var proof = r.readNullable(byte[].class);
         r.end();
@@ -139,5 +140,43 @@ public class BlockUpdate {
     public static BlockUpdate fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return BlockUpdate.readObject(reader);
+    }
+
+    private static byte[] concatAndHash(byte[] b1, byte[] b2) {
+        byte[] data = new byte[HASH_LEN * 2];
+        System.arraycopy(b1, 0, data, 0, HASH_LEN);
+        System.arraycopy(b2, 0, data, HASH_LEN, HASH_LEN);
+        return BTPMessageVerifier.hash(data);
+    }
+
+    public byte[] getNetworkSectionsRoot(byte[] leaf) {
+        byte[] h = leaf;
+        for (NetworkSectionToRoot nsRoot : networkSectionToRoot) {
+            if (nsRoot.dir == NetworkSectionToRoot.LEFT) {
+                h = concatAndHash(nsRoot.value, leaf);
+            } else if (nsRoot.dir == NetworkSectionToRoot.RIGHT) {
+                h = concatAndHash(leaf, nsRoot.value);
+            }
+        }
+        return h;
+    }
+
+    public static class NetworkSectionToRoot {
+        final static int LEFT = 0;
+        final static int RIGHT = 1;
+        private int dir;
+        private byte[] value;
+
+        public NetworkSectionToRoot(int dir, byte[] value) {
+            this.dir = dir;
+            this.value = value;
+        }
+
+        public static NetworkSectionToRoot readObject(ObjectReader r) {
+            r.beginList();
+            NetworkSectionToRoot obj = new NetworkSectionToRoot(r.readInt(), r.readByteArray());
+            r.end();
+            return obj;
+        }
     }
 }

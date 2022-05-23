@@ -18,7 +18,6 @@ package foundation.icon.btp.bmv.btp;
 
 import score.Context;
 import score.ObjectReader;
-import score.ObjectWriter;
 import scorex.util.ArrayList;
 
 import java.util.List;
