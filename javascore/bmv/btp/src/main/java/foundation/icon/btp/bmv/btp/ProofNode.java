@@ -21,17 +21,25 @@ import score.ObjectReader;
 import java.math.BigInteger;
 
 public class ProofNode {
-    private BigInteger level;
+    private int numOfLeaf;
     private byte[] value;
 
-    public ProofNode(BigInteger level, byte[] value) {
-        this.level = level;
+    public ProofNode(int level, byte[] value) {
+        this.numOfLeaf = level;
         this.value = value;
+    }
+
+    public int getNumOfLeaf() {
+        return numOfLeaf;
+    }
+
+    public byte[] getValue() {
+        return value;
     }
 
     public static ProofNode readObject(ObjectReader r) {
         r.beginList();
-        ProofNode obj = new ProofNode(r.readBigInteger(), r.readByteArray());
+        ProofNode obj = new ProofNode(r.readInt(), r.readByteArray());
         r.end();
         return obj;
     }

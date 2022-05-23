@@ -69,4 +69,31 @@ public class MessageProof {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return MessageProof.readObject(reader);
     }
+
+    public void proveMessage() {
+        Node node = new Node();
+        int total = 0;
+        for (ProofNode pn : leftProofNodes) {
+            var num = pn.getNumOfLeaf();
+            node.add(num, pn.getValue());
+            total += num;
+        }
+
+        for (byte[] message : messages) {
+            node.add(1, BTPMessageVerifier.hash(message));
+            total++;
+        }
+
+        for (ProofNode pn : rightProofNodes) {
+            var num = pn.getNumOfLeaf();
+            node.add(num, pn.getValue());
+            total += num;
+        }
+        node.ensureHash(false);
+
+        var rootNumOfLeaf = node.getNumOfLeaf();
+        if (total != rootNumOfLeaf)
+            throw BMVException.unknown("total doesn't match total : " + total + ", node : " + rootNumOfLeaf);
+        node.verify();
+    }
 }
