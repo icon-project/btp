@@ -16,9 +16,18 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.ByteArrayObjectWriter;
+import score.Context;
+import score.ObjectWriter;
+
 public class NetworkTypeSection {
     private byte[] nextProofContextHash;
     private byte[] networkSectionsRoot;
+
+    public NetworkTypeSection(byte[] nextProofContextHash, byte[] networkSectionsRoot) {
+        this.nextProofContextHash = nextProofContextHash;
+        this.networkSectionsRoot = networkSectionsRoot;
+    }
 
     public byte[] getNextProofContextHash() {
         return nextProofContextHash;
@@ -36,4 +45,21 @@ public class NetworkTypeSection {
         this.networkSectionsRoot = networkSectionsRoot;
     }
 
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w);
+        return w.toByteArray();
+    }
+
+    public void writeObject(ObjectWriter w) {
+        w.beginList(2);
+        w.writeNullable(nextProofContextHash);
+        w.write(networkSectionsRoot);
+        w.end();
+    }
+
+    public byte[] hash() {
+        byte[] bytes = toBytes();
+        return BTPMessageVerifier.hash(bytes);
+    }
 }

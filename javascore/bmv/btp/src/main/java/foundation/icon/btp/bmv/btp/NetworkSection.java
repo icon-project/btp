@@ -16,12 +16,26 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.ByteArrayObjectWriter;
+import score.Context;
+import score.ObjectWriter;
+
+import java.math.BigInteger;
+
 public class NetworkSection {
     private int nid;
-    private int updateNumber;
+    private BigInteger updateNumber;
     private byte[] prev;
     private int messageCnt;
     private byte[] messagesRoot;
+
+    public NetworkSection(int nid, BigInteger updateNumber, byte[] prev, int messageCnt, byte[] messagesRoot) {
+        this.nid = nid;
+        this.updateNumber = updateNumber;
+        this.prev = prev;
+        this.messageCnt = messageCnt;
+        this.messagesRoot = messagesRoot;
+    }
 
     public int getNid() {
         return nid;
@@ -31,11 +45,11 @@ public class NetworkSection {
         this.nid = nid;
     }
 
-    public int getUpdateNumber() {
+    public BigInteger getUpdateNumber() {
         return updateNumber;
     }
 
-    public void setUpdateNumber(int updateNumber) {
+    public void setUpdateNumber(BigInteger updateNumber) {
         this.updateNumber = updateNumber;
     }
 
@@ -61,5 +75,26 @@ public class NetworkSection {
 
     public void setMessagesRoot(byte[] messagesRoot) {
         this.messagesRoot = messagesRoot;
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w);
+        return w.toByteArray();
+    }
+
+    public void writeObject(ObjectWriter w) {
+        w.beginList(5);
+        w.write(nid);
+        w.write(updateNumber);
+        w.write(prev);
+        w.write(messageCnt);
+        w.write(messagesRoot);
+        w.end();
+    }
+
+    public byte[] hash() {
+        byte[] bytes = toBytes();
+        return BTPMessageVerifier.hash(bytes);
     }
 }
