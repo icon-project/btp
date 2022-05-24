@@ -103,7 +103,7 @@ bmc_setLinkRotateTerm() {
   local MAX_AGG=${4:-0x10}
   rpcch ${CHAIN}
   goloop rpc sendtx call --to $(cat bmc.${CHAIN}) \
-    --method setLink \
+    --method setLinkRotateTerm \
     --param _link=$(cat btp.${LINK}) \
     --param _block_interval=${INTERVAL} \
     --param _max_agg=${MAX_AGG} | jq -r . > tx.setlink.${CHAIN}
