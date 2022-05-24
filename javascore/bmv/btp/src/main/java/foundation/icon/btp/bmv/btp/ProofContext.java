@@ -19,16 +19,19 @@ package foundation.icon.btp.bmv.btp;
 import score.Address;
 import score.Context;
 import score.ObjectReader;
+import scorex.util.ArrayList;
+
+import java.util.List;
 
 public class ProofContext {
     private Address[] validators;
 
-    public Address[] getValidators() {
-        return validators;
+    public ProofContext(Address[] validators) {
+        this.validators = validators;
     }
 
-    public void setValidators(Address[] validators) {
-        this.validators = validators;
+    public Address[] getValidators() {
+        return validators;
     }
 
     public boolean isValidator(Address address) {
@@ -41,10 +44,19 @@ public class ProofContext {
 
     public static ProofContext readObject(ObjectReader reader) {
         reader.beginList();
-        ProofContext obj = new ProofContext();
-        obj.setValidators(reader.read(Address[].class));
+        List<Address> addressList = new ArrayList<>();
+        reader.beginList();
+        while(reader.hasNext()) {
+            addressList.add(reader.readAddress());
+        }
         reader.end();
-        return obj;
+        int len = addressList.size();
+        Address[] addresses = new Address[len];
+        for (int i = 0; i < len; i++) {
+            addresses[i] = addressList.get(i);
+        }
+        reader.end();
+        return new ProofContext(addresses);
     }
 
     public static ProofContext fromBytes(byte[] bytes) {
