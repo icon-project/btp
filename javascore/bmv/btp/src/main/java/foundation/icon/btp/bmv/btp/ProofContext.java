@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.Address;
 import score.Context;
 import score.ObjectReader;
 

@@ -20,6 +20,7 @@ import score.Context;
 import score.ObjectReader;
 import scorex.util.ArrayList;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class RelayMessage {
@@ -59,6 +60,13 @@ public class RelayMessage {
         return readObject(reader);
     }
 
+    @Override
+    public String toString() {
+        return "RelayMessage{" +
+                "messages=" + Arrays.toString(messages) +
+                '}';
+    }
+
     public static class TypePrefixedMessage {
         public static final int BLOCK_UPDATE = 1;
         public static final int MESSAGE_PROOF = 2;
@@ -84,6 +92,14 @@ public class RelayMessage {
             TypePrefixedMessage typePrefixedMessage = new TypePrefixedMessage(reader.readInt(), reader.readByteArray());
             reader.end();
             return typePrefixedMessage;
+        }
+
+        @Override
+        public String toString() {
+            return "TypePrefixedMessage{" +
+                    "type=" + type +
+                    ", payload=" + Arrays.toString(payload) +
+                    '}';
         }
     }
 }
