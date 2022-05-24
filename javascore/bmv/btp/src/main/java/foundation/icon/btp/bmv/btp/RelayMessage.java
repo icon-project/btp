@@ -40,18 +40,18 @@ public class RelayMessage {
         reader.beginList();
         RelayMessage relayMessage = new RelayMessage();
         List<TypePrefixedMessage> typePrefixedMessages = new ArrayList<>();
+        reader.beginList();
         while(reader.hasNext()) {
-            byte[] elementBytes = reader.readByteArray();
-            ObjectReader typePrefixedReader = Context.newByteArrayObjectReader("RLPn", elementBytes);
-            typePrefixedMessages.add(typePrefixedReader.read(TypePrefixedMessage.class));
+            typePrefixedMessages.add(reader.read(TypePrefixedMessage.class));
         }
+        reader.end();
         int msgLength = typePrefixedMessages.size();
         TypePrefixedMessage[] messageArray = new TypePrefixedMessage[msgLength];
         for (int i = 0; i < msgLength; i++) {
             messageArray[i] = typePrefixedMessages.get(i);
         }
-        reader.end();
         relayMessage.setMessages(messageArray);
+        reader.end();
         return relayMessage;
     }
 
@@ -87,7 +87,7 @@ public class RelayMessage {
             return null;
         }
 
-        public static TypePrefixedMessage ReadObject(ObjectReader reader) {
+        public static TypePrefixedMessage readObject(ObjectReader reader) {
             reader.beginList();
             TypePrefixedMessage typePrefixedMessage = new TypePrefixedMessage(reader.readInt(), reader.readByteArray());
             reader.end();
