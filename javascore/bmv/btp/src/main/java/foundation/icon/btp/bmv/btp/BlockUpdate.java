@@ -35,6 +35,7 @@ public class BlockUpdate {
     private int messageCount;
     private byte[] messageRoot;
     private byte[] proof;
+    private byte[] nextProofContext;
 
     public BigInteger getMainHeight() {
         return mainHeight;
@@ -86,7 +87,8 @@ public class BlockUpdate {
             byte[] prev,
             int messageCount,
             byte[] messageRoot,
-            byte[] proof
+            byte[] proof,
+            byte[] nextProofContext
     ) {
         this.mainHeight = mainHeight;
         this.round = round;
@@ -98,6 +100,7 @@ public class BlockUpdate {
         this.messageCount = messageCount;
         this.messageRoot = messageRoot;
         this.proof = proof;
+        this.nextProofContext = nextProofContext;
     }
 
     public static BlockUpdate readObject(ObjectReader r) {
@@ -122,6 +125,7 @@ public class BlockUpdate {
         var messageCount = r.readInt();
         var messageRoot = r.readNullable(byte[].class);
         var proof = r.readNullable(byte[].class);
+        var nextProofContext = r.readNullable(byte[].class);
         r.end();
         return new BlockUpdate(
                 mainHeight,
@@ -133,7 +137,8 @@ public class BlockUpdate {
                 prev,
                 messageCount,
                 messageRoot,
-                proof
+                proof,
+                nextProofContext
         );
     }
 

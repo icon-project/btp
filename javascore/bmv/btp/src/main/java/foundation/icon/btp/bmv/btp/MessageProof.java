@@ -47,7 +47,17 @@ public class MessageProof {
 
     public static MessageProof readObject(ObjectReader r) {
         r.beginList();
-        ProofNode[] leftProof = r.readNullable(ProofNode[].class);
+        List<ProofNode> lNodes = new ArrayList<>();
+        r.beginList();
+        while(r.hasNext()) {
+            lNodes.add(r.read(ProofNode.class));
+        }
+        r.end();
+        var lSize = lNodes.size();
+        ProofNode[] leftProofNodes = new ProofNode[lSize];
+        for (int i = 0; i < lSize; i++){
+            leftProofNodes[i] = lNodes.get(i);
+        }
         byte[][] messages;
         List<byte[]> messageList = new ArrayList<>();
         r.beginList();
@@ -60,9 +70,19 @@ public class MessageProof {
             messages[i] = messageList.get(i);
         }
         r.end();
-        ProofNode[] rightProof = r.readNullable(ProofNode[].class);
+        List<ProofNode> rNodes = new ArrayList<>();
+        r.beginList();
+        while(r.hasNext()) {
+            rNodes.add(r.read(ProofNode.class));
+        }
         r.end();
-        return new MessageProof(leftProof, messages, rightProof);
+        var rSize = rNodes.size();
+        ProofNode[] rightProofNodes = new ProofNode[rSize];
+        for (int i = 0; i < rSize; i++){
+            rightProofNodes[i] = rNodes.get(i);
+        }
+        r.end();
+        return new MessageProof(leftProofNodes, messages, rightProofNodes);
     }
 
     public static MessageProof fromBytes(byte[] bytes) {
