@@ -36,6 +36,10 @@ public class Node {
         this.value = value;
     }
 
+    public byte[] getValue() {
+        return value;
+    }
+
     public int getNumOfLeaf() {
         return numOfLeaf;
     }

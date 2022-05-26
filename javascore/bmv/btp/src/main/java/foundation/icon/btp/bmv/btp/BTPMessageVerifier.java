@@ -139,6 +139,49 @@ public class BTPMessageVerifier implements BMV {
     }
 
     private void handleMessageProof(MessageProof messageProof, BlockUpdate blockUpdate) {
+        byte[] expectedMessageRoot;
+        int expectedMessageCnt;
+        var bmvProperties = propertiesDB.get();
+        MessageProof.ProveResult result = messageProof.proveMessage();
+        if (blockUpdate != null ) {
+            expectedMessageRoot = blockUpdate.getMessageRoot();
+            expectedMessageCnt = blockUpdate.getMessageCount();
+            if (0 < result.offset) {
+                throw BMVException.unknown("ProofInLeft should be empty");
+            }
+        } else {
+            expectedMessageRoot = bmvProperties.getLastMessagesRoot();
+            expectedMessageCnt = bmvProperties.getLastMessageCount();
+            if (bmvProperties.getLastSequence() - bmvProperties.getLastFirstMessageSN() != result.offset) {
+                throw BMVException.unknown("mismatch ProofInLeft");
+            }
+        }
+        if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.unknown("mismatch MessagesRoot");
+        if (expectedMessageCnt != result.total) {
+            var rightProofNodes = messageProof.getRightProofNodes();
+            for (int i = 0; i < rightProofNodes.length; i++) {
+                logger.println("ProofInRight["+i+"] : " + "NumOfLeaf:"+rightProofNodes[i].getNumOfLeaf()
+                + "value:" + StringUtil.bytesToHex(rightProofNodes[i].getValue()));
+            }
+            throw BMVException.unknown(
+                    String.format("mismatch MessageCount offset:%d, expected:%d, count :%d",
+                            result.offset, expectedMessageCnt, result.total));
+        }
+        var msgCnt = messageProof.getMessages().length;
+        var remainCnt = result.total - result.offset - msgCnt;
+        if (remainCnt > 0 ) {
+            if (blockUpdate != null) {
+                bmvProperties.setLastMessagesRoot(blockUpdate.getMessageRoot());
+                bmvProperties.setLastMessageCount(blockUpdate.getMessageCount());
+                bmvProperties.setLastFirstMessageSN(blockUpdate.getUpdateNumber() >> 1);
+            }
+        } else {
+            bmvProperties.setLastMessagesRoot(null);
+            bmvProperties.setLastMessageCount(0);
+            bmvProperties.setLastFirstMessageSN(0);
+        }
+        bmvProperties.setLastSequence(bmvProperties.getLastSequence() + msgCnt);
+        propertiesDB.set(bmvProperties);
     }
 
     static byte[] hash(byte[] msg) {

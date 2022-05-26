@@ -33,10 +33,6 @@ public class MessageProof {
         this.rightProofNodes = rightProofNodes;
     }
 
-    public ProofNode[] getLeftProofNodes() {
-        return leftProofNodes;
-    }
-
     public byte[][] getMessages() {
         return messages;
     }
@@ -90,13 +86,13 @@ public class MessageProof {
         return MessageProof.readObject(reader);
     }
 
-    public void proveMessage() {
+    public ProveResult proveMessage() {
         Node node = new Node();
-        int total = 0;
+        int left = 0, total = 0;
         for (ProofNode pn : leftProofNodes) {
             var num = pn.getNumOfLeaf();
             node.add(num, pn.getValue());
-            total += num;
+            left += num;
         }
 
         for (byte[] message : messages) {
@@ -111,9 +107,22 @@ public class MessageProof {
         }
         node.ensureHash(false);
 
+        total += left;
         var rootNumOfLeaf = node.getNumOfLeaf();
         if (total != rootNumOfLeaf)
             throw BMVException.unknown("total doesn't match total : " + total + ", node : " + rootNumOfLeaf);
         node.verify();
+        return new ProveResult(node.getValue(), left, total);
+    }
+
+    public static class ProveResult {
+        byte[] hash;
+        int offset, total;
+
+        public ProveResult(byte[] hash, int left, int total) {
+            this.hash = hash;
+            this.offset = left;
+            this.total = total;
+        }
     }
 }
