@@ -30,7 +30,7 @@ public class BlockUpdate {
     private byte[] nextProofContextHash;
     private NetworkSectionToRoot[] networkSectionToRoot;
     private int nid;
-    private BigInteger updateNumber;
+    private int updateNumber;
     private byte[] prev;
     private int messageCount;
     private byte[] messageRoot;
@@ -57,7 +57,7 @@ public class BlockUpdate {
         return nid;
     }
 
-    public BigInteger getUpdateNumber() {
+    public int getUpdateNumber() {
         return updateNumber;
     }
 
@@ -77,13 +77,17 @@ public class BlockUpdate {
         return proof;
     }
 
+    public byte[] getNextProofContext() {
+        return nextProofContext;
+    }
+
     public BlockUpdate(
             BigInteger mainHeight,
             BigInteger round,
             byte[] nextProofContextHash,
             NetworkSectionToRoot[] networkSectionToRoot,
             int nid,
-            BigInteger updateNumber,
+            int updateNumber,
             byte[] prev,
             int messageCount,
             byte[] messageRoot,
@@ -120,7 +124,7 @@ public class BlockUpdate {
         }
         r.end();
         var nid = r.readInt();
-        var updateNumber = r.readBigInteger();
+        var updateNumber = r.readInt();
         var prev = r.readNullable(byte[].class);
         var messageCount = r.readInt();
         var messageRoot = r.readNullable(byte[].class);

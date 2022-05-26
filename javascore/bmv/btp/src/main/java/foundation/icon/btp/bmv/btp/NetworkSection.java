@@ -24,56 +24,16 @@ import java.math.BigInteger;
 
 public class NetworkSection {
     private int nid;
-    private BigInteger updateNumber;
+    private int updateNumber;
     private byte[] prev;
     private int messageCnt;
     private byte[] messagesRoot;
 
-    public NetworkSection(int nid, BigInteger updateNumber, byte[] prev, int messageCnt, byte[] messagesRoot) {
+    public NetworkSection(int nid, int updateNumber, byte[] prev, int messageCnt, byte[] messagesRoot) {
         this.nid = nid;
         this.updateNumber = updateNumber;
         this.prev = prev;
         this.messageCnt = messageCnt;
-        this.messagesRoot = messagesRoot;
-    }
-
-    public int getNid() {
-        return nid;
-    }
-
-    public void setNid(int nid) {
-        this.nid = nid;
-    }
-
-    public BigInteger getUpdateNumber() {
-        return updateNumber;
-    }
-
-    public void setUpdateNumber(BigInteger updateNumber) {
-        this.updateNumber = updateNumber;
-    }
-
-    public byte[] getPrev() {
-        return prev;
-    }
-
-    public void setPrev(byte[] prev) {
-        this.prev = prev;
-    }
-
-    public int getMessageCnt() {
-        return messageCnt;
-    }
-
-    public void setMessageCnt(int messageCnt) {
-        this.messageCnt = messageCnt;
-    }
-
-    public byte[] getMessagesRoot() {
-        return messagesRoot;
-    }
-
-    public void setMessagesRoot(byte[] messagesRoot) {
         this.messagesRoot = messagesRoot;
     }
 

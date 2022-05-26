@@ -16,6 +16,10 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.ByteArrayObjectWriter;
+import score.Context;
+import score.ObjectWriter;
+
 public class NetworkTypeSectionDecision {
     private byte[] srcNetworkId;
     private int networkTypeID;
@@ -23,43 +27,52 @@ public class NetworkTypeSectionDecision {
     private int round;
     private byte[] networkTypeSectionHash;
 
-    public byte[] getSrcNetworkId() {
-        return srcNetworkId;
+    public NetworkTypeSectionDecision(byte[] srcNetworkId, int networkTypeID, long mainHeight, int round, byte[] networkTypeSectionHash) {
+        this.srcNetworkId = srcNetworkId;
+        this.networkTypeID = networkTypeID;
+        this.mainHeight = mainHeight;
+        this.round = round;
+        this.networkTypeSectionHash = networkTypeSectionHash;
     }
 
-    public void setSrcNetworkId(byte[] srcNetworkId) {
-        this.srcNetworkId = srcNetworkId;
+    public byte[] getSrcNetworkId() {
+        return srcNetworkId;
     }
 
     public int getNetworkTypeID() {
         return networkTypeID;
     }
 
-    public void setNetworkTypeID(int networkTypeID) {
-        this.networkTypeID = networkTypeID;
-    }
-
     public long getMainHeight() {
         return mainHeight;
-    }
-
-    public void setMainHeight(long mainHeight) {
-        this.mainHeight = mainHeight;
     }
 
     public int getRound() {
         return round;
     }
 
-    public void setRound(int round) {
-        this.round = round;
-    }
-
     public byte[] getNetworkTypeSectionHash() {
         return networkTypeSectionHash;
     }
 
-    public void setNetworkTypeSectionHash(byte[] networkTypeSectionHash) {
-        this.networkTypeSectionHash = networkTypeSectionHash;
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w);
+        return w.toByteArray();
+    }
+
+    public void writeObject(ObjectWriter w) {
+        w.beginList(5);
+        w.write(srcNetworkId);
+        w.write(networkTypeID);
+        w.write(mainHeight);
+        w.write(round);
+        w.write(networkTypeSectionHash);
+        w.end();
+    }
+
+    public byte[] hash() {
+        byte[] bytes = toBytes();
+        return BTPMessageVerifier.hash(bytes);
     }
 }
