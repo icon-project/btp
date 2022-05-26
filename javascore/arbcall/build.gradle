@@ -1,0 +1,45 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation project(':score-util')
+    implementation project(':lib')
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+}
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.arbcall.CallServiceImpl'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+deployJar {
+    endpoints {
+        lisbon {
+            uri = 'https://lisbon.net.solidwallet.io/api/v3'
+            nid = 0x2
+        }
+        local {
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
+        }
+    }
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
+}
+
+test {
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+    options {
+        testLogging.showStandardStreams = true
+    }
+}
