@@ -18,6 +18,8 @@ package foundation.icon.btp.bmv.btp;
 
 import score.*;
 
+import java.math.BigInteger;
+
 public class BMVProperties {
     public static final BMVProperties DEFAULT;
 
@@ -27,15 +29,15 @@ public class BMVProperties {
 
     private byte[] srcNetworkID;
     private int networkTypeID;
-    private int networkID;
+    private BigInteger networkID;
     private byte[] proofContextHash;
     private byte[] proofContext;
     private byte[] lastNetworkSectionHash;
     private Address bmc;
-    private int lastSequence;
+    private BigInteger lastSequence;
     private byte[] lastMessagesRoot;
-    private int lastMessageCount;
-    private int lastFirstMessageSN;
+    private BigInteger lastMessageCount;
+    private BigInteger lastFirstMessageSN;
 
     public byte[] getSrcNetworkID() {
         return srcNetworkID;
@@ -53,11 +55,11 @@ public class BMVProperties {
         this.networkTypeID = networkTypeID;
     }
 
-    public int getNetworkID() {
+    public BigInteger getNetworkID() {
         return networkID;
     }
 
-    public void setNetworkID(int networkID) {
+    public void setNetworkID(BigInteger networkID) {
         this.networkID = networkID;
     }
 
@@ -85,11 +87,11 @@ public class BMVProperties {
         this.lastNetworkSectionHash = lastNetworkSectionHash;
     }
 
-    public int getLastSequence() {
+    public BigInteger getLastSequence() {
         return lastSequence;
     }
 
-    public void setLastSequence(int lastSequence) {
+    public void setLastSequence(BigInteger lastSequence) {
         this.lastSequence = lastSequence;
     }
 
@@ -101,19 +103,19 @@ public class BMVProperties {
         this.lastMessagesRoot = lastMessagesRoot;
     }
 
-    public int getLastMessageCount() {
+    public BigInteger getLastMessageCount() {
         return lastMessageCount;
     }
 
-    public void setLastMessageCount(int lastMessageCount) {
+    public void setLastMessageCount(BigInteger lastMessageCount) {
         this.lastMessageCount = lastMessageCount;
     }
 
-    public int getLastFirstMessageSN() {
+    public BigInteger getLastFirstMessageSN() {
         return lastFirstMessageSN;
     }
 
-    public void setLastFirstMessageSN(int lastFirstMessageSN) {
+    public void setLastFirstMessageSN(BigInteger lastFirstMessageSN) {
         this.lastFirstMessageSN = lastFirstMessageSN;
     }
 
@@ -131,15 +133,15 @@ public class BMVProperties {
         reader.beginList();
         obj.setSrcNetworkID(reader.readByteArray());
         obj.setNetworkTypeID(reader.readInt());
-        obj.setNetworkID(reader.readNullable(Integer.class));
+        obj.setNetworkID(reader.readNullable(BigInteger.class));
         obj.setProofContextHash(reader.readNullable(byte[].class));
         obj.setProofContext(reader.readNullable(byte[].class));
         obj.setLastNetworkSectionHash(reader.readNullable(byte[].class));
         obj.setBmc(reader.readAddress());
-        obj.setLastSequence(reader.readNullable(Integer.class));
+        obj.setLastSequence(reader.readNullable(BigInteger.class));
         obj.setLastMessagesRoot(reader.readNullable(byte[].class));
-        obj.setLastMessageCount(reader.readNullable(Integer.class));
-        obj.setLastFirstMessageSN(reader.readNullable(Integer.class));
+        obj.setLastMessageCount(reader.readNullable(BigInteger.class));
+        obj.setLastFirstMessageSN(reader.readNullable(BigInteger.class));
         reader.end();
         return obj;
     }

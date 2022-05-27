@@ -29,10 +29,10 @@ public class BlockUpdate {
     private BigInteger round;
     private byte[] nextProofContextHash;
     private NetworkSectionToRoot[] networkSectionToRoot;
-    private int nid;
-    private int updateNumber;
+    private BigInteger nid;
+    private BigInteger updateNumber;
     private byte[] prev;
-    private int messageCount;
+    private BigInteger messageCount;
     private byte[] messageRoot;
     private byte[] proof;
     private byte[] nextProofContext;
@@ -53,19 +53,23 @@ public class BlockUpdate {
         return networkSectionToRoot;
     }
 
-    public int getNid() {
+    public BigInteger getNid() {
         return nid;
     }
 
-    public int getUpdateNumber() {
+    public BigInteger getUpdateNumber() {
         return updateNumber;
+    }
+
+    public BigInteger getFirstMessageSn() {
+        return updateNumber.shiftRight(1);
     }
 
     public byte[] getPrev() {
         return prev;
     }
 
-    public int getMessageCount() {
+    public BigInteger getMessageCount() {
         return messageCount;
     }
 
@@ -86,10 +90,10 @@ public class BlockUpdate {
             BigInteger round,
             byte[] nextProofContextHash,
             NetworkSectionToRoot[] networkSectionToRoot,
-            int nid,
-            int updateNumber,
+            BigInteger nid,
+            BigInteger updateNumber,
             byte[] prev,
-            int messageCount,
+            BigInteger messageCount,
             byte[] messageRoot,
             byte[] proof,
             byte[] nextProofContext
@@ -123,10 +127,10 @@ public class BlockUpdate {
             networkSectionToRoot[i] = nstoRootList.get(i);
         }
         r.end();
-        var nid = r.readInt();
-        var updateNumber = r.readInt();
+        var nid = r.readBigInteger();
+        var updateNumber = r.readBigInteger();
         var prev = r.readNullable(byte[].class);
-        var messageCount = r.readInt();
+        var messageCount = r.readBigInteger();
         var messageRoot = r.readNullable(byte[].class);
         var proof = r.readNullable(byte[].class);
         var nextProofContext = r.readNullable(byte[].class);

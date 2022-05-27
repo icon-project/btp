@@ -37,12 +37,13 @@ public class BTPMessageVerifier implements BMV {
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
-    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc) {
+    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] firstBlockUpdate) {
         BMVProperties bmvProperties = getProperties();
         bmvProperties.setSrcNetworkID(srcNetworkID);
-        bmvProperties.setNetworkID(networkTypeID);
+        bmvProperties.setNetworkTypeID(networkTypeID);
         bmvProperties.setBmc(bmc);
         propertiesDB.set(bmvProperties);
+        handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate));
     }
 
     public BMVProperties getProperties() {
@@ -71,15 +72,44 @@ public class BTPMessageVerifier implements BMV {
         return null;
     }
 
+    private void handleFirstBlockUpdate(BlockUpdate blockUpdate) {
+        var bmvProperties = propertiesDB.get();
+        var updateNumber = blockUpdate.getUpdateNumber();
+        var blockUpdateNid = blockUpdate.getNid();
+        var msgCnt = blockUpdate.getMessageCount();
+        var msgRoot = blockUpdate.getMessageRoot();
+        NetworkSection ns = new NetworkSection(
+                blockUpdateNid,
+                updateNumber,
+                null,
+                msgCnt,
+                msgRoot
+        );
+        var nsHash = ns.hash();
+        var nextProofContextHash = blockUpdate.getNextProofContextHash();
+        var nextProofContext = blockUpdate.getNextProofContext();
+        verifyProofContextData(nextProofContextHash, nextProofContext, nextProofContextHash);
+        bmvProperties.setNetworkID(blockUpdateNid);
+        bmvProperties.setProofContextHash(nextProofContextHash);
+        bmvProperties.setProofContext(nextProofContext);
+        bmvProperties.setLastNetworkSectionHash(nsHash);
+        if (msgCnt.compareTo(BigInteger.ZERO) > 0) {
+            bmvProperties.setLastMessagesRoot(msgRoot);
+            bmvProperties.setLastMessageCount(msgCnt);
+            bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
+        }
+        propertiesDB.set(bmvProperties);
+    }
+
     private void handleBlockUpdateMessage(BlockUpdate blockUpdate) {
         var bmvProperties = propertiesDB.get();
         var networkID = bmvProperties.getNetworkID();
         var updateNumber = blockUpdate.getUpdateNumber();
         var blockUpdateNid = blockUpdate.getNid();
         var prev = blockUpdate.getPrev();
-        Context.require(networkID == blockUpdateNid, "invalid network id");
+        Context.require(networkID.compareTo(blockUpdateNid) == 0, "invalid network id");
         Context.require(Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev), "mismatch networkSectionHash");
-        Context.require(bmvProperties.getLastSequence() == updateNumber >> 1, "invalid first message sequence of blockUpdate");
+        Context.require(bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) == 0, "invalid first message sequence of blockUpdate");
 
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
@@ -102,7 +132,7 @@ public class BTPMessageVerifier implements BMV {
         Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
         verifyProof(decision, proofs);
 
-        var isUpdate = (updateNumber & 1) == 1;
+        var isUpdate = updateNumber.and(BigInteger.ONE).compareTo(BigInteger.ONE) == 0;
         if (isUpdate) {
             var nextProofContext = blockUpdate.getNextProofContext();
             verifyProofContextData(nextProofContextHash, nextProofContext, bmvProperties.getProofContextHash());
@@ -140,7 +170,7 @@ public class BTPMessageVerifier implements BMV {
 
     private void handleMessageProof(MessageProof messageProof, BlockUpdate blockUpdate) {
         byte[] expectedMessageRoot;
-        int expectedMessageCnt;
+        BigInteger expectedMessageCnt;
         var bmvProperties = propertiesDB.get();
         MessageProof.ProveResult result = messageProof.proveMessage();
         if (blockUpdate != null ) {
@@ -152,12 +182,12 @@ public class BTPMessageVerifier implements BMV {
         } else {
             expectedMessageRoot = bmvProperties.getLastMessagesRoot();
             expectedMessageCnt = bmvProperties.getLastMessageCount();
-            if (bmvProperties.getLastSequence() - bmvProperties.getLastFirstMessageSN() != result.offset) {
+            if (bmvProperties.getLastSequence().subtract(bmvProperties.getLastFirstMessageSN()).intValue() != result.offset) {
                 throw BMVException.unknown("mismatch ProofInLeft");
             }
         }
         if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.unknown("mismatch MessagesRoot");
-        if (expectedMessageCnt != result.total) {
+        if (expectedMessageCnt.intValue() != result.total) {
             var rightProofNodes = messageProof.getRightProofNodes();
             for (int i = 0; i < rightProofNodes.length; i++) {
                 logger.println("ProofInRight["+i+"] : " + "NumOfLeaf:"+rightProofNodes[i].getNumOfLeaf()
@@ -173,14 +203,14 @@ public class BTPMessageVerifier implements BMV {
             if (blockUpdate != null) {
                 bmvProperties.setLastMessagesRoot(blockUpdate.getMessageRoot());
                 bmvProperties.setLastMessageCount(blockUpdate.getMessageCount());
-                bmvProperties.setLastFirstMessageSN(blockUpdate.getUpdateNumber() >> 1);
+                bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
             }
         } else {
             bmvProperties.setLastMessagesRoot(null);
-            bmvProperties.setLastMessageCount(0);
-            bmvProperties.setLastFirstMessageSN(0);
+            bmvProperties.setLastMessageCount(BigInteger.ZERO);
+            bmvProperties.setLastFirstMessageSN(BigInteger.ZERO);
         }
-        bmvProperties.setLastSequence(bmvProperties.getLastSequence() + msgCnt);
+        bmvProperties.setLastSequence(bmvProperties.getLastSequence().add(BigInteger.valueOf(msgCnt)));
         propertiesDB.set(bmvProperties);
     }
 

@@ -23,13 +23,13 @@ import score.ObjectWriter;
 import java.math.BigInteger;
 
 public class NetworkSection {
-    private int nid;
-    private int updateNumber;
+    private BigInteger nid;
+    private BigInteger updateNumber;
     private byte[] prev;
-    private int messageCnt;
+    private BigInteger messageCnt;
     private byte[] messagesRoot;
 
-    public NetworkSection(int nid, int updateNumber, byte[] prev, int messageCnt, byte[] messagesRoot) {
+    public NetworkSection(BigInteger nid, BigInteger updateNumber, byte[] prev, BigInteger messageCnt, byte[] messagesRoot) {
         this.nid = nid;
         this.updateNumber = updateNumber;
         this.prev = prev;
@@ -47,9 +47,9 @@ public class NetworkSection {
         w.beginList(5);
         w.write(nid);
         w.write(updateNumber);
-        w.write(prev);
+        w.writeNullable(prev);
         w.write(messageCnt);
-        w.write(messagesRoot);
+        w.writeNullable(messagesRoot);
         w.end();
     }
 
