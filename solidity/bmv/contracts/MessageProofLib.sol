@@ -3,103 +3,88 @@ pragma solidity >= 0.4.22 < 0.9.0;
 
 import "./RLPReader.sol";
 
-library MessageProofFragmentLib {
-
-    struct MessageProofFragment {
-        uint level;
-        uint nleaves;
-        bytes32 hash;
-    }
-
-    function levelOf(uint nleaves) internal returns (uint) {
-        uint tmp = nleaves - 1;
-        for (uint i = 1;; i++) {
-            if (tmp == 0) {
-                return i;
-            }
-            tmp = tmp >> 1;
-        }
-    }
-
-    function merge(MessageProofFragment memory l, MessageProofFragment memory r)
-    internal
-    returns (MessageProofFragment memory)
-    {
-        require(l.nleaves == 1 << (l.level - 1), "invalid leaf size of left node");
-        require(l.nleaves >= r.nleaves, "invalid balance of leaves");
-        return MessageProofFragment(
-            l.level + 1,
-            l.nleaves + r.nleaves,
-            keccak256(abi.encodePacked(l.hash, r.hash))
-        );
-    }
-
-}
-
 library MessageProofLib {
 
-    using MessageProofFragmentLib for MessageProofFragmentLib.MessageProofFragment;
+    using RLPReader for bytes;
+    using RLPReader for RLPReader.RLPItem;
     using MessageProofLib for MessageProofLib.MessageProof;
+    using MessageProofLib for MessageProofLib.MessageProofNode;
 
     struct MessageProof {
         uint front;
         uint rear;
         uint length;
-        MessageProofFragmentLib.MessageProofFragment[] nodes;
+        MessageProofNode[] nodes;
     }
 
-    function create(
-        MessageProofFragmentLib.MessageProofFragment[] memory rights,
-        bytes[] memory msgs,
-        MessageProofFragmentLib.MessageProofFragment[] memory lefts
-    )
-    internal
-    returns (MessageProof memory)
-    {
-        uint cap = rights.length + msgs.length + lefts.length;
+    struct MessageProofNode {
+        uint level;
+        uint nleaves;
+        bytes32 hash;
+    }
+
+    function decode(bytes memory enc) internal returns (MessageProof memory) {
+
+        RLPReader.RLPItem memory ti = enc.toRlpItem();
+        RLPReader.RLPItem[] memory tl = ti.toList();
+
+        RLPReader.RLPItem[] memory tp;
+        RLPReader.RLPItem[] memory ls = tl[0].toList();
+        RLPReader.RLPItem[] memory ms = tl[1].toList();
+        RLPReader.RLPItem[] memory rs = tl[2].toList();
+
         MessageProof memory mp = MessageProof(
-            0, 0, 0, new MessageProofFragmentLib.MessageProofFragment[](cap));
+            0, 0, 0, new MessageProofNode[](ls.length + ms.length + rs.length));
 
-        for (uint i = 0; i < rights.length; i++) {
-            mp.push(rights[i]);
+        for (uint i = 0; i < ls.length; i++) {
+            tp = ls[i].toList();
+            mp.push(MessageProofNode(
+                levelOf(tp[0].toUint()),
+                tp[0].toUint(),
+                bytes32(tp[1].toBytes())
+            ));
         }
 
-        for (uint i = 0; i < msgs.length; i++) {
-            mp.push(MessageProofFragmentLib.MessageProofFragment(1, 1, keccak256(msgs[i])));
+        for (uint i = 0; i < ms.length; i++) {
+            mp.push(MessageProofNode(
+                1, 1, keccak256(ms[i].toBytes())));
         }
 
-        for (uint i = 0; i < lefts.length; i++) {
-            mp.push(lefts[i]);
+        for (uint i = 0; i < rs.length; i++) {
+            tp = rs[i].toList();
+            mp.push(MessageProofNode(
+                levelOf(tp[0].toUint()),
+                tp[0].toUint(),
+                bytes32(tp[1].toBytes())
+            ));
         }
-
-        return mp;
     }
 
-    function push(MessageProof memory tree, MessageProofFragmentLib.MessageProofFragment memory node)
+    function push(MessageProof memory proof, MessageProofLib.MessageProofNode memory node)
     internal
     {
-        require(tree.length < tree.nodes.length, "tree overflow");
-        tree.nodes[tree.rear++] = node;
-        tree.length++;
-        if (tree.rear == tree.nodes.length) {
-            tree.rear = 0;
+        require(proof.length < proof.nodes.length, "proof queue overflow");
+        proof.nodes[proof.rear++] = node;
+        proof.length++;
+        if (proof.rear == proof.nodes.length) {
+            proof.rear = 0;
         }
     }
 
-    function pop(MessageProof memory tree)
+    function pop(MessageProof memory proof)
     internal
-    returns (MessageProofFragmentLib.MessageProofFragment memory node)
+    returns (MessageProofNode memory node)
     {
-        require(tree.length > 0, "tree empty");
-        node = tree.nodes[tree.front++];
-        tree.length--;
-        if (tree.front == tree.nodes.length) {
-            tree.front = 0;
+        require(proof.length > 0, "proof empty");
+        node = proof.nodes[proof.front++];
+        proof.length--;
+        if (proof.front == proof.nodes.length) {
+            proof.front = 0;
         }
     }
 
-    function prove(MessageProof memory tree, bytes32 root, uint nleaves) internal returns (bytes32) {
-        uint _nleaves = sizeOfLeaves(tree);
+    function prove(MessageProof memory proof, bytes32 root, uint nleaves) internal returns (bytes32) {
+        uint _nleaves = sizeOfLeaves(proof);
         require(nleaves == _nleaves, "invalid the number of leaves");
 
         uint tmp = nleaves - 1;
@@ -113,78 +98,52 @@ library MessageProofLib {
         }
 
         for (uint i = 0; i < maxlevels; i++) {
-            tmp = tree.length;
+            tmp = proof.length;
             for (uint j = 0; j < tmp; j++) {
-                MessageProofFragmentLib.MessageProofFragment memory l = tree.pop();
-                if (l.level <= (i + 1) && tree.length > 0) {
-                    MessageProofFragmentLib.MessageProofFragment memory r = tree.pop();
-                    l = l.merge(r);
+                MessageProofNode memory l = proof.pop();
+                if (l.level <= (i + 1) && proof.length > 0) {
+                    MessageProofNode memory r = proof.pop();
+                    l = merge(l, r);
                     j++;
                 }
-                tree.push(l);
+                proof.push(l);
             }
         }
-        return tree.pop().hash;
+        // require(proof.length == 1);
+        return proof.pop().hash;
     }
 
-    function sizeOfLeaves(MessageProof memory tree) private returns (uint nleaves) {
-        uint position = tree.front;
-        for (uint i = 0 ; i < tree.length; i++) {
-            nleaves += tree.nodes[position++].nleaves;
-            if (position == tree.nodes.length) {
+    function sizeOfLeaves(MessageProof memory proof) private returns (uint nleaves) {
+        uint position = proof.front;
+        for (uint i = 0 ; i < proof.length; i++) {
+            nleaves += proof.nodes[position++].nleaves;
+            if (position == proof.nodes.length) {
                 position = 0;
             }
         }
     }
 
-}
-
-library MessageDecoder {
-
-    using RLPReader for bytes;
-    using RLPReader for RLPReader.RLPItem;
-
-    function decode(bytes memory enc)
-    internal
-    returns (
-        MessageProofFragmentLib.MessageProofFragment[] memory lefts,
-        bytes[] memory msgs,
-        MessageProofFragmentLib.MessageProofFragment[] memory rights 
-    ) {
-        RLPReader.RLPItem memory ti = enc.toRlpItem();
-        RLPReader.RLPItem[] memory tl = ti.toList();
-        tl = tl[0].toList();
-        tl = tl[1].toList();
-        ti = tl[1].toBytes().toRlpItem();
-        tl = ti.toList();
-
-        RLPReader.RLPItem[] memory tp;
-        RLPReader.RLPItem[] memory ls = tl[0].toList();
-        RLPReader.RLPItem[] memory ms = tl[1].toList();
-        RLPReader.RLPItem[] memory rs = tl[2].toList();
-
-        lefts = new MessageProofFragmentLib.MessageProofFragment[](ls.length);
-        for (uint i = 0; i < ls.length; i++) {
-            tp = ls[i].toList();
-            lefts[i] = MessageProofFragmentLib.MessageProofFragment(
-                MessageProofFragmentLib.levelOf(tp[0].toUint()),
-                tp[0].toUint(),
-                bytes32(tp[1].toBytes()));
-        }
-
-        msgs = new bytes[](ms.length);
-        for (uint i = 0; i < ms.length; i++) {
-            msgs[i] = ms[i].toBytes();
-        }
-
-        rights = new MessageProofFragmentLib.MessageProofFragment[](rs.length);
-        for (uint i = 0; i < rs.length; i++) {
-            tp = rs[i].toList();
-            rights[i] = MessageProofFragmentLib.MessageProofFragment(
-                MessageProofFragmentLib.levelOf(tp[0].toUint()),
-                tp[0].toUint(),
-                bytes32(tp[1].toBytes())
-            );
+    function levelOf(uint nleaves) private returns (uint) {
+        uint tmp = nleaves - 1;
+        for (uint i = 1;; i++) {
+            if (tmp == 0) {
+                return i;
+            }
+            tmp = tmp >> 1;
         }
     }
+
+    function merge(MessageProofNode memory l, MessageProofNode memory r)
+    private
+    returns (MessageProofNode memory)
+    {
+        require(l.nleaves == 1 << (l.level - 1), "invalid leaf size of left node");
+        require(l.nleaves >= r.nleaves, "invalid balance of leaves");
+        return MessageProofNode(
+            l.level + 1,
+            l.nleaves + r.nleaves,
+            keccak256(abi.encodePacked(l.hash, r.hash))
+        );
+    }
+
 }
