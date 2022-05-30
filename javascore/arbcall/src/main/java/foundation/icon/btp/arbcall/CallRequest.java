@@ -16,21 +16,22 @@
 
 package foundation.icon.btp.arbcall;
 
+import score.Address;
 import score.ObjectReader;
 import score.ObjectWriter;
 
 public class CallRequest {
-    private final String from;
+    private final Address from;
     private final String to;
     private final byte[] rollback;
 
-    public CallRequest(String from, String to, byte[] rollback) {
+    public CallRequest(Address from, String to, byte[] rollback) {
         this.from = from;
         this.to = to;
         this.rollback = rollback;
     }
 
-    public String getFrom() {
+    public Address getFrom() {
         return from;
     }
 
@@ -53,7 +54,7 @@ public class CallRequest {
     public static CallRequest readObject(ObjectReader r) {
         r.beginList();
         CallRequest req = new CallRequest(
-                r.readString(),
+                r.readAddress(),
                 r.readString(),
                 r.readNullable(byte[].class)
         );
