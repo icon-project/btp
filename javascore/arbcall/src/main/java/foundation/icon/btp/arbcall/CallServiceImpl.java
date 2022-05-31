@@ -28,12 +28,13 @@ import score.UserRevertedException;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
 
 public class CallServiceImpl implements BSH, CallService {
     private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
-    private static final String SERVICE = "arbcall";
+    public static final String SERVICE = "arbcall";
 
     private final Address bmc;
     private final String net;
@@ -76,7 +77,7 @@ public class CallServiceImpl implements BSH, CallService {
 
     @Override
     @External
-    public BigInteger sendCallMessage(String _to, byte[] _data, byte[] _rollback) {
+    public BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         Address caller = Context.getCaller();
         Context.require(caller.isContract(), "SenderNotAContract");
         BTPAddress dst = BTPAddress.valueOf(_to);

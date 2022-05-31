@@ -18,6 +18,7 @@ package foundation.icon.btp.arbcall;
 
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Optional;
 
 import java.math.BigInteger;
 
@@ -30,11 +31,11 @@ public interface CallService {
      *
      * @param _to The BTP address of the callee on the destination chain
      * @param _data The calldata specific to the target contract
-     * @param _rollback The data for restoring the caller state when an error occurred
+     * @param _rollback (Optional) The data for restoring the caller state when an error occurred
      * @return The serial number of the request
      */
     @External
-    BigInteger sendCallMessage(String _to, byte[] _data, byte[] _rollback);
+    BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback);
 
     /**
      * Notifies the user that a rollback operation is required for the request '_sn'.
