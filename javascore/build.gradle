@@ -70,8 +70,8 @@ subprojects {
                     resolvedKeyPassword = Files.readString(
                             java.nio.file.Path.of(it.value.get('keySecret').toString()))
                 }
-                it.value.put('resolvedKeyPassword', resolvedKeyPassword)
             }
+            it.value.put('resolvedKeyPassword', resolvedKeyPassword)
         }
 
         scoreTest.put('url', props.getOrDefault(prefix + 'url', 'http://localhost:9082/api/v3'))

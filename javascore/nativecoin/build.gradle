@@ -82,7 +82,7 @@ test {
         }
 
         systemProperty 'tester.keyStore', scoreTest.tester.keyStore
-        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
+        systemProperty 'tester.keyPassword', scoreTest.tester.resolvedKeyPassword
 
         systemProperty 'irc31.url', scoreTest.url
         systemProperty 'irc31.nid', scoreTest.nid
