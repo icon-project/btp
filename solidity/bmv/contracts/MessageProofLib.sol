@@ -58,6 +58,8 @@ library MessageProofLib {
                 bytes32(tp[1].toBytes())
             ));
         }
+
+        return mp;
     }
 
     function push(MessageProof memory proof, MessageProofLib.MessageProofNode memory node)
@@ -83,7 +85,7 @@ library MessageProofLib {
         }
     }
 
-    function prove(MessageProof memory proof, bytes32 root, uint nleaves) internal returns (bytes32) {
+    function verify(MessageProof memory proof, bytes32 root, uint nleaves) internal {
         uint _nleaves = sizeOfLeaves(proof);
         require(nleaves == _nleaves, "invalid the number of leaves");
 
@@ -109,8 +111,8 @@ library MessageProofLib {
                 proof.push(l);
             }
         }
-        // require(proof.length == 1);
-        return proof.pop().hash;
+        require(proof.length == 1);
+        require(root == proof.pop().hash, "invalid message root");
     }
 
     function sizeOfLeaves(MessageProof memory proof) private returns (uint nleaves) {

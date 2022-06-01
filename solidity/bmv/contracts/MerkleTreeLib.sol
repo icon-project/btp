@@ -12,13 +12,13 @@ library MerkleTreeLib {
         bytes32 hash;
     }
 
-    function verify(Path[] memory pathes, bytes memory leaf, bytes32 root) internal {
-        bytes32 temp = keccak256(leaf);
+    function calculate(bytes32 leaf, Path[] memory pathes) internal returns (bytes32) {
+        bytes32 temp = leaf;
         for (uint i = 0; i < pathes.length; i++) {
             temp = pathes[i].direction == 0
                 ? keccak256(abi.encodePacked(pathes[i].hash).concat(abi.encodePacked(temp)))
                 : keccak256(abi.encodePacked(temp).concat(abi.encodePacked(pathes[i].hash)));
         }
-        require(temp == root, "fail to verify merkle root");
+        return temp;
     }
 }
