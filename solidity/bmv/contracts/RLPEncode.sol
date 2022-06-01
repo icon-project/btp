@@ -26,6 +26,14 @@ library RLPEncode {
         return encoded;
     }
 
+    // BTP 2.0 specific
+    function encodeNil() internal pure returns (bytes memory) {
+        bytes memory encoded = new bytes(2);
+        encoded[0] = 0xf8;
+        encoded[1] = 0x00;
+        return encoded;
+    }
+
     /**
      * @dev RLP encodes a list of RLP encoded byte byte strings.
      * @param self The list of RLP encoded byte strings.
@@ -67,6 +75,13 @@ library RLPEncode {
      * @return The RLP encoded uint in bytes.
      */
     function encodeUint(uint self) internal pure returns (bytes memory) {
+        // BTP 2.0 specific
+        if (self == 0) {
+            bytes memory b = new bytes(1);
+            b[0] = 0;
+            return encodeBytes(b);
+        }
+
         return encodeBytes(toBinary(self));
     }
 
