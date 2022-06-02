@@ -60,7 +60,7 @@ public class Node {
                         right,
                         this.level + 1,
                         this.numOfLeaf + numOfLeaf,
-                        null
+                        new byte[0]
                 );
             }
         }
@@ -108,9 +108,17 @@ public class Node {
     }
 
     private static byte[] concatAndHash(byte[] b1, byte[] b2) {
-        byte[] data = new byte[b1.length + b2.length];
-        System.arraycopy(b1, 0, data, 0, b1.length);
-        System.arraycopy(b2, 0, data, b1.length, b2.length);
+        int len = 0, accum = 0;
+        if (b1 != null) len += b1.length;
+        if (b2 != null) len += b2.length;
+        byte[] data = new byte[len];
+        if (b1 != null) {
+            System.arraycopy(b1, 0, data, 0, b1.length);
+            accum += b1.length;
+        }
+        if (b2 != null) {
+            System.arraycopy(b2, 0, data, accum, b2.length);
+        }
         return BTPMessageVerifier.hash(data);
     }
 }
