@@ -176,7 +176,7 @@ public class BTPMessageVerifier implements BMV {
         var verified = verifiedValidator.size();
         var validatorsCnt = proofContext.getValidators().length;
         //quorum = validator * 2/3
-        Context.require(verified * 3 >= validatorsCnt * 2,
+        Context.require(verified * 3 > validatorsCnt * 2,
                 "not enough proof parts num of validator : " + validatorsCnt + ", num of proof parts : " + verified);
     }
 
