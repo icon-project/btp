@@ -91,18 +91,18 @@ public class MessageProof {
         int left = 0, total = 0;
         for (ProofNode pn : leftProofNodes) {
             var num = pn.getNumOfLeaf();
-            node.add(num, pn.getValue());
+            node = node.add(num, pn.getValue());
             left += num;
         }
 
         for (byte[] message : messages) {
-            node.add(1, BTPMessageVerifier.hash(message));
+            node = node.add(1, BTPMessageVerifier.hash(message));
             total++;
         }
 
         for (ProofNode pn : rightProofNodes) {
             var num = pn.getNumOfLeaf();
-            node.add(num, pn.getValue());
+            node = node.add(num, pn.getValue());
             total += num;
         }
         node.ensureHash(false);

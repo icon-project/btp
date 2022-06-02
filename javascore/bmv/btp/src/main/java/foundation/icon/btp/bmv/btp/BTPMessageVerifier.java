@@ -27,13 +27,13 @@ import score.annotation.External;
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
     private static final Logger logger = Logger.getLogger(BTPMessageVerifier.class);
-    private static String HASH = "keccak-256";
+    private static String HASH = "sha3-256";
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
@@ -52,19 +52,30 @@ public class BTPMessageVerifier implements BMV {
 
     @External
     public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
-        RelayMessage relayMessages = RelayMessage.fromBytes(_msg.getBytes(StandardCharsets.UTF_8));
+        var decoder = Base64.getUrlDecoder();
+        var base64Decoded = decoder.decode(_msg);
+        RelayMessage relayMessages = RelayMessage.fromBytes(base64Decoded);
         RelayMessage.TypePrefixedMessage[] typePrefixedMessages = relayMessages.getMessages();
         BlockUpdate blockUpdate = null;
+        List<byte[]> msgList = new ArrayList<>();
         for (RelayMessage.TypePrefixedMessage message : typePrefixedMessages) {
             Object msg = message.getMessage();
             if (msg instanceof BlockUpdate) {
                 blockUpdate = (BlockUpdate) msg;
                 handleBlockUpdateMessage(blockUpdate);
             } else if (msg instanceof MessageProof) {
-                handleMessageProof((MessageProof) msg, blockUpdate);
+                var msgs = handleMessageProof((MessageProof) msg, blockUpdate);
+                msgList.addAll(Arrays.asList(msgs));
             }
         }
-        return new byte[0][];
+        var retSize = msgList.size();
+        var ret = new byte[retSize][];
+        if (retSize > 0) {
+            for (int i = 0; i < retSize; i ++) {
+                ret[i] = msgList.get(i);
+            }
+        }
+        return ret;
     }
 
     @External(readonly = true)
@@ -88,11 +99,12 @@ public class BTPMessageVerifier implements BMV {
         var nsHash = ns.hash();
         var nextProofContextHash = blockUpdate.getNextProofContextHash();
         var nextProofContext = blockUpdate.getNextProofContext();
-        verifyProofContextData(nextProofContextHash, nextProofContext, nextProofContextHash);
+        Context.require(Arrays.equals(hash(nextProofContext), nextProofContextHash), "mismatch Hash of NextProofContext");
         bmvProperties.setNetworkID(blockUpdateNid);
         bmvProperties.setProofContextHash(nextProofContextHash);
         bmvProperties.setProofContext(nextProofContext);
         bmvProperties.setLastNetworkSectionHash(nsHash);
+        bmvProperties.setLastSequence(BigInteger.ZERO);
         if (msgCnt.compareTo(BigInteger.ZERO) > 0) {
             bmvProperties.setLastMessagesRoot(msgRoot);
             bmvProperties.setLastMessageCount(msgCnt);
@@ -168,7 +180,7 @@ public class BTPMessageVerifier implements BMV {
                 "not enough proof parts num of validator : " + validatorsCnt + ", num of proof parts : " + verified);
     }
 
-    private void handleMessageProof(MessageProof messageProof, BlockUpdate blockUpdate) {
+    private byte[][] handleMessageProof(MessageProof messageProof, BlockUpdate blockUpdate) {
         byte[] expectedMessageRoot;
         BigInteger expectedMessageCnt;
         var bmvProperties = propertiesDB.get();
@@ -212,6 +224,7 @@ public class BTPMessageVerifier implements BMV {
         }
         bmvProperties.setLastSequence(bmvProperties.getLastSequence().add(BigInteger.valueOf(msgCnt)));
         propertiesDB.set(bmvProperties);
+        return messageProof.getMessages();
     }
 
     static byte[] hash(byte[] msg) {
@@ -220,12 +233,6 @@ public class BTPMessageVerifier implements BMV {
 
     static Address recoverAddress(byte[] msg, byte[] sig) {
         byte[] publicKey = Context.recoverKey(SIGNATURE_ALG, msg, sig, true);
-        int sliceLen = publicKey.length - 1;
-        byte[] sliced = new byte[sliceLen];
-        System.arraycopy(publicKey, 1, sliced, 0, sliceLen);
-        byte[] hashed = hash(sliced);
-        byte[] addr = new byte[20];
-        System.arraycopy(hashed, 12, addr, 0, 20);
-        return new Address(addr);
+        return Context.getAddressFromKey(publicKey);
     }
 }
