@@ -9,7 +9,7 @@ library Utils {
     returns (address signer)
     {
             (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
-            return ecrecover(message, v, r, s);
+            return ecrecover(message, v + 27, r, s);
     }
 
     function splitSignature(bytes memory signature)
@@ -29,5 +29,6 @@ library Utils {
        }
         return (r, s, v);
     }
+
 }
 
