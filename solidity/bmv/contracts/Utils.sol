@@ -30,5 +30,22 @@ library Utils {
         return (r, s, v);
     }
 
+    function append(bytes[] memory v, bytes[] memory w) internal returns (bytes[] memory) {
+        if (w.length <= 0) {
+            return v;
+        }
+
+        bytes[] memory t = v;
+        uint l = v.length;
+        v = new bytes[](v.length + w.length);
+        for (uint i = 0; i < l; i++) {
+            v[i] = t[i];
+        }
+        for (uint i = 0; i < w.length; i++) {
+            v[l+i] = w[i];
+        }
+        return v;
+    }
+
 }
 

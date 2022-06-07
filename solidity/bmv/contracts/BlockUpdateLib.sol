@@ -18,9 +18,9 @@ library BlockUpdateLib {
         bytes32 nextProofContextHash;
         MerkleTreeLib.Path[] networkSectionToRoot;
         uint networkId;
-        uint messageSerialNumber;
+        uint messageSn;
         bool hasNewNextValidators;
-        bytes prevNetworkSectionHash;
+        bytes32 prevNetworkSectionHash;
         uint messageCount;
         bytes32 messageRoot;
         bytes[] signatures;
@@ -66,8 +66,10 @@ library BlockUpdateLib {
     function encodeNetworkSection(BlockUpdate memory bu) internal returns (bytes memory) {
         bytes[] memory ns = new bytes[](5);
         ns[0] = RLPEncode.encodeUint(bu.networkId);
-        ns[1] = RLPEncode.encodeUint((bu.messageSerialNumber << 1) | (bu.hasNewNextValidators ? 1 : 0));
-        ns[2] = RLPEncode.encodeBytes(bu.prevNetworkSectionHash);
+        ns[1] = RLPEncode.encodeUint((bu.messageSn << 1) | (bu.hasNewNextValidators ? 1 : 0));
+        ns[2] = bu.prevNetworkSectionHash != bytes32(0)
+            ? RLPEncode.encodeBytes(abi.encodePacked(bu.prevNetworkSectionHash))
+            : RLPEncode.encodeNil();
         ns[3] = RLPEncode.encodeUint(bu.messageCount);
         ns[4] = bu.messageRoot != bytes32(0)
             ? RLPEncode.encodeBytes(abi.encodePacked(bu.messageRoot))
@@ -75,15 +77,15 @@ library BlockUpdateLib {
         return RLPEncode.encodeList(ns);
     }
 
+    function getNetworkSectionHash(BlockUpdate memory bu) internal returns (bytes32) {
+        return keccak256(encodeNetworkSection(bu));
+    }
+
     function getNetworkSectionRoot(BlockUpdate memory bu) internal returns (bytes32) {
-        bytes32 nsh = keccak256(encodeNetworkSection(bu));
-        return MerkleTreeLib.calculate(nsh, bu.networkSectionToRoot);
+        return MerkleTreeLib.calculate(bu.getNetworkSectionHash(), bu.networkSectionToRoot);
     }
 
     function verifySignature(BlockUpdate memory bu, bytes32 message, address[] memory validators) internal {
-        require(bu.signatures.length == validators.length,
-                "the number of validators and signatures must be same");
-
         uint nverified = 0;
         for (uint i = 0; i < validators.length; i++) {
             address recovered = Utils.recoverSigner(message, bu.signatures[i]);
@@ -91,7 +93,7 @@ library BlockUpdateLib {
                 nverified++;
             }
         }
-        require(validators.length * 2 <= nverified * 3, "verification of block falls short of a quorum");
+        require(validators.length * 2 < nverified * 3, "verification of block falls short of a quorum");
     }
 
     function decode(bytes memory enc) internal returns (BlockUpdate memory) {
@@ -106,11 +108,11 @@ library BlockUpdateLib {
             , tl[4].toUint()
             , tl[5].toUint() >> 1
             , tl[5].toUint() & 1 == 1
-            , tl[6].payloadLen() > 0 ? tl[6].toBytes() : new bytes(0)
+            , tl[6].payloadLen() > 0 ? bytes32(tl[6].toBytes()) : bytes32(0)
             , tl[7].toUint()
             , tl[8].payloadLen() > 0 ? bytes32(tl[8].toBytes()) : bytes32(0)
             , tl[9].payloadLen() > 0 ? decodeSignatures(tl[9].toBytes()) : new bytes[](0)
-            , tl[10].payloadLen() > 0 ? decodeValidators(tl[10].toBytes()) : new address[](0)
+            , tl[5].toUint() & 1 == 1 ? decodeValidators(tl[10].toBytes()) : new address[](0)
         );
         return bu;
     }

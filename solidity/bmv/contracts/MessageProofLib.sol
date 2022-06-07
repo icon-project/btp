@@ -15,6 +15,10 @@ library MessageProofLib {
         uint rear;
         uint length;
         MessageProofNode[] nodes;
+
+        bytes[] messages;
+        uint leftLeafCount;
+        uint messageCount;
     }
 
     struct MessageProofNode {
@@ -34,7 +38,7 @@ library MessageProofLib {
         RLPReader.RLPItem[] memory rs = tl[2].toList();
 
         MessageProof memory mp = MessageProof(
-            0, 0, 0, new MessageProofNode[](ls.length + ms.length + rs.length));
+            0, 0, 0, new MessageProofNode[](ls.length + ms.length + rs.length), new bytes[](ms.length), 0, ms.length);
 
         for (uint i = 0; i < ls.length; i++) {
             tp = ls[i].toList();
@@ -45,9 +49,13 @@ library MessageProofLib {
             ));
         }
 
+        mp.leftLeafCount = sizeOfLeaves(mp);
+        mp.messageCount = ms.length;
+
         for (uint i = 0; i < ms.length; i++) {
             mp.push(MessageProofNode(
                 1, 1, keccak256(ms[i].toBytes())));
+            mp.messages[i] = ms[i].toBytes();
         }
 
         for (uint i = 0; i < rs.length; i++) {
@@ -101,17 +109,21 @@ library MessageProofLib {
 
         for (uint i = 0; i < maxlevels; i++) {
             tmp = proof.length;
+            // TODO improve
+            uint remainder = proof.length;
             for (uint j = 0; j < tmp; j++) {
                 MessageProofNode memory l = proof.pop();
-                if (l.level <= (i + 1) && proof.length > 0) {
+                remainder--;
+                if (l.level <= (i + 1) && remainder > 0) {
                     MessageProofNode memory r = proof.pop();
+                    remainder--;
                     l = merge(l, r);
                     j++;
                 }
                 proof.push(l);
             }
         }
-        require(proof.length == 1);
+        require(proof.length == 1, "invalid proof");
         require(root == proof.pop().hash, "invalid message root");
     }
 
