@@ -16,11 +16,11 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import foundation.icon.score.util.StringUtil;
 import score.Context;
 import score.ObjectReader;
 import scorex.util.ArrayList;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class RelayMessage {
@@ -62,8 +62,13 @@ public class RelayMessage {
 
     @Override
     public String toString() {
+        StringBuilder s = new StringBuilder();
+        for(int i = 0; i < messages.length; i++) {
+            s.append(messages[i].toString());
+        }
+
         return "RelayMessage{" +
-                "messages=" + Arrays.toString(messages) +
+                "messages=" + s +
                 '}';
     }
 
@@ -98,7 +103,7 @@ public class RelayMessage {
         public String toString() {
             return "TypePrefixedMessage{" +
                     "type=" + type +
-                    ", payload=" + Arrays.toString(payload) +
+                    ", payload=" + StringUtil.bytesToHex(payload) +
                     '}';
         }
     }

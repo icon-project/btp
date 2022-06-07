@@ -28,7 +28,7 @@ import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Base64;
+import scorex.util.Base64;
 import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
@@ -42,8 +42,7 @@ public class BTPMessageVerifier implements BMV {
         bmvProperties.setSrcNetworkID(srcNetworkID);
         bmvProperties.setNetworkTypeID(networkTypeID);
         bmvProperties.setBmc(bmc);
-        propertiesDB.set(bmvProperties);
-        handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate));
+        handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate), bmvProperties);
     }
 
     public BMVProperties getProperties() {
@@ -53,7 +52,7 @@ public class BTPMessageVerifier implements BMV {
     @External
     public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
         var decoder = Base64.getUrlDecoder();
-        var base64Decoded = decoder.decode(_msg);
+        var base64Decoded = decoder.decode(_msg.getBytes());
         RelayMessage relayMessages = RelayMessage.fromBytes(base64Decoded);
         RelayMessage.TypePrefixedMessage[] typePrefixedMessages = relayMessages.getMessages();
         BlockUpdate blockUpdate = null;
@@ -65,7 +64,9 @@ public class BTPMessageVerifier implements BMV {
                 handleBlockUpdateMessage(blockUpdate);
             } else if (msg instanceof MessageProof) {
                 var msgs = handleMessageProof((MessageProof) msg, blockUpdate);
-                msgList.addAll(Arrays.asList(msgs));
+                for(byte[] m : msgs) {
+                    msgList.add(m);
+                }
             }
         }
         var retSize = msgList.size();
@@ -83,8 +84,9 @@ public class BTPMessageVerifier implements BMV {
         return null;
     }
 
-    private void handleFirstBlockUpdate(BlockUpdate blockUpdate) {
-        var bmvProperties = propertiesDB.get();
+    private void handleFirstBlockUpdate(BlockUpdate blockUpdate, BMVProperties bmvProperties) {
+        var prev = blockUpdate.getPrev();
+        Context.require(prev == null, "not first blockUpdate");
         var updateNumber = blockUpdate.getUpdateNumber();
         var blockUpdateNid = blockUpdate.getNid();
         var msgCnt = blockUpdate.getMessageCount();
@@ -99,17 +101,15 @@ public class BTPMessageVerifier implements BMV {
         var nsHash = ns.hash();
         var nextProofContextHash = blockUpdate.getNextProofContextHash();
         var nextProofContext = blockUpdate.getNextProofContext();
-        Context.require(Arrays.equals(hash(nextProofContext), nextProofContextHash), "mismatch Hash of NextProofContext");
+        Context.require(Arrays.equals(hash(nextProofContext), nextProofContextHash), "mismatch Hash of proofContext");
         bmvProperties.setNetworkID(blockUpdateNid);
         bmvProperties.setProofContextHash(nextProofContextHash);
         bmvProperties.setProofContext(nextProofContext);
         bmvProperties.setLastNetworkSectionHash(nsHash);
         bmvProperties.setLastSequence(BigInteger.ZERO);
-        if (msgCnt.compareTo(BigInteger.ZERO) > 0) {
-            bmvProperties.setLastMessagesRoot(msgRoot);
-            bmvProperties.setLastMessageCount(msgCnt);
-            bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
-        }
+        bmvProperties.setLastMessagesRoot(msgRoot);
+        bmvProperties.setLastMessageCount(msgCnt);
+        bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
         propertiesDB.set(bmvProperties);
     }
 
@@ -123,36 +123,36 @@ public class BTPMessageVerifier implements BMV {
         Context.require(Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev), "mismatch networkSectionHash");
         Context.require(bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) == 0, "invalid first message sequence of blockUpdate");
 
-        NetworkSection ns = new NetworkSection(
-                blockUpdateNid,
-                updateNumber,
-                prev,
-                blockUpdate.getMessageCount(),
-                blockUpdate.getMessageRoot()
-        );
-        var nsHash = ns.hash();
-        var nsRoot = blockUpdate.getNetworkSectionsRoot(nsHash);
-        var nextProofContextHash = blockUpdate.getNextProofContextHash();
-        NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
-        var srcNetworkID = bmvProperties.getSrcNetworkID();
-        var networkTypeID = bmvProperties.getNetworkTypeID();
-        var height = blockUpdate.getMainHeight();
-        var round = blockUpdate.getRound();
-        var ntsHash = nts.hash();
-        NetworkTypeSectionDecision decision = new NetworkTypeSectionDecision(
-                srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
-        Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
-        verifyProof(decision, proofs);
-
         var isUpdate = updateNumber.and(BigInteger.ONE).compareTo(BigInteger.ONE) == 0;
         if (isUpdate) {
+            NetworkSection ns = new NetworkSection(
+                    blockUpdateNid,
+                    updateNumber,
+                    prev,
+                    blockUpdate.getMessageCount(),
+                    blockUpdate.getMessageRoot()
+            );
+            var nsHash = ns.hash();
+            var nsRoot = blockUpdate.getNetworkSectionsRoot(nsHash);
+            var nextProofContextHash = blockUpdate.getNextProofContextHash();
+            NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
+            var srcNetworkID = bmvProperties.getSrcNetworkID();
+            var networkTypeID = bmvProperties.getNetworkTypeID();
+            var height = blockUpdate.getMainHeight();
+            var round = blockUpdate.getRound();
+            var ntsHash = nts.hash();
+            NetworkTypeSectionDecision decision = new NetworkTypeSectionDecision(
+                    srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
+            Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
+            verifyProof(decision, proofs);
+
             var nextProofContext = blockUpdate.getNextProofContext();
             verifyProofContextData(nextProofContextHash, nextProofContext, bmvProperties.getProofContextHash());
             bmvProperties.setProofContextHash(nextProofContextHash);
             bmvProperties.setProofContext(nextProofContext);
+            bmvProperties.setLastNetworkSectionHash(nsHash);
+            propertiesDB.set(bmvProperties);
         }
-        bmvProperties.setLastNetworkSectionHash(nsHash);
-        propertiesDB.set(bmvProperties);
     }
 
     private void verifyProofContextData(byte[] proofContextHash, byte[] proofContext, byte[] currentProofContextHash) {
@@ -206,8 +206,9 @@ public class BTPMessageVerifier implements BMV {
                 + "value:" + StringUtil.bytesToHex(rightProofNodes[i].getValue()));
             }
             throw BMVException.unknown(
-                    String.format("mismatch MessageCount offset:%d, expected:%d, count :%d",
-                            result.offset, expectedMessageCnt, result.total));
+                    "mismatch MessageCount offset:" + result.offset +
+                            ", expected:" + expectedMessageCnt +
+                            ", count :" + result.total);
         }
         var msgCnt = messageProof.getMessages().length;
         var remainCnt = result.total - result.offset - msgCnt;
