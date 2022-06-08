@@ -17,8 +17,9 @@
 package foundation.icon.btp.bmv.btp;
 
 import score.ObjectReader;
+import score.ObjectWriter;
 
-import java.math.BigInteger;
+import java.util.Arrays;
 
 public class ProofNode {
     private int numOfLeaf;
@@ -44,4 +45,18 @@ public class ProofNode {
         return obj;
     }
 
+    public static void writeObject(ObjectWriter w, ProofNode node) {
+        w.beginList(2);
+        w.write(node.numOfLeaf);
+        w.write(node.value);
+        w.end();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProofNode proofNode = (ProofNode) o;
+        return numOfLeaf == proofNode.numOfLeaf && Arrays.equals(value, proofNode.value);
+    }
 }

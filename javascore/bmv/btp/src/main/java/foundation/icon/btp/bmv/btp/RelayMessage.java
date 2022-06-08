@@ -17,11 +17,15 @@
 package foundation.icon.btp.bmv.btp;
 
 import foundation.icon.score.util.StringUtil;
+import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
+import score.ObjectWriter;
 import scorex.util.ArrayList;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class RelayMessage {
     private TypePrefixedMessage[] messages;
@@ -55,9 +59,24 @@ public class RelayMessage {
         return relayMessage;
     }
 
+    public static void writeObject(ObjectWriter writer, RelayMessage message) {
+        writer.beginList(1);
+        writer.beginList(message.messages.length);
+        for (TypePrefixedMessage typedMessage : message.messages)
+            writer.write(typedMessage);
+        writer.end();
+        writer.end();
+    }
+
     public static RelayMessage fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w, this);
+        return w.toByteArray();
     }
 
     @Override
@@ -89,7 +108,7 @@ public class RelayMessage {
             } else if (type == MESSAGE_PROOF) {
                 return MessageProof.fromBytes(payload);
             }
-            return null;
+            throw BMVException.unknown("invalid type : " + type);
         }
 
         public static TypePrefixedMessage readObject(ObjectReader reader) {
@@ -99,12 +118,38 @@ public class RelayMessage {
             return typePrefixedMessage;
         }
 
+        public static TypePrefixedMessage fromBytes(byte[] bytes) {
+            ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+            return readObject(reader);
+        }
+
+        public static void writeObject(ObjectWriter writer, TypePrefixedMessage message) {
+            writer.beginList(2);
+            writer.write(message.type);
+            writer.write(message.payload);
+            writer.end();
+        }
+
+        public byte[] toBytes() {
+            ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+            writeObject(w, this);
+            return w.toByteArray();
+        }
+
         @Override
         public String toString() {
             return "TypePrefixedMessage{" +
                     "type=" + type +
                     ", payload=" + StringUtil.bytesToHex(payload) +
                     '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TypePrefixedMessage that = (TypePrefixedMessage) o;
+            return type == that.type && Arrays.equals(payload, that.payload);
         }
     }
 }

@@ -37,10 +37,10 @@ deployJar {
     keystore = scoreTest.default.keyStore
     password = scoreTest.default.resolvedKeyPassword
     parameters {[
-            arg('_bmc', 'cx?'),
-            arg('_net', '0x?.icon'),
-            arg('_validators', 'hx?'),
-            arg('_offset', '0x?')
+            arg('srcNetworkID', '0x?'),
+            arg('networkTypeID', '0x?'),
+            arg('bmc', 'cx?'),
+            arg('firstBlockUpdate', '0x?')
         ]
     }
 }

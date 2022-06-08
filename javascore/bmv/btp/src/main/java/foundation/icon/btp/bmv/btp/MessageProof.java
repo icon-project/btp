@@ -16,8 +16,10 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
+import score.ObjectWriter;
 import scorex.util.ArrayList;
 
 import java.util.List;
@@ -35,6 +37,10 @@ public class MessageProof {
 
     public byte[][] getMessages() {
         return messages;
+    }
+
+    public ProofNode[] getLeftProofNodes() {
+        return leftProofNodes;
     }
 
     public ProofNode[] getRightProofNodes() {
@@ -81,9 +87,35 @@ public class MessageProof {
         return new MessageProof(leftProofNodes, messages, rightProofNodes);
     }
 
+    public static void writeObject(ObjectWriter w, MessageProof messageProof) {
+        w.beginList(3);
+        w.beginList(messageProof.leftProofNodes.length);
+        for (ProofNode node : messageProof.leftProofNodes) {
+            w.write(node);
+        }
+        w.end();
+        w.beginList(messageProof.messages.length);
+        for (byte[] message : messageProof.messages) {
+            w.write(message);
+        }
+        w.end();
+        w.beginList(messageProof.rightProofNodes.length);
+        for (ProofNode node : messageProof.rightProofNodes) {
+            w.write(node);
+        }
+        w.end();
+        w.end();
+    }
+
     public static MessageProof fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return MessageProof.readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w, this);
+        return w.toByteArray();
     }
 
     public ProveResult proveMessage() {

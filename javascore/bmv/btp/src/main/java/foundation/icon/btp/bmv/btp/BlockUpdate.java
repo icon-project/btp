@@ -16,11 +16,14 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
+import score.ObjectWriter;
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 public class BlockUpdate {
@@ -150,9 +153,35 @@ public class BlockUpdate {
         );
     }
 
+    public static void writeObject(ObjectWriter w, BlockUpdate blockUpdate) {
+        w.beginList(11);
+        w.writeNullable(blockUpdate.mainHeight);
+        w.writeNullable(blockUpdate.round);
+        w.writeNullable(blockUpdate.nextProofContextHash);
+        w.beginList(blockUpdate.networkSectionToRoot.length);
+        for (NetworkSectionToRoot nsr : blockUpdate.networkSectionToRoot) {
+            w.write(nsr);
+        }
+        w.end();
+        w.write(blockUpdate.nid);
+        w.write(blockUpdate.updateNumber);
+        w.writeNullable(blockUpdate.prev);
+        w.write(blockUpdate.messageCount);
+        w.writeNullable(blockUpdate.messageRoot);
+        w.writeNullable(blockUpdate.proof);
+        w.writeNullable(blockUpdate.nextProofContext);
+        w.end();
+    }
+
     public static BlockUpdate fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return BlockUpdate.readObject(reader);
+    }
+
+    public byte[] toBytes() {
+        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
+        writeObject(w, this);
+        return w.toByteArray();
     }
 
     private static byte[] concatAndHash(byte[] b1, byte[] b2) {
@@ -191,5 +220,21 @@ public class BlockUpdate {
             r.end();
             return obj;
         }
+
+        public static void writeObject(ObjectWriter w, NetworkSectionToRoot networkSectionToRoot) {
+            w.beginList(2);
+            w.write(networkSectionToRoot.dir);
+            w.write(networkSectionToRoot.value);
+            w.end();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            NetworkSectionToRoot that = (NetworkSectionToRoot) o;
+            return dir == that.dir && Arrays.equals(value, that.value);
+        }
+
     }
 }
