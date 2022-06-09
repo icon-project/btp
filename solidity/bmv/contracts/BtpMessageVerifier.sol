@@ -71,8 +71,6 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
     ) external returns (bytes[] memory) {
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
 
-        // TODO optimize R/W of storage
-
         bytes[] memory messages;
         for (uint i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
@@ -102,11 +100,17 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
             } else if (rms[i].typ == RelayMessageLib.TypeMessageProof) {
                 MessageProofLib.MessageProof memory mp = rms[i].toMessageProof();
 
-                mp.verify(context.messageRoot, context.messageCount);
-                require(mp.leftLeafCount == context.messageCount - context.remainMessageCount, "??");
-                context.remainMessageCount -= mp.messageCount;
-                context.nextMessageSn += mp.messageCount;
-                messages = Utils.append(messages, mp.messages);
+                // compare roots of `block update` and `message proof`
+                require(mp.calculate() == context.messageRoot, "");
+                require(MessageProofLib.getLeafCount(mp.lefts) == context.messageCount, "");
+
+                // update context
+                context.remainMessageCount -= mp.mesgs.length;
+                context.nextMessageSn += mp.mesgs.length;
+
+                // collect messages
+                messages = Utils.append(messages, mp.mesgs);
+
             }
         }
         return messages;
