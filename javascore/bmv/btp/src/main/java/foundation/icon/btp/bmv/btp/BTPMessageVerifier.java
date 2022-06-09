@@ -122,37 +122,35 @@ public class BTPMessageVerifier implements BMV {
         Context.require(networkID.compareTo(blockUpdateNid) == 0, "invalid network id");
         Context.require(Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev), "mismatch networkSectionHash");
         Context.require(bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) == 0, "invalid first message sequence of blockUpdate");
-
+        NetworkSection ns = new NetworkSection(
+                blockUpdateNid,
+                updateNumber,
+                prev,
+                blockUpdate.getMessageCount(),
+                blockUpdate.getMessageRoot()
+        );
+        var nsHash = ns.hash();
+        var nsRoot = blockUpdate.getNetworkSectionsRoot(nsHash);
+        var nextProofContextHash = blockUpdate.getNextProofContextHash();
+        NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
+        var srcNetworkID = bmvProperties.getSrcNetworkID();
+        var networkTypeID = bmvProperties.getNetworkTypeID();
+        var height = blockUpdate.getMainHeight();
+        var round = blockUpdate.getRound();
+        var ntsHash = nts.hash();
+        NetworkTypeSectionDecision decision = new NetworkTypeSectionDecision(
+                srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
+        Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
+        verifyProof(decision, proofs);
         var isUpdate = updateNumber.and(BigInteger.ONE).compareTo(BigInteger.ONE) == 0;
         if (isUpdate) {
-            NetworkSection ns = new NetworkSection(
-                    blockUpdateNid,
-                    updateNumber,
-                    prev,
-                    blockUpdate.getMessageCount(),
-                    blockUpdate.getMessageRoot()
-            );
-            var nsHash = ns.hash();
-            var nsRoot = blockUpdate.getNetworkSectionsRoot(nsHash);
-            var nextProofContextHash = blockUpdate.getNextProofContextHash();
-            NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
-            var srcNetworkID = bmvProperties.getSrcNetworkID();
-            var networkTypeID = bmvProperties.getNetworkTypeID();
-            var height = blockUpdate.getMainHeight();
-            var round = blockUpdate.getRound();
-            var ntsHash = nts.hash();
-            NetworkTypeSectionDecision decision = new NetworkTypeSectionDecision(
-                    srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
-            Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
-            verifyProof(decision, proofs);
-
             var nextProofContext = blockUpdate.getNextProofContext();
             verifyProofContextData(nextProofContextHash, nextProofContext, bmvProperties.getProofContextHash());
             bmvProperties.setProofContextHash(nextProofContextHash);
             bmvProperties.setProofContext(nextProofContext);
-            bmvProperties.setLastNetworkSectionHash(nsHash);
-            propertiesDB.set(bmvProperties);
         }
+        bmvProperties.setLastNetworkSectionHash(nsHash);
+        propertiesDB.set(bmvProperties);
     }
 
     private void verifyProofContextData(byte[] proofContextHash, byte[] proofContext, byte[] currentProofContextHash) {
