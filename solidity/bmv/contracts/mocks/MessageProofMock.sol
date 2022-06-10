@@ -14,7 +14,8 @@ contract MessageProofMock {
 
     function calculate(bytes memory enc) public returns (bytes32) {
         MessageProofLib.MessageProof memory mp = MessageProofLib.decode(enc);
-        return mp.calculate();
+        (bytes32 root, ) = mp.calculate();
+        return root;
     }
 
 }
