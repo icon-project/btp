@@ -24,11 +24,13 @@ public class CallRequest {
     private final Address from;
     private final String to;
     private final byte[] rollback;
+    private boolean enabled;
 
     public CallRequest(Address from, String to, byte[] rollback) {
         this.from = from;
         this.to = to;
         this.rollback = rollback;
+        this.enabled = false;
     }
 
     public Address getFrom() {
@@ -44,10 +46,11 @@ public class CallRequest {
     }
 
     public static void writeObject(ObjectWriter w, CallRequest req) {
-        w.beginList(3);
+        w.beginList(4);
         w.write(req.from);
         w.write(req.to);
         w.writeNullable(req.rollback);
+        w.write(req.enabled);
         w.end();
     }
 
@@ -58,7 +61,18 @@ public class CallRequest {
                 r.readString(),
                 r.readNullable(byte[].class)
         );
+        if (r.readBoolean()) {
+            req.setEnabled();
+        }
         r.end();
         return req;
+    }
+
+    public boolean enabled() {
+        return enabled;
+    }
+
+    public void setEnabled() {
+        this.enabled = true;
     }
 }

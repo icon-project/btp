@@ -106,10 +106,11 @@ public class CallServiceImpl implements BSH, CallService {
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, null);
         } catch (UserRevertedException e) {
             logger.println("executeCall", "code:", e.getCode(), "msg:", e.getMessage());
-            msgRes = new CSMessageResponse(req.getSn(), e.getCode(), e.getMessage());
+            int code = e.getCode() == 0 ? CSMessageResponse.FAILURE : e.getCode();
+            msgRes = new CSMessageResponse(req.getSn(), code, e.getMessage());
         } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("executeCall", "Exception:", e.toString());
-            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.getMessage());
+            logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
+            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
         } finally {
             // cleanup
             proxyReqs.set(_reqId, null);
@@ -124,6 +125,7 @@ public class CallServiceImpl implements BSH, CallService {
     public void executeRollback(BigInteger _sn) {
         CallRequest req = requests.get(_sn);
         Context.require(req != null, "InvalidSerialNum");
+        Context.require(req.enabled(), "RollbackNotEnabled");
         try {
             BTPAddress callSvc = new BTPAddress(net, Context.getAddress().toString());
             DAppProxy proxy = new DAppProxy(req.getFrom());
@@ -201,24 +203,27 @@ public class CallServiceImpl implements BSH, CallService {
 
     private void handleResponse(String netFrom, BigInteger sn, byte[] data) {
         CSMessageResponse msgRes = CSMessageResponse.fromBytes(data);
-        CallRequest req = requests.get(msgRes.getSn());
+        BigInteger resSn = msgRes.getSn();
+        CallRequest req = requests.get(resSn);
         if (req == null) {
-            logger.println("handleResponse", "No request for", msgRes.getSn());
+            logger.println("handleResponse", "No request for", resSn);
             return; // just ignore
         }
         switch (msgRes.getCode()) {
             case CSMessageResponse.SUCCESS:
-                cleanupCallRequest(msgRes.getSn());
+                cleanupCallRequest(resSn);
                 break;
             case CSMessageResponse.FAILURE:
             default:
                 logger.println("handleResponse", "code:", msgRes.getCode(), "msg:", msgRes.getMsg());
                 // emit rollback event
                 if (req.getRollback() != null) {
-                    RollbackMessage(msgRes.getSn(), req.getRollback());
+                    req.setEnabled();
+                    requests.set(resSn, req);
+                    RollbackMessage(resSn, req.getRollback());
                 } else {
                     // ignore the failure response since no rollback data
-                    cleanupCallRequest(msgRes.getSn());
+                    cleanupCallRequest(resSn);
                 }
         }
     }

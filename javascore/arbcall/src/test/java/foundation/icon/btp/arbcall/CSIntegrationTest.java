@@ -54,4 +54,10 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
         return ScoreIntegrationTest.eventLogChecker(
                 csClient._address(), supplier, consumer);
     }
+
+    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier) {
+        return ScoreIntegrationTest.notExistsEventLogChecker(
+                csClient._address(), supplier);
+    }
 }
