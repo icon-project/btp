@@ -12,19 +12,24 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
     address public immutable bmc;
-    Context public context;
 
-    struct Context {
-        bytes srcNetworkId;
-        uint networkTypeId;
-        uint networkId;
-        uint mainHeight;
-        bytes32 networkSectionHash;
-        bytes32 messageRoot;
-        uint messageCount;
-        uint remainMessageCount;
-        uint nextMessageSn;
-        address[] validators;
+    bytes private _srcNetworkId;
+    uint private _networkTypeId;
+    uint private _networkId;
+    uint private _height;
+    bytes32 private _networkSectionHash;
+    bytes32 private _messageRoot;
+    uint private _messageCount;
+    uint private _remainMessageCount;
+    uint private _nextMessageSn;
+    address[] private _validators;
+
+    modifier onlyBmc() {
+        require(
+            msg.sender == bmc,
+            "Function must be called through known bmc"
+        );
+        _;
     }
 
     constructor() {
@@ -40,33 +45,27 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
     )
     external
     {
-        context.srcNetworkId = srcNetworkId;
-        context.networkTypeId = networkTypeId;
-        context.networkId = networkId;
+        _srcNetworkId = srcNetworkId;
+        _networkTypeId = networkTypeId;
+        _networkId = networkId;
+
         BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
-        context.mainHeight = bu.mainHeight;
-        context.nextMessageSn = 0;
-        context.remainMessageCount = 0;
-        context.networkSectionHash = bu.getNetworkSectionHash();
-        context.validators = bu.nextValidators;
+        _height = bu.mainHeight;
+        _nextMessageSn = 0;
+        _remainMessageCount = 0;
+        _networkSectionHash = bu.getNetworkSectionHash();
+        _validators = bu.nextValidators;
+
     }
 
-    modifier onlyBmc() {
-        require(
-            msg.sender == bmc,
-            "Function must be called through known bmc"
-        );
-        _;
-    }
-
-    function getStatus() external view returns (uint256) {
-        return context.mainHeight;
+    function getStatus() external view returns (uint) {
+        return _height;
     }
 
     function handleRelayMessage(
         string memory _bmc,
         string memory _prev,
-        uint256 _seq,
+        uint _seq,
         bytes memory _msg
     ) external returns (bytes[] memory) {
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
@@ -74,46 +73,108 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
         bytes[] memory messages;
         for (uint i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
-                if (context.remainMessageCount != 0) {
-                    // ignore block update, if there are messages to be processed
+                if (_remainMessageCount != 0) {
                     continue;
                 }
-
                 BlockUpdateLib.BlockUpdate memory bu = rms[i].toBlockUpdate();
+                checkBlockUpdateWithState(bu);
+                checkBlockUpdateProof(bu);
 
-                require(context.networkId == bu.networkId, "invalid network id");
-                require(context.networkSectionHash == bu.prevNetworkSectionHash,
-                        "invalid preivous network section hash");
-                require(context.nextMessageSn == bu.messageSn, "invalid message sequence number");
-                bu.verify(context.srcNetworkId, context.networkTypeId, context.validators);
-
-                if (bu.hasNewNextValidators) {
-                    context.validators = bu.nextValidators;
+                _height = bu.mainHeight;
+                _networkSectionHash = bu.getNetworkSectionHash();
+                if (bu.hasNextValidators) {
+                    _validators = bu.nextValidators;
                 }
-                bytes32 prevContext = context.networkSectionHash;
-                context.networkSectionHash = bu.getNetworkSectionHash();
                 if (bu.messageRoot != bytes32(0)) {
-                    context.messageRoot = bu.messageRoot;
-                    context.remainMessageCount = context.messageCount = bu.messageCount;
+                    _messageRoot = bu.messageRoot;
+                    _remainMessageCount = _messageCount = bu.messageCount;
                 }
 
             } else if (rms[i].typ == RelayMessageLib.TypeMessageProof) {
                 MessageProofLib.MessageProof memory mp = rms[i].toMessageProof();
 
                 // compare roots of `block update` and `message proof`
-                require(mp.calculate() == context.messageRoot, "");
-                require(MessageProofLib.getLeafCount(mp.lefts) == context.messageCount, "");
-
-                // update context
-                context.remainMessageCount -= mp.mesgs.length;
-                context.nextMessageSn += mp.mesgs.length;
+                (bytes32 root, uint leafCount) = mp.calculate();
+                require(root == _messageRoot, "");
+                require(leafCount == _messageCount, "");
 
                 // collect messages
                 messages = Utils.append(messages, mp.mesgs);
 
+                // update state
+                _remainMessageCount -= mp.mesgs.length;
+                _nextMessageSn += mp.mesgs.length;
+
             }
         }
         return messages;
+    }
+
+    function srcNetworkId() public view returns (bytes memory) {
+        return _srcNetworkId;
+    }
+
+    function networkTypeId() public view returns (uint) {
+        return _networkTypeId;
+    }
+
+    function networkId() public view returns (uint) {
+        return _networkId;
+    }
+
+    function height() public view returns (uint) {
+        return _height;
+    }
+
+    function networkSectionHash() public view returns (bytes32) {
+        return _networkSectionHash;
+    }
+
+    function messageRoot() public view returns (bytes32) {
+        return _messageRoot;
+    }
+
+    function messageCount() public view returns (uint) {
+        return _messageCount;
+    }
+
+    function remainMessageCount() public view returns (uint) {
+        return _remainMessageCount;
+    }
+
+    function nextMessageSn() public view returns (uint) {
+        return _nextMessageSn;
+    }
+
+    function validators(uint nth) public view returns (address) {
+        return _validators[nth];
+    }
+
+    function validatorsCount() public view returns (uint) {
+        return _validators.length;
+    }
+
+    function hasQuorumOf(uint votes) private view returns (bool) {
+        return votes * 3 > _validators.length * 2;
+    }
+
+    function checkBlockUpdateWithState(BlockUpdateLib.BlockUpdate memory bu) private view {
+        require(_networkId == bu.networkId, "invalid network id");
+        require(_networkSectionHash == bu.prevNetworkSectionHash,
+                "invalid previous network section hash");
+        require(_nextMessageSn == bu.messageSn, "invalid message sequence number");
+    }
+
+    function checkBlockUpdateProof(BlockUpdateLib.BlockUpdate memory bu) private view {
+        uint votes = 0;
+        bytes32 decision = bu.getNetworkTypeSectionDecisionHash(_srcNetworkId, _networkTypeId);
+        for (uint j = 0; j < bu.signatures.length && !hasQuorumOf(votes); j++) {
+            address signer = Utils.recoverSigner(decision, bu.signatures[j]);
+            if (signer == _validators[j]) {
+                votes++;
+            }
+        }
+        require(hasQuorumOf(votes), "lack of quorum");
     }
 
 }

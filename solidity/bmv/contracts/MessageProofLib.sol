@@ -50,9 +50,10 @@ library MessageProofLib {
         }
     }
 
-    function calculate(MessageProof memory proof) internal returns (bytes32) {
+    function calculate(MessageProof memory proof) internal returns (bytes32, uint) {
         Queue memory queue = toQueue(proof);
-        uint t = getLeafCount(queue.nodes);
+        uint leafCount = getLeafCount(queue.nodes);
+        uint t = leafCount;
         uint maxLevel = 1;
         while (t != 0) {
             maxLevel++;
@@ -73,7 +74,7 @@ library MessageProofLib {
             }
         }
         assert(queue.length == 1);
-        return queue.pop().hash;
+        return (queue.pop().hash, leafCount);
     }
 
     function push(Queue memory queue, MessageProofNode memory node) internal {

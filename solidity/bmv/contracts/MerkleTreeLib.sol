@@ -12,7 +12,7 @@ library MerkleTreeLib {
         bytes32 hash;
     }
 
-    function calculate(bytes32 leaf, Path[] memory pathes) internal returns (bytes32) {
+    function calculate(bytes32 leaf, Path[] memory pathes) internal pure returns (bytes32) {
         bytes32 temp = leaf;
         for (uint i = 0; i < pathes.length; i++) {
             temp = pathes[i].direction == 0
