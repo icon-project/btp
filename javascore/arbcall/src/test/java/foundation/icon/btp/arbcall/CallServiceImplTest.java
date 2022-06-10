@@ -22,6 +22,7 @@ import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.btp.test.SendMessageEventLog;
 import foundation.icon.jsonrpc.Address;
+import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -40,13 +41,36 @@ class CallServiceImplTest implements CSIntegrationTest {
     static BTPAddress to = new BTPAddress(linkNet, sampleAddress.toString());
     static BigInteger srcSn = BigInteger.ZERO;
     static BigInteger reqId = BigInteger.ZERO;
+    static Map<BigInteger, MessageRequest> requestMap = new HashMap<>();
+
+    private static class MessageRequest {
+        private final byte[] data;
+        private final byte[] rollback;
+
+        public MessageRequest(byte[] data, byte[] rollback) {
+            this.data = data;
+            this.rollback = rollback;
+        }
+
+        public byte[] getData() {
+            return data;
+        }
+
+        public byte[] getRollback() {
+            return rollback;
+        }
+    }
 
     @BeforeAll
     static void beforeAll() {
     }
 
     private BigInteger getNextSn() {
-        srcSn = srcSn.add(BigInteger.ONE);
+        return getNextSn(BigInteger.ONE);
+    }
+
+    private BigInteger getNextSn(BigInteger inc) {
+        srcSn = srcSn.add(inc);
         return srcSn;
     }
 
@@ -58,8 +82,9 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Order(0)
     @Test
     void sendCallMessageFromDAppProxy() {
-        byte[] data = "Hello BTP".getBytes();
+        byte[] data = "sendCallMessageFromDAppProxy".getBytes();
         var sn = getNextSn();
+        requestMap.put(sn, new MessageRequest(data, null));
         var request = new CSMessageRequest(sampleAddress.toString(), to.account(), data);
         var checker = MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
             assertEquals(linkNet, el.getTo());
@@ -80,7 +105,7 @@ class CallServiceImplTest implements CSIntegrationTest {
     void handleBTPMessageShouldEmitCallMessage() {
         var from = new BTPAddress(linkNet, sampleAddress.toString());
         var reqId = getNextReqId();
-        byte[] data = "handleBTPMessageShouldEmitCallMessage".getBytes();
+        byte[] data = requestMap.get(srcSn).getData();
         var reqMsg = new CSMessageRequest(from.account(), to.account(), data);
         var csMsg = new CSMessage(CSMessage.REQUEST, reqMsg.toBytes());
         var checker = CSIntegrationTest.eventLogChecker(CallMessageEventLog::eventLogs, (el) -> {
@@ -98,6 +123,7 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Order(2)
     @Test
     void executeCallWithSuccessResponse() {
+        var from = new BTPAddress(linkNet, sampleAddress.toString());
         var response = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var checker = MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
             assertEquals(linkNet, el.getTo());
@@ -105,13 +131,17 @@ class CallServiceImplTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el.getMsg());
             assertEquals(CSMessage.RESPONSE, csMessage.getType());
             AssertCallService.assertEqualsCSMessageResponse(response, CSMessageResponse.fromBytes(csMessage.getData()));
-        });
+        }).andThen(ScoreIntegrationTest.eventLogChecker(sampleAddress, MessageReceivedEventLog::eventLogs, (el) -> {
+            assertEquals(from.toString(), el.getFrom());
+            assertArrayEquals(requestMap.get(srcSn).getData(), el.getData());
+        }));
         ((CallServiceScoreClient) callSvc).executeCall(checker, reqId);
     }
 
     @Order(3)
     @Test
     void handleBTPMessageWithSuccessResponse() {
+        var dstSn = BigInteger.ONE;
         var resMsg = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var csMsg = new CSMessage(CSMessage.RESPONSE, resMsg.toBytes());
         var checker = CSIntegrationTest.eventLogChecker(CallRequestClearedEventLog::eventLogs, (el) -> {
@@ -119,6 +149,6 @@ class CallServiceImplTest implements CSIntegrationTest {
         });
         ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, BigInteger.ONE, csMsg.toBytes());
+                linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
 }

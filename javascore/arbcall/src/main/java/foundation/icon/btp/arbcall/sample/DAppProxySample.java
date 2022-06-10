@@ -22,6 +22,7 @@ import foundation.icon.btp.arbcall.ProxyRequest;
 import score.Address;
 import score.Context;
 import score.DictDB;
+import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
 
@@ -52,6 +53,10 @@ public class DAppProxySample implements CallServiceReceiver {
     @Override
     @External
     public void handleCallMessage(String _from, byte[] _data) {
+        MessageReceived(_from, _data);
         Context.println("handleCallMessage: from=" + _from + ", data=" + new String(_data));
     }
+
+    @EventLog
+    public void MessageReceived(String _from, byte[] _data) {}
 }
