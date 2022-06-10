@@ -25,4 +25,10 @@ public class AssertCallService {
         assertEquals(exp.getTo(), got.getTo());
         assertArrayEquals(exp.getData(), got.getData());
     }
+
+    public static void assertEqualsCSMessageResponse(CSMessageResponse exp, CSMessageResponse got) {
+        assertEquals(exp.getSn(), got.getSn());
+        assertEquals(exp.getCode(), got.getCode());
+        assertEquals(exp.getMsg(), got.getMsg());
+    }
 }

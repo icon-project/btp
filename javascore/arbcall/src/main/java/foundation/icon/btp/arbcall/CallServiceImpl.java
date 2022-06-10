@@ -73,6 +73,7 @@ public class CallServiceImpl implements BSH, CallService {
 
     private void cleanupCallRequest(BigInteger sn) {
         requests.set(sn, null);
+        CallRequestCleared(sn);
     }
 
     @Override
@@ -141,6 +142,10 @@ public class CallServiceImpl implements BSH, CallService {
     @Override
     @EventLog(indexed=1)
     public void RollbackMessage(BigInteger _sn, byte[] _rollback) {}
+
+    /* Implementation-specific eventlog */
+    @EventLog(indexed=1)
+    private void CallRequestCleared(BigInteger _sn) {}
 
     /* ========== Interfaces with BMC ========== */
     @Override

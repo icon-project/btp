@@ -17,6 +17,7 @@
 package foundation.icon.btp.arbcall.sample;
 
 import foundation.icon.btp.arbcall.CallRequest;
+import foundation.icon.btp.arbcall.CallServiceReceiver;
 import foundation.icon.btp.arbcall.ProxyRequest;
 import score.Address;
 import score.Context;
@@ -26,7 +27,7 @@ import score.annotation.Optional;
 
 import java.math.BigInteger;
 
-public class DAppProxySample {
+public class DAppProxySample implements CallServiceReceiver {
     private final Address callSvc;
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
     private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
@@ -46,5 +47,11 @@ public class DAppProxySample {
 
     private BigInteger _sendCallMessage(String to, byte[] data, byte[] rollback) {
         return Context.call(BigInteger.class, this.callSvc, "sendCallMessage", to, data, rollback);
+    }
+
+    @Override
+    @External
+    public void handleCallMessage(String _from, byte[] _data) {
+        Context.println("handleCallMessage: from=" + _from + ", data=" + new String(_data));
     }
 }
