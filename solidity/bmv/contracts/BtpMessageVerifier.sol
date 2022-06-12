@@ -2,8 +2,8 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./interfaces/IBtpMessageVerifier.sol";
-import "./RelayMessageLib.sol";
-import "./Utils.sol";
+import "./libraries/RelayMessageLib.sol";
+import "./libraries/Utils.sol";
 
 contract BtpMessageVerifier is IBtpMessageVerifier {
 
