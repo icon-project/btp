@@ -26,15 +26,17 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class RollbackMessageEventLog {
-    private static final String SIGNATURE = "RollbackMessage(int,bytes)";
+    private static final String SIGNATURE = "RollbackMessage(int,bytes,str)";
     private final BigInteger sn;
     private final byte[] rollback;
+    private final String reason;
 
     public RollbackMessageEventLog(TransactionResult.EventLog el) {
         this.sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
                 el.getIndexed().get(1));
         this.rollback = IconJsonModule.ByteArrayDeserializer.BYTE_ARRAY.convert(
                 el.getData().get(0));
+        this.reason = el.getData().get(1);
     }
 
     public BigInteger getSn() {
@@ -43,6 +45,10 @@ public class RollbackMessageEventLog {
 
     public byte[] getRollback() {
         return rollback;
+    }
+
+    public String getReason() {
+        return reason;
     }
 
     public static List<RollbackMessageEventLog> eventLogs(TransactionResult txr,

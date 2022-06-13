@@ -26,6 +26,7 @@ import java.math.BigInteger;
 public class CSMessageResponse {
     public static final int SUCCESS = 0;
     public static final int FAILURE = -1;
+    public static final int BTP_ERROR = -2;
 
     private final BigInteger sn;
     private final int code;

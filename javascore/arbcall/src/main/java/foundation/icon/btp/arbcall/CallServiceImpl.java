@@ -105,9 +105,10 @@ public class CallServiceImpl implements BSH, CallService {
             proxy.handleCallMessage(req.getFrom(), req.getData());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, null);
         } catch (UserRevertedException e) {
-            logger.println("executeCall", "code:", e.getCode(), "msg:", e.getMessage());
             int code = e.getCode() == 0 ? CSMessageResponse.FAILURE : e.getCode();
-            msgRes = new CSMessageResponse(req.getSn(), code, e.getMessage());
+            String msg = "UserReverted(" + code + ")";
+            logger.println("executeCall", "code:", code, "msg:", msg);
+            msgRes = new CSMessageResponse(req.getSn(), code, msg);
         } catch (IllegalArgumentException | RevertedException e) {
             logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
@@ -143,7 +144,7 @@ public class CallServiceImpl implements BSH, CallService {
 
     @Override
     @EventLog(indexed=1)
-    public void RollbackMessage(BigInteger _sn, byte[] _rollback) {}
+    public void RollbackMessage(BigInteger _sn, byte[] _rollback, String _reason) {}
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=1)
@@ -173,6 +174,11 @@ public class CallServiceImpl implements BSH, CallService {
     @External
     public void handleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg) {
         Context.require(Context.getCaller().equals(bmc), "Only BMC");
+        Context.require(SERVICE.equals(_svc), "InvalidServiceName");
+
+        String errMsg = "BTPError{code=" + _code + ", msg=" + _msg + "}";
+        CSMessageResponse res = new CSMessageResponse(_sn, CSMessageResponse.BTP_ERROR, errMsg);
+        handleResponse(_src, _sn, res.toBytes());
     }
 
     @Override
@@ -214,13 +220,14 @@ public class CallServiceImpl implements BSH, CallService {
                 cleanupCallRequest(resSn);
                 break;
             case CSMessageResponse.FAILURE:
+            case CSMessageResponse.BTP_ERROR:
             default:
                 logger.println("handleResponse", "code:", msgRes.getCode(), "msg:", msgRes.getMsg());
                 // emit rollback event
                 if (req.getRollback() != null) {
                     req.setEnabled();
                     requests.set(resSn, req);
-                    RollbackMessage(resSn, req.getRollback());
+                    RollbackMessage(resSn, req.getRollback(), msgRes.getMsg());
                 } else {
                     // ignore the failure response since no rollback data
                     cleanupCallRequest(resSn);

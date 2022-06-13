@@ -42,9 +42,10 @@ public interface CallService {
      *
      * @param _sn The serial number of the previous request
      * @param _rollback The data for recovering that was given by the caller
+     * @param _reason The error message that caused this rollback
      */
     @EventLog(indexed=1)
-    void RollbackMessage(BigInteger _sn, byte[] _rollback);
+    void RollbackMessage(BigInteger _sn, byte[] _rollback, String _reason);
 
     /**
      * Rollbacks the caller state of the request '_sn'.

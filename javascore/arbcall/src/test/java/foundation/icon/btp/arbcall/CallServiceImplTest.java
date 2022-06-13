@@ -228,7 +228,38 @@ class CallServiceImplTest implements CSIntegrationTest {
 
     @Order(14)
     @Test
-    void executeRollbackWithSuccess() {
+    void executeRollbackWithFailureResponse() {
+        var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
+        var from = new BTPAddress(btpAddress.net(), csAddress.toString());
+        var checker = ScoreIntegrationTest.eventLogChecker(sampleAddress, MessageReceivedEventLog::eventLogs, (el) -> {
+            assertEquals(from.toString(), el.getFrom());
+            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getData());
+        }).andThen(CSIntegrationTest.eventLogChecker(CallRequestClearedEventLog::eventLogs, (el) -> {
+            assertEquals(srcSn, el.getSn());
+        }));
+        ((CallServiceScoreClient) callSvc).executeRollback(checker, srcSn);
+    }
+
+    @Order(20)
+    @Test
+    void handleBTPErrorTest() {
+        // prepare another call request
+        sendCallMessageWithRollback();
+
+        // check the BTP error message
+        var checker = CSIntegrationTest.eventLogChecker(RollbackMessageEventLog::eventLogs, (el) -> {
+            assertEquals(srcSn, el.getSn());
+            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
+        }).andThen(CSIntegrationTest.notExistsEventLogChecker(CallRequestClearedEventLog::eventLogs));
+        var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPError(
+                checker, csAddress,
+                btpAddress.toString(), CallServiceImpl.SERVICE, srcSn, 1, "BTPError");
+    }
+
+    @Order(21)
+    @Test
+    void executeRollbackWithBTPError() {
         var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
         var from = new BTPAddress(btpAddress.net(), csAddress.toString());
         var checker = ScoreIntegrationTest.eventLogChecker(sampleAddress, MessageReceivedEventLog::eventLogs, (el) -> {
