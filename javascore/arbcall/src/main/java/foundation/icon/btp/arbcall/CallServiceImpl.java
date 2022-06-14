@@ -36,17 +36,28 @@ public class CallServiceImpl implements BSH, CallService {
     private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
     public static final String SERVICE = "arbcall";
 
-    private final Address bmc;
-    private final String net;
+    private final VarDB<Address> bmc = Context.newVarDB("bmc", Address.class);
+    private final VarDB<String> net = Context.newVarDB("net", String.class);
     private final VarDB<CSProperties> props = Context.newVarDB("properties", CSProperties.class);
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
     private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
 
     public CallServiceImpl(Address _bmc) {
-        this.bmc = _bmc;
-        BMCScoreInterface bmcInterface = new BMCScoreInterface(this.bmc);
-        BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
-        this.net = btpAddress.net();
+        // set bmc address only for the first deploy
+        if (bmc.get() == null) {
+            bmc.set(_bmc);
+            BMCScoreInterface bmcInterface = new BMCScoreInterface(_bmc);
+            BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
+            net.set(btpAddress.net());
+        }
+    }
+
+    private void onlyBMC() {
+        Context.require(Context.getCaller().equals(bmc.get()), "Only BMC");
+    }
+
+    private void checkService(String _svc) {
+        Context.require(SERVICE.equals(_svc), "InvalidServiceName");
     }
 
     public CSProperties getProperties() {
@@ -128,7 +139,7 @@ public class CallServiceImpl implements BSH, CallService {
         Context.require(req != null, "InvalidSerialNum");
         Context.require(req.enabled(), "RollbackNotEnabled");
         try {
-            BTPAddress callSvc = new BTPAddress(net, Context.getAddress().toString());
+            BTPAddress callSvc = new BTPAddress(net.get(), Context.getAddress().toString());
             DAppProxy proxy = new DAppProxy(req.getFrom());
             proxy.handleCallMessage(callSvc.toString(), req.getRollback());
         } catch (Exception e) {
@@ -154,8 +165,8 @@ public class CallServiceImpl implements BSH, CallService {
     @Override
     @External
     public void handleBTPMessage(String _from, String _svc, BigInteger _sn, byte[] _msg) {
-        Context.require(Context.getCaller().equals(bmc), "Only BMC");
-        Context.require(SERVICE.equals(_svc), "InvalidServiceName");
+        onlyBMC();
+        checkService(_svc);
 
         CSMessage msg = CSMessage.fromBytes(_msg);
         switch (msg.getType()) {
@@ -173,8 +184,8 @@ public class CallServiceImpl implements BSH, CallService {
     @Override
     @External
     public void handleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg) {
-        Context.require(Context.getCaller().equals(bmc), "Only BMC");
-        Context.require(SERVICE.equals(_svc), "InvalidServiceName");
+        onlyBMC();
+        checkService(_svc);
 
         String errMsg = "BTPError{code=" + _code + ", msg=" + _msg + "}";
         CSMessageResponse res = new CSMessageResponse(_sn, CSMessageResponse.BTP_ERROR, errMsg);
@@ -184,13 +195,14 @@ public class CallServiceImpl implements BSH, CallService {
     @Override
     @External
     public void handleFeeGathering(String _fa, String _svc) {
-        Context.require(Context.getCaller().equals(bmc), "Only BMC");
+        onlyBMC();
+        checkService(_svc);
     }
     /* ========================================= */
 
     private void sendBTPMessage(String netTo, int msgType, BigInteger sn, byte[] data) {
         CSMessage msg = new CSMessage(msgType, data);
-        BMCScoreInterface bmc = new BMCScoreInterface(this.bmc);
+        BMCScoreInterface bmc = new BMCScoreInterface(this.bmc.get());
         bmc.sendMessage(netTo, SERVICE, sn, msg.toBytes());
     }
 
