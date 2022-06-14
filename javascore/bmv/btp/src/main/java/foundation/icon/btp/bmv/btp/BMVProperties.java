@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.bmv.btp;
 
+import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.util.StringUtil;
 import score.*;
 
@@ -35,11 +36,12 @@ public class BMVProperties {
     private byte[] proofContextHash;
     private byte[] proofContext;
     private byte[] lastNetworkSectionHash;
-    private Address bmc;
+    private BTPAddress bmc;
     private BigInteger lastSequence;
     private byte[] lastMessagesRoot;
     private BigInteger lastMessageCount;
     private BigInteger lastFirstMessageSN;
+    private BigInteger height;
 
     public byte[] getSrcNetworkID() {
         return srcNetworkID;
@@ -122,12 +124,20 @@ public class BMVProperties {
     }
 
 
-    public Address getBmc() {
+    public BTPAddress getBmc() {
         return bmc;
     }
 
-    public void setBmc(Address bmc) {
+    public void setBmc(BTPAddress bmc) {
         this.bmc = bmc;
+    }
+
+    public BigInteger getHeight() {
+        return height;
+    }
+
+    public void setHeight(BigInteger height) {
+        this.height = height;
     }
 
     public static BMVProperties readObject(ObjectReader reader) {
@@ -139,11 +149,12 @@ public class BMVProperties {
         obj.setProofContextHash(reader.readNullable(byte[].class));
         obj.setProofContext(reader.readNullable(byte[].class));
         obj.setLastNetworkSectionHash(reader.readNullable(byte[].class));
-        obj.setBmc(reader.readAddress());
+        obj.setBmc(reader.read(BTPAddress.class));
         obj.setLastSequence(reader.readNullable(BigInteger.class));
         obj.setLastMessagesRoot(reader.readNullable(byte[].class));
         obj.setLastMessageCount(reader.readNullable(BigInteger.class));
         obj.setLastFirstMessageSN(reader.readNullable(BigInteger.class));
+        obj.setHeight(reader.readBigInteger());
         reader.end();
         return obj;
     }
@@ -161,6 +172,7 @@ public class BMVProperties {
         writer.writeNullable(obj.lastMessagesRoot);
         writer.writeNullable(obj.lastMessageCount);
         writer.writeNullable(obj.lastFirstMessageSN);
+        writer.write(obj.height);
         writer.end();
     }
 
@@ -178,6 +190,7 @@ public class BMVProperties {
                 ", lastMessagesRoot=" + StringUtil.bytesToHex(lastMessagesRoot) +
                 ", lastMessageCount=" + lastMessageCount +
                 ", lastFirstMessageSN=" + lastFirstMessageSN +
+                ", height=" + height +
                 '}';
     }
 }

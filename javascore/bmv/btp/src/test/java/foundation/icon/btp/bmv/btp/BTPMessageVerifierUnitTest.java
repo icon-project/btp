@@ -81,7 +81,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         score = sm.deploy(owner, BTPMessageVerifier.class,
                 StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
                 0,
-                bmcAccount.getAddress(),
+                bmc.toString(),
                 Base64.getUrlDecoder().decode(BASE64_FIRST_BLOCK_UPDATE.getBytes()));
     }
 

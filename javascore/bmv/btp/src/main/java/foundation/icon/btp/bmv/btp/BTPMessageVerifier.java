@@ -18,6 +18,7 @@ package foundation.icon.btp.bmv.btp;
 
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVStatus;
+import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
 import score.Address;
@@ -37,10 +38,11 @@ public class BTPMessageVerifier implements BMV {
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
-    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] firstBlockUpdate) {
+    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, String _bmc, byte[] firstBlockUpdate) {
         BMVProperties bmvProperties = getProperties();
         bmvProperties.setSrcNetworkID(srcNetworkID);
         bmvProperties.setNetworkTypeID(networkTypeID);
+        BTPAddress bmc = BTPAddress.valueOf(_bmc);
         bmvProperties.setBmc(bmc);
         handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate), bmvProperties);
     }
@@ -51,6 +53,8 @@ public class BTPMessageVerifier implements BMV {
 
     @External
     public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
+        BTPAddress curAddr = BTPAddress.valueOf(_bmc);
+        checkAccessible(curAddr);
         var decoder = Base64.getUrlDecoder();
         var base64Decoded = decoder.decode(_msg.getBytes());
         RelayMessage relayMessages = RelayMessage.fromBytes(base64Decoded);
@@ -81,7 +85,10 @@ public class BTPMessageVerifier implements BMV {
 
     @External(readonly = true)
     public BMVStatus getStatus() {
-        return null;
+        BMVStatus bmvStatus = new BMVStatus();
+        BigInteger height = getProperties().getHeight();
+        bmvStatus.setHeight(height.longValue());
+        return bmvStatus;
     }
 
     private void handleFirstBlockUpdate(BlockUpdate blockUpdate, BMVProperties bmvProperties) {
@@ -110,6 +117,7 @@ public class BTPMessageVerifier implements BMV {
         bmvProperties.setLastMessagesRoot(msgRoot);
         bmvProperties.setLastMessageCount(msgCnt);
         bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
+        bmvProperties.setHeight(blockUpdate.getMainHeight());
         propertiesDB.set(bmvProperties);
     }
 
@@ -150,6 +158,7 @@ public class BTPMessageVerifier implements BMV {
             bmvProperties.setProofContext(nextProofContext);
         }
         bmvProperties.setLastNetworkSectionHash(nsHash);
+        bmvProperties.setHeight(blockUpdate.getMainHeight());
         propertiesDB.set(bmvProperties);
     }
 
@@ -233,5 +242,15 @@ public class BTPMessageVerifier implements BMV {
     static Address recoverAddress(byte[] msg, byte[] sig) {
         byte[] publicKey = Context.recoverKey(SIGNATURE_ALG, msg, sig, true);
         return Context.getAddressFromKey(publicKey);
+    }
+
+    private void checkAccessible(BTPAddress curAddr) {
+        BMVProperties properties = getProperties();
+        var bmcAddress = Address.fromString(properties.getBmc().account());
+        if (!Context.getCaller().equals(bmcAddress)) {
+            throw BMVException.unknown("not acceptable bmc");
+        } else if (bmcAddress.equals(Address.fromString(curAddr.account()))) {
+            throw BMVException.unknown("not acceptable bmc");
+        }
     }
 }
