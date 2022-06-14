@@ -38,7 +38,9 @@ public class CallServiceImpl implements BSH, CallService {
 
     private final VarDB<Address> bmc = Context.newVarDB("bmc", Address.class);
     private final VarDB<String> net = Context.newVarDB("net", String.class);
-    private final VarDB<CSProperties> props = Context.newVarDB("properties", CSProperties.class);
+    private final VarDB<BigInteger> sn = Context.newVarDB("sn", BigInteger.class);
+    private final VarDB<BigInteger> reqId = Context.newVarDB("reqId", BigInteger.class);
+
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
     private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
 
@@ -60,26 +62,18 @@ public class CallServiceImpl implements BSH, CallService {
         Context.require(SERVICE.equals(_svc), "InvalidServiceName");
     }
 
-    public CSProperties getProperties() {
-        return props.getOrDefault(new CSProperties());
-    }
-
-    public void setProperties(CSProperties props) {
-        this.props.set(props);
-    }
-
     private BigInteger getNextSn() {
-        CSProperties props = getProperties();
-        props.setSn(props.getSn().add(BigInteger.ONE));
-        setProperties(props);
-        return props.getSn();
+        BigInteger _sn = this.sn.getOrDefault(BigInteger.ZERO);
+        _sn = _sn.add(BigInteger.ONE);
+        this.sn.set(_sn);
+        return _sn;
     }
 
     private BigInteger getNextReqId() {
-        CSProperties props = getProperties();
-        props.setReqId(props.getReqId().add(BigInteger.ONE));
-        setProperties(props);
-        return props.getReqId();
+        BigInteger _reqId = this.reqId.getOrDefault(BigInteger.ZERO);
+        _reqId = _reqId.add(BigInteger.ONE);
+        this.reqId.set(_reqId);
+        return _reqId;
     }
 
     private void cleanupCallRequest(BigInteger sn) {
