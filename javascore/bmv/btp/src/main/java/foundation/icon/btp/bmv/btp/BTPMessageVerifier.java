@@ -157,6 +157,9 @@ public class BTPMessageVerifier implements BMV {
             bmvProperties.setProofContextHash(nextProofContextHash);
             bmvProperties.setProofContext(nextProofContext);
         }
+        bmvProperties.setLastMessagesRoot(blockUpdate.getMessageRoot());
+        bmvProperties.setLastMessageCount(blockUpdate.getMessageCount());
+        bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
         bmvProperties.setLastNetworkSectionHash(nsHash);
         bmvProperties.setHeight(blockUpdate.getMainHeight());
         propertiesDB.set(bmvProperties);
@@ -219,16 +222,9 @@ public class BTPMessageVerifier implements BMV {
         }
         var msgCnt = messageProof.getMessages().length;
         var remainCnt = result.total - result.offset - msgCnt;
-        if (remainCnt > 0 ) {
-            if (blockUpdate != null) {
-                bmvProperties.setLastMessagesRoot(blockUpdate.getMessageRoot());
-                bmvProperties.setLastMessageCount(blockUpdate.getMessageCount());
-                bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
-            }
-        } else {
+        if (remainCnt == 0) {
             bmvProperties.setLastMessagesRoot(null);
             bmvProperties.setLastMessageCount(BigInteger.ZERO);
-            bmvProperties.setLastFirstMessageSN(BigInteger.ZERO);
         }
         bmvProperties.setLastSequence(bmvProperties.getLastSequence().add(BigInteger.valueOf(msgCnt)));
         propertiesDB.set(bmvProperties);
@@ -249,7 +245,7 @@ public class BTPMessageVerifier implements BMV {
         var bmcAddress = Address.fromString(properties.getBmc().account());
         if (!Context.getCaller().equals(bmcAddress)) {
             throw BMVException.unknown("not acceptable bmc");
-        } else if (bmcAddress.equals(Address.fromString(curAddr.account()))) {
+        } else if (!bmcAddress.equals(Address.fromString(curAddr.account()))) {
             throw BMVException.unknown("not acceptable bmc");
         }
     }
