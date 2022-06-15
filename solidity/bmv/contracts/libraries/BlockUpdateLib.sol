@@ -48,7 +48,6 @@ library BlockUpdateLib {
             l[9].payloadLen() > 0
                 ? decodeSignatures(l[9].toBytes())
                 : new bytes[](0),
-
             l[5].toUint() & 1 == 1
                 ? decodeValidators(l[10].toBytes())
                 : new address[](0)
@@ -102,7 +101,8 @@ library BlockUpdateLib {
         RLPReader.RLPItem[] memory tl = enc.toRlpItem().toList();
         MerkleTreeLib.Path[] memory pathes = new MerkleTreeLib.Path[](tl.length);
         for (uint i = 0; i < tl.length; i++) {
-            pathes[i] = MerkleTreeLib.Path(tl[0].toUint(), bytes32(tl[1].toBytes()));
+            RLPReader.RLPItem[] memory tm = tl[i].toList();
+            pathes[i] = MerkleTreeLib.Path(tm[0].toUint(), bytes32(tm[1].toBytes()));
         }
         return pathes;
     }
