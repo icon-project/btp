@@ -74,9 +74,8 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
         bytes[] memory messages;
         for (uint i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
-                if (_remainMessageCount != 0) {
-                    continue;
-                }
+                require(_remainMessageCount == 0, "BtpMessageVerifier: has messages to be handled");
+
                 BlockUpdateLib.BlockUpdate memory bu = rms[i].toBlockUpdate();
                 checkBlockUpdateWithState(bu);
                 checkBlockUpdateProof(bu);
