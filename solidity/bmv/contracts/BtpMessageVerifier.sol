@@ -51,8 +51,9 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
 
         BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
         _height = bu.mainHeight;
-        _nextMessageSn = 0;
-        _remainMessageCount = 0;
+        _nextMessageSn = bu.messageSn;
+        _messageCount = _remainMessageCount = bu.messageCount;
+        _messageRoot = bu.messageRoot;
         _networkSectionHash = bu.getNetworkSectionHash();
         _validators = bu.nextValidators;
 
