@@ -4,11 +4,13 @@ pragma solidity >=0.4.22 <0.9.0;
 import "./BlockUpdateLib.sol";
 import "./MessageProofLib.sol";
 import "./RLPReader.sol";
+// import "./Base64.sol";
 
 library RelayMessageLib {
 
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
+    // using Base64 for string;
 
     uint constant TypeBlockUpdate = 1;
     uint constant TypeMessageProof = 2;
@@ -18,6 +20,9 @@ library RelayMessageLib {
         bytes mesg;
     }
 
+    // TODO remove comment out for using base64url inputs
+    // function decode(string memory enc) internal returns (RelayMessage[] memory) {
+    //     RLPReader.RLPItem memory ti = enc.decode().toRlpItem();
     function decode(bytes memory enc) internal returns (RelayMessage[] memory) {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
@@ -37,7 +42,7 @@ library RelayMessageLib {
     internal
     returns (BlockUpdateLib.BlockUpdate memory)
     {
-        require(rm.typ == TypeBlockUpdate);
+        require(rm.typ == TypeBlockUpdate, "RelayMessage: Support only BlockUpdate type");
         return BlockUpdateLib.decode(rm.mesg);
     }
 
@@ -45,7 +50,7 @@ library RelayMessageLib {
     internal
     returns (MessageProofLib.MessageProof memory)
     {
-        require(rm.typ == TypeMessageProof);
+        require(rm.typ == TypeMessageProof, "RelayMessage: Support only MessageProof type");
         return MessageProofLib.decode(rm.mesg);
     }
 }

@@ -111,8 +111,8 @@ library MessageProofLib {
     private
     returns (MessageProofNode memory)
     {
-        require(left.leafCount == (1 << (left.level - 1)), "invalid leaf count of left node");
-        require(left.leafCount >= right.leafCount, "invalid leaves balance");
+        require(left.leafCount == (1 << (left.level - 1)), "MessageProof: Invalid leaf count of left node");
+        require(left.leafCount >= right.leafCount, "MessageProof: Invalid leaves balance");
         return MessageProofNode(
             left.level + 1,
             left.leafCount + right.leafCount,

@@ -5,14 +5,14 @@ import "./interfaces/IBtpMessageVerifier.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 
+// TODO Support upgradable bmv
 contract BtpMessageVerifier is IBtpMessageVerifier {
 
     using BlockUpdateLib for BlockUpdateLib.BlockUpdate;
     using MessageProofLib for MessageProofLib.MessageProof;
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
-    address public immutable bmc;
-
+    address public _bmc;
     bytes private _srcNetworkId;
     uint private _networkTypeId;
     uint private _networkId;
@@ -26,18 +26,14 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
 
     modifier onlyBmc() {
         require(
-            msg.sender == bmc,
-            "Function must be called through known bmc"
+            msg.sender == _bmc,
+            "BtpMessageVerifier: Function must be called through known bmc"
         );
         _;
     }
 
-    constructor() {
-        bmc = address(0);
-    }
-
-    // TODO move to constructor
     function initialize(
+        address bmc,
         bytes memory srcNetworkId,
         uint networkTypeId,
         uint networkId,
@@ -45,6 +41,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
     )
     external
     {
+        _bmc = bmc;
         _srcNetworkId = srcNetworkId;
         _networkTypeId = networkTypeId;
         _networkId = networkId;
@@ -56,17 +53,18 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
         _messageRoot = bu.messageRoot;
         _networkSectionHash = bu.getNetworkSectionHash();
         _validators = bu.nextValidators;
-
     }
 
     function getStatus() external view returns (uint) {
         return _height;
     }
 
+    // NOTE: Using bytes message instead of base64url during development
     function handleRelayMessage(
         string memory _bmc,
         string memory _prev,
         uint _seq,
+        //string memory _msg
         bytes memory _msg
     ) external returns (bytes[] memory) {
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
@@ -95,8 +93,8 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
 
                 // compare roots of `block update` and `message proof`
                 (bytes32 root, uint leafCount) = mp.calculate();
-                require(root == _messageRoot, "");
-                require(leafCount == _messageCount, "");
+                require(root == _messageRoot, "BtpMessageVerifier: Invalid merkle root of messages");
+                require(leafCount == _messageCount, "BtpMessageVerifier: Invalid message count");
 
                 // collect messages
                 messages = Utils.append(messages, mp.mesgs);
@@ -159,10 +157,10 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
     }
 
     function checkBlockUpdateWithState(BlockUpdateLib.BlockUpdate memory bu) private view {
-        require(_networkId == bu.networkId, "invalid network id");
+        require(_networkId == bu.networkId, "BtpMessageVerifier: BlockUpdate for unknown network");
         require(_networkSectionHash == bu.prevNetworkSectionHash,
-                "invalid previous network section hash");
-        require(_nextMessageSn == bu.messageSn, "invalid message sequence number");
+                "BtpMessageVerifier: Invalid previous network section hash");
+        require(_nextMessageSn == bu.messageSn, "BtpMessageVerifier: Invalid message sequence number");
     }
 
     function checkBlockUpdateProof(BlockUpdateLib.BlockUpdate memory bu) private view {
@@ -174,7 +172,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier {
                 votes++;
             }
         }
-        require(hasQuorumOf(votes), "lack of quorum");
+        require(hasQuorumOf(votes), "BtpMessageVerifier: Lack of quorum");
     }
 
 }
