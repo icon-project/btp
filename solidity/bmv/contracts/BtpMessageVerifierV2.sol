@@ -7,7 +7,7 @@ import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // TODO Support upgradable bmv
-contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
+contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
 
     using BlockUpdateLib for BlockUpdateLib.BlockUpdate;
     using MessageProofLib for MessageProofLib.MessageProof;
@@ -40,7 +40,6 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         uint networkId,
         bytes memory firstBlockUpdate
     )
-    initializer
     external
     {
         _bmc = bmc;
@@ -69,45 +68,6 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         //string memory _msg
         bytes memory _msg
     ) external returns (bytes[] memory) {
-        RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
-
-        bytes[] memory messages;
-        for (uint i = 0; i < rms.length; i++) {
-            if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
-                require(_remainMessageCount == 0, "BtpMessageVerifier: has messages to be handled");
-
-                BlockUpdateLib.BlockUpdate memory bu = rms[i].toBlockUpdate();
-                checkBlockUpdateWithState(bu);
-                checkBlockUpdateProof(bu);
-
-                _height = bu.mainHeight;
-                _networkSectionHash = bu.getNetworkSectionHash();
-                if (bu.hasNextValidators) {
-                    _validators = bu.nextValidators;
-                }
-                if (bu.messageRoot != bytes32(0)) {
-                    _messageRoot = bu.messageRoot;
-                    _remainMessageCount = _messageCount = bu.messageCount;
-                }
-
-            } else if (rms[i].typ == RelayMessageLib.TypeMessageProof) {
-                MessageProofLib.MessageProof memory mp = rms[i].toMessageProof();
-
-                // compare roots of `block update` and `message proof`
-                (bytes32 root, uint leafCount) = mp.calculate();
-                require(root == _messageRoot, "BtpMessageVerifier: Invalid merkle root of messages");
-                require(leafCount == _messageCount, "BtpMessageVerifier: Invalid message count");
-
-                // collect messages
-                messages = Utils.append(messages, mp.mesgs);
-
-                // update state
-                _remainMessageCount -= mp.mesgs.length;
-                _nextMessageSn += mp.mesgs.length;
-
-            }
-        }
-        return messages;
     }
 
     function srcNetworkId() public view returns (bytes memory) {
@@ -152,29 +112,6 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     function validatorsCount() public view returns (uint) {
         return _validators.length;
-    }
-
-    function hasQuorumOf(uint votes) private view returns (bool) {
-        return votes * 3 > _validators.length * 2;
-    }
-
-    function checkBlockUpdateWithState(BlockUpdateLib.BlockUpdate memory bu) private view {
-        require(_networkId == bu.networkId, "BtpMessageVerifier: BlockUpdate for unknown network");
-        require(_networkSectionHash == bu.prevNetworkSectionHash,
-                "BtpMessageVerifier: Invalid previous network section hash");
-        require(_nextMessageSn == bu.messageSn, "BtpMessageVerifier: Invalid message sequence number");
-    }
-
-    function checkBlockUpdateProof(BlockUpdateLib.BlockUpdate memory bu) private view {
-        uint votes = 0;
-        bytes32 decision = bu.getNetworkTypeSectionDecisionHash(_srcNetworkId, _networkTypeId);
-        for (uint j = 0; j < bu.signatures.length && !hasQuorumOf(votes); j++) {
-            address signer = Utils.recoverSigner(decision, bu.signatures[j]);
-            if (signer == _validators[j]) {
-                votes++;
-            }
-        }
-        require(hasQuorumOf(votes), "BtpMessageVerifier: Lack of quorum");
     }
 
 }
