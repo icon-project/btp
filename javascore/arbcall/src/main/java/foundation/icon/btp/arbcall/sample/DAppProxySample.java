@@ -25,6 +25,7 @@ import score.DictDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -37,17 +38,18 @@ public class DAppProxySample implements CallServiceReceiver {
         this.callSvc = _callService;
     }
 
+    @Payable
     @External
     public void sendMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
-        var sn = _sendCallMessage(_to, _data, _rollback);
+        var sn = _sendCallMessage(Context.getValue(), _to, _data, _rollback);
         CallRequest req = new CallRequest(Context.getCaller(), _to, _rollback);
         ProxyRequest preq = new ProxyRequest("from", _to, sn, _data);
         requests.set(sn, req);
         proxyReqs.set(sn, preq);
     }
 
-    private BigInteger _sendCallMessage(String to, byte[] data, byte[] rollback) {
-        return Context.call(BigInteger.class, this.callSvc, "sendCallMessage", to, data, rollback);
+    private BigInteger _sendCallMessage(BigInteger value, String to, byte[] data, byte[] rollback) {
+        return Context.call(BigInteger.class, value, this.callSvc, "sendCallMessage", to, data, rollback);
     }
 
     @Override

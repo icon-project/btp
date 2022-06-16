@@ -29,6 +29,7 @@ import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -44,6 +45,13 @@ public class CallServiceImpl implements BSH, CallService {
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
     private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
 
+    // for fee-related operations
+    private static final BigInteger EXA = BigInteger.valueOf(1_000_000_000_000_000_000L);
+    private static final String DEFAULT = "default";
+    private final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
+    // netAddr => fee
+    private final DictDB<String, BigInteger> feeTable = Context.newDictDB("feeTable", BigInteger.class);
+
     public CallServiceImpl(Address _bmc) {
         // set bmc address only for the first deploy
         if (bmc.get() == null) {
@@ -52,10 +60,22 @@ public class CallServiceImpl implements BSH, CallService {
             BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
             net.set(btpAddress.net());
         }
+        // set default fee to 10 ICX
+        if (feeTable.get(DEFAULT) == null) {
+            feeTable.set(DEFAULT, EXA.multiply(BigInteger.TEN));
+        }
+    }
+
+    private void checkCallerOrThrow(Address caller, String errMsg) {
+        Context.require(Context.getCaller().equals(caller), errMsg);
+    }
+
+    private void onlyOwner() {
+        checkCallerOrThrow(Context.getOwner(), "OnlyOwner");
     }
 
     private void onlyBMC() {
-        Context.require(Context.getCaller().equals(bmc.get()), "Only BMC");
+        checkCallerOrThrow(bmc.get(), "OnlyBMC");
     }
 
     private void checkService(String _svc) {
@@ -82,11 +102,15 @@ public class CallServiceImpl implements BSH, CallService {
     }
 
     @Override
+    @Payable
     @External
     public BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         Address caller = Context.getCaller();
         Context.require(caller.isContract(), "SenderNotAContract");
         BTPAddress dst = BTPAddress.valueOf(_to);
+
+        BigInteger fee = fixedFee(dst.net());
+        Context.require(Context.getValue().compareTo(fee) >= 0, "InsufficientFee");
 
         BigInteger sn = getNextSn();
         CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
@@ -240,4 +264,34 @@ public class CallServiceImpl implements BSH, CallService {
                 }
         }
     }
+
+    @External(readonly=true)
+    public Address admin() {
+        return admin.getOrDefault(Context.getOwner());
+    }
+
+    @External
+    public void setAdmin(Address _address) {
+        onlyOwner();
+        admin.set(_address);
+    }
+
+    @External(readonly=true)
+    public BigInteger fixedFee(String _net) {
+        BigInteger fee = feeTable.get(_net);
+        return fee != null ? fee : feeTable.get(DEFAULT);
+    }
+
+    @External
+    public void setFixedFee(String _net, BigInteger _fee) {
+        checkCallerOrThrow(admin(), "OnlyAdmin");
+        if (_net.isEmpty() || _net.indexOf('/') != -1 || _net.indexOf(':') != -1) {
+            Context.revert("InvalidNetworkAddress");
+        }
+        feeTable.set(_net, _fee);
+        FixedFeeUpdated(_net, _fee);
+    }
+
+    @EventLog(indexed=1)
+    public void FixedFeeUpdated(String _net, BigInteger _fee) {}
 }

@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CallServiceImplTest implements CSIntegrationTest {
+    static final BigInteger EXA = BigInteger.TEN.pow(18);
     static Address csAddress = csClient._address();
     static Address sampleAddress = sampleClient._address();
     static Address fakeAddress = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT);
@@ -82,6 +83,12 @@ class CallServiceImplTest implements CSIntegrationTest {
         return reqId;
     }
 
+    private BigInteger getFixedFee(String net) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("_net", net);
+        return csClient._call(BigInteger.class, "fixedFee", params);
+    }
+
     @Order(0)
     @Test
     void sendCallMessageFromDAppProxy() {
@@ -97,10 +104,11 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
+        BigInteger fee = getFixedFee(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", to.toString());
         params.put("_data", data);
-        checker.accept(sampleClient._send("sendMessage", params));
+        checker.accept(sampleClient._send(fee, "sendMessage", params));
     }
 
     @Order(1)
@@ -155,6 +163,27 @@ class CallServiceImplTest implements CSIntegrationTest {
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
 
+    @Order(9)
+    @Test
+    void fixedFeeTest() {
+        BigInteger fee = getFixedFee(to.net());
+        assertEquals(BigInteger.TEN.multiply(EXA), fee);
+
+        final BigInteger nineIcx = BigInteger.valueOf(9).multiply(EXA);
+        var checker = CSIntegrationTest.eventLogChecker(FixedFeeEventLog::eventLogs, (el) -> {
+            assertEquals(to.net(), el.getNet());
+            assertEquals(nineIcx, el.getFee());
+        });
+        BigInteger fee2 = fee.subtract(EXA);
+        Map<String, Object> params = new HashMap<>();
+        params.put("_net", to.net());
+        params.put("_fee", fee2);
+        checker.accept(csClient._send("setFixedFee", params));
+
+        assertEquals(nineIcx, getFixedFee(to.net()));
+        assertEquals(fee, getFixedFee("default"));
+    }
+
     @Order(10)
     @Test
     void sendCallMessageWithRollback() {
@@ -171,11 +200,12 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
+        BigInteger fee = getFixedFee(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", fakeTo.toString());
         params.put("_data", data);
         params.put("_rollback", rollback);
-        checker.accept(sampleClient._send("sendMessage", params));
+        checker.accept(sampleClient._send(fee, "sendMessage", params));
     }
 
     @Order(11)
