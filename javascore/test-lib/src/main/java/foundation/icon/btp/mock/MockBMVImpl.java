@@ -71,8 +71,8 @@ public class MockBMVImpl implements MockBMV {
     public void HandleRelayMessage(byte[] _ret) {}
 
     @External
-    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
-        MockRelayMessage relayMessage = MockRelayMessage.fromBase64String(_msg);
+    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg) {
+        MockRelayMessage relayMessage = MockRelayMessage.fromBytes(_msg);
         Integer revertCode = relayMessage.getRevertCode();
         if (revertCode != null) {
             String revertMsg = relayMessage.getRevertMessage();

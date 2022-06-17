@@ -60,7 +60,7 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
                 MockBMCIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs,
                         (el) -> assertArrayEquals(msgs, el.getRet())),
                 MockBMVIntegrationTest.mockBMVClient._address(),
-                prev, seq, relayMessage.toBase64String());
+                prev, seq, relayMessage.toBytes());
     }
 
     @Test

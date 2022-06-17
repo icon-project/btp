@@ -52,7 +52,7 @@ public class MockBMCImpl implements MockBMC {
     }
 
     @External
-    public void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, String _msg) {
+    public void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg) {
         BMVScoreInterface bmv = new BMVScoreInterface(_addr);
         byte[][] ret = bmv.handleRelayMessage(btpAddress, _prev, _seq, _msg);
         HandleRelayMessage(MockRelayMessage.toBytes(ret));

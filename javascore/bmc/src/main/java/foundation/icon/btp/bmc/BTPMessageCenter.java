@@ -32,6 +32,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Payable;
 import scorex.util.ArrayList;
+import scorex.util.Base64;
 import scorex.util.HashMap;
 
 import java.math.BigInteger;
@@ -351,13 +352,14 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     public void handleRelayMessage(String _prev, String _msg) {
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
+        byte[] msgBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
         BMVStatus prevStatus = verifier.getStatus();
         BigInteger rxSeq = link.getRxSeq();
         // decode and verify relay message
         byte[][] serializedMsgs = null;
         try {
-            serializedMsgs = verifier.handleRelayMessage(btpAddr.toString(), _prev, rxSeq, _msg);
+            serializedMsgs = verifier.handleRelayMessage(btpAddr.toString(), _prev, rxSeq, msgBytes);
         } catch (UserRevertedException e) {
             logger.println("handleRelayMessage",
                     "fail to verifier.handleRelayMessage",

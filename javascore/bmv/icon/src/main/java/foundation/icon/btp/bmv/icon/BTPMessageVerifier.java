@@ -73,13 +73,12 @@ public class BTPMessageVerifier implements BMV {
     }
 
     @External
-    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
+    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg) {
         BTPAddress curAddr = BTPAddress.valueOf(_bmc);
         BTPAddress prevAddr = BTPAddress.valueOf(_prev);
         checkAccessible(curAddr, prevAddr);
 
-        byte[] serializedMsg = Base64.getUrlDecoder().decode(_msg.getBytes());
-        RelayMessage relayMessage = RelayMessage.fromBytes(serializedMsg);
+        RelayMessage relayMessage = RelayMessage.fromBytes(_msg);
         BlockUpdate[] blockUpdates = relayMessage.getBlockUpdates();
         BlockProof blockProof = relayMessage.getBlockProof();
         ReceiptProof[] receiptProofs = relayMessage.getReceiptProofs();
