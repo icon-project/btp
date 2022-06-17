@@ -18,6 +18,8 @@ dependencies {
 }
 
 optimizedJar {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.arbcall.CallServiceImpl'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
