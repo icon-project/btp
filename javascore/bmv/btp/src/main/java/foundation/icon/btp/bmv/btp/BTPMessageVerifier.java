@@ -195,7 +195,9 @@ public class BTPMessageVerifier implements BMV {
         byte[] expectedMessageRoot;
         BigInteger expectedMessageCnt;
         var bmvProperties = propertiesDB.get();
+        Context.require(bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) > 0, "remaining message count must greater than zero");
         MessageProof.ProveResult result = messageProof.proveMessage();
+        Context.require(bmvProperties.getProcessedMessageCount().compareTo(BigInteger.valueOf(result.offset)) == 0, "invalid ProofInLeft.NumberOfLeaf");
         if (blockUpdate != null ) {
             expectedMessageRoot = blockUpdate.getMessageRoot();
             expectedMessageCnt = blockUpdate.getMessageCount();
@@ -209,7 +211,6 @@ public class BTPMessageVerifier implements BMV {
                 throw BMVException.unknown("mismatch ProofInLeft");
             }
         }
-        if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.unknown("mismatch MessagesRoot");
         if (expectedMessageCnt.intValue() != result.total) {
             var rightProofNodes = messageProof.getRightProofNodes();
             for (int i = 0; i < rightProofNodes.length; i++) {
@@ -221,6 +222,7 @@ public class BTPMessageVerifier implements BMV {
                             ", expected:" + expectedMessageCnt +
                             ", count :" + result.total);
         }
+        if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.unknown("mismatch MessagesRoot");
         var msgCnt = messageProof.getMessages().length;
         var remainCnt = result.total - result.offset - msgCnt;
         if (remainCnt == 0) {

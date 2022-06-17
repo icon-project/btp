@@ -202,6 +202,73 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         assertTrue(hashMismatched.getMessage().contains("mismatch Hash of NextProofContext"));
     }
 
+    /***
+     * 1. receive messageProof message when remaining msg count == 0
+     * 2. make message count to 2(success)
+     * 3. mismatch ProcessedMessageCount
+     * 4. invalid numOfLeaf(ProofNode)
+     * 5. invalid level(proofNode)
+     * 6. mismatch message count
+     * 7. mismatch message root
+     */
+    @Order(6)
+    @Test
+    public void scenario6() {
+        var proofMessageMsg = "3NvaApjX-ADSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        AssertionError invalidRemainCnt = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), proofMessageMsg)
+        );
+        assertTrue(invalidRemainCnt.getMessage().contains("remaining message count must greater than zero"));
+
+        // make remain count 2
+        var validBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                bmc.toString(), prev.toString(), BigInteger.valueOf(0), validBlockUpdate);
+
+        var mismatchLeftNumMsg = "-EL4QPg-Arg7-Dnj4gGg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kTSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        AssertionError mismatchLeftNum = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchLeftNumMsg)
+        );
+        assertTrue(mismatchLeftNum.getMessage().contains("invalid ProofInLeft.NumberOfLeaf"));
+
+        var invalidNumOfLeafMsg = "-EL4QPg-Arg7-Dnj4gOgbs80Ium1Rjp5xTW_DbjhxvWJu84w7J67PPT-lH0kz3nSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        AssertionError invalidNumOfLeaf = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidNumOfLeafMsg)
+        );
+        assertTrue(invalidNumOfLeaf.getMessage().contains("invalid numOfLeaf, expected : 4, value : 3"));
+
+        var invalidLevelMsg = "8O_uAqzr-ADEg2NhdOPiAqBuzzQi6bVGOnnFNb8NuOHG9Ym7zjDsnrs89P6UfSTPeQ==";
+        AssertionError invalidLevel = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidLevelMsg)
+        );
+        assertTrue(invalidLevel.getMessage().contains("invalid level left : 1 right : 2"));
+
+        var mismatchCountMsg = "4eDfAp3c-ADXg2NhdIhlbGVwaGFudIRiaXJkhHRlc3T4AA==";
+        AssertionError mismatchCount = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchCountMsg)
+        );
+        assertTrue(mismatchCount.getMessage().contains("mismatch MessageCount offset:0, expected:3, count :4"));
+
+        var mismatchRootMsg = "4N_eApzb-ADWh2NhdHRlc3SIZWxlcGhhbnSEYmlyZPgA";
+        AssertionError mismatchRoot = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchRootMsg)
+        );
+        assertTrue(mismatchRoot.getMessage().contains("mismatch MessagesRoot"));
+
+    }
+
     private void successCase(List<String> relayMessages, List<String[]> messages) throws Exception {
         score = sm.deploy(owner, BTPMessageVerifier.class,
                 StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
