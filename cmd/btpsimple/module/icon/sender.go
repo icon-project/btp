@@ -237,14 +237,9 @@ func (s *sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) e
 	return err
 }
 
-func (s *sender) sendFragment(rmp *BMCRelayMethodParams, idx int) (module.GetResultParam, error) {
-	msgLen := txSizeLimit
-	if len(rmp.Messages) < msgLen {
-		msgLen = len(rmp.Messages)
-	}
+func (s *sender) sendFragment(rmp *BMCRelayMethodParams, msg string, idx int) (module.GetResultParam, error) {
 	fmp := &BMCFragmentMethodParams{
-		Prev: rmp.Prev, Messages: rmp.Messages[:msgLen], Index: NewHexInt(int64(idx))}
-	rmp.Messages = rmp.Messages[msgLen:]
+		Prev: rmp.Prev, Messages: msg, Index: NewHexInt(int64(idx))}
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
@@ -264,18 +259,30 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	p := segment.TransactionParam.(*TransactionParam)
 	rmp := p.Data.(*CallData).Params.(*BMCRelayMethodParams)
 
-	idx := len(rmp.Messages) / txSizeLimit
-	if idx == 0 {
+	if len(rmp.Messages) <= txSizeLimit {
 		return s.sendTransaction(p)
 	} else {
-		ret, err := s.sendFragment(rmp, idx*-1)
+		b, err := base64.URLEncoding.DecodeString(rmp.Messages)
 		if err != nil {
 			return nil, err
 		}
-		for idx--; idx >= 0; idx-- {
-			if ret, err = s.sendFragment(rmp, idx); err != nil {
+		idx := len(b) / txSizeLimit
+		msg := base64.URLEncoding.EncodeToString(b[:txSizeLimit])
+		ret, err := s.sendFragment(rmp, msg, idx*-1)
+		if err != nil {
+			return nil, err
+		}
+		b = b[txSizeLimit:]
+		for idx--; idx > 0; idx-- {
+			msg = base64.URLEncoding.EncodeToString(b[:txSizeLimit])
+			if ret, err = s.sendFragment(rmp, msg, idx); err != nil {
 				return ret, err
 			}
+			b = b[txSizeLimit:]
+		}
+		msg = base64.URLEncoding.EncodeToString(b[:])
+		if ret, err = s.sendFragment(rmp, msg, idx); err != nil {
+			return ret, err
 		}
 		return ret, err
 	}
