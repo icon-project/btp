@@ -36,7 +36,7 @@ public class BMVProperties {
     private byte[] proofContextHash;
     private byte[] proofContext;
     private byte[] lastNetworkSectionHash;
-    private BTPAddress bmc;
+    private Address bmc;
     private BigInteger lastSequence;
     private byte[] lastMessagesRoot;
     private BigInteger lastMessageCount;
@@ -49,6 +49,11 @@ public class BMVProperties {
 
     public void setSrcNetworkID(byte[] srcNetworkID) {
         this.srcNetworkID = srcNetworkID;
+    }
+
+    public String getNetwork() {
+        var stringSrc = new String(srcNetworkID);
+        return stringSrc.split("/")[2];
     }
 
     public int getNetworkTypeID() {
@@ -123,12 +128,19 @@ public class BMVProperties {
         this.lastFirstMessageSN = lastFirstMessageSN;
     }
 
+    public BigInteger getProcessedMessageCount() {
+        return lastSequence.subtract(lastFirstMessageSN);
+    }
 
-    public BTPAddress getBmc() {
+    public BigInteger getRemainMessageCount() {
+        return lastMessageCount.subtract(getProcessedMessageCount());
+    }
+
+    public Address getBmc() {
         return bmc;
     }
 
-    public void setBmc(BTPAddress bmc) {
+    public void setBmc(Address bmc) {
         this.bmc = bmc;
     }
 
@@ -149,7 +161,7 @@ public class BMVProperties {
         obj.setProofContextHash(reader.readNullable(byte[].class));
         obj.setProofContext(reader.readNullable(byte[].class));
         obj.setLastNetworkSectionHash(reader.readNullable(byte[].class));
-        obj.setBmc(reader.read(BTPAddress.class));
+        obj.setBmc(reader.readAddress());
         obj.setLastSequence(reader.readNullable(BigInteger.class));
         obj.setLastMessagesRoot(reader.readNullable(byte[].class));
         obj.setLastMessageCount(reader.readNullable(BigInteger.class));
