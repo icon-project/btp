@@ -276,18 +276,32 @@ public class CallServiceImpl implements BSH, CallService {
         admin.set(_address);
     }
 
+    /**
+     * Gets the fixed fee for the given network address.
+     * If there is no mapping to the network address, `default` fee is returned.
+     *
+     * @param _net The network address
+     * @return The fee amount in loop
+     */
     @External(readonly=true)
     public BigInteger fixedFee(String _net) {
         BigInteger fee = feeTable.get(_net);
         return fee != null ? fee : feeTable.get(DEFAULT);
     }
 
+    /**
+     * Sets the fixed fee for the given network address.
+     *
+     * @param _net The network address
+     * @param _fee The fee amount in loop
+     */
     @External
     public void setFixedFee(String _net, BigInteger _fee) {
         checkCallerOrThrow(admin(), "OnlyAdmin");
         if (_net.isEmpty() || _net.indexOf('/') != -1 || _net.indexOf(':') != -1) {
             Context.revert("InvalidNetworkAddress");
         }
+        Context.require(_fee.compareTo(EXA) >= 0, "Fee should be greater than 1 ICX");
         feeTable.set(_net, _fee);
         FixedFeeUpdated(_net, _fee);
     }
