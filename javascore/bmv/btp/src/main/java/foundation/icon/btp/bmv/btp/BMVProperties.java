@@ -53,7 +53,8 @@ public class BMVProperties {
 
     public String getNetwork() {
         var stringSrc = new String(srcNetworkID);
-        return stringSrc.split("/")[2];
+        var delimIndex = stringSrc.lastIndexOf("/");
+        return stringSrc.substring(delimIndex + 1);
     }
 
     public int getNetworkTypeID() {
