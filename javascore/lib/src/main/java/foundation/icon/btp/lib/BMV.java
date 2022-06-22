@@ -29,11 +29,11 @@ public interface BMV {
      * @param _bmc String ( BTP Address of the BMC handling the message )
      * @param _prev String ( BTP Address of the previous BMC )
      * @param _seq Integer ( next sequence number to get a message )
-     * @param _msg String ( base64 encoded string of serialized bytes of Relay Message )
+     * @param _msg Bytes ( serialized bytes of Relay Message )
      * @return List of serialized bytes of a BTP Message
      */
     @External
-    byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg);
+    byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg);
 
     /**
      * Get status of BMV.

@@ -53,7 +53,7 @@ public final class BMVScoreInterface implements BMV {
   }
 
   @Override
-  public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
+  public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg) {
     return Context.call(byte[][].class, this.address, "handleRelayMessage", _bmc, _prev, _seq, _msg);
   }
 

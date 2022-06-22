@@ -36,7 +36,7 @@ public interface MockBMC {
 
     //for BMV
     @External
-    void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, String _msg);
+    void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg);
 
     @EventLog
     void HandleRelayMessage(byte[] _ret);
