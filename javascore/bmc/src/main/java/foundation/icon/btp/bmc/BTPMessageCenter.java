@@ -52,7 +52,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     //
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
     private final ArrayDB<ServiceCandidate> serviceCandidates = Context.newArrayDB("serviceCandidates", ServiceCandidate.class);
-    private final BranchDB<String, BranchDB<Address, ArrayDB<String>>> fragments = Context.newBranchDB("fragments", String.class);
+    private final BranchDB<String, BranchDB<Address, ArrayDB<byte[]>>> fragments = Context.newBranchDB("fragments", byte[].class);
     private final DictDB<String, DropSequences> drops = Context.newDictDB("drops", DropSequences.class);
 
     //
@@ -350,9 +350,13 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void handleRelayMessage(String _prev, String _msg) {
+        byte[] msgBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
+        handleRelayMessage(_prev, msgBytes);
+    }
+
+    private void handleRelayMessage(String _prev, byte[] msgBytes) {
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
-        byte[] msgBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
         BMVStatus prevStatus = verifier.getStatus();
         BigInteger rxSeq = link.getRxSeq();
@@ -767,42 +771,52 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (!relays.containsKey(Context.getOrigin())) {
             throw BMCException.unauthorized("not registered relay");
         }
+        byte[] fragmentBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
         final int INDEX_LAST = 0;
         final int INDEX_NEXT = 1;
         final int INDEX_OFFSET = 2;
-        ArrayDB<String> fragments = this.fragments.at(_prev).at(Context.getOrigin());
+        ArrayDB<byte[]> fragments = this.fragments.at(_prev).at(Context.getOrigin());
         if (_idx < 0) {
             int last = _idx * -1;
             if (fragments.size() == 0) {
-                fragments.add(Integer.toString(last));
-                fragments.add(Integer.toString(last - 1));
-                fragments.add(_msg);
+                fragments.add(Integer.toString(last).getBytes());
+                fragments.add(Integer.toString(last - 1).getBytes());
+                fragments.add(fragmentBytes);
             } else {
-                fragments.set(INDEX_LAST, Integer.toString(last));
-                fragments.set(INDEX_NEXT, Integer.toString(last - 1));
-                fragments.set(INDEX_OFFSET, _msg);
+                fragments.set(INDEX_LAST, Integer.toString(last).getBytes());
+                fragments.set(INDEX_NEXT, Integer.toString(last - 1).getBytes());
+                fragments.set(INDEX_OFFSET, fragmentBytes);
             }
         } else {
-            int next = Integer.parseInt(fragments.get(INDEX_NEXT));
+            int next = Integer.parseInt(new String(fragments.get(INDEX_NEXT)));
             if (next != _idx) {
                 throw BMCException.unknown("invalid _idx");
             }
-            int last = Integer.parseInt(fragments.get(INDEX_LAST));
+            int last = Integer.parseInt(new String(fragments.get(INDEX_LAST)));
             if (_idx == 0) {
-                StringBuilder msg = new StringBuilder();
+                int total = 0;
+                byte[][] bytesArr = new byte[last+1][];
                 for(int i = 0; i < last; i++){
-                    msg.append(fragments.get(i + INDEX_OFFSET));
+                    bytesArr[i] = fragments.get(i + INDEX_OFFSET);
+                    total += bytesArr[i].length;
                 }
-                msg.append(_msg);
-                logger.println("handleFragment", "handleRelayMessage","fragments:",last+1, "len:"+msg.length());
-                handleRelayMessage(_prev, msg.toString());
+                bytesArr[last] = fragmentBytes;
+                total += fragmentBytes.length;
+                byte[] msgBytes = new byte[total];
+                int pos = 0;
+                for (byte[] bytes : bytesArr) {
+                    System.arraycopy(bytes, 0, msgBytes, pos, bytes.length);
+                    pos += bytes.length;
+                }
+                logger.println("handleFragment", "handleRelayMessage","fragments:",last+1, "len:"+total);
+                handleRelayMessage(_prev, msgBytes);
             } else {
-                fragments.set(INDEX_NEXT, Integer.toString(_idx - 1));
+                fragments.set(INDEX_NEXT, Integer.toString(_idx - 1).getBytes());
                 int INDEX_MSG = last - _idx + INDEX_OFFSET;
                 if (INDEX_MSG < fragments.size()) {
-                    fragments.set(INDEX_MSG, _msg);
+                    fragments.set(INDEX_MSG, fragmentBytes);
                 } else {
-                    fragments.add(_msg);
+                    fragments.add(fragmentBytes);
                 }
             }
         }
