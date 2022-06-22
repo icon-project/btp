@@ -29,7 +29,6 @@ import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import scorex.util.Base64;
 import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
@@ -51,13 +50,11 @@ public class BTPMessageVerifier implements BMV {
     }
 
     @External
-    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, String _msg) {
+    public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg) {
         BTPAddress curAddr = BTPAddress.valueOf(_bmc);
         BTPAddress prevAddr = BTPAddress.valueOf(_prev);
         checkAccessible(curAddr, prevAddr);
-        var decoder = Base64.getUrlDecoder();
-        var base64Decoded = decoder.decode(_msg.getBytes());
-        RelayMessage relayMessages = RelayMessage.fromBytes(base64Decoded);
+        RelayMessage relayMessages = RelayMessage.fromBytes(_msg);
         RelayMessage.TypePrefixedMessage[] typePrefixedMessages = relayMessages.getMessages();
         BlockUpdate blockUpdate = null;
         List<byte[]> msgList = new ArrayList<>();

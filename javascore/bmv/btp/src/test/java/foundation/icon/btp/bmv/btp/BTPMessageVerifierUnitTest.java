@@ -26,6 +26,7 @@ import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import score.Address;
+import scorex.util.Base64;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -43,7 +44,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),
             bmcAccount.getAddress().toString());
     static final BTPAddress prev = new BTPAddress(network, prevAccount.getAddress().toString());
-
+    static final Base64.Decoder decoder = Base64.getUrlDecoder();
     static final List<String> SUCCESS_RELAY_MESSAGE1 = List.of(
             "f8aa0a00a031a48b551e5db0c6db4ad9f2002905f1b2005bcd0f4087b284a06f0137cafb4fc00101f80001a005cd98fdecc74538182a123f3d91e031833da3e9b0a2558d6652e48bf318a1b2f800b85cf85af858950020e2c291b19598e1338bc7a9c373b69f6dc4c6139500dff51eb43f08ee74678e69ba29626df65f8f4e5295003f695fedf6a2aa1c7a07fe6810ed5ba7edc7c48c9500235c67cee3e2bfda66a34e884991414391fc6abf",
             "zs3MAorJ-ADEg2RvZ_gA",
@@ -93,25 +94,25 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 1,
                 Address.fromString(bmc.account()),
                 StringUtil.hexToBytes(FAIL_CASE_FIRST_BLOCK_UPDATE));
-        var validMsg = "zs3MAorJ-ADEg2RvZ_gA";
+        var encodedValidMsg = "zs3MAorJ-ADEg2RvZ_gA";
         AssertionError invalidCurrent = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        prev.toString(), prev.toString(), BigInteger.valueOf(0), validMsg)
+                        prev.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidMsg.getBytes()))
         );
         assertTrue(invalidCurrent.getMessage().contains("invalid current"));
 
         AssertionError invalidCaller = assertThrows(
                 AssertionError.class, () -> sm.call(
                         prevAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        prev.toString(), prev.toString(), BigInteger.valueOf(0), validMsg)
+                        prev.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidMsg.getBytes()))
         );
         assertTrue(invalidCaller.getMessage().contains("invalid caller"));
 
         var invalidPrev = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), bmc.toString(), BigInteger.valueOf(0), validMsg)
+                        bmc.toString(), bmc.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidMsg.getBytes()))
         );
         assertTrue(invalidPrev.getMessage().contains("invalid prev"));
     }
@@ -126,39 +127,39 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Order(3)
     @Test
     public void scenario3() {
-        var blockUpdateMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedBlockUpdateMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError invalidRemainCnt = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), blockUpdateMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedBlockUpdateMsg.getBytes()))
         );
         assertTrue(invalidRemainCnt.getMessage().contains("remain must"));
         var remainMessage = "zs3MAorJ-ADEg2RvZ_gA";
         assertDoesNotThrow(() -> sm.call(
                 bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                bmc.toString(), prev.toString(), BigInteger.valueOf(0), remainMessage));
+                bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(remainMessage.getBytes())));
 
-        var invalidNidMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAgOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedInvalidNidMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAgOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError invalidNid = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidNidMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidNidMsg.getBytes()))
         );
         assertTrue(invalidNid.getMessage().contains("invalid network id"));
 
-        var invalidFirstSNMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQWgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedInvalidFirstSNMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQWgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError invalidFirstSN = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidFirstSNMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidFirstSNMsg.getBytes()))
         );
         assertTrue(invalidFirstSN.getMessage().contains("invalid first message"));
 
-        var invalidPrevHashMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedInvalidPrevHashMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError invalidPrev = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidPrevHashMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidPrevHashMsg.getBytes()))
         );
         assertTrue(invalidPrev.getMessage().contains("mismatch networkSectionHash"));
     }
@@ -170,11 +171,11 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Order(4)
     @Test
     public void scenario4() {
-        var duplicatedSignatureMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4QbzRzbTdgO00OmSh9HCsrQju6ZncFcVtS8sNF-k1zKyUKWe7YlyncLBevVIIVFRvx_dUTR6TAiV3fPUlLvtKO6oAuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedDuplicatedSignatureMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4QbzRzbTdgO00OmSh9HCsrQju6ZncFcVtS8sNF-k1zKyUKWe7YlyncLBevVIIVFRvx_dUTR6TAiV3fPUlLvtKO6oAuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError duplicated = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), duplicatedSignatureMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedDuplicatedSignatureMsg.getBytes()))
         );
         assertTrue(duplicated.getMessage().contains("duplicated"));
 
@@ -182,7 +183,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError proofNull = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), proofNullMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(proofNullMsg.getBytes()))
         );
         assertTrue(proofNull.getMessage().contains("null"));
     }
@@ -193,11 +194,11 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Order(5)
     @Test
     public void scenario5() {
-        var hashMismatchMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedHashMismatchMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         AssertionError hashMismatched = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), hashMismatchMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedHashMismatchMsg.getBytes()))
         );
         assertTrue(hashMismatched.getMessage().contains("mismatch Hash of NextProofContext"));
     }
@@ -214,57 +215,57 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Order(6)
     @Test
     public void scenario6() {
-        var proofMessageMsg = "3NvaApjX-ADSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        var encodedProofMessageMsg = "3NvaApjX-ADSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
         AssertionError invalidRemainCnt = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), proofMessageMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedProofMessageMsg.getBytes()))
         );
         assertTrue(invalidRemainCnt.getMessage().contains("remaining message count must greater than zero"));
 
         // make remain count 2
-        var validBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedValidBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                bmc.toString(), prev.toString(), BigInteger.valueOf(0), validBlockUpdate);
+                bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidBlockUpdate.getBytes()));
 
-        var mismatchLeftNumMsg = "-EL4QPg-Arg7-Dnj4gGg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kTSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        var encodedMismatchLeftNumMsg = "-EL4QPg-Arg7-Dnj4gGg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kTSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
         AssertionError mismatchLeftNum = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchLeftNumMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchLeftNumMsg.getBytes()))
         );
         assertTrue(mismatchLeftNum.getMessage().contains("invalid ProofInLeft.NumberOfLeaf"));
 
-        var invalidNumOfLeafMsg = "-EL4QPg-Arg7-Dnj4gOgbs80Ium1Rjp5xTW_DbjhxvWJu84w7J67PPT-lH0kz3nSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
+        var encodedInvalidNumOfLeafMsg = "-EL4QPg-Arg7-Dnj4gOgbs80Ium1Rjp5xTW_DbjhxvWJu84w7J67PPT-lH0kz3nSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
         AssertionError invalidNumOfLeaf = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidNumOfLeafMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidNumOfLeafMsg.getBytes()))
         );
         assertTrue(invalidNumOfLeaf.getMessage().contains("invalid numOfLeaf, expected : 4, value : 3"));
 
-        var invalidLevelMsg = "8O_uAqzr-ADEg2NhdOPiAqBuzzQi6bVGOnnFNb8NuOHG9Ym7zjDsnrs89P6UfSTPeQ==";
+        var encodedInvalidLevelMsg = "8O_uAqzr-ADEg2NhdOPiAqBuzzQi6bVGOnnFNb8NuOHG9Ym7zjDsnrs89P6UfSTPeQ==";
         AssertionError invalidLevel = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), invalidLevelMsg)
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidLevelMsg.getBytes()))
         );
         assertTrue(invalidLevel.getMessage().contains("invalid level left : 1 right : 2"));
 
-        var mismatchCountMsg = "4eDfAp3c-ADXg2NhdIhlbGVwaGFudIRiaXJkhHRlc3T4AA==";
+        var encodedMismatchCountMsg = "4eDfAp3c-ADXg2NhdIhlbGVwaGFudIRiaXJkhHRlc3T4AA==";
         AssertionError mismatchCount = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchCountMsg)
-        );
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchCountMsg.getBytes()))
+                );
         assertTrue(mismatchCount.getMessage().contains("mismatch MessageCount offset:0, expected:3, count :4"));
 
-        var mismatchRootMsg = "4N_eApzb-ADWh2NhdHRlc3SIZWxlcGhhbnSEYmlyZPgA";
+        var encodedMismatchRootMsg = "4N_eApzb-ADWh2NhdHRlc3SIZWxlcGhhbnSEYmlyZPgA";
         AssertionError mismatchRoot = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), mismatchRootMsg)
-        );
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchRootMsg.getBytes()))
+                );
         assertTrue(mismatchRoot.getMessage().contains("mismatch MessagesRoot"));
 
     }
@@ -278,14 +279,15 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         var seq = 0;
         for (int i = 0; i < messages.size() - 1; i++) {
             String base64Msg = relayMessages.get(i + 1);
+            byte[] msg = Base64.getUrlDecoder().decode(base64Msg.getBytes());
             byte[][] ret = (byte[][]) sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(),
                     "handleRelayMessage",
-                    bmc.toString(), prev.toString(), BigInteger.valueOf(seq), base64Msg);
+                    bmc.toString(), prev.toString(), BigInteger.valueOf(seq), msg);
             String[] partialMsgs = messages.get(i);
             assertEquals(ret.length, partialMsgs.length);
             for (int j = 0; j < ret.length; j++) {
-                String msg = new String(ret[j]);
-                assertEquals(partialMsgs[j], msg);
+                String stringMsg = new String(ret[j]);
+                assertEquals(partialMsgs[j], stringMsg);
             }
         }
     }
