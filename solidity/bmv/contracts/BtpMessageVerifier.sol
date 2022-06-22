@@ -6,7 +6,6 @@ import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-// TODO Support upgradable bmv
 contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     using BlockUpdateLib for BlockUpdateLib.BlockUpdate;
@@ -28,7 +27,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     modifier onlyBmc() {
         require(
             msg.sender == _bmc,
-            "BtpMessageVerifier: Function must be called through known bmc"
+            "BtpMessageVerifier: Unauthorized bmc sender"
         );
         _;
     }
@@ -54,6 +53,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         _messageCount = _remainMessageCount = bu.messageCount;
         _messageRoot = bu.messageRoot;
         _networkSectionHash = bu.getNetworkSectionHash();
+        require(bu.nextValidators.length > 0, "BtpMessageVerifier: No validator(s)");
         _validators = bu.nextValidators;
     }
 
@@ -68,8 +68,13 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         uint _seq,
         //string memory _msg
         bytes memory _msg
-    ) external returns (bytes[] memory) {
+    )
+    external
+    onlyBmc
+    returns (bytes[] memory) {
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
+
+        checkAllowedNetwork(_prev);
 
         bytes[] memory messages;
         for (uint i = 0; i < rms.length; i++) {
@@ -156,6 +161,13 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     function hasQuorumOf(uint votes) private view returns (bool) {
         return votes * 3 > _validators.length * 2;
+    }
+
+    function checkAllowedNetwork(string memory srcAddr) private view {
+        require(
+            keccak256(abi.encodePacked(_srcNetworkId)) == keccak256(abi.encodePacked(bytes(srcAddr))),
+            "BtpMessageVerifier: Not allowed source network"
+        );
     }
 
     function checkBlockUpdateWithState(BlockUpdateLib.BlockUpdate memory bu) private view {
