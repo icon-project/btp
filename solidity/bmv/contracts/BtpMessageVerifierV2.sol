@@ -35,17 +35,17 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
 
     function initialize(
         address bmc,
-        bytes memory srcNetworkId,
-        uint networkTypeId,
-        uint networkId,
+        bytes memory srcNetworkId_,
+        uint networkTypeId_,
+        uint networkId_,
         bytes memory firstBlockUpdate
     )
     external
     {
         _bmc = bmc;
-        _srcNetworkId = srcNetworkId;
-        _networkTypeId = networkTypeId;
-        _networkId = networkId;
+        _srcNetworkId = srcNetworkId_;
+        _networkTypeId = networkTypeId_;
+        _networkId = networkId_;
 
         BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
         _height = bu.mainHeight;
@@ -62,10 +62,9 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
 
     // NOTE: Using bytes message instead of base64url during development
     function handleRelayMessage(
-        string memory _bmc,
-        string memory _prev,
-        uint _seq,
-        //string memory _msg
+        string memory bmc_,
+        string memory prev_,
+        uint seq,
         bytes memory _msg
     ) external returns (bytes[] memory) {
     }

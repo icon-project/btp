@@ -30,7 +30,7 @@ library Utils {
         return (r, s, v);
     }
 
-    function append(bytes[] memory v, bytes[] memory w) internal returns (bytes[] memory) {
+    function append(bytes[] memory v, bytes[] memory w) internal pure returns (bytes[] memory) {
         if (w.length <= 0) {
             return v;
         }

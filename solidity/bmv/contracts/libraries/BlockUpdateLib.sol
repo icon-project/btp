@@ -74,7 +74,7 @@ library BlockUpdateLib {
         uint networkType
     )
     internal
-    view
+    pure
     returns (bytes32)
     {
         bytes[] memory ntsd = new bytes[](5);
@@ -86,14 +86,14 @@ library BlockUpdateLib {
         return keccak256(RLPEncode.encodeList(ntsd));
     }
 
-    function getNetworkTypeSectionHash(BlockUpdate memory bu) internal view returns (bytes32) {
+    function getNetworkTypeSectionHash(BlockUpdate memory bu) internal pure returns (bytes32) {
         bytes[] memory nts = new bytes[](2);
         nts[0] = RLPEncode.encodeBytes(abi.encodePacked(bu.nextProofContextHash));
         nts[1] = RLPEncode.encodeBytes(abi.encodePacked(getNetworkSectionRoot(bu)));
         return keccak256(RLPEncode.encodeList(nts));
     }
 
-    function getNetworkSectionRoot(BlockUpdate memory bu) internal view returns (bytes32) {
+    function getNetworkSectionRoot(BlockUpdate memory bu) internal pure returns (bytes32) {
         return MerkleTreeLib.calculate(getNetworkSectionHash(bu), bu.networkSectionToRoot);
     }
 

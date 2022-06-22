@@ -204,15 +204,13 @@ library RLPReader {
         // 1 byte for the length prefix
         require(item.len == 21);
 
-        (uint memPtr, uint len) = payloadLocation(item);
+        (uint memPtr, ) = payloadLocation(item);
 
         uint result;
         assembly {
             result := mload(sub(memPtr, 12))
         }
         return address(uint160(result));
-
-        //return address(toUint(item));
     }
 
     function toUint(RLPItem memory item) internal pure returns (uint) {

@@ -20,10 +20,7 @@ library RelayMessageLib {
         bytes mesg;
     }
 
-    // TODO remove comment out for using base64url inputs
-    // function decode(string memory enc) internal returns (RelayMessage[] memory) {
-    //     RLPReader.RLPItem memory ti = enc.decode().toRlpItem();
-    function decode(bytes memory enc) internal returns (RelayMessage[] memory) {
+    function decode(bytes memory enc) internal pure returns (RelayMessage[] memory) {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
         tl = tl[0].toList();
@@ -40,6 +37,7 @@ library RelayMessageLib {
 
     function toBlockUpdate(RelayMessage memory rm)
     internal
+    pure
     returns (BlockUpdateLib.BlockUpdate memory)
     {
         require(rm.typ == TypeBlockUpdate, "RelayMessage: Support only BlockUpdate type");
@@ -48,6 +46,7 @@ library RelayMessageLib {
 
     function toMessageProof(RelayMessage memory rm)
     internal
+    pure
     returns (MessageProofLib.MessageProof memory)
     {
         require(rm.typ == TypeMessageProof, "RelayMessage: Support only MessageProof type");

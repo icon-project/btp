@@ -28,7 +28,7 @@ library MessageProofLib {
         MessageProofNode[] nodes;
     }
 
-    function decode(bytes memory enc) internal returns (MessageProof memory) {
+    function decode(bytes memory enc) internal pure returns (MessageProof memory) {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
 
@@ -44,13 +44,13 @@ library MessageProofLib {
         return MessageProof(lefts, mesgs, rights);
     }
 
-    function getLeafCount(MessageProofNode[] memory nodes) internal returns (uint cnt) {
+    function getLeafCount(MessageProofNode[] memory nodes) internal pure returns (uint cnt) {
         for (uint i = 0; i < nodes.length; i++) {
             cnt += nodes[i].leafCount;
         }
     }
 
-    function calculate(MessageProof memory proof) internal returns (bytes32, uint) {
+    function calculate(MessageProof memory proof) internal pure returns (bytes32, uint) {
         Queue memory queue = toQueue(proof);
         uint leafCount = getLeafCount(queue.nodes);
         uint t = leafCount;
@@ -77,7 +77,7 @@ library MessageProofLib {
         return (queue.pop().hash, leafCount);
     }
 
-    function push(Queue memory queue, MessageProofNode memory node) internal {
+    function push(Queue memory queue, MessageProofNode memory node) internal pure {
         assert(queue.length < queue.nodes.length);
 
         queue.nodes[queue.rear++] = node;
@@ -87,7 +87,7 @@ library MessageProofLib {
         }
     }
 
-    function pop(Queue memory queue) internal returns (MessageProofNode memory node) {
+    function pop(Queue memory queue) internal pure returns (MessageProofNode memory node) {
         assert(queue.length > 0);
         node = queue.nodes[queue.front];
         delete queue.nodes[queue.front++];
@@ -97,7 +97,7 @@ library MessageProofLib {
         }
     }
 
-    function levelOf(uint nleaves) private returns (uint) {
+    function levelOf(uint nleaves) private pure returns (uint) {
         uint t = nleaves - 1;
         uint l = 1;
         while (t != 0) {
@@ -109,6 +109,7 @@ library MessageProofLib {
 
     function concat(MessageProofNode memory left, MessageProofNode memory right)
     private
+    pure
     returns (MessageProofNode memory)
     {
         require(left.leafCount == (1 << (left.level - 1)), "MessageProof: Invalid leaf count of left node");
@@ -120,7 +121,7 @@ library MessageProofLib {
         );
     }
 
-    function toQueue(MessageProof memory proof) private returns (Queue memory) {
+    function toQueue(MessageProof memory proof) private pure returns (Queue memory) {
         Queue memory queue = Queue({
             front: 0,
             rear: 0,
@@ -151,6 +152,7 @@ library MessageProofLib {
 
     function toMessageProofNodes(RLPReader.RLPItem[] memory items)
     private
+    pure
     returns (MessageProofNode[] memory)
     {
         RLPReader.RLPItem[] memory tmp;

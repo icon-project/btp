@@ -7,7 +7,7 @@ contract BlockUpdateMock {
 
     using BlockUpdateLib for BlockUpdateLib.BlockUpdate;
 
-    function decode(bytes memory enc) public returns (BlockUpdateLib.BlockUpdate memory) {
+    function decode(bytes memory enc) public pure returns (BlockUpdateLib.BlockUpdate memory) {
         return BlockUpdateLib.decode(enc);
     }
 
