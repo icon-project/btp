@@ -16,10 +16,10 @@
 
 package foundation.icon.btp.bsh.test;
 
-import com.iconloop.testsvc.Account;
-import com.iconloop.testsvc.Score;
-import com.iconloop.testsvc.ServiceManager;
-import com.iconloop.testsvc.TestBase;
+import com.iconloop.score.test.Account;
+import com.iconloop.score.test.Score;
+import com.iconloop.score.test.ServiceManager;
+import com.iconloop.score.test.TestBase;
 import foundation.icon.btp.irc2.IRC2Basic;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class IRC2BasicTest extends TestBase {
 
     @Test
     void decimals() {
-        assertEquals(decimals, tokenScore.call("decimals"));
+        assertEquals(BigInteger.valueOf(decimals), tokenScore.call("decimals"));
     }
 
     @Test

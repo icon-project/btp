@@ -100,10 +100,6 @@ $(JAVASCORE_DIST_DIR)/%:
 	$(eval MODULE := $(patsubst $(JAVASCORE_DIST_DIR)/%,%,$@))
 	mkdir -p $(JAVASCORE_DIST_DIR)
 
-dist-lib:
-	cd javascore/lib ; \
-    gradle build
-
 dist-java-bmc: $(JAVASCORE_DIST_DIR)/bmc.jar
 	cd javascore ; \
     ./gradlew :bmc:optimizedJar ; \
@@ -133,7 +129,7 @@ dist-java-feeaggregation: $(JAVASCORE_DIST_DIR)/fee-aggregation.jar
     ./gradlew :fee-aggregation:optimizedJar ; \
     cp ./fee-aggregation/build/libs/fee-aggregation-?.?-*.jar $(JAVASCORE_DIST_DIR)/fee-aggregation.jar ; \
 
-dist-java: dist-lib dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin dist-java-feeaggregation
+dist-java: dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin dist-java-feeaggregation
 
 clean-java-build:
 	cd javascore ; \
