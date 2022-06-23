@@ -15,6 +15,7 @@
     "@openzeppelin/test-helpers": "^0.5.15",
     "@openzeppelin/truffle-upgrades": "^1.15.0",
     "chai": "^4.3.6",
+    "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.4",
     "ganache": "^7.3.0",
     "truffle": "^5.1.16-truffleLogger.0"

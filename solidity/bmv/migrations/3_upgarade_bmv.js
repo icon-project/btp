@@ -1,10 +1,16 @@
-const bmv = artifacts.require("BtpMessageVerifierV2");
 const { upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
+const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
+const BtpMessageVerifierV2 = artifacts.require("BtpMessageVerifierV2");
+const RelayMessageLib = artifacts.require("RelayMessageLib");
+const Utils = artifacts.require("Utils");
+
+// only for upgrade
 module.exports = async function (deployer, network) {
-    const UPGRADE_ADDRESS = process.env.BMV_UPGRADE_ADDRESS;
-    if (UPGRADE_ADDRESS === undefined) {
-        return;
-    }
-    await upgradeProxy(UPGRADE_ADDRESS, bmv, { deployer });
+    // let old = await BtpMessageVerifier.deployed();
+
+    // deployer.link(RelayMessageLib, BtpMessageVerifierV2);
+    // deployer.link(Utils, BtpMessageVerifierV2);
+
+    // await upgradeProxy(old.address, BtpMessageVerifierV2, { deployer });
 };
