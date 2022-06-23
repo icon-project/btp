@@ -1,26 +1,9 @@
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
+const { ZB32, toBytesString, toStr } = require('./utils');
 
-const toStr = (h) => {
-    h = h.slice(0, 2) == '0x' ? h.slice(2, h.length) : h;
-    return Buffer.from(h, 'hex').toString();
-}
-const toB64U = (h) => {
-    return h;
-
-    // h = h.slice(0, 2) == '0x' ? h.slice(2, h.length) : h;
-    // return Buffer.from(h, 'hex').toString('base64')
-    //     .replace(/\+/g, '-')
-    //     .replace(/\//g, '_')
-    //     .replace(/=/g, '')
-}
-
-const ZB32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const SRC_NETWORK_ID = 'btp://0x1.icon'
-const toBytesString = (s) => {
-    return '0x' + Buffer.from(s).toString('hex');
-}
 const NTID = new BN('2');
 const NID = new BN('2');
 
@@ -401,7 +384,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when invalid source network sends RELAY_MESSAGE = [MessageProof]', () => {
-            const RELAY_MESSAGE = toB64U('0xd0cfce028ccbf800c685616c696365f800');
+            const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call('', 'btp://0x2.eth', 0, RELAY_MESSAGE),
@@ -411,7 +394,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when invalid sender send RELAY_MESSAGE = [ MessageProof]', () => {
-            const RELAY_MESSAGE = toB64U('0xd0cfce028ccbf800c685616c696365f800');
+            const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
                     '', SRC_NETWORK_ID, 0, RELAY_MESSAGE, { from: accounts[1] }),
@@ -421,7 +404,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when send RELAY_MESSAGE = [MessageProof]', () => {
-            const RELAY_MESSAGE = toB64U('0xd0cfce028ccbf800c685616c696365f800');
+            const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
 
             it('returns messages', async () => {
                 let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
