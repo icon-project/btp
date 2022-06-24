@@ -1,5 +1,15 @@
 version = '0.1.0'
 
+// for integration tests
+sourceSets {
+    intTest {}
+}
+
+configurations {
+    intTestImplementation.extendsFrom testImplementation
+    intTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 dependencies {
     compileOnly("foundation.icon:javaee-api:$javaeeVersion")
     implementation("foundation.icon:javaee-scorex:$scorexVersion")
@@ -11,6 +21,9 @@ dependencies {
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
     testImplementation project(':test-lib')
+
+    intTestImplementation 'foundation.icon:icon-sdk:2.0.0'
+    intTestImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
 }
 
 optimizedJar {
@@ -50,4 +63,20 @@ test {
             excludeTags("integration")
         }
     }
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
+    testLogging.showStandardStreams = true
+
+    // use the common config files
+    systemProperty('env.props', new File('conf/env.props'))
+
+    def prefix = 'score.path.'
+    systemProperty(prefix + project.name, optimizedJar.outputJarName)
 }
