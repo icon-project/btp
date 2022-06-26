@@ -142,7 +142,7 @@ public class MessageProof {
         total += left;
         var rootNumOfLeaf = node.getNumOfLeaf();
         if (total != rootNumOfLeaf)
-            throw BMVException.unknown("total doesn't match total : " + total + ", node : " + rootNumOfLeaf);
+            throw BMVException.invalidMessageProof("total doesn't match total : " + total + ", node : " + rootNumOfLeaf);
         node.verify();
         return new ProveResult(node.getValue(), left, total);
     }

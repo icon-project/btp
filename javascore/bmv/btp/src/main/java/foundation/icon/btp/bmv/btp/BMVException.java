@@ -32,24 +32,29 @@ public class BMVException extends BTPException.BMV {
         return new BMVException(Code.Unknown, message);
     }
 
-    public static BMVException invalidVotes() {
-        return new BMVException(Code.InvalidVotes);
+    public static BMVException permissionDenied(String message) {
+        return new BMVException(Code.PermissionDenied, message);
     }
 
-    public static BMVException invalidBlockUpdate() {
-        return new BMVException(Code.InvalidBlockUpdate);
+    public static BMVException invalidProofs(String message) {
+        return new BMVException(Code.InvalidProofs, message);
     }
 
     public static BMVException invalidBlockUpdate(String message) {
         return new BMVException(Code.InvalidBlockUpdate, message);
     }
 
+    public static BMVException invalidMessageProof(String message) {
+        return new BMVException(Code.InvalidMessageProof, message);
+    }
+
     //BTPException.BMV => 25 ~ 39
     public enum Code implements Coded{
         Unknown(0),
-        InvalidVotes(2),
-        InvalidSequence(3),
-        InvalidBlockUpdate(4);
+        PermissionDenied(1),
+        InvalidProofs(2),
+        InvalidBlockUpdate(3),
+        InvalidMessageProof(4);
 
         final int code;
         Code(int code){ this.code = code; }

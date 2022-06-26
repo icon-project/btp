@@ -79,19 +79,19 @@ public class Node {
     void verify() {
         if (level == LEVEL_LEAF) {
             if (numOfLeaf != 1) {
-                throw BMVException.unknown("invalid numOfLeaf, expected: 1, value: " + numOfLeaf);
+                throw BMVException.invalidMessageProof("invalid numOfLeaf, expected: 1, value: " + numOfLeaf);
             }
             return;
         }
         if (left != null) {
             if (left.level < right.level) {
-                throw BMVException.unknown("invalid level left : " + left.level + " right : " + right.level);
+                throw BMVException.invalidMessageProof("invalid level left : " + left.level + " right : " + right.level);
             }
             left.verify();
             if (level > LEVEL_BRANCH) {
                 var v = 1 << (left.level - LEVEL_LEAF);
                 if (v != left.numOfLeaf) {
-                    throw BMVException.unknown("invalid numOfLeaf, expected : " + v + ", value : " + left.numOfLeaf);
+                    throw BMVException.invalidMessageProof("invalid numOfLeaf, expected : " + v + ", value : " + left.numOfLeaf);
                 }
             }
             right.verify();

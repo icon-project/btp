@@ -90,7 +90,7 @@ public class BTPMessageVerifier implements BMV {
 
     private void handleFirstBlockUpdate(BlockUpdate blockUpdate, BMVProperties bmvProperties) {
         var prev = blockUpdate.getPrev();
-        Context.require(prev == null, "not first blockUpdate");
+        if (prev != null) throw BMVException.invalidBlockUpdate("not first blockUpdate");
         var updateNumber = blockUpdate.getUpdateNumber();
         var blockUpdateNid = blockUpdate.getNid();
         var msgCnt = blockUpdate.getMessageCount();
@@ -105,7 +105,8 @@ public class BTPMessageVerifier implements BMV {
         var nsHash = ns.hash();
         var nextProofContextHash = blockUpdate.getNextProofContextHash();
         var nextProofContext = blockUpdate.getNextProofContext();
-        Context.require(Arrays.equals(hash(nextProofContext), nextProofContextHash), "mismatch Hash of proofContext");
+        if (!Arrays.equals(hash(nextProofContext), nextProofContextHash))
+            throw BMVException.invalidBlockUpdate("mismatch Hash of proofContext");
         bmvProperties.setNetworkID(blockUpdateNid);
         bmvProperties.setProofContextHash(nextProofContextHash);
         bmvProperties.setProofContext(nextProofContext);
@@ -124,10 +125,10 @@ public class BTPMessageVerifier implements BMV {
         var updateNumber = blockUpdate.getUpdateNumber();
         var blockUpdateNid = blockUpdate.getNid();
         var prev = blockUpdate.getPrev();
-        Context.require(bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) == 0, "remain must be zero");
-        Context.require(networkID.compareTo(blockUpdateNid) == 0, "invalid network id");
-        Context.require(Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev), "mismatch networkSectionHash");
-        Context.require(bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) == 0, "invalid first message sequence of blockUpdate");
+        if (bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) != 0) throw BMVException.invalidBlockUpdate("remain must be zero");
+        if (networkID.compareTo(blockUpdateNid) != 0) throw BMVException.invalidBlockUpdate("invalid network id");
+        if (!Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev)) throw BMVException.invalidBlockUpdate("mismatch networkSectionHash");
+        if (bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) != 0) throw BMVException.invalidBlockUpdate("invalid first message sequence of blockUpdate");
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
                 updateNumber,
@@ -164,8 +165,8 @@ public class BTPMessageVerifier implements BMV {
     }
 
     private void verifyProofContextData(byte[] proofContextHash, byte[] proofContext, byte[] currentProofContextHash) {
-        Context.require(!Arrays.equals(currentProofContextHash, proofContextHash), "mismatch UpdateFlag");
-        Context.require(Arrays.equals(hash(proofContext), proofContextHash), "mismatch Hash of NextProofContext");
+        if (Arrays.equals(currentProofContextHash, proofContextHash)) throw BMVException.invalidBlockUpdate("mismatch UpdateFlag");
+        if (!Arrays.equals(hash(proofContext), proofContextHash)) throw BMVException.invalidBlockUpdate("mismatch Hash of NextProofContext");
     }
 
     private void verifyProof(NetworkTypeSectionDecision decision, Proofs proofs) {
@@ -177,35 +178,37 @@ public class BTPMessageVerifier implements BMV {
         var proofContext = ProofContext.fromBytes(proofContextBytes);
         for (byte[] sig : sigs) {
             Address address = recoverAddress(decisionHash, sig);
-            Context.require(proofContext.isValidator(address), "invalid validator : " + address);
-            Context.require(!verifiedValidator.contains(address), "duplicated validator : " + address);
+            if (!proofContext.isValidator(address)) throw BMVException.invalidProofs("invalid validator : " + address);
+            if (verifiedValidator.contains(address)) throw BMVException.invalidProofs("duplicated validator : " + address);
             verifiedValidator.add(address);
         }
         var verified = verifiedValidator.size();
         var validatorsCnt = proofContext.getValidators().length;
         //quorum = validator * 2/3
-        Context.require(verified * 3 > validatorsCnt * 2,
-                "not enough proof parts num of validator : " + validatorsCnt + ", num of proof parts : " + verified);
+        if (verified * 3 <= validatorsCnt * 2)
+                throw BMVException.invalidProofs("not enough proof parts num of validator : " + validatorsCnt + ", num of proof parts : " + verified);
     }
 
     private byte[][] handleMessageProof(MessageProof messageProof, BlockUpdate blockUpdate) {
         byte[] expectedMessageRoot;
         BigInteger expectedMessageCnt;
         var bmvProperties = propertiesDB.get();
-        Context.require(bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) > 0, "remaining message count must greater than zero");
+        if (bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) <= 0)
+            throw BMVException.invalidMessageProof("remaining message count must greater than zero");
         MessageProof.ProveResult result = messageProof.proveMessage();
-        Context.require(bmvProperties.getProcessedMessageCount().compareTo(BigInteger.valueOf(result.offset)) == 0, "invalid ProofInLeft.NumberOfLeaf");
+        if (bmvProperties.getProcessedMessageCount().compareTo(BigInteger.valueOf(result.offset)) != 0)
+            throw BMVException.invalidMessageProof("invalid ProofInLeft.NumberOfLeaf");
         if (blockUpdate != null ) {
             expectedMessageRoot = blockUpdate.getMessageRoot();
             expectedMessageCnt = blockUpdate.getMessageCount();
             if (0 < result.offset) {
-                throw BMVException.unknown("ProofInLeft should be empty");
+                throw BMVException.invalidMessageProof("ProofInLeft should be empty");
             }
         } else {
             expectedMessageRoot = bmvProperties.getLastMessagesRoot();
             expectedMessageCnt = bmvProperties.getLastMessageCount();
             if (bmvProperties.getLastSequence().subtract(bmvProperties.getLastFirstMessageSN()).intValue() != result.offset) {
-                throw BMVException.unknown("mismatch ProofInLeft");
+                throw BMVException.invalidMessageProof("mismatch ProofInLeft");
             }
         }
         if (expectedMessageCnt.intValue() != result.total) {
@@ -214,12 +217,12 @@ public class BTPMessageVerifier implements BMV {
                 logger.println("ProofInRight["+i+"] : " + "NumOfLeaf:"+rightProofNodes[i].getNumOfLeaf()
                 + "value:" + StringUtil.bytesToHex(rightProofNodes[i].getValue()));
             }
-            throw BMVException.unknown(
+            throw BMVException.invalidMessageProof(
                     "mismatch MessageCount offset:" + result.offset +
                             ", expected:" + expectedMessageCnt +
                             ", count :" + result.total);
         }
-        if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.unknown("mismatch MessagesRoot");
+        if (!Arrays.equals(result.hash, expectedMessageRoot)) throw BMVException.invalidMessageProof("mismatch MessagesRoot");
         var msgCnt = messageProof.getMessages().length;
         var remainCnt = result.total - result.offset - msgCnt;
         if (remainCnt == 0) {
@@ -242,11 +245,11 @@ public class BTPMessageVerifier implements BMV {
     private void checkAccessible(BTPAddress curAddr, BTPAddress fromAddress) {
         BMVProperties properties = getProperties();
         if (!properties.getNetwork().equals(fromAddress.net())) {
-            throw BMVException.unknown("invalid prev bmc");
+            throw BMVException.permissionDenied("invalid prev bmc");
         } else if (!Context.getCaller().equals(properties.getBmc())) {
-            throw BMVException.unknown("invalid caller bmc");
+            throw BMVException.permissionDenied("invalid caller bmc");
         } else if (!Address.fromString(curAddr.account()).equals(properties.getBmc())) {
-            throw BMVException.unknown("invalid current bmc");
+            throw BMVException.permissionDenied("invalid current bmc");
         }
     }
 }
