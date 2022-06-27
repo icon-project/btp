@@ -25,14 +25,16 @@ import foundation.icon.icx.data.Address;
 import foundation.icon.icx.data.Bytes;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
 import foundation.icon.icx.transport.jsonrpc.RpcValue;
+import scorex.util.HashMap;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Map;
 
 import static foundation.icon.btp.bmv.btp.Env.LOG;
 
 public class BMCScore extends Score {
-
+    public static Map<Address, String> bmcNetWork = new HashMap<>();
     public static BMCScore mustDeploy(TransactionHandler txHandler, Wallet wallet, String net)
             throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "bmc");
@@ -42,6 +44,7 @@ public class BMCScore extends Score {
         Score score = txHandler.deploy(wallet, "bmc-mock-0.1.0-optimized.jar", params);
         LOG.info("scoreAddr = " + score.getAddress());
         LOG.infoExiting();
+        bmcNetWork.put(score.getAddress(), net);
         return new BMCScore(score);
     }
 
