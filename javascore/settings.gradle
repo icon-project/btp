@@ -7,6 +7,6 @@ include (
         'bmv:icon',
         'bsh',
         'nativecoin',
-        'arbcall',
+        'xcall',
         'fee-aggregation',
 )
