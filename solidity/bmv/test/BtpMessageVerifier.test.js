@@ -7,8 +7,192 @@ const SRC_NETWORK_ID = 'btp://0x1.icon'
 const NTID = new BN('2');
 const NID = new BN('2');
 
+function toHex(str) {
+    function unescape (str) {
+        return (str + '==='.slice((str.length + 3) % 4))
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
+    }
+    return '0x' + Buffer.from(unescape(str), 'base64').toString('hex')
+}
+
 contract('BtpMessageVerifier', (accounts) => {
     const BMC = accounts[0];
+
+    describe('common test scenario', () => {
+        const RELAY_MESSAGES = [
+            toHex('zs3MAorJ-ADEg2RvZ_gA'),
+            toHex('-QIj-QIg-QICAbkB_vkB-xQAoNZD7rpFrNq3tP1l7NuGIuZyQ8smQlGRf4RboBTFfBXP4-IBoKSZfSg69oAj9pZmgy3wjK-0uReJsQQ48TtIvfuqA-SsAgOgsBp-kKaHtktY4kEKMeGy6OExZyVjxsUtuE7q3RW2lWQDoE6u7R0ehETxCKD3mrvFFQ3XaLvaiSecLkowH-jE5d0muQES-QEP-QEMuEEcjhxOiepvKiLAbUmYTYCI9Atdi8H_VH15Dfg3RFT5_3P0MkFoy2ihx4107gWizMsaRxwmw9zQWvTCEkHTGo_TAbhBH5Fa5_BH24_uP-xCiCoXR6qJjFFJ6HUeR5I18zd5_UFPUsOmPQ3SSVPz6O136waWVBDCw2X2aavHTQI528cFKgG4QdIWOPiu5RlJIN9TZSrckG9mlEBE4dkXbkW509gNAQ3teWf_TdlEtvkhR5TwyWdSlmPu2j07UcK3vNVv-PakHTgAuEFr46tWgH92LyYqn-uBmqGqwegzMOFWh2S7nnZlGRNftk9yre8yMYfHAOazCzpE52bsuIhfEpAHTEP3vTuwb1bcAbhY-Fb4VJSRGsdN2f-PTN2R50evz9yUEKkm6ZSX42-4hWCjAjxQlwSAHrEUms7PQ5SpsKdLK2OrnNIMbjjIgZXIF1vrRpRDK2RI80ca7xkIGbPE9UmjponYOtoCmNf4ANKDY2F0iGVsZXBoYW50hGJpcmT4AA=='),
+            toHex('-QGw-QGt-QGqAbkBpvkBox4AoNZD7rpFrNq3tP1l7NuGIuZyQ8smQlGRf4RboBTFfBXP4-IBoN19fNEilkmgVNv9A5aavgzk5DmvwJ824HFluV-Gb1ZcAgigM1_HhBduGPTT7-_GYlA_D9j-EgdR7UJRpmqqk4ZAAVIDoIbAXPMl0an8kyNgA3qHuIccg48nTqtNgBCunIGz3iSpuQES-QEP-QEMuEESjdeeYuefJwZ-UeGSMip22InituKiiJfGqyZJoDUumnmR5YkehBosgtgIF-vnY915fw0cCcU10qxqpCftq_FlALhBjn8ySeyJIADkTuJVdrv2PQAlit-ct0Az9rBKjDX7R-wgLyfa3CQ9e6Z2gjEVKqPeDbIcd5okPmq83QN_0XI-CwC4QaeoiNDMesxqDWnlL9lVrjUOw-wPwLlYez80LPXcY4idelSW7rfoHwqU6kOxtfWqGY-m6lL2C-9rwZXoofUWvbsBuEEW0SS9tLZ-Y9rVuRHybDONlQEiF3jRYFjPeHOBsjRWGkmHA581uhQ12xZMNN_0uaewGkmrMxkTLJzlR8eHjwXnAPgA'),
+            toHex('-Gj4ZvUCs_LAzIZtb25rZXmEbGlvbuPiAaA49JIQh3ULzCVOzHkRcOuwGgKX1JxjCohEwY9hBKXaB-8Crezj4gKgncYz2Q6WuHRLJ6qlu2uyzKKPGHwZbPevHILY0ejNX2_GhXRpZ2VywA=='),
+            toHex('-QPP-QPM-QHjAbkB3_kB3CgAoNJMTz2YoxD5QEfw6hi1U_n1cBlWBRieTLezPKiKKQCK4-IBoIxGqEsLrY0u43XR-2ZiVu8Ku3v88giw5umoNxji3aTIAg-gSdpnzeHtlNM992HWWr4Pixe-3UGhM99Q3mOuuAqpp-cA-AC5ARL5AQ_5AQy4QehBlwzU6giHD5Sb-u9Z5u-rGnEyovcVbp7SFCfrdjHrbtHkaxvvq28IA5nw0r72SSCB2Ko-cW3oGcyKfpnCXZQAuEFKBoi26_isR7QjJn-obP-L3vYJWTT6FR2_B7eoYf1eRABVckewJ43yW0yGWzyKBn-bQGk-918x5oADCi6vJc0KAbhBsRWNXWP-jwgP9V0Tbj6we3rfPx-sQJ1UFZmh6xERxAEbYmSYdfckUJ3kMf9hzYDnAMxc-jF7njPfZ-ZaptXOzwC4QZj8L22GlXdWhbgMaFYv-y5Ic4n8W4OdXJXDZUJrWL-BLG8eszuqd1KRrShOAt2xHdXpR2_fK6H2vdTqci723LIAuFj4VvhUlNzPNYIKM3USuqZngPES_vdFkzddlAU25tNZAfBW7UjxnI0rjnbGKSOZlCGChRp1pbFlfXQ14xeJdbqXNyCDlA-VHh-j-WoqO5LwXzgsaocSaUXL-QHjAbkB3_kB3DIAoPFbYdkTkt3Ln7YL6xOKih__ghvgNx08IPnKoGO534464-IBoNHN__nyTVC6iKNPGcvfXCFBad9jYp4pnZuv-yQqG7QoAg-g7-V4XDUhT1Tg7lleu-loQs0VjZMp4_P27X4w-M-oNfkA-AC5ARL5AQ_5AQy4QebYLrwB4QzOPWhnxsqiM3-OtIfv7E-wD4GqHHkVjyGEVZRd-XBdX7zNDBSZDT0224MIWxPIGg1dY8FxC8Ufll4BuEEZz8qirig9bu_FLp_sAQ71Oo5LSqhTqe1qAm9YyTCpN3Rc8bISAsUIZcyForxQWjB99_bjoQeZPTXu0kk3fR0qAbhByAfdr1zvXd92iMMvbu2TD7-feYk6C8w1VHLk-QQQPA4MZkPG6GAkmgaPh1TXWo-Q2NzNIKDLsImYgtK9Pt0DsgC4Qe14NBoPKtMYo__08uEYwl56cM1led4YSjwoFxIO8yzCKPYQNIJSwEe2GS-G_Xn7qaOa_k5RrZ0gWGeRjGpF_soAuFj4VvhUlPKKUwXb5Vb9AQNZasqRKdcwqRa4lEKqYqZbfQPtaKBrlas0RdavKUvplDOpd591s283KkpmAFebmplZ5FaHlMmuULRCNQnGTddK7pjuKqDg_tMj'),
+        ];
+
+        describe('when bmv has been initialized', () => {
+            const SRC_NETWORK_ID = 'btp://0x1.icon';
+            const NETWORK_TYPE_ID = new BN(2);
+            const NETWORK_ID = new BN(2);
+            const FIRST_BLOCK_UPDATE = '0xf8a60a00a08d647190ed786d4f8a522f32351ff2269732f6e3771b908271ca29aa73c2c03cc00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7af800b858f856f85494e3aee81071e40c44dde872e568d8d09429c5970e94b3d988f28443446c9d7ac62f673085e2736ca4e094f7646979981a5d7dcc05ea261ae26ecd2c2c81889477fec3da1ba8b192f4b278057395a5124392c88b';
+            const VALIDATORS = [
+                '0xe3aee81071e40c44dde872e568d8d09429c5970e',
+                '0xb3d988f28443446c9d7ac62f673085e2736ca4e0',
+                '0xf7646979981a5d7dcc05ea261ae26ecd2c2c8188',
+                '0x77fec3da1ba8b192f4b278057395a5124392c88b'
+            ];
+
+            beforeEach(async () => {
+                this.instance = await BtpMessageVerifier.new();
+                await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE);
+            });
+
+            shouldHaveImmutableState.call(this, {
+                srcNetworkId: toBytesString(SRC_NETWORK_ID),
+                networkTypeId: NETWORK_TYPE_ID,
+                networkId: NETWORK_ID
+            });
+
+            shouldHaveThisState.call(this, {
+                height: new BN(10),
+                messageRoot: '0x41791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7a',
+                messageSn: new BN(0),
+                messageCount: new BN(1),
+                remainMessageCount: new BN(1),
+                networkSectionHash: '0xb01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b69564',
+                validators: VALIDATORS
+            });
+
+            describe('sends RelayMessage=[MessageProof]', () => {
+                it('returns messages', async () => {
+                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    expect(msgs.map(v => toStr(v))).to.deep.equal(['dog']);
+                });
+
+                describe('when state has been updated, height(10)', () => {
+                    beforeEach(async () => {
+                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    });
+
+                    shouldHaveThisState.call(this, {
+                        height: new BN(10),
+                        messageRoot: '0x41791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7a',
+                        messageSn: new BN(1),
+                        messageCount: new BN(1),
+                        remainMessageCount: new BN(0),
+                        networkSectionHash: '0xb01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b69564',
+                        validators: VALIDATORS
+                    });
+
+                    describe('sends RelayMessage=[BlockUpdate, MessageProof]', () => {
+                        it('returns messages', async () => {
+                            let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[1]);
+                            expect(msgs.map(v => toStr(v))).to.deep.equal(['cat', 'elephant', 'bird']);
+                        });
+
+                        describe('when state has been updated, height(20)', () => {
+                            beforeEach(async () => {
+                                await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[1]);
+                            });
+
+                            shouldHaveThisState.call(this, {
+                                height: new BN(20),
+                                messageRoot: '0x4eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26',
+                                messageSn: new BN(4),
+                                messageCount: new BN(3),
+                                remainMessageCount: new BN(0),
+                                networkSectionHash: '0x335fc784176e18f4d3efefc662503f0fd8fe120751ed4251a66aaa9386400152',
+                                validators: [
+                                    '0x911ac74dd9ff8f4cdd91e747afcfdc9410a926e9',
+                                    '0x97e36fb88560a3023c509704801eb1149acecf43',
+                                    '0xa9b0a74b2b63ab9cd20c6e38c88195c8175beb46',
+                                    '0x432b6448f3471aef190819b3c4f549a3a689d83a'
+                                ]
+                            });
+
+                            describe('sends RelayMessage=[BlockUpdate(changing validators)]', () => {
+                                it('returns empty list', async () => {
+                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[2]);
+                                    expect(msgs.map(v => toStr(v))).to.be.empty;
+                                });
+
+                                describe('when state has been updated, height(30)', () => {
+                                    beforeEach(async () => {
+                                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[2]);
+                                    });
+
+                                    let validators = [
+                                        '0x911ac74dd9ff8f4cdd91e747afcfdc9410a926e9',
+                                        '0x97e36fb88560a3023c509704801eb1149acecf43',
+                                        '0xa9b0a74b2b63ab9cd20c6e38c88195c8175beb46',
+                                        '0x432b6448f3471aef190819b3c4f549a3a689d83a'
+                                    ];
+
+                                    shouldHaveThisState.call(this, {
+                                        height: new BN(30),
+                                        messageRoot: '0x86c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9',
+                                        messageSn: new BN(4),
+                                        messageCount: new BN(3),
+                                        remainMessageCount: new BN(3),
+                                        networkSectionHash: '0x49da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e7',
+                                        validators
+                                    });
+
+                                    describe('sends RelayMessage=[MessageProof, MessageProof]', () => {
+                                        it('returns messages', async () => {
+                                            let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[3]);
+                                            expect(msgs.map(v => toStr(v))).to.deep.equal(['monkey', 'lion', 'tiger']);
+                                        });
+
+                                        describe('when state has been updated, height(40)', () => {
+                                            beforeEach(async () => {
+                                                await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[3]);
+                                            });
+
+                                            shouldHaveThisState.call(this, {
+                                                height: new BN(30),
+                                                messageRoot: '0x86c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9',
+                                                messageSn: new BN(7),
+                                                messageCount: new BN(3),
+                                                remainMessageCount: new BN(0),
+                                                networkSectionHash: '0x49da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e7',
+                                                validators
+                                            });
+                                            describe('sends RelayMessage=[BlockUpdate(changing validators), BlockUpdate(chainging validators)]', () => {
+                                                it('returns empty list', async () => {
+                                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[4]);
+                                                    expect(msgs.map(v => toStr(v))).to.be.empty;
+                                                });
+
+                                                describe('when state has been updated, height(50)', () => {
+                                                    beforeEach(async () => {
+                                                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[4]);
+                                                    });
+
+                                                    shouldHaveThisState.call(this, {
+                                                        height: new BN(50),
+                                                        messageRoot: '0x86c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9',
+                                                        messageSn: new BN(7),
+                                                        messageCount: new BN(3),
+                                                        remainMessageCount: new BN(0),
+                                                        networkSectionHash: '0xd33456b7b455a6381b4e523716b33f9593d3dfe00c7219a3656c983ed99ab8a9',
+                                                        validators: [
+                                                            '0xf28a5305dbe556fd0103596aca9129d730a916b8',
+                                                            '0x42aa62a65b7d03ed68a06b95ab3445d6af294be9',
+                                                            '0x33a9779f75b36f372a4a6600579b9a9959e45687',
+                                                            '0xc9ae50b4423509c64dd74aee98ee2aa0e0fed323'
+                                                        ]
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 
     describe('when has installed: BlockUpdate', () => {
         const NETWORK_TYPE_ID = new BN(1);
