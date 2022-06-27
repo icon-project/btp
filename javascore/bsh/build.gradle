@@ -45,7 +45,6 @@ task optimizedJarIRC2(type: OptimizedJar) {
     enableDebug = debugJar
 }
 
-logging.println("BMC Address   :" + System.getProperty("BMC_ADDRESS"))
 deployJar {
     endpoints {
         gangnam {

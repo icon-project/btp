@@ -8,5 +8,6 @@ include (
         'bmv:btp',
         'bsh',
         'nativecoin',
+        'xcall',
         'fee-aggregation',
 )

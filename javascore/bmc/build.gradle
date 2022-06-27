@@ -70,7 +70,7 @@ test {
 
         //for foundation.icon.btp.test.ScoreIntegrationTest
         systemProperty 'tester.keyStore', scoreTest.tester.keyStore
-        systemProperty 'tester.keySecret', scoreTest.tester.keySecret
+        systemProperty 'tester.keyPassword', scoreTest.tester.resolvedKeyPassword
 
         //for bmv-mock client
         systemProperty 'bmv-mock.url', scoreTest.url
