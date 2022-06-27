@@ -63,17 +63,15 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     function handleRelayMessage(
         string memory,
-        string memory prev,
+        string calldata prev,
         uint,
-        bytes memory mesg
+        bytes calldata mesg
     )
     external
     onlyBmc
     returns (bytes[] memory) {
-        RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(mesg);
-
         checkAllowedNetwork(prev);
-
+        RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(mesg);
         bytes[] memory messages;
         for (uint i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
@@ -83,6 +81,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
                 checkBlockUpdateWithState(bu);
                 checkBlockUpdateProof(bu);
 
+                // update state
                 _height = bu.mainHeight;
                 _networkSectionHash = bu.getNetworkSectionHash();
                 if (bu.hasNextValidators) {
@@ -161,7 +160,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         return votes * 3 > _validators.length * 2;
     }
 
-    function checkAllowedNetwork(string memory srcAddr) private view {
+    function checkAllowedNetwork(string calldata srcAddr) private view {
         require(
             keccak256(abi.encodePacked(_srcNetworkId)) == keccak256(abi.encodePacked(bytes(srcAddr))),
             "BtpMessageVerifier: Not allowed source network"

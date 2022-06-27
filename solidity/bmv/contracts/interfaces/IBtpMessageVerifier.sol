@@ -5,13 +5,11 @@ interface IBtpMessageVerifier {
 
     function getStatus() external view returns (uint256);
 
-    // NOTE: Using bytes message instead of base64url during development
     function handleRelayMessage(
         string memory _bmc,
-        string memory _prev,
+        string calldata _prev,
         uint256 _seq,
-        // string memory _msg
-        bytes memory _msg
+        bytes calldata _msg
     )
     external
     returns (bytes[] memory);

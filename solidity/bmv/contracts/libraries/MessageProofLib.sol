@@ -89,22 +89,22 @@ library MessageProofLib {
 
     function pop(Queue memory queue) internal pure returns (MessageProofNode memory node) {
         assert(queue.length > 0);
-        node = queue.nodes[queue.front];
-        delete queue.nodes[queue.front++];
+        node = queue.nodes[queue.front++];
         queue.length--;
         if (queue.front == queue.nodes.length) {
             queue.front = 0;
         }
     }
 
-    function levelOf(uint nleaves) private pure returns (uint) {
-        uint t = nleaves - 1;
-        uint l = 1;
-        while (t != 0) {
-            l++;
-            t = t >> 1;
+    function levelOf(uint nleaves) private pure returns (uint level) {
+        assembly {
+            let t := sub(nleaves, 1)
+            level := 1
+            for {} gt(t, 0) {} {
+                level := add(level, 1)
+                t := shr(1, t)
+            }
         }
-        return l;
     }
 
     function concat(MessageProofNode memory left, MessageProofNode memory right)

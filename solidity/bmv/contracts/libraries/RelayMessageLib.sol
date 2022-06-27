@@ -4,13 +4,11 @@ pragma solidity >=0.4.22 <0.9.0;
 import "./BlockUpdateLib.sol";
 import "./MessageProofLib.sol";
 import "./RLPReader.sol";
-// import "./Base64.sol";
 
 library RelayMessageLib {
 
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
-    // using Base64 for string;
 
     uint constant TypeBlockUpdate = 1;
     uint constant TypeMessageProof = 2;
@@ -20,7 +18,7 @@ library RelayMessageLib {
         bytes mesg;
     }
 
-    function decode(bytes memory enc) internal pure returns (RelayMessage[] memory) {
+    function decode(bytes calldata enc) internal pure returns (RelayMessage[] memory) {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
         tl = tl[0].toList();

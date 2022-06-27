@@ -7,7 +7,7 @@ contract RelayMessageMock {
 
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
-    function decode(bytes memory enc) public pure returns (RelayMessageLib.RelayMessage[] memory) {
+    function decode(bytes calldata enc) public pure returns (RelayMessageLib.RelayMessage[] memory) {
         return RelayMessageLib.decode(enc);
     }
 
