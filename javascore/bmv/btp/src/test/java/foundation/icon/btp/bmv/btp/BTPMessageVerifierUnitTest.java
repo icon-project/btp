@@ -143,7 +143,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidNid = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidNidMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedInvalidNidMsg.getBytes()))
         );
         assertTrue(invalidNid.getMessage().contains("invalid network id"));
 
@@ -151,7 +151,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidFirstSN = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidFirstSNMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedInvalidFirstSNMsg.getBytes()))
         );
         assertTrue(invalidFirstSN.getMessage().contains("invalid first message"));
 
@@ -159,7 +159,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidPrev = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidPrevHashMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedInvalidPrevHashMsg.getBytes()))
         );
         assertTrue(invalidPrev.getMessage().contains("mismatch networkSectionHash"));
     }
@@ -175,7 +175,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError duplicated = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedDuplicatedSignatureMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedDuplicatedSignatureMsg.getBytes()))
         );
         assertTrue(duplicated.getMessage().contains("duplicated"));
 
@@ -183,7 +183,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError proofNull = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(proofNullMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(proofNullMsg.getBytes()))
         );
         assertTrue(proofNull.getMessage().contains("null"));
     }
@@ -198,7 +198,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError hashMismatched = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedHashMismatchMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedHashMismatchMsg.getBytes()))
         );
         assertTrue(hashMismatched.getMessage().contains("mismatch Hash of NextProofContext"));
     }
@@ -219,20 +219,20 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidRemainCnt = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedProofMessageMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedProofMessageMsg.getBytes()))
         );
         assertTrue(invalidRemainCnt.getMessage().contains("remaining message count must greater than zero"));
 
         // make remain count 2
         var encodedValidBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidBlockUpdate.getBytes()));
+                bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedValidBlockUpdate.getBytes()));
 
         var encodedMismatchLeftNumMsg = "-EL4QPg-Arg7-Dnj4gGg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kTSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
         AssertionError mismatchLeftNum = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchLeftNumMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedMismatchLeftNumMsg.getBytes()))
         );
         assertTrue(mismatchLeftNum.getMessage().contains("invalid ProofInLeft.NumberOfLeaf"));
 
@@ -240,7 +240,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidNumOfLeaf = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidNumOfLeafMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedInvalidNumOfLeafMsg.getBytes()))
         );
         assertTrue(invalidNumOfLeaf.getMessage().contains("invalid numOfLeaf, expected : 4, value : 3"));
 
@@ -248,7 +248,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError invalidLevel = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedInvalidLevelMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedInvalidLevelMsg.getBytes()))
         );
         assertTrue(invalidLevel.getMessage().contains("invalid level left : 1 right : 2"));
 
@@ -256,7 +256,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError mismatchCount = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchCountMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedMismatchCountMsg.getBytes()))
                 );
         assertTrue(mismatchCount.getMessage().contains("mismatch MessageCount offset:0, expected:3, count :4"));
 
@@ -264,7 +264,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         AssertionError mismatchRoot = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
-                        bmc.toString(), prev.toString(), BigInteger.valueOf(0), decoder.decode(encodedMismatchRootMsg.getBytes()))
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedMismatchRootMsg.getBytes()))
                 );
         assertTrue(mismatchRoot.getMessage().contains("mismatch MessagesRoot"));
 
@@ -277,12 +277,14 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 Address.fromString(bmc.account()),
                 StringUtil.hexToBytes(relayMessages.get(0)));
         var seq = 0;
-        for (int i = 0; i < messages.size() - 1; i++) {
+        for (int i = 0; i < relayMessages.size() - 1; i++) {
+            System.out.println("###" + i);
             String base64Msg = relayMessages.get(i + 1);
             byte[] msg = Base64.getUrlDecoder().decode(base64Msg.getBytes());
             byte[][] ret = (byte[][]) sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(),
                     "handleRelayMessage",
                     bmc.toString(), prev.toString(), BigInteger.valueOf(seq), msg);
+            seq += ret.length;
             String[] partialMsgs = messages.get(i);
             assertEquals(ret.length, partialMsgs.length);
             for (int j = 0; j < ret.length; j++) {

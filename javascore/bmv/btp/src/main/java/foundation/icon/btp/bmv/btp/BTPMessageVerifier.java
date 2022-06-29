@@ -54,6 +54,8 @@ public class BTPMessageVerifier implements BMV {
         BTPAddress curAddr = BTPAddress.valueOf(_bmc);
         BTPAddress prevAddr = BTPAddress.valueOf(_prev);
         checkAccessible(curAddr, prevAddr);
+        var lastSeq = getProperties().getLastSequence();
+        if (lastSeq.compareTo(_seq) != 0) throw BMVException.unknown("invalid sequence");
         RelayMessage relayMessages = RelayMessage.fromBytes(_msg);
         RelayMessage.TypePrefixedMessage[] typePrefixedMessages = relayMessages.getMessages();
         BlockUpdate blockUpdate = null;

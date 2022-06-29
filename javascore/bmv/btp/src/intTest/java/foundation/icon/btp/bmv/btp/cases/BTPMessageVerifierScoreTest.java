@@ -90,8 +90,8 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     @Order(1)
     @Test
     public void positiveCases() throws TransactionFailureException, IOException, ResultTimeoutException {
-        positiveCase(SUCCESS_RELAY_MESSAGE1, FIRST_BLOCK_UPDATE1);
-        positiveCase(SUCCESS_RELAY_MESSAGE2, FIRST_BLOCK_UPDATE2);
+        positiveCase(SUCCESS_RELAY_MESSAGE1, FIRST_BLOCK_UPDATE1, new long[]{0, 1, 4, 4, 7});
+        positiveCase(SUCCESS_RELAY_MESSAGE2, FIRST_BLOCK_UPDATE2, new long[]{0, 2, 4});
     }
 
     @Order(2)
@@ -120,17 +120,17 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         assertSuccess(txResult);
 
         var encodedInvalidNidMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAgOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedInvalidNidMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedInvalidNidMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
 
         var encodedInvalidFirstSNMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQWgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedInvalidFirstSNMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedInvalidFirstSNMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
 
         var encodedInvalidPrevHashMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedInvalidPrevHashMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedInvalidPrevHashMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
     }
@@ -140,12 +140,12 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     public void scenario4() throws IOException, ResultTimeoutException {
         var encodedDuplicatedSignatureMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4QbzRzbTdgO00OmSh9HCsrQju6ZncFcVtS8sNF-k1zKyUKWe7YlyncLBevVIIVFRvx_dUTR6TAiV3fPUlLvtKO6oAuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
-        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedDuplicatedSignatureMsg.getBytes()));
+        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedDuplicatedSignatureMsg.getBytes()));
         var txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_PROOFS + ")");
 
         var proofNullMsg = "-PX48_jxAbju-OwUAKBhlBG-Qix4DSe8x7EhdWhXqqtp1OIziQN0JU5vK4s-m-PiAaAcTWuuo7xeus63j_E8E-WZ-9h3R3AAIWu5FBojK0nWBgEDoIO2ClMe5amawJnfOXxozWVz_XFCQ3Uwfj5xhHjxdsJQA6BPvk47vrQ4fGQhKzrR9_mA_oICd24EZO8QJ9V2GDYpS_gAuFz4WvhYlQBVxHfvDjG_XLnikTVCbo1l6RHxKJUAngk_cqQXJkboLzZjJSCQRub_Cr-VADz1kN5_jUvAOhUXOaIqqfNqPEZNlQB2jL2kjUIr94jSorLJD7cvPlSZEw==";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(proofNullMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(proofNullMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "UnknownFailure");
     }
@@ -155,7 +155,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     public void scenario5() throws IOException, ResultTimeoutException {
         var encodedHashMismatchMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
-        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedHashMismatchMsg.getBytes()));
+        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedHashMismatchMsg.getBytes()));
         var txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
     }
@@ -171,44 +171,44 @@ public class BTPMessageVerifierScoreTest extends TestBase {
 
         // make remain count 2
         var encodedValidBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedValidBlockUpdate.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedValidBlockUpdate.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertSuccess(txResult);
 
         var encodedMismatchLeftNumMsg = "-EL4QPg-Arg7-Dnj4gGg1hZgfT5LqWp08yPP_F8go8eOfKuOy9uwOxP6j_yb9kTSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedMismatchLeftNumMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedMismatchLeftNumMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
 
         var encodedInvalidNumOfLeafMsg = "-EL4QPg-Arg7-Dnj4gOgbs80Ium1Rjp5xTW_DbjhxvWJu84w7J67PPT-lH0kz3nSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedInvalidNumOfLeafMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedInvalidNumOfLeafMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
 
         var encodedInvalidLevelMsg = "8O_uAqzr-ADEg2NhdOPiAqBuzzQi6bVGOnnFNb8NuOHG9Ym7zjDsnrs89P6UfSTPeQ==";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedInvalidLevelMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedInvalidLevelMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
 
         var encodedMismatchCountMsg = "4eDfAp3c-ADXg2NhdIhlbGVwaGFudIRiaXJkhHRlc3T4AA==";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedMismatchCountMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedMismatchCountMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
 
         var encodedMismatchRootMsg = "4N_eApzb-ADWh2NhdHRlc3SIZWxlcGhhbnSEYmlyZPgA";
-        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedMismatchRootMsg.getBytes()));
+        txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedMismatchRootMsg.getBytes()));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
     }
 
-    private void positiveCase(List<String> msgList, byte[] firstBlockUpdate) throws TransactionFailureException, IOException, ResultTimeoutException {
+    private void positiveCase(List<String> msgList, byte[] firstBlockUpdate, long[] seqs) throws TransactionFailureException, IOException, ResultTimeoutException {
         // Deploy BMV
         bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), firstBlockUpdate);
 
         var msgLength = msgList.size();
         var hashes = new Bytes[msgLength];
         for (int i = 0; i < msgLength; i++) {
-             hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.ZERO, decoder.decode(msgList.get(i).getBytes()));
+             hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.valueOf(1), decoder.decode(msgList.get(i).getBytes()));
         }
         for (Bytes h : hashes) {
             assertSuccess(txHandler.getResult(h));
