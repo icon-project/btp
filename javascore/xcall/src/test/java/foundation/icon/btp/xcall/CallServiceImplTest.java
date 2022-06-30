@@ -46,6 +46,7 @@ class CallServiceImplTest implements CSIntegrationTest {
     static BigInteger srcSn = BigInteger.ZERO;
     static BigInteger reqId = BigInteger.ZERO;
     static Map<BigInteger, MessageRequest> requestMap = new HashMap<>();
+    static Map<String, BigInteger> accruedFees = new HashMap<>();
 
     private static class MessageRequest {
         private final byte[] data;
@@ -96,6 +97,26 @@ class CallServiceImplTest implements CSIntegrationTest {
         return csClient._call(BigInteger.class, "fixedTotalFees", params);
     }
 
+    private BigInteger getAccruedFees(String type) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("_type", type);
+        return csClient._call(BigInteger.class, "accruedFees", params);
+    }
+
+    private void accumulateFees(String net) {
+        final String[] types = {"relay", "protocol"};
+        if (accruedFees.isEmpty()) {
+            for (String type : types) {
+                accruedFees.put(type, getFixedFee(net, type));
+            }
+        } else {
+            for (String type : types) {
+                BigInteger fee = getFixedFee(net, type);
+                accruedFees.put(type, fee.add(accruedFees.get(type)));
+            }
+        }
+    }
+
     @Order(0)
     @Test
     void sendCallMessageFromDAppProxy() {
@@ -112,6 +133,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
         BigInteger fee = getFixedTotalFees(to.net());
+        accumulateFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", to.toString());
         params.put("_data", data);
@@ -214,6 +236,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
         BigInteger fee = getFixedTotalFees(to.net());
+        accumulateFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", fakeTo.toString());
         params.put("_data", data);
@@ -281,6 +304,15 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.getSn());
         }));
         ((CallServiceScoreClient) callSvc).executeRollback(checker, srcSn);
+    }
+
+    @Order(19)
+    @Test
+    void verifyAccruedFees() {
+        final String[] types = {"relay", "protocol"};
+        for (String type : types) {
+            assertEquals(accruedFees.get(type), getAccruedFees(type));
+        }
     }
 
     @Order(20)
