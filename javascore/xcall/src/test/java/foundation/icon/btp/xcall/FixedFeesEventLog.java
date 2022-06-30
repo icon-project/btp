@@ -25,29 +25,36 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class FixedFeeEventLog {
-    private static final String SIGNATURE = "FixedFeeUpdated(str,int)";
+public class FixedFeesEventLog {
+    private static final String SIGNATURE = "FixedFeesUpdated(str,int,int)";
     private final String net;
-    private final BigInteger fee;
+    private final BigInteger relay;
+    private final BigInteger protocol;
 
-    public FixedFeeEventLog(TransactionResult.EventLog el) {
+    public FixedFeesEventLog(TransactionResult.EventLog el) {
         this.net = el.getIndexed().get(1);
-        this.fee = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
+        this.relay = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
                 el.getData().get(0));
+        this.protocol = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
+                el.getData().get(1));
     }
 
     public String getNet() {
         return net;
     }
 
-    public BigInteger getFee() {
-        return fee;
+    public BigInteger getRelayFee() {
+        return relay;
     }
 
-    public static List<FixedFeeEventLog> eventLogs(TransactionResult txr,
-                                                   Address address,
-                                                   Predicate<FixedFeeEventLog> filter) {
+    public BigInteger getProtocolFee() {
+        return protocol;
+    }
+
+    public static List<FixedFeesEventLog> eventLogs(TransactionResult txr,
+                                                    Address address,
+                                                    Predicate<FixedFeesEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(
-                txr, FixedFeeEventLog.SIGNATURE, address, FixedFeeEventLog::new, filter);
+                txr, FixedFeesEventLog.SIGNATURE, address, FixedFeesEventLog::new, filter);
     }
 }

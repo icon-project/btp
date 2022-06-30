@@ -49,8 +49,10 @@ public class CallServiceImpl implements BSH, CallService {
     private static final BigInteger EXA = BigInteger.valueOf(1_000_000_000_000_000_000L);
     private static final String DEFAULT = "default";
     private final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
-    // netAddr => fee
-    private final DictDB<String, BigInteger> feeTable = Context.newDictDB("feeTable", BigInteger.class);
+    // netAddr => fees
+    private final DictDB<String, Fees> feeTable = Context.newDictDB("feeTable", Fees.class);
+    // fees type ==> accrued fees
+    private final DictDB<String, BigInteger> accruedFees = Context.newDictDB("accruedFees", BigInteger.class);
 
     public CallServiceImpl(Address _bmc) {
         // set bmc address only for the first deploy
@@ -60,9 +62,10 @@ public class CallServiceImpl implements BSH, CallService {
             BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
             net.set(btpAddress.net());
         }
-        // set default fee to 10 ICX
+        // set default fees to (10, 1) ICX
         if (feeTable.get(DEFAULT) == null) {
-            feeTable.set(DEFAULT, EXA.multiply(BigInteger.TEN));
+            Fees fees = new Fees(EXA.multiply(BigInteger.TEN), EXA);
+            feeTable.set(DEFAULT, fees);
         }
     }
 
@@ -109,8 +112,14 @@ public class CallServiceImpl implements BSH, CallService {
         Context.require(caller.isContract(), "SenderNotAContract");
         BTPAddress dst = BTPAddress.valueOf(_to);
 
-        BigInteger fee = fixedFee(dst.net());
-        Context.require(Context.getValue().compareTo(fee) >= 0, "InsufficientFee");
+        BigInteger value = Context.getValue();
+        Fees fees = getFees(dst.net());
+        Context.require(value.compareTo(fees.getTotalFees()) >= 0, "InsufficientFee");
+        // accumulate fees per type
+        BigInteger relayFee = fees.getFee("relay");
+        BigInteger protocolFee = value.subtract(relayFee); // residual goes to protocol fee
+        accruedFees.set("relay", accruedFees("relay").add(relayFee));
+        accruedFees.set("protocol", accruedFees("protocol").add(protocolFee));
 
         BigInteger sn = getNextSn();
         CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
@@ -276,36 +285,70 @@ public class CallServiceImpl implements BSH, CallService {
         admin.set(_address);
     }
 
-    /**
-     * Gets the fixed fee for the given network address.
-     * If there is no mapping to the network address, `default` fee is returned.
-     *
-     * @param _net The network address
-     * @return The fee amount in loop
-     */
-    @External(readonly=true)
-    public BigInteger fixedFee(String _net) {
-        BigInteger fee = feeTable.get(_net);
-        return fee != null ? fee : feeTable.get(DEFAULT);
+    private Fees getFees(String _net) {
+        Fees fees = feeTable.get(_net);
+        if (fees == null) {
+            fees = feeTable.get(DEFAULT);
+        }
+        return fees;
     }
 
     /**
-     * Sets the fixed fee for the given network address.
+     * Gets the fixed fee for the given network address and type.
+     * If there is no mapping to the network address, `default` fee is returned.
      *
      * @param _net The network address
-     * @param _fee The fee amount in loop
+     * @param _type The fee type ("relay" or "protocol")
+     * @return The fee amount in loop
+     */
+    @External(readonly=true)
+    public BigInteger fixedFee(String _net, String _type) {
+        Fees fees = getFees(_net);
+        return fees.getFee(_type);
+    }
+
+    /**
+     * Gets the total fixed fees for the given network address.
+     * If there is no mapping to the network address, `default` fee is returned.
+     *
+     * @param _net The network address
+     * @return The total fees amount in loop
+     */
+    @External(readonly=true)
+    public BigInteger fixedTotalFees(String _net) {
+        Fees fees = getFees(_net);
+        return fees.getTotalFees();
+    }
+
+    /**
+     * Sets the fixed fees for the given network address.
+     *
+     * @param _net The destination network address
+     * @param _relay The relay fee amount in loop
+     * @param _protocol The protocol fee amount in loop
      */
     @External
-    public void setFixedFee(String _net, BigInteger _fee) {
+    public void setFixedFees(String _net, BigInteger _relay, BigInteger _protocol) {
         checkCallerOrThrow(admin(), "OnlyAdmin");
         if (_net.isEmpty() || _net.indexOf('/') != -1 || _net.indexOf(':') != -1) {
             Context.revert("InvalidNetworkAddress");
         }
-        Context.require(_fee.compareTo(EXA) >= 0, "Fee should be greater than 1 ICX");
-        feeTable.set(_net, _fee);
-        FixedFeeUpdated(_net, _fee);
+        Fees fees = new Fees(_relay, _protocol);
+        feeTable.set(_net, fees);
+        FixedFeesUpdated(_net, _relay, _protocol);
     }
 
     @EventLog(indexed=1)
-    public void FixedFeeUpdated(String _net, BigInteger _fee) {}
+    public void FixedFeesUpdated(String _net, BigInteger _relay, BigInteger _protocol) {}
+
+    /**
+     * Gets the total accrued fees for the given type.
+     *
+     * @param _type The fee type ("relay" or "protocol")
+     * @return The total accrued fees in loop
+     */
+    @External(readonly=true)
+    public BigInteger accruedFees(String _type) {
+        return accruedFees.getOrDefault(_type, BigInteger.ZERO);
+    }
 }

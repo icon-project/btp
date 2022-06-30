@@ -83,10 +83,17 @@ class CallServiceImplTest implements CSIntegrationTest {
         return reqId;
     }
 
-    private BigInteger getFixedFee(String net) {
+    private BigInteger getFixedFee(String net, String type) {
         Map<String, Object> params = new HashMap<>();
         params.put("_net", net);
+        params.put("_type", type);
         return csClient._call(BigInteger.class, "fixedFee", params);
+    }
+
+    private BigInteger getFixedTotalFees(String net) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("_net", net);
+        return csClient._call(BigInteger.class, "fixedTotalFees", params);
     }
 
     @Order(0)
@@ -104,7 +111,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getFixedFee(to.net());
+        BigInteger fee = getFixedTotalFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", to.toString());
         params.put("_data", data);
@@ -166,22 +173,28 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Order(9)
     @Test
     void fixedFeeTest() {
-        BigInteger fee = getFixedFee(to.net());
-        assertEquals(BigInteger.TEN.multiply(EXA), fee);
+        BigInteger defaultTotalFees = getFixedTotalFees(to.net());
+        assertEquals(BigInteger.valueOf(11).multiply(EXA), defaultTotalFees);
 
-        final BigInteger nineIcx = BigInteger.valueOf(9).multiply(EXA);
-        var checker = CSIntegrationTest.eventLogChecker(FixedFeeEventLog::eventLogs, (el) -> {
+        // new fees for the net
+        BigInteger relayFee = BigInteger.TWO.multiply(EXA);
+        BigInteger protocolFee = EXA;
+
+        var checker = CSIntegrationTest.eventLogChecker(FixedFeesEventLog::eventLogs, (el) -> {
             assertEquals(to.net(), el.getNet());
-            assertEquals(nineIcx, el.getFee());
+            assertEquals(relayFee, el.getRelayFee());
+            assertEquals(protocolFee, el.getProtocolFee());
         });
-        BigInteger fee2 = fee.subtract(EXA);
         Map<String, Object> params = new HashMap<>();
         params.put("_net", to.net());
-        params.put("_fee", fee2);
-        checker.accept(csClient._send("setFixedFee", params));
+        params.put("_relay", relayFee);
+        params.put("_protocol", protocolFee);
+        checker.accept(csClient._send("setFixedFees", params));
 
-        assertEquals(nineIcx, getFixedFee(to.net()));
-        assertEquals(fee, getFixedFee("default"));
+        assertEquals(relayFee, getFixedFee(to.net(), "relay"));
+        assertEquals(protocolFee, getFixedFee(to.net(), "protocol"));
+        assertEquals(relayFee.add(protocolFee), getFixedTotalFees(to.net()));
+        assertEquals(defaultTotalFees, getFixedTotalFees("default"));
     }
 
     @Order(10)
@@ -200,7 +213,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getFixedFee(to.net());
+        BigInteger fee = getFixedTotalFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", fakeTo.toString());
         params.put("_data", data);
