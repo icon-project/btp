@@ -52,7 +52,8 @@ deployJar {
             arg('srcNetworkID', '0x?'),
             arg('networkTypeID', '0x?'),
             arg('bmc', 'cx?'),
-            arg('firstBlockUpdate', '0x?')
+            arg('firstBlockUpdate', '0x?'),
+            arg('seqOffset', '0x?')
         ]
     }
 }
@@ -75,8 +76,9 @@ task integrationTest(type: Test) {
     testLogging.showStandardStreams = true
 
     // use the common config files
-    systemProperty('env.props', new File('conf/env.props'))
+    systemProperty('env.props', new File('src/test/resources/env.props'))
 
     def prefix = 'score.path.'
     systemProperty(prefix + project.name, optimizedJar.outputJarName)
+    systemProperty prefix + 'bmc-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMC").outputJarName
 }

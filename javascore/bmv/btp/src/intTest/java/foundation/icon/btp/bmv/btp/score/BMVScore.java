@@ -50,7 +50,7 @@ public class BMVScore extends Score {
                 .put("firstBlockUpdate", new RpcValue(blockUpdate))
                 .put("seqOffset", new RpcValue(seqOffset))
                 .build();
-        Score score = txHandler.deploy(wallet, "bmv-btp-0.1.0-optimized.jar", params);
+        Score score = txHandler.deploy(wallet, getFilePath("btp"), params);
         LOG.info("scoreAddr = " + score.getAddress());
         LOG.infoExiting();
         return new BMVScore(score);

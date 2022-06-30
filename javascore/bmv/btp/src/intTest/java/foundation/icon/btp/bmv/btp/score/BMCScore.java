@@ -41,7 +41,7 @@ public class BMCScore extends Score {
         RpcObject params = new RpcObject.Builder().
                 put("_net", new RpcValue(net)).
                 build();
-        Score score = txHandler.deploy(wallet, "bmc-mock-0.1.0-optimized.jar", params);
+        Score score = txHandler.deploy(wallet, getFilePath("bmc-mock.scoreFilePath"), params);
         LOG.info("scoreAddr = " + score.getAddress());
         LOG.infoExiting();
         bmcNetWork.put(score.getAddress(), net);
