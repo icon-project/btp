@@ -93,7 +93,9 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
                 1,
                 Address.fromString(bmc.account()),
-                StringUtil.hexToBytes(FAIL_CASE_FIRST_BLOCK_UPDATE));
+                StringUtil.hexToBytes(FAIL_CASE_FIRST_BLOCK_UPDATE),
+                BigInteger.ZERO
+        );
         var encodedValidMsg = "zs3MAorJ-ADEg2RvZ_gA";
         AssertionError invalidCurrent = assertThrows(
                 AssertionError.class, () -> sm.call(
@@ -275,10 +277,11 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
                 1,
                 Address.fromString(bmc.account()),
-                StringUtil.hexToBytes(relayMessages.get(0)));
+                StringUtil.hexToBytes(relayMessages.get(0)),
+                BigInteger.ZERO
+                );
         var seq = 0;
         for (int i = 0; i < relayMessages.size() - 1; i++) {
-            System.out.println("###" + i);
             String base64Msg = relayMessages.get(i + 1);
             byte[] msg = Base64.getUrlDecoder().decode(base64Msg.getBytes());
             byte[][] ret = (byte[][]) sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(),

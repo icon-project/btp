@@ -32,8 +32,15 @@ import static foundation.icon.btp.bmv.btp.Env.LOG;
 
 public class BMVScore extends Score {
 
-    public static BMVScore mustDeploy(TransactionHandler txHandler, Wallet wallet, byte[] networkID,
-                                              BigInteger networkTypeID, Address bmc, byte[] blockUpdate)
+    public static BMVScore mustDeploy(
+            TransactionHandler txHandler,
+            Wallet wallet,
+            byte[] networkID,
+            BigInteger networkTypeID,
+            Address bmc,
+            byte[] blockUpdate,
+            BigInteger seqOffset
+    )
             throws ResultTimeoutException, TransactionFailureException, IOException {
         LOG.infoEntering("deploy", "bmv");
         RpcObject params = new RpcObject.Builder()
@@ -41,6 +48,7 @@ public class BMVScore extends Score {
                 .put("networkTypeID", new RpcValue(networkTypeID))
                 .put("bmc", new RpcValue(bmc))
                 .put("firstBlockUpdate", new RpcValue(blockUpdate))
+                .put("seqOffset", new RpcValue(seqOffset))
                 .build();
         Score score = txHandler.deploy(wallet, "bmv-btp-0.1.0-optimized.jar", params);
         LOG.info("scoreAddr = " + score.getAddress());

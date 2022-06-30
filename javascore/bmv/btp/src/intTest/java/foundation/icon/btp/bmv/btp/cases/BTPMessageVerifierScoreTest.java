@@ -97,7 +97,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     @Order(2)
     @Test
     public void scenario2() throws TransactionFailureException, IOException, ResultTimeoutException {
-        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), FAIL_CASE_FIRST_BLOCK_UPDATE);
+        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), FAIL_CASE_FIRST_BLOCK_UPDATE, BigInteger.ZERO);
         var encodedValidMsg = "zs3MAorJ-ADEg2RvZ_gA";
         String otherBMC = makeBTPAddress(otherNetworkBMC.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), otherBMC, BigInteger.ZERO, decoder.decode(encodedValidMsg.getBytes()));
@@ -165,7 +165,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     public void scenario6() throws IOException, ResultTimeoutException {
         var encodedProofMessageMsg = "3NvaApjX-ADSg2NhdIhlbGVwaGFudIRiaXJk-AA=";
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
-        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, decoder.decode(encodedProofMessageMsg.getBytes()));
+        var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, decoder.decode(encodedProofMessageMsg.getBytes()));
         var txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
 
@@ -203,12 +203,12 @@ public class BTPMessageVerifierScoreTest extends TestBase {
 
     private void positiveCase(List<String> msgList, byte[] firstBlockUpdate, long[] seqs) throws TransactionFailureException, IOException, ResultTimeoutException {
         // Deploy BMV
-        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), firstBlockUpdate);
+        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), firstBlockUpdate, BigInteger.ZERO);
 
         var msgLength = msgList.size();
         var hashes = new Bytes[msgLength];
         for (int i = 0; i < msgLength; i++) {
-             hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.valueOf(1), decoder.decode(msgList.get(i).getBytes()));
+             hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.valueOf(seqs[i]), decoder.decode(msgList.get(i).getBytes()));
         }
         for (Bytes h : hashes) {
             assertSuccess(txHandler.getResult(h));

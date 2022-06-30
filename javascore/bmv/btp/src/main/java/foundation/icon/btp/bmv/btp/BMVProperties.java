@@ -16,12 +16,9 @@
 
 package foundation.icon.btp.bmv.btp;
 
-import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.score.util.StringUtil;
 import score.*;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 public class BMVProperties {
     public static final BMVProperties DEFAULT;
@@ -42,6 +39,7 @@ public class BMVProperties {
     private BigInteger lastMessageCount;
     private BigInteger lastFirstMessageSN;
     private BigInteger height;
+    private BigInteger sequenceOffset;
 
     public byte[] getSrcNetworkID() {
         return srcNetworkID;
@@ -153,6 +151,15 @@ public class BMVProperties {
         this.height = height;
     }
 
+    public BigInteger getSequenceOffset() {
+        return sequenceOffset;
+    }
+
+    public void setSequenceOffset(BigInteger sequenceOffset) {
+        this.sequenceOffset = sequenceOffset;
+    }
+
+
     public static BMVProperties readObject(ObjectReader reader) {
         BMVProperties obj = new BMVProperties();
         reader.beginList();
@@ -168,6 +175,7 @@ public class BMVProperties {
         obj.setLastMessageCount(reader.readNullable(BigInteger.class));
         obj.setLastFirstMessageSN(reader.readNullable(BigInteger.class));
         obj.setHeight(reader.readBigInteger());
+        obj.setSequenceOffset(reader.readBigInteger());
         reader.end();
         return obj;
     }
@@ -186,24 +194,7 @@ public class BMVProperties {
         writer.writeNullable(obj.lastMessageCount);
         writer.writeNullable(obj.lastFirstMessageSN);
         writer.write(obj.height);
+        writer.write(obj.sequenceOffset);
         writer.end();
-    }
-
-    @Override
-    public String toString() {
-        return "BMVProperties{" +
-                "srcNetworkID=" + StringUtil.bytesToHex(srcNetworkID) +
-                ", networkTypeID=" + networkTypeID +
-                ", networkID=" + networkID +
-                ", proofContextHash=" + StringUtil.bytesToHex(proofContextHash) +
-                ", proofContext=" + StringUtil.bytesToHex(proofContext) +
-                ", lastNetworkSectionHash=" + StringUtil.bytesToHex(lastNetworkSectionHash) +
-                ", bmc=" + bmc +
-                ", lastSequence=" + lastSequence +
-                ", lastMessagesRoot=" + StringUtil.bytesToHex(lastMessagesRoot) +
-                ", lastMessageCount=" + lastMessageCount +
-                ", lastFirstMessageSN=" + lastFirstMessageSN +
-                ", height=" + height +
-                '}';
     }
 }

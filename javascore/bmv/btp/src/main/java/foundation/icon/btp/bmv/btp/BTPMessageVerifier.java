@@ -37,11 +37,12 @@ public class BTPMessageVerifier implements BMV {
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
-    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] firstBlockUpdate) {
+    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] firstBlockUpdate, BigInteger seqOffset) {
         BMVProperties bmvProperties = getProperties();
         bmvProperties.setSrcNetworkID(srcNetworkID);
         bmvProperties.setNetworkTypeID(networkTypeID);
         bmvProperties.setBmc(bmc);
+        bmvProperties.setSequenceOffset(seqOffset);
         handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate), bmvProperties);
     }
 
@@ -54,8 +55,10 @@ public class BTPMessageVerifier implements BMV {
         BTPAddress curAddr = BTPAddress.valueOf(_bmc);
         BTPAddress prevAddr = BTPAddress.valueOf(_prev);
         checkAccessible(curAddr, prevAddr);
-        var lastSeq = getProperties().getLastSequence();
-        if (lastSeq.compareTo(_seq) != 0) throw BMVException.unknown("invalid sequence");
+        var bmvProperties = getProperties();
+        var lastSeq = bmvProperties.getLastSequence();
+        var seq = bmvProperties.getSequenceOffset().add(lastSeq);
+        if (seq.compareTo(_seq) != 0) throw BMVException.unknown("invalid sequence");
         RelayMessage relayMessages = RelayMessage.fromBytes(_msg);
         RelayMessage.TypePrefixedMessage[] typePrefixedMessages = relayMessages.getMessages();
         BlockUpdate blockUpdate = null;
