@@ -444,6 +444,27 @@ public class MessageTest implements BMCIntegrationTest {
     }
 
     @Test
+    void sendMessageShouldRevertNotExistsBSH() {
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+
+        String notRegisteredSvc = BTPIntegrationTest.Faker.btpService();
+
+        AssertBMCException.assertNotExistsBSH(() -> MockBSHIntegrationTest.mockBSH.intercallSendMessage(
+                ((BMCScoreClient) bmc)._address(),
+                Faker.btpNetwork(), notRegisteredSvc, sn, payload));
+    }
+
+    @Test
+    void sendMessageShouldRevertUnauthorized() {
+        BigInteger sn = BigInteger.ONE;
+        byte[] payload = Faker.btpLink().toBytes();
+
+        AssertBMCException.assertUnauthorized(() -> bmc.sendMessage(
+                Faker.btpNetwork(), svc, sn, payload));
+    }
+
+    @Test
     void dropMessageShouldSendErrorMessageAndMakeEventLog() {
         BigInteger sn = BigInteger.ONE;
 
