@@ -23,6 +23,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     uint private _remainMessageCount;
     uint private _nextMessageSn;
     address[] private _validators;
+    uint _sequenceOffset;
 
     modifier onlyBmc() {
         require(
@@ -37,7 +38,8 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         bytes memory srcNetworkId_,
         uint networkTypeId_,
         uint networkId_,
-        bytes memory firstBlockUpdate
+        bytes memory firstBlockUpdate,
+        uint sequenceOffset_
     )
     initializer
     external
@@ -46,6 +48,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         _srcNetworkId = srcNetworkId_;
         _networkTypeId = networkTypeId_;
         _networkId = networkId_;
+        _sequenceOffset = sequenceOffset_;
 
         BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
         _height = bu.mainHeight;
@@ -58,7 +61,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     }
 
     function getStatus() external view returns (uint) {
-        return _height;
+        return _height + _sequenceOffset;
     }
 
     function handleRelayMessage(

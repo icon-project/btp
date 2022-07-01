@@ -24,6 +24,7 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
     uint private _remainMessageCount;
     uint private _nextMessageSn;
     address[] private _validators;
+    uint _sequenceOffset;
 
     modifier onlyBmc() {
         require(
