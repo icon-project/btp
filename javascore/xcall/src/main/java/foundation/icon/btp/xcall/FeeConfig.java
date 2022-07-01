@@ -21,11 +21,11 @@ import score.ObjectWriter;
 
 import java.math.BigInteger;
 
-public class Fees {
+public class FeeConfig {
     private final BigInteger relay;
     private final BigInteger protocol;
 
-    public Fees(BigInteger relay, BigInteger protocol) {
+    public FeeConfig(BigInteger relay, BigInteger protocol) {
         this.relay = relay;
         this.protocol = protocol;
     }
@@ -45,13 +45,13 @@ public class Fees {
         return relay.add(protocol);
     }
 
-    public static void writeObject(ObjectWriter w, Fees fees) {
+    public static void writeObject(ObjectWriter w, FeeConfig fees) {
         w.writeListOf(fees.relay, fees.protocol);
     }
 
-    public static Fees readObject(ObjectReader r) {
+    public static FeeConfig readObject(ObjectReader r) {
         r.beginList();
-        Fees fees = new Fees(
+        FeeConfig fees = new FeeConfig(
                 r.readBigInteger(),
                 r.readBigInteger()
         );

@@ -91,10 +91,10 @@ class CallServiceImplTest implements CSIntegrationTest {
         return csClient._call(BigInteger.class, "fixedFee", params);
     }
 
-    private BigInteger getFixedTotalFees(String net) {
+    private BigInteger getTotalFixedFees(String net) {
         Map<String, Object> params = new HashMap<>();
         params.put("_net", net);
-        return csClient._call(BigInteger.class, "fixedTotalFees", params);
+        return csClient._call(BigInteger.class, "totalFixedFees", params);
     }
 
     private BigInteger getAccruedFees(String type) {
@@ -132,7 +132,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getFixedTotalFees(to.net());
+        BigInteger fee = getTotalFixedFees(to.net());
         accumulateFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", to.toString());
@@ -194,8 +194,8 @@ class CallServiceImplTest implements CSIntegrationTest {
 
     @Order(9)
     @Test
-    void fixedFeeTest() {
-        BigInteger defaultTotalFees = getFixedTotalFees(to.net());
+    void fixedFeesTest() {
+        BigInteger defaultTotalFees = getTotalFixedFees(to.net());
         assertEquals(BigInteger.valueOf(11).multiply(EXA), defaultTotalFees);
 
         // new fees for the net
@@ -215,8 +215,8 @@ class CallServiceImplTest implements CSIntegrationTest {
 
         assertEquals(relayFee, getFixedFee(to.net(), "relay"));
         assertEquals(protocolFee, getFixedFee(to.net(), "protocol"));
-        assertEquals(relayFee.add(protocolFee), getFixedTotalFees(to.net()));
-        assertEquals(defaultTotalFees, getFixedTotalFees("default"));
+        assertEquals(relayFee.add(protocolFee), getTotalFixedFees(to.net()));
+        assertEquals(defaultTotalFees, getTotalFixedFees("default"));
     }
 
     @Order(10)
@@ -235,7 +235,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getFixedTotalFees(to.net());
+        BigInteger fee = getTotalFixedFees(to.net());
         accumulateFees(to.net());
         Map<String, Object> params = new HashMap<>();
         params.put("_to", fakeTo.toString());
