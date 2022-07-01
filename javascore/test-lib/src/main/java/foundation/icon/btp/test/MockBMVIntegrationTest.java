@@ -16,12 +16,17 @@
 
 package foundation.icon.btp.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import foundation.icon.btp.lib.BMCStatus;
+import foundation.icon.btp.lib.BMV;
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.mock.MockBMV;
 import foundation.icon.btp.mock.MockBMVScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 public interface MockBMVIntegrationTest {
@@ -35,4 +40,12 @@ public interface MockBMVIntegrationTest {
                 mockBMVClient._address(), supplier, consumer);
     }
 
+    static BMVStatus getStatus(BMV bmv) {
+        ObjectMapper mapper = mockBMVClient.mapper();
+        try {
+            return mapper.readValue(mapper.writeValueAsString(bmv.getStatus()), BMVStatus.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

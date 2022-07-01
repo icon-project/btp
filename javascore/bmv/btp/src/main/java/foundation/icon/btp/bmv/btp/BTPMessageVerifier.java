@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmv.btp;
 
 import foundation.icon.btp.lib.BMV;
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
@@ -30,6 +29,7 @@ import scorex.util.ArrayList;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class BTPMessageVerifier implements BMV {
     private static final Logger logger = Logger.getLogger(BTPMessageVerifier.class);
@@ -86,11 +86,8 @@ public class BTPMessageVerifier implements BMV {
     }
 
     @External(readonly = true)
-    public BMVStatus getStatus() {
-        BMVStatus bmvStatus = new BMVStatus();
-        BigInteger height = getProperties().getHeight();
-        bmvStatus.setHeight(height.longValue());
-        return bmvStatus;
+    public Map getStatus() {
+        return Map.of("height", getProperties().getHeight().longValue());
     }
 
     private void handleFirstBlockUpdate(BlockUpdate blockUpdate, BMVProperties bmvProperties) {

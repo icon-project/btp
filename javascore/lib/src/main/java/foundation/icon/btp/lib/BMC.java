@@ -117,7 +117,7 @@ public interface BMC {
      * @return The object contains followings fields.
      */
     @External(readonly = true)
-    BMCStatus getStatus(String _link);
+    Map getStatus(String _link);
 
     /**
      * Get registered links.

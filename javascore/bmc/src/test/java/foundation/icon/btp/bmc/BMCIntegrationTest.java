@@ -16,10 +16,8 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMC;
-import foundation.icon.btp.lib.BMCScoreClient;
-import foundation.icon.btp.lib.OwnerManager;
-import foundation.icon.btp.lib.OwnerManagerScoreClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import foundation.icon.btp.lib.*;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
@@ -28,13 +26,12 @@ import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface BMCIntegrationTest extends BTPIntegrationTest {
@@ -80,5 +77,14 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 .filter((bmcMsg) -> bmcMsg.getType().equals(internal.name()))
                 .map((bmcMsg) -> mapFunc.apply(bmcMsg.getPayload()))
                 .collect(Collectors.toList());
+    }
+
+    static BMCStatus getStatus(BMC bmc, String _link) {
+        ObjectMapper mapper = client.mapper();
+        try {
+            return mapper.readValue(mapper.writeValueAsString(bmc.getStatus(_link)), BMCStatus.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

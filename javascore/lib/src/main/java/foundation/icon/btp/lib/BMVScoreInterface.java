@@ -20,6 +20,7 @@ import score.Address;
 import score.Context;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public final class BMVScoreInterface implements BMV {
   protected final Address address;
@@ -58,7 +59,11 @@ public final class BMVScoreInterface implements BMV {
   }
 
   @Override
-  public BMVStatus getStatus() {
-    return Context.call(BMVStatus.class, this.address, "getStatus");
+  public Map getStatus() {
+    return Context.call(Map.class, this.address, "getStatus");
+  }
+
+  public <T> T getStatus(Class<T> clazz) {
+    return Context.call(clazz, this.address, "getStatus");
   }
 }

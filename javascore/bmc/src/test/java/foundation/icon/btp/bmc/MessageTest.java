@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MessageTest implements BMCIntegrationTest {
-    static BTPAddress linkBtpAddress = BMCIntegrationTest.Faker.btpLink();
+    static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
     static Address relay = Address.of(bmcClient._wallet());
@@ -148,7 +148,7 @@ public class MessageTest implements BMCIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
         bmc.handleRelayMessage(link, relayMessage.toBase64String());
-        BMCStatus status = bmc.getStatus(link);
+        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         System.out.println(status);
         assertEquals(sackMessage.getHeight(), status.getSack_height());
         assertEquals(sackMessage.getSeq(), status.getSack_seq());
@@ -159,7 +159,7 @@ public class MessageTest implements BMCIntegrationTest {
         //if sackTerm > 0 && sackNext <= blockHeight
         int sackTerm = 2;
         iconSpecific.setLinkSackTerm(link, sackTerm);
-        BigInteger seq = bmc.getStatus(link).getRx_seq();
+        BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getRx_seq();
         long height = 1;
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setHeight(height);
@@ -299,7 +299,7 @@ public class MessageTest implements BMCIntegrationTest {
     void handleRelayMessageShouldDropAndSendErrorMessageAndMakeEventLog() {
         //BMC.dropMessage(BMC.getStatus().getRx_seq().add(BigInteger.ONE))
         //BMC.handleRelayMessage -> BMC.Message(str,int,bytes)
-        BMCStatus status = bmc.getStatus(link);
+        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         BigInteger rxSeq = status.getRx_seq().add(BigInteger.ONE);
         DropMessageTest.scheduleDropMessage(link, rxSeq);
 
@@ -332,7 +332,7 @@ public class MessageTest implements BMCIntegrationTest {
     void handleRelayMessageShouldDropAndMakeEventLog() {
         //BMC.dropMessage
         //BMC.handleRelayMessage -> BMC.DropMessage(str,int,bytes)
-        BigInteger seq = bmc.getStatus(link).getRx_seq().add(BigInteger.ONE);
+        BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getRx_seq().add(BigInteger.ONE);
         DropMessageTest.scheduleDropMessage(link, seq);
 
         ErrorMessage errorMessage = new ErrorMessage();
@@ -417,7 +417,7 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
 
-        BigInteger seq = bmc.getStatus(link).getTx_seq().add(BigInteger.ONE);
+        BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getTx_seq().add(BigInteger.ONE);
         ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
                 BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
                     assertEquals(link, el.getNext());
@@ -473,7 +473,7 @@ public class MessageTest implements BMCIntegrationTest {
         assumeMsg.setSvc(svc);
         assumeMsg.setSn(sn);
 
-        BMCStatus status = bmc.getStatus(link);
+        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         BigInteger rxSeq = status.getRx_seq().add(BigInteger.ONE);
         BigInteger txSeq = status.getTx_seq().add(BigInteger.ONE);
         ((ICONSpecificScoreClient)iconSpecific).dropMessage(

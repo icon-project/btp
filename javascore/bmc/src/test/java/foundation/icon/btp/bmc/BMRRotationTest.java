@@ -123,7 +123,7 @@ public class BMRRotationTest implements BMCIntegrationTest {
         ExecutorService executorService = Executors.newFixedThreadPool(numOfRelays);
 
         for (int i = 0; i < numOfRelays; i++) {
-            BMCStatus status = bmc.getStatus(link);
+            BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
             System.out.println(status);
 
             long sendTxHeight = status.getCur_height();
@@ -149,7 +149,7 @@ public class BMRRotationTest implements BMCIntegrationTest {
                 future.get();
             }
             //wait to rotateHeight
-            ScoreIntegrationTest.waitByHeight(bmc.getStatus(link).getRotate_height());
+            ScoreIntegrationTest.waitByHeight(BMCIntegrationTest.getStatus(bmc, link).getRotate_height());
         }
     }
 
@@ -201,7 +201,7 @@ public class BMRRotationTest implements BMCIntegrationTest {
 
         ExecutorService executorService = Executors.newFixedThreadPool(numOfRelays);
         for (int i = 0; i < numOfRelays; i++) {
-            BMCStatus status = bmc.getStatus(link);
+            BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
             System.out.println(status);
             long msgHeight = status.getCur_height();
             long sendTxHeight = msgHeight + delayLimit;

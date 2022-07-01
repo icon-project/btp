@@ -20,11 +20,12 @@ import foundation.icon.score.util.StringUtil;
 import score.annotation.Keep;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public class BMCStatus {
     private BigInteger rx_seq;
     private BigInteger tx_seq;
-    private BMVStatus verifier;
+    private Map verifier;
     private BMRStatus[] relays;
 
     private int block_interval_src;
@@ -66,12 +67,12 @@ public class BMCStatus {
     }
 
     @Keep
-    public BMVStatus getVerifier() {
+    public Map getVerifier() {
         return verifier;
     }
 
     @Keep
-    public void setVerifier(BMVStatus verifier) {
+    public void setVerifier(Map verifier) {
         this.verifier = verifier;
     }
 

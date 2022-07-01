@@ -19,6 +19,7 @@ package foundation.icon.btp.lib;
 import score.annotation.External;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public interface BMV {
     /**
@@ -43,5 +44,5 @@ public interface BMV {
      * @return The object contains followings fields.
      */
     @External(readonly = true)
-    BMVStatus getStatus();
+    Map getStatus();
 }

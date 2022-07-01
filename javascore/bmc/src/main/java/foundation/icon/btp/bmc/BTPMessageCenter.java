@@ -245,27 +245,14 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @External(readonly = true)
-    public BMCStatus getStatus(String _link) {
+    public Map getStatus(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
-        BMCStatus status = new BMCStatus();
-
         Link link = getLink(target);
-        status.setTx_seq(link.getTxSeq());
-        status.setRx_seq(link.getRxSeq());
-        status.setRelay_idx(link.getRelayIdx());
-        status.setRotate_height(link.getRotateHeight());
-        status.setRotate_term(link.rotateTerm());
-        status.setDelay_limit(link.getDelayLimit());
-        status.setMax_agg(link.getMaxAggregation());
-        status.setRx_height(link.getRxHeight());
-        status.setRx_height_src(link.getRxHeightSrc());
-        status.setBlock_interval_dst(link.getBlockIntervalDst());
-        status.setBlock_interval_src(link.getBlockIntervalSrc());
-        status.setSack_term(link.getSackTerm());
-        status.setSack_next(link.getSackNext());
-        status.setSack_height(link.getSackHeight());
-        status.setSack_seq(link.getSackSeq());
-        status.setCur_height(Context.getBlockHeight());
+        Map<String, Object> map = new HashMap<>();
+        map.put("tx_seq", link.getTxSeq());
+        map.put("rx_seq", link.getRxSeq());
+        BMVScoreInterface verifier = getVerifier(link.getAddr().net());
+        map.put("verifier", verifier.getStatus());
 
         Map<Address, Relay> relayMap = link.getRelays().toMap();
         BMRStatus[] relays = new BMRStatus[relayMap.size()];
@@ -278,12 +265,22 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             bmrStatus.setMsg_count(relay.getMsgCount());
             relays[i++] = bmrStatus;
         }
-        status.setRelays(relays);
-
-        BMVScoreInterface bmv = getVerifier(link.getAddr().net());
-        BMVStatus bmvStatus = bmv.getStatus();
-        status.setVerifier(bmvStatus);
-        return status;
+        map.put("relays", relays);
+        map.put("block_interval_src", link.getBlockIntervalSrc());
+        map.put("block_interval_dst", link.getBlockIntervalDst());
+        map.put("max_agg", link.getMaxAggregation());
+        map.put("delay_limit", link.getDelayLimit());
+        map.put("relay_idx", link.getRelayIdx());
+        map.put("rotate_height", link.getRotateHeight());
+        map.put("rotate_term", link.rotateTerm());
+        map.put("rx_height", link.getRxHeight());
+        map.put("rx_height_src", link.getRxHeightSrc());
+        map.put("sack_term", link.getSackTerm());
+        map.put("sack_next", link.getSackNext());
+        map.put("sack_height", link.getSackHeight());
+        map.put("sack_seq", link.getSackSeq());
+        map.put("cur_height", Context.getBlockHeight());
+        return map;
     }
 
     @External(readonly = true)
@@ -378,7 +375,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
-        BMVStatus prevStatus = verifier.getStatus();
+        BMVStatus prevStatus = verifier.getStatus(BMVStatus.class);
         BigInteger rxSeq = link.getRxSeq();
         // decode and verify relay message
         byte[][] serializedMsgs = null;
@@ -394,7 +391,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
         // rotate and check valid relay
         long currentHeight = Context.getBlockHeight();
-        BMVStatus status = verifier.getStatus();
+        BMVStatus status = verifier.getStatus(BMVStatus.class);
         Relays relays = link.getRelays();
         Relay relay = link.rotate(currentHeight, status.getLast_height(), msgCount > 0);
         if (relay == null) {
@@ -923,7 +920,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             link.setRotateHeight(currentHeight + rotateTerm);
             link.setRxHeight(currentHeight);
             BMVScoreInterface verifier = getVerifier(target.net());
-            link.setRxHeightSrc(verifier.getStatus().getHeight());
+            link.setRxHeightSrc(verifier.getStatus(BMVStatus.class).getHeight());
         }
         putLink(link);
     }
