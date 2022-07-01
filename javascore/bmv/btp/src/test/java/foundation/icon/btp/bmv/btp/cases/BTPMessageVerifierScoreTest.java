@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmv.btp.cases;
 
-import foundation.icon.btp.bmv.btp.*;
 import foundation.icon.btp.bmv.btp.score.BMCScore;
 import foundation.icon.btp.bmv.btp.score.BMVScore;
 import foundation.icon.icx.IconService;
@@ -25,9 +24,11 @@ import foundation.icon.icx.data.Address;
 import foundation.icon.icx.data.Bytes;
 import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.score.util.StringUtil;
+import foundation.icon.test.*;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scorex.util.Base64;
 
@@ -37,6 +38,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("integration")
 public class BTPMessageVerifierScoreTest extends TestBase {
     private static final int UNKNOWN = 25;
     private static final int PERMISSION_DENIED = 26;
@@ -72,7 +74,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     static void setup() throws Exception {
         Env.Chain chain = Env.getDefaultChain();
         OkHttpClient ohc = new OkHttpClient.Builder().build();
-        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL()));
+        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3)));
         txHandler = new TransactionHandler(iconService, chain);
 
         // init wallets
@@ -208,7 +210,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         var msgLength = msgList.size();
         var hashes = new Bytes[msgLength];
         for (int i = 0; i < msgLength; i++) {
-             hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.valueOf(seqs[i]), decoder.decode(msgList.get(i).getBytes()));
+            hashes[i] = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), makeBTPAddress(prevBmCScore.getAddress()), BigInteger.valueOf(seqs[i]), decoder.decode(msgList.get(i).getBytes()));
         }
         for (Bytes h : hashes) {
             assertSuccess(txHandler.getResult(h));

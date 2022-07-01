@@ -16,21 +16,24 @@
 
 package foundation.icon.btp.bmv.btp.score;
 
-import foundation.icon.btp.bmv.btp.ResultTimeoutException;
-import foundation.icon.btp.bmv.btp.TransactionFailureException;
-import foundation.icon.btp.bmv.btp.TransactionHandler;
 import foundation.icon.icx.Wallet;
 import foundation.icon.icx.data.Address;
 import foundation.icon.icx.data.TransactionResult;
 import foundation.icon.icx.transport.jsonrpc.RpcObject;
 import foundation.icon.icx.transport.jsonrpc.RpcValue;
+import foundation.icon.test.Log;
+import foundation.icon.test.ResultTimeoutException;
+import foundation.icon.test.TransactionFailureException;
+import foundation.icon.test.TransactionHandler;
+import foundation.icon.test.score.Score;
 
 import java.io.IOException;
 import java.math.BigInteger;
 
-import static foundation.icon.btp.bmv.btp.Env.LOG;
 
 public class BMVScore extends Score {
+
+    private static final Log LOG = Log.getGlobal();
 
     public static BMVScore mustDeploy(
             TransactionHandler txHandler,
