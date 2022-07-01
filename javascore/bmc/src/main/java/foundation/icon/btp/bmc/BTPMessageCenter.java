@@ -43,7 +43,20 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private static final Logger logger = Logger.getLogger(BTPMessageCenter.class);
     public static final int BLOCK_INTERVAL_MSEC = 2000;
     public static final String INTERNAL_SERVICE = "bmc";
-    public enum Internal { Init, Link, Unlink, FeeGathering, Sack }
+    private static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
+
+    public enum Internal {
+        Init, Link, Unlink, FeeGathering, Sack;
+
+        public static Internal of(String s) {
+            for (Internal internal : values()) {
+                if (internal.name().equals(s)) {
+                    return internal;
+                }
+            }
+            throw new IllegalArgumentException();
+        }
+    }
 
     //
     private final BTPAddress btpAddr;
@@ -490,7 +503,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         byte[] payload = bmcMsg.getPayload();
         Internal internal = null;
         try {
-            internal = Internal.valueOf(bmcMsg.getType());
+            internal = Internal.of(bmcMsg.getType());
         } catch (IllegalArgumentException e) {
             //TODO exception handling
             logger.println("handleInternal", "not supported internal type", e.getMessage());
