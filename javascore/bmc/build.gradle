@@ -91,5 +91,19 @@ test {
 //        systemProperty 'bsh-mock.isUpdate', "true"
         dependsOn ":test-lib:optimizedJarMockBSH"
         systemProperty 'bsh-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBSH").outputJarName
+
+        //for gov-mock client
+        systemProperty 'gov-mock.url', scoreTest.url
+        systemProperty 'gov-mock.nid', scoreTest.nid
+        systemProperty 'gov-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'gov-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+        systemProperty 'gov-mock.address', "cx0000000000000000000000000000000000000001"
+        systemProperty 'gov-mock.isUpdate', "true"
+        dependsOn ":test-lib:optimizedJarMockGov"
+        systemProperty 'gov-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockGov").outputJarName
+
+        //for foundation.icon.btp.test.MockGovIntegrationTest
+        systemProperty 'validator.keyStore', scoreTest.default.keyStore
+        systemProperty 'validator.keyPassword', scoreTest.default.resolvedKeyPassword
     }
 }

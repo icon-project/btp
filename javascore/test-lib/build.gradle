@@ -27,6 +27,8 @@ dependencies {
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
 
 task optimizedJarMockBMC(type: OptimizedJar) {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.mock.MockBMCImpl'
     archiveName("bmc-mock-" + archiveVersion.get() + "." + archiveExtension.get());
     from { sourceSets.main.output }
@@ -37,6 +39,8 @@ task optimizedJarMockBMC(type: OptimizedJar) {
 }
 
 task optimizedJarMockBMV(type: OptimizedJar) {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.mock.MockBMVImpl'
     archiveName("bmv-mock-" + archiveVersion.get() + "." + archiveExtension.get());
     from { sourceSets.main.output }
@@ -47,8 +51,22 @@ task optimizedJarMockBMV(type: OptimizedJar) {
 }
 
 task optimizedJarMockBSH(type: OptimizedJar) {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.mock.MockBSHImpl'
     archiveName("bsh-mock-" + archiveVersion.get() + "." + archiveExtension.get());
+    from { sourceSets.main.output }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+task optimizedJarMockGov(type: OptimizedJar) {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
+    mainClassName = 'foundation.icon.btp.mock.MockGovImpl'
+    archiveName("gov-mock-" + archiveVersion.get() + "." + archiveExtension.get());
     from { sourceSets.main.output }
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -121,5 +139,19 @@ test {
 //        systemProperty 'bsh-mock.isUpdate', "true"
         dependsOn "optimizedJarMockBSH"
         systemProperty 'bsh-mock.scoreFilePath', tasks.getByPath("optimizedJarMockBSH").outputJarName
+
+        //for MockGovTest.mockGovClient
+        systemProperty 'gov-mock.url', scoreTest.url
+        systemProperty 'gov-mock.nid', scoreTest.nid
+        systemProperty 'gov-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'gov-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+        systemProperty 'gov-mock.address', "cx0000000000000000000000000000000000000001"
+        systemProperty 'gov-mock.isUpdate', "true"
+        dependsOn "optimizedJarMockGov"
+        systemProperty 'gov-mock.scoreFilePath', tasks.getByPath("optimizedJarMockGov").outputJarName
+
+        //for MockGovTest.validator
+        systemProperty 'validator.keyStore', scoreTest.default.keyStore
+        systemProperty 'validator.keyPassword', scoreTest.default.resolvedKeyPassword
     }
 }

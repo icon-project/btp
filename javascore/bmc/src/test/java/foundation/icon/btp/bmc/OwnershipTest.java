@@ -34,6 +34,7 @@ public class OwnershipTest implements BMCIntegrationTest {
     static int intVal = 0;
     static long longVal = 0;
     static BigInteger bigInteger = BigInteger.ZERO;
+    static long longPositiveNumber = 1;
 
     static boolean isExistsOwner(Address address) {
         return ownerManager.isOwner(address);
@@ -224,4 +225,15 @@ public class OwnershipTest implements BMCIntegrationTest {
     void cancelDropMessageShouldRevertUnauthorized() {
         assertUnauthorized(() -> iconSpecificWithTester.scheduleDropMessage(btpAddress, bigInteger));
     }
+
+    @Test
+    void addBTPLinkShouldRevertUnauthorized() {
+        assertUnauthorized(() -> iconSpecificWithTester.addBTPLink(btpAddress, longPositiveNumber));
+    }
+
+    @Test
+    void setBTPLinkNetworkIdShouldRevertUnauthorized() {
+        assertUnauthorized(() -> iconSpecificWithTester.setBTPLinkNetworkId(btpAddress, longPositiveNumber));
+    }
+
 }

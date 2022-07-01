@@ -319,4 +319,32 @@ public interface ICONSpecific {
     @External(readonly = true)
     RelayersProperties getRelayersProperties();
 
+    /**
+     * Registers the BTPLink to connect that use the BTP-Block instead of Event-Log to send message.
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _link String ( BTP Address of BMC to connect )
+     * @param _networkId Integer ( To use networkId parameter of ChainSCORE API )
+     */
+    @External
+    void addBTPLink(String _link, long _networkId);
+
+    /**
+     * Sets to migrate the Link to the BTPLink which use the BTP-Block to send message.
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _link String ( BTP Address of connected BMC )
+     * @param _networkId Integer (To use networkId parameter of ChainSCORE API)
+     */
+    @External
+    void setBTPLinkNetworkId(String _link, long _networkId);
+
+    /**
+     * Get network id of the BTPLink
+     *
+     * @param _link String ( BTP Address of connected BMC )
+     * @return Integer network id of the BTPLink
+     */
+    @External(readonly = true)
+    long getBTPLinkNetworkId(String _link);
 }

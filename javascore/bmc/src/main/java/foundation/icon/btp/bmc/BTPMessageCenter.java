@@ -62,6 +62,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private final Links links = new Links("links");
     private final Relayers relayers = new Relayers("relayers");
     public static final int DEFAULT_REWARD_PERCENT_SCALE_FACTOR = 4;
+    private final DictDB<String, BigInteger> btpLinkNetworkIds = Context.newDictDB("btpLinkNetworkIds", BigInteger.class);
+    private final DictDB<BigInteger, String> networkIdToLinks = Context.newDictDB("networkIdToLinks", String.class);
 
     public BTPMessageCenter(String _net) {
         this.btpAddr = new BTPAddress(BTPAddress.PROTOCOL_BTP, _net, Context.getAddress().toString());
@@ -222,6 +224,11 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.getRelays().clear();
 
         drops.set(_link, null);
+        BigInteger networkId = btpLinkNetworkIds.get(_link);
+        if (networkId != null) {
+            btpLinkNetworkIds.set(_link, null);
+            networkIdToLinks.set(networkId, null);
+        }
     }
 
     @External(readonly = true)
@@ -698,7 +705,12 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         Link link = getLink(to);
         link.setTxSeq(link.getTxSeq().add(BigInteger.ONE));
         putLink(link);
-        Message(to.toString(), link.getTxSeq(), serializedMsg);
+        BigInteger networkId = btpLinkNetworkIds.get(to.toString());
+        if (networkId == null) {
+            Message(to.toString(), link.getTxSeq(), serializedMsg);
+        } else {
+            Context.call(CHAIN_SCORE, "sendBTPMessage", networkId, serializedMsg);
+        }
     }
 
     private void sendError(BTPAddress prev, BTPMessage msg, BTPException e) {
@@ -1313,6 +1325,38 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     @External(readonly = true)
     public RelayersProperties getRelayersProperties() {
         return relayers.getProperties();
+    }
+
+    @External
+    public void addBTPLink(String _link, long _networkId) {
+        setBTPLink(_link, _networkId);
+        addLink(_link);
+    }
+
+    @External
+    public void setBTPLinkNetworkId(String _link, long _networkId) {
+        requireLink(BTPAddress.valueOf(_link));
+        setBTPLink(_link, _networkId);
+    }
+
+    private void setBTPLink(String _link, long _networkId) {
+        requireOwnerAccess();
+        if (_networkId < 1) {
+            throw BMCException.unknown("_networkId should be greater than zero");
+        }
+        BigInteger networkId = BigInteger.valueOf(_networkId);
+        String oldLink = networkIdToLinks.get(networkId);
+        if (oldLink != null) {
+            throw BMCException.unknown("already exists networkId by "+oldLink);
+        }
+        networkIdToLinks.set(networkId, _link);
+        btpLinkNetworkIds.set(_link, networkId);
+    }
+
+    @External(readonly = true)
+    public long getBTPLinkNetworkId(String _link) {
+        requireLink(BTPAddress.valueOf(_link));
+        return btpLinkNetworkIds.getOrDefault(_link, BigInteger.ZERO).longValue();
     }
 
 }
