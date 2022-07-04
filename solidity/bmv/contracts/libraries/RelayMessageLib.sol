@@ -18,7 +18,7 @@ library RelayMessageLib {
         bytes mesg;
     }
 
-    function decode(bytes calldata enc) internal pure returns (RelayMessage[] memory) {
+    function decode(bytes memory enc) internal pure returns (RelayMessage[] memory) {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
         tl = tl[0].toList();

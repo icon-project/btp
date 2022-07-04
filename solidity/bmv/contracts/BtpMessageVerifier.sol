@@ -66,9 +66,9 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     function handleRelayMessage(
         string memory,
-        string calldata prev,
+        string memory prev,
         uint,
-        bytes calldata mesg
+        bytes memory mesg
     )
     external
     onlyBmc
@@ -163,7 +163,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         return votes * 3 > _validators.length * 2;
     }
 
-    function checkAllowedNetwork(string calldata srcAddr) private view {
+    function checkAllowedNetwork(string memory srcAddr) private view {
         require(
             keccak256(abi.encodePacked(_srcNetworkId)) == keccak256(abi.encodePacked(bytes(srcAddr))),
             "BtpMessageVerifier: Not allowed source network"
