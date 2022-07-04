@@ -1,0 +1,81 @@
+version = '0.1.0'
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("foundation.icon:javaee-scorex:$scorexVersion")
+    implementation project(':score-util')
+    implementation project(':lib')
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+
+    testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+    testImplementation project(':test-lib')
+    testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    testImplementation("com.github.javafaker:javafaker:1.0.2")
+}
+
+optimizedJar {
+    mainClassName = 'foundation.icon.btp.bmv.bridge.BTPMessageVerifier'
+    archivesBaseName = 'bmv-bridge'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } { exclude "score/*" }
+    enableDebug = debugJar
+}
+
+deployJar {
+    endpoints {
+        gangnam {
+            uri = 'https://gicon.net.solidwallet.io/api/v3'
+            nid = 7
+        }
+        local {
+            uri = scoreTest.url
+            nid = scoreTest.parseNid(scoreTest.nid)
+        }
+    }
+    keystore = scoreTest.default.keyStore
+    password = scoreTest.default.resolvedKeyPassword
+    parameters {[
+            arg('_bmc', 'cx0000000000000000000000000000000000000000'),
+            arg('_height', '0x0')
+        ]
+    }
+}
+
+test {
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        }
+    }
+    options {
+        testLogging.showStandardStreams = true
+        systemProperty 'url', scoreTest.url
+        systemProperty 'nid', scoreTest.nid
+        systemProperty 'keyStore', scoreTest.default.keyStore
+        systemProperty 'keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'address', "cx0000000000000000000000000000000000000000"
+//        systemProperty 'isUpdate', "true"
+        dependsOn optimizedJar
+        systemProperty 'scoreFilePath', project.tasks.optimizedJar.outputJarName
+        project.extensions.deployJar.arguments.each {
+            arg -> systemProperty 'params.'+arg.name, arg.value
+        }
+
+        //for bsh-mock client
+        systemProperty 'bmc-mock.url', scoreTest.url
+        systemProperty 'bmc-mock.nid', scoreTest.nid
+        systemProperty 'bmc-mock.keyStore', scoreTest.default.keyStore
+        systemProperty 'bmc-mock.keyPassword', scoreTest.default.resolvedKeyPassword
+//        systemProperty 'address', "cx0000000000000000000000000000000000000000"
+//        systemProperty 'isUpdate', "true"
+        dependsOn ":test-lib:optimizedJarMockBMC"
+        systemProperty 'bmc-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMC").outputJarName
+        systemProperty 'bmc-mock.params._net', scoreTest.nid+'.icon'
+    }
+}
