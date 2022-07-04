@@ -23,6 +23,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     uint private _remainMessageCount;
     uint private _nextMessageSn;
     address[] private _validators;
+    uint _sequenceOffset;
 
     modifier onlyBmc() {
         require(
@@ -37,7 +38,8 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         bytes memory srcNetworkId_,
         uint networkTypeId_,
         uint networkId_,
-        bytes memory firstBlockUpdate
+        bytes memory firstBlockUpdate,
+        uint sequenceOffset_
     )
     initializer
     external
@@ -46,6 +48,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         _srcNetworkId = srcNetworkId_;
         _networkTypeId = networkTypeId_;
         _networkId = networkId_;
+        _sequenceOffset = sequenceOffset_;
 
         BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
         _height = bu.mainHeight;
@@ -58,14 +61,14 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     }
 
     function getStatus() external view returns (uint) {
-        return _height;
+        return _height + _sequenceOffset;
     }
 
     function handleRelayMessage(
         string memory,
-        string calldata prev,
+        string memory prev,
         uint,
-        bytes calldata mesg
+        bytes memory mesg
     )
     external
     onlyBmc
@@ -160,7 +163,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         return votes * 3 > _validators.length * 2;
     }
 
-    function checkAllowedNetwork(string calldata srcAddr) private view {
+    function checkAllowedNetwork(string memory srcAddr) private view {
         require(
             keccak256(abi.encodePacked(_srcNetworkId)) == keccak256(abi.encodePacked(bytes(srcAddr))),
             "BtpMessageVerifier: Not allowed source network"

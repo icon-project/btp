@@ -113,7 +113,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
     void setLinkRotateTerm(String link) {
         iconSpecific.setLinkRotateTerm(link, blockInterval, maxAgg);
-        BMCStatus status = bmc.getStatus(link);
+        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         assertEquals(blockInterval, status.getBlock_interval_dst());
         assertEquals(maxAgg, status.getMax_agg());
     }
@@ -313,8 +313,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     @Test
     void setLinkDelayLimitShouldSuccess() {
         iconSpecific.setLinkDelayLimit(link, delayLimit);
-        BMCStatus status = bmc.getStatus(link);
-        assertEquals(delayLimit, status.getDelay_limit());
+        assertEquals(delayLimit, BMCIntegrationTest.getStatus(bmc, link).getDelay_limit());
     }
 
     @Test
@@ -333,7 +332,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     @Test
     void setLinkSackTermShouldSuccess() {
         iconSpecific.setLinkSackTerm(link, sackTerm);
-        BMCStatus status = bmc.getStatus(link);
+        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         assertEquals(sackTerm, status.getSack_term());
     }
 

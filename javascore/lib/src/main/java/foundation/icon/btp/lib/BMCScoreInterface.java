@@ -94,8 +94,12 @@ public final class BMCScoreInterface implements BMC {
   }
 
   @Override
-  public BMCStatus getStatus(String _link) {
-    return Context.call(BMCStatus.class, this.address, "getStatus", _link);
+  public Map getStatus(String _link) {
+    return Context.call(Map.class, this.address, "getStatus", _link);
+  }
+
+  public <T> T getStatus(Class<T> clazz, String _link) {
+    return Context.call(clazz, this.address, "getStatus", _link);
   }
 
   @Override

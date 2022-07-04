@@ -12,6 +12,7 @@ contract('BtpMessageVerifierV2', (accounts) => {
     const NETWORK_TYPE_ID = new BN(1);
     const NETWORK_ID = new BN(1);
     const FIRST_BLOCK_UPDATE = '0xf8870a01a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00101f80000f800f800b858f856f85494524122f6386c9cd3342ecc377dbc9dcb036dd2e0948103611a29623db06a937b24f52d70cf44c1c41494910d15f35a3e685968d8596512efa56d840bb3c59451226eee21a3d3758727886df161c108f5857f3f';
+    const SEQUENCE_OFFSET = new BN(0);
     const validators = [
         '0x524122f6386c9cd3342ecc377dbc9dcb036dd2e0',
         '0x8103611a29623db06a937b24f52d70cf44c1c414',
@@ -26,7 +27,8 @@ contract('BtpMessageVerifierV2', (accounts) => {
                 toBytesString(SRC_NETWORK_ID),
                 NETWORK_TYPE_ID,
                 NETWORK_ID,
-                FIRST_BLOCK_UPDATE
+                FIRST_BLOCK_UPDATE,
+                SEQUENCE_OFFSET
             ]);
         });
 

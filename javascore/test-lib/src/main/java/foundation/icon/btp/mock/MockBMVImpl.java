@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.mock;
 
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.score.util.Logger;
 import score.Context;
@@ -25,6 +24,7 @@ import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 public class MockBMVImpl implements MockBMV {
     private static final Logger logger = Logger.getLogger(MockBMVImpl.class);
@@ -113,7 +113,10 @@ public class MockBMVImpl implements MockBMV {
     }
 
     @External(readonly = true)
-    public BMVStatus getStatus() {
-        return getProperties();
+    public Map getStatus() {
+        MockBMVProperties p = getProperties();
+        return Map.of("height", p.getHeight(),
+                "offset", p.getOffset(),
+                "last_height", p.getLast_height());
     }
 }

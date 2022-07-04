@@ -19,6 +19,7 @@ package foundation.icon.btp.xcall;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -34,6 +35,7 @@ public interface CallService {
      * @param _rollback (Optional) The data for restoring the caller state when an error occurred
      * @return The serial number of the request
      */
+    @Payable
     @External
     BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback);
 

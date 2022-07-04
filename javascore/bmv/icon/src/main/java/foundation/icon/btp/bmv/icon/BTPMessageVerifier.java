@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmv.icon;
 
 import foundation.icon.btp.lib.BMV;
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
@@ -26,11 +25,11 @@ import score.Context;
 import score.VarDB;
 import score.annotation.External;
 import scorex.util.ArrayList;
-import scorex.util.Base64;
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class BTPMessageVerifier implements BMV {
     private static final Logger logger = Logger.getLogger(BTPMessageVerifier.class);
@@ -279,13 +278,11 @@ public class BTPMessageVerifier implements BMV {
     }
 
     @External(readonly = true)
-    public BMVStatus getStatus() {
+    public Map getStatus() {
         BMVProperties properties = getProperties();
         MerkleTreeAccumulator mta = properties.getMta();
-        BMVStatus status = new BMVStatus();
-        status.setOffset(mta.getOffset());
-        status.setHeight(mta.getHeight());
-        status.setLast_height(properties.getLastHeight());
-        return status;
+        return Map.of("height", mta.getHeight(),
+                "offset", mta.getOffset(),
+                "last_height", properties.getLastHeight());
     }
 }

@@ -5,9 +5,11 @@ include (
         'test-lib',
         'bmc',
         'bmv:icon',
-        'bmv:btp',
+        'bmv:btpblock',
         'bsh',
         'nativecoin',
         'xcall',
         'fee-aggregation',
+        'icon-sdk-java',
 )
+project(":icon-sdk-java").projectDir = file("../icon-sdk-java/library")

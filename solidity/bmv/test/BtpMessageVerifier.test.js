@@ -6,6 +6,7 @@ const { ZB32, toBytesString, toStr } = require('./utils');
 const SRC_NETWORK_ID = 'btp://0x1.icon'
 const NTID = new BN('2');
 const NID = new BN('2');
+const SEQUENCE_OFFSET = new BN('0');
 
 function toHex(str) {
     function unescape (str) {
@@ -42,7 +43,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             beforeEach(async () => {
                 this.instance = await BtpMessageVerifier.new();
-                await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE);
+                await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
             });
 
             shouldHaveImmutableState.call(this, {
@@ -207,7 +208,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE);
+            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
@@ -537,7 +538,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE);
+            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
