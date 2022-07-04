@@ -17,10 +17,12 @@
 package icon
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/common/intconv"
 	"math/big"
 
 	"github.com/icon-project/btp/common/codec"
@@ -54,14 +56,10 @@ func (r *Receiver) GetBTPBlockHeader(v *BTPNotification) (*BTPBlockHeader, error
 	if err != nil {
 		return nil, err
 	}
-	p, _ := v.Proof.Value()
-	if p != nil {
-		bh.Proof = p
-	}
 	return &bh, nil
 }
 func (r *Receiver) GetBTPMessage(bh *BTPBlockHeader, nid int64) ([][]byte, error) {
-	p := &BTPBlockParam{Height: HexInt(bh.MainHeight), NetworkID: HexInt(nid)}
+	p := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
 	b, err := r.c.GetBTPMessage(p)
 	if err != nil {
 		return nil, err
@@ -70,7 +68,7 @@ func (r *Receiver) GetBTPMessage(bh *BTPBlockHeader, nid int64) ([][]byte, error
 }
 
 func (r *Receiver) GetBTPProof(bh *BTPBlockHeader, nid int64) ([]byte, error) {
-	p := &BTPBlockParam{Height: HexInt(bh.MainHeight), NetworkID: HexInt(nid)}
+	p := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
 	b, err := r.c.GetBTPProof(p)
 	if err != nil {
 		return nil, err
@@ -78,12 +76,21 @@ func (r *Receiver) GetBTPProof(bh *BTPBlockHeader, nid int64) ([]byte, error) {
 	return b, nil
 }
 
-func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag int, cb func(bu *BTPBlockHeader), scb func()) error {
+func (r *Receiver) GetBTPNetworkInfo(nid int64) (*NetworkInfo, error) {
+	p := &BTPNetworkInfoParam{NetworkId: HexInt(intconv.FormatInt(nid))}
+	b, err := r.c.GetBTPNetworkInfo(p)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag int64, cb func(bu *BTPBlockHeader) error, scb func()) error {
 	//s := r.dst.String()
 	r.req = &BTPRequest{
-		Height:    HexInt(height),
-		NetworkID: HexInt(networkId),
-		ProofFlag: HexInt(proofFlag),
+		Height:    HexInt(intconv.FormatInt(height)),
+		NetworkID: HexInt(intconv.FormatInt(networkId)),
+		ProofFlag: HexInt(intconv.FormatInt(proofFlag)),
 	}
 
 	if height < 1 {
@@ -98,6 +105,13 @@ func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag int, cb 
 				return err
 			}
 			_, err = codec.RLP.UnmarshalFromBytes(h, &bh)
+			if len(v.Proof) > 0 {
+				p, err := base64.URLEncoding.DecodeString(v.Proof)
+				if err != nil {
+					return err
+				}
+				bh.Proof = p
+			}
 			if err != nil {
 				return err
 			}

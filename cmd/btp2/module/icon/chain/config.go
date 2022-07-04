@@ -33,6 +33,6 @@ type Config struct {
 	Dst               BaseConfig       `json:"dst"`
 	Ntid              int64            `json:"ntid"`
 	Nid               int64            `json:"nid"`
-	proofFlag         int              `json:"proofFlag`
+	proofFlag         int64            `json:"proofFlag"`
 	Offset            int64            `json:"offset"`
 }

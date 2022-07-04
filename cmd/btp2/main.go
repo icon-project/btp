@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/icon-project/btp/cmd/btp2/module/icon"
+	iconChain "github.com/icon-project/btp/cmd/btp2/module/icon/chain"
 	"io/ioutil"
 	stdlog "log"
 	"os"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/icon-project/btp/cmd/btp2/chain"
 	"github.com/icon-project/btp/common/cli"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/errors"
@@ -43,14 +43,14 @@ var (
 )
 
 const (
-	DefaultKeyStorePass = "btpsimple"
+	DefaultKeyStorePass = "btp2"
 )
 
 type Config struct {
-	chain.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData json.RawMessage `json:"key_store"`
-	KeyStorePass string          `json:"key_password,omitempty"`
-	KeySecret    string          `json:"key_secret,omitempty"`
+	iconChain.Config `json:",squash"` //instead of `mapstructure:",squash"`
+	KeyStoreData     json.RawMessage  `json:"key_store"`
+	KeyStorePass     string           `json:"key_password,omitempty"`
+	KeySecret        string           `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -108,7 +108,7 @@ var logoLines = []string{
 }
 
 func main() {
-	rootCmd, rootVc := cli.NewCommand(nil, nil, "btpsimple", "BTP Relay CLI")
+	rootCmd, rootVc := cli.NewCommand(nil, nil, "btp2", "BTP Relay CLI")
 	cfg := &Config{}
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
@@ -116,10 +116,10 @@ func main() {
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
-		Short: "Print btpsimple version",
+		Short: "Print btp2 version",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("btpsimple version", version, build)
+			fmt.Println("btp2 version", version, build)
 		},
 	})
 
@@ -157,6 +157,12 @@ func main() {
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
+
+	//BTP2.0
+	rootPFlags.Int64("ntid", 1, "network type id")
+	rootPFlags.Int64("nid", 3, "network id")
+	rootPFlags.Int64("proofFlag", 1, "btp2.0 notification proof flag")
+
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
 	rootPFlags.String("key_store", "", "KeyStore")
 	rootPFlags.String("key_password", "", "Password of KeyStore")
@@ -245,11 +251,11 @@ func main() {
 			l := setLogger(cfg, w, modLevels)
 			l.Debugln(cfg.FilePath, cfg.BaseDir)
 			if cfg.BaseDir == "" {
-				cfg.BaseDir = path.Join(".", ".btpsimple", cfg.Src.Address.NetworkAddress())
+				cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
 			}
 
-			sh := chain.NewSimpleChain(&cfg.Config, w, l)
-			s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Src.Endpoint, cfg.Src.Options, l)
+			sh := iconChain.NewSimpleChain(&cfg.Config, w, l)
+			s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
 			return sh.Serve(s)
 		},
 	}

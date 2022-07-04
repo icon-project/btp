@@ -94,7 +94,6 @@ type Sender interface {
 	Relay(segment *Segment) (GetResultParam, error)
 	GetResult(p GetResultParam) (TransactionResult, error)
 	GetStatus() (*BMCLinkStatus, error)
-	//
 	MonitorLoop(height int64, cb MonitorCallback, scb func()) error
 	StopMonitorLoop()
 	FinalizeLatency() int

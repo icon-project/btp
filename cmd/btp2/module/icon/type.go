@@ -221,7 +221,12 @@ type BMCStatus struct {
 
 type BTPBlockParam struct {
 	Height    HexInt `json:"height" validate:"required,t_int"`
-	NetworkID HexInt `json:"NetworkID" validate:"required,t_int"`
+	NetworkId HexInt `json:"networkId" validate:"required,t_int"`
+}
+
+type BTPNetworkInfoParam struct {
+	Height    HexInt `json:"height" validate:"optional,t_int"`
+	NetworkId HexInt `json:"networkId" validate:"required,t_int"`
 }
 
 type TransactionHashParam struct {
@@ -411,13 +416,23 @@ type Block struct {
 //icon2 relaymessage
 type BTPNotification struct {
 	Header HexBytes `json:"header"`
-	Proof  HexBytes `json:"proof"`
+	Proof  string   `json:"proof"`
 }
 
 type BTPRequest struct {
 	Height    HexInt `json:"height"`
 	NetworkID HexInt `json:"networkID"`
 	ProofFlag HexInt `json:"proofFlag"`
+}
+
+type NetworkInfo struct {
+	StartHeight     HexInt   `json:"startHeight"`
+	NetworkTypeID   HexInt   `json:"networkTypeID"`
+	NetworkTypeName string   `json:"networkTypeName"`
+	NetworkID       HexInt   `json:"networkID"`
+	NextMessageSN   HexInt   `json:"nextMessageSN"`
+	PrevNSHash      HexBytes `json:"prevNSHash"`
+	LastNSHash      HexBytes `json:"lastNSHash"`
 }
 
 type BTPBlock struct {

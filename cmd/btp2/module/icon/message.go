@@ -16,7 +16,7 @@ const (
 
 type BTPRelayMessage struct {
 	height     int64
-	messageSeq int64
+	messageSeq int
 	Messages   []*TypePrefixedMessage
 }
 
@@ -24,7 +24,7 @@ func (rm *BTPRelayMessage) Height() int64 {
 	return rm.height
 }
 
-func (rm *BTPRelayMessage) MessageSeq() int64 {
+func (rm *BTPRelayMessage) MessageSeq() int {
 	return rm.messageSeq
 }
 
@@ -32,7 +32,7 @@ func (rm *BTPRelayMessage) SetHeight(height int64) {
 	rm.height = height
 }
 
-func (rm *BTPRelayMessage) SetMessageSeq(seq int64) {
+func (rm *BTPRelayMessage) SetMessageSeq(seq int) {
 	rm.messageSeq = seq
 }
 

@@ -188,6 +188,14 @@ func (c *Client) GetBTPProof(p *BTPBlockParam) ([]byte, error) {
 	return result, nil
 }
 
+func (c *Client) GetBTPNetworkInfo(p *BTPNetworkInfoParam) (*NetworkInfo, error) {
+	result := &NetworkInfo{}
+	if _, err := c.Do("btp_getNetworkInformation", p, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (c *Client) GetBlockByHeight(p *BlockHeightParam) (*Block, error) {
 	result := &Block{}
 	if _, err := c.Do("icx_getBlockByHeight", p, &result); err != nil {
