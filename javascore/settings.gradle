@@ -10,4 +10,6 @@ include (
         'nativecoin',
         'xcall',
         'fee-aggregation',
+        'icon-sdk-java',
 )
+project(":icon-sdk-java").projectDir = file("../icon-sdk-java/library")
