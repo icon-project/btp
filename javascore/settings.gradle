@@ -5,7 +5,7 @@ include (
         'test-lib',
         'bmc',
         'bmv:icon',
-        'bmv:btp',
+        'bmv:btpblock',
         'bsh',
         'nativecoin',
         'xcall',

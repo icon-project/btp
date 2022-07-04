@@ -38,7 +38,6 @@ public class FeeAggregationSCORETest extends TestBase {
 
     @BeforeAll
     static void setup() throws Exception {
-        System.out.println("@@");
         Env.Chain chain = Env.getDefaultChain();
         OkHttpClient ohc = new OkHttpClient.Builder().build();
         iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3)));
