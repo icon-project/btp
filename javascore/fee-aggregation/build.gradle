@@ -17,16 +17,6 @@ apply plugin: 'foundation.icon.javaee'
 group 'foundation.icon.btp'
 version '1.0'
 
-// for integration tests
-sourceSets {
-    intTest {}
-}
-
-configurations {
-    intTestImplementation.extendsFrom testImplementation
-    intTestRuntimeOnly.extendsFrom testRuntimeOnly
-}
-
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
@@ -68,8 +58,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 
-    intTestImplementation 'foundation.icon:icon-sdk:2.0.0'
-    intTestImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'foundation.icon:icon-sdk:2.0.0'
+    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    testImplementation 'foundation.icon:javaee-integration-test:0.9.0'
 }
 
 deployJar {
@@ -91,23 +82,14 @@ deployJar {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (!integrationTest) {
+            excludeTags("integration")
+        } else {
+            systemProperty('env.props', new File('src/test/resources/env.props'))
+
+            def prefix = 'score.path.'
+            systemProperty(prefix + project.name, optimizedJar.outputJarName)
+        }
+    }
 }
-
-task integrationTest(type: Test) {
-    useJUnitPlatform()
-    description = 'Runs integration tests.'
-    group = 'verification'
-
-    testClassesDirs = sourceSets.intTest.output.classesDirs
-    classpath = sourceSets.intTest.runtimeClasspath
-    testLogging.showStandardStreams = true
-
-    // use the common config files
-    systemProperty('env.props', new File('conf/env.props'))
-
-    def prefix = 'score.path.'
-    systemProperty(prefix + project.name, optimizedJar.outputJarName)
-}
-
-
