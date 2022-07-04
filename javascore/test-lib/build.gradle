@@ -17,7 +17,8 @@ dependencies {
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     implementation("foundation.icon:javaee-score-client:$scoreClientVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("foundation.icon:icon-sdk:$iconsdkVersion")
+//    implementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    implementation project(':icon-sdk-java')
     implementation("com.github.javafaker:javafaker:1.0.2")
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")

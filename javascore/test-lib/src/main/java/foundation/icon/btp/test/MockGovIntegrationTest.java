@@ -24,12 +24,14 @@ import foundation.icon.icx.KeyWallet;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.util.StringUtil;
+import org.junit.jupiter.api.Tag;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag("integration")
 public interface MockGovIntegrationTest {
 
     MockGovScoreClient mockGovClient = new MockGovScoreClient(

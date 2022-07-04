@@ -15,6 +15,7 @@ import foundation.icon.test.TransactionHandler;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,6 +24,7 @@ import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 import java.util.Date;
 
+@Tag("integration")
 public class FeeAggregationSCORETest extends TestBase {
     private static final Log LOG = Log.getGlobal();
     private static TransactionHandler txHandler;
