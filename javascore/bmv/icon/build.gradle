@@ -13,6 +13,8 @@ dependencies {
 }
 
 optimizedJar {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.bmv.icon.BTPMessageVerifier'
     archivesBaseName = 'bmv-icon'
     from {
