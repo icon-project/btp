@@ -151,10 +151,10 @@ public class BTPMessageVerifier implements BMV {
                 srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
         Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
         var isUpdate = updateNumber.and(BigInteger.ONE).compareTo(BigInteger.ONE) == 0;
+        verifyProof(decision, proofs);
         if (isUpdate) {
             var nextProofContext = blockUpdate.getNextProofContext();
             verifyProofContextData(nextProofContextHash, nextProofContext, bmvProperties.getProofContextHash());
-            verifyProof(decision, proofs);
             bmvProperties.setProofContextHash(nextProofContextHash);
             bmvProperties.setProofContext(nextProofContext);
         }

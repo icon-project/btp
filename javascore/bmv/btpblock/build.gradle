@@ -61,6 +61,7 @@ test {
 
             def prefix = 'score.path.'
             systemProperty(prefix + 'bmv-' + project.name, optimizedJar.outputJarName)
+            dependsOn optimizedJar
             systemProperty prefix + 'bmc-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMC").outputJarName
         }
     }

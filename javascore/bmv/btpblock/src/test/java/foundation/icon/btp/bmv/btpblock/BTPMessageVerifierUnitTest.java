@@ -84,7 +84,11 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     }
 
     /***
-     * Scenario2 : 1. invalid current bmc, invalid caller, invalid prev bmc
+     * Scenario2 :
+     * 1. invalid current bmc
+     * 2.invalid caller
+     * 3. invalid prev bmc
+     * 4. invalid sequence
      */
     @Order(2)
     @Test
@@ -117,6 +121,13 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                         bmc.toString(), bmc.toString(), BigInteger.valueOf(0), decoder.decode(encodedValidMsg.getBytes()))
         );
         assertTrue(invalidPrev.getMessage().contains("invalid prev"));
+
+        var invalidSeq = assertThrows(
+                AssertionError.class, () -> sm.call(
+                        bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
+                        bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedValidMsg.getBytes()))
+        );
+        assertTrue(invalidSeq.getMessage().contains("invalid sequence"));
     }
 
     /***
@@ -124,7 +135,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
      * 1. receive blockUpdate while remaining message count > 0
      * 2. make remaining message count 0
      * 3. invalid nid
-     * 4. mismatch prev networkSectionHash
+     * 4. invalid first message
+     * 5. mismatch prev networkSectionHash
      */
     @Order(3)
     @Test
@@ -196,7 +208,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Order(5)
     @Test
     public void scenario5() {
-        var encodedHashMismatchMsg = "-QIM-QIJ-QIGAbkCAvkB_xQAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
+        var encodedHashMismatchMsg = "-QGx-QGu-QGrAbkBp_kBpBQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_AILBwA==";
         AssertionError hashMismatched = assertThrows(
                 AssertionError.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
@@ -225,7 +237,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         );
         assertTrue(invalidRemainCnt.getMessage().contains("remaining message count must greater than zero"));
 
-        // make remain count 2
+        // make remain count 3
         var encodedValidBlockUpdate = "-QIM-QIJ-QIGAbkCAvkB_xQAoGGUEb5CLHgNJ7zHsSF1aFeqq2nU4jOJA3QlTm8riz6b4-IBoBxNa66jvF66zreP8TwT5Zn72HdHcAAha7kUGiMrSdYGAQOgg7YKUx7lqZrAmd85fGjNZXP9cUJDdTB-PnGEePF2wlADoE--Tju-tDh8ZCErOtH3-YD-ggJ3bgRk7xAn1XYYNilLuQES-QEP-QEMuEG80c203YDtNDpkofRwrK0I7umZ3BXFbUvLDRfpNcyslClnu2Jcp3CwXr1SCFRUb8f3VE0ekwIld3z1JS77SjuqALhBkY5GK0jT4YPsj3YDf1pXW5gaoUSFh0ZiAfpIxhlhlUt_LNHucU11Nh-jlWDVVWUNFSk7N_KEnB_0tzF-PsijJAC4Qdwbu80iCamHm5mpV4oZYmRQeY95xPbC3kyYpW3GYH58O2fbfoCIG4E9eGY9G8h0ZbmI_TKqh4Uamzp3APqJfLoBuEGoVGsMqQU-aflDPkdFspJVYFjpXv7DBwdu4MhKYk29b3VY5LVlO9bivw-4czIEC5h_IHet9Zv1Eb8sCtIShqH_ALhc-Fr4WJUAVcR37w4xv1y54pE1Qm6NZekR8SiVAJ4JP3KkFyZG6C82YyUgkEbm_wq_lQA89ZDef41LwDoVFzmiKqnzajxGTZUAdoy9pI1CK_eI0qKyyQ-3Lz5UmRM=";
         sm.call(bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                 bmc.toString(), prev.toString(), BigInteger.valueOf(1), decoder.decode(encodedValidBlockUpdate.getBytes()));
