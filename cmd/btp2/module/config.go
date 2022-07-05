@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package chain
+package module
 
 import (
-	"github.com/icon-project/btp/cmd/btp2/module"
 	"github.com/icon-project/btp/common/config"
 )
 
 type BaseConfig struct {
-	Address  module.BtpAddress      `json:"address"`
+	Address  BtpAddress             `json:"address"`
 	Endpoint string                 `json:"endpoint"`
 	Options  map[string]interface{} `json:"options,omitempty"`
 }
@@ -33,6 +32,6 @@ type Config struct {
 	Dst               BaseConfig       `json:"dst"`
 	Ntid              int64            `json:"ntid"`
 	Nid               int64            `json:"nid"`
-	proofFlag         int64            `json:"proofFlag"`
+	ProofFlag         int64            `json:"proofFlag"`
 	Offset            int64            `json:"offset"`
 }

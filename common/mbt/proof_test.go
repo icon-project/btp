@@ -23,7 +23,7 @@ func TestMerkleBinaryTreeProof_Basic(t *testing.T) {
 	//leftTest := unsafe.Sizeof(mProof.ProofInLeft)
 	//rightTest := unsafe.Sizeof(mProof.ProofInRight)
 
-	fmt.Printf("l %d. r %d", leftTest., rightTest)
+	fmt.Printf("l %d. r %d", leftTest, rightTest)
 
 	assert.NoError(t, err)
 	for i, j := begin-1, 0; i < end; i, j = i+1, j+1 {

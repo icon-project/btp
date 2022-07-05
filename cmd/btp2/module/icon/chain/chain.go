@@ -121,7 +121,7 @@ type SimpleChain struct {
 
 	bs  *module.BMCLinkStatus //getstatus(dst.src)
 	l   log.Logger
-	cfg *Config
+	cfg *module.Config
 
 	bds []*icon.BTPBlockData
 	rms []*icon.BTPRelayMessage
@@ -484,7 +484,7 @@ func (s *SimpleChain) Serve(sender module.Sender) error {
 		return err
 	}
 
-	//TODO for test
+	//TODO Pre rotation settings
 	s.relayble = true
 
 	s.SetChainInfo()
@@ -531,7 +531,7 @@ func (s *SimpleChain) Monitoring() error {
 		err := s.r.ReceiveLoop(
 			s.receiveHeight(),
 			s.cfg.Nid,
-			s.cfg.proofFlag,
+			s.cfg.ProofFlag,
 			s.OnBlockOfSrc,
 			func() {
 				s.l.Debugf("Connect ReceiveLoop")
@@ -552,7 +552,7 @@ func (s *SimpleChain) Monitoring() error {
 	}
 }
 
-func NewSimpleChain(cfg *Config, w wallet.Wallet, l log.Logger) *SimpleChain {
+func NewChain(cfg *module.Config, w wallet.Wallet, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,

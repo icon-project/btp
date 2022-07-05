@@ -177,6 +177,38 @@ type RelayMessage struct {
 	numberOfEvent       int
 }
 
+func (r *RelayMessage) GetHeight() int64 {
+	return r.height
+}
+
+func (r *RelayMessage) GetNumberOfBlockUpdate() int {
+	return r.numberOfBlockUpdate
+}
+
+func (r *RelayMessage) GetEventSequence() int64 {
+	return r.eventSequence
+}
+
+func (r *RelayMessage) GetNumberOfEvent() int {
+	return r.numberOfEvent
+}
+
+func (r *RelayMessage) SetHeight(height int64) {
+	r.height = height
+}
+
+func (r *RelayMessage) SetNumberOfBlockUpdate(numberOfBlockUpdate int) {
+	r.numberOfBlockUpdate = numberOfBlockUpdate
+}
+
+func (r *RelayMessage) SetEventSequence(eventSequence int64) {
+	r.eventSequence = eventSequence
+}
+
+func (r *RelayMessage) SetNumberOfEvent(numberOfEvent int) {
+	r.numberOfEvent = numberOfEvent
+}
+
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte

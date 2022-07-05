@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/icon-project/btp/cmd/btp2/module"
 	"github.com/icon-project/btp/cmd/btp2/module/icon"
 	iconChain "github.com/icon-project/btp/cmd/btp2/module/icon/chain"
 	"io/ioutil"
@@ -47,10 +48,10 @@ const (
 )
 
 type Config struct {
-	iconChain.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData     json.RawMessage  `json:"key_store"`
-	KeyStorePass     string           `json:"key_password,omitempty"`
-	KeySecret        string           `json:"key_secret,omitempty"`
+	module.Config `json:",squash"` //instead of `mapstructure:",squash"`
+	KeyStoreData  json.RawMessage `json:"key_store"`
+	KeyStorePass  string          `json:"key_password,omitempty"`
+	KeySecret     string          `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -254,8 +255,18 @@ func main() {
 				cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
 			}
 
-			sh := iconChain.NewSimpleChain(&cfg.Config, w, l)
+			//icon -> icon
+			sh := iconChain.NewChain(&cfg.Config, w, l)
 			s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
+
+			//icon -> bsc
+			//sh := iconChain.NewChain(&cfg.Config, w, l)
+			//s := bsc.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
+
+			//bsc -> icon
+			//sh := bscChain.NewChain(&cfg.Config, w, l)
+			//s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
+
 			return sh.Serve(s)
 		},
 	}
