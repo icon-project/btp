@@ -48,50 +48,16 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static BTPAddress secondLinkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String secondLink = secondLinkBtpAddress.toString();
-    static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
-    static IconService iconService = new IconService(new HttpProvider(client.endpoint()));
 
     static void addBTPLink(String link, long networkId) {
         List<String> links = Arrays.asList(bmc.getLinks());
-        ((ICONSpecificScoreClient) iconSpecific).addBTPLink((txr) -> {
-            LinkManagementTest.initMessageChecker(links)
-                    .accept(bmcMessages(
-                            txr.getBlockHeight().add(BigInteger.ONE), BigInteger.valueOf(networkId)));
-        }, link, networkId);
+        ((ICONSpecificScoreClient) iconSpecific).addBTPLink(
+                BTPBlockIntegrationTest.bmcMessageChecker(
+                        networkId,
+                        LinkManagementTest.initMessageChecker(links)),
+                link, networkId);
         assertTrue(LinkManagementTest.isExistsLink(link));
         assertEquals(networkId, iconSpecific.getBTPLinkNetworkId(link));
-    }
-
-    static List<BTPMessage> btpMessages(BigInteger height, BigInteger networkId, Predicate<BTPMessage> filter) {
-        Base64[] messages = null;
-        try {
-            messages = iconService.btpGetMessages(height, networkId).execute();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        Stream<BTPMessage> stream = Arrays.stream(messages)
-                .map((m) -> BTPMessage.fromBytes(m.decode()));
-        if (filter != null) {
-            stream = stream.filter(filter);
-        }
-        return stream.collect(Collectors.toList());
-    }
-
-    static List<BTPMessage> btpMessages(BigInteger height, BigInteger networkId, String svc) {
-        Predicate<BTPMessage> filter = (m) -> m.getSvc().equals(svc);
-        return btpMessages(height, networkId, filter);
-    }
-
-    static <T> List<T> svcMessages(BigInteger height, BigInteger networkId, String svc,
-                                   Function<BTPMessage, T> mapperFunc) {
-        return btpMessages(height, networkId, svc).stream()
-                .map(mapperFunc)
-                .collect(Collectors.toList());
-    }
-
-    static List<BMCMessage> bmcMessages(BigInteger height, BigInteger networkId) {
-        return svcMessages(height, networkId, BTPMessageCenter.INTERNAL_SERVICE,
-                (m) -> BMCMessage.fromBytes(m.getPayload()));
     }
 
     @BeforeAll
@@ -117,66 +83,48 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
     }
 
     @Test
-    void addBTPLinkShouldSuccessAndRemoveLinkShouldRemoveNetworkId() {
+    void addBTPLinkAndRemoveLinkShouldSuccess() {
         long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
         addBTPLink(link, networkId);
 
         LinkManagementTest.removeLink(link);
-        assertEquals(0, iconSpecific.getBTPLinkNetworkId(link));
     }
 
     @Test
     void addBTPLinkShouldRevertInvalidNetworkId() {
         AssertBMCException.assertUnknown(() -> iconSpecific.addBTPLink(link, 0));
+    }
 
+    @Test
+    void addBTPLinkShouldRevertDuplicatedNetworkId() {
         long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
         addBTPLink(link, networkId);
 
-        AssertBMCException.assertUnknown(() -> addBTPLink(secondLink, networkId));
+        AssertBMCException.assertUnknown(() -> iconSpecific.addBTPLink(secondLink, networkId));
     }
 
     @Test
     void setBTPLinkNetworkIdShouldSuccess() {
         LinkManagementTest.addLink(link);
-        String svc = MockBSH.SERVICE;
-        BigInteger sn = BigInteger.ONE;
-        byte[] payload = Faker.btpLink().toBytes();
+        assertEquals(0, iconSpecific.getBTPLinkNetworkId(link));
 
-        BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getTx_seq().add(BigInteger.ONE);
-        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
-        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
-                BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
-                    assertEquals(link, el.getNext());
-                    assertEquals(seq, el.getSeq());
-                    BTPMessage btpMessage = el.getMsg();
-                    assertEquals(btpAddress, btpMessage.getSrc());
-                    assertEquals(linkBtpAddress, btpMessage.getDst());
-                    assertEquals(svc, btpMessage.getSvc());
-                    assertEquals(sn, btpMessage.getSn());
-                    assertArrayEquals(payload, btpMessage.getPayload());
-                }),
-                bmcClient._address(),
-                linkBtpAddress.net(), svc, sn, payload);
-
-        BigInteger sn2 = sn.add(BigInteger.ONE);
-        byte[] payload2 = Faker.btpLink().toBytes();
         long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
         iconSpecific.setBTPLinkNetworkId(link, networkId);
-        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
-                (txr) -> {
-                    List<BTPMessage> msgs = btpMessages(txr.getBlockHeight().add(BigInteger.ONE),
-                            BigInteger.valueOf(networkId),
-                            svc);
-                    assertEquals(1, msgs.size());
-                    BTPMessage btpMessage = msgs.get(0);
-                    assertEquals(btpAddress, btpMessage.getSrc());
-                    assertEquals(linkBtpAddress, btpMessage.getDst());
-                    assertEquals(svc, btpMessage.getSvc());
-                    assertEquals(sn2, btpMessage.getSn());
-                    assertArrayEquals(payload2, btpMessage.getPayload());
-                },
-                bmcClient._address(),
-                linkBtpAddress.net(), svc, sn2, payload2);
+        assertEquals(networkId, iconSpecific.getBTPLinkNetworkId(link));
     }
 
+    @Test
+    void setBTPLinkNetworkIdShouldRevertInvalidNetworkId() {
+        LinkManagementTest.addLink(link);
+        AssertBMCException.assertUnknown(() -> iconSpecific.setBTPLinkNetworkId(link, 0));
+    }
+
+    @Test
+    void setBTPLinkNetworkIdShouldRevertDuplicatedNetworkId() {
+        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        addBTPLink(link, networkId);
+
+        LinkManagementTest.addLink(secondLink);
+        AssertBMCException.assertUnknown(() -> iconSpecific.setBTPLinkNetworkId(secondLink, networkId));
+    }
 }
