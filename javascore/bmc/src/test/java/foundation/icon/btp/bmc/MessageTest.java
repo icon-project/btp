@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -357,8 +358,8 @@ public class MessageTest implements BMCIntegrationTest {
         assertFalse(DropMessageTest.isExistsScheduledDropMessage(link, seq));
     }
 
-    static String[] fragments(String s, int count) {
-        int len = s.length();
+    static String[] fragments(byte[] bytes, int count) {
+        int len = bytes.length;
         if (len < count || count < 1) {
             throw new IllegalArgumentException();
         }
@@ -370,11 +371,13 @@ public class MessageTest implements BMCIntegrationTest {
         String[] arr = new String[count];
         for (int i = 0; i < count; i++) {
             int end = begin + fLen;
+            byte[] fragment = null;
             if (end < len) {
-                arr[i] = s.substring(begin, end);
+                fragment = Arrays.copyOfRange(bytes, begin, end);
             } else {
-                arr[i] = s.substring(begin);
+                fragment = Arrays.copyOfRange(bytes, begin, len);
             }
+            arr[i] = Base64.getUrlEncoder().encodeToString(fragment);
             begin = end;
         }
         return arr;
@@ -389,7 +392,7 @@ public class MessageTest implements BMCIntegrationTest {
         btpMessages.add(btpMessage(svc, sn, payload));
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        String msg = relayMessage.toBase64String();
+        byte[] msg = relayMessage.toBytes();
         int count = 3;
         int last = count - 1;
         String[] fragments = fragments(msg, count);
