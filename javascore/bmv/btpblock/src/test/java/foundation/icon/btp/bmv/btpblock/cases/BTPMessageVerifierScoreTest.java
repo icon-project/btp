@@ -26,19 +26,17 @@ import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.score.util.StringUtil;
 import foundation.icon.test.*;
 import okhttp3.OkHttpClient;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import scorex.util.Base64;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag("integration")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BTPMessageVerifierScoreTest extends TestBase {
     private static final int UNKNOWN = 25;
     private static final int PERMISSION_DENIED = 26;
