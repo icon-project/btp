@@ -26,12 +26,18 @@ optimizedJar {
     }
 }
 
+// need to add this option to retrieve formal parameter names
+compileTestJava {
+    options.compilerArgs += ['-parameters']
+}
+
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
 
 task optimizedJarSample(type: OptimizedJar) {
     mainClassName = 'foundation.icon.btp.xcall.sample.DAppProxySample'
     archiveName("sample-" + archiveVersion.get() + "." + archiveExtension.get());
     from { sourceSets.main.output }
+    from { sourceSets.test.output }
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }

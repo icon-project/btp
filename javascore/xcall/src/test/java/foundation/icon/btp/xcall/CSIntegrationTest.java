@@ -16,8 +16,6 @@
 
 package foundation.icon.btp.xcall;
 
-import foundation.icon.btp.lib.BSH;
-import foundation.icon.btp.lib.BSHScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.icx.Wallet;
@@ -40,9 +38,6 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
 
     @ScoreClient
     CallService callSvc = new CallServiceScoreClient(csClient);
-
-    @ScoreClient
-    BSH callSvcBSH = new BSHScoreClient(csClient);
 
     Wallet tester = ScoreIntegrationTest.getOrGenerateWallet("tester.", System.getProperties());
     DefaultScoreClient csClientWithTester = new DefaultScoreClient(
