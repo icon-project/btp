@@ -22,6 +22,7 @@ import foundation.icon.btp.xcall.ProxyRequest;
 import score.Address;
 import score.Context;
 import score.DictDB;
+import score.UserRevertedException;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -49,7 +50,13 @@ public class DAppProxySample implements CallServiceReceiver {
     }
 
     private BigInteger _sendCallMessage(BigInteger value, String to, byte[] data, byte[] rollback) {
-        return Context.call(BigInteger.class, value, this.callSvc, "sendCallMessage", to, data, rollback);
+        try {
+            return Context.call(BigInteger.class, value, this.callSvc, "sendCallMessage", to, data, rollback);
+        } catch (UserRevertedException e) {
+            // propagate the error code to the caller
+            Context.revert(e.getCode(), "UserReverted");
+            return BigInteger.ZERO; // call flow does not reach here, but make compiler happy
+        }
     }
 
     @Override

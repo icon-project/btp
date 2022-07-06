@@ -192,6 +192,28 @@ class CallServiceImplTest implements CSIntegrationTest {
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
 
+    @Order(4)
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    void maxPayloadsTest() {
+        BigInteger fee = getTotalFixedFees(to.net());
+        byte[][][] cases = {
+                {new byte[CallServiceImpl.MAX_DATA_SIZE + 1], null},
+                {new byte[CallServiceImpl.MAX_DATA_SIZE], new byte[CallServiceImpl.MAX_ROLLBACK_SIZE + 1]},
+        };
+        for (var c : cases) {
+            Map<String, Object> params = new HashMap<>();
+            params.put("_to", to.toString());
+            params.put("_data", c[0]);
+            if (c[1] != null) {
+                params.put("_rollback", c[1]);
+            }
+            AssertRevertedException.assertUserReverted(0, () ->
+                    sampleClient._send(fee, "sendMessage", params)
+            );
+        }
+    }
+
     @Order(9)
     @Test
     void fixedFeesTest() {

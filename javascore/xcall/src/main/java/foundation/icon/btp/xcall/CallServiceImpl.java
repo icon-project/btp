@@ -36,6 +36,8 @@ import java.math.BigInteger;
 public class CallServiceImpl implements BSH, CallService, FixedFees {
     private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
     public static final String SERVICE = "xcall";
+    public static final int MAX_DATA_SIZE = 2048;
+    public static final int MAX_ROLLBACK_SIZE = 1024;
 
     private final VarDB<Address> bmc = Context.newVarDB("bmc", Address.class);
     private final VarDB<String> net = Context.newVarDB("net", String.class);
@@ -110,8 +112,12 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     public BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         Address caller = Context.getCaller();
         Context.require(caller.isContract(), "SenderNotAContract");
-        BTPAddress dst = BTPAddress.valueOf(_to);
 
+        // check size of payloads to avoid abusing
+        Context.require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");
+        Context.require(_rollback == null || _rollback.length <= MAX_ROLLBACK_SIZE, "MaxRollbackSizeExceeded");
+
+        BTPAddress dst = BTPAddress.valueOf(_to);
         BigInteger value = Context.getValue();
         FeeConfig fees = getFees(dst.net());
         Context.require(value.compareTo(fees.getTotalFees()) >= 0, "InsufficientFee");
