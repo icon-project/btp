@@ -178,22 +178,22 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void setRelayerMinBondShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.setRelayerMinBond(bigInteger));
+        assertUnauthorized(() -> relayerManagerWithTester.setRelayerMinBond(bigInteger));
     }
 
     @Test
     void setRelayerTermShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.setRelayerTerm(longVal));
+        assertUnauthorized(() -> relayerManagerWithTester.setRelayerTerm(longVal));
     }
 
     @Test
     void setRelayerRewardRankShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.setRelayerRewardRank(intVal));
+        assertUnauthorized(() -> relayerManagerWithTester.setRelayerRewardRank(intVal));
     }
 
     @Test
     void removeRelayerShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.removeRelayer(address, address));
+        assertUnauthorized(() -> relayerManagerWithTester.removeRelayer(address, address));
     }
 
     @Test
