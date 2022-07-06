@@ -43,14 +43,11 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     ICONSpecific iconSpecific = new ICONSpecificScoreClient(bmcClient);
     @ScoreClient
     OwnerManager ownerManager = new OwnerManagerScoreClient(bmcClient);
-    @ScoreClient
-    RelayerManager relayerManager = new RelayerManagerScoreClient(bmcClient);
 
     DefaultScoreClient bmcClientWithTester = new DefaultScoreClient(bmcClient.endpoint(), bmcClient._nid(), tester, bmcClient._address());
     BMC bmcWithTester = new BMCScoreClient(bmcClientWithTester);
     ICONSpecific iconSpecificWithTester = new ICONSpecificScoreClient(bmcClientWithTester);
     OwnerManager ownerManagerWithTester = new OwnerManagerScoreClient(bmcClientWithTester);
-    RelayerManager relayerManagerWithTester = new RelayerManagerScoreClient(bmcClientWithTester);
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {

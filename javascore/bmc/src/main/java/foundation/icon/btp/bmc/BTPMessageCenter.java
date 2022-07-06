@@ -39,7 +39,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager, RelayerManager {
+public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager {
     private static final Logger logger = Logger.getLogger(BTPMessageCenter.class);
     public static final int BLOCK_INTERVAL_MSEC = 2000;
     public static final String INTERNAL_SERVICE = "bmc";
@@ -73,7 +73,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private final Services services = new Services("services");
     private final Routes routes = new Routes("routes");
     private final Links links = new Links("links");
-    private final RelayerManager relayerManager = new RelayerManagerImpl("relayers");
     private final DictDB<String, BigInteger> btpLinkNetworkIds = Context.newDictDB("btpLinkNetworkIds", BigInteger.class);
     private final DictDB<BigInteger, String> networkIdToLinks = Context.newDictDB("networkIdToLinks", String.class);
 
@@ -483,8 +482,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             properties.setFeeGatheringNext(feeGatheringNext);
             setProperties(properties);
         }
-
-        distributeRelayerReward();
     }
 
     private void handleMessage(BTPAddress prev, BTPMessage msg) {
@@ -1114,93 +1111,10 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         return ownerManager.isOwner(_addr);
     }
 
-    /* Delegate RelayerManager */
-    @Payable
-    @External
-    public void registerRelayer(String _desc) {
-        relayerManager.registerRelayer(_desc);
-    }
-
-    @External
-    public void unregisterRelayer() {
-        relayerManager.unregisterRelayer();
-    }
-
-    @External
-    public void removeRelayer(Address _addr, Address _refund) {
-        requireOwnerAccess();
-        relayerManager.removeRelayer(_addr, _refund);
-    }
-
-    @External(readonly = true)
-    public Map<String, Relayer> getRelayers() {
-        return relayerManager.getRelayers();
-    }
-
-    @External
-    public void distributeRelayerReward() {
-        relayerManager.distributeRelayerReward();
-    }
-
     //FIXME fallback is required?
     @Payable
     public void fallback() {
         logger.println("fallback","value:", Context.getValue());
-    }
-
-    @External
-    public void claimRelayerReward() {
-        relayerManager.claimRelayerReward();
-    }
-
-    @External(readonly = true)
-    public BigInteger getRelayerMinBond() {
-        return relayerManager.getRelayerMinBond();
-    }
-
-    @External
-    public void setRelayerMinBond(BigInteger _value) {
-        requireOwnerAccess();
-        relayerManager.setRelayerMinBond(_value);
-    }
-
-    @External(readonly = true)
-    public long getRelayerTerm() {
-        return relayerManager.getRelayerTerm();
-    }
-
-    @External
-    public void setRelayerTerm(long _value) {
-        requireOwnerAccess();
-        relayerManager.setRelayerTerm(_value);
-    }
-
-    @External(readonly = true)
-    public int getRelayerRewardRank() {
-        return relayerManager.getRelayerRewardRank();
-    }
-
-    @External
-    public void setRelayerRewardRank(int _value) {
-        requireOwnerAccess();
-        relayerManager.setRelayerRewardRank(_value);
-    }
-
-    @External(readonly = true)
-    public long getNextRewardDistribution() {
-        return relayerManager.getNextRewardDistribution();
-    }
-
-    @External
-    public void setNextRewardDistribution(long _height) {
-        requireOwnerAccess();
-        relayerManager.setNextRewardDistribution(_height);
-    }
-
-    // for re-deploy test only, temporary only
-    @External(readonly = true)
-    public RelayersProperties getRelayersProperties() {
-        return relayerManager.getRelayersProperties();
     }
 
     @External
