@@ -12,5 +12,6 @@ include (
         'xcall',
         'fee-aggregation',
         'icon-sdk-java',
+        'debug-bsh'
 )
 project(":icon-sdk-java").projectDir = file("../icon-sdk-java/library")
