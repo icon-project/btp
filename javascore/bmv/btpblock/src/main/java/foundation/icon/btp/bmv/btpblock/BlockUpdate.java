@@ -135,7 +135,10 @@ public class BlockUpdate {
         var prev = r.readNullable(byte[].class);
         var messageCount = r.readBigInteger();
         var messageRoot = r.readNullable(byte[].class);
-        var proof = r.readNullable(byte[].class);
+        byte[] proof = null;
+        if (prev != null) {
+            proof = r.readNullable(byte[].class);
+        }
         var nextProofContext = r.readNullable(byte[].class);
         r.end();
         return new BlockUpdate(
