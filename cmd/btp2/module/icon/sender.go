@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"math/big"
 	"net/url"
 	"strconv"
 	"time"
@@ -230,42 +229,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	if ls.Verifier.LastHeight, err = bs.Verifier.LastHeight.Value(); err != nil {
 		return nil, err
 	}
-	ls.BMRs = make([]struct {
-		Address      string
-		BlockCount   int64
-		MessageCount *big.Int
-	}, len(bs.BMRs))
-	for i, bmr := range bs.BMRs {
-		ls.BMRs[i].Address = string(bmr.Address)
-		if ls.BMRs[i].BlockCount, err = bmr.BlockCount.Value(); err != nil {
-			return nil, err
-		}
-		if ls.BMRs[i].MessageCount, err = bmr.MessageCount.BigInt(); err != nil {
-			return nil, err
-		}
-	}
-	if ls.BMRIndex, err = bs.BMRIndex.Int(); err != nil {
-		return nil, err
-	}
-	if ls.RotateHeight, err = bs.RotateHeight.Value(); err != nil {
-		return nil, err
-	}
-	if ls.RotateTerm, err = bs.RotateTerm.Int(); err != nil {
-		return nil, err
-	}
-	if ls.DelayLimit, err = bs.DelayLimit.Int(); err != nil {
-		return nil, err
-	}
-	if ls.MaxAggregation, err = bs.MaxAggregation.Int(); err != nil {
-		return nil, err
-	}
 	if ls.CurrentHeight, err = bs.CurrentHeight.Value(); err != nil {
-		return nil, err
-	}
-	if ls.RxHeight, err = bs.RxHeight.Value(); err != nil {
-		return nil, err
-	}
-	if ls.RxHeightSrc, err = bs.RxHeightSrc.Value(); err != nil {
 		return nil, err
 	}
 	return ls, nil

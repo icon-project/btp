@@ -221,12 +221,12 @@ type BMCStatus struct {
 
 type BTPBlockParam struct {
 	Height    HexInt `json:"height" validate:"required,t_int"`
-	NetworkId HexInt `json:"networkId" validate:"required,t_int"`
+	NetworkId HexInt `json:"networkID" validate:"required,t_int"`
 }
 
 type BTPNetworkInfoParam struct {
-	Height    HexInt `json:"height" validate:"optional,t_int"`
-	NetworkId HexInt `json:"networkId" validate:"required,t_int"`
+	Height HexInt `json:"height" validate:"optional,t_int"`
+	Id     HexInt `json:"id" validate:"required,t_int"`
 }
 
 type TransactionHashParam struct {

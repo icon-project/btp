@@ -163,6 +163,7 @@ func main() {
 	rootPFlags.Int64("ntid", 1, "network type id")
 	rootPFlags.Int64("nid", 3, "network id")
 	rootPFlags.Int64("proofFlag", 1, "btp2.0 notification proof flag")
+	rootPFlags.Bool("txPoolFlag", false, "Send when the maximum transaction size is reached.")
 
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
 	rootPFlags.String("key_store", "", "KeyStore")

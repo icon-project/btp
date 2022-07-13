@@ -164,33 +164,33 @@ txrLoop:
 	}
 }
 
-func (c *Client) GetBTPHeader(p *BTPBlockParam) (*BTPBlockHeader, error) {
-	result := &BTPBlockHeader{}
-	if _, err := c.Do("btp_getHeader", p, &result); err != nil {
-		return nil, err
+func (c *Client) GetBTPHeader(p *BTPBlockParam) (string, error) {
+	var header string
+	if _, err := c.Do("btp_getHeader", p, &header); err != nil {
+		return "", err
 	}
-	return result, nil
+	return header, nil
 }
 
-func (c *Client) GetBTPMessage(p *BTPBlockParam) ([][]byte, error) {
-	var result [][]byte
+func (c *Client) GetBTPMessage(p *BTPBlockParam) ([]string, error) {
+	var result []string
 	if _, err := c.Do("btp_getMessages", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (c *Client) GetBTPProof(p *BTPBlockParam) ([]byte, error) {
-	var result []byte
+func (c *Client) GetBTPProof(p *BTPBlockParam) (string, error) {
+	var result string
 	if _, err := c.Do("btp_getProof", p, &result); err != nil {
-		return nil, err
+		return "", err
 	}
 	return result, nil
 }
 
 func (c *Client) GetBTPNetworkInfo(p *BTPNetworkInfoParam) (*NetworkInfo, error) {
 	result := &NetworkInfo{}
-	if _, err := c.Do("btp_getNetworkInformation", p, &result); err != nil {
+	if _, err := c.Do("btp_getNetworkInfo", p, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

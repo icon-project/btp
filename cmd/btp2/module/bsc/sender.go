@@ -159,24 +159,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	ls.Verifier.Height = status.Verifier.HeightMTA.Int64()
 	ls.Verifier.Offset = status.Verifier.OffsetMTA.Int64()
 	ls.Verifier.LastHeight = status.Verifier.LastHeight.Int64()
-	ls.BMRs = make([]struct {
-		Address      string
-		BlockCount   int64
-		MessageCount *big.Int
-	}, len(status.Relays))
-	for i, bmr := range status.Relays {
-		ls.BMRs[i].Address = bmr.Addr.String()
-		ls.BMRs[i].BlockCount = bmr.BlockCount.Int64()
-		ls.BMRs[i].MessageCount = bmr.MsgCount
-	}
-	ls.BMRIndex = int(status.RelayIdx.Int64())
-	ls.RotateHeight = status.RotateHeight.Int64()
-	ls.RotateTerm = int(status.RotateTerm.Int64())
-	ls.DelayLimit = int(status.DelayLimit.Int64())
-	ls.MaxAggregation = int(status.MaxAggregation.Int64())
 	ls.CurrentHeight = status.CurrentHeight.Int64()
-	ls.RxHeight = status.RxHeight.Int64()
-	ls.RxHeightSrc = status.RxHeightSrc.Int64()
 	return ls, nil
 }
 

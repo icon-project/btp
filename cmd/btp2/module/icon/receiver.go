@@ -59,25 +59,39 @@ func (r *Receiver) GetBTPBlockHeader(v *BTPNotification) (*BTPBlockHeader, error
 	return &bh, nil
 }
 func (r *Receiver) GetBTPMessage(bh *BTPBlockHeader, nid int64) ([][]byte, error) {
-	p := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
-	b, err := r.c.GetBTPMessage(p)
+	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
+	mgs, err := r.c.GetBTPMessage(pr)
 	if err != nil {
 		return nil, err
 	}
-	return b, nil
+	result := make([][]byte, 0)
+	for _, mg := range mgs {
+		m, err := base64.StdEncoding.DecodeString(mg)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, m)
+	}
+
+	return result, nil
 }
 
 func (r *Receiver) GetBTPProof(bh *BTPBlockHeader, nid int64) ([]byte, error) {
-	p := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
-	b, err := r.c.GetBTPProof(p)
+	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
+	b64p, err := r.c.GetBTPProof(pr)
 	if err != nil {
 		return nil, err
 	}
-	return b, nil
+	proof, err := base64.StdEncoding.DecodeString(b64p)
+	if err != nil {
+		return nil, err
+	}
+
+	return proof, nil
 }
 
 func (r *Receiver) GetBTPNetworkInfo(nid int64) (*NetworkInfo, error) {
-	p := &BTPNetworkInfoParam{NetworkId: HexInt(intconv.FormatInt(nid))}
+	p := &BTPNetworkInfoParam{Id: HexInt(intconv.FormatInt(nid))}
 	b, err := r.c.GetBTPNetworkInfo(p)
 	if err != nil {
 		return nil, err

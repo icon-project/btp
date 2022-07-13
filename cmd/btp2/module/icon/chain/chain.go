@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/icon-project/btp/cmd/btp2/module/icon"
 	"github.com/icon-project/btp/common/mbt"
-	"math"
 	"math/big"
 	"path/filepath"
 	"sync"
@@ -136,28 +135,17 @@ type SimpleChain struct {
 	relaybleHeight int64
 }
 
-func (s *SimpleChain) _relayble(rm *module.RelayMessage) bool {
-	return s.relayble && (s._overMaxAggregation(rm) || s._lastRelaybleHeight())
-}
-func (s *SimpleChain) _overMaxAggregation(rm *module.RelayMessage) bool {
-	return len(rm.BlockUpdates) >= s.bs.MaxAggregation
-}
-func (s *SimpleChain) _lastRelaybleHeight() bool {
-	return s.relaybleHeight == (s.monitorHeight() + 1)
-}
-
-func (s *SimpleChain) _log(prefix string, rm *module.RelayMessage, segment *module.Segment, segmentIdx int) {
+func (s *SimpleChain) _log(prefix string, rm *icon.BTPRelayMessage, segment *module.Segment, segmentIdx int) {
 	if segment == nil {
-		s.l.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
+		s.l.Debugf("%s rm message seq:%, rm height:%, relayLen:%d",
 			prefix,
-			rm.Seq,
-			rm.BlockUpdates[0].Height,
-			rm.BlockUpdates[len(rm.BlockUpdates)-1].Height,
-			len(rm.ReceiptProofs))
+			rm.MessageSeq(),
+			rm.Height(),
+			len(rm.Messages))
 	} else {
 		s.l.Debugf("%s rm:%d [i:%d,h:%d,bu:%d,seq:%d,evt:%d,txh:%v]",
 			prefix,
-			rm.Seq,
+			rm.Height(),
 			segmentIdx,
 			segment.Height,
 			segment.NumberOfBlockUpdate,
@@ -170,9 +158,15 @@ func (s *SimpleChain) _log(prefix string, rm *module.RelayMessage, segment *modu
 func (s *SimpleChain) relay() error {
 	s.rmsMtx.RLock()
 	defer s.rmsMtx.RUnlock()
-	//TODO txlimit check
-	for i := 0; i < len(s.rms); i++ {
-		//s._log("before relay", rm, nil, -1)
+	var rmSize int
+	if s.cfg.TxPoolFlag {
+		rmSize = len(s.rms) - 1
+	} else {
+		rmSize = len(s.rms)
+	}
+
+	for i := 0; i < rmSize; i++ {
+		s._log("before relay", s.rms[i], nil, -1)
 		b, err := codec.RLP.MarshalToBytes(s.rms[i])
 		if err != nil {
 			return err
@@ -186,10 +180,11 @@ func (s *SimpleChain) relay() error {
 			if segment.GetResultParam, err = s.s.Relay(segment); err != nil {
 				s.l.Panicf("fail to Relay err:%+v", err)
 			}
-			//s._log("after relay", rm, segment, j)
+			s._log("after relay", s.rms[i], segment, -1)
 			go s.result(i, segment)
 		}
 	}
+
 	return nil
 }
 
@@ -225,7 +220,6 @@ func (s *SimpleChain) segment() error {
 				return err
 			}
 			b, err := codec.RLP.MarshalToBytes(p)
-			//TODO refactoring
 			//if s.isOverLimit(s.rms[len(s.rms)-1].Size() + s.bds[bdIndex].Mt.ProofLength(s.bds[bdIndex].PartialOffset, endIndex)) {
 			if s.isOverLimit(s.rms[len(s.rms)-1].Size() + len(b)) {
 				tpm, err := icon.NewTypePrefixedMessage(*p)
@@ -313,8 +307,11 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockHeader) error {
 	defer s.rmsMtx.Unlock()
 
 	if bu.Proof == nil {
-		//TODO refactoring base64 decoding
-		bu.Proof, _ = s.r.GetBTPProof(bu, s.cfg.Nid) // TODO error refactoring
+		p, err := s.r.GetBTPProof(bu, s.cfg.Nid)
+		if err != nil {
+			return err
+		}
+		bu.Proof = p
 	}
 	var mt *mbt.MerkleBinaryTree
 	if bu.MessageCount > 0 {
@@ -322,7 +319,7 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockHeader) error {
 		if err != nil {
 			return err
 		}
-		//TODO refactoring base64 decoding
+
 		if mt, err = mbt.NewMerkleBinaryTree(mbt.HashFuncByUID(s.ci.NetworkTypeName), m); err != nil {
 			return err
 		}
@@ -334,15 +331,6 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockHeader) error {
 		Seq:         s.rmSeq,
 		HeightOfDst: s.monitorHeight(),
 		HeightOfSrc: bu.MainHeight}
-
-	//TODO refactoring
-	if s.bs.BlockIntervalDst > 0 {
-		scale := float64(s.bs.BlockIntervalSrc) / float64(s.bs.BlockIntervalDst)
-		guessHeightOfDst := s.bs.RxHeight + int64(math.Ceil(float64(bu.MainHeight-s.bs.RxHeightSrc)/scale)) - 1
-		if guessHeightOfDst < btpBlock.HeightOfDst {
-			btpBlock.HeightOfDst = guessHeightOfDst
-		}
-	}
 
 	s.bds = append(s.bds, btpBlock)
 	s.ci.Update(btpBlock.Bu.MainHeight, s.ci.ch.dstHeight)
@@ -457,20 +445,19 @@ func (s *SimpleChain) init() error {
 
 func (s *SimpleChain) receiveHeight() int64 {
 	//min(max(s.acc.Height(), s.bs.Verifier.Offset), s.bs.Verifier.LastHeight)
+
+	max := s.ci.dstHeight()
+	if max < s.bs.Verifier.Offset {
+		max = s.bs.Verifier.Offset
+	}
+	max += 1
+	min := s.bs.Verifier.LastHeight
+	if max < min {
+		min = max
+	}
+	return min
 	//TODO refactoring
-
-	//max := s.ci.dstHeight()
-	//if max < s.bs.Verifier.Offset {
-	//	max = s.bs.Verifier.Offset
-	//}
-	//max += 1
-	//min := s.bs.Verifier.LastHeight
-	//if max < min {
-	//	min = max
-	//}
-	//return min
-
-	return s.ci.ch.srcHeight
+	//return s.ci.ch.srcHeight
 }
 
 func (s *SimpleChain) monitorHeight() int64 {
