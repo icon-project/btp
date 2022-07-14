@@ -37,13 +37,13 @@ public class BTPMessageVerifier implements BMV {
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
-    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] firstBlockUpdate, BigInteger seqOffset) {
+    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] blockHeader, BigInteger seqOffset) {
         BMVProperties bmvProperties = getProperties();
         bmvProperties.setSrcNetworkID(srcNetworkID);
         bmvProperties.setNetworkTypeID(networkTypeID);
         bmvProperties.setBmc(bmc);
         bmvProperties.setSequenceOffset(seqOffset);
-        handleFirstBlockUpdate(BlockUpdate.fromBytes(firstBlockUpdate), bmvProperties);
+        handleFirstBlockHeader(BlockHeader.fromBytes(blockHeader), bmvProperties);
     }
 
     public BMVProperties getProperties() {
@@ -90,13 +90,13 @@ public class BTPMessageVerifier implements BMV {
         return Map.of("height", getProperties().getHeight().longValue());
     }
 
-    private void handleFirstBlockUpdate(BlockUpdate blockUpdate, BMVProperties bmvProperties) {
-        var prev = blockUpdate.getPrev();
+    private void handleFirstBlockHeader(BlockHeader blockHeader, BMVProperties bmvProperties) {
+        var prev = blockHeader.getPrev();
         if (prev != null) throw BMVException.invalidBlockUpdate("not first blockUpdate");
-        var updateNumber = blockUpdate.getUpdateNumber();
-        var blockUpdateNid = blockUpdate.getNid();
-        var msgCnt = blockUpdate.getMessageCount();
-        var msgRoot = blockUpdate.getMessageRoot();
+        var updateNumber = blockHeader.getUpdateNumber();
+        var blockUpdateNid = blockHeader.getNid();
+        var msgCnt = blockHeader.getMessageCount();
+        var msgRoot = blockHeader.getMessageRoot();
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
                 updateNumber,
@@ -105,8 +105,8 @@ public class BTPMessageVerifier implements BMV {
                 msgRoot
         );
         var nsHash = ns.hash();
-        var nextProofContextHash = blockUpdate.getNextProofContextHash();
-        var nextProofContext = blockUpdate.getNextProofContext();
+        var nextProofContextHash = blockHeader.getNextProofContextHash();
+        var nextProofContext = blockHeader.getNextProofContext();
         if (!Arrays.equals(hash(nextProofContext), nextProofContextHash))
             throw BMVException.invalidBlockUpdate("mismatch Hash of proofContext");
         bmvProperties.setNetworkID(blockUpdateNid);
@@ -116,53 +116,54 @@ public class BTPMessageVerifier implements BMV {
         bmvProperties.setLastSequence(BigInteger.ZERO);
         bmvProperties.setLastMessagesRoot(msgRoot);
         bmvProperties.setLastMessageCount(msgCnt);
-        bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
-        bmvProperties.setHeight(blockUpdate.getMainHeight());
+        bmvProperties.setLastFirstMessageSN(blockHeader.getFirstMessageSn());
+        bmvProperties.setHeight(blockHeader.getMainHeight());
         propertiesDB.set(bmvProperties);
     }
 
     private void handleBlockUpdateMessage(BlockUpdate blockUpdate) {
         var bmvProperties = propertiesDB.get();
         var networkID = bmvProperties.getNetworkID();
-        var updateNumber = blockUpdate.getUpdateNumber();
-        var blockUpdateNid = blockUpdate.getNid();
-        var prev = blockUpdate.getPrev();
+        var blockHeader = blockUpdate.getBlockHeader();
+        var updateNumber = blockHeader.getUpdateNumber();
+        var blockUpdateNid = blockHeader.getNid();
+        var prev = blockHeader.getPrev();
         if (bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) != 0) throw BMVException.invalidBlockUpdate("remain must be zero");
         if (networkID.compareTo(blockUpdateNid) != 0) throw BMVException.invalidBlockUpdate("invalid network id");
         if (!Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev)) throw BMVException.invalidBlockUpdate("mismatch networkSectionHash");
-        if (bmvProperties.getLastSequence().compareTo(blockUpdate.getFirstMessageSn()) != 0) throw BMVException.invalidBlockUpdate("invalid first message sequence of blockUpdate");
+        if (bmvProperties.getLastSequence().compareTo(blockHeader.getFirstMessageSn()) != 0) throw BMVException.invalidBlockUpdate("invalid first message sequence of blockUpdate");
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
                 updateNumber,
                 prev,
-                blockUpdate.getMessageCount(),
-                blockUpdate.getMessageRoot()
+                blockHeader.getMessageCount(),
+                blockHeader.getMessageRoot()
         );
         var nsHash = ns.hash();
-        var nsRoot = blockUpdate.getNetworkSectionsRoot(nsHash);
-        var nextProofContextHash = blockUpdate.getNextProofContextHash();
+        var nsRoot = blockHeader.getNetworkSectionsRoot(nsHash);
+        var nextProofContextHash = blockHeader.getNextProofContextHash();
         NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
         var srcNetworkID = bmvProperties.getSrcNetworkID();
         var networkTypeID = bmvProperties.getNetworkTypeID();
-        var height = blockUpdate.getMainHeight();
-        var round = blockUpdate.getRound();
+        var height = blockHeader.getMainHeight();
+        var round = blockHeader.getRound();
         var ntsHash = nts.hash();
         NetworkTypeSectionDecision decision = new NetworkTypeSectionDecision(
                 srcNetworkID, networkTypeID, height.longValue(), round.intValue(), ntsHash);
-        Proofs proofs = Proofs.fromBytes(blockUpdate.getProof());
+        Proofs proofs = Proofs.fromBytes(blockUpdate.getBlockProof());
         var isUpdate = updateNumber.and(BigInteger.ONE).compareTo(BigInteger.ONE) == 0;
         verifyProof(decision, proofs);
         if (isUpdate) {
-            var nextProofContext = blockUpdate.getNextProofContext();
+            var nextProofContext = blockHeader.getNextProofContext();
             verifyProofContextData(nextProofContextHash, nextProofContext, bmvProperties.getProofContextHash());
             bmvProperties.setProofContextHash(nextProofContextHash);
             bmvProperties.setProofContext(nextProofContext);
         }
-        bmvProperties.setLastMessagesRoot(blockUpdate.getMessageRoot());
-        bmvProperties.setLastMessageCount(blockUpdate.getMessageCount());
-        bmvProperties.setLastFirstMessageSN(blockUpdate.getFirstMessageSn());
+        bmvProperties.setLastMessagesRoot(blockHeader.getMessageRoot());
+        bmvProperties.setLastMessageCount(blockHeader.getMessageCount());
+        bmvProperties.setLastFirstMessageSN(blockHeader.getFirstMessageSn());
         bmvProperties.setLastNetworkSectionHash(nsHash);
-        bmvProperties.setHeight(blockUpdate.getMainHeight());
+        bmvProperties.setHeight(blockHeader.getMainHeight());
         propertiesDB.set(bmvProperties);
     }
 
@@ -201,8 +202,9 @@ public class BTPMessageVerifier implements BMV {
         if (bmvProperties.getProcessedMessageCount().compareTo(BigInteger.valueOf(result.offset)) != 0)
             throw BMVException.invalidMessageProof("invalid ProofInLeft.NumberOfLeaf");
         if (blockUpdate != null ) {
-            expectedMessageRoot = blockUpdate.getMessageRoot();
-            expectedMessageCnt = blockUpdate.getMessageCount();
+            var blockHeader = blockUpdate.getBlockHeader();
+            expectedMessageRoot = blockHeader.getMessageRoot();
+            expectedMessageCnt = blockHeader.getMessageCount();
             if (0 < result.offset) {
                 throw BMVException.invalidMessageProof("ProofInLeft should be empty");
             }
