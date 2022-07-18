@@ -87,7 +87,13 @@ public class BTPMessageVerifier implements BMV {
 
     @External(readonly = true)
     public Map getStatus() {
-        return Map.of("height", getProperties().getHeight().longValue());
+        var properties = getProperties();
+        return Map.of(
+                "height", properties.getHeight().longValue(),
+                "sequence_offset", properties.getSequenceOffset().longValue(),
+                "first_message_sn", properties.getLastFirstMessageSN().longValueExact(),
+                "message_count", properties.getLastMessageCount().longValue()
+        );
     }
 
     private void handleFirstBlockHeader(BlockHeader blockHeader, BMVProperties bmvProperties) {
