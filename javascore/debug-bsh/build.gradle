@@ -31,10 +31,11 @@ deployJar {
     }
     keystore = scoreTest.default.keyStore
     password = scoreTest.default.keyPassword
-    parameters {[
-            arg('_svc', 'serviceName'),
-            arg('_bmc', 'cx?'),
-    ]
+    parameters {
+        [
+                arg('_bmc', 'cx?'),
+                arg('_svc', 'serviceName'),
+        ]
     }
 }
 

@@ -30,7 +30,7 @@ public class DebugBSH {
     private final VarDB<Address> bmcDB = Context.newVarDB("bmc", Address.class);
     private final VarDB<String> svcDB = Context.newVarDB("svc", String.class);
 
-    public DebugBSH(String _svc, Address _bmc) {
+    public DebugBSH(Address _bmc, String _svc) {
         serialNoDB.set(BigInteger.ZERO);
         bmcDB.set(_bmc);
         svcDB.set(_svc);
@@ -52,16 +52,17 @@ public class DebugBSH {
     }
 
     @External
-    public void sendMessage(Address _bmc, String _to, byte[] _msg) {
+    public void sendMessage(String _to, byte[] _msg) {
         var sn = generateSerialNumber();
         var svc = svcDB.get();
-        sendRawMessage(_bmc, _to, svc, sn, _msg);
+        var bmc = bmcDB.get();
+        sendRawMessage(bmc, _to, svc, sn, _msg);
     }
 
     @External
-    public void sendRawMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
+    public void sendRawMessage(Address _bmc, String _svc, String _network, BigInteger _sn, byte[] _msg) {
         BMCScore bmc = new BMCScore(_bmc);
-        bmc.sendMessage(_to, _svc, _sn, _msg);
+        bmc.sendMessage(_network, _svc, _sn, _msg);
     }
 
     private BigInteger generateSerialNumber() {
