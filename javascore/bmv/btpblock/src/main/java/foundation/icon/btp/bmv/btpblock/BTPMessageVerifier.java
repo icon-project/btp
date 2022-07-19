@@ -134,10 +134,13 @@ public class BTPMessageVerifier implements BMV {
         var updateNumber = blockHeader.getUpdateNumber();
         var blockUpdateNid = blockHeader.getNid();
         var prev = blockHeader.getPrev();
+        var firstMessageSn = bmvProperties.getLastFirstMessageSN();
+        var messageCount = bmvProperties.getLastMessageCount();
+        var seqOffset = bmvProperties.getSequenceOffset();
         if (bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) != 0) throw BMVException.invalidBlockUpdate("remain must be zero");
         if (networkID.compareTo(blockUpdateNid) != 0) throw BMVException.invalidBlockUpdate("invalid network id");
         if (!Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev)) throw BMVException.invalidBlockUpdate("mismatch networkSectionHash");
-        if (bmvProperties.getLastSequence().compareTo(blockHeader.getFirstMessageSn()) != 0) throw BMVException.invalidBlockUpdate("invalid first message sequence of blockUpdate");
+        if (firstMessageSn.add(messageCount).compareTo(seqOffset.add(blockHeader.getFirstMessageSn())) != 0) throw BMVException.invalidBlockUpdate("invalid first message sequence of blockUpdate");
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
                 updateNumber,
