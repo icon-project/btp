@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 // TODO Support upgradable bmv
 contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
 
-    using BlockUpdateLib for BlockUpdateLib.BlockUpdate;
+    using BlockUpdateLib for BlockUpdateLib.Header;
     using MessageProofLib for MessageProofLib.MessageProof;
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
@@ -48,7 +48,7 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
         _networkTypeId = networkTypeId_;
         _networkId = networkId_;
 
-        BlockUpdateLib.BlockUpdate memory bu = BlockUpdateLib.decode(firstBlockUpdate);
+        BlockUpdateLib.Header memory bu = BlockUpdateLib.decodeHeader(firstBlockUpdate);
         _height = bu.mainHeight;
         _nextMessageSn = bu.messageSn;
         _messageCount = _remainMessageCount = bu.messageCount;
@@ -57,8 +57,8 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
         _validators = bu.nextValidators;
     }
 
-    function getStatus() external view returns (uint) {
-        return _height;
+    function getStatus() external view returns (uint, uint, uint, uint) {
+        return (_height, 0, 0, 0);
     }
 
     // NOTE: Using bytes message instead of base64url during development

@@ -36,7 +36,7 @@ library RelayMessageLib {
     function toBlockUpdate(RelayMessage memory rm)
     internal
     pure
-    returns (BlockUpdateLib.BlockUpdate memory)
+    returns (BlockUpdateLib.Header memory, BlockUpdateLib.Proof memory)
     {
         require(rm.typ == TypeBlockUpdate, "RelayMessage: Support only BlockUpdate type");
         return BlockUpdateLib.decode(rm.mesg);

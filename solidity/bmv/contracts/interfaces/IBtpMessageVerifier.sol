@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >= 0.5.0;
-pragma abicoder v2;
+pragma solidity > 0.5.8;
+pragma experimental ABIEncoderV2;
 
 interface IBtpMessageVerifier {
 
-    function getStatus() external view returns (uint256);
+    function getStatus() external view returns (uint, uint, uint, uint);
 
     /**
         @notice Decodes Relay Messages and process BTP Messages.

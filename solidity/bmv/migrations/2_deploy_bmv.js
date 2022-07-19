@@ -17,18 +17,21 @@ module.exports = async function (deployer, network, accounts) {
 
     deployer.deploy(RLPReader);
 
-    deployer.link(RLPReader, RelayMessageLib);
-    deployer.deploy(RelayMessageLib);
-
     deployer.deploy(MerkleTreeLib);
     deployer.deploy(RLPEncode);
 
     deployer.link(MerkleTreeLib, BlockUpdateLib);
     deployer.link(RLPEncode, BlockUpdateLib);
+    deployer.link(RLPReader, BlockUpdateLib);
     deployer.deploy(BlockUpdateLib);
 
     deployer.link(RLPReader, MessageProofLib);
     deployer.deploy(MessageProofLib);
+
+    deployer.link(RLPReader, RelayMessageLib);
+    deployer.link(BlockUpdateLib, RelayMessageLib);
+    deployer.link(MessageProofLib, RelayMessageLib);
+    deployer.deploy(RelayMessageLib);
 
     deployer.link(RelayMessageLib, BtpMessageVerifier);
     deployer.deploy(Utils);
