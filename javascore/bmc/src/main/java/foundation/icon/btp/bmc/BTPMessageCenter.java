@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.*;
-import foundation.icon.score.util.*;
 import foundation.icon.score.util.ArrayUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
@@ -41,7 +40,7 @@ import java.util.Map;
 
 public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager {
     private static final Logger logger = Logger.getLogger(BTPMessageCenter.class);
-    public static final int BLOCK_INTERVAL_MSEC = 2000;
+
     public static final String INTERNAL_SERVICE = "bmc";
     private static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
 
@@ -75,6 +74,9 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private final Links links = new Links("links");
     private final DictDB<String, BigInteger> btpLinkNetworkIds = Context.newDictDB("btpLinkNetworkIds", BigInteger.class);
     private final DictDB<BigInteger, String> networkIdToLinks = Context.newDictDB("networkIdToLinks", String.class);
+
+    public static final int BLOCK_INTERVAL_MSEC = 2000;
+    private final DictDB<String, RelayRotation> relayRotations = Context.newDictDB("relayRotations", RelayRotation.class);
 
     public BTPMessageCenter(String _net) {
         this.btpAddr = new BTPAddress(BTPAddress.PROTOCOL_BTP, _net, Context.getAddress().toString());
@@ -210,7 +212,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.setAddr(target);
         link.setRxSeq(BigInteger.ZERO);
         link.setTxSeq(BigInteger.ZERO);
-        link.setBlockIntervalSrc(BLOCK_INTERVAL_MSEC);
         link.setSackSeq(BigInteger.ZERO);
         link.setReachable(new ArrayList<>());
         putLink(link);
@@ -264,15 +265,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             relays[i++] = bmrStatus;
         }
         map.put("relays", relays);
-        map.put("block_interval_src", link.getBlockIntervalSrc());
-        map.put("block_interval_dst", link.getBlockIntervalDst());
-        map.put("max_agg", link.getMaxAggregation());
-        map.put("delay_limit", link.getDelayLimit());
-        map.put("relay_idx", link.getRelayIdx());
-        map.put("rotate_height", link.getRotateHeight());
-        map.put("rotate_term", link.rotateTerm());
-        map.put("rx_height", link.getRxHeight());
-        map.put("rx_height_src", link.getRxHeightSrc());
         map.put("sack_term", link.getSackTerm());
         map.put("sack_next", link.getSackNext());
         map.put("sack_height", link.getSackHeight());
@@ -373,9 +365,11 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private void handleRelayMessage(String _prev, byte[] msgBytes) {
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
+        BigInteger rxSeq = link.getRxSeq();
+
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
         BMVStatus prevStatus = verifier.getStatus(BMVStatus.class);
-        BigInteger rxSeq = link.getRxSeq();
+
         // decode and verify relay message
         byte[][] serializedMsgs = null;
         try {
@@ -389,16 +383,22 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         long msgCount = serializedMsgs.length;
 
         // rotate and check valid relay
-        long currentHeight = Context.getBlockHeight();
-        BMVStatus status = verifier.getStatus(BMVStatus.class);
+        BMVStatus status = null;
         Relays relays = link.getRelays();
-        Relay relay = link.rotate(currentHeight, status.getLast_height(), msgCount > 0);
-        if (relay == null) {
-            //rotateRelay is disabled.
+        Relay relay = null;
+        long currentHeight = Context.getBlockHeight();
+        RelayRotation rotation = relayRotations.getOrDefault(_prev, RelayRotation.DEFAULT);
+        if (rotation.isRelayRotationEnabled()) {
+            status = verifier.getStatus(BMVStatusForRotation.class);
+            rotation.rotate(((BMVStatusForRotation)status).getLast_height(), msgCount > 0, relays.size());
+            relay = relays.getByIndex(rotation.getRelayIdx());
+            relayRotations.set(_prev, rotation);
+        } else {
+            status = verifier.getStatus(BMVStatus.class);
             relay = relays.get(Context.getOrigin());
-            if (relay == null) {
-                throw BMCException.unauthorized("not registered relay");
-            }
+        }
+        if (relay == null) {
+            throw BMCException.unauthorized("not registered relay");
         } else if (!relay.getAddress().equals(Context.getOrigin())) {
             throw BMCException.unauthorized("invalid relay");
         }
@@ -901,37 +901,20 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     public void MessageDropped(String _link, BigInteger _seq, byte[] _msg) {}
 
     @External
-    public void setLinkRotateTerm(String _link, int _block_interval, int _max_agg) {
+    public void setRelayRotation(String _link, int _block_interval, int _max_agg, int _delay_limit) {
         requireOwnerAccess();
         BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
-        if (_block_interval < 0 || _max_agg < 1) {
-            throw BMCException.unknown("invalid param");
-        }
-        int oldRotateTerm = link.rotateTerm();
-        link.setBlockIntervalDst(_block_interval);
-        link.setMaxAggregation(_max_agg);
-        int rotateTerm = link.rotateTerm();
-        if (oldRotateTerm == 0 && rotateTerm > 0) {
-            long currentHeight = Context.getBlockHeight();
-            link.setRotateHeight(currentHeight + rotateTerm);
-            link.setRxHeight(currentHeight);
-            BMVScoreInterface verifier = getVerifier(target.net());
-            link.setRxHeightSrc(verifier.getStatus(BMVStatus.class).getHeight());
-        }
-        putLink(link);
+        requireLink(target);
+        RelayRotation rotation = relayRotations.getOrDefault(_link, RelayRotation.DEFAULT);
+        rotation.reset(BLOCK_INTERVAL_MSEC, _block_interval, _max_agg, _delay_limit);
+        relayRotations.set(_link, rotation);
     }
 
-    @External
-    public void setLinkDelayLimit(String _link, int _value) {
-        requireOwnerAccess();
+    @External(readonly = true)
+    public RelayRotation getRelayRotation(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
-        if (_value < 1) {
-            throw BMCException.unknown("invalid param");
-        }
-        link.setDelayLimit(_value);
-        putLink(link);
+        requireLink(target);
+        return relayRotations.get(_link);
     }
 
     @External

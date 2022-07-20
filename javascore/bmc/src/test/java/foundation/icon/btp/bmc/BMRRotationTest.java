@@ -17,10 +17,10 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMCScoreClient;
-import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.mock.MockBSH;
 import foundation.icon.btp.mock.MockRelayMessage;
+import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.icx.Wallet;
@@ -35,10 +35,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class BMRRotationTest implements BMCIntegrationTest {
     static BTPAddress linkBtpAddress = BMCIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
+    static BTPAddress secondLinkBtpAddress = BTPIntegrationTest.Faker.btpLink();
+    static String secondLink = secondLinkBtpAddress.toString();
     static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
     static String svc = MockBSH.SERVICE;
     static int numOfRelays = 3;
@@ -60,6 +64,14 @@ public class BMRRotationTest implements BMCIntegrationTest {
         return btpMsg;
     }
 
+    void setRelayRotation(String link) {
+        iconSpecific.setRelayRotation(link, blockInterval, maxAggregation, delayLimit);
+        RelayRotation rotation = iconSpecific.getRelayRotation(link);
+        assertEquals(blockInterval, rotation.getBlockIntervalDst());
+        assertEquals(maxAggregation, rotation.getMaxAggregation());
+        assertEquals(delayLimit, rotation.getDelayLimit());
+    }
+
     @BeforeAll
     static void beforeAll() {
         System.out.println("beforeAll start");
@@ -67,8 +79,7 @@ public class BMRRotationTest implements BMCIntegrationTest {
         BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
         LinkManagementTest.addLink(link);
         MockBMVIntegrationTest.mockBMV.setHeight(client._lastBlockHeight().longValue());
-        iconSpecific.setLinkRotateTerm(link, blockInterval, maxAggregation);
-        iconSpecific.setLinkDelayLimit(link, delayLimit);
+        iconSpecific.setRelayRotation(link, blockInterval, maxAggregation, delayLimit);
         for (int i = 0; i < numOfRelays; i++) {
             Wallet wallet = ScoreIntegrationTest.generateWallet();
             relays[i] = new BMCScoreClient(
@@ -96,38 +107,18 @@ public class BMRRotationTest implements BMCIntegrationTest {
         System.out.println("afterAll end");
     }
 
-    static int rotateRelayIdx(int idx, int num) {
-        idx += num;
-        return idx >= numOfRelays ? 0 : idx;
-    }
-
-    static int rotate(BMCStatus status, long at) {
-        long rotateHeight = status.getRotate_height();
-        int rotateTerm = status.getRotate_term();
-        int rotateCnt = (int)StrictMath.ceil((double)(at - rotateHeight)/(double)rotateTerm);
-        int relayIdx = status.getRelay_idx();
-        if (rotateCnt > 0) {
-            rotateHeight += ((long) rotateCnt * rotateTerm);
-            relayIdx = rotateRelayIdx(status.getRelay_idx(), rotateCnt);
-        }
-        System.out.println("rotateCnt:"+rotateCnt+
-                ", relayIdx:"+relayIdx+
-                ", rotateHeight:"+rotateHeight+
-                ", at:"+at);
-        return relayIdx;
-    }
-
     @Test
     void relayRotationNotContainsBTPMessage() throws Exception {
         MockRelayMessage relayMessage = new MockRelayMessage();
         ExecutorService executorService = Executors.newFixedThreadPool(numOfRelays);
 
         for (int i = 0; i < numOfRelays; i++) {
-            BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
-            System.out.println(status);
+            RelayRotation rotation = iconSpecific.getRelayRotation(link);
+            System.out.println(rotation);
 
-            long sendTxHeight = status.getCur_height();
-            int relayIdx = rotate(status, sendTxHeight + executeMargin);
+            long sendTxHeight = BMCIntegrationTest.getStatus(bmc, link).getCur_height();
+            rotation.rotate(sendTxHeight + executeMargin, sendTxHeight, false, numOfRelays);
+            int relayIdx = rotation.getRelayIdx();
             relayMessage.setHeight(sendTxHeight);
             String msg = relayMessage.toBase64String();
 
@@ -149,45 +140,8 @@ public class BMRRotationTest implements BMCIntegrationTest {
                 future.get();
             }
             //wait to rotateHeight
-            ScoreIntegrationTest.waitByHeight(BMCIntegrationTest.getStatus(bmc, link).getRotate_height());
+            ScoreIntegrationTest.waitByHeight(iconSpecific.getRelayRotation(link).getRotateHeight());
         }
-    }
-
-    static int guessRotate(BMCStatus status, long msgHeight, long at) {
-        double scale = (double) status.getBlock_interval_src() / (double) status.getBlock_interval_dst();
-        long guessHeight = status.getRx_height() +
-                (long) StrictMath.ceil(
-                        (double) (msgHeight - status.getRx_height_src()) / scale) - 1;
-        if (guessHeight > at) {
-            System.out.println("guessHeight > at,"+guessHeight);
-            guessHeight = at;
-        }
-        long rotateHeight = status.getRotate_height();
-        int rotateTerm = status.getRotate_term();
-        int rotateCnt = (int)StrictMath.ceil((double)(guessHeight - rotateHeight)/(double)rotateTerm);
-        if (rotateCnt < 0) {
-            rotateCnt = 0;
-        } else {
-            rotateHeight += ((long) rotateCnt * rotateTerm);
-        }
-        int skipCnt = (int)StrictMath.ceil((double)(at - guessHeight)/(double)delayLimit) - 1;
-        if (skipCnt > 0) {
-            rotateHeight = at + rotateTerm;
-        } else {
-            skipCnt = 0;
-        }
-        int relayIdx = status.getRelay_idx();
-        if (rotateCnt > 0 || skipCnt > 0) {
-            relayIdx = rotateRelayIdx(status.getRelay_idx(), rotateCnt + skipCnt);
-        }
-        System.out.println("guessHeight:"+guessHeight+
-                ", rotateCnt:"+rotateCnt+
-                ", skipCnt:"+skipCnt+
-                ", relayIdx:"+relayIdx+
-                ", rotateHeight:"+rotateHeight+
-                ", msgHeight:"+msgHeight+
-                ", at:"+at);
-        return relayIdx;
     }
 
     @Test
@@ -201,11 +155,13 @@ public class BMRRotationTest implements BMCIntegrationTest {
 
         ExecutorService executorService = Executors.newFixedThreadPool(numOfRelays);
         for (int i = 0; i < numOfRelays; i++) {
-            BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
-            System.out.println(status);
-            long msgHeight = status.getCur_height();
+            RelayRotation rotation = iconSpecific.getRelayRotation(link);
+            System.out.println(rotation);
+
+            long msgHeight = BMCIntegrationTest.getStatus(bmc, link).getCur_height();
             long sendTxHeight = msgHeight + delayLimit;
-            int relayIdx = guessRotate(status, msgHeight, sendTxHeight+executeMargin);
+            rotation.rotate(sendTxHeight + executeMargin, msgHeight, true, numOfRelays);
+            int relayIdx = rotation.getRelayIdx();
             relayMessage.setHeight(msgHeight);
             relayMessage.setLastHeight(relayMessage.getHeight());
             String msg = relayMessage.toBase64String();
@@ -236,6 +192,28 @@ public class BMRRotationTest implements BMCIntegrationTest {
             relayMessage.setLastHeight(relayMessage.getHeight());
             relays[relayIdx].handleRelayMessage(link, relayMessage.toBase64String());
         }
+    }
+
+    @Test
+    void setRelayRotationShouldSuccess() {
+        setRelayRotation(link);
+    }
+
+    @Test
+    void setRelayRotationShouldRevertNotExistsLink() {
+        AssertBMCException.assertNotExistsLink(
+                () -> setRelayRotation(secondLink));
+    }
+
+    @Test
+    void setRelayRotationShouldRevertIllegalArgument() {
+        int invalidValue = -2;
+        AssertBMCException.assertUnknown(
+                () -> iconSpecific.setRelayRotation(link, invalidValue, maxAggregation, delayLimit));
+        AssertBMCException.assertUnknown(
+                () -> iconSpecific.setRelayRotation(link, blockInterval, invalidValue, delayLimit));
+        AssertBMCException.assertUnknown(
+                () -> iconSpecific.setRelayRotation(link, blockInterval, maxAggregation, invalidValue));
     }
 
 }

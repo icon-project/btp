@@ -79,7 +79,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
                     assertArrayEquals(new byte[][]{}, el.getRet());
                 }),
                 bmc, prev, seq, relayMessage.toBytes());
-        BMVStatus status = MockBMVIntegrationTest.getStatus(mockBMV);
+        MockBMVProperties status = MockBMVIntegrationTest.getStatus(mockBMV);
         assertEquals(relayMessage.getHeight(), status.getHeight());
         assertEquals(relayMessage.getLastHeight(), status.getLast_height());
         assertEquals(relayMessage.getOffset(), status.getOffset());

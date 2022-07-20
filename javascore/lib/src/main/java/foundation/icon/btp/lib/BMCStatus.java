@@ -28,17 +28,6 @@ public class BMCStatus {
     private Map verifier;
     private BMRStatus[] relays;
 
-    private int block_interval_src;
-    private int block_interval_dst;
-    private int max_agg;
-    private int delay_limit;
-
-    private int relay_idx;
-    private long rotate_height;
-    private int rotate_term;
-    private long rx_height; //initialize with BMC.block_height
-    private long rx_height_src; //initialize with BMV._offset
-
     private int sack_term; //0: disable sack
     private long sack_next;
     private long sack_height;
@@ -84,96 +73,6 @@ public class BMCStatus {
     @Keep
     public void setRelays(BMRStatus[] relays) {
         this.relays = relays;
-    }
-
-    @Keep
-    public int getBlock_interval_src() {
-        return block_interval_src;
-    }
-
-    @Keep
-    public void setBlock_interval_src(int block_interval_src) {
-        this.block_interval_src = block_interval_src;
-    }
-
-    @Keep
-    public int getBlock_interval_dst() {
-        return block_interval_dst;
-    }
-
-    @Keep
-    public void setBlock_interval_dst(int block_interval_dst) {
-        this.block_interval_dst = block_interval_dst;
-    }
-
-    @Keep
-    public int getMax_agg() {
-        return max_agg;
-    }
-
-    @Keep
-    public void setMax_agg(int max_agg) {
-        this.max_agg = max_agg;
-    }
-
-    @Keep
-    public int getDelay_limit() {
-        return delay_limit;
-    }
-
-    @Keep
-    public void setDelay_limit(int delay_limit) {
-        this.delay_limit = delay_limit;
-    }
-
-    @Keep
-    public int getRelay_idx() {
-        return relay_idx;
-    }
-
-    @Keep
-    public void setRelay_idx(int relay_idx) {
-        this.relay_idx = relay_idx;
-    }
-
-    @Keep
-    public long getRotate_height() {
-        return rotate_height;
-    }
-
-    @Keep
-    public void setRotate_height(long rotate_height) {
-        this.rotate_height = rotate_height;
-    }
-
-    @Keep
-    public int getRotate_term() {
-        return rotate_term;
-    }
-
-    @Keep
-    public void setRotate_term(int rotate_term) {
-        this.rotate_term = rotate_term;
-    }
-
-    @Keep
-    public long getRx_height() {
-        return rx_height;
-    }
-
-    @Keep
-    public void setRx_height(long rx_height) {
-        this.rx_height = rx_height;
-    }
-
-    @Keep
-    public long getRx_height_src() {
-        return rx_height_src;
-    }
-
-    @Keep
-    public void setRx_height_src(long rx_height_src) {
-        this.rx_height_src = rx_height_src;
     }
 
     @Keep
@@ -233,15 +132,6 @@ public class BMCStatus {
         sb.append(", tx_seq=").append(tx_seq);
         sb.append(", verifier=").append(verifier);
         sb.append(", relays=").append(StringUtil.toString(relays));
-        sb.append(", block_interval_src=").append(block_interval_src);
-        sb.append(", block_interval_dst=").append(block_interval_dst);
-        sb.append(", max_agg=").append(max_agg);
-        sb.append(", delay_limit=").append(delay_limit);
-        sb.append(", relay_idx=").append(relay_idx);
-        sb.append(", rotate_height=").append(rotate_height);
-        sb.append(", rotate_term=").append(rotate_term);
-        sb.append(", rx_height=").append(rx_height);
-        sb.append(", rx_height_src=").append(rx_height_src);
         sb.append(", sack_term=").append(sack_term);
         sb.append(", sack_next=").append(sack_next);
         sb.append(", sack_height=").append(sack_height);

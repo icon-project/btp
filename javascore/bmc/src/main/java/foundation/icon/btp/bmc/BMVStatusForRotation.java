@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.lib;
+package foundation.icon.btp.bmc;
 
-public class BMVStatus {
-    private long height;
+import foundation.icon.btp.lib.BMVStatus;
 
-    public BMVStatus() {
+public class BMVStatusForRotation extends BMVStatus {
+    private long last_height;
+
+    public long getLast_height() {
+        return last_height;
     }
 
-    public long getHeight() {
-        return height;
-    }
-
-    public void setHeight(long height) {
-        this.height = height;
+    public void setLast_height(long last_height) {
+        this.last_height = last_height;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("BMVStatus{");
-        sb.append("height=").append(height);
+        final StringBuilder sb = new StringBuilder("BMVStatusForRotation{");
+        sb.append("last_height=").append(last_height);
         sb.append('}');
         return sb.toString();
     }

@@ -33,6 +33,9 @@ public class MockBMVProperties extends BMVStatus {
         DEFAULT.setLast_height(Context.getBlockHeight());
     }
 
+    private long offset;
+    private long last_height;
+
     public MockBMVProperties() {
         super();
     }
@@ -40,8 +43,22 @@ public class MockBMVProperties extends BMVStatus {
     public MockBMVProperties(BMVStatus obj) {
         super();
         this.setHeight(obj.getHeight());
-        this.setOffset(obj.getOffset());
-        this.setLast_height(obj.getLast_height());
+    }
+
+    public long getOffset() {
+        return offset;
+    }
+
+    public void setOffset(long offset) {
+        this.offset = offset;
+    }
+
+    public long getLast_height() {
+        return last_height;
+    }
+
+    public void setLast_height(long last_height) {
+        this.last_height = last_height;
     }
 
     @Override

@@ -46,9 +46,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
     static String dst = BTPIntegrationTest.Faker.btpLink().toString();
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
 
-    static int blockInterval = 1000;
-    static int maxAgg = 100;
-    static int delayLimit = 2;
     static int sackTerm = 10;
 
     static Consumer<List<BMCMessage>> initMessageChecker(List<String> links) {
@@ -109,13 +106,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
             System.out.println("clear link btpAddress:" + link);
             removeLink(link);
         }
-    }
-
-    void setLinkRotateTerm(String link) {
-        iconSpecific.setLinkRotateTerm(link, blockInterval, maxAgg);
-        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
-        assertEquals(blockInterval, status.getBlock_interval_dst());
-        assertEquals(maxAgg, status.getMax_agg());
     }
 
     static boolean isExistsRoute(String dst, String link) {
@@ -289,45 +279,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
 //        }
 //        System.out.println("afterLinkRequiredTests end on "+testInfo.getDisplayName());
 //    }
-
-    @Test
-    void setLinkRotateTermShouldSuccess() {
-        setLinkRotateTerm(link);
-    }
-
-    @Test
-    void setLinkRotateTermShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(
-                () -> setLinkRotateTerm(secondLink));
-    }
-
-    @Test
-    void setLinkRotateTermShouldRevertIllegalArgument() {
-        int invalidValue = -1;
-        AssertBMCException.assertUnknown(
-                () -> iconSpecific.setLinkRotateTerm(link, invalidValue, maxAgg));
-        AssertBMCException.assertUnknown(
-                () -> iconSpecific.setLinkRotateTerm(link, blockInterval, invalidValue));
-    }
-
-    @Test
-    void setLinkDelayLimitShouldSuccess() {
-        iconSpecific.setLinkDelayLimit(link, delayLimit);
-        assertEquals(delayLimit, BMCIntegrationTest.getStatus(bmc, link).getDelay_limit());
-    }
-
-    @Test
-    void setLinkDelayLimitShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(
-                () -> iconSpecific.setLinkDelayLimit(secondLink, delayLimit));
-    }
-
-    @Test
-    void setLinkDelayLimitShouldRevertIllegalArgument() {
-        int invalidValue = -1;
-        AssertBMCException.assertUnknown(
-                () -> iconSpecific.setLinkDelayLimit(link, invalidValue));
-    }
 
     @Test
     void setLinkSackTermShouldSuccess() {

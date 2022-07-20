@@ -40,32 +40,11 @@ public interface ICONSpecific {
     void handleFragment(String _prev, String _msg, int _idx);
 
     /**
-     * Set properties of link for term of relay rotation
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link           String (BTP Address of connected BMC)
-     * @param _block_interval Integer (Interval of block creation, milliseconds)
-     * @param _max_agg        Integer (Maximum aggregation of block update of a relay message)
-     */
-    @External
-    void setLinkRotateTerm(String _link, int _block_interval, int _max_agg);
-
-    /**
-     * Set properties of link for delay limitation of relay rotation
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link     String (BTP Address of connected BMC)
-     * @param _value    Integer (Maximum delay at BTP Event relay, block count)
-     */
-    @External
-    void setLinkDelayLimit(String _link, int _value);
-
-    /**
      * Set properties of link for term of sending SACK message
      * Called by the operator to manage the BTP network.
      *
-     * @param _link     String (BTP Address of connected BMC)
-     * @param _value    Integer (Term of sending SACK message, block count)
+     * @param _link  String (BTP Address of connected BMC)
+     * @param _value Integer (Term of sending SACK message, block count)
      */
     @External
     void setLinkSackTerm(String _link, int _value);
@@ -106,6 +85,38 @@ public interface ICONSpecific {
      */
     @External(readonly = true)
     Address[] getRelays(String _link);
+
+    /**
+     * Sets properties of relay rotation of link
+     * The policy of relay rotation by _block_interval
+     * -1 : destination height based relay rotation
+     * 0 : disable relay rotation (as default)
+     * greater than 0 : source height based relay rotation
+     *
+     * @param _link           String (BTP Address of connected BMC)
+     * @param _block_interval Integer (Interval of block creation, milliseconds)
+     * @param _max_agg        Integer (Maximum aggregation of block update of a relay message)
+     * @param _delay_limit    Integer (Maximum delay at BTP Event relay, block count)
+     */
+    @External
+    void setRelayRotation(String _link, int _block_interval, int _max_agg, int _delay_limit);
+
+    /**
+     * Get properties of relay rotation of link
+     * @param _link String (BTP Address of connected BMC)
+     * @return The object contains followings fields.
+     * block_interval_src : Integer ( Interval of block creation of source chain, milliseconds )
+     * block_interval_dst : Integer ( Interval of block creation of destination chain, milliseconds )
+     * max_agg : Integer ( Maximum aggregation of block update of a relay message )
+     * delay_limit : Integer ( Maximum delay at BTP Event relay, block count )
+     * relay_idx : Integer ( Current index of relay )
+     * rotate_height : Integer ( Height of next relay rotation )
+     * rotate_term : Integer ( Term of relay rotation, block count )
+     * rx_height : Integer ( Height of last receiving )
+     * rx_height_src : Integer ( Height of source chain of last message )
+     */
+    @External(readonly = true)
+    RelayRotation getRelayRotation(String _link);
 
     /**
      * Registers candidate for the smart contract for the service.
@@ -166,9 +177,9 @@ public interface ICONSpecific {
      * Called by the operator to manage the BTP network.
      *
      * @param _link String ( BTP Address of connected BMC )
-     * @param _seq Integer ( number of the message from connected BMC )
-     * @param _svc String ( number of the message from connected BMC )
-     * @param _sn Integer ( serial number of the message, must be positive )
+     * @param _seq  Integer ( number of the message from connected BMC )
+     * @param _svc  String ( number of the message from connected BMC )
+     * @param _sn   Integer ( serial number of the message, must be positive )
      */
     @External
     void dropMessage(String _link, BigInteger _seq, String _svc, BigInteger _sn);
@@ -178,7 +189,7 @@ public interface ICONSpecific {
      * Called by the operator to manage the BTP network.
      *
      * @param _link String (BTP Address of connected BMC)
-     * @param _seq Integer ( sequence number of the message from connected BMC )
+     * @param _seq  Integer ( sequence number of the message from connected BMC )
      */
     @External
     void scheduleDropMessage(String _link, BigInteger _seq);
@@ -188,7 +199,7 @@ public interface ICONSpecific {
      * Called by the operator to manage the BTP network.
      *
      * @param _link String ( BTP Address of connected BMC )
-     * @param _seq Integer ( sequence number of the message from connected BMC )
+     * @param _seq  Integer ( sequence number of the message from connected BMC )
      */
     @External
     void cancelDropMessage(String _link, BigInteger _seq);
@@ -200,7 +211,7 @@ public interface ICONSpecific {
      * @return A list of registered sequences to drop
      * <br>For Example::<br>
      * [
-     *  "0x1"
+     * "0x1"
      * ]
      */
     @External(readonly = true)
@@ -211,7 +222,7 @@ public interface ICONSpecific {
      * if sn of message is less than zero
      *
      * @param _link String ( BTP Address of connected BMC )
-     * @param _seq Integer ( sequence number of the message from connected BMC )
+     * @param _seq  Integer ( sequence number of the message from connected BMC )
      * @param _msg  Bytes ( serialized bytes of BTP Message )
      */
     @EventLog(indexed = 2)
@@ -221,7 +232,7 @@ public interface ICONSpecific {
      * Registers the BTPLink to connect that use the BTP-Block instead of Event-Log to send message.
      * Called by the operator to manage the BTP network.
      *
-     * @param _link String ( BTP Address of BMC to connect )
+     * @param _link      String ( BTP Address of BMC to connect )
      * @param _networkId Integer ( To use networkId parameter of ChainSCORE API )
      */
     @External
@@ -231,7 +242,7 @@ public interface ICONSpecific {
      * Sets to migrate the Link to the BTPLink which use the BTP-Block to send message.
      * Called by the operator to manage the BTP network.
      *
-     * @param _link String ( BTP Address of connected BMC )
+     * @param _link      String ( BTP Address of connected BMC )
      * @param _networkId Integer (To use networkId parameter of ChainSCORE API)
      */
     @External

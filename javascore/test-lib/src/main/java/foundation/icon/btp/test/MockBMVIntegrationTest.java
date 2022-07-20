@@ -21,6 +21,7 @@ import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.mock.MockBMV;
+import foundation.icon.btp.mock.MockBMVProperties;
 import foundation.icon.btp.mock.MockBMVScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
@@ -40,10 +41,10 @@ public interface MockBMVIntegrationTest {
                 mockBMVClient._address(), supplier, consumer);
     }
 
-    static BMVStatus getStatus(BMV bmv) {
+    static MockBMVProperties getStatus(BMV bmv) {
         ObjectMapper mapper = mockBMVClient.mapper();
         try {
-            return mapper.readValue(mapper.writeValueAsString(bmv.getStatus()), BMVStatus.class);
+            return mapper.readValue(mapper.writeValueAsString(bmv.getStatus()), MockBMVProperties.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

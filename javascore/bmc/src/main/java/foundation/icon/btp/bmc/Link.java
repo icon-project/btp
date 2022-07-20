@@ -27,29 +27,13 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class Link {
-    //TODO define default max_aggregation
-    public static final int DEFAULT_MAX_AGGREGATION = 10;
-    //TODO define default delay_limit, if delay_limit < 3, too sensitive
-    public static final int DEFAULT_DELAY_LIMIT = 3;
-
     private Relays relays;
 
-    //
     private BTPAddress addr; //primary key
     private BigInteger rxSeq;
     private BigInteger txSeq;
-    //
 
-    private int blockIntervalSrc;
-    private int blockIntervalDst;
-    private int maxAggregation = DEFAULT_MAX_AGGREGATION;
-    private int delayLimit = DEFAULT_DELAY_LIMIT;
-
-    private int relayIdx;
-    private long rotateHeight;
-    private long rxHeight; //initialize with BMC.block_height
-    private long rxHeightSrc; //initialize with BMV._offset
-
+    //SackProperties
     private int sackTerm; //0: disable sack
     private long sackNext;
     private long sackHeight;
@@ -57,63 +41,6 @@ public class Link {
 
     //with suffix("reachable") ArrayDB<String>
     private List<BTPAddress> reachable;
-
-    private double scale() {
-        if (blockIntervalSrc < 1 || blockIntervalDst < 1) {
-            return 0;
-        } else {
-            return (double)blockIntervalSrc/(double)blockIntervalDst;
-        }
-    }
-
-    public int rotateTerm() {
-        double scale = scale();
-        if (scale > 0) {
-            return (int)StrictMath.ceil((double) maxAggregation / scale);
-        } else {
-            return 0;
-        }
-    }
-
-    public Relay rotate(long currentHeight, long msgHeight, boolean hasMsg) {
-        long rotateTerm = rotateTerm();
-        if (rotateTerm > 0) {
-            int rotateCnt;
-            long baseHeight;
-            if (hasMsg) {
-                long guessHeight = rxHeight + (long)StrictMath.ceil((double) (msgHeight - rxHeightSrc) / scale()) - 1;
-                if (guessHeight > currentHeight) {
-                    guessHeight = currentHeight;
-                }
-
-                rotateCnt = (int)StrictMath.ceil((double)(guessHeight - rotateHeight)/(double)rotateTerm);
-                if (rotateCnt < 0) {
-                    rotateCnt = 0;
-                }
-                baseHeight = rotateHeight + ((rotateCnt - 1) * rotateTerm);
-                int skipCnt = (int)StrictMath.ceil((double)(currentHeight - guessHeight)/(double)delayLimit) - 1;
-                if (skipCnt > 0) {
-                    rotateCnt += skipCnt;
-                    baseHeight = currentHeight;
-                }
-                rxHeight = currentHeight;
-                rxHeightSrc = msgHeight;
-            } else {
-                rotateCnt = (int)StrictMath.ceil((double)(currentHeight - rotateHeight)/(double)rotateTerm);
-                baseHeight = rotateHeight + ((rotateCnt - 1) * rotateTerm);
-            }
-            if (rotateCnt > 0) {
-                rotateHeight = baseHeight + rotateTerm;
-                relayIdx += rotateCnt;
-                if (relayIdx >= relays.size()) {
-                    relayIdx = relayIdx % relays.size();
-                }
-            }
-            return relays.getByIndex(relayIdx);
-        } else {
-            return null;
-        }
-    }
 
     public BTPAddress getAddr() {
         return addr;
@@ -137,70 +64,6 @@ public class Link {
 
     public void setTxSeq(BigInteger txSeq) {
         this.txSeq = txSeq;
-    }
-
-    public int getBlockIntervalSrc() {
-        return blockIntervalSrc;
-    }
-
-    public void setBlockIntervalSrc(int blockIntervalSrc) {
-        this.blockIntervalSrc = blockIntervalSrc;
-    }
-
-    public int getBlockIntervalDst() {
-        return blockIntervalDst;
-    }
-
-    public void setBlockIntervalDst(int blockIntervalDst) {
-        this.blockIntervalDst = blockIntervalDst;
-    }
-
-    public int getMaxAggregation() {
-        return maxAggregation;
-    }
-
-    public void setMaxAggregation(int maxAggregation) {
-        this.maxAggregation = maxAggregation;
-    }
-
-    public int getDelayLimit() {
-        return delayLimit;
-    }
-
-    public void setDelayLimit(int delayLimit) {
-        this.delayLimit = delayLimit;
-    }
-
-    public int getRelayIdx() {
-        return relayIdx;
-    }
-
-    public void setRelayIdx(int relayIdx) {
-        this.relayIdx = relayIdx;
-    }
-
-    public long getRotateHeight() {
-        return rotateHeight;
-    }
-
-    public void setRotateHeight(long rotateHeight) {
-        this.rotateHeight = rotateHeight;
-    }
-
-    public long getRxHeight() {
-        return rxHeight;
-    }
-
-    public void setRxHeight(long rxHeight) {
-        this.rxHeight = rxHeight;
-    }
-
-    public long getRxHeightSrc() {
-        return rxHeightSrc;
-    }
-
-    public void setRxHeightSrc(long rxHeightSrc) {
-        this.rxHeightSrc = rxHeightSrc;
     }
 
     public int getSackTerm() {
@@ -258,14 +121,6 @@ public class Link {
         sb.append(", addr=").append(addr);
         sb.append(", rxSeq=").append(rxSeq);
         sb.append(", txSeq=").append(txSeq);
-        sb.append(", blockIntervalSrc=").append(blockIntervalSrc);
-        sb.append(", blockIntervalDst=").append(blockIntervalDst);
-        sb.append(", maxAggregation=").append(maxAggregation);
-        sb.append(", delayLimit=").append(delayLimit);
-        sb.append(", relayIdx=").append(relayIdx);
-        sb.append(", rotateHeight=").append(rotateHeight);
-        sb.append(", rxHeight=").append(rxHeight);
-        sb.append(", rxHeightSrc=").append(rxHeightSrc);
         sb.append(", sackTerm=").append(sackTerm);
         sb.append(", sackNext=").append(sackNext);
         sb.append(", sackHeight=").append(sackHeight);
@@ -285,14 +140,6 @@ public class Link {
         obj.setAddr(reader.readNullable(BTPAddress.class));
         obj.setRxSeq(reader.readNullable(BigInteger.class));
         obj.setTxSeq(reader.readNullable(BigInteger.class));
-        obj.setBlockIntervalSrc(reader.readInt());
-        obj.setBlockIntervalDst(reader.readInt());
-        obj.setMaxAggregation(reader.readInt());
-        obj.setDelayLimit(reader.readInt());
-        obj.setRelayIdx(reader.readInt());
-        obj.setRotateHeight(reader.readLong());
-        obj.setRxHeight(reader.readLong());
-        obj.setRxHeightSrc(reader.readLong());
         obj.setSackTerm(reader.readInt());
         obj.setSackNext(reader.readLong());
         obj.setSackHeight(reader.readLong());
@@ -314,14 +161,6 @@ public class Link {
         writer.writeNullable(this.getAddr());
         writer.writeNullable(this.getRxSeq());
         writer.writeNullable(this.getTxSeq());
-        writer.write(this.getBlockIntervalSrc());
-        writer.write(this.getBlockIntervalDst());
-        writer.write(this.getMaxAggregation());
-        writer.write(this.getDelayLimit());
-        writer.write(this.getRelayIdx());
-        writer.write(this.getRotateHeight());
-        writer.write(this.getRxHeight());
-        writer.write(this.getRxHeightSrc());
         writer.write(this.getSackTerm());
         writer.write(this.getSackNext());
         writer.write(this.getSackHeight());
