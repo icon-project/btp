@@ -109,9 +109,9 @@ public class RelayMessage {
                     return MessageProof.fromBytes(payload);
                 }
             } catch (Exception e) {
-                throw BMVException.unknown("invalid relay message");
+                throw BMVException.invalidRelayMessage("invalid relay message payload");
             }
-            throw BMVException.unknown("invalid type : " + type);
+            throw BMVException.invalidRelayMessage("invalid type : " + type);
         }
 
         public static TypePrefixedMessage readObject(ObjectReader reader) {

@@ -48,13 +48,18 @@ public class BMVException extends BTPException.BMV {
         return new BMVException(Code.InvalidMessageProof, message);
     }
 
+    public static BMVException invalidRelayMessage(String message) {
+        return new BMVException(Code.InvalidRelayMessage, message);
+    }
+
     //BTPException.BMV => 25 ~ 39
     public enum Code implements Coded{
         Unknown(0),
         PermissionDenied(1),
         InvalidProofs(2),
         InvalidBlockUpdate(3),
-        InvalidMessageProof(4);
+        InvalidMessageProof(4),
+        InvalidRelayMessage(5);
 
         final int code;
         Code(int code){ this.code = code; }
