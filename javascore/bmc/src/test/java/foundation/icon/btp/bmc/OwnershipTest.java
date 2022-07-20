@@ -142,11 +142,6 @@ public class OwnershipTest implements BMCIntegrationTest {
     }
 
     @Test
-    void setRelayRotationShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.setRelayRotation(btpAddress, intVal, intVal, intVal));
-    }
-
-    @Test
     void setLinkSackTermShouldRevertUnauthorized() {
         assertUnauthorized(() -> iconSpecificWithTester.setLinkSackTerm(btpAddress, intVal));
     }

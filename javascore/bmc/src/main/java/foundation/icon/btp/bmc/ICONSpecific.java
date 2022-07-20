@@ -87,38 +87,6 @@ public interface ICONSpecific {
     Address[] getRelays(String _link);
 
     /**
-     * Sets properties of relay rotation of link
-     * The policy of relay rotation by _block_interval
-     * -1 : destination height based relay rotation
-     * 0 : disable relay rotation (as default)
-     * greater than 0 : source height based relay rotation
-     *
-     * @param _link           String (BTP Address of connected BMC)
-     * @param _block_interval Integer (Interval of block creation, milliseconds)
-     * @param _max_agg        Integer (Maximum aggregation of block update of a relay message)
-     * @param _delay_limit    Integer (Maximum delay at BTP Event relay, block count)
-     */
-    @External
-    void setRelayRotation(String _link, int _block_interval, int _max_agg, int _delay_limit);
-
-    /**
-     * Get properties of relay rotation of link
-     * @param _link String (BTP Address of connected BMC)
-     * @return The object contains followings fields.
-     * block_interval_src : Integer ( Interval of block creation of source chain, milliseconds )
-     * block_interval_dst : Integer ( Interval of block creation of destination chain, milliseconds )
-     * max_agg : Integer ( Maximum aggregation of block update of a relay message )
-     * delay_limit : Integer ( Maximum delay at BTP Event relay, block count )
-     * relay_idx : Integer ( Current index of relay )
-     * rotate_height : Integer ( Height of next relay rotation )
-     * rotate_term : Integer ( Term of relay rotation, block count )
-     * rx_height : Integer ( Height of last receiving )
-     * rx_height_src : Integer ( Height of source chain of last message )
-     */
-    @External(readonly = true)
-    RelayRotation getRelayRotation(String _link);
-
-    /**
      * Registers candidate for the smart contract for the service.
      * Called by the BSH-Owner.
      *
