@@ -102,10 +102,14 @@ public class RelayMessage {
         }
 
         public Object getMessage() {
-            if (type == BLOCK_UPDATE) {
-                return BlockUpdate.fromBytes(payload);
-            } else if (type == MESSAGE_PROOF) {
-                return MessageProof.fromBytes(payload);
+            try {
+                if (type == BLOCK_UPDATE) {
+                    return BlockUpdate.fromBytes(payload);
+                } else if (type == MESSAGE_PROOF) {
+                    return MessageProof.fromBytes(payload);
+                }
+            } catch (Exception e) {
+                throw BMVException.unknown("invalid relay message");
             }
             throw BMVException.unknown("invalid type : " + type);
         }
