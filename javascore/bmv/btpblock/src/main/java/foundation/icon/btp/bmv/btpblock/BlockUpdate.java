@@ -39,20 +39,14 @@ public class BlockUpdate {
 
     public static BlockUpdate readObject(ObjectReader r) {
         r.beginList();
-        var blockHeader = r.read(BlockHeader.class);
+        var blockHeaderBytes = r.readByteArray();
+        var blockHeader = BlockHeader.fromBytes(blockHeaderBytes);
         var blockProof = r.readNullable(byte[].class);
         r.end();
         return new BlockUpdate(
                 blockHeader,
                 blockProof
         );
-    }
-
-    public static void writeObject(ObjectWriter w, BlockUpdate blockUpdate) {
-        w.beginList(11);
-        w.write(blockUpdate.blockHeader);
-        w.write(blockUpdate.blockProof);
-        w.end();
     }
 
     public static BlockUpdate fromBytes(byte[] bytes) {

@@ -143,34 +143,9 @@ public class BlockHeader {
         );
     }
 
-    public static void writeObject(ObjectWriter w, BlockHeader blockUpdate) {
-        w.beginList(11);
-        w.writeNullable(blockUpdate.mainHeight);
-        w.writeNullable(blockUpdate.round);
-        w.writeNullable(blockUpdate.nextProofContextHash);
-        w.beginList(blockUpdate.networkSectionToRoot.length);
-        for (NetworkSectionToRoot nsr : blockUpdate.networkSectionToRoot) {
-            w.write(nsr);
-        }
-        w.end();
-        w.write(blockUpdate.nid);
-        w.write(blockUpdate.updateNumber);
-        w.writeNullable(blockUpdate.prev);
-        w.write(blockUpdate.messageCount);
-        w.writeNullable(blockUpdate.messageRoot);
-        w.writeNullable(blockUpdate.nextProofContext);
-        w.end();
-    }
-
     public static BlockHeader fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
         return BlockHeader.readObject(reader);
-    }
-
-    public byte[] toBytes() {
-        ByteArrayObjectWriter w = Context.newByteArrayObjectWriter("RLPn");
-        writeObject(w, this);
-        return w.toByteArray();
     }
 
     private static byte[] concatAndHash(byte[] b1, byte[] b2) {

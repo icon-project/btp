@@ -37,11 +37,4 @@ public class NetworkSectionToRoot {
         r.end();
         return obj;
     }
-
-    public static void writeObject(ObjectWriter w, NetworkSectionToRoot networkSectionToRoot) {
-        w.beginList(2);
-        w.write(networkSectionToRoot.dir);
-        w.write(networkSectionToRoot.value);
-        w.end();
-    }
 }
