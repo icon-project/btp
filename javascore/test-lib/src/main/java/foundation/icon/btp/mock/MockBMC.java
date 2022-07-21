@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.mock;
 
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
@@ -60,4 +61,6 @@ public interface MockBMC {
     @External
     void intercallHandleFeeGathering(Address _addr, String _fa, String _svc);
 
+    @External(readonly = true)
+    BMVStatus intercallGetStatus(Address _addr);
 }

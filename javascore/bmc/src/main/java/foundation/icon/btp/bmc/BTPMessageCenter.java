@@ -365,7 +365,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         BigInteger rxSeq = link.getRxSeq();
 
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
-        BMVStatus prevStatus = verifier.getStatus(BMVStatus.class);
+        BMVStatus prevStatus = BMVStatus.fromMap(verifier.getStatus());
 
         // decode and verify relay message
         byte[][] serializedMsgs = null;
@@ -385,7 +385,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (relay == null) {
             throw BMCException.unauthorized("not registered relay");
         }
-        BMVStatus status = verifier.getStatus(BMVStatus.class);
+        BMVStatus status = BMVStatus.fromMap(verifier.getStatus());
         relay.setBlockCount(relay.getBlockCount() + status.getHeight() - prevStatus.getHeight());
         relay.setMsgCount(relay.getMsgCount().add(BigInteger.valueOf(msgCount)));
         relays.put(relay.getAddress(), relay);

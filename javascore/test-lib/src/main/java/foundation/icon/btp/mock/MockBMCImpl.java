@@ -16,10 +16,7 @@
 
 package foundation.icon.btp.mock;
 
-import foundation.icon.btp.lib.BMVScoreInterface;
-import foundation.icon.btp.lib.BSHScoreInterface;
-import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.lib.BTPException;
+import foundation.icon.btp.lib.*;
 import score.Address;
 import score.Context;
 import score.UserRevertedException;
@@ -96,5 +93,11 @@ public class MockBMCImpl implements MockBMC {
     public void intercallHandleFeeGathering(Address _addr, String _fa, String _svc) {
         BSHScoreInterface bsh = new BSHScoreInterface(_addr);
         bsh.handleFeeGathering(_fa, _svc);
+    }
+
+    @External(readonly = true)
+    public BMVStatus intercallGetStatus(Address _addr) {
+        BMVScoreInterface bmv = new BMVScoreInterface(_addr);
+        return BMVStatus.fromMap(bmv.getStatus());
     }
 }

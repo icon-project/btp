@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.mock;
 
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.*;
 import foundation.icon.jsonrpc.Address;
@@ -114,5 +115,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
                 }),
                 MockBSHIntegrationTest.mockBSHClient._address(),
                 fa, svc);
+    }
+
+    @Test
+    void intercallGetStatus() {
+        BMVStatus status = mockBMC.intercallGetStatus(MockBMVIntegrationTest.mockBMVClient._address());
+        System.out.println(status);
     }
 }

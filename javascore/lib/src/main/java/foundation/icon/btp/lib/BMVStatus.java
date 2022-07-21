@@ -16,11 +16,11 @@
 
 package foundation.icon.btp.lib;
 
+import java.math.BigInteger;
+import java.util.Map;
+
 public class BMVStatus {
     private long height;
-
-    public BMVStatus() {
-    }
 
     public long getHeight() {
         return height;
@@ -37,4 +37,11 @@ public class BMVStatus {
         sb.append('}');
         return sb.toString();
     }
+
+    public static BMVStatus fromMap(Map<String, Object> map) {
+        BMVStatus obj = new BMVStatus();
+        obj.height = ((BigInteger)map.get("height")).longValue();
+        return obj;
+    }
+
 }
