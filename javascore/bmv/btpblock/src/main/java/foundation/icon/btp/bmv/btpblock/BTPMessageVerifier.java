@@ -151,9 +151,6 @@ public class BTPMessageVerifier implements BMV {
         var nsHash = ns.hash();
         var nsRoot = blockHeader.getNetworkSectionsRoot(nsHash);
         var nextProofContextHash = blockHeader.getNextProofContextHash();
-        if (nextProofContextHash == null) {
-            nextProofContextHash = bmvProperties.getProofContextHash();
-        }
         NetworkTypeSection nts = new NetworkTypeSection(nextProofContextHash, nsRoot);
         var srcNetworkID = bmvProperties.getSrcNetworkID();
         var networkTypeID = bmvProperties.getNetworkTypeID();
