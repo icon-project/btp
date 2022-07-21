@@ -104,7 +104,7 @@ library BlockUpdateLib {
 
     function getNetworkTypeSectionDecisionHash(
         Header memory self,
-        bytes storage srcNetworkId,
+        string storage srcNetworkId,
         uint networkType
     )
     internal
@@ -112,7 +112,7 @@ library BlockUpdateLib {
     returns (bytes32)
     {
         bytes[] memory ntsd = new bytes[](5);
-        ntsd[0] = RLPEncode.encodeBytes(srcNetworkId);
+        ntsd[0] = RLPEncode.encodeString(srcNetworkId);
         ntsd[1] = RLPEncode.encodeUint(networkType);
         ntsd[2] = RLPEncode.encodeUint(self.mainHeight);
         ntsd[3] = RLPEncode.encodeUint(self.round);

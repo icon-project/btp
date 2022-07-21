@@ -1,7 +1,7 @@
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
-const { ZB32, toBytesString, toStr } = require('./utils');
+const { ZB32, toStr } = require('./utils');
 
 const SRC_NETWORK_ID = 'btp://0x1.icon'
 const NTID = new BN('2');
@@ -34,11 +34,11 @@ contract('BtpMessageVerifier', (accounts) => {
 
             beforeEach(async () => {
                 this.instance = await BtpMessageVerifier.new();
-                await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+                await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
             });
 
             shouldHaveImmutableState.call(this, {
-                srcNetworkId: toBytesString(SRC_NETWORK_ID),
+                srcNetworkId: SRC_NETWORK_ID,
                 networkTypeId: NETWORK_TYPE_ID,
                 networkId: NETWORK_ID
             });
@@ -199,11 +199,11 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: toBytesString(SRC_NETWORK_ID),
+            srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
             networkId: NETWORK_ID
         });
@@ -529,11 +529,11 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, toBytesString(SRC_NETWORK_ID), NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: toBytesString(SRC_NETWORK_ID),
+            srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
             networkId: NETWORK_ID
         });

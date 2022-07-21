@@ -13,7 +13,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
     address public bmc;
-    bytes private srcNetworkId;
+    string private srcNetworkId;
     uint private networkTypeId;
     uint private networkId;
     uint private height;
@@ -35,7 +35,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
 
     function initialize(
         address _bmc,
-        bytes memory _srcNetworkId,
+        string memory _srcNetworkId,
         uint _networkTypeId,
         uint _networkId,
         bytes memory _firstBlockHeader,
@@ -80,7 +80,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
     onlyBmc
     returns (bytes[] memory) {
 
-        require(compare(srcNetworkId, bytes(_prev)), "BtpMessageVerifier: Not allowed source network");
+        require(compare(bytes(srcNetworkId), bytes(_prev)), "BtpMessageVerifier: Not allowed source network");
         require(nextMessageSn == _sn, "BtpMessageVerifier: Invalid message sequence");
 
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
@@ -128,7 +128,7 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         return messages;
     }
 
-    function getSrcNetworkId() public view returns (bytes memory) {
+    function getSrcNetworkId() public view returns (string memory) {
         return srcNetworkId;
     }
 
