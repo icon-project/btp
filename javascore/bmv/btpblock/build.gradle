@@ -43,7 +43,7 @@ deployJar {
     password = scoreTest.default.resolvedKeyPassword
     parameters {
         [
-                arg('srcNetworkID', '0x?'),
+                arg('srcNetworkID', 'btp://network.address'),
                 arg('networkTypeID', '0x?'),
                 arg('bmc', 'cx?'),
                 arg('blockHeader', '0x?'),
