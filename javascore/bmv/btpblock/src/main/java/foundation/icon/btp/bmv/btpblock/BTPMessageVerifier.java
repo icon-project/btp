@@ -37,9 +37,9 @@ public class BTPMessageVerifier implements BMV {
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
-    public BTPMessageVerifier(byte[] srcNetworkID, int networkTypeID, Address bmc, byte[] blockHeader, BigInteger seqOffset) {
+    public BTPMessageVerifier(String srcNetworkID, int networkTypeID, Address bmc, byte[] blockHeader, BigInteger seqOffset) {
         BMVProperties bmvProperties = getProperties();
-        bmvProperties.setSrcNetworkID(srcNetworkID);
+        bmvProperties.setSrcNetworkID(srcNetworkID.getBytes());
         bmvProperties.setNetworkTypeID(networkTypeID);
         bmvProperties.setBmc(bmc);
         bmvProperties.setSequenceOffset(seqOffset);

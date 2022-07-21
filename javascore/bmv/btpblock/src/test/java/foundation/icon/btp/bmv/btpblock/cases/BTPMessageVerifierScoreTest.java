@@ -27,7 +27,6 @@ import foundation.icon.score.util.StringUtil;
 import foundation.icon.test.*;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.*;
-import scorex.util.Base64;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -49,12 +48,11 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     private static BMCScore bmcScore;
     private static BMCScore prevBmCScore;
     private static BMCScore otherNetworkBMC;
-    private static final Base64.Decoder decoder = Base64.getUrlDecoder();
-    private static final byte[] srcNetworkID = StringUtil.hexToBytes("6274703a2f2f3078312e69636f6e");
+    private static final String srcNetworkID = "btp://0x1.icon";
     private static final BigInteger networkTypeID = BigInteger.ONE;
-    private static final byte[] FIRST_BLOCK_UPDATE1 = StringUtil.hexToBytes("f8a80a00a031a48b551e5db0c6db4ad9f2002905f1b2005bcd0f4087b284a06f0137cafb4fc00101f80001a005cd98fdecc74538182a123f3d91e031833da3e9b0a2558d6652e48bf318a1b2b85cf85af858950020e2c291b19598e1338bc7a9c373b69f6dc4c6139500dff51eb43f08ee74678e69ba29626df65f8f4e5295003f695fedf6a2aa1c7a07fe6810ed5ba7edc7c48c9500235c67cee3e2bfda66a34e884991414391fc6abf");
-    private static final byte[] FIRST_BLOCK_UPDATE2 = StringUtil.hexToBytes("f8ac1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e200a0142e0892c8baca64bfa8c6f53aac2b2f494ef854672d91a3372107ee29dc7cbc0301f80000f800b85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913");
-    private static final byte[] FAIL_CASE_FIRST_BLOCK_UPDATE = StringUtil.hexToBytes("f8a80a00a031a48b551e5db0c6db4ad9f2002905f1b2005bcd0f4087b284a06f0137cafb4fc00101f80001a005cd98fdecc74538182a123f3d91e031833da3e9b0a2558d6652e48bf318a1b2b85cf85af858950020e2c291b19598e1338bc7a9c373b69f6dc4c6139500dff51eb43f08ee74678e69ba29626df65f8f4e5295003f695fedf6a2aa1c7a07fe6810ed5ba7edc7c48c9500235c67cee3e2bfda66a34e884991414391fc6abf");
+    private static final byte[] FIRST_BLOCK_HEADER1 = StringUtil.hexToBytes("f8a80a00a031a48b551e5db0c6db4ad9f2002905f1b2005bcd0f4087b284a06f0137cafb4fc00101f80001a005cd98fdecc74538182a123f3d91e031833da3e9b0a2558d6652e48bf318a1b2b85cf85af858950020e2c291b19598e1338bc7a9c373b69f6dc4c6139500dff51eb43f08ee74678e69ba29626df65f8f4e5295003f695fedf6a2aa1c7a07fe6810ed5ba7edc7c48c9500235c67cee3e2bfda66a34e884991414391fc6abf");
+    private static final byte[] FIRST_BLOCK_HEADER2 = StringUtil.hexToBytes("f8ac1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e200a0142e0892c8baca64bfa8c6f53aac2b2f494ef854672d91a3372107ee29dc7cbc0301f80000f800b85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913");
+    private static final byte[] FAIL_CASE_FIRST_BLOCK_HEADER = StringUtil.hexToBytes("f8a80a00a031a48b551e5db0c6db4ad9f2002905f1b2005bcd0f4087b284a06f0137cafb4fc00101f80001a005cd98fdecc74538182a123f3d91e031833da3e9b0a2558d6652e48bf318a1b2b85cf85af858950020e2c291b19598e1338bc7a9c373b69f6dc4c6139500dff51eb43f08ee74678e69ba29626df65f8f4e5295003f695fedf6a2aa1c7a07fe6810ed5ba7edc7c48c9500235c67cee3e2bfda66a34e884991414391fc6abf");
     static final List<String> SUCCESS_RELAY_MESSAGE1 = List.of(
             "cecdcc028ac9f800c483646f67f800",
             "f9022bf90228f9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060103a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00da0298d7f800d28363617488656c657068616e748462697264f800",
@@ -90,14 +88,14 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     @Order(1)
     @Test
     public void positiveCases() throws TransactionFailureException, IOException, ResultTimeoutException {
-        positiveCase(SUCCESS_RELAY_MESSAGE1, FIRST_BLOCK_UPDATE1, new long[]{0, 1, 4, 4, 7});
-        positiveCase(SUCCESS_RELAY_MESSAGE2, FIRST_BLOCK_UPDATE2, new long[]{0, 2, 4});
+        positiveCase(SUCCESS_RELAY_MESSAGE1, FIRST_BLOCK_HEADER1, new long[]{0, 1, 4, 4, 7});
+        positiveCase(SUCCESS_RELAY_MESSAGE2, FIRST_BLOCK_HEADER2, new long[]{0, 2, 4});
     }
 
     @Order(2)
     @Test
     public void scenario2() throws TransactionFailureException, IOException, ResultTimeoutException {
-        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), FAIL_CASE_FIRST_BLOCK_UPDATE, BigInteger.ZERO);
+        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), FAIL_CASE_FIRST_BLOCK_HEADER, BigInteger.ZERO);
         var validMsg = "cecdcc028ac9f800c483646f67f800";
         String otherBMC = makeBTPAddress(otherNetworkBMC.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), otherBMC, BigInteger.ZERO, StringUtil.hexToBytes(validMsg));
@@ -119,7 +117,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         txResult = txHandler.getResult(txHash);
         assertSuccess(txResult);
 
-        var invalidNidMsg = "90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060203a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
+        var invalidNidMsg = "f90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060203a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidNidMsg));
         txResult = txHandler.getResult(txHash);
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
@@ -201,9 +199,9 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
     }
 
-    private void positiveCase(List<String> msgList, byte[] firstBlockUpdate, long[] seqs) throws TransactionFailureException, IOException, ResultTimeoutException {
+    private void positiveCase(List<String> msgList, byte[] blockHeader, long[] seqs) throws TransactionFailureException, IOException, ResultTimeoutException {
         // Deploy BMV
-        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), firstBlockUpdate, BigInteger.ZERO);
+        bmvScore = BMVScore.mustDeploy(txHandler, ownerWallet, srcNetworkID, networkTypeID, bmcScore.getAddress(), blockHeader, BigInteger.ZERO);
 
         var msgLength = msgList.size();
         var hashes = new Bytes[msgLength];

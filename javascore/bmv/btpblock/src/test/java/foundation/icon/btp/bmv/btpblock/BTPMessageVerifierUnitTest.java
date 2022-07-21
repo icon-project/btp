@@ -36,8 +36,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     static Score score;
     static final ServiceManager sm = getServiceManager();
     static final Account owner = sm.createAccount();
-    static final String HEX_SRC_NETWORK_ID = "6274703a2f2f3078312e69636f6e";
-    static final String network = new String(StringUtil.hexToBytes(HEX_SRC_NETWORK_ID)).substring(6);
+    static final String SRC_NETWORK_ID = "btp://0x1.icon";
+    static final String network = "0x1.icon";
     static final Account bmcAccount = Account.newScoreAccount(Integer.MAX_VALUE);
     static final Account prevAccount = Account.newScoreAccount(0);
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),
@@ -92,7 +92,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Test
     public void scenario2() throws Exception {
         score = sm.deploy(owner, BTPMessageVerifier.class,
-                StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
+                SRC_NETWORK_ID,
                 1,
                 Address.fromString(bmc.account()),
                 StringUtil.hexToBytes(FAIL_CASE_FIRST_BLOCK_UPDATE),
@@ -284,7 +284,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
 
     private void successCase(List<String> relayMessages, List<String[]> messages) throws Exception {
         score = sm.deploy(owner, BTPMessageVerifier.class,
-                StringUtil.hexToBytes(HEX_SRC_NETWORK_ID),
+                SRC_NETWORK_ID,
                 1,
                 Address.fromString(bmc.account()),
                 StringUtil.hexToBytes(relayMessages.get(0)),

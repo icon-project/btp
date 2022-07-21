@@ -38,10 +38,10 @@ public class BMVScore extends Score {
     public static BMVScore mustDeploy(
             TransactionHandler txHandler,
             Wallet wallet,
-            byte[] networkID,
+            String networkID,
             BigInteger networkTypeID,
             Address bmc,
-            byte[] blockUpdate,
+            byte[] blockHeader,
             BigInteger seqOffset
     )
             throws ResultTimeoutException, TransactionFailureException, IOException {
@@ -50,7 +50,7 @@ public class BMVScore extends Score {
                 .put("srcNetworkID", new RpcValue(networkID))
                 .put("networkTypeID", new RpcValue(networkTypeID))
                 .put("bmc", new RpcValue(bmc))
-                .put("firstBlockUpdate", new RpcValue(blockUpdate))
+                .put("blockHeader", new RpcValue(blockHeader))
                 .put("seqOffset", new RpcValue(seqOffset))
                 .build();
         Score score = txHandler.deploy(wallet, getFilePath("bmv-btpblock"), params);
