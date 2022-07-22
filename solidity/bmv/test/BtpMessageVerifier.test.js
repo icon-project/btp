@@ -4,8 +4,6 @@ const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
 const { ZB32, toStr } = require('./utils');
 
 const SRC_NETWORK_ID = 'btp://0x1.icon'
-const NTID = new BN('2');
-const NID = new BN('2');
 const SEQUENCE_OFFSET = new BN('0');
 
 contract('BtpMessageVerifier', (accounts) => {
@@ -23,7 +21,6 @@ contract('BtpMessageVerifier', (accounts) => {
         describe('when bmv has been initialized', () => {
             const SRC_NETWORK_ID = 'btp://0x1.icon';
             const NETWORK_TYPE_ID = new BN(2);
-            const NETWORK_ID = new BN(2);
             const FIRST_BLOCK_UPDATE = '0xf8a40a00a08d647190ed786d4f8a522f32351ff2269732f6e3771b908271ca29aa73c2c03cc00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7ab858f856f85494e3aee81071e40c44dde872e568d8d09429c5970e94b3d988f28443446c9d7ac62f673085e2736ca4e094f7646979981a5d7dcc05ea261ae26ecd2c2c81889477fec3da1ba8b192f4b278057395a5124392c88b';
             const VALIDATORS = [
                 '0xe3aee81071e40c44dde872e568d8d09429c5970e',
@@ -34,13 +31,12 @@ contract('BtpMessageVerifier', (accounts) => {
 
             beforeEach(async () => {
                 this.instance = await BtpMessageVerifier.new();
-                await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+                await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
             });
 
             shouldHaveImmutableState.call(this, {
                 srcNetworkId: SRC_NETWORK_ID,
                 networkTypeId: NETWORK_TYPE_ID,
-                networkId: NETWORK_ID
             });
 
             shouldHaveThisState.call(this, {
@@ -188,7 +184,6 @@ contract('BtpMessageVerifier', (accounts) => {
 
     describe('when has installed: BlockUpdate', () => {
         const NETWORK_TYPE_ID = new BN(1);
-        const NETWORK_ID = new BN(1);
         const FIRST_BLOCK_UPDATE = '0xf8850a01a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00101f80000f800b858f856f85494524122f6386c9cd3342ecc377dbc9dcb036dd2e0948103611a29623db06a937b24f52d70cf44c1c41494910d15f35a3e685968d8596512efa56d840bb3c59451226eee21a3d3758727886df161c108f5857f3f';
         const validators = [
             '0x524122f6386c9cd3342ecc377dbc9dcb036dd2e0',
@@ -199,13 +194,12 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
             srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
-            networkId: NETWORK_ID
         });
 
         shouldHaveThisState.call(this, {
@@ -518,7 +512,6 @@ contract('BtpMessageVerifier', (accounts) => {
 
     describe('when has installed with block update which has generated with message', () => {
         const NETWORK_TYPE_ID = new BN(1);
-        const NETWORK_ID = new BN(1);
         const FIRST_BLOCK_UPDATE = '0xf8a40a00a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00101f80001a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f85494524122f6386c9cd3342ecc377dbc9dcb036dd2e0948103611a29623db06a937b24f52d70cf44c1c41494910d15f35a3e685968d8596512efa56d840bb3c59451226eee21a3d3758727886df161c108f5857f3f';
         const validators = [
             '0x524122f6386c9cd3342ecc377dbc9dcb036dd2e0',
@@ -529,13 +522,12 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, NETWORK_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
             srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
-            networkId: NETWORK_ID
         });
 
         shouldHaveThisState.call(this, {
@@ -615,11 +607,6 @@ function shouldHaveImmutableState(props) {
     it('has network type id', async () => {
         expect(await this.instance.getNetworkTypeId())
             .to.be.bignumber.equal(props.networkTypeId);
-    });
-
-    it('has network id', async () => {
-        expect(await this.instance.getNetworkId())
-            .to.be.bignumber.equal(props.networkId);
     });
 }
 

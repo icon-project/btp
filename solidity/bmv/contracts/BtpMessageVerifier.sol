@@ -37,7 +37,6 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         address _bmc,
         string memory _srcNetworkId,
         uint _networkTypeId,
-        uint _networkId,
         bytes memory _firstBlockHeader,
         uint _sequenceOffset
     )
@@ -47,10 +46,10 @@ contract BtpMessageVerifier is IBtpMessageVerifier, Initializable {
         bmc = _bmc;
         srcNetworkId = _srcNetworkId;
         networkTypeId = _networkTypeId;
-        networkId = _networkId;
         sequenceOffset = _sequenceOffset;
 
         BlockUpdateLib.Header memory header = BlockUpdateLib.decodeHeader(_firstBlockHeader);
+        networkId = header.networkId;
         height = header.mainHeight;
         nextMessageSn = header.messageSn;
         firstMessageSn = header.messageSn;

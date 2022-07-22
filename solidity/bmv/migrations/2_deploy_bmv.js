@@ -41,7 +41,6 @@ module.exports = async function (deployer, network, accounts) {
         process.env.BMC_ADDR,
         process.env.SRC_NETWORK_ID,
         process.env.NETWORK_TYPE_ID,
-        process.env.NETWORK_ID,
         process.env.FIRST_BLOCK_UPDATE,
         process.env.SEQUENCE_OFFSET
     ], { deployer });
