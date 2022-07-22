@@ -62,9 +62,12 @@ type BMCLinkStatus struct {
 	TxSeq    *big.Int
 	RxSeq    *big.Int
 	Verifier struct {
-		Height     int64
-		Offset     int64
-		LastHeight int64
+		Height           int64
+		Offset           int64
+		LastHeight       int64
+		Sequence_offset  int64
+		First_message_sn int64
+		Message_count    int64
 	}
 	//BMR rotate
 	BMRs []struct {

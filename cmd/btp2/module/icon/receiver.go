@@ -25,15 +25,7 @@ import (
 	"github.com/icon-project/btp/common/intconv"
 	"math/big"
 
-	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
-)
-
-const (
-	EventSignature      = "Message(str,int,bytes)"
-	EventIndexSignature = 0
-	EventIndexNext      = 1
-	EventIndexSequence  = 2
 )
 
 type Receiver struct {
@@ -49,17 +41,21 @@ type Receiver struct {
 
 var bigIntOne = big.NewInt(1)
 
-func (r *Receiver) GetBTPBlockHeader(v *BTPNotification) (*BTPBlockHeader, error) {
-	var bh BTPBlockHeader
-	hv, _ := v.Header.Value()
-	_, err := codec.RLP.UnmarshalFromBytes(hv, &bh)
+func (r *Receiver) GetBTPBlockHeader(height int64, nid int64) ([]byte, error) {
+	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(height)), NetworkId: HexInt(intconv.FormatInt(nid))}
+	hB64, err := r.c.GetBTPHeader(pr)
 	if err != nil {
 		return nil, err
 	}
-	return &bh, nil
+	h, err := base64.StdEncoding.DecodeString(hB64)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
 }
-func (r *Receiver) GetBTPMessage(bh *BTPBlockHeader, nid int64) ([][]byte, error) {
-	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
+
+func (r *Receiver) GetBTPMessage(height int64, nid int64) ([][]byte, error) {
+	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(height)), NetworkId: HexInt(intconv.FormatInt(nid))}
 	mgs, err := r.c.GetBTPMessage(pr)
 	if err != nil {
 		return nil, err
@@ -76,8 +72,8 @@ func (r *Receiver) GetBTPMessage(bh *BTPBlockHeader, nid int64) ([][]byte, error
 	return result, nil
 }
 
-func (r *Receiver) GetBTPProof(bh *BTPBlockHeader, nid int64) ([]byte, error) {
-	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(bh.MainHeight)), NetworkId: HexInt(intconv.FormatInt(nid))}
+func (r *Receiver) GetBTPProof(height int64, nid int64) ([]byte, error) {
+	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(height)), NetworkId: HexInt(intconv.FormatInt(nid))}
 	b64p, err := r.c.GetBTPProof(pr)
 	if err != nil {
 		return nil, err
@@ -99,12 +95,12 @@ func (r *Receiver) GetBTPNetworkInfo(nid int64) (*NetworkInfo, error) {
 	return b, nil
 }
 
-func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag int64, cb func(bu *BTPBlockHeader) error, scb func()) error {
+func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag bool, cb func(bu *BTPBlockUpdate) error, scb func()) error {
 	//s := r.dst.String()
 	r.req = &BTPRequest{
 		Height:    HexInt(intconv.FormatInt(height)),
 		NetworkID: HexInt(intconv.FormatInt(networkId)),
-		ProofFlag: HexInt(intconv.FormatInt(proofFlag)),
+		ProofFlag: proofFlag,
 	}
 
 	if height < 1 {
@@ -113,23 +109,22 @@ func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag int64, c
 
 	return r.c.MonitorBTP(r.req,
 		func(conn *websocket.Conn, v *BTPNotification) error {
-			var bh BTPBlockHeader
+			var p []byte
 			h, err := v.Header.Value()
 			if err != nil {
 				return err
 			}
-			_, err = codec.RLP.UnmarshalFromBytes(h, &bh)
 			if len(v.Proof) > 0 {
-				p, err := base64.URLEncoding.DecodeString(v.Proof)
+				p, err = base64.URLEncoding.DecodeString(v.Proof)
 				if err != nil {
 					return err
 				}
-				bh.Proof = p
 			}
+
 			if err != nil {
 				return err
 			}
-			cb(&bh)
+			cb(&BTPBlockUpdate{BTPBlockHeader: h, BTPBlockProof: p})
 			return nil
 		},
 		func(conn *websocket.Conn) {

@@ -49,9 +49,9 @@ const (
 
 type Config struct {
 	module.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData  json.RawMessage `json:"key_store"`
-	KeyStorePass  string          `json:"key_password,omitempty"`
-	KeySecret     string          `json:"key_secret,omitempty"`
+	KeyStoreData  json.RawMessage  `json:"key_store"`
+	KeyStorePass  string           `json:"key_password,omitempty"`
+	KeySecret     string           `json:"key_secret,omitempty"`
 
 	LogLevel     string               `json:"log_level"`
 	ConsoleLevel string               `json:"console_level"`
@@ -161,8 +161,8 @@ func main() {
 
 	//BTP2.0
 	rootPFlags.Int64("ntid", 1, "network type id")
-	rootPFlags.Int64("nid", 3, "network id")
-	rootPFlags.Int64("proofFlag", 1, "btp2.0 notification proof flag")
+	rootPFlags.Int64("nid", 1, "network id")
+	rootPFlags.Bool("proofFlag", false, "btp2.0 notification proof flag")
 	rootPFlags.Bool("txPoolFlag", false, "Send when the maximum transaction size is reached.")
 
 	rootPFlags.Int64("offset", 0, "Offset of MTA")

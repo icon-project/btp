@@ -198,25 +198,17 @@ type BMCStatus struct {
 	TxSeq    HexInt `json:"tx_seq"`
 	RxSeq    HexInt `json:"rx_seq"`
 	Verifier struct {
-		Height     HexInt `json:"height"`
-		Offset     HexInt `json:"offset"`
-		LastHeight HexInt `json:"last_height"`
+		Height           HexInt `json:"height"`
+		Sequence_offset  HexInt `json:"sequence_offset"`
+		First_message_sn HexInt `json:"first_message_sn"`
+		Message_count    HexInt `json:"message_count"`
 	} `json:"verifier"`
 	BMRs []struct {
 		Address      Address `json:"address"`
 		BlockCount   HexInt  `json:"block_count"`
 		MessageCount HexInt  `json:"msg_count"`
 	} `json:"relays"`
-	BMRIndex         HexInt `json:"relay_idx"`
-	RotateHeight     HexInt `json:"rotate_height"`
-	RotateTerm       HexInt `json:"rotate_term"`
-	DelayLimit       HexInt `json:"delay_limit"`
-	MaxAggregation   HexInt `json:"max_agg"`
-	CurrentHeight    HexInt `json:"cur_height"`
-	RxHeight         HexInt `json:"rx_height"`
-	RxHeightSrc      HexInt `json:"rx_height_src"`
-	BlockIntervalSrc HexInt `json:"block_interval_src"`
-	BlockIntervalDst HexInt `json:"block_interval_dst"`
+	CurrentHeight HexInt `json:"cur_height"`
 }
 
 type BTPBlockParam struct {
@@ -422,7 +414,7 @@ type BTPNotification struct {
 type BTPRequest struct {
 	Height    HexInt `json:"height"`
 	NetworkID HexInt `json:"networkID"`
-	ProofFlag HexInt `json:"proofFlag"`
+	ProofFlag bool   `json:"proofFlag"`
 }
 
 type NetworkInfo struct {
@@ -435,10 +427,15 @@ type NetworkInfo struct {
 	LastNSHash      HexBytes `json:"lastNSHash"`
 }
 
-type BTPBlock struct {
-	BTPBlockHeader
-	Proof    []byte
-	Messages [][]byte
+//type BTPBlock struct {
+//	BTPBlockUpdate
+//	Proof    []byte
+//	Messages [][]byte
+//}
+
+type BTPBlockUpdate struct {
+	BTPBlockHeader []byte
+	BTPBlockProof  []byte
 }
 
 type BTPBlockHeader struct {
@@ -451,6 +448,5 @@ type BTPBlockHeader struct {
 	PrevNetworkSectionHash []byte
 	MessageCount           int64
 	MessagesRoot           []byte
-	Proof                  []byte
 	NextProofContext       []byte
 }

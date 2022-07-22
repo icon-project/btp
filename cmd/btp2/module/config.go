@@ -33,6 +33,6 @@ type Config struct {
 	Ntid              int64            `json:"ntid"`
 	Nid               int64            `json:"nid"`
 	TxPoolFlag        bool             `json:"txPoolFlag"`
-	ProofFlag         int64            `json:"proofFlag"`
+	ProofFlag         bool             `json:"proofFlag"`
 	Offset            int64            `json:"offset"`
 }

@@ -56,7 +56,7 @@ type TypePrefixedMessage struct {
 func NewTypePrefixedMessage(v interface{}) (*TypePrefixedMessage, error) {
 	mt := RelayMessageTypeReserved
 	switch v.(type) {
-	case BTPBlockHeader, *BTPBlockHeader: //TODO refactoring
+	case BTPBlockUpdate, *BTPBlockUpdate:
 		mt = RelayMessageTypeBlockUpdate
 	case mbt.MerkleBinaryTreeProof, *mbt.MerkleBinaryTreeProof:
 		mt = RelayMessageTypeMessageProof
@@ -77,7 +77,7 @@ func NewRelayMessage() *BTPRelayMessage {
 }
 
 type BTPBlockData struct {
-	Bu            *BTPBlockHeader
+	Bu            *BTPBlockUpdate
 	Mt            *mbt.MerkleBinaryTree
 	PartialOffset int
 	Seq           uint64

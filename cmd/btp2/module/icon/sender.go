@@ -223,10 +223,13 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	if ls.Verifier.Height, err = bs.Verifier.Height.Value(); err != nil {
 		return nil, err
 	}
-	if ls.Verifier.Offset, err = bs.Verifier.Offset.Value(); err != nil {
+	if ls.Verifier.Sequence_offset, err = bs.Verifier.Sequence_offset.Value(); err != nil {
 		return nil, err
 	}
-	if ls.Verifier.LastHeight, err = bs.Verifier.LastHeight.Value(); err != nil {
+	if ls.Verifier.First_message_sn, err = bs.Verifier.First_message_sn.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Message_count, err = bs.Verifier.Message_count.Value(); err != nil {
 		return nil, err
 	}
 	if ls.CurrentHeight, err = bs.CurrentHeight.Value(); err != nil {
