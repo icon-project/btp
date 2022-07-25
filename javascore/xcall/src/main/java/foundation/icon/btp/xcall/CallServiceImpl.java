@@ -128,11 +128,13 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         accruedFees.set("protocol", accruedFees("protocol").add(protocolFee));
 
         BigInteger sn = getNextSn();
-        CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
-        requests.set(sn, req);
-
-        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), _data);
+        if (_rollback != null) {
+            CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
+            requests.set(sn, req);
+        }
+        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), _rollback != null, _data);
         sendBTPMessage(dst.net(), CSMessage.REQUEST, sn, msgReq.toBytes());
+        CallMessageSent(caller, dst.toString(), sn, _data);
         return sn;
     }
 
@@ -144,6 +146,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
 
         BTPAddress from = BTPAddress.valueOf(req.getFrom());
         CSMessageResponse msgRes = null;
+        boolean needResponse = req.needRollback();
         try {
             DAppProxy proxy = new DAppProxy(Address.fromString(req.getTo()));
             proxy.handleCallMessage(req.getFrom(), req.getData());
@@ -159,9 +162,11 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         } finally {
             // cleanup
             proxyReqs.set(_reqId, null);
-            // send response
-            BigInteger sn = getNextSn();
-            sendBTPMessage(from.net(), CSMessage.RESPONSE, sn, msgRes.toBytes());
+            // send response only when there was a rollback
+            if (needResponse) {
+                BigInteger sn = getNextSn();
+                sendBTPMessage(from.net(), CSMessage.RESPONSE, sn, msgRes.toBytes());
+            }
         }
     }
 
@@ -189,6 +194,10 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     @Override
     @EventLog(indexed=1)
     public void RollbackMessage(BigInteger _sn, byte[] _rollback, String _reason) {}
+
+    /* Implementation-specific eventlog */
+    @EventLog(indexed=3)
+    private void CallMessageSent(Address _from, String _to, BigInteger _sn, byte[] _data) {}
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=1)
@@ -245,7 +254,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         String to = msgReq.getTo();
 
         BigInteger reqId = getNextReqId();
-        ProxyRequest req = new ProxyRequest(from.toString(), to, sn, msgReq.getData());
+        ProxyRequest req = new ProxyRequest(from.toString(), to, sn, msgReq.needRollback(), msgReq.getData());
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user
@@ -269,14 +278,10 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
             default:
                 logger.println("handleResponse", "code:", msgRes.getCode(), "msg:", msgRes.getMsg());
                 // emit rollback event
-                if (req.getRollback() != null) {
-                    req.setEnabled();
-                    requests.set(resSn, req);
-                    RollbackMessage(resSn, req.getRollback(), msgRes.getMsg());
-                } else {
-                    // ignore the failure response since no rollback data
-                    cleanupCallRequest(resSn);
-                }
+                Context.require(req.getRollback() != null, "NoRollbackData");
+                req.setEnabled();
+                requests.set(resSn, req);
+                RollbackMessage(resSn, req.getRollback(), msgRes.getMsg());
         }
     }
 

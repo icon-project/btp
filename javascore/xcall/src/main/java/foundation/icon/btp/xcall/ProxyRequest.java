@@ -25,12 +25,14 @@ public class ProxyRequest {
     private final String from;
     private final String to;
     private final BigInteger sn;
+    private final boolean rollback;
     private final byte[] data;
 
-    public ProxyRequest(String from, String to, BigInteger sn, byte[] data) {
+    public ProxyRequest(String from, String to, BigInteger sn, boolean rollback, byte[] data) {
         this.from = from;
         this.to = to;
         this.sn = sn;
+        this.rollback = rollback;
         this.data = data;
     }
 
@@ -46,15 +48,20 @@ public class ProxyRequest {
         return sn;
     }
 
+    public boolean needRollback() {
+        return rollback;
+    }
+
     public byte[] getData() {
         return data;
     }
 
     public static void writeObject(ObjectWriter w, ProxyRequest req) {
-        w.beginList(4);
+        w.beginList(5);
         w.write(req.from);
         w.write(req.to);
         w.write(req.sn);
+        w.write(req.rollback);
         w.writeNullable(req.data);
         w.end();
     }
@@ -65,6 +72,7 @@ public class ProxyRequest {
                 r.readString(),
                 r.readString(),
                 r.readBigInteger(),
+                r.readBoolean(),
                 r.readNullable(byte[].class)
         );
         r.end();

@@ -44,7 +44,7 @@ public class DAppProxySample implements CallServiceReceiver {
     public void sendMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         var sn = _sendCallMessage(Context.getValue(), _to, _data, _rollback);
         CallRequest req = new CallRequest(Context.getCaller(), _to, _rollback);
-        ProxyRequest preq = new ProxyRequest("from", _to, sn, _data);
+        ProxyRequest preq = new ProxyRequest("from", _to, sn, _rollback != null, _data);
         requests.set(sn, req);
         proxyReqs.set(sn, preq);
     }

@@ -24,11 +24,13 @@ import score.ObjectWriter;
 public class CSMessageRequest {
     private final String from;
     private final String to;
+    private final boolean rollback;
     private final byte[] data;
 
-    public CSMessageRequest(String from, String to, byte[] data) {
+    public CSMessageRequest(String from, String to, boolean rollback, byte[] data) {
         this.from = from;
         this.to = to;
+        this.rollback = rollback;
         this.data = data;
     }
 
@@ -44,10 +46,15 @@ public class CSMessageRequest {
         return data;
     }
 
+    public boolean needRollback() {
+        return rollback;
+    }
+
     public static void writeObject(ObjectWriter w, CSMessageRequest m) {
-        w.beginList(3);
+        w.beginList(4);
         w.write(m.from);
         w.write(m.to);
+        w.write(m.rollback);
         w.writeNullable(m.data);
         w.end();
     }
@@ -57,6 +64,7 @@ public class CSMessageRequest {
         CSMessageRequest m = new CSMessageRequest(
                 r.readString(),
                 r.readString(),
+                r.readBoolean(),
                 r.readNullable(byte[].class)
         );
         r.end();
