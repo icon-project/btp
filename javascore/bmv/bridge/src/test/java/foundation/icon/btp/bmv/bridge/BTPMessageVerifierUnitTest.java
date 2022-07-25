@@ -50,6 +50,7 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     public static void setup() throws Exception {
         score = sm.deploy(owner, BTPMessageVerifier.class,
                 bmcAccount.getAddress(),
+                prev.net(),
                 BigInteger.valueOf(0));
     }
 

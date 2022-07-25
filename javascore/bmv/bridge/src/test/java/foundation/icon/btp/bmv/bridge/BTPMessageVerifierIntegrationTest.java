@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmv.bridge;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVScoreClient;
 import foundation.icon.btp.lib.BTPAddress;
@@ -41,6 +40,7 @@ public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
     static DefaultScoreClient bmvClient = DefaultScoreClient.of(
             System.getProperties(),
             Map.of("_bmc", MockBMCIntegrationTest.mockBMCClient._address(),
+                    "_net",BTPMessageVerifierUnitTest.prev.net(),
                     "_height", BigInteger.ZERO));
 
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),

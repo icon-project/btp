@@ -17,6 +17,7 @@
 package foundation.icon.btp.bmv.bridge;
 
 import foundation.icon.btp.lib.BMV;
+import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.BTPException;
 import score.Address;
 import score.Context;
@@ -33,18 +34,20 @@ public class BTPMessageVerifier implements BMV {
     public static final int REVERT_INVALID_SEQ_NUMBER = 1;
 
     private VarDB<Address> varBMCAddress = Context.newVarDB("bmcAddress", Address.class);
+    private VarDB<String> varNetAddress = Context.newVarDB("netAddress", String.class);
     private VarDB<BigInteger> varHeight = Context.newVarDB("height", BigInteger.class);
 
-    public BTPMessageVerifier(Address _bmc, BigInteger _height) {
+    public BTPMessageVerifier(Address _bmc, String _net, BigInteger _height) {
         varBMCAddress.set(_bmc);
+        varNetAddress.set(_net);
         varHeight.set(_height);
     }
 
     @External
     public byte[][] handleRelayMessage(String _bmc, String _prev, BigInteger _seq, byte[] _msg) {
-        if (!Context.getCaller().equals(varBMCAddress.get())) {
-            throw new BTPException.BMV(REVERT_UNKNOWN, "not acceptable bmc");
-        }
+        BTPAddress curAddr = BTPAddress.valueOf(_bmc);
+        BTPAddress prevAddr = BTPAddress.valueOf(_prev);
+        checkAccessible(curAddr, prevAddr);
 
         BigInteger next_seq = _seq.add(BigInteger.ONE);
         RelayMessage rm = RelayMessage.fromBytes(_msg);
@@ -82,5 +85,16 @@ public class BTPMessageVerifier implements BMV {
     @External(readonly = true)
     public Map getStatus() {
         return Map.of("height", varHeight.get());
+    }
+
+    private void checkAccessible(BTPAddress curAddr, BTPAddress fromAddr) {
+        Address bmcAddress = varBMCAddress.get();
+        if (!varNetAddress.get().equals(fromAddr.net())) {
+            throw new BTPException.BMV(REVERT_UNKNOWN,"not acceptable from");
+        } else if (!Context.getCaller().equals(bmcAddress)) {
+            throw new BTPException.BMV(REVERT_UNKNOWN, "not acceptable bmc");
+        } else if (!Address.fromString(curAddr.account()).equals(bmcAddress)) {
+            throw new BTPException.BMV(REVERT_UNKNOWN, "not acceptable bmc");
+        }
     }
 }

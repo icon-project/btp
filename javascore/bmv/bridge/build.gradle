@@ -42,6 +42,7 @@ deployJar {
     password = scoreTest.default.resolvedKeyPassword
     parameters {[
             arg('_bmc', 'cx0000000000000000000000000000000000000000'),
+            arg('_net', '0x0.icon'),
             arg('_height', '0x0')
         ]
     }
