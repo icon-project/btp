@@ -123,7 +123,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         byte[] data = "sendCallMessageFromDAppProxy".getBytes();
         var sn = getNextSn();
         requestMap.put(sn, new MessageRequest(data, null));
-        var request = new CSMessageRequest(sampleAddress.toString(), to.account(), false, data);
+        var request = new CSMessageRequest(sampleAddress.toString(), to.account(), sn, false, data);
         var checker = MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
             assertEquals(linkNet, el.getTo());
             assertEquals(CallServiceImpl.SERVICE, el.getSvc());
@@ -146,7 +146,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var from = new BTPAddress(linkNet, sampleAddress.toString());
         var reqId = getNextReqId();
         byte[] data = requestMap.get(srcSn).getData();
-        var request = new CSMessageRequest(from.account(), to.account(), false, data);
+        var request = new CSMessageRequest(from.account(), to.account(), srcSn, false, data);
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
         var checker = CSIntegrationTest.eventLogChecker(CallMessageEventLog::eventLogs, (el) -> {
             assertEquals(from.toString(), el.getFrom());
@@ -255,7 +255,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         byte[] rollback = "ThisIsRollbackMessage".getBytes();
         var sn = getNextSn(inc);
         requestMap.put(sn, new MessageRequest(data, rollback));
-        var request = new CSMessageRequest(sampleAddress.toString(), fakeTo.account(), true, data);
+        var request = new CSMessageRequest(sampleAddress.toString(), fakeTo.account(), sn, true, data);
         var checker = MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
             assertEquals(linkNet, el.getTo());
             assertEquals(CallServiceImpl.SERVICE, el.getSvc());
@@ -279,7 +279,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         // relay the message first
         var from = new BTPAddress(linkNet, sampleAddress.toString());
         byte[] data = requestMap.get(srcSn).getData();
-        var request = new CSMessageRequest(from.account(), fakeTo.account(), true, data);
+        var request = new CSMessageRequest(from.account(), fakeTo.account(), srcSn, true, data);
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
         MockBMCIntegrationTest.mockBMC.intercallHandleBTPMessage(csAddress,
                 linkNet, CallServiceImpl.SERVICE, srcSn, csMsg.toBytes());

@@ -45,7 +45,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     private final VarDB<BigInteger> reqId = Context.newVarDB("reqId", BigInteger.class);
 
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
-    private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
+    private final DictDB<BigInteger, CSMessageRequest> proxyReqs = Context.newDictDB("proxyReqs", CSMessageRequest.class);
 
     // for fee-related operations
     private static final BigInteger EXA = BigInteger.valueOf(1_000_000_000_000_000_000L);
@@ -132,7 +132,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
             CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
             requests.set(sn, req);
         }
-        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), _rollback != null, _data);
+        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), sn, _rollback != null, _data);
         sendBTPMessage(dst.net(), CSMessage.REQUEST, sn, msgReq.toBytes());
         CallMessageSent(caller, dst.toString(), sn, _data);
         return sn;
@@ -141,7 +141,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     @Override
     @External
     public void executeCall(BigInteger _reqId) {
-        ProxyRequest req = proxyReqs.get(_reqId);
+        CSMessageRequest req = proxyReqs.get(_reqId);
         Context.require(req != null, "InvalidRequestId");
 
         BTPAddress from = BTPAddress.valueOf(req.getFrom());
@@ -254,7 +254,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         String to = msgReq.getTo();
 
         BigInteger reqId = getNextReqId();
-        ProxyRequest req = new ProxyRequest(from.toString(), to, sn, msgReq.needRollback(), msgReq.getData());
+        CSMessageRequest req = new CSMessageRequest(from.toString(), to, sn, msgReq.needRollback(), msgReq.getData());
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user

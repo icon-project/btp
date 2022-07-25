@@ -18,7 +18,6 @@ package foundation.icon.btp.xcall.sample;
 
 import foundation.icon.btp.xcall.CallRequest;
 import foundation.icon.btp.xcall.CallServiceReceiver;
-import foundation.icon.btp.xcall.ProxyRequest;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -33,7 +32,6 @@ import java.math.BigInteger;
 public class DAppProxySample implements CallServiceReceiver {
     private final Address callSvc;
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
-    private final DictDB<BigInteger, ProxyRequest> proxyReqs = Context.newDictDB("proxyReqs", ProxyRequest.class);
 
     public DAppProxySample(Address _callService) {
         this.callSvc = _callService;
@@ -44,9 +42,7 @@ public class DAppProxySample implements CallServiceReceiver {
     public void sendMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         var sn = _sendCallMessage(Context.getValue(), _to, _data, _rollback);
         CallRequest req = new CallRequest(Context.getCaller(), _to, _rollback);
-        ProxyRequest preq = new ProxyRequest("from", _to, sn, _rollback != null, _data);
         requests.set(sn, req);
-        proxyReqs.set(sn, preq);
     }
 
     private BigInteger _sendCallMessage(BigInteger value, String to, byte[] data, byte[] rollback) {
