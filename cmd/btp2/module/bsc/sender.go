@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"net/url"
 	"strconv"
@@ -183,7 +184,7 @@ func (s *sender) FinalizeLatency() int {
 }
 
 func (s *sender) TxSizeLimit() int {
-	return int(float64(txSizeLimit))
+	return int(math.Round(float64(txSizeLimit)))
 }
 
 func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) module.Sender {
