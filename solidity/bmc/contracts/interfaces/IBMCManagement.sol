@@ -43,14 +43,14 @@ interface IBMCManagement {
     function addService(string memory _svc, address _addr) external;
 
     /**
-       @notice De-registers the smart contract for the service.  
+       @notice De-registers the smart contract for the service.
        @dev Caller must be an operator of BTP network.
        @param _svc     Name of the service
      */
     function removeService(string calldata _svc) external;
 
     /**
-       @notice Registers BMV for the network. 
+       @notice Registers BMV for the network.
        @dev Caller must be an operator of BTP network.
        @param _net     Network Address of the blockchain
        @param _addr    Address of BMV
@@ -72,10 +72,10 @@ interface IBMCManagement {
     function addLink(string calldata _link) external;
 
     /**
-       @notice Set the link and status information. 
+       @notice Set the link and status information.
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
-       @param _blockInterval    Block interval of a connected link 
+       @param _blockInterval    Block interval of a connected link
        @param _maxAggregation   Set max aggreation of a connected link
        @param _delayLimit       Set delay limit of a connected link
      */
@@ -87,7 +87,7 @@ interface IBMCManagement {
     ) external;
 
     /**
-       @notice Removes the link and status information. 
+       @notice Removes the link and status information.
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
      */
@@ -176,7 +176,7 @@ interface IBMCManagement {
 
     /**
         @notice Get BMV services by net. Only called by BMC periphery.
-        @param _net net of the connected network 
+        @param _net net of the connected network
         @return BMV service address
      */
     function getBmvServiceByNet(string memory _net)

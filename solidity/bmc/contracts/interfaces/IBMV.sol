@@ -27,7 +27,7 @@ interface IBMV {
     /**
         @notice Used by the relay to resolve next BTP Message to send.
                 Called by BMC.
-        @return height height of MerkleTreeAccumulator 
+        @return height height of MerkleTreeAccumulator
         @return offset offset of MerkleTreeAccumulator
         @return lastHeight block height of last relayed BTP Message
      */

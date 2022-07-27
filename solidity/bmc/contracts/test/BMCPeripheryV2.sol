@@ -63,7 +63,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
 
     /**
        @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
-       @dev Caller must be a registered relayer.     
+       @dev Caller must be a registered relayer.
        @param _prev    BTP Address of the BMC generates the message
        @param _msg     base64 encoded string of serialized bytes of Relay Message refer RelayMessage structure
      */

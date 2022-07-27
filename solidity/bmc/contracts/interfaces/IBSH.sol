@@ -27,7 +27,7 @@ interface IBSH {
        @param _svc     Name of the service
        @param _sn      Serial number of the original message
        @param _code    Code of the error
-       @param _msg     Message of the error  
+       @param _msg     Message of the error
    */
     function handleBTPError(
         string calldata _src,

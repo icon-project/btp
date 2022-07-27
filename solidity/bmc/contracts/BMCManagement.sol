@@ -128,7 +128,7 @@ contract BMCManagement is IBMCManagement, Initializable {
     }
 
     /**
-       @notice Unregisters the smart contract for the service.  
+       @notice Unregisters the smart contract for the service.
        @dev Caller must be an operator of BTP network.
        @param _svc     Name of the service
    */
@@ -160,7 +160,7 @@ contract BMCManagement is IBMCManagement, Initializable {
     }
 
     /**
-       @notice Registers BMV for the network. 
+       @notice Registers BMV for the network.
        @dev Caller must be an operator of BTP network.
        @param _net     Network Address of the blockchain
        @param _addr    Address of BMV
@@ -243,7 +243,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         // propagate an event "LINK"
         propagateInternal("Link", _link);
 
-        string[] memory _links = listLinkNames; 
+        string[] memory _links = listLinkNames;
 
         listLinkNames.push(_link);
         getLinkFromNet[_net] = _link;
@@ -253,7 +253,7 @@ contract BMCManagement is IBMCManagement, Initializable {
     }
 
     /**
-       @notice Removes the link and status information. 
+       @notice Removes the link and status information.
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
    */
@@ -369,10 +369,10 @@ contract BMCManagement is IBMCManagement, Initializable {
                 //  it might have an error calculation if using unsigned integer
                 //  Thus, 'skipCount - 1' is moved into if_statement
                 //  For example:
-                //     + 'currentHeight' = 'guessHeight' 
-                //        => skipCount = 0 
+                //     + 'currentHeight' = 'guessHeight'
+                //        => skipCount = 0
                 //        => no delay
-                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' <= 'delay_limit' 
+                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' <= 'delay_limit'
                 //        => ceil(('currentHeight' - 'guessHeight') / 'delay_limit') = 1
                 //        => skipCount = skipCount - 1 = 0
                 //        => not out of 'delay_limit'
