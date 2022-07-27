@@ -14,9 +14,9 @@ interface IBMCPeriphery {
         @notice Verify and decode RelayMessage with BMV, and dispatch BTP Messages to registered BSHs
         @dev Caller must be a registered relayer.     
         @param _prev    BTP Address of the BMC generates the message
-        @param _msg     base64 encoded string of serialized bytes of Relay Message refer RelayMessage structure
+        @param _msg     serialized bytes of Relay Message refer RelayMessage structure
      */
-    function handleRelayMessage(string calldata _prev, string calldata _msg)
+    function handleRelayMessage(string calldata _prev, bytes calldata _msg)
         external;
 
     /**

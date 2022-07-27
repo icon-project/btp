@@ -67,7 +67,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
        @param _prev    BTP Address of the BMC generates the message
        @param _msg     base64 encoded string of serialized bytes of Relay Message refer RelayMessage structure
      */
-    function handleRelayMessage(string calldata _prev, string calldata _msg)
+    function handleRelayMessage(string calldata _prev, bytes calldata _msg)
         external
         override
     {
@@ -107,7 +107,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
 
     function decodeMsgAndValidateRelay(
         string calldata _prev,
-        string calldata _msg
+        bytes calldata _msg
     ) internal returns (bytes[] memory) {
         (string memory _net, ) = _prev.splitBTPAddress();
         address _bmvAddr = IBMCManagement(bmcManagement).getBmvServiceByNet(
