@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.5.0 <0.8.0;
+pragma solidity >=0.8.0 <0.8.5;
 
 interface IBSH {
     /**
        @notice Handle BTP Message from other blockchain.
-       @dev Accept the message only from the BMC. 
+       @dev Accept the message only from the BMC.
        Every BSH must implement this function
        @param _from    Network Address of source network
        @param _svc     Name of the service

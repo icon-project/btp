@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.5.0 <0.8.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.8.0 <0.8.5;
+pragma abicoder v2;
 
 import "../interfaces/IBMCManagement.sol";
 import "../interfaces/IBMCPeriphery.sol";
@@ -11,7 +11,7 @@ import "../libraries/String.sol";
 import "../libraries/Types.sol";
 import "../libraries/Utils.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract BMCManagementV2 is IBMCManagement, Initializable {
     using ParseAddress for address;

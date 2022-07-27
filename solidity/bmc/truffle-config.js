@@ -10,64 +10,64 @@ var privKeys = [
 //const BSC_RPC_URI = "ws://binancesmartchain:8546"
 
 module.exports = {
-  networks: {
-      development: {
-          provider: () => new HDWalletProvider({
-              privateKeys: privKeys,
-              providerOrUrl: "http://localhost:8545",
-          }),
-          network_id: '*'
-      },
-      bscLocal: {
-          provider: () => new HDWalletProvider({
-              privateKeys: privKeys,
-              providerOrUrl: "ws://localhost:8546",
-              chainId: 97,
-          }),
-          network_id: '97'
-      },
-      bscDocker: {
-          provider: () => new HDWalletProvider({
-              privateKeys: privKeys,
-              providerOrUrl: "BSC_RPC_URI",
-              chainId: 97,
-          }),
-          network_id: '97',
-          skipDryRun: true,
-          networkCheckTimeout: 1000000000
-      },
-      bsc: {
-          provider: () => new HDWalletProvider({
-              privateKeys: privKeys,
-              providerOrUrl: "http://35.214.59.124:8545",
-          }),
-          network_id: '97',
-          //networkCheckTimeout: 1000000,
-          //timeoutBlocks: 2000
-      }
-  },
-
-  // Set default mocha options here, use special reporters etc.
-  mocha: {
-    // timeout: 100000
-  },
-
-  // Configure your compilers
-  compilers: {
-    solc: {
-       version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
-      // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-       settings: {          // See the solidity docs for advice about optimization and evmVersion
-        optimizer: {
-          enabled: true,
-          runs: 10
+    networks: {
+        development: {
+            provider: () => new HDWalletProvider({
+                privateKeys: privKeys,
+                providerOrUrl: "http://localhost:8545",
+            }),
+            network_id: '*'
         },
-        evmVersion: "petersburg"
-      }
-    }
-  },
+        bscLocal: {
+            provider: () => new HDWalletProvider({
+                privateKeys: privKeys,
+                providerOrUrl: "ws://localhost:8546",
+                chainId: 97,
+            }),
+            network_id: '97'
+        },
+        bscDocker: {
+            provider: () => new HDWalletProvider({
+                privateKeys: privKeys,
+                providerOrUrl: "BSC_RPC_URI",
+                chainId: 97,
+            }),
+            network_id: '97',
+            skipDryRun: true,
+            networkCheckTimeout: 1000000000
+        },
+        bsc: {
+            provider: () => new HDWalletProvider({
+                privateKeys: privKeys,
+                providerOrUrl: "http://35.214.59.124:8545",
+            }),
+            network_id: '97',
+            //networkCheckTimeout: 1000000,
+            //timeoutBlocks: 2000
+        }
+    },
 
-  db: {
-    enabled: false
-  }
+    // Set default mocha options here, use special reporters etc.
+    mocha: {
+        // timeout: 100000
+    },
+
+    // Configure your compilers
+    compilers: {
+        solc: {
+            version: "0.8.0",    // Fetch exact version from solc-bin (default: truffle's version)
+            // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
+            settings: {          // See the solidity docs for advice about optimization and evmVersion
+                optimizer: {
+                    enabled: true,
+                    runs: 10
+                },
+                evmVersion: "petersburg"
+            }
+        }
+    },
+    plugins: ["truffle-plugin-verify", "@chainsafe/truffle-plugin-abigen"],
+    db: {
+        enabled: false
+    }
 };

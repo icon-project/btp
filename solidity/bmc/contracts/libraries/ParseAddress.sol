@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.5.0 <0.8.0;
+pragma solidity >=0.8.0 <0.8.5;
 
 /*
  * Utility library of inline functions on addresses
@@ -87,13 +87,13 @@ library ParseAddress {
             asciiOffset = _getAsciiOffset(leftNibble, leftCaps);
 
             // add the converted character to the byte array.
-            asciiBytes[2 * i] = byte(leftNibble + asciiOffset);
+            asciiBytes[2 * i] = bytes1(leftNibble + asciiOffset);
 
             // get the offset from nibble value to ascii character for right nibble.
             asciiOffset = _getAsciiOffset(rightNibble, rightCaps);
 
             // add the converted character to the byte array.
-            asciiBytes[2 * i + 1] = byte(rightNibble + asciiOffset);
+            asciiBytes[2 * i + 1] = bytes1(rightNibble + asciiOffset);
         }
 
         return string(abi.encodePacked("0x", string(asciiBytes)));
@@ -218,7 +218,7 @@ library ParseAddress {
                     nibble = b - asciiOffset;
                 } else {
                     accountAddressBytes[(i - 1) / 2] = (
-                        byte(16 * nibble + (b - asciiOffset))
+                        bytes1(16 * nibble + (b - asciiOffset))
                     );
                 }
             }
@@ -253,8 +253,10 @@ library ParseAddress {
             rightNibble = b - 16 * leftNibble;
 
             // to convert to ascii characters, add 48 to 0-9 and 87 to a-f.
-            asciiBytes[2 * i] = byte(leftNibble + (leftNibble < 10 ? 48 : 87));
-            asciiBytes[2 * i + 1] = byte(
+            asciiBytes[2 * i] = bytes1(
+                leftNibble + (leftNibble < 10 ? 48 : 87)
+            );
+            asciiBytes[2 * i + 1] = bytes1(
                 rightNibble + (rightNibble < 10 ? 48 : 87)
             );
         }
