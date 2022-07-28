@@ -269,21 +269,21 @@ func (_BMC *BMCCallerSession) GetStatus(_link string) (TypesLinkStats, error) {
 // HandleRelayMessage is a paid mutator transaction binding the contract method 0x6f4779cc.
 //
 // Solidity: function handleRelayMessage(string _prev, string _msg) returns()
-func (_BMC *BMCTransactor) HandleRelayMessage(opts *bind.TransactOpts, _prev string, _msg string) (*types.Transaction, error) {
+func (_BMC *BMCTransactor) HandleRelayMessage(opts *bind.TransactOpts, _prev string, _msg []byte) (*types.Transaction, error) {
 	return _BMC.contract.Transact(opts, "handleRelayMessage", _prev, _msg)
 }
 
 // HandleRelayMessage is a paid mutator transaction binding the contract method 0x6f4779cc.
 //
 // Solidity: function handleRelayMessage(string _prev, string _msg) returns()
-func (_BMC *BMCSession) HandleRelayMessage(_prev string, _msg string) (*types.Transaction, error) {
+func (_BMC *BMCSession) HandleRelayMessage(_prev string, _msg []byte) (*types.Transaction, error) {
 	return _BMC.Contract.HandleRelayMessage(&_BMC.TransactOpts, _prev, _msg)
 }
 
 // HandleRelayMessage is a paid mutator transaction binding the contract method 0x6f4779cc.
 //
 // Solidity: function handleRelayMessage(string _prev, string _msg) returns()
-func (_BMC *BMCTransactorSession) HandleRelayMessage(_prev string, _msg string) (*types.Transaction, error) {
+func (_BMC *BMCTransactorSession) HandleRelayMessage(_prev string, _msg []byte) (*types.Transaction, error) {
 	return _BMC.Contract.HandleRelayMessage(&_BMC.TransactOpts, _prev, _msg)
 }
 

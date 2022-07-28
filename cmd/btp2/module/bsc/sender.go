@@ -112,7 +112,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	}
 
 	var tx *types.Transaction
-	tx, err = s.bmc.HandleRelayMessage(t, s.src.String(), string(p[:]))
+	tx, err = s.bmc.HandleRelayMessage(t, s.src.String(), p[:])
 	if err != nil {
 		s.l.Errorf("handleRelayMessage: ", err.Error())
 		return nil, err
