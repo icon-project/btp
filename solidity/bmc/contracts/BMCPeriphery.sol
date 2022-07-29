@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "./interfaces/IBSH.sol";
 import "./interfaces/IBMCPeriphery.sol";
 import "./interfaces/IBMCManagement.sol";
-import "./interfaces/IBMV.sol";
+import "./interfaces/IBtpMessageVerifier.sol";
 import "./libraries/ParseAddress.sol";
 import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncodeStruct.sol";
@@ -115,10 +115,10 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         );
 
         require(_bmvAddr != address(0), "BMCRevertNotExistsBMV");
-        (uint256 _prevHeight, , ) = IBMV(_bmvAddr).getStatus();
+        (uint _prevHeight, , , ) = IBtpMessageVerifier(_bmvAddr).getStatus();
 
         // decode and verify relay message
-        bytes[] memory serializedMsgs = IBMV(_bmvAddr).handleRelayMessage(
+        bytes[] memory serializedMsgs = IBtpMessageVerifier(_bmvAddr).handleRelayMessage(
             bmcBtpAddress,
             _prev,
             IBMCManagement(bmcManagement).getLinkRxSeq(_prev),
@@ -126,11 +126,11 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         );
 
         // rotate and check valid relay
-        (uint256 _height, uint256 _lastHeight, ) = IBMV(_bmvAddr).getStatus();
+        (uint256 _height, uint256 _sequenceOffset, ,) = IBtpMessageVerifier(_bmvAddr).getStatus();
         address relay = IBMCManagement(bmcManagement).rotateRelay(
             _prev,
             block.number,
-            _lastHeight,
+            _sequenceOffset,
             serializedMsgs.length > 0
         );
 
@@ -416,10 +416,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         Types.RelayStats[] memory _relays = IBMCManagement(bmcManagement)
             .getRelayStatusByLink(_link);
         (string memory _net, ) = _link.splitBTPAddress();
-        uint256 _height;
-        uint256 _offset;
-        uint256 _lastHeight;
-        (_height, _offset, _lastHeight) = IBMV(
+        (uint _height, , , ) = IBtpMessageVerifier(
             IBMCManagement(bmcManagement).getBmvServiceByNet(_net)
         ).getStatus();
         uint256 _rotateTerm = link.maxAggregation.getRotateTerm(
@@ -429,7 +426,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
             Types.LinkStats(
                 link.rxSeq,
                 link.txSeq,
-                Types.VerifierStats(_height, _offset, _lastHeight, ""),
+                Types.VerifierStats(_height, 0, 0, ""),
                 _relays,
                 link.relayIdx,
                 link.rotateHeight,
