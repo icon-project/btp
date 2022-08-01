@@ -72,21 +72,6 @@ interface IBMCManagement {
     function addLink(string calldata _link) external;
 
     /**
-       @notice Set the link and status information.
-       @dev Caller must be an operator of BTP network.
-       @param _link    BTP Address of connected BMC
-       @param _blockInterval    Block interval of a connected link
-       @param _maxAggregation   Set max aggreation of a connected link
-       @param _delayLimit       Set delay limit of a connected link
-     */
-    function setLink(
-        string calldata _link,
-        uint256 _blockInterval,
-        uint256 _maxAggregation,
-        uint256 _delayLimit
-    ) external;
-
-    /**
        @notice Removes the link and status information.
        @dev Caller must be an operator of BTP network.
        @param _link    BTP Address of connected BMC
@@ -225,6 +210,14 @@ interface IBMCManagement {
         returns (address[] memory);
 
     /**
+       @notice Checking whether one specific address has Owner role.
+       @dev Caller can be ANY
+       @param _prev BTP Address of the previous BMC
+       @param _addr Address needs to verify.
+     */
+    function isLinkRelay(string calldata _prev, address _addr) external view returns (bool);
+
+    /**
         @notice Get relays status by link. Only called by BMC periphery.
         @param _prev BTP Address of the previous BMC
         @return Relay status of all relays
@@ -283,18 +276,4 @@ interface IBMCManagement {
         view
         returns (string memory, string memory);
 
-    /**
-        @notice rotate relay for relay address. Only called by BMC periphery.
-        @param _link BTP network address of connected BMC
-        @param _currentHeight current block height of MTA from BMV
-        @param _relayMsgHeight  block height of last relayed BTP Message
-        @param _hasMsg check if message exists
-        @return relay address
-     */
-    function rotateRelay(
-        string memory _link,
-        uint256 _currentHeight,
-        uint256 _relayMsgHeight,
-        bool _hasMsg
-    ) external returns (address);
 }
