@@ -3,6 +3,7 @@ pragma solidity >=0.8.0 <0.8.5;
 pragma abicoder v2;
 
 import "../interfaces/IBMV.sol";
+import "../libraries/RLPEncode.sol";
 
 contract MockBMV is IBMV {
 
@@ -25,14 +26,13 @@ contract MockBMV is IBMV {
     function getMTA()
         external
         view
-        override
         returns (string memory base64EncodedMTA)
     {}
 
     /**
         @return addr connected BMC address
      */
-    function getConnectedBMC() external view override returns (address addr) {}
+    function getConnectedBMC() external view returns (address addr) {}
 
     /**
         @return net network address of the blockchain
@@ -40,7 +40,6 @@ contract MockBMV is IBMV {
     function getNetAddress()
         external
         view
-        override
         returns (string memory net)
     {}
 
@@ -51,16 +50,15 @@ contract MockBMV is IBMV {
     function getValidators()
         external
         view
-        override
         returns (bytes32 serializedHash, address[] memory addresses)
     {}
 
     /**
         @notice Used by the relay to resolve next BTP Message to send.
                 Called by BMC.
-        @return height height of MerkleTreeAccumulator
-        @return offset offset of MerkleTreeAccumulator
-        @return lastHeight block height of last relayed BTP Message
+        @return height Last verified block height
+        @return extra  extra rlp encoded bytes
+                (offset of MerkleTreeAccumulator, block height of last relayed BTP Message)
      */
     function getStatus()
         external
@@ -68,11 +66,13 @@ contract MockBMV is IBMV {
         override
         returns (
             uint256 height,
-            uint256 offset,
-            uint256 lastHeight
+            bytes memory extra
         )
     {
-        return (mta.height, mta.offset, lastBTPHeight);
+        bytes[] memory l = new bytes[](2);
+        l[0] = RLPEncode.encodeUint(mta.offset);
+        l[1] = RLPEncode.encodeUint(lastBTPHeight);
+        return (mta.height, RLPEncode.encodeList(l));
     }
 
     /**

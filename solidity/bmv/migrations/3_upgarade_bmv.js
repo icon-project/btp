@@ -7,10 +7,10 @@ const Utils = artifacts.require("Utils");
 
 // only for upgrade
 module.exports = async function (deployer, network) {
-    let old = await BtpMessageVerifier.deployed();
+    // let old = await BtpMessageVerifier.deployed();
 
-    deployer.link(RelayMessageLib, BtpMessageVerifierV2);
-    deployer.link(Utils, BtpMessageVerifierV2);
+    // deployer.link(RelayMessageLib, BtpMessageVerifierV2);
+    // deployer.link(Utils, BtpMessageVerifierV2);
 
-    await upgradeProxy(old.address, BtpMessageVerifierV2, { deployer });
+    // await upgradeProxy(old.address, BtpMessageVerifierV2, { deployer });
 };

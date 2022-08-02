@@ -50,13 +50,13 @@ contract BMCManagement is IBMCManagement, Initializable {
 
     uint256 private constant BLOCK_INTERVAL_MSEC = 1000;
 
-    modifier hasPermission {
-        require(_owners[msg.sender] == true, "BMCRevertUnauthorized");
+    modifier hasPermission() {
+        require(_owners[msg.sender] == true, "Unauthorized");
         _;
     }
 
-    modifier onlyBMCPeriphery {
-        require(msg.sender == bmcPeriphery, "BMCRevertUnauthorized");
+    modifier onlyBMCPeriphery() {
+        require(msg.sender == bmcPeriphery, "Unauthorized");
         _;
     }
 
@@ -66,8 +66,8 @@ contract BMCManagement is IBMCManagement, Initializable {
     }
 
     function setBMCPeriphery(address _addr) external override hasPermission {
-        require(_addr != address(0), "BMCRevertInvalidAddress");
-        require(_addr != bmcPeriphery, "BMCRevertAlreadyExistsBMCPeriphery");
+        require(_addr != address(0), "InvalidAddress");
+        require(_addr != bmcPeriphery, "AlreadyExistsBMCPeriphery");
         bmcPeriphery = _addr;
     }
 
@@ -95,8 +95,8 @@ contract BMCManagement is IBMCManagement, Initializable {
        @param _owner    Address of an Owner to be removed.
      */
     function removeOwner(address _owner) external override hasPermission {
-        require(numOfOwner > 1, "BMCRevertLastOwner");
-        require(_owners[_owner] == true, "BMCRevertNotExistsPermission");
+        require(numOfOwner > 1, "LastOwner");
+        require(_owners[_owner] == true, "NotExistsPermission");
         delete _owners[_owner];
         numOfOwner--;
     }
@@ -121,8 +121,8 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(_addr != address(0), "BMCRevertInvalidAddress");
-        require(bshServices[_svc] == address(0), "BMCRevertAlreadyExistsBSH");
+        require(_addr != address(0), "InvalidAddress");
+        require(bshServices[_svc] == address(0), "AlreadyExistsBSH");
         bshServices[_svc] = _addr;
         listBSHNames.push(_svc);
     }
@@ -133,7 +133,7 @@ contract BMCManagement is IBMCManagement, Initializable {
        @param _svc     Name of the service
    */
     function removeService(string memory _svc) external override hasPermission {
-        require(bshServices[_svc] != address(0), "BMCRevertNotExistsBSH");
+        require(bshServices[_svc] != address(0), "NotExistsBSH");
         delete bshServices[_svc];
         listBSHNames.remove(_svc);
     }
@@ -148,8 +148,9 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         returns (Types.Service[] memory)
     {
-        Types.Service[] memory services =
-            new Types.Service[](listBSHNames.length);
+        Types.Service[] memory services = new Types.Service[](
+            listBSHNames.length
+        );
         for (uint256 i = 0; i < listBSHNames.length; i++) {
             services[i] = Types.Service(
                 listBSHNames[i],
@@ -170,7 +171,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(bmvServices[_net] == address(0), "BMCRevertAlreadyExistsBMV");
+        require(bmvServices[_net] == address(0), "AlreadyExistsBMV");
         bmvServices[_net] = _addr;
         listBMVNames.push(_net);
     }
@@ -185,7 +186,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
+        require(bmvServices[_net] != address(0), "NotExistsBMV");
         delete bmvServices[_net];
         listBMVNames.remove(_net);
     }
@@ -222,19 +223,11 @@ contract BMCManagement is IBMCManagement, Initializable {
         require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
         require(
             links[_link].isConnected == false,
-            "BMCRevertAlreadyExistsLink"
+            "AlreadyExistsLink"
         );
         links[_link] = Types.Link(
             new address[](0),
             new string[](0),
-            0,
-            0,
-            BLOCK_INTERVAL_MSEC,
-            0,
-            10,
-            3,
-            0,
-            0,
             0,
             0,
             true
@@ -272,165 +265,6 @@ contract BMCManagement is IBMCManagement, Initializable {
     */
     function getLinks() external view override returns (string[] memory) {
         return listLinkNames;
-    }
-
-    function setLink(
-        string memory _link,
-        uint256 _blockInterval,
-        uint256 _maxAggregation,
-        uint256 _delayLimit
-    ) external override hasPermission {
-        require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
-        require(
-            _maxAggregation >= 1 && _delayLimit >= 1,
-            "BMCRevertInvalidParam"
-        );
-        Types.Link memory link = links[_link];
-        uint256 _scale = link.blockIntervalSrc.getScale(link.blockIntervalDst);
-        bool resetRotateHeight = false;
-        if (link.maxAggregation.getRotateTerm(_scale) == 0) {
-            resetRotateHeight = true;
-        }
-        link.blockIntervalDst = _blockInterval;
-        link.maxAggregation = _maxAggregation;
-        link.delayLimit = _delayLimit;
-
-        _scale = link.blockIntervalSrc.getScale(_blockInterval);
-        uint256 _rotateTerm = _maxAggregation.getRotateTerm(_scale);
-        if (resetRotateHeight && _rotateTerm > 0) {
-            link.rotateHeight = block.number + _rotateTerm;
-            link.rxHeight = block.number;
-            string memory _net;
-            (_net, ) = _link.splitBTPAddress();
-            (link.rxHeightSrc, , ) = IBMV(bmvServices[_net]).getStatus();
-        }
-        links[_link] = link;
-    }
-
-    function rotateRelay(
-        string memory _link,
-        uint256 _currentHeight,
-        uint256 _relayMsgHeight,
-        bool _hasMsg
-    ) external override onlyBMCPeriphery returns (address) {
-        /*
-            @dev Solidity does not support calculate rational numbers/floating numbers
-            thus, a division of _blockIntervalSrc and _blockIntervalDst should be
-            scaled by 10^6 to minimize proportional error
-        */
-        Types.Link memory link = links[_link];
-        uint256 _scale = link.blockIntervalSrc.getScale(link.blockIntervalDst);
-        uint256 _rotateTerm = link.maxAggregation.getRotateTerm(_scale);
-        uint256 _baseHeight;
-        uint256 _rotateCount;
-        if (_rotateTerm > 0) {
-            if (_hasMsg) {
-                //  Note that, Relay has to relay this event immediately to BMC
-                //  upon receiving this event. However, Relay is allowed to hold
-                //  no later than 'delay_limit'. Thus, guessHeight comes up
-                //  Arrival time of BTP Message identified by a block height
-                //  BMC starts guessing when an event of 'RelayMessage' was thrown by another BMC
-                //  which is 'guessHeight' and the time BMC receiving this event is 'currentHeight'
-                //  If there is any delay, 'guessHeight' is likely less than 'currentHeight'
-                uint256 _guessHeight =
-                    link.rxHeight +
-                        uint256((_relayMsgHeight - link.rxHeightSrc) * 10**6)
-                            .ceilDiv(_scale) -
-                        1;
-
-                if (_guessHeight > _currentHeight) {
-                    _guessHeight = _currentHeight;
-                }
-                //  Python implementation as:
-                //  rotate_count = math.ceil((guess_height - self.rotate_height)/rotate_term)
-                //  the following code re-write it with using unsigned integer
-                if (_guessHeight < link.rotateHeight) {
-                    _rotateCount =
-                        (link.rotateHeight - _guessHeight).ceilDiv(
-                            _rotateTerm
-                        ) -
-                        1;
-                } else {
-                    _rotateCount = (_guessHeight - link.rotateHeight).ceilDiv(
-                        _rotateTerm
-                    );
-                }
-                //  No need to check this if using unsigned integer as above
-                // if (_rotateCount < 0) {
-                //     _rotateCount = 0;
-                // }
-
-                _baseHeight =
-                    link.rotateHeight +
-                    ((_rotateCount - 1) * _rotateTerm);
-                /*  Python implementation as:
-                //  skip_count = math.ceil((current_height - guess_height)/self.delay_limit) - 1
-                //  In case that 'current_height' = 'guess_height'
-                //  it might have an error calculation if using unsigned integer
-                //  Thus, 'skipCount - 1' is moved into if_statement
-                //  For example:
-                //     + 'currentHeight' = 'guessHeight'
-                //        => skipCount = 0
-                //        => no delay
-                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' <= 'delay_limit'
-                //        => ceil(('currentHeight' - 'guessHeight') / 'delay_limit') = 1
-                //        => skipCount = skipCount - 1 = 0
-                //        => not out of 'delay_limit'
-                //        => accepted
-                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' > 'delay_limit'
-                //        => ceil(('currentHeight' - 'guessHeight') / 'delay_limit') = 2
-                //        => skipCount = skipCount - 1 = 1
-                //        => out of 'delay_limit'
-                //        => rejected and move to next Relay
-                */
-                uint256 _skipCount =
-                    (_currentHeight - _guessHeight).ceilDiv(link.delayLimit);
-
-                if (_skipCount > 0) {
-                    _skipCount = _skipCount - 1;
-                    _rotateCount += _skipCount;
-                    _baseHeight = _currentHeight;
-                }
-                link.rxHeight = _currentHeight;
-                link.rxHeightSrc = _relayMsgHeight;
-                links[_link] = link;
-            } else {
-                if (_currentHeight < link.rotateHeight) {
-                    _rotateCount =
-                        (link.rotateHeight - _currentHeight).ceilDiv(
-                            _rotateTerm
-                        ) -
-                        1;
-                } else {
-                    _rotateCount = (_currentHeight - link.rotateHeight).ceilDiv(
-                        _rotateTerm
-                    );
-                }
-                _baseHeight =
-                    link.rotateHeight +
-                    ((_rotateCount - 1) * _rotateTerm);
-            }
-            return rotate(_link, _rotateTerm, _rotateCount, _baseHeight);
-        }
-        return address(0);
-    }
-
-    function rotate(
-        string memory _link,
-        uint256 _rotateTerm,
-        uint256 _rotateCount,
-        uint256 _baseHeight
-    ) internal returns (address) {
-        Types.Link memory link = links[_link];
-        if (_rotateTerm > 0 && _rotateCount > 0) {
-            link.rotateHeight = _baseHeight + _rotateTerm;
-            link.relayIdx = link.relayIdx + _rotateCount;
-            if (link.relayIdx >= link.relays.length) {
-                link.relayIdx = link.relayIdx % link.relays.length;
-            }
-            links[_link] = link;
-        }
-        return link.relays[link.relayIdx];
     }
 
     function propagateInternal(
@@ -473,7 +307,10 @@ contract BMCManagement is IBMCManagement, Initializable {
             _rlpBytes = abi.encodePacked(RLPEncodeStruct.LIST_SHORT_START);
         } else {
             for (uint256 i = 0; i < _links.length; i++)
-                _rlpBytes = abi.encodePacked(_rlpBytes, _links[i].encodeString());
+                _rlpBytes = abi.encodePacked(
+                    _rlpBytes,
+                    _links[i].encodeString()
+                );
             // encode target's reachable list
             _rlpBytes = abi.encodePacked(
                 _rlpBytes.length.addLength(false),
@@ -505,7 +342,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(bytes(routes[_dst]).length == 0, "BTPRevertAlreadyExistRoute");
+        require(bytes(routes[_dst]).length == 0, "AlreadyExistRoute");
         //  Verify _dst and _link format address
         //  these two strings must follow BTP format address
         //  If one of these is failed, revert()
@@ -526,7 +363,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         //  @dev No need to check if _dst is a valid BTP format address
         //  since it was checked when adding route at the beginning
         //  If _dst does not match, revert()
-        require(bytes(routes[_dst]).length != 0, "BTPRevertNotExistRoute");
+        require(bytes(routes[_dst]).length != 0, "NotExistRoute");
         delete routes[_dst];
         (string memory _net, ) = _dst.splitBTPAddress();
         delete getRouteDstFromNet[_net];
@@ -559,7 +396,7 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
+        require(links[_link].isConnected == true, "NotExistsLink");
         links[_link].relays = _addr;
         for (uint256 i = 0; i < _addr.length; i++)
             relayStats[_addr[i]] = Types.RelayStats(_addr[i], 0, 0);
@@ -578,7 +415,7 @@ contract BMCManagement is IBMCManagement, Initializable {
     {
         require(
             links[_link].isConnected == true && links[_link].relays.length != 0,
-            "BMCRevertUnauthorized"
+            "Unauthorized"
         );
         for (uint256 i = 0; i < links[_link].relays.length; i++) {
             if (links[_link].relays[i] != _addr) {
@@ -659,6 +496,21 @@ contract BMCManagement is IBMCManagement, Initializable {
         return links[_prev].relays;
     }
 
+    function isLinkRelay(string calldata _prev, address _addr)
+        external
+        view
+        override
+        returns (bool)
+    {
+        address[] memory relays = links[_prev].relays;
+        for (uint256 i = 0; i < relays.length; i++) {
+            if (_addr == relays[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function getRelayStatusByLink(string memory _prev)
         external
         view
@@ -705,8 +557,9 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         onlyBMCPeriphery
     {
-        (string memory _net, ) =
-            links[_prev].reachable[_index].splitBTPAddress();
+        (string memory _net, ) = links[_prev]
+            .reachable[_index]
+            .splitBTPAddress();
         delete getLinkFromReachableNet[_net];
         delete links[_prev].reachable[_index];
         links[_prev].reachable[_index] = links[_prev].reachable[
@@ -744,7 +597,7 @@ contract BMCManagement is IBMCManagement, Initializable {
 
         require(
             bytes(res._to).length > 0,
-            string("BMCRevertUnreachable: ").concat(_dstNet).concat(
+            string("Unreachable: ").concat(_dstNet).concat(
                 " is unreachable"
             )
         );

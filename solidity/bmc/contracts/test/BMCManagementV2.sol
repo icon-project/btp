@@ -230,14 +230,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
             new string[](0),
             0,
             0,
-            BLOCK_INTERVAL_MSEC,
-            0,
-            10,
-            3,
-            0,
-            0,
-            0,
-            0,
             true
         );
         listLinkNames.push(_link);
@@ -267,165 +259,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     */
     function getLinks() external view override returns (string[] memory) {
         return listLinkNames;
-    }
-
-    function setLink(
-        string memory _link,
-        uint256 _blockInterval,
-        uint256 _maxAggregation,
-        uint256 _delayLimit
-    ) external override hasPermission {
-        require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
-        require(
-            _maxAggregation >= 1 && _delayLimit >= 1,
-            "BMCRevertInvalidParam"
-        );
-        Types.Link memory link = links[_link];
-        uint256 _scale = link.blockIntervalSrc.getScale(link.blockIntervalDst);
-        bool resetRotateHeight = false;
-        if (link.maxAggregation.getRotateTerm(_scale) == 0) {
-            resetRotateHeight = true;
-        }
-        link.blockIntervalDst = _blockInterval;
-        link.maxAggregation = _maxAggregation;
-        link.delayLimit = _delayLimit;
-
-        _scale = link.blockIntervalSrc.getScale(_blockInterval);
-        uint256 _rotateTerm = _maxAggregation.getRotateTerm(_scale);
-        if (resetRotateHeight && _rotateTerm > 0) {
-            link.rotateHeight = block.number + _rotateTerm;
-            link.rxHeight = block.number;
-            string memory _net;
-            (_net, ) = _link.splitBTPAddress();
-            (link.rxHeightSrc, , ) = IBMV(bmvServices[_net]).getStatus();
-        }
-        links[_link] = link;
-    }
-
-    function rotateRelay(
-        string memory _link,
-        uint256 _currentHeight,
-        uint256 _relayMsgHeight,
-        bool _hasMsg
-    ) external override onlyBMCPeriphery returns (address) {
-        /*
-            @dev Solidity does not support calculate rational numbers/floating numbers
-            thus, a division of _blockIntervalSrc and _blockIntervalDst should be
-            scaled by 10^6 to minimize proportional error
-        */
-        Types.Link memory link = links[_link];
-        uint256 _scale = link.blockIntervalSrc.getScale(link.blockIntervalDst);
-        uint256 _rotateTerm = link.maxAggregation.getRotateTerm(_scale);
-        uint256 _baseHeight;
-        uint256 _rotateCount;
-        if (_rotateTerm > 0) {
-            if (_hasMsg) {
-                //  Note that, Relay has to relay this event immediately to BMC
-                //  upon receiving this event. However, Relay is allowed to hold
-                //  no later than 'delay_limit'. Thus, guessHeight comes up
-                //  Arrival time of BTP Message identified by a block height
-                //  BMC starts guessing when an event of 'RelayMessage' was thrown by another BMC
-                //  which is 'guessHeight' and the time BMC receiving this event is 'currentHeight'
-                //  If there is any delay, 'guessHeight' is likely less than 'currentHeight'
-                uint256 _guessHeight =
-                    link.rxHeight +
-                        uint256((_relayMsgHeight - link.rxHeightSrc) * 10**6)
-                            .ceilDiv(_scale) -
-                        1;
-
-                if (_guessHeight > _currentHeight) {
-                    _guessHeight = _currentHeight;
-                }
-                //  Python implementation as:
-                //  rotate_count = math.ceil((guess_height - self.rotate_height)/rotate_term)
-                //  the following code re-write it with using unsigned integer
-                if (_guessHeight < link.rotateHeight) {
-                    _rotateCount =
-                        (link.rotateHeight - _guessHeight).ceilDiv(
-                            _rotateTerm
-                        ) -
-                        1;
-                } else {
-                    _rotateCount = (_guessHeight - link.rotateHeight).ceilDiv(
-                        _rotateTerm
-                    );
-                }
-                //  No need to check this if using unsigned integer as above
-                // if (_rotateCount < 0) {
-                //     _rotateCount = 0;
-                // }
-
-                _baseHeight =
-                    link.rotateHeight +
-                    ((_rotateCount - 1) * _rotateTerm);
-                /*  Python implementation as:
-                //  skip_count = math.ceil((current_height - guess_height)/self.delay_limit) - 1
-                //  In case that 'current_height' = 'guess_height'
-                //  it might have an error calculation if using unsigned integer
-                //  Thus, 'skipCount - 1' is moved into if_statement
-                //  For example:
-                //     + 'currentHeight' = 'guessHeight'
-                //        => skipCount = 0
-                //        => no delay
-                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' <= 'delay_limit'
-                //        => ceil(('currentHeight' - 'guessHeight') / 'delay_limit') = 1
-                //        => skipCount = skipCount - 1 = 0
-                //        => not out of 'delay_limit'
-                //        => accepted
-                //     + 'currentHeight' > 'guessHeight' and 'currentHeight' - 'guessHeight' > 'delay_limit'
-                //        => ceil(('currentHeight' - 'guessHeight') / 'delay_limit') = 2
-                //        => skipCount = skipCount - 1 = 1
-                //        => out of 'delay_limit'
-                //        => rejected and move to next Relay
-                */
-                uint256 _skipCount =
-                    (_currentHeight - _guessHeight).ceilDiv(link.delayLimit);
-
-                if (_skipCount > 0) {
-                    _skipCount = _skipCount - 1;
-                    _rotateCount += _skipCount;
-                    _baseHeight = _currentHeight;
-                }
-                link.rxHeight = _currentHeight;
-                link.rxHeightSrc = _relayMsgHeight;
-                links[_link] = link;
-            } else {
-                if (_currentHeight < link.rotateHeight) {
-                    _rotateCount =
-                        (link.rotateHeight - _currentHeight).ceilDiv(
-                            _rotateTerm
-                        ) -
-                        1;
-                } else {
-                    _rotateCount = (_currentHeight - link.rotateHeight).ceilDiv(
-                        _rotateTerm
-                    );
-                }
-                _baseHeight =
-                    link.rotateHeight +
-                    ((_rotateCount - 1) * _rotateTerm);
-            }
-            return rotate(_link, _rotateTerm, _rotateCount, _baseHeight);
-        }
-        return address(0);
-    }
-
-    function rotate(
-        string memory _link,
-        uint256 _rotateTerm,
-        uint256 _rotateCount,
-        uint256 _baseHeight
-    ) internal returns (address) {
-        Types.Link memory link = links[_link];
-        if (_rotateTerm > 0 && _rotateCount > 0) {
-            link.rotateHeight = _baseHeight + _rotateTerm;
-            link.relayIdx = link.relayIdx + _rotateCount;
-            if (link.relayIdx >= link.relays.length) {
-                link.relayIdx = link.relayIdx % link.relays.length;
-            }
-            links[_link] = link;
-        }
-        return link.relays[link.relayIdx];
     }
 
     function propagateEvent(string memory _eventType, string calldata _link)
@@ -610,6 +443,21 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         returns (address[] memory)
     {
         return links[_prev].relays;
+    }
+
+    function isLinkRelay(string calldata _prev, address _addr)
+        external
+        view
+        override
+        returns (bool)
+    {
+        address[] memory relays = links[_prev].relays;
+        for (uint256 i = 0; i < relays.length; i++) {
+            if (_addr == relays[i]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function getRelayStatusByLink(string memory _prev)

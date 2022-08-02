@@ -4,40 +4,17 @@ pragma abicoder v2;
 
 interface IBMV {
     /**
-        @return base64EncodedMTA Base64 encode of Merkle Tree
-     */
-    function getMTA() external view returns (string memory);
-
-    /**
-        @return addr connected BMC address
-     */
-    function getConnectedBMC() external view returns (address);
-
-    /**
-        @return net network address of the blockchain
-     */
-    function getNetAddress() external view returns (string memory);
-
-    /**
-        @return serializedHash hash of RLP encode from given list of validators
-        @return addresses list of validators' addresses
-     */
-    function getValidators() external view returns (bytes32, address[] memory);
-
-    /**
         @notice Used by the relay to resolve next BTP Message to send.
                 Called by BMC.
-        @return height height of MerkleTreeAccumulator
-        @return offset offset of MerkleTreeAccumulator
-        @return lastHeight block height of last relayed BTP Message
+        @return height Last verified block height
+        @return extra  extra rlp encoded bytes
      */
     function getStatus()
         external
         view
         returns (
             uint256 height,
-            uint256 offset,
-            uint256 lastHeight
+            bytes memory extra
         );
 
     /**

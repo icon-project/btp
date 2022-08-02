@@ -154,9 +154,7 @@ library Types {
      * @Notice List of ALL Structs being used by a BMC contract
      */
     struct VerifierStats {
-        uint256 heightMTA; // MTA = Merkle Trie Accumulator
-        uint256 offsetMTA;
-        uint256 lastHeight; // Block height of last verified message which is BTP-Message contained
+        uint256 height; // Last verified block height
         bytes extra;
     }
 
@@ -180,14 +178,6 @@ library Types {
         string[] reachable; //  A BTP Address of the next BMC that can be reach using this link
         uint256 rxSeq;
         uint256 txSeq;
-        uint256 blockIntervalSrc;
-        uint256 blockIntervalDst;
-        uint256 maxAggregation;
-        uint256 delayLimit;
-        uint256 relayIdx;
-        uint256 rotateHeight;
-        uint256 rxHeight;
-        uint256 rxHeightSrc;
         bool isConnected;
     }
 
@@ -196,15 +186,6 @@ library Types {
         uint256 txSeq;
         VerifierStats verifier;
         RelayStats[] relays;
-        uint256 relayIdx;
-        uint256 rotateHeight;
-        uint256 rotateTerm;
-        uint256 delayLimit;
-        uint256 maxAggregation;
-        uint256 rxHeightSrc;
-        uint256 rxHeight;
-        uint256 blockIntervalSrc;
-        uint256 blockIntervalDst;
         uint256 currentHeight;
     }
 
