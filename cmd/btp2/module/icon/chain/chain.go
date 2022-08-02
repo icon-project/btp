@@ -167,7 +167,7 @@ func (s *SimpleChain) relay() error {
 	s.rmsMtx.RLock()
 	defer s.rmsMtx.RUnlock()
 	var rmSize int
-	if s.cfg.TxPoolFlag {
+	if s.cfg.MaxSizeTx {
 		rmSize = len(s.rms) - 1
 	} else {
 		rmSize = len(s.rms)
@@ -532,7 +532,7 @@ func (s *SimpleChain) Monitoring() error {
 	}
 
 	s.l.Debugf("_init height:%d, dst(%s, src height:%d, seq:%d, last:%d), receive:%d",
-		s.ci.srcHeight(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.LastHeight, h)
+		s.ci.srcHeight(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.Height, h)
 
 	errCh := make(chan error)
 	go func() {

@@ -32,7 +32,7 @@ type Config struct {
 	Dst               BaseConfig       `json:"dst"`
 	Ntid              int64            `json:"ntid"`
 	Nid               int64            `json:"nid"`
-	TxPoolFlag        bool             `json:"txPoolFlag"`
+	MaxSizeTx         bool             `json:"maxSizeTx"`
 	ProofFlag         bool             `json:"proofFlag"`
 	Offset            int64            `json:"offset"`
 }

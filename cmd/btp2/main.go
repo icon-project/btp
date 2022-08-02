@@ -64,7 +64,7 @@ func (c *Config) Wallet() (wallet.Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wallet.NewFromKeyStore(c.KeyStoreData, pw)
+	return wallet.DecryptKeyStore(c.KeyStoreData, pw)
 }
 
 func (c *Config) resolvePassword() ([]byte, error) {
@@ -114,7 +114,6 @@ func main() {
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
 	//rootVc.Debug()
-
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Print btp2 version",
@@ -163,7 +162,7 @@ func main() {
 	rootPFlags.Int64("ntid", 1, "network type id")
 	rootPFlags.Int64("nid", 1, "network id")
 	rootPFlags.Bool("proofFlag", false, "btp2.0 notification proof flag")
-	rootPFlags.Bool("txPoolFlag", false, "Send when the maximum transaction size is reached.")
+	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
 
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
 	rootPFlags.String("key_store", "", "KeyStore")
