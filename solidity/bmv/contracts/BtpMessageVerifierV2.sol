@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
-import "./interfaces/IBtpMessageVerifier.sol";
+import "./interfaces/IBMV.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
+contract BtpMessageVerifierV2 is IBMV, Initializable {
 
     using BlockUpdateLib for BlockUpdateLib.Header;
     using MessageProofLib for MessageProofLib.MessageProof;
@@ -60,12 +60,14 @@ contract BtpMessageVerifierV2 is IBtpMessageVerifier, Initializable {
         validators = header.nextValidators;
     }
 
-    function getStatus() external view returns (uint, uint, uint, uint) {
+    function getStatus() external view returns (uint, bytes memory) {
+        bytes[] memory extra = new bytes[](3);
+        extra[0] = RLPEncode.encodeUint(sequenceOffset);
+        extra[1] = RLPEncode.encodeUint(firstMessageSn);
+        extra[2] = RLPEncode.encodeUint(messageCount);
         return (
             height,
-            sequenceOffset,
-            firstMessageSn,
-            messageCount
+            RLPEncode.encodeList(extra)
         );
     }
 
