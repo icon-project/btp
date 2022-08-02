@@ -17,6 +17,9 @@
 package foundation.icon.btp.lib;
 
 import foundation.icon.score.util.StringUtil;
+import score.Context;
+import score.ObjectReader;
+import score.ObjectWriter;
 
 public class BMVStatus {
     private long height;
@@ -47,4 +50,28 @@ public class BMVStatus {
         return sb.toString();
     }
 
+    public static void writeObject(ObjectWriter writer, BMVStatus obj) {
+        obj.writeObject(writer);
+    }
+
+    public void writeObject(ObjectWriter writer) {
+        writer.beginList(2);
+        writer.write(this.getHeight());
+        writer.write(this.getExtra());
+        writer.end();
+    }
+
+    public static BMVStatus readObject(ObjectReader reader) {
+        BMVStatus obj = new BMVStatus();
+        reader.beginList();
+        obj.setHeight(reader.readLong());
+        obj.setExtra(reader.readByteArray());
+        reader.end();
+        return obj;
+    }
+
+    public static BMVStatus fromBytes(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        return BMVStatus.readObject(reader);
+    }
 }
