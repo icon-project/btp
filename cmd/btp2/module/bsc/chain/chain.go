@@ -500,7 +500,14 @@ func (s *SimpleChain) OnBlockOfSrc(bu *module.BlockUpdate, rps []*module.Receipt
 func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockProof, error) {
 	//at := s.bs.Verifier.Height
 	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bs.Verifier.Offset)
-	at, w, err := s.acc.WitnessForAt(height, s.bs.Verifier.Height, s.bs.Verifier.Offset)
+	//TODO refactoring Duplicate rlp decode
+	vs := &bsc.VerifierStatus_v1{}
+	_, err := codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
+	if err != nil {
+		return nil, err
+	}
+
+	at, w, err := s.acc.WitnessForAt(height, s.bs.Verifier.Height, vs.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -592,18 +599,25 @@ func (s *SimpleChain) init() error {
 		}()
 	}
 	s.l.Debugf("_init height:%d, dst(%s, height:%d, seq:%d, last:%d), receive:%d",
-		s.acc.Height(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.LastHeight, s.receiveHeight())
+		s.acc.Height(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.Height, s.receiveHeight())
 	return nil
 }
 
 func (s *SimpleChain) receiveHeight() int64 {
 	//min(max(s.acc.Height(), s.bs.Verifier.Offset), s.bs.Verifier.LastHeight)
+	//TODO refactoring Duplicate rlp decode
+	vs := &bsc.VerifierStatus_v1{}
+	_, err := codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
+	if err != nil {
+		return 0
+	}
+
 	max := s.acc.Height()
-	if max < s.bs.Verifier.Offset {
-		max = s.bs.Verifier.Offset
+	if max < vs.Offset {
+		max = vs.Offset
 	}
 	max += 1
-	min := s.bs.Verifier.LastHeight
+	min := vs.LastHeight
 	if max < min {
 		min = max
 	}
@@ -676,7 +690,7 @@ func NewChain(cfg *module.Config, w wallet.Wallet, l log.Logger) *SimpleChain {
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
 		w:   w,
-		l:   l.WithFields(log.Fields{log.FieldKeyChain:
+		l: l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,

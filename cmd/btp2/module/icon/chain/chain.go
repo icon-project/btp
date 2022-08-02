@@ -468,7 +468,14 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		index := (s.bs.RxSeq.Int64() - s.bs.Verifier.Sequence_offset) - s.bs.Verifier.First_message_sn
+
+		vs := &icon.VerifierStatus{}
+		_, err = codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
+		if err != nil {
+			return 0, err
+		}
+
+		index := (s.bs.RxSeq.Int64() - vs.SequenceOffset) - vs.FirstMessageSn
 		if index < bh.MessageCount {
 			var mt *mbt.MerkleBinaryTree
 			m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Nid)

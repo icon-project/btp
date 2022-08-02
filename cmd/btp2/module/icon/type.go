@@ -67,6 +67,12 @@ const (
 	BMCGetStatusMethod = "getStatus"
 )
 
+type VerifierStatus struct {
+	SequenceOffset int64
+	FirstMessageSn int64
+	MessageCount   int64
+}
+
 type BlockHeader struct {
 	Version                int
 	Height                 int64
@@ -198,10 +204,8 @@ type BMCStatus struct {
 	TxSeq    HexInt `json:"tx_seq"`
 	RxSeq    HexInt `json:"rx_seq"`
 	Verifier struct {
-		Height           HexInt `json:"height"`
-		Sequence_offset  HexInt `json:"sequence_offset"`
-		First_message_sn HexInt `json:"first_message_sn"`
-		Message_count    HexInt `json:"message_count"`
+		Height HexInt   `json:"height"`
+		Extra  HexBytes `json:"extra"`
 	} `json:"verifier"`
 	BMRs []struct {
 		Address      Address `json:"address"`

@@ -148,11 +148,6 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	var status binding.TypesLinkStats
 	status, err := s.bmc.GetStatus(nil, s.src.String())
-	verifierStatus := &VerifierStatus{}
-	if _, err = codec.RLP.UnmarshalFromBytes(status.Verifier.Extra, verifierStatus); err != nil {
-		return nil, err
-	}
-
 	if err != nil {
 		s.l.Errorf("Error retrieving relay status from BMC")
 		return nil, err
@@ -161,10 +156,8 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	ls := &module.BMCLinkStatus{}
 	ls.TxSeq = status.TxSeq
 	ls.RxSeq = status.RxSeq
-	ls.Verifier.Height = verifierStatus.Height
-	ls.Verifier.Sequence_offset = verifierStatus.Sequence_offset
-	ls.Verifier.First_message_sn = verifierStatus.First_message_sn
-	ls.Verifier.Message_count = verifierStatus.Message_count
+	ls.Verifier.Height = status.Verifier.Height.Int64()
+	ls.Verifier.Extra = status.Verifier.Extra
 	ls.CurrentHeight = status.CurrentHeight.Int64()
 	return ls, nil
 }

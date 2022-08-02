@@ -66,11 +66,15 @@ const (
 	ResultStatusFailureCodeEnd    = 99
 )
 
-type VerifierStatus struct {
-	Height           int64
-	Sequence_offset  int64
-	First_message_sn int64
-	Message_count    int64
+type VerifierStatus_v2 struct {
+	SequenceOffset int64
+	FirstMessageSn int64
+	MessageCount   int64
+}
+
+type VerifierStatus_v1 struct {
+	Offset     int64
+	LastHeight int64
 }
 
 type EventLog struct {
