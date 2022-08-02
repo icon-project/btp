@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package foundation.icon.btp.mock;
+package foundation.icon.btp.bmv.icon;
 
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-public class MockBMVProperties {
-    public static final MockBMVProperties DEFAULT;
-
-    static {
-        DEFAULT = new MockBMVProperties();
-        DEFAULT.setOffset(Context.getBlockHeight());
-        DEFAULT.setLastHeight(Context.getBlockHeight());
-    }
-
+public class BMVStatusExtra {
     private long offset;
     private long lastHeight;
 
-    public MockBMVProperties() {
-        super();
+    public BMVStatusExtra() {
+    }
+
+    public BMVStatusExtra(long offset, long lastHeight) {
+        this.offset = offset;
+        this.lastHeight = lastHeight;
     }
 
     public long getOffset() {
@@ -55,19 +51,19 @@ public class MockBMVProperties {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("MockBMVProperties{");
+        final StringBuilder sb = new StringBuilder("BMVStatusExtra{");
         sb.append("offset=").append(offset);
         sb.append(", lastHeight=").append(lastHeight);
         sb.append('}');
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, MockBMVProperties obj) {
+    public static void writeObject(ObjectWriter writer, BMVStatusExtra obj) {
         obj.writeObject(writer);
     }
 
-    public static MockBMVProperties readObject(ObjectReader reader) {
-        MockBMVProperties obj = new MockBMVProperties();
+    public static BMVStatusExtra readObject(ObjectReader reader) {
+        BMVStatusExtra obj = new BMVStatusExtra();
         reader.beginList();
         obj.setOffset(reader.readLong());
         obj.setLastHeight(reader.readLong());
@@ -82,14 +78,14 @@ public class MockBMVProperties {
         writer.end();
     }
 
-    public static MockBMVProperties fromBytes(byte[] bytes) {
+    public static BMVStatusExtra fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return MockBMVProperties.readObject(reader);
+        return BMVStatusExtra.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        MockBMVProperties.writeObject(writer, this);
+        BMVStatusExtra.writeObject(writer, this);
         return writer.toByteArray();
     }
 

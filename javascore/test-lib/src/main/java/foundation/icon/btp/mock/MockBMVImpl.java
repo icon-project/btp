@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.mock;
 
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.score.util.Logger;
 import score.Context;
@@ -24,11 +25,11 @@ import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
-import java.util.Map;
 
 public class MockBMVImpl implements MockBMV {
     private static final Logger logger = Logger.getLogger(MockBMVImpl.class);
 
+    private final VarDB<Long> varHeight = Context.newVarDB("height", Long.class);
     private final VarDB<MockBMVProperties> properties = Context.newVarDB("properties", MockBMVProperties.class);
 
     public MockBMVImpl() {
@@ -36,6 +37,10 @@ public class MockBMVImpl implements MockBMV {
         if (properties == null) {
             setProperties(MockBMVProperties.DEFAULT);
         }
+    }
+
+    private long getHeight() {
+        return varHeight.getOrDefault(0L);
     }
 
     public MockBMVProperties getProperties() {
@@ -48,9 +53,7 @@ public class MockBMVImpl implements MockBMV {
 
     @External
     public void setHeight(long _height) {
-        MockBMVProperties properties = getProperties();
-        properties.setHeight(_height);
-        setProperties(properties);
+        varHeight.set(_height);
     }
 
     @External
@@ -63,7 +66,7 @@ public class MockBMVImpl implements MockBMV {
     @External
     public void setLast_height(long _last_height) {
         MockBMVProperties properties = getProperties();
-        properties.setLast_height(_last_height);
+        properties.setLastHeight(_last_height);
         setProperties(properties);
     }
 
@@ -88,15 +91,15 @@ public class MockBMVImpl implements MockBMV {
                 isUpdateProperties = true;
             }
             Long height = relayMessage.getHeight();
-            if (height != null && height != properties.getHeight()) {
-                logger.println("handleRelayMessage", "height", properties.getHeight(), height);
-                properties.setHeight(height);
+            if (height != null && height != getHeight()) {
+                logger.println("handleRelayMessage", "height", getHeight(), height);
+                setHeight(height);
                 isUpdateProperties = true;
             }
             Long lastHeight = relayMessage.getLastHeight();
-            if (lastHeight != null && lastHeight != properties.getLast_height()) {
-                logger.println("handleRelayMessage", "lastHeight", properties.getLast_height(), lastHeight);
-                properties.setLast_height(lastHeight);
+            if (lastHeight != null && lastHeight != properties.getLastHeight()) {
+                logger.println("handleRelayMessage", "lastHeight", properties.getLastHeight(), lastHeight);
+                properties.setLastHeight(lastHeight);
                 isUpdateProperties = true;
             }
             if (isUpdateProperties) {
@@ -113,10 +116,11 @@ public class MockBMVImpl implements MockBMV {
     }
 
     @External(readonly = true)
-    public Map getStatus() {
+    public BMVStatus getStatus() {
         MockBMVProperties p = getProperties();
-        return Map.of("height", p.getHeight(),
-                "offset", p.getOffset(),
-                "last_height", p.getLast_height());
+        BMVStatus s = new BMVStatus();
+        s.setHeight(getHeight());
+        s.setExtra(p.toBytes());
+        return s;
     }
 }

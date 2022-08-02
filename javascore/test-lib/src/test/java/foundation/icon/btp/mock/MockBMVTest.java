@@ -79,10 +79,12 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
                     assertArrayEquals(new byte[][]{}, el.getRet());
                 }),
                 bmc, prev, seq, relayMessage.toBytes());
-        MockBMVProperties status = MockBMVIntegrationTest.getStatus(mockBMV);
+
+        BMVStatus status = mockBMV.getStatus();
         assertEquals(relayMessage.getHeight(), status.getHeight());
-        assertEquals(relayMessage.getLastHeight(), status.getLast_height());
-        assertEquals(relayMessage.getOffset(), status.getOffset());
+        MockBMVProperties properties = MockBMVProperties.fromBytes(mockBMV.getStatus().getExtra());
+        assertEquals(relayMessage.getLastHeight(), properties.getLastHeight());
+        assertEquals(relayMessage.getOffset(), properties.getOffset());
     }
 
     @Test
@@ -90,15 +92,19 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         Number number = com.github.javafaker.Faker.instance().number();
         long height = number.numberBetween(0, Long.MAX_VALUE);
         mockBMV.setHeight(height);
-        assertEquals(height, MockBMVIntegrationTest.getStatus(mockBMV).getHeight());
+        assertEquals(height, mockBMV.getStatus().getHeight());
 
         long lastHeight = number.numberBetween(0, Long.MAX_VALUE);
         mockBMV.setLast_height(lastHeight);
-        assertEquals(lastHeight, MockBMVIntegrationTest.getStatus(mockBMV).getLast_height());
+        assertEquals(lastHeight,
+                MockBMVProperties.fromBytes(mockBMV.getStatus().getExtra())
+                        .getLastHeight());
 
         long offset = number.numberBetween(0, Long.MAX_VALUE);
         mockBMV.setOffset(offset);
-        assertEquals(offset, MockBMVIntegrationTest.getStatus(mockBMV).getOffset());
+        assertEquals(lastHeight,
+                MockBMVProperties.fromBytes(mockBMV.getStatus().getExtra())
+                        .getOffset());
     }
 
 }

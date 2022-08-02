@@ -17,6 +17,7 @@
 package foundation.icon.btp.bmv.bridge;
 
 import foundation.icon.btp.lib.BMV;
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.BTPException;
 import score.Address;
@@ -27,7 +28,6 @@ import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 
 public class BTPMessageVerifier implements BMV {
     public static final int REVERT_UNKNOWN = 0;
@@ -83,8 +83,10 @@ public class BTPMessageVerifier implements BMV {
     }
 
     @External(readonly = true)
-    public Map getStatus() {
-        return Map.of("height", varHeight.get());
+    public BMVStatus getStatus() {
+        BMVStatus s = new BMVStatus();
+        s.setHeight(varHeight.get().longValue());
+        return s;
     }
 
     private void checkAccessible(BTPAddress curAddr, BTPAddress fromAddr) {

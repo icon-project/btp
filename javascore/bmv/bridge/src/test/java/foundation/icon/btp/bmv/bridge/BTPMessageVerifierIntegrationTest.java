@@ -18,6 +18,7 @@ package foundation.icon.btp.bmv.bridge;
 
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVScoreClient;
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.mock.MockBMCScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
@@ -28,7 +29,6 @@ import foundation.icon.score.client.ScoreClient;
 import org.junit.jupiter.api.Test;
 import scorex.util.ArrayList;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -65,15 +65,8 @@ public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
                 BTPMessageVerifierUnitTest.prev.toString(),
                 seq,
                 BTPMessageVerifierUnitTest.toBytes(rm));
-        Map<String, Object> map = (Map<String, Object>) bmv.getStatus();
-        assertEquals(toJsonRpcValue(height, String.class), map.get("height"));
+        BMVStatus status = bmv.getStatus();
+        assertEquals(height.longValue(), status.getHeight());
     }
 
-    static <T> T toJsonRpcValue(Object obj, Class<T> clazz) {
-        try {
-            return client.mapper().readValue(client.mapper().writeValueAsString(obj), clazz);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

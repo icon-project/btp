@@ -22,10 +22,12 @@ import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
+import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import score.ByteArrayObjectWriter;
 import score.Context;
+import score.ObjectReader;
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
@@ -156,5 +158,30 @@ public class BTPMessageVerifierUnitTest extends TestBase {
         assertArrayEquals(rps.toArray(), rm.getReceiptProofs());
         RelayMessage rm2 = RelayMessage.fromBytes(toBytes(rm));
         assertRelayMessageEquals(rm, rm2);
+    }
+
+    @Test
+    public void decodeTest() {
+        String hex = "de942eca89299fdfea25b07978017221c41cadf19b03883078332e69636f6e";
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", StringUtil.hexToBytes(hex));
+        reader.beginList();
+        //eth address
+        byte[] bmcAddresss = reader.readByteArray();
+        String netAddr = reader.readString();
+        reader.end();
+        System.out.println("bmcAddresss:"+StringUtil.bytesToHex(bmcAddresss));
+        System.out.println("netAddr:"+netAddr);
+
+        //validatorset
+        //https://github.com/tendermint/tendermint/blob/master/proto/tendermint/types/validator.proto
+        //*tmtypes.ValidatorSet
+        hex = "4d1be64f0e9a466c2e66a53433928192783e29f8fa21beb2133499b5ef770f60000000e8d4a5100099308aa365c40554bc89982af505d85da95251445d5dd4a9bb37dd2584fd92d3000000e8d4a5100001776920ff0b0f38d78cf95c033c21adf7045785114e392a7544179652e0a612000000e8d4a51000";
+        byte[] bs =StringUtil.hexToBytes(hex);
+        System.out.println(bs.length);
+        System.out.printf("<"+StringUtil.bytesToHex(new byte[]{bs[0]}));
+        for (int i=1;i<bs.length;i++) {
+            System.out.printf(" "+StringUtil.bytesToHex(new byte[]{bs[i]}));
+        }
+        System.out.println(">");
     }
 }

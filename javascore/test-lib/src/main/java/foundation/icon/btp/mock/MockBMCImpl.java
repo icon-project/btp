@@ -98,6 +98,6 @@ public class MockBMCImpl implements MockBMC {
     @External(readonly = true)
     public BMVStatus intercallGetStatus(Address _addr) {
         BMVScoreInterface bmv = new BMVScoreInterface(_addr);
-        return BMVStatus.fromMap(bmv.getStatus());
+        return bmv.getStatus();
     }
 }
