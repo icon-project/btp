@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/icon-project/btp/cmd/btp2/module/bsc"
-	"math"
 	"math/big"
 	"path/filepath"
 	"sync"
@@ -66,21 +65,12 @@ type SimpleChain struct {
 	heightOfDst     int64
 	lastBlockUpdate *module.BlockUpdate
 
-	bmrIndex       int
-	relayble       bool
-	relaybleIndex  int
-	relaybleHeight int64
+	//bmrIndex       int
+	//relayble       bool
+	//relaybleIndex  int
+	//relaybleHeight int64
 }
 
-func (s *SimpleChain) _relayble(rm *module.RelayMessage) bool {
-	return s.relayble && (s._overMaxAggregation(rm) || s._lastRelaybleHeight())
-}
-func (s *SimpleChain) _overMaxAggregation(rm *module.RelayMessage) bool {
-	return len(rm.BlockUpdates) >= s.bs.MaxAggregation
-}
-func (s *SimpleChain) _lastRelaybleHeight() bool {
-	return s.relaybleHeight == (s.monitorHeight() + 1)
-}
 func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
 	for _, segment := range rm.Segments {
 		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
@@ -116,8 +106,7 @@ func (s *SimpleChain) _relay() {
 	defer s.rmsMtx.RUnlock()
 	var err error
 	for _, rm := range s.rms {
-		if (len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0) ||
-			s._hasWait(rm) || (!s._skippable(rm) && !s._relayble(rm)) {
+		if (len(rm.BlockUpdates) == 0 && len(rm.ReceiptProofs) == 0) || s._hasWait(rm) {
 			break
 		} else {
 			if len(rm.Segments) == 0 {
@@ -371,13 +360,6 @@ func (s *SimpleChain) addRelayMessage(bu *module.BlockUpdate, rps []*module.Rece
 		rm.BlockUpdates = append(rm.BlockUpdates, bu)
 		rm.ReceiptProofs = rps
 		rm.HeightOfDst = s.monitorHeight()
-		if s.bs.BlockIntervalDst > 0 {
-			scale := float64(s.bs.BlockIntervalSrc) / float64(s.bs.BlockIntervalDst)
-			guessHeightOfDst := s.bs.RxHeight + int64(math.Ceil(float64(bu.Height-s.bs.RxHeightSrc)/scale)) - 1
-			if guessHeightOfDst < rm.HeightOfDst {
-				rm.HeightOfDst = guessHeightOfDst
-			}
-		}
 		s.l.Debugf("addRelayMessage rms:%d bu:%d rps:%d HeightOfDst:%d", len(s.rms), bu.Height, len(rps), rm.HeightOfDst)
 		rm = s._rm()
 	} else {
@@ -577,90 +559,12 @@ func (s *SimpleChain) prepareDatabase(offset int64) error {
 	return nil
 }
 
-func (s *SimpleChain) _skippable(rm *module.RelayMessage) bool {
-	bs := s.bs
-	if len(rm.ReceiptProofs) > 0 {
-		if bs.RotateTerm > 0 {
-			rotate := 0
-			relaybleHeightStart := bs.RotateHeight - int64(bs.RotateTerm+1)
-			if rm.HeightOfDst > bs.RotateHeight {
-				rotate = int(math.Ceil(float64(rm.HeightOfDst-bs.RotateHeight) / float64(bs.RotateTerm)))
-				if rotate > 0 {
-					relaybleHeightStart += int64(bs.RotateTerm * (rotate - 1))
-				}
-			}
-			skip := int(math.Ceil(float64(s.monitorHeight()+1-rm.HeightOfDst)/float64(bs.DelayLimit))) - 1
-			if skip > 0 {
-				rotate += skip
-				relaybleHeightStart = rm.HeightOfDst + int64(bs.DelayLimit*skip)
-			}
-			relaybleIndex := bs.BMRIndex
-			if rotate > 0 {
-				relaybleIndex += rotate
-				if relaybleIndex >= len(bs.BMRs) {
-					relaybleIndex = relaybleIndex % len(bs.BMRs)
-				}
-			}
-			prevFinalizeHeight := relaybleHeightStart + int64(s.s.FinalizeLatency())
-			return (relaybleIndex == s.bmrIndex) && (prevFinalizeHeight <= s.monitorHeight())
-		} else {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *SimpleChain) _rotate() {
-	bs := s.bs
-	a := s.w.Address()
-	if bs.RotateTerm > 0 {
-		//update own bmrIndex of BMRs
-		bmrIndex := -1
-		for i, bmr := range bs.BMRs {
-			if bmr.Address == a {
-				bmrIndex = i
-				break
-			}
-		}
-		s.bmrIndex = bmrIndex
-
-		//predict index and height of rotate on next block
-		rotate := int(math.Ceil(float64(s.monitorHeight()+1-bs.RotateHeight) / float64(bs.RotateTerm)))
-		relaybleIndex := bs.BMRIndex
-		relaybleHeightEnd := bs.RotateHeight
-		if rotate > 0 {
-			relaybleIndex += rotate
-			if relaybleIndex >= len(bs.BMRs) {
-				relaybleIndex = relaybleIndex % len(bs.BMRs)
-			}
-			relaybleHeightEnd += int64(bs.RotateTerm * rotate)
-		}
-		prevFinalizeHeight := relaybleHeightEnd - int64(s.bs.RotateTerm) + int64(s.s.FinalizeLatency())
-		s.relayble = (relaybleIndex == s.bmrIndex) && (prevFinalizeHeight <= s.monitorHeight())
-		s.relaybleIndex = relaybleIndex
-		s.relaybleHeight = relaybleHeightEnd
-		//b7214314876a73397c07}]
-		s.l.Debugf("RefreshStatus %d si:%d status[i:%d rh:%d rxh:%d rxhs:%d] relayble[%v i:%d rh:%d r:%d]",
-			s.monitorHeight(),
-			s.bmrIndex,
-			bs.BMRIndex,
-			bs.RotateHeight,
-			bs.RxHeight,
-			bs.RxHeightSrc,
-			s.relayble,
-			relaybleIndex,
-			relaybleHeightEnd,
-			rotate)
-	}
-}
-
 func (s *SimpleChain) RefreshStatus() error {
 	bmcStatus, err := s.s.GetStatus()
 	if err != nil {
 		return err
 	}
 	s.bs = bmcStatus
-	s._rotate()
 	return nil
 }
 
@@ -717,9 +621,6 @@ func (s *SimpleChain) Serve(sender module.Sender) error {
 	if err := s.prepareDatabase(s.cfg.Offset); err != nil {
 		return err
 	}
-
-	//TODO Pre rotation settings
-	s.relayble = true
 
 	if err := s.Monitoring(); err != nil {
 		return err
