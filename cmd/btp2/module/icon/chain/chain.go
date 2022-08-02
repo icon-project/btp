@@ -200,16 +200,16 @@ func (s *SimpleChain) relay() error {
 func (s *SimpleChain) segment() error {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
-	dbslen := len(s.bds) - 1
+	bdsLen := len(s.bds) - 1
 	if len(s.rms) == 0 || s.isOverLimit(s.rms[len(s.rms)-1].Size()) {
 		s.rms = append(s.rms, icon.NewRelayMessage())
 	}
 
 	//blockUpdate
-	s.BlockUpdateSegment(s.bds[dbslen].Bu, s.bds[dbslen].HeightOfSrc)
+	s.BlockUpdateSegment(s.bds[bdsLen].Bu, s.bds[bdsLen].HeightOfSrc)
 	//messageProof
-	if s.bds[dbslen].Mt != nil {
-		s.MessageSegment(s.bds[dbslen].Mt, s.bds[dbslen].PartialOffset, s.bds[dbslen].HeightOfSrc)
+	if s.bds[bdsLen].Mt != nil {
+		s.MessageSegment(s.bds[bdsLen].Mt, s.bds[bdsLen].PartialOffset, s.bds[bdsLen].HeightOfSrc)
 	}
 	return nil
 }
@@ -392,10 +392,18 @@ func (s *SimpleChain) OnBlockOfSrc(bu *icon.BTPBlockUpdate) error {
 		s.SetChainInfo()
 	}
 
-	if s.relayble && bh.MainHeight != s.ci.StartHeight+1 {
-		s.addRelayMessage(bu, bh)
-		s.segment()
-		s.relay()
+	if s.relayble && bh.MainHeight != s.ci.StartHeight {
+		if err := s.addRelayMessage(bu, bh); err != nil {
+			return err
+		}
+
+		if err := s.segment(); err != nil {
+			return err
+		}
+
+		if err := s.relay(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
