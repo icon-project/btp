@@ -115,7 +115,7 @@ func (r *Receiver) ReceiveLoop(height int64, networkId int64, proofFlag bool, cb
 				return err
 			}
 			if len(v.Proof) > 0 {
-				p, err = base64.URLEncoding.DecodeString(v.Proof)
+				p, err = base64.StdEncoding.DecodeString(v.Proof)
 				if err != nil {
 					return err
 				}
