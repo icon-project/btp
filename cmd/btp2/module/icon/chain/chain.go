@@ -31,7 +31,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 const (
@@ -193,7 +192,9 @@ func (s *SimpleChain) relay() error {
 			go s.result(i, segment)
 		}
 	}
+	//TODO 메모리 검사해보기
 	s.rms = append(s.rms[:0], s.rms[0+rmSize:]...)
+	//s.rms = s.rms[:rmSize]
 	return nil
 }
 
@@ -201,7 +202,7 @@ func (s *SimpleChain) segment() error {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
 	bdsLen := len(s.bds) - 1
-	if len(s.rms) == 0 || s.isOverLimit(s.rms[len(s.rms)-1].Size()) {
+	if len(s.rms) == 0 {
 		s.rms = append(s.rms, icon.NewRelayMessage())
 	}
 
@@ -218,14 +219,18 @@ func (s *SimpleChain) BlockUpdateSegment(bu *icon.BTPBlockUpdate, heightOfSrc in
 	//blockUpdate
 	//skipped first btp block
 	if heightOfSrc != s.ci.StartHeight {
-		if s.isOverLimit(s.rms[len(s.rms)-1].Size() + int(unsafe.Sizeof(bu))) {
-			s.rms = append(s.rms, icon.NewRelayMessage())
-		}
 		tpm, err := icon.NewTypePrefixedMessage(bu)
+		b, err := codec.RLP.MarshalToBytes(tpm)
 		if err != nil {
 			return err
 		}
-
+		rmsSize, err := s.rms[len(s.rms)-1].Size()
+		if err != nil {
+			return err
+		}
+		if s.isOverLimit(rmsSize + len(b)) {
+			s.rms = append(s.rms, icon.NewRelayMessage())
+		}
 		s.rms[len(s.rms)-1].SetHeight(heightOfSrc)
 		s.rms[len(s.rms)-1].AppendMessage(tpm)
 	}
@@ -240,10 +245,15 @@ func (s *SimpleChain) MessageSegment(mt *mbt.MerkleBinaryTree, partialOffset int
 		if err != nil {
 			return err
 		}
-		b, err := codec.RLP.MarshalToBytes(p)
+		tpm, err := icon.NewTypePrefixedMessage(*p)
+		b, err := codec.RLP.MarshalToBytes(tpm)
 		//if s.isOverLimit(s.rms[len(s.rms)-1].Size() + s.bds[bdIndex].Mt.ProofLength(s.bds[bdIndex].PartialOffset, endIndex)) {
-		if s.isOverLimit(s.rms[len(s.rms)-1].Size() + len(b)) {
-			tpm, err := icon.NewTypePrefixedMessage(*p)
+		rmsSize, err := s.rms[len(s.rms)-1].Size()
+		if err != nil {
+			return err
+		}
+		if s.isOverLimit(rmsSize + len(b)) {
+			s.rms = append(s.rms, icon.NewRelayMessage())
 			if err != nil {
 				return err
 			}
@@ -252,7 +262,6 @@ func (s *SimpleChain) MessageSegment(mt *mbt.MerkleBinaryTree, partialOffset int
 			s.rms[len(s.rms)-1].SetHeight(heightOfSrc)
 			s.rms[len(s.rms)-1].SetMessageSeq(endIndex)
 			s.rms[len(s.rms)-1].AppendMessage(tpm)
-			s.rms = append(s.rms, icon.NewRelayMessage())
 		}
 	}
 	if partialOffset != mt.Len() {

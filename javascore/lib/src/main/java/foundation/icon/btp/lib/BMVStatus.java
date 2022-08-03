@@ -20,23 +20,25 @@ import foundation.icon.score.util.StringUtil;
 import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
+import score.annotation.Keep;
 
 public class BMVStatus {
     private long height;
     private byte[] extra;
 
+    @Keep
     public long getHeight() {
         return height;
     }
-
+    @Keep
     public void setHeight(long height) {
         this.height = height;
     }
-
+    @Keep
     public byte[] getExtra() {
         return extra;
     }
-
+    @Keep
     public void setExtra(byte[] extra) {
         this.extra = extra;
     }

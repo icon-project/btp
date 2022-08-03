@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/mbt"
-	"unsafe"
 )
 
 const (
@@ -40,12 +39,9 @@ func (rm *BTPRelayMessage) AppendMessage(tpm *TypePrefixedMessage) {
 	rm.Messages = append(rm.Messages, tpm)
 }
 
-func (rm *BTPRelayMessage) Size() int {
-	var size int
-	for _, tm := range rm.Messages {
-		size += int(unsafe.Sizeof(tm))
-	}
-	return size
+func (rm *BTPRelayMessage) Size() (int, error) {
+	b, err := codec.RLP.MarshalToBytes(rm)
+	return len(b), err
 }
 
 type TypePrefixedMessage struct {
