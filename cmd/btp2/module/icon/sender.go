@@ -127,12 +127,11 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 			return nil, err
 		}
 		for idx--; idx >= 0; idx-- {
-			tp := s.newFragmentTransactionPram(s.src.String(), tpm, idx*-1)
-			ret, err := s.sendTransaction(tp)
+			tp := s.newFragmentTransactionPram(s.src.String(), tpm, idx)
+			_, err := s.sendTransaction(tp)
 			if err != nil {
 				return nil, err
 			}
-			return ret, err
 		}
 		return ret, err
 	}
