@@ -39,8 +39,8 @@ library BlockUpdateLib {
         RLPReader.RLPItem memory i = enc.toRlpItem();
         RLPReader.RLPItem[] memory l = i.toList();
         return (
-            decodeHeader(l[0].toRlpBytes()),
-            decodeProof(l[1].toRlpBytes())
+            decodeHeader(l[0].toBytes()),
+            decodeProof(l[1].toBytes())
         );
     }
 
@@ -75,9 +75,8 @@ library BlockUpdateLib {
         RLPReader.RLPItem memory ti = enc.toRlpItem();
         RLPReader.RLPItem[] memory tl = ti.toList();
 
-        ti = tl[0].toBytes().toRlpItem();
+        ti = tl[0];
         tl = ti.toList();
-        tl = tl[0].toList();
 
         bytes[] memory signatures = new bytes[](tl.length);
         for (uint i = 0; i < tl.length; i++) {
