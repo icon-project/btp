@@ -17,6 +17,8 @@
 package chain
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"github.com/icon-project/btp/cmd/btp2/module"
 	"github.com/icon-project/btp/cmd/btp2/module/icon"
@@ -168,6 +170,7 @@ func (s *SimpleChain) relay() error {
 		rmSize = len(s.rms) - 1
 	} else {
 		rmSize = len(s.rms)
+		s.rms = append(s.rms, icon.NewRelayMessage())
 	}
 
 	for i := 0; i < rmSize; i++ {
@@ -176,23 +179,22 @@ func (s *SimpleChain) relay() error {
 		if err != nil {
 			return err
 		}
-		segment := &module.Segment{
-			TransactionParam: b,
-			Height:           s.rms[i].Height(),
+
+		if s.rms[i].Segments() == nil {
+			s.rms[i].SetSegments(b, s.rms[i].Height())
 		}
 
-		if segment.GetResultParam == nil {
-			segment.TransactionResult = nil
-			if segment.GetResultParam, err = s.s.Relay(segment); err != nil {
+		if s.rms[i].Segments().GetResultParam == nil {
+			s.rms[i].Segments().TransactionResult = nil
+			fmt.Print(hex.EncodeToString(b), "\n\n")
+			fmt.Print(base64.URLEncoding.EncodeToString(b), "\n\n")
+			if s.rms[i].Segments().GetResultParam, err = s.s.Relay(s.rms[i].Segments()); err != nil {
 				s.l.Panicf("fail to Relay err:%+v", err)
 			}
-			s._log("after relay", s.rms[i], segment, -1)
-			go s.result(i, segment)
+			s._log("after relay", s.rms[i], s.rms[i].Segments(), -1)
+			go s.result(i, s.rms[i].Segments())
 		}
 	}
-	//TODO 메모리 검사해보기
-	s.rms = append(s.rms[:0], s.rms[0+rmSize:]...)
-	//s.rms = s.rms[:rmSize]
 	return nil
 }
 
@@ -288,19 +290,9 @@ func (s *SimpleChain) result(index int, segment *module.Segment) {
 		if ec, ok := errors.CoderOf(err); ok {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
-			switch ec.ErrorCode() {
+			switch ec.ErrorCode() { //TODO Add BMV invalid code
 			case module.BMVRevertInvalidSequence, module.BMVRevertInvalidBlockUpdateLower:
-				for i := 0; i < len(s.bds); i++ {
-					if s.bds[i].HeightOfSrc == s.rms[index].Height() {
-						if s.bds[i].PartialOffset == s.rms[index].MessageSeq() {
-							s.bds = s.bds[i:]
-						} else {
-							s.bds[i].PartialOffset = s.rms[index].MessageSeq()
-						}
-						break
-					}
-				}
-				s.rms = s.rms[index:]
+				segment.GetResultParam = nil
 			case module.BMVRevertInvalidBlockWitnessOld:
 				segment.GetResultParam = nil
 			case module.BMVRevertInvalidSequenceHigher, module.BMVRevertInvalidBlockUpdateHigher, module.BMVRevertInvalidBlockProofHigher:
@@ -362,6 +354,7 @@ func (s *SimpleChain) updateRelayMessage(h int64, seq *big.Int) {
 	defer s.rmsMtx.Unlock()
 	s.l.Debugf("updateRelayMessage h:%d seq:%d monitorHeight:%d", h, seq, s.monitorHeight())
 	bdIndex := 0
+	rmIndex := 0
 
 	for i, bd := range s.bds {
 		if bd.HeightOfSrc == h {
@@ -369,7 +362,15 @@ func (s *SimpleChain) updateRelayMessage(h int64, seq *big.Int) {
 		}
 	}
 
+	for i, rm := range s.rms {
+		if rm.Height() == h {
+			rmIndex = i
+		}
+	}
+
 	s.bds = s.bds[bdIndex:]
+	s.rms = s.rms[rmIndex:]
+
 	s.ci.Update(s.ci.ch.srcHeight, h)
 }
 
