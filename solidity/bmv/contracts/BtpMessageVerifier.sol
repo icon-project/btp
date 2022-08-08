@@ -2,6 +2,7 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./interfaces/IBMV.sol";
+import "./libraries/BTPLib.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -11,6 +12,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
     using BlockUpdateLib for BlockUpdateLib.Header;
     using MessageProofLib for MessageProofLib.MessageProof;
     using RelayMessageLib for RelayMessageLib.RelayMessage;
+    using BTPLib for string;
 
     address private bmc;
     string private srcNetworkId;
@@ -80,8 +82,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
     external
     onlyBmc
     returns (bytes[] memory) {
-
-        require(compare(bytes(srcNetworkId), bytes(_prev)), "BtpMessageVerifier: Not allowed source network");
+        checkAccessible(_prev);
         require(nextMessageSn == _sn, "BtpMessageVerifier: Invalid message sequence");
 
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
@@ -130,7 +131,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
     }
 
     function getSrcNetworkId() public view returns (string memory) {
-        return srcNetworkId;
+        return srcNetworkId.beyondScheme();
     }
 
     function getNetworkTypeId() public view returns (uint) {
@@ -179,6 +180,14 @@ contract BtpMessageVerifier is IBMV, Initializable {
 
     function compare(bytes memory b1, bytes memory b2) private pure returns (bool) {
         return keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
+    }
+
+    function checkAccessible(string memory _from) private view {
+        BTPLib.BTPAddress memory from = _from.toBTPAddress();
+        // TODO only support `network address` format
+        // btp://{network address}/{account id}
+        string memory network = srcNetworkId.beyondScheme();
+        require(compare(bytes(network), bytes(from.net)), "BtpMessageVerifier: Not allowed source network");
     }
 
     function checkHeaderWithState(BlockUpdateLib.Header memory header) private view {

@@ -103,7 +103,7 @@ library BlockUpdateLib {
 
     function getNetworkTypeSectionDecisionHash(
         Header memory self,
-        string storage srcNetworkId,
+        string memory srcNetworkId,
         uint networkType
     )
     internal

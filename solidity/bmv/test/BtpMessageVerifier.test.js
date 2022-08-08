@@ -1,13 +1,15 @@
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const url = require('url');
 const { expect } = require('chai');
 const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
 const { ZB32, toStr } = require('./utils');
 
-const SRC_NETWORK_ID = 'btp://0x1.icon'
-const SEQUENCE_OFFSET = new BN('0');
-
 contract('BtpMessageVerifier', (accounts) => {
     const BMC = accounts[0];
+    // TODO remove scheme string(btp://)
+    const SRC_NETWORK_ID = 'btp://0x1.icon'
+    const SRC_BMC_BTP_ADDR = SRC_NETWORK_ID + '/' + 'srcBmcCA';
+    const SEQUENCE_OFFSET = new BN('0');
 
     describe('common test scenario', () => {
         const RELAY_MESSAGES = [
@@ -19,7 +21,6 @@ contract('BtpMessageVerifier', (accounts) => {
         ];
 
         describe('when bmv has been initialized', () => {
-            const SRC_NETWORK_ID = 'btp://0x1.icon';
             const NETWORK_TYPE_ID = new BN(2);
             const FIRST_BLOCK_UPDATE = '0xf8a40a00a08d647190ed786d4f8a522f32351ff2269732f6e3771b908271ca29aa73c2c03cc00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7ab858f856f85494e3aee81071e40c44dde872e568d8d09429c5970e94b3d988f28443446c9d7ac62f673085e2736ca4e094f7646979981a5d7dcc05ea261ae26ecd2c2c81889477fec3da1ba8b192f4b278057395a5124392c88b';
             const VALIDATORS = [
@@ -35,7 +36,7 @@ contract('BtpMessageVerifier', (accounts) => {
             });
 
             shouldHaveImmutableState.call(this, {
-                srcNetworkId: SRC_NETWORK_ID,
+                srcNetworkId: url.parse(SRC_NETWORK_ID).host,
                 networkTypeId: NETWORK_TYPE_ID,
             });
 
@@ -51,13 +52,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
             describe('sends RelayMessage=[MessageProof]', () => {
                 it('returns messages', async () => {
-                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                     expect(msgs.map(v => toStr(v))).to.deep.equal(['dog']);
                 });
 
                 describe('when state has been updated, height(10)', () => {
                     beforeEach(async () => {
-                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                        await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                     });
 
                     shouldHaveThisState.call(this, {
@@ -72,13 +73,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                     describe('sends RelayMessage=[BlockUpdate, MessageProof]', () => {
                         it('returns messages', async () => {
-                            let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 1, RELAY_MESSAGES[1]);
+                            let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGES[1]);
                             expect(msgs.map(v => toStr(v))).to.deep.equal(['cat', 'elephant', 'bird']);
                         });
 
                         describe('when state has been updated, height(20)', () => {
                             beforeEach(async () => {
-                                await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 1, RELAY_MESSAGES[1]);
+                                await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGES[1]);
                             });
 
                             shouldHaveThisState.call(this, {
@@ -98,13 +99,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                             describe('sends RelayMessage=[BlockUpdate(changing validators)]', () => {
                                 it('returns empty list', async () => {
-                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 4, RELAY_MESSAGES[2]);
+                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 4, RELAY_MESSAGES[2]);
                                     expect(msgs.map(v => toStr(v))).to.be.empty;
                                 });
 
                                 describe('when state has been updated, height(30)', () => {
                                     beforeEach(async () => {
-                                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 4, RELAY_MESSAGES[2]);
+                                        await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 4, RELAY_MESSAGES[2]);
                                     });
 
                                     let validators = [
@@ -126,13 +127,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                                     describe('sends RelayMessage=[MessageProof, MessageProof]', () => {
                                         it('returns messages', async () => {
-                                            let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 4, RELAY_MESSAGES[3]);
+                                            let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 4, RELAY_MESSAGES[3]);
                                             expect(msgs.map(v => toStr(v))).to.deep.equal(['monkey', 'lion', 'tiger']);
                                         });
 
                                         describe('when state has been updated, height(40)', () => {
                                             beforeEach(async () => {
-                                                await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 4, RELAY_MESSAGES[3]);
+                                                await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 4, RELAY_MESSAGES[3]);
                                             });
 
                                             shouldHaveThisState.call(this, {
@@ -146,13 +147,13 @@ contract('BtpMessageVerifier', (accounts) => {
                                             });
                                             describe('sends RelayMessage=[BlockUpdate(changing validators), BlockUpdate(chainging validators)]', () => {
                                                 it('returns empty list', async () => {
-                                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 7, RELAY_MESSAGES[4]);
+                                                    let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 7, RELAY_MESSAGES[4]);
                                                     expect(msgs.map(v => toStr(v))).to.be.empty;
                                                 });
 
                                                 describe('when state has been updated, height(50)', () => {
                                                     beforeEach(async () => {
-                                                        await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 7, RELAY_MESSAGES[4]);
+                                                        await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 7, RELAY_MESSAGES[4]);
                                                     });
 
                                                     shouldHaveThisState.call(this, {
@@ -198,7 +199,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: SRC_NETWORK_ID,
+            srcNetworkId: url.parse(SRC_NETWORK_ID).host,
             networkTypeId: NETWORK_TYPE_ID,
         });
 
@@ -216,13 +217,13 @@ contract('BtpMessageVerifier', (accounts) => {
             const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb841081455a1d67834537febe7796c17f74366bc0566f29d505abe98a5e297d549cc5aa96c24f7bb92c3298974abf3c5610353f96f2d10b8d9234d8c6081d1de256601b841155f92300d2d788f25bb04ee9a8faa2b93265dc2b1bf45ef4e7c9e166c379243339066c6e13b706d9d631d6f3fb726164be9e65345803d2cd6802abed37374e000b8411670b589335b85d2e3d2a77e6e9210b09277d47ff7b2185148c30183454a530d66271a147a14a5b8c24896422ff57d6da8e242edbd4c9e110b018ff07df00c7300b841474a1f2b4889c8f84c5211648b9099348c3488b2932e020ddece72bc6490d3ae7d96f61766a7be599f414c31e0780382ae2b3ad3e2aa14304faf22b028abfd1800ce028ccbf800c685616c696365f800';
 
             it('returns message', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
             });
 
             describe('after changed state', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -244,13 +245,13 @@ contract('BtpMessageVerifier', (accounts) => {
             ];
 
             it('returns messages: RELAY_MESSAGES[0]', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
             });
 
             describe('after changed state: RELAY_MESSAGES[0]', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -267,13 +268,13 @@ contract('BtpMessageVerifier', (accounts) => {
                     const RELAY_MESSAGE = '0xefeeed02abeae3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62c0';
 
                     it('returns messages: RELAY_MESSAGES[1]', async () => {
-                        let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 1, RELAY_MESSAGE);
+                        let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGE);
                         expect(msgs.map(v => toStr(v))).to.deep.equal(['bob']);
                     });
 
                     describe('after changed state: RELAY_MESSAGES[1]', () => {
                         beforeEach(async () => {
-                            await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 1, RELAY_MESSAGE);
+                            await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGE);
                         });
 
                         shouldHaveThisState.call(this, {
@@ -298,13 +299,13 @@ contract('BtpMessageVerifier', (accounts) => {
             ];
 
             it('returns messages', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
             });
 
             describe('after changed state', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -319,13 +320,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                 describe('when send RELAY_MESSAGES[1]', () => {
                     it('returns messages', async () => {
-                        let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 1, RELAY_MESSAGES[1]);
+                        let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGES[1]);
                         expect(msgs.map(v => toStr(v))).to.deep.equal(['bob']);
                     });
 
                     describe('after changed state', () => {
                         beforeEach(async () => {
-                            await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 1, RELAY_MESSAGES[1]);
+                            await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGES[1]);
                         });
 
                         shouldHaveThisState.call(this, {
@@ -340,13 +341,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                         describe('when send RELAY_MESSAGE[2]', () => {
                             it('returns messages', async () => {
-                                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 2, RELAY_MESSAGES[2]);
+                                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 2, RELAY_MESSAGES[2]);
                                 expect(msgs.map(v => toStr(v))).to.deep.equal(['crystal']);
                             });
 
                             describe('after changed state', () => {
                                 beforeEach(async () => {
-                                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 2, RELAY_MESSAGES[2]);
+                                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 2, RELAY_MESSAGES[2]);
                                 });
 
                                 shouldHaveThisState.call(this, {
@@ -369,13 +370,13 @@ contract('BtpMessageVerifier', (accounts) => {
             const RELAY_MESSAGE = '0xf9026ef9026bf9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb8414ea5201093fb9bfceae99016a8dda2655c23d5a82e6c692ec2d829a18ef2411a4656f20d7ff98a4b80a28294a9030f18c9b2821c0451fb85c927dd340353c47100b8414dc6594d5d0cfde5bc84d23459bae8d5ba959496fce3acbcf1fd0d211716c9ae30caf23b8380946a050d9b8d9b24f9f6935cfc77853d03746b60c5c9030e8a8500b84183a67494b3b5bfb10257330dab5aff20e3bb030312e3c8066c3a9544b7ef1b820720e2a36de1ea29316bec8dd395a1889748e2eb6adc18807e75b6f6e5aa98b200b841502274515c8867ee8570065a0a07fafda9b58a91046583073b495e513ea8722c05fc1063ae629c59f70264e5fc6f05d5a37597e87d166cd6f992137fd170373900f85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f85202b84ff84de3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62e3e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f102afeee3e202a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bc8876372797374616cc0';
 
             it('returns messages', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice', 'bob', 'crystal']);
             });
 
             describe('after changed state', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -397,13 +398,13 @@ contract('BtpMessageVerifier', (accounts) => {
             ]
 
             it('returns empty message list: RELAY_MESSAGES[0]', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 expect(msgs.map(v => toStr(v))).to.be.empty;
             });
 
             describe('after changed state: RELAY_MESSAGES[0]', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[0]);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -418,13 +419,13 @@ contract('BtpMessageVerifier', (accounts) => {
 
                 describe('when send RELAY_MESSAGE[1]', () => {
                     it('returns messages', async () => {
-                        let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[1]);
+                        let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[1]);
                         expect(msgs.map(v => toStr(v))).to.deep.equal(['alice', 'bob', 'crystal']);
                     });
 
                     describe('after changed state: RELAY_MESSAGE[1]', () => {
                         beforeEach(async () => {
-                            await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGES[1]);
+                            await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[1]);
                         });
 
                         shouldHaveThisState.call(this, {
@@ -446,7 +447,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
-                    '', SRC_NETWORK_ID, 0, RELAY_MESSAGE), "BtpMessageVerifier: BlockUpdate for unknown network",
+                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE), "BtpMessageVerifier: BlockUpdate for unknown network",
                 );
             });
         });
@@ -456,7 +457,7 @@ contract('BtpMessageVerifier', (accounts) => {
                 const RELAY_MESSAGE = '0xf901f8f901f5f901e301b901dff901dcb8c5f8c31401a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f85494944db52183a8cc6e118346780314963ae1de158b943c9e099a48d4bc432dd4c5be73dcb3e069cb3aa194acf71c78a1f0b6def45660f7352d30d0be7d80a394055126ca715a1f532d6ba57b41373bd460241346b90112f9010ff9010cb84136c70ddd4f0ccfe6ee52a2f312d5aca50a7649c7b629b50f549e4c3d211617b64e483bea14f7ff03aa940eee17e9062b5e870fac4d89f80528d86e9c04df411300b8411a8fe4a69174fd0cbc586a72e0ed0e295fe7af0c60d9af2437b30b23f0c723f16bd56b2676d41d07d915883f5cedd3f57269381357420e9979749e0ee409db7600b841d678040fc3d706dde3ecce95ef920752803767c75ec7ff4796a5e4f8803b63361879ba2c464a6fae1a62f5dfdc51dab2ff4e53173064a2574bc7cc9b18ba092c01b841c2218bee0c3ac96e7c978b7f3b394386a657109e098eada5fd99d415720270ef50d1fb73b7ec0e3ebdeab42f530f088e948bc7e17bdda844bb26dcd935c23f1700ce028ccbf800c685616c696365f800';
 
                 it('returns messages', async () => {
-                    let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                    let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                     expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
                 });
             });
@@ -466,7 +467,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
                 it('reverts', async () => {
                     await expectRevert(
-                        this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE),
+                        this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE),
                         "BtpMessageVerifier: Lack of quorum"
                     );
                 });
@@ -485,7 +486,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             describe('after changed state', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -502,7 +503,7 @@ contract('BtpMessageVerifier', (accounts) => {
                     const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1e01a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00100a039ea97ede1d7b3019f4f1b4ce6b463d4189dc86f620e5ced3611fded5ae4199501a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb8419a25843917fe773046b812733fa62b25c9d10d2845eede8ccab8f335797ddea81fd2697ad3acdf6e4434bb2ab5a6e899405f411138172ac15dc3ee6edc043bfd00b841e35320badc46222b169942dcd257acf697a067a63256942195400171eb69ef3b4f9c37466c1ae7b8ac1b573aea55e4964da7b4bb034cc485ef924f51fc8127e200b84113ab8ac7790218ffabfe1d18e1a9a3e6e1e2a308328df410c99c342ec25823a627910e27287aefe6a6513d20884c572910987fee9fdc7ac4bedf1208d691f4b800b8417dc67f1a979f02c7349badbed8892aebc46f510e9ecfcdb54400c7fcc8f09bf454f1e56986ddd93db96841718c34bfaa36606f356edd1741eab6ea469fc0b90d01ce028ccbf800c685616c696365f800';
 
                     it('returns messages', async () => {
-                        let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                        let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                         expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
                     });
                 });
@@ -526,7 +527,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: SRC_NETWORK_ID,
+            srcNetworkId: url.parse(SRC_NETWORK_ID).host,
             networkTypeId: NETWORK_TYPE_ID,
         });
 
@@ -545,7 +546,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(
-                    this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, INVALID_RELAY_MESSAGE),
+                    this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, INVALID_RELAY_MESSAGE),
                     "BtpMessageVerifier: has messages to be handled"
                 );
             });
@@ -555,7 +556,7 @@ contract('BtpMessageVerifier', (accounts) => {
             const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
 
             it('revert', async () => {
-                await expectRevert(this.instance.handleRelayMessage.call('', 'btp://0x2.eth', 0, RELAY_MESSAGE),
+                await expectRevert(this.instance.handleRelayMessage.call('', 'btp://0x2.eth/invalidSmcAddress', 0, RELAY_MESSAGE),
                     "BtpMessageVerifier: Not allowed source network"
                 );
             });
@@ -565,7 +566,7 @@ contract('BtpMessageVerifier', (accounts) => {
             const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
-                    '', SRC_NETWORK_ID, 0, RELAY_MESSAGE, { from: accounts[1] }),
+                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE, { from: accounts[1] }),
                     "BtpMessageVerifier: Unauthorized bmc sender"
                 );
             });
@@ -575,13 +576,13 @@ contract('BtpMessageVerifier', (accounts) => {
             const RELAY_MESSAGE = '0xd0cfce028ccbf800c685616c696365f800';
 
             it('returns messages', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
             });
 
             describe('after changed state', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_NETWORK_ID, 0, RELAY_MESSAGE);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 });
 
                 shouldHaveThisState.call(this, {
