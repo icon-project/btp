@@ -33,7 +33,6 @@ import (
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mta"
-	"github.com/icon-project/btp/common/wallet"
 )
 
 const (
@@ -50,7 +49,6 @@ const (
 type SimpleChain struct {
 	s       module.Sender
 	r       module.Receiver
-	w       wallet.Wallet
 	src     module.BtpAddress
 	acc     *mta.ExtAccumulator
 	dst     module.BtpAddress
@@ -685,11 +683,10 @@ func (s *SimpleChain) Monitoring() error {
 	}
 }
 
-func NewChain(cfg *module.Config, w wallet.Wallet, l log.Logger) *SimpleChain {
+func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
-		w:   w,
 		l: l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),

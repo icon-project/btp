@@ -25,7 +25,6 @@ import (
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mbt"
-	"github.com/icon-project/btp/common/wallet"
 	"math/big"
 	"path/filepath"
 	"sync"
@@ -120,7 +119,6 @@ type SimpleChain struct {
 	s  module.Sender
 	r  *icon.Receiver
 	ci *chainInfo
-	w  wallet.Wallet
 
 	src module.BtpAddress
 	dst module.BtpAddress
@@ -589,11 +587,10 @@ func (s *SimpleChain) Monitoring() error {
 	}
 }
 
-func NewChain(cfg *module.Config, w wallet.Wallet, l log.Logger) *SimpleChain {
+func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
-		w:   w,
 		l:   l.WithFields(log.Fields{log.FieldKeyChain: fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
 		bds: make([]*icon.BTPBlockData, 0),

@@ -256,7 +256,7 @@ func main() {
 			}
 
 			//icon -> icon
-			sh := iconChain.NewChain(&cfg.Config, w, l)
+			sh := iconChain.NewChain(&cfg.Config, l)
 			s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
 
 			//icon -> bsc

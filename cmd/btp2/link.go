@@ -38,9 +38,9 @@ func newChain(name string, cfg *Config, w wallet.Wallet, l log.Logger) module.Ch
 	var chain module.Chain
 	switch name {
 	case "icon":
-		chain = iconChain.NewChain(&cfg.Config, w, l)
+		chain = iconChain.NewChain(&cfg.Config, l)
 	case "bsc":
-		chain = bscChain.NewChain(&cfg.Config, w, l)
+		chain = bscChain.NewChain(&cfg.Config, l)
 	default:
 		l.Fatalf("Sender not supported for chain ", cfg.Dst.Address.BlockChain())
 		return nil
