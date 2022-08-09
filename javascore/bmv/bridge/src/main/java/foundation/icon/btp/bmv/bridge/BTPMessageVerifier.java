@@ -37,10 +37,10 @@ public class BTPMessageVerifier implements BMV {
     private VarDB<String> varNetAddress = Context.newVarDB("netAddress", String.class);
     private VarDB<BigInteger> varHeight = Context.newVarDB("height", BigInteger.class);
 
-    public BTPMessageVerifier(Address _bmc, String _net, BigInteger _height) {
+    public BTPMessageVerifier(Address _bmc, String _net, BigInteger _offset) {
         varBMCAddress.set(_bmc);
         varNetAddress.set(_net);
-        varHeight.set(_height);
+        varHeight.set(_offset);
     }
 
     @External

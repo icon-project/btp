@@ -41,7 +41,7 @@ public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
             System.getProperties(),
             Map.of("_bmc", MockBMCIntegrationTest.mockBMCClient._address(),
                     "_net",BTPMessageVerifierUnitTest.prev.net(),
-                    "_height", BigInteger.ZERO));
+                    "_offset", BigInteger.ZERO));
 
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),
             MockBMCIntegrationTest.mockBMCClient._address().toString());
