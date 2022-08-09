@@ -249,19 +249,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         map.put("rx_seq", link.getRxSeq());
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
         map.put("verifier", verifier.getStatus());
-
-        Map<Address, Relay> relayMap = link.getRelays().toMap();
-        BMRStatus[] relays = new BMRStatus[relayMap.size()];
-        int i = 0;
-        for (Map.Entry<Address, Relay> entry : relayMap.entrySet()) {
-            Relay relay = entry.getValue();
-            BMRStatus bmrStatus = new BMRStatus();
-            bmrStatus.setAddress(relay.getAddress());
-            bmrStatus.setBlock_count(relay.getBlockCount());
-            bmrStatus.setMsg_count(relay.getMsgCount());
-            relays[i++] = bmrStatus;
-        }
-        map.put("relays", relays);
         map.put("sack_term", link.getSackTerm());
         map.put("sack_next", link.getSackNext());
         map.put("sack_height", link.getSackHeight());
@@ -970,10 +957,19 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @External(readonly = true)
-    public Address[] getRelays(String _link) {
+    public BMRStatus[] getRelays(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
         Relays relays = getLink(target).getRelays();
-        return ArrayUtil.toAddressArray(relays.keySet());
+        BMRStatus[] arr = new BMRStatus[relays.size()];
+        for (int i = 0; i < relays.size(); i++) {
+            Relay relay = relays.getByIndex(i);
+            BMRStatus s = new BMRStatus();
+            s.setAddress(relay.getAddress());
+            s.setBlock_count(relay.getBlockCount());
+            s.setMsg_count(relay.getMsgCount());
+            arr[i] = s;
+        }
+        return arr;
     }
 
     @External
