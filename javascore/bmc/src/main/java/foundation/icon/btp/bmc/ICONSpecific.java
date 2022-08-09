@@ -20,10 +20,8 @@ import foundation.icon.btp.lib.BMC;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
-import score.annotation.Payable;
 
 import java.math.BigInteger;
-import java.util.Map;
 
 public interface ICONSpecific {
 
@@ -224,4 +222,7 @@ public interface ICONSpecific {
      */
     @External(readonly = true)
     long getBTPLinkNetworkId(String _link);
+
+    @External(readonly = true)
+    long getBTPLinkOffset(String _link);
 }
