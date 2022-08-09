@@ -185,7 +185,6 @@ library Types {
         uint256 rxSeq;
         uint256 txSeq;
         VerifierStats verifier;
-        RelayStats[] relays;
         uint256 currentHeight;
     }
 

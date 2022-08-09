@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.lib;
 
-import foundation.icon.score.util.StringUtil;
 import score.annotation.Keep;
 
 import java.math.BigInteger;
@@ -26,7 +25,6 @@ public class BMCStatus {
     private BigInteger rx_seq;
     private BigInteger tx_seq;
     private Map verifier;
-    private BMRStatus[] relays;
 
     private int sack_term; //0: disable sack
     private long sack_next;
@@ -63,16 +61,6 @@ public class BMCStatus {
     @Keep
     public void setVerifier(Map verifier) {
         this.verifier = verifier;
-    }
-
-    @Keep
-    public BMRStatus[] getRelays() {
-        return relays;
-    }
-
-    @Keep
-    public void setRelays(BMRStatus[] relays) {
-        this.relays = relays;
     }
 
     @Keep
@@ -131,7 +119,6 @@ public class BMCStatus {
         sb.append("rx_seq=").append(rx_seq);
         sb.append(", tx_seq=").append(tx_seq);
         sb.append(", verifier=").append(verifier);
-        sb.append(", relays=").append(StringUtil.toString(relays));
         sb.append(", sack_term=").append(sack_term);
         sb.append(", sack_next=").append(sack_next);
         sb.append(", sack_height=").append(sack_height);

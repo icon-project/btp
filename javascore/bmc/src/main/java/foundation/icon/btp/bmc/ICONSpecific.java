@@ -17,13 +17,12 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
+import foundation.icon.btp.lib.BMRStatus;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
-import score.annotation.Payable;
 
 import java.math.BigInteger;
-import java.util.Map;
 
 public interface ICONSpecific {
 
@@ -73,18 +72,13 @@ public interface ICONSpecific {
 
     /**
      * TODO [TBD] add 'getRelays' to IIP-25.BMC.Read-only methods
-     * Get registered relays.
+     * Get status of registered relays by link..
      *
      * @param _link String (BTP Address of connected BMC)
-     * @return A list of relays.
-     *
-     * <br>For Example::<br>
-     * [
-     * "hx..."
-     * ]
+     * @return The object contains followings fields.
      */
     @External(readonly = true)
-    Address[] getRelays(String _link);
+    BMRStatus[] getRelays(String _link);
 
     /**
      * Registers candidate for the smart contract for the service.
@@ -224,4 +218,7 @@ public interface ICONSpecific {
      */
     @External(readonly = true)
     long getBTPLinkNetworkId(String _link);
+
+    @External(readonly = true)
+    long getBTPLinkOffset(String _link);
 }

@@ -26,6 +26,7 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
 
     mapping(string => address) private bshServices;
     mapping(string => address) private bmvServices;
+    //FIXME relay status should store by link and address of relay
     mapping(address => Types.RelayStats) private relayStats;
     mapping(string => string) private routes;
     mapping(string => Types.Link) internal links; // should be private, temporarily set internal for testing
@@ -376,18 +377,20 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     }
 
     /**
-       @notice Get registered relays.
+       @notice Get relays status by link..
        @param _link        BTP Address of the connected BMC.
-       @return _relayes A list of relays.
+       @return _relays Relay status of all relays
     */
-
     function getRelays(string memory _link)
         external
         view
         override
-        returns (address[] memory)
+        returns (Types.RelayStats[] memory _relays)
     {
-        return links[_link].relays;
+        _relays = new Types.RelayStats[](links[_link].relays.length);
+        for (uint256 i = 0; i < links[_link].relays.length; i++) {
+            _relays[i] = relayStats[links[_link].relays[i]];
+        }
     }
 
     /******************************* Use for BMC Service *************************************/
@@ -458,18 +461,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
             }
         }
         return false;
-    }
-
-    function getRelayStatusByLink(string memory _prev)
-        external
-        view
-        override
-        returns (Types.RelayStats[] memory _relays)
-    {
-        _relays = new Types.RelayStats[](links[_prev].relays.length);
-        for (uint256 i = 0; i < links[_prev].relays.length; i++) {
-            _relays[i] = relayStats[links[_prev].relays[i]];
-        }
     }
 
     function updateLinkRxSeq(string calldata _prev, uint256 _val)

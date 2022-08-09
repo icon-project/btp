@@ -140,14 +140,14 @@ interface IBMCManagement {
     function getRoutes() external view returns (Types.Route[] memory _routes);
 
     /**
-       @notice Get registered relays.
+       @notice Get relays status by link.
        @param _link        BTP Address of the connected BMC.
-       @return _relayes A list of relays.
+       @return _relays Relay status of all relays
      */
     function getRelays(string calldata _link)
         external
         view
-        returns (address[] memory _relayes);
+        returns (Types.RelayStats[] memory _relays);
 
     /**
         @notice Get BSH services by name. Only called by BMC periphery.
@@ -216,16 +216,6 @@ interface IBMCManagement {
        @param _addr Address needs to verify.
      */
     function isLinkRelay(string calldata _prev, address _addr) external view returns (bool);
-
-    /**
-        @notice Get relays status by link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
-        @return Relay status of all relays
-     */
-    function getRelayStatusByLink(string memory _prev)
-        external
-        view
-        returns (Types.RelayStats[] memory);
 
     /**
         @notice Update rotation sequence by link. Only called by BMC periphery.

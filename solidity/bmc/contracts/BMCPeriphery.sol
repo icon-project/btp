@@ -421,8 +421,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     {
         Types.Link memory link = IBMCManagement(bmcManagement).getLink(_link);
         require(link.isConnected == true, BMCRevertNotExistsLink);
-        Types.RelayStats[] memory _relays = IBMCManagement(bmcManagement)
-            .getRelayStatusByLink(_link);
         (string memory _net, ) = _link.splitBTPAddress();
         (uint256 _height, bytes memory extra) = IBMV(
             IBMCManagement(bmcManagement).getBmvServiceByNet(_net)
@@ -432,7 +430,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 link.rxSeq,
                 link.txSeq,
                 Types.VerifierStats(_height, extra),
-                _relays,
                 block.number
             );
     }
