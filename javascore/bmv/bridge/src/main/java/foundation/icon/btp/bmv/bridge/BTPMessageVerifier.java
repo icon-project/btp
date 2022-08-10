@@ -19,7 +19,6 @@ package foundation.icon.btp.bmv.bridge;
 import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.lib.BTPException;
 import score.Address;
 import score.Context;
 import score.VarDB;
@@ -30,9 +29,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
-    public static final int REVERT_UNKNOWN = 0;
-    public static final int REVERT_INVALID_SEQ_NUMBER = 1;
-
     private VarDB<Address> varBMCAddress = Context.newVarDB("bmcAddress", Address.class);
     private VarDB<String> varNetAddress = Context.newVarDB("netAddress", String.class);
     private VarDB<BigInteger> varHeight = Context.newVarDB("height", BigInteger.class);
@@ -56,6 +52,8 @@ public class BTPMessageVerifier implements BMV {
         for (ReceiptProof rp : rm.getReceiptProofs()) {
             if (rp.getHeight().compareTo(height) < 0) {
                 //ignore lower height
+//                throw BMVException.alreadyVerified(
+//                        "alreadyVerified height:"+rp.getHeight()+" expected:"+height);
                 continue;
             }
             height = rp.getHeight();
@@ -64,10 +62,12 @@ public class BTPMessageVerifier implements BMV {
                 int compare = ev.getSeq().compareTo(next_seq);
                 if (compare < 0) {
                     //ignore lower seq
+//                    throw BMVException.alreadyVerified(
+//                            "alreadyVerified seq:"+ev.getSeq()+" expected:"+next_seq);
                     continue;
                 } else if (compare > 0) {//ev.seq > next
-                    throw new BTPException.BMV(REVERT_INVALID_SEQ_NUMBER,
-                            "invalid sequence "+ev.getSeq() + " expected:"+next_seq);
+                    throw BMVException.notVerifiableYet(
+                            "notVerifiable seq:"+ev.getSeq()+" expected:"+next_seq);
                 }
                 msgs.add(ev.getMsg());
                 next_seq = next_seq.add(BigInteger.ONE);
@@ -92,11 +92,11 @@ public class BTPMessageVerifier implements BMV {
     private void checkAccessible(BTPAddress curAddr, BTPAddress fromAddr) {
         Address bmcAddress = varBMCAddress.get();
         if (!varNetAddress.get().equals(fromAddr.net())) {
-            throw new BTPException.BMV(REVERT_UNKNOWN,"not acceptable from");
+            throw BMVException.unknown("not acceptable from");
         } else if (!Context.getCaller().equals(bmcAddress)) {
-            throw new BTPException.BMV(REVERT_UNKNOWN, "not acceptable bmc");
+            throw BMVException.unknown("not acceptable bmc");
         } else if (!Address.fromString(curAddr.account()).equals(bmcAddress)) {
-            throw new BTPException.BMV(REVERT_UNKNOWN, "not acceptable bmc");
+            throw BMVException.unknown("not acceptable bmc");
         }
     }
 }
