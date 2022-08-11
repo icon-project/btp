@@ -10,6 +10,12 @@ module.exports = {
     compilers: {
         solc: {
             version: "0.8.12",
+            settings: {
+                optimizer: {
+                    enabled: true,
+                    runs: 10
+                }
+            }
         }
     },
 };

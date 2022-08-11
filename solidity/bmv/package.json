@@ -21,7 +21,6 @@
     "truffle": "^5.1.16-truffleLogger.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^4.6.0",
-    "solidity-bytes-utils": "^0.8.0"
+    "@openzeppelin/contracts-upgradeable": "^4.6.0"
   }
 }

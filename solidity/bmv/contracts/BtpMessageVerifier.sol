@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.8.12;
 
 import "./interfaces/IBMV.sol";
-import "./libraries/BTPLib.sol";
+import "./libraries/String.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -12,7 +12,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
     using BlockUpdateLib for BlockUpdateLib.Header;
     using MessageProofLib for MessageProofLib.MessageProof;
     using RelayMessageLib for RelayMessageLib.RelayMessage;
-    using BTPLib for string;
+    using String for string;
 
     address private bmc;
     string private srcNetworkId;
@@ -131,7 +131,17 @@ contract BtpMessageVerifier is IBMV, Initializable {
     }
 
     function getSrcNetworkId() public view returns (string memory) {
-        return srcNetworkId.beyondScheme();
+        // TODO only support {network address}.{account identifier} format
+        string[] memory tokens = srcNetworkId.split("/");
+
+        // {network address}.{account identifier}
+        if (tokens.length == 2) {
+            return srcNetworkId;
+
+        // btp://{netowkr address}.{account identifier}
+        } else {
+            return tokens[2];
+        }
     }
 
     function getNetworkTypeId() public view returns (uint) {
@@ -178,16 +188,9 @@ contract BtpMessageVerifier is IBMV, Initializable {
         return votes * 3 > validators.length * 2;
     }
 
-    function compare(bytes memory b1, bytes memory b2) private pure returns (bool) {
-        return keccak256(abi.encodePacked(b1)) == keccak256(abi.encodePacked(b2));
-    }
-
     function checkAccessible(string memory _from) private view {
-        BTPLib.BTPAddress memory from = _from.toBTPAddress();
-        // TODO only support `network address` format
-        // btp://{network address}/{account id}
-        string memory network = srcNetworkId.beyondScheme();
-        require(compare(bytes(network), bytes(from.net)), "BtpMessageVerifier: Not allowed source network");
+        (string memory net, ) = _from.splitBTPAddress();
+        require(getSrcNetworkId().compareTo(net), "BtpMessageVerifier: Not allowed source network");
     }
 
     function checkHeaderWithState(BlockUpdateLib.Header memory header) private view {
