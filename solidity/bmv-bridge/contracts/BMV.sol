@@ -49,15 +49,7 @@ contract BMV is IBMV, Initializable {
         override
         returns (uint256, bytes memory)
     {
-        return (height, null);
-    }
-
-    function getExtra(bytes calldata extra)
-        external
-        view
-    returns (address, string memory)
-    {
-        return extra.decodeExtra();
+        return (height, bytes(""));
     }
 
     function checkAccessible(
