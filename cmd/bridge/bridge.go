@@ -132,19 +132,21 @@ func (c *bridge) removeSegment(offset int) {
 	c.ss = c.ss[offset:]
 }
 
+type RelayMessage struct {
+	Receipts [][]byte
+}
+
 type Receipt struct {
-	Index  uint64
+	Index  int64
 	Events []byte
-	Height uint64
+	Height int64
 }
 
 func (c *bridge) addSegment() error {
 	c.ssMtx.Lock()
 	defer c.ssMtx.Unlock()
 
-	rm := &struct {
-		Receipts [][]byte
-	}{
+	rm := &RelayMessage{
 		Receipts: make([][]byte, 0),
 	}
 	var (
@@ -160,11 +162,7 @@ func (c *bridge) addSegment() error {
 		if b, err = codec.RLP.MarshalToBytes(rp.Events); err != nil {
 			return err
 		}
-		r := &struct {
-			Index  int64
-			Events []byte
-			Height int64
-		}{
+		r := &Receipt{
 			Index:  rp.Index,
 			Events: b,
 			Height: rp.Height,

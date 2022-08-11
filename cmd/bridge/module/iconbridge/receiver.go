@@ -232,12 +232,7 @@ func (r *Receiver) ReceiveLoop(height, seq int64,
 	if height < 1 {
 		return fmt.Errorf("cannot catchup from zero height")
 	}
-	onConn := func(conn *websocket.Conn) {
-		r.l.Debugf("ReceiveLoop connected %s", conn.LocalAddr().String())
-		if scb != nil {
-			scb()
-		}
-	}
+
 	onErr := func(conn *websocket.Conn, err error) {
 		r.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
 		_ = conn.Close()
@@ -246,6 +241,13 @@ func (r *Receiver) ReceiveLoop(height, seq int64,
 		req := &client.BTPRequest{
 			Height:    client.HexInt(intconv.FormatInt(height)),
 			NetworkID: client.HexInt(intconv.FormatInt(networkId)),
+		}
+		onConn := func(conn *websocket.Conn) {
+			r.l.Debugf("ReceiveLoop monitorBTPBlock height:%d seq:%d networkId:%d connected %s",
+				height, seq, networkId, conn.LocalAddr().String())
+			if scb != nil {
+				scb()
+			}
 		}
 		return r.monitorBTPBlock(req, seq, cb, onConn, onErr)
 	} else {
@@ -258,6 +260,13 @@ func (r *Receiver) ReceiveLoop(height, seq int64,
 		req := &client.BlockRequest{
 			Height:       client.NewHexInt(height),
 			EventFilters: []*client.EventFilter{ef},
+		}
+		onConn := func(conn *websocket.Conn) {
+			r.l.Debugf("ReceiveLoop monitorEvent height:%d seq:%d connected %s",
+				height, seq, conn.LocalAddr().String())
+			if scb != nil {
+				scb()
+			}
 		}
 		return r.monitorEvent(req, seq, cb, onConn, onErr)
 	}

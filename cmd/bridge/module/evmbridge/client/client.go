@@ -255,7 +255,7 @@ func (c *Client) MonitorBlock(br *BlockRequest, cb func(b *BlockNotification) er
 				c.log.Info("Unable to get logs ", err)
 				return err
 			}
-			c.log.Debugf("FilterLogs height:%d hash:%s logs:%d",
+			c.log.Tracef("FilterLogs height:%d hash:%s logs:%d",
 				bn.Height.Int64(), fq.BlockHash.Hex(), len(bn.Logs))
 		}
 		return cb(bn)

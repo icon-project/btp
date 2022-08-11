@@ -20,14 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/icon-project/btp/cmd/bridge/module/evmbridge/client"
-
 	"github.com/icon-project/btp/cmd/bridge/module"
+	"github.com/icon-project/btp/cmd/bridge/module/evmbridge/client"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -49,23 +47,9 @@ type sender struct {
 	}
 
 	bmc *client.BMC
-
-	evtLogRawFilter struct {
-		addr      []byte
-		signature []byte
-		next      []byte
-		seq       []byte
-	}
-	evtReq             *client.BlockRequest
-	isFoundOffsetBySeq bool
-	cb                 module.ReceiveCallback
-
-	mutex sync.Mutex
 }
 
 func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	p := segment.TransactionParam.([]byte)
 
 	t, err := s.c.NewTransactOpts(s.w.PrivateKey)
@@ -80,7 +64,6 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 		return nil, err
 	}
 	txh := tx.Hash()
-	//s.l.Debugf("HandleRelayMessage tx hash:%s, prev %s, msg: %s", thp.Hash, rmp.Prev, base64.URLEncoding.EncodeToString([]byte(rmp.Messages)))
 	return txh, nil
 }
 
