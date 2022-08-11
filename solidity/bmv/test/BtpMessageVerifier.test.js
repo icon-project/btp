@@ -447,7 +447,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
-                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE), "BtpMessageVerifier: BlockUpdate for unknown network",
+                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE), "bmv: NotVerifiable",
                 );
             });
         });
@@ -468,7 +468,7 @@ contract('BtpMessageVerifier', (accounts) => {
                 it('reverts', async () => {
                     await expectRevert(
                         this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE),
-                        "BtpMessageVerifier: Lack of quorum"
+                        "bmv: NotVerifiable"
                     );
                 });
             });
@@ -547,7 +547,7 @@ contract('BtpMessageVerifier', (accounts) => {
             it('revert', async () => {
                 await expectRevert(
                     this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, INVALID_RELAY_MESSAGE),
-                    "BtpMessageVerifier: has messages to be handled"
+                    "bmv: NotVerifiable"
                 );
             });
         });
@@ -557,7 +557,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call('', 'btp://0x2.eth/invalidSmcAddress', 0, RELAY_MESSAGE),
-                    "BtpMessageVerifier: Not allowed source network"
+                    "bmv: NotVerifiable"
                 );
             });
         });
@@ -567,7 +567,7 @@ contract('BtpMessageVerifier', (accounts) => {
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
                     '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE, { from: accounts[1] }),
-                    "BtpMessageVerifier: Unauthorized bmc sender"
+                    "bmv: Unauthorized"
                 );
             });
         });

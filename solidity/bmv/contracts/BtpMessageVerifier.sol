@@ -27,11 +27,12 @@ contract BtpMessageVerifier is IBMV, Initializable {
     uint private sequenceOffset;
     uint private firstMessageSn;
 
+    string constant private ERR_UNAUTHORIZED = "bmv: Unauthorized";
+    string constant private ERR_NOT_VERIFIABLE = "bmv: NotVerifiable";
+    string constant private ERR_ALREADY_VERIFIED = "bmv: AlreadyVerified";
+
     modifier onlyBmc() {
-        require(
-            msg.sender == bmc,
-            "BtpMessageVerifier: Unauthorized bmc sender"
-        );
+        require(msg.sender == bmc, ERR_UNAUTHORIZED);
         _;
     }
 
@@ -58,7 +59,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
         messageCount = header.messageCount;
         messageRoot = header.messageRoot;
         networkSectionHash = header.getNetworkSectionHash();
-        require(header.nextValidators.length > 0, "BtpMessageVerifier: No validator(s)");
+        require(header.nextValidators.length > 0, ERR_NOT_VERIFIABLE);
         validators = header.nextValidators;
     }
 
@@ -83,15 +84,13 @@ contract BtpMessageVerifier is IBMV, Initializable {
     onlyBmc
     returns (bytes[] memory) {
         checkAccessible(_prev);
-        require(nextMessageSn == _sn, "BtpMessageVerifier: Invalid message sequence");
-
+        checkNextMessageSn(_sn);
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
         bytes[] memory messages;
         uint remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
-
         for (uint i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
-                require(remainMessageCount == 0, "BtpMessageVerifier: has messages to be handled");
+                require(remainMessageCount == 0, ERR_NOT_VERIFIABLE);
                 (BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof) = rms[i].toBlockUpdate();
                 checkHeaderWithState(header);
                 checkBlockUpdateProof(header, proof);
@@ -103,9 +102,12 @@ contract BtpMessageVerifier is IBMV, Initializable {
                     validators = header.nextValidators;
                 }
                 if (header.messageRoot != bytes32(0)) {
-                    require(firstMessageSn + messageCount - sequenceOffset == header.messageSn,
-                            "BtpMessageVerifier: invalid message sequence number");
-
+                    uint messageSn = firstMessageSn + messageCount - sequenceOffset;
+                    if (messageSn < header.messageSn) {
+                        revert(ERR_NOT_VERIFIABLE);
+                    } else if (messageSn > header.messageSn) {
+                        revert(ERR_ALREADY_VERIFIED);
+                    }
                     messageRoot = header.messageRoot;
                     firstMessageSn = header.messageSn;
                     remainMessageCount = messageCount = header.messageCount;
@@ -116,8 +118,9 @@ contract BtpMessageVerifier is IBMV, Initializable {
 
                 // compare roots of `block update` and `message proof`
                 (bytes32 root, uint leafCount) = mp.calculate();
-                require(root == messageRoot, "BtpMessageVerifier: Invalid merkle root of messages");
-                require(leafCount == messageCount, "BtpMessageVerifier: Invalid message count");
+                if (root != messageRoot || leafCount != messageCount) {
+                    revert(ERR_NOT_VERIFIABLE);
+                }
 
                 // collect messages
                 messages = Utils.append(messages, mp.mesgs);
@@ -190,14 +193,25 @@ contract BtpMessageVerifier is IBMV, Initializable {
 
     function checkAccessible(string memory _from) private view {
         (string memory net, ) = _from.splitBTPAddress();
-        require(getSrcNetworkId().compareTo(net), "BtpMessageVerifier: Not allowed source network");
+        require(getSrcNetworkId().compareTo(net), ERR_NOT_VERIFIABLE);
+    }
+
+    function checkNextMessageSn(uint sn) private view {
+        if (nextMessageSn < sn) {
+            revert(ERR_NOT_VERIFIABLE);
+        } else if (nextMessageSn > sn) {
+            revert(ERR_ALREADY_VERIFIED);
+        }
     }
 
     function checkHeaderWithState(BlockUpdateLib.Header memory header) private view {
-        require(networkId == header.networkId, "BtpMessageVerifier: BlockUpdate for unknown network");
-        require(networkSectionHash == header.prevNetworkSectionHash,
-                "BtpMessageVerifier: Invalid previous network section hash");
-        require(nextMessageSn == header.messageSn, "BtpMessageVerifier: Invalid message sequence number");
+        require(networkId == header.networkId, ERR_NOT_VERIFIABLE);
+        require(networkSectionHash == header.prevNetworkSectionHash, ERR_NOT_VERIFIABLE);
+        if (nextMessageSn < header.messageSn) {
+            revert(ERR_ALREADY_VERIFIED);
+        } else if (nextMessageSn > header.messageSn) {
+            revert(ERR_NOT_VERIFIABLE);
+        }
     }
 
     function checkBlockUpdateProof(BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof) private view {
@@ -209,7 +223,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
                 votes++;
             }
         }
-        require(hasQuorumOf(votes), "BtpMessageVerifier: Lack of quorum");
+        require(hasQuorumOf(votes), ERR_NOT_VERIFIABLE);
     }
 
 }
