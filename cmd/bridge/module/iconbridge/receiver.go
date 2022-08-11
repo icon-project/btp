@@ -86,6 +86,8 @@ func (r *Receiver) monitorBTPBlock(req *client.BTPRequest, seq int64,
 	if err != nil {
 		return err
 	}
+	//BMC.seq starts with 1 and BTPBlock.FirstMessageSN starts with 0
+	offset += 1
 	return r.c.MonitorBTP(req, func(conn *websocket.Conn, v *client.BTPNotification) error {
 		b, err := v.Header.Value()
 		if err != nil {
@@ -110,8 +112,8 @@ func (r *Receiver) monitorBTPBlock(req *client.BTPRequest, seq int64,
 			return err
 		}
 		for _, msg := range msgs {
-			if sn >= seq {
-				evt, err := messageToEvent(msg, sn)
+			if sn > seq {
+				evt, err := messageToEvent(r.dst.String(), msg, sn)
 				if err != nil {
 					return err
 				}
@@ -133,12 +135,13 @@ func (r *Receiver) monitorBTPBlock(req *client.BTPRequest, seq int64,
 	}, scb, errCb)
 }
 
-func messageToEvent(msg string, seq int64) (*module.Event, error) {
+func messageToEvent(next, msg string, seq int64) (*module.Event, error) {
 	b, err := base64.StdEncoding.DecodeString(msg)
 	if err != nil {
 		return nil, err
 	}
 	evt := &module.Event{
+		Next:     next,
 		Sequence: seq,
 		Message:  b,
 	}

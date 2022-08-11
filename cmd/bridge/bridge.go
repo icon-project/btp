@@ -151,7 +151,12 @@ func (c *bridge) addSegment() error {
 		b   []byte
 		err error
 	)
+	numOfEvents := 0
 	for _, rp := range c.rm.ReceiptProofs {
+		if len(rp.Events) == 0 {
+			continue
+		}
+		numOfEvents += len(rp.Events)
 		if b, err = codec.RLP.MarshalToBytes(rp.Events); err != nil {
 			return err
 		}
@@ -180,7 +185,7 @@ func (c *bridge) addSegment() error {
 		From:          c.src,
 		Height:        lrp.Height,
 		EventSequence: le.Sequence,
-		NumberOfEvent: len(lrp.Events),
+		NumberOfEvent: numOfEvents,
 	}
 	c.ss = append(c.ss, s)
 	lrp.Events = lrp.Events[:0]

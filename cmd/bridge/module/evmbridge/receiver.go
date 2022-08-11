@@ -91,7 +91,7 @@ func (r *Receiver) ReceiveLoop(height, seq int64,
 					if err != nil {
 						return err
 					}
-					if evt.Sequence < seq {
+					if evt.Sequence <= seq {
 						continue EpLoop
 					}
 					//below statement is unnecessary if 'next' is indexed
