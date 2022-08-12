@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >= 0.4.22 < 0.9.0;
+pragma solidity >=0.4.22 <0.9.0;
 
 import "../libraries/MessageProofLib.sol";
 
 contract MessageProofMock {
-
     using MessageProofLib for MessageProofLib.MessageProof;
 
     function decode(bytes memory enc) public pure returns (MessageProofLib.MessageProof memory) {
@@ -17,6 +16,4 @@ contract MessageProofMock {
         (bytes32 root, ) = mp.calculate();
         return root;
     }
-
 }
-

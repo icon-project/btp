@@ -7,42 +7,35 @@ import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract BtpMessageVerifierV2 is IBMV, Initializable {
-
     using BlockUpdateLib for BlockUpdateLib.Header;
     using MessageProofLib for MessageProofLib.MessageProof;
     using RelayMessageLib for RelayMessageLib.RelayMessage;
 
     address public bmc;
     string private srcNetworkId;
-    uint private networkTypeId;
-    uint private networkId;
-    uint private height;
+    uint256 private networkTypeId;
+    uint256 private networkId;
+    uint256 private height;
     bytes32 private networkSectionHash;
     bytes32 private messageRoot;
-    uint private messageCount;
-    uint private nextMessageSn;
+    uint256 private messageCount;
+    uint256 private nextMessageSn;
     address[] private validators;
-    uint private sequenceOffset;
-    uint private firstMessageSn;
+    uint256 private sequenceOffset;
+    uint256 private firstMessageSn;
 
     modifier onlyBmc() {
-        require(
-            msg.sender == bmc,
-            "BtpMessageVerifier: Unauthorized bmc sender"
-        );
+        require(msg.sender == bmc, "BtpMessageVerifier: Unauthorized bmc sender");
         _;
     }
 
     function initialize(
         address _bmc,
         string memory _srcNetworkId,
-        uint _networkTypeId,
+        uint256 _networkTypeId,
         bytes memory _firstBlockHeader,
-        uint _sequenceOffset
-    )
-    initializer
-    external
-    {
+        uint256 _sequenceOffset
+    ) external initializer {
         bmc = _bmc;
         srcNetworkId = _srcNetworkId;
         networkTypeId = _networkTypeId;
@@ -60,36 +53,29 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
         validators = header.nextValidators;
     }
 
-    function getStatus() external view returns (uint, bytes memory) {
+    function getStatus() external view returns (uint256, bytes memory) {
         bytes[] memory extra = new bytes[](3);
         extra[0] = RLPEncode.encodeUint(sequenceOffset);
         extra[1] = RLPEncode.encodeUint(firstMessageSn);
         extra[2] = RLPEncode.encodeUint(messageCount);
-        return (
-            height,
-            RLPEncode.encodeList(extra)
-        );
+        return (height, RLPEncode.encodeList(extra));
     }
 
     function handleRelayMessage(
         string memory,
         string memory _prev,
-        uint _sn,
+        uint256 _sn,
         bytes memory _msg
-    )
-    external
-    onlyBmc
-    returns (bytes[] memory) {
-
+    ) external onlyBmc returns (bytes[] memory) {
         require(compare(bytes(srcNetworkId), bytes(_prev)), "BtpMessageVerifier: Not allowed source network");
         require(nextMessageSn == _sn, "BtpMessageVerifier: Invalid message sequence");
 
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
         bytes[] memory messages;
-        uint remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
+        uint256 remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
 
-        for (uint i = 0; i < rms.length; i++) {
-            if (rms[i].typ == RelayMessageLib.TypeBlockUpdate) {
+        for (uint256 i = 0; i < rms.length; i++) {
+            if (rms[i].typ == RelayMessageLib.TYPE_BLOCK_UPDATE) {
                 require(remainMessageCount == 0, "BtpMessageVerifier: has messages to be handled");
                 (BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof) = rms[i].toBlockUpdate();
                 checkHeaderWithState(header);
@@ -102,19 +88,20 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
                     validators = header.nextValidators;
                 }
                 if (header.messageRoot != bytes32(0)) {
-                    require(firstMessageSn + messageCount - sequenceOffset == header.messageSn,
-                            "BtpMessageVerifier: invalid message sequence number");
+                    require(
+                        firstMessageSn + messageCount - sequenceOffset == header.messageSn,
+                        "BtpMessageVerifier: invalid message sequence number"
+                    );
 
                     messageRoot = header.messageRoot;
                     firstMessageSn = header.messageSn;
                     remainMessageCount = messageCount = header.messageCount;
                 }
-
-            } else if (rms[i].typ == RelayMessageLib.TypeMessageProof) {
+            } else if (rms[i].typ == RelayMessageLib.TYPE_MESSAGE_PROOF) {
                 MessageProofLib.MessageProof memory mp = rms[i].toMessageProof();
 
                 // compare roots of `block update` and `message proof`
-                (bytes32 root, uint leafCount) = mp.calculate();
+                (bytes32 root, uint256 leafCount) = mp.calculate();
                 require(root == messageRoot, "BtpMessageVerifier: Invalid merkle root of messages");
                 require(leafCount == messageCount, "BtpMessageVerifier: Invalid message count");
 
@@ -133,15 +120,15 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
         return srcNetworkId;
     }
 
-    function getNetworkTypeId() public view returns (uint) {
+    function getNetworkTypeId() public view returns (uint256) {
         return networkTypeId;
     }
 
-    function getNetworkId() public view returns (uint) {
+    function getNetworkId() public view returns (uint256) {
         return networkId;
     }
 
-    function getHeight() public view returns (uint) {
+    function getHeight() public view returns (uint256) {
         return height;
     }
 
@@ -153,27 +140,27 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
         return messageRoot;
     }
 
-    function getMessageCount() public view returns (uint) {
+    function getMessageCount() public view returns (uint256) {
         return messageCount;
     }
 
-    function getRemainMessageCount() public view returns (uint) {
+    function getRemainMessageCount() public view returns (uint256) {
         return messageCount - (nextMessageSn - firstMessageSn);
     }
 
-    function getNextMessageSn() public view returns (uint) {
+    function getNextMessageSn() public view returns (uint256) {
         return nextMessageSn;
     }
 
-    function getValidators(uint nth) public view returns (address) {
+    function getValidators(uint256 nth) public view returns (address) {
         return validators[nth];
     }
 
-    function getValidatorsCount() public view returns (uint) {
+    function getValidatorsCount() public view returns (uint256) {
         return validators.length;
     }
 
-    function hasQuorumOf(uint votes) private view returns (bool) {
+    function hasQuorumOf(uint256 votes) private view returns (bool) {
         return votes * 3 > validators.length * 2;
     }
 
@@ -183,15 +170,20 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
 
     function checkHeaderWithState(BlockUpdateLib.Header memory header) private view {
         require(networkId == header.networkId, "BtpMessageVerifier: BlockUpdate for unknown network");
-        require(networkSectionHash == header.prevNetworkSectionHash,
-                "BtpMessageVerifier: Invalid previous network section hash");
+        require(
+            networkSectionHash == header.prevNetworkSectionHash,
+            "BtpMessageVerifier: Invalid previous network section hash"
+        );
         require(nextMessageSn == header.messageSn, "BtpMessageVerifier: Invalid message sequence number");
     }
 
-    function checkBlockUpdateProof(BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof) private view {
-        uint votes = 0;
+    function checkBlockUpdateProof(BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof)
+        private
+        view
+    {
+        uint256 votes = 0;
         bytes32 decision = header.getNetworkTypeSectionDecisionHash(srcNetworkId, networkTypeId);
-        for (uint j = 0; j < proof.signatures.length && !hasQuorumOf(votes); j++) {
+        for (uint256 j = 0; j < proof.signatures.length && !hasQuorumOf(votes); j++) {
             address signer = Utils.recoverSigner(decision, proof.signatures[j]);
             if (signer == validators[j]) {
                 votes++;
@@ -199,6 +191,4 @@ contract BtpMessageVerifierV2 is IBMV, Initializable {
         }
         require(hasQuorumOf(votes), "BtpMessageVerifier: Lack of quorum");
     }
-
 }
-

@@ -9,13 +9,7 @@ interface IBMV {
         @return height Last verified block height
         @return extra  extra rlp encoded bytes
      */
-    function getStatus()
-        external
-        view
-        returns (
-            uint256 height,
-            bytes memory extra
-        );
+    function getStatus() external view returns (uint256 height, bytes memory extra);
 
     /**
         @notice Decodes Relay Messages and process BTP Messages.

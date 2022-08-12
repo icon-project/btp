@@ -2,20 +2,19 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 library Utils {
-
-    function recoverSigner(bytes32 message, bytes memory signature)
-    internal
-    pure
-    returns (address signer)
-    {
-            (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
-            return ecrecover(message, v + 27, r, s);
+    function recoverSigner(bytes32 message, bytes memory signature) internal pure returns (address signer) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
+        return ecrecover(message, v + 27, r, s);
     }
 
     function splitSignature(bytes memory signature)
-    private
-    pure
-    returns (bytes32, bytes32, uint8)
+        private
+        pure
+        returns (
+            bytes32,
+            bytes32,
+            uint8
+        )
     {
         require(signature.length == 65);
 
@@ -26,7 +25,7 @@ library Utils {
             r := mload(add(signature, 32))
             s := mload(add(signature, 64))
             v := byte(0, mload(add(signature, 96)))
-       }
+        }
         return (r, s, v);
     }
 
@@ -36,16 +35,14 @@ library Utils {
         }
 
         bytes[] memory t = v;
-        uint l = v.length;
+        uint256 l = v.length;
         v = new bytes[](v.length + w.length);
-        for (uint i = 0; i < l; i++) {
+        for (uint256 i = 0; i < l; i++) {
             v[i] = t[i];
         }
-        for (uint i = 0; i < w.length; i++) {
-            v[l+i] = w[i];
+        for (uint256 i = 0; i < w.length; i++) {
+            v[l + i] = w[i];
         }
         return v;
     }
-
 }
-

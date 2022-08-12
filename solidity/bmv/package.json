@@ -7,7 +7,13 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx truffle compile --all",
+    "lint": "npx run lint:js && npm run lint:sol",
+    "lint:fix": "npm run lint:js:fix && npx run lint:sol:fix",
+    "lint:js": "npx eslint test/**",
+    "lint:js:fix": "npx eslint --fix test/**",
+    "lint:sol": "npx solhint 'contracts/**/*.sol' && npx prettier -c 'contracts/**/*.sol'",
+    "lint:sol:fix": "npx prettier --write \"contracts/**/*.sol\""
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +24,8 @@
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.4",
     "ganache": "^7.3.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.24",
     "truffle": "^5.1.16-truffleLogger.0"
   },
   "dependencies": {

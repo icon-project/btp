@@ -24,11 +24,7 @@ library String {
      *
      * @return string, string   The resulting strings of Network_address and Server_address
      */
-    function splitBTPAddress(string memory _base)
-        internal
-        pure
-        returns (string memory, string memory)
-    {
+    function splitBTPAddress(string memory _base) internal pure returns (string memory, string memory) {
         string[] memory temp = split(_base, "/");
         return (temp[2], temp[3]);
     }
@@ -44,11 +40,7 @@ library String {
      * @param _value The value to be the concatenated suffix
      * @return string The resulting string from combinging the base and value
      */
-    function concat(string memory _base, string memory _value)
-        internal
-        pure
-        returns (string memory)
-    {
+    function concat(string memory _base, string memory _value) internal pure returns (string memory) {
         return string(abi.encodePacked(_base, _value));
     }
 
@@ -65,11 +57,7 @@ library String {
      * @return int The position of the needle starting from 0 and returning -1
      *             in the case of no matches found
      */
-    function indexOf(string memory _base, string memory _value)
-        internal
-        pure
-        returns (int256)
-    {
+    function indexOf(string memory _base, string memory _value) internal pure returns (int256) {
         return _indexOf(_base, _value, 0);
     }
 
@@ -136,11 +124,7 @@ library String {
      * @return string[] An array of values split based off the delimiter, but
      *                  do not container the delimiter.
      */
-    function split(string memory _base, string memory _value)
-        internal
-        pure
-        returns (string[] memory splitArr)
-    {
+    function split(string memory _base, string memory _value) internal pure returns (string[] memory splitArr) {
         bytes memory _baseBytes = bytes(_base);
 
         uint256 _offset = 0;
@@ -188,18 +172,10 @@ library String {
      * @param _value The string the base is being compared to
      * @return bool Simply notates if the two string have an equivalent
      */
-    function compareTo(string memory _base, string memory _value)
-        internal
-        pure
-        returns (bool)
-    {
-        if (
-            keccak256(abi.encodePacked(_base)) ==
-            keccak256(abi.encodePacked(_value))
-        ) {
+    function compareTo(string memory _base, string memory _value) internal pure returns (bool) {
+        if (keccak256(abi.encodePacked(_base)) == keccak256(abi.encodePacked(_value))) {
             return true;
         }
         return false;
     }
-
 }

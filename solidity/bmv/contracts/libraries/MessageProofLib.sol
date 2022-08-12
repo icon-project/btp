@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >= 0.4.22 < 0.9.0;
+pragma solidity >=0.4.22 <0.9.0;
 
 import "./RLPReader.sol";
 
 library MessageProofLib {
-
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
     using MessageProofLib for MessageProofLib.Queue;
@@ -16,15 +15,15 @@ library MessageProofLib {
     }
 
     struct MessageProofNode {
-        uint level;
-        uint leafCount;
+        uint256 level;
+        uint256 leafCount;
         bytes32 hash;
     }
 
     struct Queue {
-        uint front;
-        uint rear;
-        uint length;
+        uint256 front;
+        uint256 rear;
+        uint256 length;
         MessageProofNode[] nodes;
     }
 
@@ -37,38 +36,41 @@ library MessageProofLib {
         MessageProofNode[] memory rights = toMessageProofNodes(tl[2].toList());
 
         bytes[] memory mesgs = new bytes[](ms.length);
-        for (uint i = 0; i < ms.length; i++) {
+        for (uint256 i = 0; i < ms.length; i++) {
             mesgs[i] = ms[i].toBytes();
         }
 
         return MessageProof(lefts, mesgs, rights);
     }
 
-    function getLeafCount(MessageProofNode[] memory nodes) internal pure returns (uint cnt) {
-        for (uint i = 0; i < nodes.length; i++) {
+    function getLeafCount(MessageProofNode[] memory nodes) internal pure returns (uint256 cnt) {
+        for (uint256 i = 0; i < nodes.length; i++) {
             cnt += nodes[i].leafCount;
         }
     }
 
-    function calculate(MessageProof memory proof) internal pure returns (bytes32, uint) {
+    function calculate(MessageProof memory proof) internal pure returns (bytes32, uint256) {
         Queue memory queue = toQueue(proof);
-        uint leafCount = getLeafCount(queue.nodes);
-        uint t = leafCount;
-        uint maxLevel = 1;
+        uint256 leafCount = getLeafCount(queue.nodes);
+        uint256 t = leafCount;
+        uint256 maxLevel = 1;
         while (t != 0) {
             maxLevel++;
             t = t >> 1;
         }
 
-        uint w;
-        for (uint i = 0; i < maxLevel; i++) {
+        uint256 w;
+        for (uint256 i = 0; i < maxLevel; i++) {
             t = queue.length;
             w = queue.length;
-            for (uint j = 0; j < t; j++) {
-                MessageProofNode memory l = queue.pop(); w--;
+            for (uint256 j = 0; j < t; j++) {
+                MessageProofNode memory l = queue.pop();
+                w--;
                 if (l.level <= (i + 1) && w > 0) {
                     MessageProofNode memory r = queue.pop();
-                    l = concat(l, r); w--; j++;
+                    l = concat(l, r);
+                    w--;
+                    j++;
                 }
                 queue.push(l);
             }
@@ -96,11 +98,15 @@ library MessageProofLib {
         }
     }
 
-    function levelOf(uint nleaves) private pure returns (uint level) {
+    function levelOf(uint256 nleaves) private pure returns (uint256 level) {
         assembly {
             let t := sub(nleaves, 1)
             level := 1
-            for {} gt(t, 0) {} {
+            for {
+
+            } gt(t, 0) {
+
+            } {
                 level := add(level, 1)
                 t := shr(1, t)
             }
@@ -108,17 +114,18 @@ library MessageProofLib {
     }
 
     function concat(MessageProofNode memory left, MessageProofNode memory right)
-    private
-    pure
-    returns (MessageProofNode memory)
+        private
+        pure
+        returns (MessageProofNode memory)
     {
         require(left.leafCount == (1 << (left.level - 1)), "MessageProof: Invalid leaf count of left node");
         require(left.leafCount >= right.leafCount, "MessageProof: Invalid leaves balance");
-        return MessageProofNode(
-            left.level + 1,
-            left.leafCount + right.leafCount,
-            keccak256(abi.encodePacked(left.hash, right.hash))
-        );
+        return
+            MessageProofNode(
+                left.level + 1,
+                left.leafCount + right.leafCount,
+                keccak256(abi.encodePacked(left.hash, right.hash))
+            );
     }
 
     function toQueue(MessageProof memory proof) private pure returns (Queue memory) {
@@ -126,46 +133,31 @@ library MessageProofLib {
             front: 0,
             rear: 0,
             length: 0,
-            nodes: new MessageProofNode[](
-                proof.lefts.length + proof.mesgs.length + proof.rights.length
-            )
+            nodes: new MessageProofNode[](proof.lefts.length + proof.mesgs.length + proof.rights.length)
         });
 
-        for (uint i = 0; i < proof.lefts.length; i++) {
+        for (uint256 i = 0; i < proof.lefts.length; i++) {
             queue.push(proof.lefts[i]);
         }
 
-        for (uint i = 0; i < proof.mesgs.length; i++) {
-            queue.push(MessageProofNode({
-                level: 1,
-                leafCount: 1,
-                hash: keccak256(proof.mesgs[i])
-            }));
+        for (uint256 i = 0; i < proof.mesgs.length; i++) {
+            queue.push(MessageProofNode({level: 1, leafCount: 1, hash: keccak256(proof.mesgs[i])}));
         }
 
-        for (uint i = 0; i < proof.rights.length; i++) {
+        for (uint256 i = 0; i < proof.rights.length; i++) {
             queue.push(proof.rights[i]);
         }
 
         return queue;
     }
 
-    function toMessageProofNodes(RLPReader.RLPItem[] memory items)
-    private
-    pure
-    returns (MessageProofNode[] memory)
-    {
+    function toMessageProofNodes(RLPReader.RLPItem[] memory items) private pure returns (MessageProofNode[] memory) {
         RLPReader.RLPItem[] memory tmp;
         MessageProofNode[] memory nodes = new MessageProofNode[](items.length);
-        for (uint i = 0 ; i < items.length; i++) {
+        for (uint256 i = 0; i < items.length; i++) {
             tmp = items[i].toList();
-            nodes[i] = MessageProofNode(
-                levelOf(tmp[0].toUint()),
-                tmp[0].toUint(),
-                bytes32(tmp[1].toBytes())
-            );
+            nodes[i] = MessageProofNode(levelOf(tmp[0].toUint()), tmp[0].toUint(), bytes32(tmp[1].toBytes()));
         }
         return nodes;
     }
-
 }

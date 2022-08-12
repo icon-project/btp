@@ -6,20 +6,19 @@ import "./RLPEncode.sol";
 import "./RLPReader.sol";
 
 library BlockUpdateLib {
-
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
 
     struct Header {
-        uint mainHeight;
-        uint round;
+        uint256 mainHeight;
+        uint256 round;
         bytes32 nextProofContextHash;
         MerkleTreeLib.Path[] networkSectionToRoot;
-        uint networkId;
-        uint messageSn;
+        uint256 networkId;
+        uint256 messageSn;
         bool hasNextValidators;
         bytes32 prevNetworkSectionHash;
-        uint messageCount;
+        uint256 messageCount;
         bytes32 messageRoot;
         address[] nextValidators;
     }
@@ -28,47 +27,30 @@ library BlockUpdateLib {
         bytes[] signatures;
     }
 
-    function decode(bytes memory enc)
-    internal
-    pure
-    returns (
-        Header memory header,
-        Proof memory proof
-    )
-    {
+    function decode(bytes memory enc) internal pure returns (Header memory header, Proof memory proof) {
         RLPReader.RLPItem memory i = enc.toRlpItem();
         RLPReader.RLPItem[] memory l = i.toList();
-        return (
-            decodeHeader(l[0].toBytes()),
-            decodeProof(l[1].toBytes())
-        );
+        return (decodeHeader(l[0].toBytes()), decodeProof(l[1].toBytes()));
     }
 
     function decodeHeader(bytes memory enc) internal pure returns (Header memory header) {
         RLPReader.RLPItem memory i = enc.toRlpItem();
         RLPReader.RLPItem[] memory l = i.toList();
 
-        return Header(
-            l[0].toUint(),
-            l[1].toUint(),
-            bytes32(l[2].toBytes()),
-            l[3].payloadLen() > 0
-                ? decodeNSRootPath(l[3].toRlpBytes())
-                : new MerkleTreeLib.Path[](0),
-            l[4].toUint(),
-            l[5].toUint() >> 1,
-            l[5].toUint() & 1 == 1,
-            l[6].payloadLen() > 0
-                ? bytes32(l[6].toBytes())
-                : bytes32(0),
-            l[7].toUint(),
-            l[8].payloadLen() > 0
-                ? bytes32(l[8].toBytes())
-                : bytes32(0),
-            l[5].toUint() & 1 == 1
-                ? decodeValidators(l[9].toBytes())
-                : new address[](0)
-        );
+        return
+            Header(
+                l[0].toUint(),
+                l[1].toUint(),
+                bytes32(l[2].toBytes()),
+                l[3].payloadLen() > 0 ? decodeNSRootPath(l[3].toRlpBytes()) : new MerkleTreeLib.Path[](0),
+                l[4].toUint(),
+                l[5].toUint() >> 1,
+                l[5].toUint() & 1 == 1,
+                l[6].payloadLen() > 0 ? bytes32(l[6].toBytes()) : bytes32(0),
+                l[7].toUint(),
+                l[8].payloadLen() > 0 ? bytes32(l[8].toBytes()) : bytes32(0),
+                l[5].toUint() & 1 == 1 ? decodeValidators(l[9].toBytes()) : new address[](0)
+            );
     }
 
     function decodeProof(bytes memory enc) internal pure returns (Proof memory) {
@@ -79,10 +61,8 @@ library BlockUpdateLib {
         tl = ti.toList();
 
         bytes[] memory signatures = new bytes[](tl.length);
-        for (uint i = 0; i < tl.length; i++) {
-            signatures[i] = tl[i].payloadLen() > 0
-                ? tl[i].toBytes()
-                : new bytes(0);
+        for (uint256 i = 0; i < tl.length; i++) {
+            signatures[i] = tl[i].payloadLen() > 0 ? tl[i].toBytes() : new bytes(0);
         }
         return Proof(signatures);
     }
@@ -104,12 +84,8 @@ library BlockUpdateLib {
     function getNetworkTypeSectionDecisionHash(
         Header memory self,
         string memory srcNetworkId,
-        uint networkType
-    )
-    internal
-    pure
-    returns (bytes32)
-    {
+        uint256 networkType
+    ) internal pure returns (bytes32) {
         bytes[] memory ntsd = new bytes[](5);
         ntsd[0] = RLPEncode.encodeString(srcNetworkId);
         ntsd[1] = RLPEncode.encodeUint(networkType);
@@ -133,7 +109,7 @@ library BlockUpdateLib {
     function decodeNSRootPath(bytes memory enc) private pure returns (MerkleTreeLib.Path[] memory) {
         RLPReader.RLPItem[] memory tl = enc.toRlpItem().toList();
         MerkleTreeLib.Path[] memory pathes = new MerkleTreeLib.Path[](tl.length);
-        for (uint i = 0; i < tl.length; i++) {
+        for (uint256 i = 0; i < tl.length; i++) {
             RLPReader.RLPItem[] memory tm = tl[i].toList();
             pathes[i] = MerkleTreeLib.Path(tm[0].toUint(), bytes32(tm[1].toBytes()));
         }
@@ -146,10 +122,9 @@ library BlockUpdateLib {
         tl = tl[0].toList();
 
         address[] memory validators = new address[](tl.length);
-        for (uint i = 0; i < tl.length; i++) {
+        for (uint256 i = 0; i < tl.length; i++) {
             validators[i] = tl[i].toAddress();
         }
         return validators;
     }
 }
-

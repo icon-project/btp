@@ -6,15 +6,14 @@ import "./MessageProofLib.sol";
 import "./RLPReader.sol";
 
 library RelayMessageLib {
-
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
 
-    uint constant TypeBlockUpdate = 1;
-    uint constant TypeMessageProof = 2;
+    uint256 constant TYPE_BLOCK_UPDATE = 1;
+    uint256 constant TYPE_MESSAGE_PROOF = 2;
 
     struct RelayMessage {
-        uint typ;
+        uint256 typ;
         bytes mesg;
     }
 
@@ -24,7 +23,7 @@ library RelayMessageLib {
         tl = tl[0].toList();
 
         RelayMessage[] memory rms = new RelayMessage[](tl.length);
-        for (uint i = 0; i < tl.length; i++) {
+        for (uint256 i = 0; i < tl.length; i++) {
             RLPReader.RLPItem[] memory ms = tl[i].toList();
             rms[i].typ = ms[0].toUint();
             rms[i].mesg = ms[1].toBytes();
@@ -34,20 +33,16 @@ library RelayMessageLib {
     }
 
     function toBlockUpdate(RelayMessage memory rm)
-    internal
-    pure
-    returns (BlockUpdateLib.Header memory, BlockUpdateLib.Proof memory)
+        internal
+        pure
+        returns (BlockUpdateLib.Header memory, BlockUpdateLib.Proof memory)
     {
-        require(rm.typ == TypeBlockUpdate, "RelayMessage: Support only BlockUpdate type");
+        require(rm.typ == TYPE_BLOCK_UPDATE, "RelayMessage: Support only BlockUpdate type");
         return BlockUpdateLib.decode(rm.mesg);
     }
 
-    function toMessageProof(RelayMessage memory rm)
-    internal
-    pure
-    returns (MessageProofLib.MessageProof memory)
-    {
-        require(rm.typ == TypeMessageProof, "RelayMessage: Support only MessageProof type");
+    function toMessageProof(RelayMessage memory rm) internal pure returns (MessageProofLib.MessageProof memory) {
+        require(rm.typ == TYPE_MESSAGE_PROOF, "RelayMessage: Support only MessageProof type");
         return MessageProofLib.decode(rm.mesg);
     }
 }
