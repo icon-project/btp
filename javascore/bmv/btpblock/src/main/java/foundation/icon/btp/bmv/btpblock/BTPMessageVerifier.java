@@ -147,7 +147,6 @@ public class BTPMessageVerifier implements BMV {
         if (bmvProperties.getRemainMessageCount().compareTo(BigInteger.ZERO) != 0) throw BMVException.unknown("remain must be zero");
         if (networkID.compareTo(blockUpdateNid) != 0) throw BMVException.unknown("invalid network id");
         if (!Arrays.equals(bmvProperties.getLastNetworkSectionHash(), prev)) throw BMVException.unknown("mismatch networkSectionHash");
-        if (firstMessageSn.add(messageCount).compareTo(seqOffset.add(blockHeader.getFirstMessageSn())) != 0) throw BMVException.unknown("invalid first message sequence of blockUpdate");
         NetworkSection ns = new NetworkSection(
                 blockUpdateNid,
                 updateNumber,

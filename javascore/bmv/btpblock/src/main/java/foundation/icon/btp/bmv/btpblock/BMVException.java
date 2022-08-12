@@ -33,11 +33,11 @@ public class BMVException extends BTPException.BMV {
     }
 
     public static BMVException notVerifiable(String message) {
-        return new BMVException(Code.Unknown, message);
+        return new BMVException(Code.NotVerifiable, message);
     }
 
     public static BMVException alreadyVerified(String message) {
-        return new BMVException(Code.Unknown, message);
+        return new BMVException(Code.AlreadyVerified, message);
     }
 
     //BTPException.BMV => 25 ~ 39

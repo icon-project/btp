@@ -38,10 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BTPMessageVerifierScoreTest extends TestBase {
     private static final int UNKNOWN = 25;
-    private static final int PERMISSION_DENIED = 26;
-    private static final int INVALID_PROOFS = 27;
-    private static final int INVALID_BLOCK_UPDATE = 28;
-    private static final int INVALID_MESSAGE_PROOF = 29;
+    private static final int NOT_VERIFIABLE = 26;
     private static TransactionHandler txHandler;
     private static KeyWallet ownerWallet;
     private static BMVScore bmvScore;
@@ -100,7 +97,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         String otherBMC = makeBTPAddress(otherNetworkBMC.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), otherBMC, BigInteger.ZERO, StringUtil.hexToBytes(validMsg));
         var txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + PERMISSION_DENIED + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
     }
 
     @Order(3)
@@ -110,7 +107,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, StringUtil.hexToBytes(blockUpdateMsg));
         var txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var remainMessage = "cecdcc028ac9f800c483646f67f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ZERO, StringUtil.hexToBytes(remainMessage));
@@ -120,17 +117,17 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         var invalidNidMsg = "f90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060203a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidNidMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var invalidFirstSNMsg = "f90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060105a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidFirstSNMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + NOT_VERIFIABLE + ")");
 
         var invalidPrevHashMsg = "f90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060103a0000000000000000000000000000000000000000000000000000000000000000003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidPrevHashMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
     }
 
     @Order(4)
@@ -140,7 +137,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(duplicatedSignatureMsg));
         var txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_PROOFS + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var proofNullMsg = "f8f9f8f7f8f501b8f2f8f0b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060103a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(proofNullMsg));
@@ -155,7 +152,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(hashMismatchMsg));
         var txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_BLOCK_UPDATE + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
     }
 
     @Order(6)
@@ -165,7 +162,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         String prevBmc = makeBTPAddress(prevBmCScore.getAddress());
         var txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(proofMessageMsg));
         var txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         // make remain count 2
         var validBlockUpdate = "f90210f9020df9020a01b90206f90203b8ecf8ea1400a0619411be422c780d27bcc7b121756857aaab69d4e233890374254e6f2b8b3e9be3e201a01c4d6baea3bc5ebaceb78ff13c13e599fbd877477000216bb9141a232b49d6060103a083b60a531ee5a99ac099df397c68cd6573fd71424375307e3e718478f176c25003a04fbe4e3bbeb4387c64212b3ad1f7f980fe8202776e0464ef1027d5761836294bb85cf85af858950055c477ef0e31bf5cb9e29135426e8d65e911f12895009e093f72a4172646e82f366325209046e6ff0abf95003cf590de7f8d4bc03a151739a22aa9f36a3c464d9500768cbda48d422bf788d2a2b2c90fb72f3e549913b90112f9010ff9010cb841bcd1cdb4dd80ed343a64a1f470acad08eee999dc15c56d4bcb0d17e935ccac942967bb625ca770b05ebd520854546fc7f7544d1e930225777cf5252efb4a3baa00b841918e462b48d3e183ec8f76037f5a575b981aa1448587466201fa48c61961954b7f2cd1ee714d75361fa39560d555650d15293b37f2849c1ff4b7317e3ec8a32400b841dc1bbbcd2209a9879b99a9578a19626450798f79c4f6c2de4c98a56dc6607e7c3b67db7e80881b813d78663d1bc87465b988fd32aa87851a9b3a7700fa897cba01b841a8546b0ca9053e69f9433e4745b292556058e95efec307076ee0c84a624dbd6f7558e4b5653bd6e2bf0fb87332040b987f2077adf59bf511bf2c0ad21286a1ff00";
@@ -176,27 +173,27 @@ public class BTPMessageVerifierScoreTest extends TestBase {
         var mismatchLeftNumMsg = "f842f840f83e02b83bf839e3e201a0d616607d3e4ba96a74f323cffc5f20a3c78e7cab8ecbdbb03b13fa8ffc9bf644d28363617488656c657068616e748462697264f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(mismatchLeftNumMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var invalidNumOfLeafMsg = "f842f840f83e02b83bf839e3e203a06ecf3422e9b5463a79c535bf0db8e1c6f589bbce30ec9ebb3cf4fe947d24cf79d28363617488656c657068616e748462697264f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidNumOfLeafMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var invalidLevelMsg = "f0efee02acebf800c483636174e3e202a06ecf3422e9b5463a79c535bf0db8e1c6f589bbce30ec9ebb3cf4fe947d24cf79";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(invalidLevelMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var mismatchCountMsg = "e1e0df029ddcf800d78363617488656c657068616e7484626972648474657374f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(mismatchCountMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
 
         var mismatchRootMsg = "e0dfde029cdbf800d6876361747465737488656c657068616e748462697264f800";
         txHash = bmcScore.intercallHandleRelayMessage(ownerWallet, bmvScore.getAddress(), prevBmc, BigInteger.ONE, StringUtil.hexToBytes(mismatchRootMsg));
         txResult = txHandler.getResult(txHash);
-        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + INVALID_MESSAGE_PROOF + ")");
+        assertEquals(txResult.getFailure().getMessage(), "Reverted(" + UNKNOWN + ")");
     }
 
     private void positiveCase(List<String> msgList, byte[] blockHeader, long[] seqs) throws TransactionFailureException, IOException, ResultTimeoutException {
