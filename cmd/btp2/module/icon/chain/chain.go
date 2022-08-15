@@ -23,98 +23,17 @@ import (
 	"github.com/icon-project/btp/cmd/btp2/module"
 	"github.com/icon-project/btp/cmd/btp2/module/icon"
 	"github.com/icon-project/btp/common/codec"
-	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mbt"
 	"math/big"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
-	"time"
-)
-
-const (
-	DefaultDBDir  = "db"
-	DefaultDBType = db.GoLevelDBBackend
-	//Base64 in:out = 6:8
-	DefaultBufferScaleOfBlockProof  = 0.5
-	DefaultBufferNumberOfBlockProof = 100
-	DefaultBufferInterval           = 5 * time.Second
-	DefaultReconnectDelay           = time.Second
-	DefaultRelayReSendInterval      = time.Second
 )
 
 type chainInfo struct {
-	Src             module.BtpAddress
-	Bucket          db.Bucket
 	StartHeight     int64
 	NetworkTypeName string
-	ch              *chainHeight
-}
-
-type chainHeight struct {
-	srcHeight int64
-	dstHeight int64
-}
-
-func (r *chainInfo) srcHeight() int64 {
-	return r.ch.srcHeight
-}
-
-func (r *chainInfo) dstHeight() int64 {
-	return r.ch.dstHeight
-}
-
-func (r *chainInfo) Recover() error {
-	b, err := r.Bucket.Get([]byte(r.Src.String()))
-	if err != nil {
-		return err
-	}
-
-	if len(b) == 0 {
-		r.ch.srcHeight = 0
-		r.ch.dstHeight = 0
-	}
-	var ch chainHeight
-	if _, err = codec.RLP.UnmarshalFromBytes(b, &ch); err != nil {
-		return err
-	}
-	r.ch.dstHeight = ch.dstHeight
-	r.ch.srcHeight = ch.srcHeight
-
-	return nil
-}
-
-func (r *chainInfo) Update(sh int64, dh int64) error {
-	var s chainHeight
-	if sh == 0 {
-		s.srcHeight = r.ch.srcHeight
-	} else {
-		s.srcHeight = sh
-	}
-
-	if dh == 0 {
-		s.dstHeight = r.ch.dstHeight
-	} else {
-		s.dstHeight = dh
-	}
-
-	if bs, err := codec.RLP.MarshalToBytes(&s); err != nil {
-		return err
-	} else {
-		return r.Bucket.Set([]byte(r.Src.String()), bs)
-	}
-}
-
-func newRelayHeight(sh int64, dh int64, bk db.Bucket) *chainInfo {
-	return &chainInfo{
-		ch: &chainHeight{
-			dstHeight: dh,
-			srcHeight: sh,
-		},
-		Bucket: bk,
-	}
 }
 
 type SimpleChain struct {
@@ -345,7 +264,6 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlock
 		HeightOfSrc: bh.MainHeight}
 
 	s.bds = append(s.bds, btpBlock)
-	s.ci.Update(bh.MainHeight, s.ci.ch.dstHeight)
 	return nil
 }
 
@@ -370,8 +288,6 @@ func (s *SimpleChain) updateRelayMessage(h int64, seq *big.Int) {
 
 	s.bds = s.bds[bdIndex:]
 	s.rms = s.rms[rmIndex:]
-
-	s.ci.Update(s.ci.ch.srcHeight, h)
 }
 
 func (s *SimpleChain) OnBlockOfDst(height int64) error {
@@ -395,7 +311,7 @@ func (s *SimpleChain) OnBlockOfSrc(bu *icon.BTPBlockUpdate) error {
 		return err
 	}
 
-	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.ci.srcHeight(), bh.MainHeight)
+	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.ci.StartHeight, bh.MainHeight)
 	if s.ci.StartHeight == 0 {
 		s.SetChainInfo()
 	}
@@ -412,33 +328,6 @@ func (s *SimpleChain) OnBlockOfSrc(bu *icon.BTPBlockUpdate) error {
 		if err := s.relay(); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func (s *SimpleChain) prepareDatabase() error {
-	s.l.Debugln("open database", filepath.Join(s.cfg.AbsBaseDir(), s.cfg.Dst.Address.NetworkAddress()))
-	database, err := db.Open(s.cfg.AbsBaseDir(), string(DefaultDBType), s.cfg.Dst.Address.NetworkAddress())
-	if err != nil {
-		return errors.Wrap(err, "fail to open database")
-	}
-	defer func() {
-		if err != nil {
-			database.Close()
-		}
-	}()
-	var bk db.Bucket
-	if bk, err = database.GetBucket("relayHeight"); err != nil {
-		return err
-	}
-	k := []byte("relayHeight")
-	s.ci = newRelayHeight(0, 0, bk)
-	if bk.Has(k) {
-		//offset will be ignore
-		if err = s.ci.Recover(); err != nil {
-			return errors.Wrapf(err, "fail to acc.Recover cause:%v", err)
-		}
-		s.l.Debugf("recover relayHeight srcHeight:%d, dstHeight:%d", s.ci.srcHeight(), s.ci.dstHeight())
 	}
 	return nil
 }
@@ -462,7 +351,7 @@ func (s *SimpleChain) init() error {
 
 func (s *SimpleChain) receiveHeight() (int64, error) {
 	if s.bs.Verifier.Height == s.ci.StartHeight {
-		return s.ci.ch.srcHeight, nil
+		return s.bs.Verifier.Height, nil
 	} else {
 		if len(s.rms) == 0 {
 			s.rms = append(s.rms, icon.NewRelayMessage())
@@ -507,17 +396,11 @@ func (s *SimpleChain) monitorHeight() int64 {
 func (s *SimpleChain) Serve(sender module.Sender) error {
 	s.s = sender
 	s.r = icon.NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
-	if err := s.prepareDatabase(); err != nil {
-		return err
-	}
-
+	s.ci = &chainInfo{}
 	//TODO Pre rotation settings
 	s.relayble = true
 
 	s.SetChainInfo()
-	if s.ci.ch.srcHeight < 1 {
-		s.ci.ch.srcHeight = s.ci.StartHeight
-	}
 
 	if err := s.Monitoring(); err != nil {
 		return err
@@ -547,7 +430,7 @@ func (s *SimpleChain) Monitoring() error {
 	}
 
 	s.l.Debugf("_init height:%d, dst(%s, src height:%d, seq:%d, last:%d), receive:%d",
-		s.ci.srcHeight(), s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.Height, h)
+		s.ci.StartHeight, s.dst, s.bs.Verifier.Height, s.bs.RxSeq, s.bs.Verifier.Height, h)
 
 	errCh := make(chan error)
 	go func() {
