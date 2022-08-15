@@ -67,7 +67,7 @@ type KeyStoreData struct {
 	Address  common.Address `json:"address"`
 	ID       string         `json:"id"`
 	Version  int            `json:"version"`
-	CoinType string         `json:"coinType"`
+	CoinType string         `json:"coinType,omitempty"`
 	Crypto   CryptoData     `json:"crypto"`
 }
 
@@ -156,7 +156,7 @@ func DecryptKeyStore(data, pw []byte) (Wallet, error) {
 			return nil, err
 		}
 		return NewIcxWalletFromPrivateKey(secret)
-	case coinTypeEVM:
+	case coinTypeEVM, "":
 		key, err := DecryptEvmKeyStore(data, pw)
 		if err != nil {
 			return nil, err
