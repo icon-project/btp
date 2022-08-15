@@ -238,7 +238,7 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlock
 	defer s.rmsMtx.Unlock()
 
 	if len(bu.BTPBlockProof) == 0 {
-		p, err := s.r.GetBTPProof(bh.MainHeight, s.cfg.Nid)
+		p, err := s.r.GetBTPProof(bh.MainHeight, s.cfg.Src.Nid)
 		if err != nil {
 			return err
 		}
@@ -246,7 +246,7 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlock
 	}
 	var mt *mbt.MerkleBinaryTree
 	if bh.MessageCount > 0 {
-		m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Nid)
+		m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Src.Nid)
 		if err != nil {
 			return err
 		}
@@ -356,7 +356,7 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 		if len(s.rms) == 0 {
 			s.rms = append(s.rms, icon.NewRelayMessage())
 		}
-		h, err := s.r.GetBTPBlockHeader(s.bs.Verifier.Height, s.cfg.Nid)
+		h, err := s.r.GetBTPBlockHeader(s.bs.Verifier.Height, s.cfg.Src.Nid)
 		if err != nil {
 			return 0, err
 		}
@@ -375,7 +375,7 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 		index := (s.bs.RxSeq.Int64() - vs.SequenceOffset) - vs.FirstMessageSn
 		if index < bh.MessageCount {
 			var mt *mbt.MerkleBinaryTree
-			m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Nid)
+			m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Src.Nid)
 			if err != nil {
 				return 0, err
 			}
@@ -409,7 +409,7 @@ func (s *SimpleChain) Serve(sender module.Sender) error {
 	return nil
 }
 func (s *SimpleChain) SetChainInfo() error {
-	ni, err := s.r.GetBTPNetworkInfo(s.cfg.Nid)
+	ni, err := s.r.GetBTPNetworkInfo(s.cfg.Src.Nid)
 	if err != nil {
 		return err
 	}
@@ -449,7 +449,7 @@ func (s *SimpleChain) Monitoring() error {
 	go func() {
 		err := s.r.ReceiveLoop(
 			h,
-			s.cfg.Nid,
+			s.cfg.Src.Nid,
 			s.cfg.ProofFlag,
 			s.OnBlockOfSrc,
 			func() {

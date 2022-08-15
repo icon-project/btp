@@ -23,6 +23,7 @@ import (
 type BaseConfig struct {
 	Address  BtpAddress             `json:"address"`
 	Endpoint string                 `json:"endpoint"`
+	Nid      int64                  `json:"nid"`
 	Options  map[string]interface{} `json:"options,omitempty"`
 }
 
@@ -30,8 +31,6 @@ type Config struct {
 	config.FileConfig `json:",squash"` //instead of `mapstructure:",squash"`
 	Src               BaseConfig       `json:"src"`
 	Dst               BaseConfig       `json:"dst"`
-	Ntid              int64            `json:"ntid"`
-	Nid               int64            `json:"nid"`
 	MaxSizeTx         bool             `json:"maxSizeTx"`
 	ProofFlag         bool             `json:"proofFlag"`
 	Offset            int64            `json:"offset"`

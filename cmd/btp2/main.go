@@ -159,8 +159,8 @@ func main() {
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
 
 	//BTP2.0
-	rootPFlags.Int64("ntid", 1, "network type id")
-	rootPFlags.Int64("nid", 1, "network id")
+	rootPFlags.Int64("src.nid", 1, "source network id")
+	rootPFlags.Int64("dst.nid", 1, "destination network id")
 	rootPFlags.Bool("proofFlag", false, "btp2.0 notification proof flag")
 	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
 
