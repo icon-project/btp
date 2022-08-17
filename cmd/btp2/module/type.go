@@ -65,12 +65,6 @@ type BMCLinkStatus struct {
 		Height int64
 		Extra  []byte
 	}
-	//BMR rotate
-	BMRs []struct {
-		Address      string
-		BlockCount   int64
-		MessageCount *big.Int
-	}
 	CurrentHeight int64
 }
 
