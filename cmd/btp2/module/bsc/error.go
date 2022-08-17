@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package module
+package bsc
 
 import (
 	"fmt"
 
 	"github.com/icon-project/btp/common/errors"
-)
-
-var (
-	ErrConnectFail            = fmt.Errorf("fail to connect")
-	ErrSendFailByExpired      = fmt.Errorf("reject by expired")
-	ErrSendFailByFuture       = fmt.Errorf("reject by future")
-	ErrSendFailByOverflow     = fmt.Errorf("reject by overflow")
-	ErrGetResultFailByPending = fmt.Errorf("fail to getresult by pending")
 )
 
 const (

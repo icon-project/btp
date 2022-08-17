@@ -295,29 +295,29 @@ func mapError(err error) error {
 			//fmt.Printf("jrResp.Error:%+v", re)
 			switch re.Code {
 			case JsonrpcErrorCodeTxPoolOverflow:
-				return module.ErrSendFailByOverflow
+				return ErrSendFailByOverflow
 			case JsonrpcErrorCodeSystem:
 				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
 					//TODO return JsonRPC Error
 					switch subEc {
 					case ExpiredTransactionError:
-						return module.ErrSendFailByExpired
+						return ErrSendFailByExpired
 					case FutureTransactionError:
-						return module.ErrSendFailByFuture
+						return ErrSendFailByFuture
 					case TransactionPoolOverflowError:
-						return module.ErrSendFailByOverflow
+						return ErrSendFailByOverflow
 					}
 				}
 			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-				return module.ErrGetResultFailByPending
+				return ErrGetResultFailByPending
 			}
 		case *common.HttpError:
 			fmt.Printf("*common.HttpError:%+v", re)
-			return module.ErrConnectFail
+			return ErrConnectFail
 		case *url.Error:
 			if common.IsConnectRefusedError(re.Err) {
 				//fmt.Printf("*url.Error:%+v", re)
-				return module.ErrConnectFail
+				return ErrConnectFail
 			}
 		}
 	}
@@ -332,7 +332,7 @@ func mapErrorWithTransactionResult(txr *TransactionResult, err error) error {
 			err = fmt.Errorf("failure with code:%s, message:%s",
 				txr.Failure.CodeValue, txr.Failure.MessageValue)
 		} else {
-			err = module.NewRevertError(int(fc - ResultStatusFailureCodeRevert))
+			err = NewRevertError(int(fc - ResultStatusFailureCodeRevert))
 		}
 	}
 	return err

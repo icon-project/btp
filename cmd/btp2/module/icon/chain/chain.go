@@ -209,14 +209,12 @@ func (s *SimpleChain) result(index int, segment *module.Segment) {
 		if ec, ok := errors.CoderOf(err); ok {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
-			switch ec.ErrorCode() { //TODO Add BMV invalid code
-			case module.BMVRevertInvalidSequence, module.BMVRevertInvalidBlockUpdateLower:
+			switch ec.ErrorCode() {
+			case icon.BMVUnknown:
 				segment.GetResultParam = nil
-			case module.BMVRevertInvalidBlockWitnessOld:
+			case icon.BMVNotVerifiable:
 				segment.GetResultParam = nil
-			case module.BMVRevertInvalidSequenceHigher, module.BMVRevertInvalidBlockUpdateHigher, module.BMVRevertInvalidBlockProofHigher:
-				segment.GetResultParam = nil
-			case module.BMCRevertUnauthorized:
+			case icon.BMVAlreadyVerified:
 				segment.GetResultParam = nil
 			default:
 				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
