@@ -300,20 +300,20 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
 			switch ec.ErrorCode() {
-			case module.BMVRevertInvalidSequence, module.BMVRevertInvalidBlockUpdateLower:
+			case bsc.BMVRevertInvalidSequence, bsc.BMVRevertInvalidBlockUpdateLower:
 				for i := 0; i < len(rm.Segments); i++ {
 					if rm.Segments[i] == segment {
 						rm.Segments[i] = nil
 						break
 					}
 				}
-			case module.BMVRevertInvalidBlockWitnessOld:
+			case bsc.BMVRevertInvalidBlockWitnessOld:
 				rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
 				s.UpdateSegment(rm.BlockProof, segment)
 				segment.GetResultParam = nil
-			case module.BMVRevertInvalidSequenceHigher, module.BMVRevertInvalidBlockUpdateHigher, module.BMVRevertInvalidBlockProofHigher:
+			case bsc.BMVRevertInvalidSequenceHigher, bsc.BMVRevertInvalidBlockUpdateHigher, bsc.BMVRevertInvalidBlockProofHigher:
 				segment.GetResultParam = nil
-			case module.BMCRevertUnauthorized:
+			case bsc.BMCRevertUnauthorized:
 				segment.GetResultParam = nil
 			default:
 				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
