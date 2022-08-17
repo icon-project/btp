@@ -2,6 +2,7 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./RLPReader.sol";
+import "./Errors.sol";
 
 library MessageProofLib {
     using RLPReader for bytes;
@@ -118,8 +119,8 @@ library MessageProofLib {
         pure
         returns (MessageProofNode memory)
     {
-        require(left.leafCount == (1 << (left.level - 1)), "MessageProof: Invalid leaf count of left node");
-        require(left.leafCount >= right.leafCount, "MessageProof: Invalid leaves balance");
+        require(left.leafCount == (1 << (left.level - 1)), Errors.ERR_UNKNOWN);
+        require(left.leafCount >= right.leafCount, Errors.ERR_UNKNOWN);
         return
             MessageProofNode(
                 left.level + 1,

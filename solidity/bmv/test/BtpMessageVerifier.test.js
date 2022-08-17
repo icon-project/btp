@@ -3,6 +3,13 @@ const url = require('url');
 const { expect } = require('chai');
 const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
 const { ZB32, toStr } = require('./utils');
+const Errors = {
+    ERR_UNKNOWN: "bmv: Unknown|25",
+    ERR_NOT_VERIFIABLE: "bmv: NotVerifiable|26",
+    ERR_ALREADY_VERIFIED: "bmv: AlreadyVerified|27",
+
+    ERR_UNAUTHORIZED: "bmv: Unauthorized",
+}
 
 contract('BtpMessageVerifier', (accounts) => {
     const BMC = accounts[0];
@@ -447,7 +454,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
-                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE), "bmv: NotVerifiable",
+                    '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE), Errors.ERR_UNKNOWN,
                 );
             });
         });
@@ -468,7 +475,7 @@ contract('BtpMessageVerifier', (accounts) => {
                 it('reverts', async () => {
                     await expectRevert(
                         this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE),
-                        "bmv: NotVerifiable"
+                        Errors.ERR_UNKNOWN
                     );
                 });
             });
@@ -547,7 +554,7 @@ contract('BtpMessageVerifier', (accounts) => {
             it('revert', async () => {
                 await expectRevert(
                     this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, INVALID_RELAY_MESSAGE),
-                    "bmv: NotVerifiable"
+                    Errors.ERR_UNKNOWN
                 );
             });
         });
@@ -557,7 +564,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call('', 'btp://0x2.eth/invalidSmcAddress', 0, RELAY_MESSAGE),
-                    "bmv: NotVerifiable"
+                    Errors.ERR_UNAUTHORIZED
                 );
             });
         });
@@ -595,6 +602,26 @@ contract('BtpMessageVerifier', (accounts) => {
                     validators
                 });
             });
+        });
+    });
+
+    describe('multiple src network id formats', () => {
+        beforeEach('..', async () => {
+            const FIRST_BLOCK_HEADER = '0xf8430e00a0a2a824778e04bb8ea209bbb72f4d03cfcef676a87e51dd86332a10d7bac666cdc00201f80000f80097d6d594295f731277f78fd0f2fb918e4f04f6adc7d4c9fe';
+            this.instance1 = await BtpMessageVerifier.new();
+            this.instance2 = await BtpMessageVerifier.new();
+            await this.instance1.initialize(BMC, 'btp://0x2.icon', new BN(2), FIRST_BLOCK_HEADER, SEQUENCE_OFFSET);
+            await this.instance2.initialize(BMC, '0x2.icon', new BN(2), FIRST_BLOCK_HEADER, SEQUENCE_OFFSET);
+        });
+
+        it('has source network id', async () => {
+            expect(await this.instance1.getSrcNetworkId())
+                .to.equal('0x2.icon');
+        });
+
+        it('has source network id', async () => {
+            expect(await this.instance2.getSrcNetworkId())
+                .to.equal('0x2.icon');
         });
     });
 });
