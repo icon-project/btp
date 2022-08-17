@@ -74,7 +74,8 @@ contract BtpMessageVerifier is IBMV, Initializable {
         bytes memory _msg
     ) external onlyBmc returns (bytes[] memory) {
         checkAccessible(_prev);
-        checkNextMessageSn(_sn);
+        require(_sn >= sequenceOffset, ERR_NOT_VERIFIABLE);
+        checkNextMessageSn(_sn - sequenceOffset);
         RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
         bytes[] memory messages;
         uint256 remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
@@ -92,7 +93,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
                     validators = header.nextValidators;
                 }
                 if (header.messageRoot != bytes32(0)) {
-                    uint256 messageSn = firstMessageSn + messageCount - sequenceOffset;
+                    uint256 messageSn = firstMessageSn + messageCount;
                     if (messageSn < header.messageSn) {
                         revert(ERR_NOT_VERIFIABLE);
                     } else if (messageSn > header.messageSn) {
@@ -124,15 +125,11 @@ contract BtpMessageVerifier is IBMV, Initializable {
 
     function getSrcNetworkId() public view returns (string memory) {
         // TODO only support {network address}.{account identifier} format
-        string[] memory tokens = srcNetworkId.split("/");
-
-        // {network address}.{account identifier}
-        if (tokens.length == 2) {
-            return srcNetworkId;
-
-            // btp://{netowkr address}.{account identifier}
+        string memory scheme = "btp://";
+        if (Utils.substring(srcNetworkId, 0, scheme.length()).compareTo(scheme)) {
+            return Utils.substring(srcNetworkId, scheme.length(), srcNetworkId.length());
         } else {
-            return tokens[2];
+            return srcNetworkId;
         }
     }
 
@@ -197,9 +194,9 @@ contract BtpMessageVerifier is IBMV, Initializable {
         require(networkId == header.networkId, ERR_NOT_VERIFIABLE);
         require(networkSectionHash == header.prevNetworkSectionHash, ERR_NOT_VERIFIABLE);
         if (nextMessageSn < header.messageSn) {
-            revert(ERR_ALREADY_VERIFIED);
-        } else if (nextMessageSn > header.messageSn) {
             revert(ERR_NOT_VERIFIABLE);
+        } else if (nextMessageSn > header.messageSn) {
+            revert(ERR_ALREADY_VERIFIED);
         }
     }
 
