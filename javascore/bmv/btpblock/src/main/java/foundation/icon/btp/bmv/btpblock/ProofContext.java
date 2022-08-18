@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmv.btpblock;
 
-import score.Address;
 import score.Context;
 import score.ObjectReader;
 import scorex.util.ArrayList;
@@ -24,19 +23,18 @@ import scorex.util.ArrayList;
 import java.util.List;
 
 public class ProofContext {
-    private Address[] validators;
+    private EthAddress[] validators;
 
-    public ProofContext(Address[] validators) {
+    public ProofContext(EthAddress[] validators) {
         this.validators = validators;
     }
 
-    public Address[] getValidators() {
+    public EthAddress[] getValidators() {
         return validators;
     }
 
-    public boolean isValidator(Address address) {
-        Address[] validators = this.validators;
-        for (Address addr : validators) {
+    public boolean isValidator(EthAddress address) {
+        for (EthAddress addr : validators) {
             if (addr.equals(address)) return true;
         }
         return false;
@@ -44,14 +42,14 @@ public class ProofContext {
 
     public static ProofContext readObject(ObjectReader reader) {
         reader.beginList();
-        List<Address> addressList = new ArrayList<>();
+        List<EthAddress> addressList = new ArrayList<>();
         reader.beginList();
         while(reader.hasNext()) {
-            addressList.add(reader.readAddress());
+            addressList.add(reader.read(EthAddress.class));
         }
         reader.end();
         int len = addressList.size();
-        Address[] addresses = new Address[len];
+        EthAddress[] addresses = new EthAddress[len];
         for (int i = 0; i < len; i++) {
             addresses[i] = addressList.get(i);
         }

@@ -33,7 +33,7 @@ import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
     private static final Logger logger = Logger.getLogger(BTPMessageVerifier.class);
-    private static String HASH = "sha3-256";
+    private static String HASH = "keccak-256";
     private static String SIGNATURE_ALG = "ecdsa-secp256k1";
     private final VarDB<BMVProperties> propertiesDB = Context.newVarDB("properties", BMVProperties.class);
 
@@ -190,12 +190,12 @@ public class BTPMessageVerifier implements BMV {
     private void verifyProof(NetworkTypeSectionDecision decision, Proofs proofs) {
         byte[] decisionHash = decision.hash();
         byte[][] sigs = proofs.getProofs();
-        List<Address> verifiedValidator = new ArrayList<>();
+        List<EthAddress> verifiedValidator = new ArrayList<>();
         var bmvProperties = propertiesDB.get();
         var proofContextBytes = bmvProperties.getProofContext();
         var proofContext = ProofContext.fromBytes(proofContextBytes);
         for (byte[] sig : sigs) {
-            Address address = recoverAddress(decisionHash, sig);
+            EthAddress address = recoverAddress(decisionHash, sig);
             if (!proofContext.isValidator(address)) throw BMVException.unknown("invalid validator : " + address);
             if (verifiedValidator.contains(address)) throw BMVException.unknown("duplicated validator : " + address);
             verifiedValidator.add(address);
@@ -256,9 +256,15 @@ public class BTPMessageVerifier implements BMV {
         return Context.hash(HASH, msg);
     }
 
-    static Address recoverAddress(byte[] msg, byte[] sig) {
-        byte[] publicKey = Context.recoverKey(SIGNATURE_ALG, msg, sig, true);
-        return Context.getAddressFromKey(publicKey);
+    static EthAddress recoverAddress(byte[] msg, byte[] sig) {
+        byte[] publicKey = Context.recoverKey(SIGNATURE_ALG, msg, sig, false);
+        int sliceLen = publicKey.length - 1;
+        byte[] sliced = new byte[sliceLen];
+        System.arraycopy(publicKey, 1, sliced, 0, sliceLen);
+        byte[] hashed = hash(sliced);
+        byte[] addr = new byte[20];
+        System.arraycopy(hashed, 12, addr, 0, 20);
+        return new EthAddress(addr);
     }
 
     private void checkAccessible(BTPAddress curAddr, BTPAddress fromAddress) {
