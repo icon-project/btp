@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package chain
+package bsc
 
 import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/icon-project/btp/cmd/btp2/module/bsc"
 	"math/big"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/db"
 	"github.com/icon-project/btp/common/errors"
@@ -43,7 +42,6 @@ const (
 	DefaultBufferNumberOfBlockProof = 100
 	DefaultBufferInterval           = 5 * time.Second
 	DefaultReconnectDelay           = time.Second
-	DefaultRelayReSendInterval      = time.Second
 )
 
 type SimpleChain struct {
@@ -62,11 +60,6 @@ type SimpleChain struct {
 	rmSeq           uint64
 	heightOfDst     int64
 	lastBlockUpdate *module.BlockUpdate
-
-	//bmrIndex       int
-	//relayble       bool
-	//relaybleIndex  int
-	//relaybleHeight int64
 }
 
 func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
@@ -143,7 +136,7 @@ func (s *SimpleChain) isOverLimit(size int) bool {
 func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.Segment, error) {
 	segments := make([]*module.Segment, 0)
 	var err error
-	msg := &bsc.RelayMessage{
+	msg := &RelayMessage{
 		BlockUpdates:  make([][]byte, 0),
 		ReceiptProofs: make([][]byte, 0),
 	}
@@ -171,7 +164,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 			segment.TransactionParam = b
 
 			segments = append(segments, segment)
-			msg = &bsc.RelayMessage{
+			msg = &RelayMessage{
 				BlockUpdates:  make([][]byte, 0),
 				ReceiptProofs: make([][]byte, 0),
 			}
@@ -201,7 +194,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 			msg.SetHeight(rm.BlockProof.BlockWitness.Height)
 		}
 		size += len(rp.Proof)
-		trp := &bsc.ReceiptProof{
+		trp := &ReceiptProof{
 			Index:       rp.Index,
 			Proof:       rp.Proof,
 			EventProofs: make([]*module.EventProof, 0),
@@ -230,7 +223,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 				segment.TransactionParam = b
 				segments = append(segments, segment)
 
-				msg = &bsc.RelayMessage{
+				msg = &RelayMessage{
 					BlockUpdates:  make([][]byte, 0),
 					ReceiptProofs: make([][]byte, 0),
 					BlockProof:    bp,
@@ -239,7 +232,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 				size += len(rp.Proof)
 				size += len(bp)
 
-				trp = &bsc.ReceiptProof{
+				trp = &ReceiptProof{
 					Index:       rp.Index,
 					Proof:       rp.Proof,
 					EventProofs: make([]*module.EventProof, 0),
@@ -274,9 +267,9 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 
 func (s *SimpleChain) UpdateSegment(bp *module.BlockProof, segment *module.Segment) error {
 	//p := segment.TransactionParam.(*TransactionParam)
-	cd := bsc.CallData{}
-	rmp := cd.Params.(bsc.BMCRelayMethodParams)
-	msg := &bsc.RelayMessage{}
+	cd := CallData{}
+	rmp := cd.Params.(BMCRelayMethodParams)
+	msg := &RelayMessage{}
 	b, err := base64.URLEncoding.DecodeString(rmp.Messages)
 	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
 		return err
@@ -300,20 +293,13 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
 			switch ec.ErrorCode() {
-			case bsc.BMVRevertInvalidSequence, bsc.BMVRevertInvalidBlockUpdateLower:
-				for i := 0; i < len(rm.Segments); i++ {
-					if rm.Segments[i] == segment {
-						rm.Segments[i] = nil
-						break
-					}
-				}
-			case bsc.BMVRevertInvalidBlockWitnessOld:
-				rm.BlockProof, err = s.newBlockProof(rm.BlockProof.BlockWitness.Height, rm.BlockProof.Header)
-				s.UpdateSegment(rm.BlockProof, segment)
+			case BMVUnknown:
+				//TODO panic??
+			case BMVNotVerifiable:
 				segment.GetResultParam = nil
-			case bsc.BMVRevertInvalidSequenceHigher, bsc.BMVRevertInvalidBlockUpdateHigher, bsc.BMVRevertInvalidBlockProofHigher:
+			case BMVAlreadyVerified:
 				segment.GetResultParam = nil
-			case bsc.BMCRevertUnauthorized:
+			case BMCRevertUnauthorized:
 				segment.GetResultParam = nil
 			default:
 				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
@@ -499,7 +485,7 @@ func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockP
 	//at := s.bs.Verifier.Height
 	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bs.Verifier.Offset)
 	//TODO refactoring Duplicate rlp decode
-	vs := &bsc.VerifierStatus_v1{}
+	vs := &VerifierStatus_v1{}
 	_, err := codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
 	if err != nil {
 		return nil, err
@@ -604,7 +590,7 @@ func (s *SimpleChain) init() error {
 func (s *SimpleChain) receiveHeight() int64 {
 	//min(max(s.acc.Height(), s.bs.Verifier.Offset), s.bs.Verifier.LastHeight)
 	//TODO refactoring Duplicate rlp decode
-	vs := &bsc.VerifierStatus_v1{}
+	vs := &VerifierStatus_v1{}
 	_, err := codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
 	if err != nil {
 		return 0
@@ -628,7 +614,7 @@ func (s *SimpleChain) monitorHeight() int64 {
 
 func (s *SimpleChain) Serve(sender module.Sender) error {
 	s.s = sender
-	s.r = bsc.NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
+	s.r = NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
 
 	if err := s.prepareDatabase(s.cfg.Offset); err != nil {
 		return err
@@ -687,7 +673,7 @@ func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
-		l: l.WithFields(log.Fields{log.FieldKeyChain:
+		l:   l.WithFields(log.Fields{log.FieldKeyChain:
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,

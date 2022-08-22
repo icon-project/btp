@@ -20,13 +20,14 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/icon-project/btp/cmd/btp2/module/bsc/systemcontracts"
+	"github.com/icon-project/btp/chain/bsc/systemcontracts"
 	"github.com/icon-project/btp/common/wallet"
 	"math/big"
 	"strconv"
@@ -50,6 +51,12 @@ var (
 	BlockRetryInterval                = time.Second * 3
 	BlockRetryLimit                   = 5
 )
+
+type jsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
 
 type Wallet interface {
 	Sign(data []byte) ([]byte, error)
@@ -86,6 +93,31 @@ func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit u
 		GasPrice: gasPrice,
 		Data:     data,
 	})
+}
+
+func (c *Client) GetRevertMessage(hash common.Hash) (string, error) {
+	tx, _, err := c.ethClient.TransactionByHash(context.Background(), hash)
+	if err != nil {
+		return "", err
+	}
+
+	from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
+	if err != nil {
+		return "", err
+	}
+
+	msg := ethereum.CallMsg{
+		From:     from,
+		To:       tx.To(),
+		Gas:      tx.Gas(),
+		GasPrice: tx.GasPrice(),
+		Value:    tx.Value(),
+		Data:     tx.Data(),
+	}
+
+	_, err = c.ethClient.CallContract(context.Background(), msg, nil)
+	return err.Error(), nil
+
 }
 
 func (c *Client) newTransactOpts(w Wallet) (*bind.TransactOpts, error) {

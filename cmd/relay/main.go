@@ -19,13 +19,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/icon-project/btp/cmd/btp2/module"
-	"github.com/icon-project/btp/cmd/btp2/module/icon"
-	iconChain "github.com/icon-project/btp/cmd/btp2/module/icon/chain"
+	"github.com/icon-project/btp/chain"
 	"io/ioutil"
 	stdlog "log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -45,57 +42,73 @@ var (
 
 const (
 	DefaultKeyStorePass = "btp2"
+	BothDirection       = "both"
+	FrontDirection      = "front"
+	ReverseDirection    = "reverse"
+	ICON                = "icon"
+	ETH                 = "eth"
 )
 
 type Config struct {
-	module.Config `json:",squash"` //instead of `mapstructure:",squash"`
-	KeyStoreData  json.RawMessage  `json:"key_store"`
-	KeyStorePass  string           `json:"key_password,omitempty"`
-	KeySecret     string           `json:"key_secret,omitempty"`
-
-	LogLevel     string               `json:"log_level"`
-	ConsoleLevel string               `json:"console_level"`
-	LogForwarder *log.ForwarderConfig `json:"log_forwarder,omitempty"`
-	LogWriter    *log.WriterConfig    `json:"log_writer,omitempty"`
+	module.Config `json:",squash"`     //instead of `mapstructure:",squash"`
+	LogLevel      string               `json:"log_level"`
+	ConsoleLevel  string               `json:"console_level"`
+	LogForwarder  *log.ForwarderConfig `json:"log_forwarder,omitempty"`
+	LogWriter     *log.WriterConfig    `json:"log_writer,omitempty"`
 }
 
-func (c *Config) Wallet() (wallet.Wallet, error) {
-	pw, err := c.resolvePassword()
+func (c *Config) Wallet(passwd, secret string, keyStore json.RawMessage) (wallet.Wallet, error) {
+	pw, err := c.resolvePassword(secret, passwd)
 	if err != nil {
 		return nil, err
 	}
-	return wallet.DecryptKeyStore(c.KeyStoreData, pw)
+	return wallet.DecryptKeyStore(keyStore, pw)
 }
 
-func (c *Config) resolvePassword() ([]byte, error) {
-	if c.KeySecret != "" {
-		return ioutil.ReadFile(c.KeySecret)
+func (c *Config) resolvePassword(keySecret, keyStorePass string) ([]byte, error) {
+	if keySecret != "" {
+		return ioutil.ReadFile(keySecret)
 	} else {
-		if c.KeyStorePass == "" {
+		if keyStorePass == "" {
 			return []byte(DefaultKeyStorePass), nil
 		} else {
-			return []byte(c.KeyStorePass), nil
+			return []byte(keyStorePass), nil
 		}
 	}
 }
 
 func (c *Config) EnsureWallet() error {
-	pw, err := c.resolvePassword()
+	srcPw, err := c.resolvePassword(c.Src.KeySecret, c.Src.KeyStorePass)
+	dstPw, err := c.resolvePassword(c.Dst.KeySecret, c.Dst.KeyStorePass)
 	if err != nil {
 		return err
 	}
-	if len(c.KeyStoreData) < 1 {
-		priK, _ := crypto.GenerateKeyPair()
-		if ks, err := wallet.EncryptKeyAsKeyStore(priK, pw); err != nil {
+	if len(c.Src.KeyStoreData) < 1 {
+		src_prikey, _ := crypto.GenerateKeyPair()
+		if ks, err := wallet.EncryptKeyAsKeyStore(src_prikey, srcPw); err != nil {
 			return err
 		} else {
-			c.KeyStoreData = ks
+			c.Src.KeyStoreData = ks
 		}
 	} else {
-		if _, err := wallet.DecryptKeyStore(c.KeyStoreData, pw); err != nil {
+		if _, err := wallet.DecryptKeyStore(c.Src.KeyStoreData, srcPw); err != nil {
 			return errors.Errorf("fail to decrypt KeyStore err=%+v", err)
 		}
 	}
+
+	if len(c.Dst.KeyStoreData) < 1 {
+		dst_prikey, _ := crypto.GenerateKeyPair()
+		if ks, err := wallet.EncryptKeyAsKeyStore(dst_prikey, dstPw); err != nil {
+			return err
+		} else {
+			c.Dst.KeyStoreData = ks
+		}
+	} else {
+		if _, err := wallet.DecryptKeyStore(c.Dst.KeyStoreData, dstPw); err != nil {
+			return errors.Errorf("fail to decrypt KeyStore err=%+v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -160,14 +173,20 @@ func main() {
 
 	//BTP2.0
 	rootPFlags.Int64("src.nid", 1, "source network id")
-	rootPFlags.Int64("dst.nid", 1, "destination network id")
-	rootPFlags.Bool("proofFlag", false, "btp2.0 notification proof flag")
+	rootPFlags.Int64("src.key_store", 1, "Source network id")
+	rootPFlags.Int64("src.key_password", 1, "Source password of keyStore")
+	rootPFlags.Int64("src.key_secret", 1, "Source Secret(password) file for keyStore")
+
+	rootPFlags.Int64("dst.nid", 1, "Destination network id")
+	rootPFlags.Int64("dst.key_store", 1, "Destination network id")
+	rootPFlags.Int64("dst.key_password", 1, "Destination password of keyStore")
+	rootPFlags.Int64("dst.key_secret", 1, "Destination Secret(password) file for keyStore")
+
+	rootPFlags.String("direction", "both", "btp2.0 network direction ( both, front, reverse)")
 	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
 
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
-	rootPFlags.String("key_store", "", "KeyStore")
-	rootPFlags.String("key_password", "", "Password of KeyStore")
-	rootPFlags.String("key_secret", "", "Secret(password) file for KeyStore")
+
 	//
 	rootPFlags.String("base_dir", "", "Base directory for data")
 	rootPFlags.StringP("config", "c", "", "Parsing configuration file")
@@ -200,7 +219,8 @@ func main() {
 			if err := cfg.EnsureWallet(); err != nil {
 				return fmt.Errorf("fail to ensure src wallet err:%+v", err)
 			} else {
-				cfg.KeyStorePass = ""
+				cfg.Src.KeyStorePass = ""
+				cfg.Dst.KeyStorePass = ""
 			}
 			return nil
 		},
@@ -217,8 +237,14 @@ func main() {
 				return err
 			}
 			cmd.Println("Save configuration to", saveFilePath)
-			if saveKeyStore, _ := cmd.Flags().GetString("save_key_store"); saveKeyStore != "" {
-				if err := cli.JsonPrettySaveFile(saveKeyStore, 0600, cfg.KeyStoreData); err != nil {
+			if saveSrcKeyStore, _ := cmd.Flags().GetString("save_src_key_store"); saveSrcKeyStore != "" {
+				if err := cli.JsonPrettySaveFile(saveSrcKeyStore, 0600, cfg.Src.KeyStoreData); err != nil {
+					return err
+				}
+			}
+
+			if saveDstKeyStore, _ := cmd.Flags().GetString("save_dst_key_store"); saveDstKeyStore != "" {
+				if err := cli.JsonPrettySaveFile(saveDstKeyStore, 0600, cfg.Dst.KeyStoreData); err != nil {
 					return err
 				}
 			}
@@ -242,32 +268,30 @@ func main() {
 			log.Printf("Build   : %s", build)
 
 			var (
-				err error
-				w   wallet.Wallet
+				err       error
+				srcWallet wallet.Wallet
+				dstWallet wallet.Wallet
 			)
-			if w, err = cfg.Wallet(); err != nil {
+			if srcWallet, err = cfg.Wallet(cfg.Src.KeyStorePass, cfg.Src.KeySecret, cfg.Src.KeyStoreData); err != nil {
+				return err
+			}
+
+			if dstWallet, err = cfg.Wallet(cfg.Dst.KeyStorePass, cfg.Dst.KeySecret, cfg.Dst.KeyStoreData); err != nil {
+				return err
+			}
+
+			var srcKsData wallet.KeyStoreData
+			var dstKsData wallet.KeyStoreData
+			if err := json.Unmarshal(cfg.Src.KeyStoreData, &srcKsData); err != nil {
+				return err
+			}
+
+			if err := json.Unmarshal(cfg.Dst.KeyStoreData, &dstKsData); err != nil {
 				return err
 			}
 			modLevels, _ := cmd.Flags().GetStringToString("mod_level")
-			l := setLogger(cfg, w, modLevels)
-			l.Debugln(cfg.FilePath, cfg.BaseDir)
-			if cfg.BaseDir == "" {
-				cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
-			}
 
-			//icon -> icon
-			sh := iconChain.NewChain(&cfg.Config, l)
-			s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
-
-			//icon -> bsc
-			//sh := iconChain.NewChain(&cfg.Config, w, l)
-			//s := bsc.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
-
-			//bsc -> icon
-			//sh := bscChain.NewChain(&cfg.Config, w, l)
-			//s := icon.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
-
-			return sh.Serve(s)
+			return NewLink(cfg, srcWallet, dstWallet, modLevels)
 		},
 	}
 	rootCmd.AddCommand(startCmd)

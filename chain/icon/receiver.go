@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/intconv"
 	"math/big"
 

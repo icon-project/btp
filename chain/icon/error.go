@@ -87,17 +87,17 @@ func NewRevertError(code int) error {
 	if c >= CodeBTP {
 		var msg string
 		var ok bool
-		if c < CodeBMC {
+		if c <= CodeBMC {
 			msg = fmt.Sprintf("BTPRevert[%d]", c)
-		} else if c < CodeBMV {
+		} else if c <= CodeBMV {
 			if msg, ok = BMCRevertCodeNames[c]; !ok {
 				msg = fmt.Sprintf("BMCRevert[%d]", c)
 			}
-		} else if c < CodeBSH {
+		} else if c <= CodeBSH {
 			if msg, ok = BMVRevertCodeNames[c]; !ok {
 				msg = fmt.Sprintf("BMVRevert[%d]", c)
 			}
-		} else if c < CodeReserved {
+		} else if c <= CodeReserved {
 			msg = fmt.Sprintf("BSHRevert[%d]", c)
 		} else {
 			msg = fmt.Sprintf("ReservedRevert[%d]", c)

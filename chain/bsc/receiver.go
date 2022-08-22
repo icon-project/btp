@@ -30,8 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/icon-project/btp/cmd/btp2/module"
-	"github.com/icon-project/btp/cmd/btp2/module/bsc/binding"
+	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
 
 	"math/big"
@@ -119,7 +119,7 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	})
 
 	if err != nil {
-		panic("can't encode: " + err.Error())
+		//panic("can't encode: " + err.Error())
 	}
 }
 

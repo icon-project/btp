@@ -61,34 +61,16 @@ var (
 )
 
 const (
-	BMVRevert = CodeBMV + iota
-	BMVRevertInvalidMPT
-	BMVRevertInvalidVotes
-	BMVRevertInvalidSequence
-	BMVRevertInvalidBlockUpdate
-	BMVRevertInvalidBlockProof
-	BMVRevertInvalidBlockWitness
-	BMVRevertInvalidSequenceHigher
-	BMVRevertInvalidBlockUpdateHigher
-	BMVRevertInvalidBlockUpdateLower
-	BMVRevertInvalidBlockProofHigher
-	BMVRevertInvalidBlockWitnessOld
+	BMVUnknown = CodeBMV + iota
+	BMVNotVerifiable
+	BMVAlreadyVerified
 )
 
 var (
 	BMVRevertCodeNames = map[errors.Code]string{
-		BMVRevert:                         "BMVRevert",
-		BMVRevertInvalidMPT:               "BMVRevertInvalidMPT",
-		BMVRevertInvalidVotes:             "BMVRevertInvalidVotes",
-		BMVRevertInvalidSequence:          "BMVRevertInvalidSequence",
-		BMVRevertInvalidBlockUpdate:       "BMVRevertInvalidBlockUpdate",
-		BMVRevertInvalidBlockProof:        "BMVRevertInvalidBlockProof",
-		BMVRevertInvalidBlockWitness:      "BMVRevertInvalidBlockWitness",
-		BMVRevertInvalidSequenceHigher:    "BMVRevertInvalidSequenceHigher",
-		BMVRevertInvalidBlockUpdateHigher: "BMVRevertInvalidBlockUpdateHigher",
-		BMVRevertInvalidBlockUpdateLower:  "BMVRevertInvalidBlockUpdateLower",
-		BMVRevertInvalidBlockProofHigher:  "BMVRevertInvalidBlockProofHigher",
-		BMVRevertInvalidBlockWitnessOld:   "BMVRevertInvalidBlockWitnessOld",
+		BMVUnknown:         "BMVUnknown",
+		BMVNotVerifiable:   "BMVNotVerifiable",
+		BMVAlreadyVerified: "BMVAlreadyVerified",
 	}
 )
 
@@ -97,17 +79,17 @@ func NewRevertError(code int) error {
 	if c >= CodeBTP {
 		var msg string
 		var ok bool
-		if c < CodeBMC {
+		if c <= CodeBMC {
 			msg = fmt.Sprintf("BTPRevert[%d]", c)
-		} else if c < CodeBMV {
+		} else if c <= CodeBMV {
 			if msg, ok = BMCRevertCodeNames[c]; !ok {
 				msg = fmt.Sprintf("BMCRevert[%d]", c)
 			}
-		} else if c < CodeBSH {
+		} else if c <= CodeBSH {
 			if msg, ok = BMVRevertCodeNames[c]; !ok {
 				msg = fmt.Sprintf("BMVRevert[%d]", c)
 			}
-		} else if c < CodeReserved {
+		} else if c <= CodeReserved {
 			msg = fmt.Sprintf("BSHRevert[%d]", c)
 		} else {
 			msg = fmt.Sprintf("ReservedRevert[%d]", c)

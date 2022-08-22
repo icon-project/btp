@@ -27,7 +27,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
@@ -111,6 +111,7 @@ func (s *sender) newFragmentTransactionPram(prev string, tpm *transactionParamMe
 
 func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	p := segment.TransactionParam.([]byte)
+	//TODO Refactoring ( transactionParamMessage -> []byte )
 	tpm := &transactionParamMessage{messages: base64.URLEncoding.EncodeToString(p)}
 
 	idx := len(tpm.messages) / txSizeLimit

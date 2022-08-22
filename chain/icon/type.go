@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/icon-project/btp/cmd/btpsimple/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/jsonrpc"
 )

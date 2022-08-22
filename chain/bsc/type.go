@@ -27,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/chain"
 
 	"github.com/icon-project/btp/common/jsonrpc"
 )

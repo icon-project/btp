@@ -2,9 +2,10 @@ package icon
 
 import (
 	"fmt"
-	"github.com/icon-project/btp/cmd/btp2/module"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/mbt"
+	"math/big"
 )
 
 const (
@@ -41,10 +42,11 @@ func (rm *BTPRelayMessage) SetMessageSeq(seq int) {
 	rm.messageSeq = seq
 }
 
-func (rm *BTPRelayMessage) SetSegments(tpm []byte, height int64) {
+func (rm *BTPRelayMessage) SetSegments(tpm []byte, height int64, seq int64) {
 	rm.segments = &module.Segment{
 		Height:           height,
 		TransactionParam: tpm,
+		EventSequence:    big.NewInt(seq),
 	}
 }
 
@@ -86,10 +88,9 @@ func NewRelayMessage() *BTPRelayMessage {
 }
 
 type BTPBlockData struct {
+	Height        int64
+	MessageCnt    int64
 	Bu            *BTPBlockUpdate
 	Mt            *mbt.MerkleBinaryTree
 	PartialOffset int
-	Seq           uint64
-	HeightOfDst   int64
-	HeightOfSrc   int64
 }

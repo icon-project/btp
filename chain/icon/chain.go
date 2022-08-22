@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package chain
+package icon
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
-	"github.com/icon-project/btp/cmd/btp2/module"
-	"github.com/icon-project/btp/cmd/btp2/module/icon"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
@@ -38,30 +35,27 @@ type chainInfo struct {
 
 type SimpleChain struct {
 	s  module.Sender
-	r  *icon.Receiver
+	r  *Receiver
 	ci *chainInfo
 
 	src module.BtpAddress
 	dst module.BtpAddress
 
-	bs  *module.BMCLinkStatus //getstatus(dst.src)
+	bs  *module.BMCLinkStatus
 	l   log.Logger
 	cfg *module.Config
 
-	bds []*icon.BTPBlockData
-	rms []*icon.BTPRelayMessage
+	bds []*BTPBlockData
+	rms []*BTPRelayMessage
 
 	rmsMtx      sync.RWMutex
 	rmSeq       uint64
 	heightOfDst int64
 
-	bmrIndex       int
-	relayble       bool
-	relaybleIndex  int
-	relaybleHeight int64
+	relayble bool
 }
 
-func (s *SimpleChain) _log(prefix string, rm *icon.BTPRelayMessage, segment *module.Segment, segmentIdx int) {
+func (s *SimpleChain) _log(prefix string, rm *BTPRelayMessage, segment *module.Segment, segmentIdx int) {
 	if segment == nil {
 		s.l.Debugf("%s rm message seq:%, rm height:%, relayLen:%d",
 			prefix,
@@ -89,7 +83,7 @@ func (s *SimpleChain) relay() error {
 		rmSize = len(s.rms) - 1
 	} else {
 		rmSize = len(s.rms)
-		s.rms = append(s.rms, icon.NewRelayMessage())
+		s.rms = append(s.rms, NewRelayMessage())
 	}
 
 	for i := 0; i < rmSize; i++ {
@@ -100,18 +94,16 @@ func (s *SimpleChain) relay() error {
 		}
 
 		if s.rms[i].Segments() == nil {
-			s.rms[i].SetSegments(b, s.rms[i].Height())
+			s.rms[i].SetSegments(b, s.rms[i].Height(), int64(s.rms[i].MessageSeq()))
 		}
 
 		if s.rms[i].Segments().GetResultParam == nil {
 			s.rms[i].Segments().TransactionResult = nil
-			fmt.Print(hex.EncodeToString(b), "\n\n")
-			fmt.Print(base64.URLEncoding.EncodeToString(b), "\n\n")
 			if s.rms[i].Segments().GetResultParam, err = s.s.Relay(s.rms[i].Segments()); err != nil {
 				s.l.Panicf("fail to Relay err:%+v", err)
 			}
 			s._log("after relay", s.rms[i], s.rms[i].Segments(), -1)
-			go s.result(i, s.rms[i].Segments())
+			go s.result(s.rms[i].Segments())
 		}
 	}
 	return nil
@@ -122,23 +114,23 @@ func (s *SimpleChain) segment() error {
 	defer s.rmsMtx.Unlock()
 	bdsLen := len(s.bds) - 1
 	if len(s.rms) == 0 {
-		s.rms = append(s.rms, icon.NewRelayMessage())
+		s.rms = append(s.rms, NewRelayMessage())
 	}
 
 	//blockUpdate
-	s.BlockUpdateSegment(s.bds[bdsLen].Bu, s.bds[bdsLen].HeightOfSrc)
+	s.BlockUpdateSegment(s.bds[bdsLen].Bu, s.bds[bdsLen].Height)
 	//messageProof
 	if s.bds[bdsLen].Mt != nil {
-		s.MessageSegment(s.bds[bdsLen].Mt, s.bds[bdsLen].PartialOffset, s.bds[bdsLen].HeightOfSrc)
+		s.MessageSegment(s.bds[bdsLen])
 	}
 	return nil
 }
 
-func (s *SimpleChain) BlockUpdateSegment(bu *icon.BTPBlockUpdate, heightOfSrc int64) error {
+func (s *SimpleChain) BlockUpdateSegment(bu *BTPBlockUpdate, heightOfSrc int64) error {
 	//blockUpdate
 	//skipped first btp block
 	if heightOfSrc != s.ci.StartHeight {
-		tpm, err := icon.NewTypePrefixedMessage(bu)
+		tpm, err := NewTypePrefixedMessage(bu)
 		b, err := codec.RLP.MarshalToBytes(tpm)
 		if err != nil {
 			return err
@@ -148,7 +140,7 @@ func (s *SimpleChain) BlockUpdateSegment(bu *icon.BTPBlockUpdate, heightOfSrc in
 			return err
 		}
 		if s.isOverLimit(rmsSize + len(b)) {
-			s.rms = append(s.rms, icon.NewRelayMessage())
+			s.rms = append(s.rms, NewRelayMessage())
 		}
 		s.rms[len(s.rms)-1].SetHeight(heightOfSrc)
 		s.rms[len(s.rms)-1].AppendMessage(tpm)
@@ -156,15 +148,15 @@ func (s *SimpleChain) BlockUpdateSegment(bu *icon.BTPBlockUpdate, heightOfSrc in
 	return nil
 }
 
-func (s *SimpleChain) MessageSegment(mt *mbt.MerkleBinaryTree, partialOffset int, heightOfSrc int64) error {
+func (s *SimpleChain) MessageSegment(bd *BTPBlockData) error {
 	var endIndex int
-	for endIndex = partialOffset + 1; endIndex < mt.Len(); endIndex++ {
+	for endIndex = bd.PartialOffset + 1; endIndex < bd.Mt.Len(); endIndex++ {
 		//TODO refactoring
-		p, err := mt.Proof(partialOffset+1, endIndex)
+		p, err := bd.Mt.Proof(bd.PartialOffset+1, endIndex)
 		if err != nil {
 			return err
 		}
-		tpm, err := icon.NewTypePrefixedMessage(*p)
+		tpm, err := NewTypePrefixedMessage(*p)
 		b, err := codec.RLP.MarshalToBytes(tpm)
 		//if s.isOverLimit(s.rms[len(s.rms)-1].Size() + s.bds[bdIndex].Mt.ProofLength(s.bds[bdIndex].PartialOffset, endIndex)) {
 		rmsSize, err := s.rms[len(s.rms)-1].Size()
@@ -172,37 +164,62 @@ func (s *SimpleChain) MessageSegment(mt *mbt.MerkleBinaryTree, partialOffset int
 			return err
 		}
 		if s.isOverLimit(rmsSize + len(b)) {
-			s.rms = append(s.rms, icon.NewRelayMessage())
+			s.rms = append(s.rms, NewRelayMessage())
 			if err != nil {
 				return err
 			}
-			partialOffset = endIndex
+			bd.PartialOffset = endIndex
 
-			s.rms[len(s.rms)-1].SetHeight(heightOfSrc)
+			s.rms[len(s.rms)-1].SetHeight(bd.Height)
 			s.rms[len(s.rms)-1].SetMessageSeq(endIndex)
 			s.rms[len(s.rms)-1].AppendMessage(tpm)
 		}
 	}
-	if partialOffset != mt.Len() {
-		p, err := mt.Proof(partialOffset+1, endIndex)
+	if bd.PartialOffset != bd.Mt.Len() {
+		p, err := bd.Mt.Proof(bd.PartialOffset+1, endIndex)
 		if err != nil {
 			return err
 		}
 
-		tpm, err := icon.NewTypePrefixedMessage(*p)
+		tpm, err := NewTypePrefixedMessage(*p)
 		if err != nil {
 			return err
 		}
 
-		s.rms[len(s.rms)-1].SetHeight(heightOfSrc)
+		s.rms[len(s.rms)-1].SetHeight(bd.Height)
 		s.rms[len(s.rms)-1].SetMessageSeq(endIndex)
 		s.rms[len(s.rms)-1].AppendMessage(tpm)
-		partialOffset = mt.Len()
+		bd.PartialOffset = bd.Mt.Len()
 	}
 	return nil
 }
 
-func (s *SimpleChain) result(index int, segment *module.Segment) {
+func (s *SimpleChain) notVerifiableRevert(h int64, seq *big.Int) error {
+	if err := s.RefreshStatus(); err != nil {
+		return err
+	}
+	vs := &VerifierStatus{}
+	_, err := codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
+	if err != nil {
+		return err
+	}
+
+	if s.bs.RxSeq.Int64() < s.rms[0].Height() {
+		//TODO Add after monitoring refactoring
+	} else {
+		for i := 0; i < len(s.rms); i++ {
+			if (s.bs.RxSeq.Int64() <= s.rms[i].Height()) || (s.rms[i].Height() > h) {
+				s.rms[i].Segments().GetResultParam = nil
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *SimpleChain) result(segment *module.Segment) {
+	s.rmsMtx.Lock()
+	defer s.rmsMtx.Unlock()
 	var err error
 	segment.TransactionResult, err = s.s.GetResult(segment.GetResultParam)
 	if err != nil {
@@ -210,11 +227,15 @@ func (s *SimpleChain) result(index int, segment *module.Segment) {
 			s.l.Debugf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
 				segment.GetResultParam, ec)
 			switch ec.ErrorCode() {
-			case icon.BMVUnknown:
+			case BMVUnknown:
+				s.l.Panicf("BMVUnknown Revert :%v ErrorCoder:%+v",
+					segment.GetResultParam, ec)
+			case BMVNotVerifiable:
+				s.notVerifiableRevert(segment.Height, segment.EventSequence)
 				segment.GetResultParam = nil
-			case icon.BMVNotVerifiable:
-				segment.GetResultParam = nil
-			case icon.BMVAlreadyVerified:
+			case BMVAlreadyVerified:
+				s.updateRelayMessage(segment.Height, segment.EventSequence)
+			case BMCRevertUnauthorized:
 				segment.GetResultParam = nil
 			default:
 				s.l.Panicf("fail to GetResult GetResultParam:%v ErrorCoder:%+v",
@@ -224,6 +245,8 @@ func (s *SimpleChain) result(index int, segment *module.Segment) {
 			s.l.Panicf("fail to GetResult GetResultParam:%v err:%+v",
 				segment.GetResultParam, err)
 		}
+	} else { //TODO delete for test
+		fmt.Printf("#### sucess tx \n\n")
 	}
 }
 
@@ -231,7 +254,7 @@ func (s *SimpleChain) isOverLimit(size int) bool {
 	return s.s.TxSizeLimit() < size
 }
 
-func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlockHeader) error {
+func (s *SimpleChain) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader) error {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
 
@@ -243,6 +266,7 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlock
 		bu.BTPBlockProof = p
 	}
 	var mt *mbt.MerkleBinaryTree
+
 	if bh.MessageCount > 0 {
 		m, err := s.r.GetBTPMessage(bh.MainHeight, s.cfg.Src.Nid)
 		if err != nil {
@@ -254,12 +278,11 @@ func (s *SimpleChain) addRelayMessage(bu *icon.BTPBlockUpdate, bh *icon.BTPBlock
 		}
 	}
 
-	btpBlock := &icon.BTPBlockData{
-		Bu: bu,
-		Mt: mt, PartialOffset: 0,
-		Seq:         s.rmSeq,
-		HeightOfDst: s.monitorHeight(),
-		HeightOfSrc: bh.MainHeight}
+	btpBlock := &BTPBlockData{
+		Bu:         bu,
+		MessageCnt: bh.MessageCount,
+		Mt:         mt, PartialOffset: 0,
+		Height: bh.MainHeight}
 
 	s.bds = append(s.bds, btpBlock)
 	return nil
@@ -273,13 +296,13 @@ func (s *SimpleChain) updateRelayMessage(h int64, seq *big.Int) {
 	rmIndex := 0
 
 	for i, bd := range s.bds {
-		if bd.HeightOfSrc == h {
+		if (bd.Height == h || big.NewInt(bd.MessageCnt) == seq) || bd.Height < h {
 			bdIndex = i
 		}
 	}
 
 	for i, rm := range s.rms {
-		if rm.Height() == h {
+		if (rm.Height() == h || big.NewInt(int64(rm.MessageSeq())) == seq) || rm.Height() < h {
 			rmIndex = i
 		}
 	}
@@ -302,8 +325,8 @@ func (s *SimpleChain) OnBlockOfDst(height int64) error {
 	return nil
 }
 
-func (s *SimpleChain) OnBlockOfSrc(bu *icon.BTPBlockUpdate) error {
-	bh := &icon.BTPBlockHeader{}
+func (s *SimpleChain) OnBlockOfSrc(bu *BTPBlockUpdate) error {
+	bh := &BTPBlockHeader{}
 	_, err := codec.RLP.UnmarshalFromBytes(bu.BTPBlockHeader, bh)
 	if err != nil {
 		return err
@@ -352,19 +375,19 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 		return s.bs.Verifier.Height, nil
 	} else {
 		if len(s.rms) == 0 {
-			s.rms = append(s.rms, icon.NewRelayMessage())
+			s.rms = append(s.rms, NewRelayMessage())
 		}
 		h, err := s.r.GetBTPBlockHeader(s.bs.Verifier.Height, s.cfg.Src.Nid)
 		if err != nil {
 			return 0, err
 		}
-		bh := &icon.BTPBlockHeader{}
+		bh := &BTPBlockHeader{}
 		_, err = codec.RLP.UnmarshalFromBytes(h, bh)
 		if err != nil {
 			return 0, err
 		}
 
-		vs := &icon.VerifierStatus{}
+		vs := &VerifierStatus{}
 		_, err = codec.RLP.UnmarshalFromBytes(s.bs.Verifier.Extra, vs)
 		if err != nil {
 			return 0, err
@@ -380,7 +403,14 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 			if mt, err = mbt.NewMerkleBinaryTree(mbt.HashFuncByUID(s.ci.NetworkTypeName), m); err != nil {
 				return 0, err
 			}
-			s.MessageSegment(mt, int(index), bh.MainHeight)
+			bd := &BTPBlockData{
+				Mt:            mt,
+				PartialOffset: int(index),
+				MessageCnt:    bh.MessageCount,
+				Height:        bh.MainHeight,
+			}
+
+			s.MessageSegment(bd)
 			s.relay()
 		}
 		return bh.MainHeight + 1, nil
@@ -393,7 +423,7 @@ func (s *SimpleChain) monitorHeight() int64 {
 
 func (s *SimpleChain) Serve(sender module.Sender) error {
 	s.s = sender
-	s.r = icon.NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
+	s.r = NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
 	s.ci = &chainInfo{}
 	//TODO Pre rotation settings
 	s.relayble = true
@@ -448,7 +478,7 @@ func (s *SimpleChain) Monitoring() error {
 		err := s.r.ReceiveLoop(
 			h,
 			s.cfg.Src.Nid,
-			s.cfg.ProofFlag,
+			false,
 			s.OnBlockOfSrc,
 			func() {
 				s.l.Debugf("Connect ReceiveLoop")
@@ -475,8 +505,8 @@ func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
 		dst: cfg.Dst.Address,
 		l:   l.WithFields(log.Fields{log.FieldKeyChain: fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
-		bds: make([]*icon.BTPBlockData, 0),
-		rms: make([]*icon.BTPRelayMessage, 0),
+		bds: make([]*BTPBlockData, 0),
+		rms: make([]*BTPRelayMessage, 0),
 	}
 
 	return s

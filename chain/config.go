@@ -17,14 +17,18 @@
 package module
 
 import (
+	"encoding/json"
 	"github.com/icon-project/btp/common/config"
 )
 
 type BaseConfig struct {
-	Address  BtpAddress             `json:"address"`
-	Endpoint string                 `json:"endpoint"`
-	Nid      int64                  `json:"nid"`
-	Options  map[string]interface{} `json:"options,omitempty"`
+	Address      BtpAddress             `json:"address"`
+	Endpoint     string                 `json:"endpoint"`
+	Nid          int64                  `json:"nid"`
+	KeyStoreData json.RawMessage        `json:"key_store"`
+	KeyStorePass string                 `json:"key_password,omitempty"`
+	KeySecret    string                 `json:"key_secret,omitempty"`
+	Options      map[string]interface{} `json:"options,omitempty"`
 }
 
 type Config struct {
@@ -32,6 +36,6 @@ type Config struct {
 	Src               BaseConfig       `json:"src"`
 	Dst               BaseConfig       `json:"dst"`
 	MaxSizeTx         bool             `json:"maxSizeTx"`
-	ProofFlag         bool             `json:"proofFlag"`
+	Direction         string           `json:"direction"`
 	Offset            int64            `json:"offset"`
 }

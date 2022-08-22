@@ -22,18 +22,16 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/icon-project/btp/cmd/btp2/module/bsc/binding"
+	"github.com/icon-project/btp/chain/bsc/binding"
 
-	"github.com/icon-project/btp/cmd/btp2/module"
-	"github.com/icon-project/btp/common"
+	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
-	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -42,7 +40,6 @@ const (
 	txOverheadScale               = 0.37   //base64 encoding overhead 0.36, rlp and other fields 0.01
 	txSizeLimit                   = txMaxDataSize / (1 + txOverheadScale)
 	DefaultGetRelayResultInterval = time.Second
-	DefaultRelayReSendInterval    = time.Second
 )
 
 type sender struct {
@@ -138,7 +135,19 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 			if err != nil {
 				return nil, err
 			}
-			return tx, nil //mapErrorWithTransactionResult(&types.Receipt{}, err) // TODO: map transaction.js result error
+
+			if tx.Status == 0 {
+				revertMsg, err := s.c.GetRevertMessage(txh.Hash)
+				if err != nil {
+					return nil, err
+				}
+				code, err := strconv.Atoi(strings.Split(revertMsg, "|")[1])
+				if err != nil {
+					return nil, err
+				}
+				return tx, NewRevertError(code)
+			}
+			return tx, nil
 		}
 	} else {
 		return nil, fmt.Errorf("fail to casting TransactionHashParam %T", p)
