@@ -204,9 +204,10 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         //TODO require BTPAddress validation
         (string memory netFrom, ) = req.from.splitBTPAddress();
         int errCode = Types.CS_RESP_SUCCESS;
+        address csrAddress = req.to.parseAddress();
         string memory errMsg;
         try this.tryHandleCallMessage(
-            req.to,
+            csrAddress,
             req.from,
             req.data
         ) {
@@ -236,13 +237,12 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
 
     //  @dev To catch for invalid address of ICallServiceReceiver
     function tryHandleCallMessage(
-        string memory to,
+        address csrAddress,
         string memory from,
         bytes memory data
     ) external {
         require(msg.sender == address(this), "OnlyInternal");
-        address toAddress = to.parseAddress();
-        ICallServiceReceiver(toAddress).handleCallMessage(from, data);
+        ICallServiceReceiver(csrAddress).handleCallMessage(from, data);
     }
 
     /**
