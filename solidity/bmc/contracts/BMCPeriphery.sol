@@ -11,7 +11,6 @@ import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncodeStruct.sol";
 import "./libraries/String.sol";
 import "./libraries/Types.sol";
-import "./libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -21,7 +20,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     using RLPDecodeStruct for bytes;
     using RLPEncodeStruct for Types.BMCMessage;
     using RLPEncodeStruct for Types.Response;
-    using Utils for uint256;
 
     uint256 internal constant UNKNOWN_ERR = 0;
     uint256 internal constant BMC_ERR = 10;
@@ -248,18 +246,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                     )
                 {} catch Error(string memory reason) {
                     _sendError(_prev, _msg, BSH_ERR, reason);
-                    // } catch Panic(uint256 errorCode) {
-                    //     _sendError(
-                    //         _prev,
-                    //         _msg,
-                    //         BSH_ERR,
-                    //         string(
-                    //             abi.encodePacked(
-                    //                 "BMCPanicHandleBTPMessage:",
-                    //                 errorCode
-                    //             )
-                    //         )
-                    //     );
                 } catch (bytes memory) {
                     _sendError(
                         _prev,
@@ -283,12 +269,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 {} catch Error(string memory reason) {
                     _errCode = BSH_ERR;
                     _errMsg = bytes(reason);
-                    // } catch Panic(uint256 errorCode) {
-                    //     _errCode = UNKNOWN_ERR;
-                    //     _errMsg = abi.encodePacked(
-                    //         "BMCPanicHandleBTPError:",
-                    //         errorCode
-                    //     );
                 } catch (bytes memory) {
                     _errCode = UNKNOWN_ERR;
                     _errMsg = bytes(BMCRevertUnknownHandleBTPError);

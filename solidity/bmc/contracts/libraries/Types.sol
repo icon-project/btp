@@ -3,154 +3,6 @@ pragma solidity >=0.8.0 <0.8.5;
 
 library Types {
     /**
-     * @Notice List of ALL Struct being used to Encode and Decode RLP Messages
-     */
-
-    //  SPR = State Hash + Pathch Receipt Hash + Receipt Hash
-    struct SPR {
-        bytes stateHash;
-        bytes patchReceiptHash;
-        bytes receiptHash;
-    }
-
-    struct BlockHeader {
-        uint256 version;
-        uint256 height;
-        uint256 timestamp;
-        bytes proposer;
-        bytes prevHash;
-        bytes voteHash;
-        bytes nextValidators;
-        bytes patchTxHash;
-        bytes txHash;
-        bytes logsBloom;
-        SPR spr;
-        bool isSPREmpty; //  add to check whether SPR is an empty struct, not include in RLP thereafter
-    }
-
-    //  TS = Timestamp + Signature
-    struct TS {
-        uint256 timestamp;
-        bytes signature;
-    }
-
-    //  BPSI = blockPartSetID
-    struct BPSI {
-        uint256 n;
-        bytes b;
-    }
-
-    struct Votes {
-        uint256 round;
-        BPSI blockPartSetID;
-        TS[] ts;
-    }
-
-    struct BlockWitness {
-        uint256 height;
-        bytes[] witnesses;
-    }
-
-    struct EventProof {
-        uint256 index;
-        bytes[] eventMptNode;
-    }
-
-    struct BlockUpdate {
-        BlockHeader bh;
-        Votes votes;
-        bytes[] validators;
-    }
-
-    struct ReceiptProof {
-        uint256 index;
-        bytes[] txReceipts;
-        EventProof[] ep;
-    }
-
-    struct BlockProof {
-        BlockHeader bh;
-        BlockWitness bw;
-    }
-
-    struct RelayMessage {
-        BlockUpdate[] buArray;
-        BlockProof bp;
-        bool isBPEmpty; //  add to check in a case BlockProof is an empty struct
-        //  when RLP RelayMessage, this field will not be serialized
-        ReceiptProof[] rp;
-        bool isRPEmpty; //  add to check in a case ReceiptProof is an empty struct
-        //  when RLP RelayMessage, this field will not be serialized
-    }
-
-    /**
-     * @Notice List of ALL Structs being used by a BSH contract
-     */
-    enum ServiceType {
-        REQUEST_COIN_TRANSFER,
-        REQUEST_COIN_REGISTER,
-        REPONSE_HANDLE_SERVICE,
-        UNKNOWN_TYPE
-    }
-
-    struct PendingTransferCoin {
-        string from;
-        string to;
-        string coinName;
-        uint256 value;
-        uint256 fee;
-    }
-
-    struct TransferCoin {
-        string from;
-        string to;
-        Asset[] assets;
-    }
-
-    struct Asset {
-        string coinName;
-        uint256 value;
-    }
-
-    struct AssetTransferDetail {
-        string coinName;
-        uint256 value;
-        uint256 fee;
-    }
-
-    struct RegisterCoin {
-        string coinName;
-        uint256 id;
-        string symbol;
-    }
-
-    struct Response {
-        uint256 code;
-        string message;
-    }
-
-    struct ServiceMessage {
-        ServiceType serviceType;
-        bytes data;
-    }
-
-    struct Coin {
-        uint256 id;
-        string symbol;
-        uint256 decimals;
-    }
-
-    struct Balance {
-        uint256 lockedBalance;
-        uint256 refundableBalance;
-    }
-
-    struct Request {
-        string serviceName;
-        address bsh;
-    }
-
-    /**
      * @Notice List of ALL Structs being used by a BMC contract
      */
     struct VerifierStats {
@@ -215,5 +67,10 @@ library Types {
     struct Tuple {
         string _prev;
         string _to;
+    }
+
+    struct Response {
+        uint256 code;
+        string message;
     }
 }
