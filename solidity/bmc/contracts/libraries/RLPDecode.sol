@@ -331,12 +331,15 @@ library RLPDecode {
             dest += WORD_SIZE;
         }
 
-        // left over bytes. Mask is used to remove unwanted bytes from the word
-        uint256 mask = 256**(WORD_SIZE - len) - 1;
-        assembly {
-            let srcpart := and(mload(src), not(mask)) // zero out src
-            let destpart := and(mload(dest), mask) // retrieve the bytes
-            mstore(dest, or(destpart, srcpart))
+        if (len > 0) {
+            // left over bytes. Mask is used to remove unwanted bytes from the word
+            uint256 mask = 256**(WORD_SIZE - len) - 1;
+            assembly {
+                let srcpart := and(mload(src), not(mask)) // zero out src
+                let destpart := and(mload(dest), mask) // retrieve the bytes
+                mstore(dest, or(destpart, srcpart))
+            }
         }
     }
+
 }
