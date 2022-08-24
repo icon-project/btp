@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.8.12;
 
 import "../libraries/RelayMessageLib.sol";
 
 contract RelayMessageMock {
-    using RelayMessageLib for RelayMessageLib.RelayMessage;
+    using RelayMessageLib for RelayMessage;
 
-    function decode(bytes calldata enc) public pure returns (RelayMessageLib.RelayMessage[] memory) {
+    function decode(bytes calldata enc) public pure returns (RelayMessage[] memory) {
         return RelayMessageLib.decode(enc);
     }
 }

@@ -4,14 +4,15 @@ pragma solidity ^0.8.12;
 import "./interfaces/IBMV.sol";
 import "./libraries/Errors.sol";
 import "./libraries/String.sol";
+import "./libraries/RLPEncode.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract BtpMessageVerifier is IBMV, Initializable {
-    using BlockUpdateLib for BlockUpdateLib.Header;
-    using MessageProofLib for MessageProofLib.MessageProof;
-    using RelayMessageLib for RelayMessageLib.RelayMessage;
+    using BlockUpdateLib for Header;
+    using MessageProofLib for MessageProof;
+    using RelayMessageLib for RelayMessage;
     using String for string;
 
     address private bmc;
@@ -47,7 +48,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
         networkTypeId = _networkTypeId;
         sequenceOffset = _sequenceOffset;
 
-        BlockUpdateLib.Header memory header = BlockUpdateLib.decodeHeader(_firstBlockHeader);
+        Header memory header = BlockUpdateLib.decodeHeader(_firstBlockHeader);
         networkId = header.networkId;
         height = header.mainHeight;
         nextMessageSn = header.messageSn;
@@ -76,13 +77,13 @@ contract BtpMessageVerifier is IBMV, Initializable {
         checkAccessible(_prev);
         require(_sn >= sequenceOffset, ERR_INVALID_ARGS);
         checkNextMessageSn(_sn - sequenceOffset);
-        RelayMessageLib.RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
+        RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
         bytes[] memory messages;
         uint256 remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
         for (uint256 i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TYPE_BLOCK_UPDATE) {
                 require(remainMessageCount == 0, Errors.ERR_UNKNOWN);
-                (BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof) = rms[i].toBlockUpdate();
+                (Header memory header, Proof memory proof) = rms[i].toBlockUpdate();
                 checkHeaderWithState(header);
                 checkBlockUpdateProof(header, proof);
 
@@ -104,7 +105,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
                     remainMessageCount = messageCount = header.messageCount;
                 }
             } else if (rms[i].typ == RelayMessageLib.TYPE_MESSAGE_PROOF) {
-                MessageProofLib.MessageProof memory mp = rms[i].toMessageProof();
+                MessageProof memory mp = rms[i].toMessageProof();
 
                 // compare roots of `block update` and `message proof`
                 (bytes32 root, uint256 leafCount) = mp.calculate();
@@ -190,7 +191,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
         }
     }
 
-    function checkHeaderWithState(BlockUpdateLib.Header memory header) private view {
+    function checkHeaderWithState(Header memory header) private view {
         require(networkId == header.networkId, Errors.ERR_UNKNOWN);
         require(networkSectionHash == header.prevNetworkSectionHash, Errors.ERR_UNKNOWN);
         if (nextMessageSn < header.messageSn) {
@@ -200,10 +201,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
         }
     }
 
-    function checkBlockUpdateProof(BlockUpdateLib.Header memory header, BlockUpdateLib.Proof memory proof)
-        private
-        view
-    {
+    function checkBlockUpdateProof(Header memory header, Proof memory proof) private view {
         uint256 votes = 0;
         bytes32 decision = header.getNetworkTypeSectionDecisionHash(srcNetworkId, networkTypeId);
         for (uint256 j = 0; j < proof.signatures.length && !hasQuorumOf(votes); j++) {

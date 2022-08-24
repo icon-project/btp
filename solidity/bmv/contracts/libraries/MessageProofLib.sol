@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.8.12;
 
 import "./RLPReader.sol";
 import "./Errors.sol";
 
+struct MessageProof {
+    MessageProofNode[] lefts;
+    bytes[] mesgs;
+    MessageProofNode[] rights;
+}
+
+struct MessageProofNode {
+    uint256 level;
+    uint256 leafCount;
+    bytes32 hash;
+}
+
 library MessageProofLib {
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
-    using MessageProofLib for MessageProofLib.Queue;
-
-    struct MessageProof {
-        MessageProofNode[] lefts;
-        bytes[] mesgs;
-        MessageProofNode[] rights;
-    }
-
-    struct MessageProofNode {
-        uint256 level;
-        uint256 leafCount;
-        bytes32 hash;
-    }
+    using MessageProofLib for Queue;
 
     struct Queue {
         uint256 front;

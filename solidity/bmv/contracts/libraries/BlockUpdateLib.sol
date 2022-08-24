@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.8.12;
 
-import "./MerkleTreeLib.sol";
+import {Path, MerkleTreeLib} from "./MerkleTreeLib.sol";
 import "./RLPEncode.sol";
 import "./RLPReader.sol";
+
+struct Header {
+    uint256 mainHeight;
+    uint256 round;
+    bytes32 nextProofContextHash;
+    Path[] networkSectionToRoot;
+    uint256 networkId;
+    uint256 messageSn;
+    bool hasNextValidators;
+    bytes32 prevNetworkSectionHash;
+    uint256 messageCount;
+    bytes32 messageRoot;
+    address[] nextValidators;
+}
+
+struct Proof {
+    bytes[] signatures;
+}
 
 library BlockUpdateLib {
     using RLPReader for bytes;
     using RLPReader for RLPReader.RLPItem;
-
-    struct Header {
-        uint256 mainHeight;
-        uint256 round;
-        bytes32 nextProofContextHash;
-        MerkleTreeLib.Path[] networkSectionToRoot;
-        uint256 networkId;
-        uint256 messageSn;
-        bool hasNextValidators;
-        bytes32 prevNetworkSectionHash;
-        uint256 messageCount;
-        bytes32 messageRoot;
-        address[] nextValidators;
-    }
-
-    struct Proof {
-        bytes[] signatures;
-    }
 
     function decode(bytes memory enc) internal pure returns (Header memory header, Proof memory proof) {
         RLPReader.RLPItem memory i = enc.toRlpItem();
@@ -42,7 +42,7 @@ library BlockUpdateLib {
                 l[0].toUint(),
                 l[1].toUint(),
                 bytes32(l[2].toBytes()),
-                l[3].payloadLen() > 0 ? decodeNSRootPath(l[3].toRlpBytes()) : new MerkleTreeLib.Path[](0),
+                l[3].payloadLen() > 0 ? decodeNSRootPath(l[3].toRlpBytes()) : new Path[](0),
                 l[4].toUint(),
                 l[5].toUint() >> 1,
                 l[5].toUint() & 1 == 1,
@@ -106,12 +106,12 @@ library BlockUpdateLib {
         return MerkleTreeLib.calculate(getNetworkSectionHash(self), self.networkSectionToRoot);
     }
 
-    function decodeNSRootPath(bytes memory enc) private pure returns (MerkleTreeLib.Path[] memory) {
+    function decodeNSRootPath(bytes memory enc) private pure returns (Path[] memory) {
         RLPReader.RLPItem[] memory tl = enc.toRlpItem().toList();
-        MerkleTreeLib.Path[] memory pathes = new MerkleTreeLib.Path[](tl.length);
+        Path[] memory pathes = new Path[](tl.length);
         for (uint256 i = 0; i < tl.length; i++) {
             RLPReader.RLPItem[] memory tm = tl[i].toList();
-            pathes[i] = MerkleTreeLib.Path(tm[0].toUint(), bytes32(tm[1].toBytes()));
+            pathes[i] = Path(tm[0].toUint(), bytes32(tm[1].toBytes()));
         }
         return pathes;
     }

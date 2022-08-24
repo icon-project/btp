@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-library MerkleTreeLib {
-    struct Path {
-        uint256 direction;
-        bytes32 hash;
-    }
+struct Path {
+    uint256 direction;
+    bytes32 hash;
+}
 
+library MerkleTreeLib {
     function calculate(bytes32 leaf, Path[] memory pathes) internal pure returns (bytes32) {
         bytes32 temp = leaf;
         for (uint256 i = 0; i < pathes.length; i++) {
