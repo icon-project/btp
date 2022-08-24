@@ -18,14 +18,15 @@ package icon
 
 import (
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/mbt"
-	"math/big"
-	"sync"
-	"sync/atomic"
 )
 
 type chainInfo struct {
@@ -194,7 +195,7 @@ func (s *SimpleChain) MessageSegment(bd *BTPBlockData) error {
 	return nil
 }
 
-func (s *SimpleChain) notVerifiableRevert(h int64, seq *big.Int) error {
+func (s *SimpleChain) updateSegments(h int64, seq *big.Int) error {
 	if err := s.RefreshStatus(); err != nil {
 		return err
 	}
@@ -204,14 +205,14 @@ func (s *SimpleChain) notVerifiableRevert(h int64, seq *big.Int) error {
 		return err
 	}
 
-	if s.bs.RxSeq.Int64() < s.rms[0].Height() {
-		//TODO Add after monitoring refactoring
-	} else {
+	if !(s.bs.RxSeq.Int64() < s.rms[0].Height()) {
 		for i := 0; i < len(s.rms); i++ {
 			if (s.bs.RxSeq.Int64() <= s.rms[i].Height()) || (s.rms[i].Height() > h) {
 				s.rms[i].Segments().GetResultParam = nil
 			}
 		}
+	} else {
+		s.l.Panicf("No relay messages collected.")
 	}
 
 	return nil
@@ -231,7 +232,7 @@ func (s *SimpleChain) result(segment *module.Segment) {
 				s.l.Panicf("BMVUnknown Revert :%v ErrorCoder:%+v",
 					segment.GetResultParam, ec)
 			case BMVNotVerifiable:
-				s.notVerifiableRevert(segment.Height, segment.EventSequence)
+				s.updateSegments(segment.Height, segment.EventSequence)
 				segment.GetResultParam = nil
 			case BMVAlreadyVerified:
 				s.updateRelayMessage(segment.Height, segment.EventSequence)
@@ -245,8 +246,6 @@ func (s *SimpleChain) result(segment *module.Segment) {
 			s.l.Panicf("fail to GetResult GetResultParam:%v err:%+v",
 				segment.GetResultParam, err)
 		}
-	} else { //TODO delete for test
-		fmt.Printf("#### sucess tx \n\n")
 	}
 }
 
