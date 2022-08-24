@@ -13,28 +13,27 @@ const Errors = {
 
 contract('BtpMessageVerifier', (accounts) => {
     const BMC = accounts[0];
-    // TODO remove scheme string(btp://)
-    const SRC_NETWORK_ID = 'btp://0x1.icon'
-    const SRC_BMC_BTP_ADDR = SRC_NETWORK_ID + '/' + 'srcBmcCA';
     const SEQUENCE_OFFSET = new BN('0');
 
     describe('common test scenario', () => {
         const RELAY_MESSAGES = [
             '0xcecdcc028ac9f800c483646f67f800',
-            '0xf90227f90224f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01da0298d7f800d28363617488656c657068616e748462697264f800',
-            '0xf901b4f901b1f901ae01b901aaf901a7b890f88e1e00a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0dd7d7cd1229649a054dbfd03969abe0ce4e439afc09f36e07165b95f866f565c0208a0335fc784176e18f4d3efefc662503f0fd8fe120751ed4251a66aaa938640015203a086c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9f800b90112f9010ff9010cb841128dd79e62e79f27067e51e192322a76d889e2b6e2a28897c6ab2649a0352e9a7991e5891e841a2c82d80817ebe763dd797f0d1c09c535d2ac6aa427edabf16500b8418e7f3249ec892000e44ee25576bbf63d00258adf9cb74033f6b04a8c35fb47ec202f27dadc243d7ba6768231152aa3de0db21c779a243e6abcdd037fd1723e0b00b841a7a888d0cc7acc6a0d69e52fd955ae350ec3ec0fc0b9587b3f342cf5dc63889d7a5496eeb7e81f0a94ea43b1b5f5aa198fa6ea52f60bef6bc195e8a1f516bdbb01b84116d124bdb4b67e63dad5b911f26c338d9501221778d16058cf787381b234561a4987039f35ba1435db164c34dff4b9a7b01a49ab3319132c9ce547c7878f05e700',
+            '0xf90227f90224f9020601b90202f901ffb8e8f8e61400a02bf59cc47e3a486a79538905537cb05de356ab87c4b3c6fc2f9eef60a7f9e2f1e3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f854948b23df84e212853bdda59507788bf55171a6f3909468d5c7be0d4423e196b67068c4cfc45223f1a528944752531087ea4697dc2f128e01c6f466ee254e769498cdda8989b8ecc0d30b617e1dc242e4ccd296c4b90112f9010ff9010cb84108cb45aaa3b46719f3e8894c97b470544f1a5539f78f0fffd6380d375e5b1bd4079aaa08257400abda1309c3fe0cbd280f3aeae4b669c0172e542933d1ae397501b84125cda1cc0255f0ee02064e8c79a6406dba33d181fb71c3d0a45b2bdafe20d1f25f64412c51190d0b042c905ae90c9bfffe12a71889dd2e25c44f98aee3f2e0b200b84167c8f3d0646f58610853a51e62e167bdeaffcc50e54c4a0c038b8cfcfff12f181695f3ef9df5ebe31dff9b27c382145978c0089f8e00bcbf083ee70c2bbca05801b841d164cc3920f625346a9de5d041dcd21e55a2707d84869e2b15f89d1eeeb84d5659dcd49f8dca65e1c01f6f6b99a1d218af383f517d11a7a603d2b254a018ba6b00da0298d7f800d28363617488656c657068616e748462697264f800',
+            '0xf901b4f901b1f901ae01b901aaf901a7b890f88e1e00a02bf59cc47e3a486a79538905537cb05de356ab87c4b3c6fc2f9eef60a7f9e2f1e3e201a0dd7d7cd1229649a054dbfd03969abe0ce4e439afc09f36e07165b95f866f565c0208a0335fc784176e18f4d3efefc662503f0fd8fe120751ed4251a66aaa938640015203a086c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9f800b90112f9010ff9010cb841920b6c311d5d4be72c8ddb9599b94842c029a8e2630608d892d87dd2b911c3894029a749ff42647ee7b849404591a5227fb932a2cb7cdc017dd78a04383b770b01b841d5d46fd23e06882bf5325554cf63090ddea2c15a09ad740707b9a50715d4ca6c5e14d836c01edebedc09d414e9315a11bad0c25c3f5304dadde5567ff953e79401b8418e30acb1f4e3879289c969584966b080cee33e4f42dc2d14d8ed74f8ef2e69ec1551cfe0ae54d0e14f5ede7cb3597d3e8823a2ba2147c5d9b81ee144b2046c2f01b84166d5b56bcf5a7110a9680ed0cdc4999b4a520991b2fa91c741068d57e42390f57962f2e432a17762208f8c766f83f1fb6e7fee83af30026d4e5a83e22441963e00',
             '0xf868f866f502b3f2c0cc866d6f6e6b6579846c696f6ee3e201a038f4921087750bcc254ecc791170ebb01a0297d49c630a8844c18f6104a5da07ef02adece3e202a09dc633d90e96b8744b27aaa5bb6bb2cca28f187c196cf7af1c82d8d1e8cd5f6fc6857469676572c0',
-            '0xf903d7f903d4f901e701b901e3f901e0b8c9f8c72800a0d24c4f3d98a310f94047f0ea18b553f9f570195605189e4cb7b33ca88a29008ae3e201a08c46a84b0bad8d2ee375d1fb666256ef0abb7bfcf208b0e6e9a83718e2dda4c8020fa049da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e700f800b858f856f85494dccf35820a337512baa66780f112fef74593375d940536e6d35901f056ed48f19c8d2b8e76c6292399942182851a75a5b1657d7435e3178975ba97372083940f951e1fa3f96a2a3b92f05f382c6a87126945cbb90112f9010ff9010cb841e841970cd4ea08870f949bfaef59e6efab1a7132a2f7156e9ed21427eb7631eb6ed1e46b1befab6f080399f0d2bef6492081d8aa3e716de819cc8a7e99c25d9400b8414a0688b6ebf8ac47b423267fa86cff8bdef6095934fa151dbf07b7a861fd5e4400557247b0278df25b4c865b3c8a067f9b40693ef75f31e680030a2eaf25cd0a01b841b1158d5d63fe8f080ff55d136e3eb07b7adf3f1fac409d541599a1eb1111c4011b62649875f724509de431ff61cd80e700cc5cfa317b9e33df67e65aa6d5cecf00b84198fc2f6d8695775685b80c68562ffb2e487389fc5b839d5c95c365426b58bf812c6f1eb33baa775291ad284e02ddb11dd5e9476fdf2ba1f6bdd4ea722ef6dcb200f901e701b901e3f901e0b8c9f8c73200a0f15b61d91392ddcb9fb60beb138a8a1fff821be0371d3c20f9caa063b9df8e3ae3e201a0d1cdfff9f24d50ba88a34f19cbdf5c214169df63629e299d9baffb242a1bb428020fa0efe5785c35214f54e0ee595ebbe96842cd158d9329e3f3f6ed7e30f8cfa835f900f800b858f856f85494f28a5305dbe556fd0103596aca9129d730a916b89442aa62a65b7d03ed68a06b95ab3445d6af294be99433a9779f75b36f372a4a6600579b9a9959e4568794c9ae50b4423509c64dd74aee98ee2aa0e0fed323b90112f9010ff9010cb841e6d82ebc01e10cce3d6867c6caa2337f8eb487efec4fb00f81aa1c79158f218455945df9705d5fbccd0c14990d3d36db83085b13c81a0d5d63c1710bc51f965e01b84119cfcaa2ae283d6eefc52e9fec010ef53a8e4b4aa853a9ed6a026f58c930a937745cf1b21202c50865cc85a2bc505a307df7f6e3a107993d35eed249377d1d2a01b841c807ddaf5cef5ddf7688c32f6eed930fbf9f79893a0bcc355472e4f904103c0e0c6643c6e860249a068f8754d75a8f90d8dccd20a0cbb0899882d2bd3edd03b200b841ed78341a0f2ad318a3fff4f2e118c25e7a70cd6579de184a3c2817120ef32cc228f610348252c047b6192f86fd79fba9a39afe4e51ad9d205867918c6a45feca00'
+             '0xf903d7f903d4f901e701b901e3f901e0b8c9f8c72800a00a6b1f7f6a4399ebb1ecbc91f6aaf1909ac24eae0f9272fd509d258678a78108e3e201a08c46a84b0bad8d2ee375d1fb666256ef0abb7bfcf208b0e6e9a83718e2dda4c8020fa049da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e700f800b858f856f854943a7628e882019c2de9eb598a17e6b2f9bff8df0c946b9669b054c5305ec5ca0b17601ab3c5f2afc3f694991ebc1d9508d0c0d5857dbd1d0db643f6d87143946e5cba0c7a327bf777645a7bccf74781544c4b2db90112f9010ff9010cb8417bc3f31ee790c25efbadba0c305b0e2c9dee1ec46e1b860f30b5f55f0b0afe5c36986bc38e59303e7b66855d7cd8ecfb435f902763fd92a1a29d3a34f1bb96b100b841b50311b27807ca71522905a2568320431d716beef7f51d32c0419417a8e2b20f451a917eff4db316a12a1ce507dee1d9337c103b580e02a1d53ed4967f6da46800b8415014f0c97ba43928f264d26e7e02458a6ef250fa2c3ed509c1188c001163afe95c5b2631b687088e5e6dbe3252c6ee142238eb5cdb699951f744c57e2df0b9fb01b841e9cc9d47aeae55b7953e6588ff29e4aa160a8c285948e543157dfc9c9de8f8283fe7625f3cddf9ee24b710dc541164676f637b8af0685e4be76bf69f77e7bd8f00f901e701b901e3f901e0b8c9f8c73200a0bf658c599a716a705fe05b89552d363f0bbd6788619d005d1fdc5ae857b5f5fee3e201a0d1cdfff9f24d50ba88a34f19cbdf5c214169df63629e299d9baffb242a1bb428020fa0efe5785c35214f54e0ee595ebbe96842cd158d9329e3f3f6ed7e30f8cfa835f900f800b858f856f85494829296427556b23451dbf1cbfc9e436b5011813394958f3dcecaec9f52738de296a413316953dd5da6942a1e8e9fa2f3bb0c481cc9682edc4136652de0e3942d90a4cb77b86ed5ebdd49fb959a38c98b32ec4eb90112f9010ff9010cb841f95751b14d944b428c157847a70a4ad6d135ed0042b840a27d67018548d04d182b1f0a270e915c55f6f2e01fac5dae9f4e133a2456575291904a48603dbad3b901b84168d72d61d1469baca873017a2071cd7f656034c3b033b51a8334a3c95030341731cc0811c359e735ad6df1dc7939358c8998920b774ba258c51bd2cbbab51da700b8417ae75cd923c74e6383d5153149e01636a34d80526619aee149eb579c0013a8fb74b8d86ada8ffc16da4605b41b89451c6c730cdf5cbccd8b81e6f07b8365dd3c00b841058c1ddd5710315931db918133161278a5a2472fad846b4a61343f426838eaff3516ee70037941cb2892d0698e1ddc5d8c1acba12dd635f39091c89eede006a501'
         ];
 
         describe('when bmv has been initialized', () => {
+            const SRC_NETWORK_ID = '0x1.icon'
+            const SRC_BMC_BTP_ADDR = 'btp://' + SRC_NETWORK_ID + '/' + 'srcBmcCA';
             const NETWORK_TYPE_ID = new BN(2);
-            const FIRST_BLOCK_UPDATE = '0xf8a40a00a08d647190ed786d4f8a522f32351ff2269732f6e3771b908271ca29aa73c2c03cc00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7ab858f856f85494e3aee81071e40c44dde872e568d8d09429c5970e94b3d988f28443446c9d7ac62f673085e2736ca4e094f7646979981a5d7dcc05ea261ae26ecd2c2c81889477fec3da1ba8b192f4b278057395a5124392c88b';
+            const FIRST_BLOCK_UPDATE = '0xf8a40a00a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7ab858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e944fe6e85b23709cbf74e98f81d5869e2b46b9721f94ccefbb67c172b02e70b699884b76e39806eefe00';
             const VALIDATORS = [
-                '0xe3aee81071e40c44dde872e568d8d09429c5970e',
-                '0xb3d988f28443446c9d7ac62f673085e2736ca4e0',
-                '0xf7646979981a5d7dcc05ea261ae26ecd2c2c8188',
-                '0x77fec3da1ba8b192f4b278057395a5124392c88b'
+                '0x35343874344652abe559b226f00abec23a98a7a5',
+                '0xcfb89e639a3b69704631cadae3517165fbf06e1e',
+                '0x4fe6e85b23709cbf74e98f81d5869e2b46b9721f',
+                '0xccefbb67c172b02e70b699884b76e39806eefe00'
             ];
 
             beforeEach(async () => {
@@ -43,7 +42,7 @@ contract('BtpMessageVerifier', (accounts) => {
             });
 
             shouldHaveImmutableState.call(this, {
-                srcNetworkId: url.parse(SRC_NETWORK_ID).host,
+                srcNetworkId: SRC_NETWORK_ID,
                 networkTypeId: NETWORK_TYPE_ID,
             });
 
@@ -85,6 +84,12 @@ contract('BtpMessageVerifier', (accounts) => {
                         });
 
                         describe('when state has been updated, height(20)', () => {
+                            const VALIDATORS = [
+                                '0x8b23df84e212853bdda59507788bf55171a6f390',
+                                '0x68d5c7be0d4423e196b67068c4cfc45223f1a528',
+                                '0x4752531087ea4697dc2f128e01c6f466ee254e76',
+                                '0x98cdda8989b8ecc0d30b617e1dc242e4ccd296c4'
+                            ]
                             beforeEach(async () => {
                                 await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGES[1]);
                             });
@@ -96,12 +101,7 @@ contract('BtpMessageVerifier', (accounts) => {
                                 messageCount: new BN(3),
                                 remainMessageCount: new BN(0),
                                 networkSectionHash: '0x335fc784176e18f4d3efefc662503f0fd8fe120751ed4251a66aaa9386400152',
-                                validators: [
-                                    '0x911ac74dd9ff8f4cdd91e747afcfdc9410a926e9',
-                                    '0x97e36fb88560a3023c509704801eb1149acecf43',
-                                    '0xa9b0a74b2b63ab9cd20c6e38c88195c8175beb46',
-                                    '0x432b6448f3471aef190819b3c4f549a3a689d83a'
-                                ]
+                                validators: VALIDATORS
                             });
 
                             describe('sends RelayMessage=[BlockUpdate(changing validators)]', () => {
@@ -115,13 +115,6 @@ contract('BtpMessageVerifier', (accounts) => {
                                         await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 4, RELAY_MESSAGES[2]);
                                     });
 
-                                    let validators = [
-                                        '0x911ac74dd9ff8f4cdd91e747afcfdc9410a926e9',
-                                        '0x97e36fb88560a3023c509704801eb1149acecf43',
-                                        '0xa9b0a74b2b63ab9cd20c6e38c88195c8175beb46',
-                                        '0x432b6448f3471aef190819b3c4f549a3a689d83a'
-                                    ];
-
                                     shouldHaveThisState.call(this, {
                                         height: new BN(30),
                                         messageRoot: '0x86c05cf325d1a9fc932360037a87b8871c838f274eab4d8010ae9c81b3de24a9',
@@ -129,7 +122,7 @@ contract('BtpMessageVerifier', (accounts) => {
                                         messageCount: new BN(3),
                                         remainMessageCount: new BN(3),
                                         networkSectionHash: '0x49da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e7',
-                                        validators
+                                        validators: VALIDATORS
                                     });
 
                                     describe('sends RelayMessage=[MessageProof, MessageProof]', () => {
@@ -150,7 +143,7 @@ contract('BtpMessageVerifier', (accounts) => {
                                                 messageCount: new BN(3),
                                                 remainMessageCount: new BN(0),
                                                 networkSectionHash: '0x49da67cde1ed94d33df761d65abe0f8b17bedd41a133df50de63aeb80aa9a7e7',
-                                                validators
+                                                validators: VALIDATORS
                                             });
                                             describe('sends RelayMessage=[BlockUpdate(changing validators), BlockUpdate(chainging validators)]', () => {
                                                 it('returns empty list', async () => {
@@ -171,10 +164,10 @@ contract('BtpMessageVerifier', (accounts) => {
                                                         remainMessageCount: new BN(0),
                                                         networkSectionHash: '0xd33456b7b455a6381b4e523716b33f9593d3dfe00c7219a3656c983ed99ab8a9',
                                                         validators: [
-                                                            '0xf28a5305dbe556fd0103596aca9129d730a916b8',
-                                                            '0x42aa62a65b7d03ed68a06b95ab3445d6af294be9',
-                                                            '0x33a9779f75b36f372a4a6600579b9a9959e45687',
-                                                            '0xc9ae50b4423509c64dd74aee98ee2aa0e0fed323'
+                                                            '0x829296427556b23451dbf1cbfc9e436b50118133',
+                                                            '0x958f3dcecaec9f52738de296a413316953dd5da6',
+                                                            '0x2a1e8e9fa2f3bb0c481cc9682edc4136652de0e3',
+                                                            '0x2d90a4cb77b86ed5ebdd49fb959a38c98b32ec4e'
                                                         ]
                                                     });
                                                 });
@@ -191,22 +184,24 @@ contract('BtpMessageVerifier', (accounts) => {
     });
 
     describe('when has installed: BlockUpdate', () => {
+        const SRC_NETWORK_ID = '0x1.icon'
+        const SRC_BMC_BTP_ADDR = 'btp://' + SRC_NETWORK_ID + '/' + 'srcBmcCA';
         const NETWORK_TYPE_ID = new BN(1);
-        const FIRST_BLOCK_UPDATE = '0xf8850a01a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00101f80000f800b858f856f85494524122f6386c9cd3342ecc377dbc9dcb036dd2e0948103611a29623db06a937b24f52d70cf44c1c41494910d15f35a3e685968d8596512efa56d840bb3c59451226eee21a3d3758727886df161c108f5857f3f';
-        const validators = [
-            '0x524122f6386c9cd3342ecc377dbc9dcb036dd2e0',
-            '0x8103611a29623db06a937b24f52d70cf44c1c414',
-            '0x910d15f35a3e685968d8596512efa56d840bb3c5',
-            '0x51226eee21a3d3758727886df161c108f5857f3f'
+        const VALIDATORS = [
+            '0x35343874344652abe559b226f00abec23a98a7a5',
+            '0xcfb89e639a3b69704631cadae3517165fbf06e1e',
+            '0x4fe6e85b23709cbf74e98f81d5869e2b46b9721f',
+            '0xccefbb67c172b02e70b699884b76e39806eefe00'
         ];
 
         beforeEach(async () => {
+            const FIRST_BLOCK_UPDATE = '0xf8850a01a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00101f80000f800b858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e944fe6e85b23709cbf74e98f81d5869e2b46b9721f94ccefbb67c172b02e70b699884b76e39806eefe00';
             this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            await this.instance.initialize(BMC, SRC_NETWORK_ID, 1, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: url.parse(SRC_NETWORK_ID).host,
+            srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
         });
 
@@ -217,11 +212,11 @@ contract('BtpMessageVerifier', (accounts) => {
             messageCount: new BN(0),
             remainMessageCount: new BN(0),
             networkSectionHash: '0xb791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e',
-            validators
+            validators: VALIDATORS
         });
 
         describe('when send RELAY_MESSAGE = [BlockUpdate, MessageProof]', () => {
-            const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb841081455a1d67834537febe7796c17f74366bc0566f29d505abe98a5e297d549cc5aa96c24f7bb92c3298974abf3c5610353f96f2d10b8d9234d8c6081d1de256601b841155f92300d2d788f25bb04ee9a8faa2b93265dc2b1bf45ef4e7c9e166c379243339066c6e13b706d9d631d6f3fb726164be9e65345803d2cd6802abed37374e000b8411670b589335b85d2e3d2a77e6e9210b09277d47ff7b2185148c30183454a530d66271a147a14a5b8c24896422ff57d6da8e242edbd4c9e110b018ff07df00c7300b841474a1f2b4889c8f84c5211648b9099348c3488b2932e020ddece72bc6490d3ae7d96f61766a7be599f414c31e0780382ae2b3ad3e2aa14304faf22b028abfd1800ce028ccbf800c685616c696365f800';
+            const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1401a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb8414793e4cc621a0d89e3558124b9c5a8d286f9b79a914afa6947260210ac14785366a3b4b4deda123d7b4b0bd30fe4acebc3000eb493001019012a70cb5004184c01b841b7516d10759de1c1b4eabff1b2209220316e566df4b3108162d8467d8dfca52602fb0dabbf5bd2e639ded058df2a39649a156dcfdb2088176ca9fad43f2f110f00b841f04e0d99fe053db692144e422113e92d398c1a07dac7a22f889f04188f778a697a65fcebd77c2d58735efc1c3735450388ddcc4a83d0156855c0772b5a75280301b841873b1feefa67d31894e864094261d0e877241a4b2e2c0bf428c8179ffae84f54004d6436c52d58a816ee095ceae0e18cef280ea0be64a916e88fcc34b5332fc200ce028ccbf800c685616c696365f800';
 
             it('returns message', async () => {
                 let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
@@ -240,25 +235,21 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(1),
                     remainMessageCount: new BN(0),
                     networkSectionHash: '0x064be11ce64b5e8c007b34bebbf39dd0df0f77afcaf50cf31cc379af17924f4a',
-                    validators
+                    validators: VALIDATORS
                 });
             });
         });
 
         describe('when send RELAY_MESSAGES = [[BlockUpdate, MessageProof], [MessageProof]]', () => {
-            const RELAY_MESSAGES = [
-                '0xf901c1f901bef9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e02a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bf800b90112f9010ff9010cb841e9a77b99ecb2a7dc4a323ed058df52e657ea3daf7ccf37000e3cd58ecc94bb7e415218711ffaa015b942d44b4a21bcf305f2b57164fe38d25652bca249a3cb8801b841d1db81140886f8c7892e67756e08133efbc35a6caf5f2ea9f20ae0a94e571a126b1dd47879f768453164d85b21eb8844dceb46636a478f33522420b5e47273d100b841435fe512230a4f2d7c8ec33856bf1f43b1f284c41dbd5cb7a8cb0f55a6ec78ab5d38c49f034523be89968ec2398de923ad4ca20de7e510dd6bcd219f14c1199701b841cd642ff89fcb4790239b4a6e402168e7401bd75768c11d707f4b3ad1bfc38a4540d530beb91a4127b5282d4f5b36f1ace733db37903fa2280b30ec3989de8d6500ef02adecc0c685616c696365e3e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2',
-                '0xefeeed02abeae3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62c0'
-            ];
-
-            it('returns messages: RELAY_MESSAGES[0]', async () => {
-                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
+            const RELAY_MESSAGE = '0xf901c1f901bef9018b01b90187f90184b86df86b1401a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e02a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bf800b90112f9010ff9010cb841b23d299670ce1181965ae060700e7fcd7596c319990cdcfa49304afb164556055a18022739dfff287b97faebbf720c5459992b3743f3b6a66ae147aeaee2a26a01b8419938698e6f61ac1fd4a0e3b528e9c578a4f8b6cdae30757a1b9f12da1eccc6f723f15628280117ffd9e5fc15b7e1e87876fee4ee1574fc41cf0cab9cd70cb78f01b841884446814048f31fe57b03d76a50905b55748e197e767d0aa15ac2bbe528327e603886ac006e99d1faf798f462b09641f8c36357afac3d58f51dd5b350519fb901b8415097fd3a067782f1bb6054ac1a1706b5276beb5fdd115cab07ebc3ba160d05cd2f9779a77a46d06ac530c007e4553a236899c529b41134d5be0ad502485d007f01ef02adecc0c685616c696365e3e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2';
+            it('returns messages: [alice]', async () => {
+                let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 expect(msgs.map(v => toStr(v))).to.deep.equal(['alice']);
             });
 
             describe('after changed state: RELAY_MESSAGES[0]', () => {
                 beforeEach(async () => {
-                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGES[0]);
+                    await this.instance.handleRelayMessage('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
                 });
 
                 shouldHaveThisState.call(this, {
@@ -268,12 +259,11 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(2),
                     remainMessageCount: new BN(1),
                     networkSectionHash: '0x4f8b2d17e51d233e0b1a89413a490633b1fee96a17265e7f697190118975daff',
-                    validators
+                    validators: VALIDATORS
                 });
 
                 describe('when send RELAY_MESSAGES[1]', () => {
-                    const RELAY_MESSAGE = '0xefeeed02abeae3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62c0';
-
+                    const RELAY_MESSAGE = '0xefeeed02abeae3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62c0'
                     it('returns messages: RELAY_MESSAGES[1]', async () => {
                         let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 1, RELAY_MESSAGE);
                         expect(msgs.map(v => toStr(v))).to.deep.equal(['bob']);
@@ -291,7 +281,7 @@ contract('BtpMessageVerifier', (accounts) => {
                             messageCount: new BN(2),
                             remainMessageCount: new BN(0),
                             networkSectionHash: '0x4f8b2d17e51d233e0b1a89413a490633b1fee96a17265e7f697190118975daff',
-                            validators
+                            validators: VALIDATORS
                         });
                     });
                 });
@@ -300,7 +290,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
         describe('when send RELAY_MESSAGES = [[BlockUpdate, MessageProof], [MessageProof], [MessageProof]]', () => {
             const RELAY_MESSAGES = [
-                '0xf901e8f901e5f9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb841ecc36972e9f7f8aeba9dac2375944e17bf341b0e831520cb4dddfdc526d8de6e110007edb46290a9feeb238b7f62a036a9e8c07fc70d650fd4db381248e41a8a00b841fe90cf7b2ac7a56231e42eb6baf0ecc4d3b732973c18396933f25a51461f11381026f37fcbbbca6c21e4a762d3510fa2b9f6a63041fd6a9a20891ce0a544d75500b8414a802b48b332834eb6a6c71b685642094afa8a58b41abbe88999e6a3b9ae93d651f6639512bb09702e079a06b681281932e071cfc07b59fda1196ccfa3a8baef00b841cb86ee4e7ddacaa923421ff3f15efd3eb15309e77566c8a321d6568406434fbe3fc4c526fe6721b4ddd09b16e7385ce02f0720043851b90ea5d17cac97a6f0e600f85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488',
+                '0xf901e8f901e5f9018b01b90187f90184b86df86b1401a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb84144c09aec56c9e31b9fc25654f90d5a6159938d8fe08eb5057e6f66fa8a9d30f57f9f207087f7f8d5bba56e5fa9aa745a9d556609fef86a3eb35679061ad679fb01b841aebb2695e701c09d9517fc2823ab11ccee293d320140432ab5b7bcf3c61154aa25b168d3bb21f4057fffa0c283b67dd53a2abfccc2d86036d5dcdc0e5fb7e74e01b841d2d5adfd3f2282be213ee510d54280421df43653112d369b1b352e044932cb7d10f24518947cc6f9a85d9a6a358481ef7668c73d23fb817458845cfe8b104ec300b8416d978688a0e654ef48280cb4013c9b27e12f90aa059d124f3353ac70113f0a430bb4dc59a433d551703edb694252ca77e378efbc926dd0ded55d0ad22162fac201f85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488',
                 '0xf856f854f85202b84ff84de3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62e3e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488',
                 '0xf3f2f102afeee3e202a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bc8876372797374616cc0'
             ];
@@ -322,7 +312,7 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(3),
                     remainMessageCount: new BN(2),
                     networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                    validators
+                    validators: VALIDATORS
                 });
 
                 describe('when send RELAY_MESSAGES[1]', () => {
@@ -343,7 +333,7 @@ contract('BtpMessageVerifier', (accounts) => {
                             messageCount: new BN(3),
                             remainMessageCount: new BN(1),
                             networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                            validators
+                            validators: VALIDATORS
                         });
 
                         describe('when send RELAY_MESSAGE[2]', () => {
@@ -364,7 +354,7 @@ contract('BtpMessageVerifier', (accounts) => {
                                     messageCount: new BN(3),
                                     remainMessageCount: new BN(0),
                                     networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                                    validators
+                                    validators: VALIDATORS
                                 });
                             });
                         });
@@ -374,7 +364,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when send RELAY_MESSAGE = [BlockUpdate, MessageProof, MessageProof, MessageProof]', () => {
-            const RELAY_MESSAGE = '0xf9026ef9026bf9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb8414ea5201093fb9bfceae99016a8dda2655c23d5a82e6c692ec2d829a18ef2411a4656f20d7ff98a4b80a28294a9030f18c9b2821c0451fb85c927dd340353c47100b8414dc6594d5d0cfde5bc84d23459bae8d5ba959496fce3acbcf1fd0d211716c9ae30caf23b8380946a050d9b8d9b24f9f6935cfc77853d03746b60c5c9030e8a8500b84183a67494b3b5bfb10257330dab5aff20e3bb030312e3c8066c3a9544b7ef1b820720e2a36de1ea29316bec8dd395a1889748e2eb6adc18807e75b6f6e5aa98b200b841502274515c8867ee8570065a0a07fafda9b58a91046583073b495e513ea8722c05fc1063ae629c59f70264e5fc6f05d5a37597e87d166cd6f992137fd170373900f85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f85202b84ff84de3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62e3e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f102afeee3e202a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bc8876372797374616cc0';
+            const RELAY_MESSAGE = '0xf9026ef9026bf9018b01b90187f90184b86df86b1401a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb841365be6bf81ffc8ae8416e485cad76b202d4ceeb74e39a93e2173c4aa89654176578642b2a8e372db3a0729dbd9bd1eb8ce3691d7145e3447d8a70c3fcdc0c67f00b8417c9257412f93e401eea301d5a73b0f90fcf909d5711a04a40831f4b0ff70a7875f288b1d776cbca3d3b2eeab095a6032b1f9454c861aeb2d8279f8b7f77d5dc301b84136aa7b1eabef684b9de4df6d1c388450bb287606261737a7ca92a5773c38489863bfa4c9b509c24940aa4d2d20e22fa968d0927aed634bf7b36463fded02297b01b841a6d98e94ff29cde35bfed374217e03584174c9953f1fe110701aee13c790f63017514aa5e7f72497776595f21d6232dd5acb5763b992b05311bf16f9babcab1f00f85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f85202b84ff84de3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62e3e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f102afeee3e202a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bc8876372797374616cc0';
 
             it('returns messages', async () => {
                 let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
@@ -393,14 +383,14 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(3),
                     remainMessageCount: new BN(0),
                     networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                    validators
+                    validators: VALIDATORS
                 });
             });
         });
 
         describe('when send RELAY_MESSAGES = [[BlockUpdate], [MessageProof, MessageProof, MessageProof]]', () => {
             const RELAY_MESSAGES = [
-                '0xf90191f9018ef9018b01b90187f90184b86df86b1401a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb8414c21c67f32585e680bc5079977ff0974f34c58461e4b88e089966012b5a0520f37b620fd62913abba15905befc6f83b17da391e1c6999aa01be0703f00ca989600b841743358b7078f2c8612ec8d6ac0f2470fa151526410c5967f2f132ff7b659d68558259029c092968ccf21435ddd4f89592f0f1b757c31baa75341db3d69cf977c00b841b97ad5e607b759e7d711acaa9ad4ddde8b4dd670cc2ff8c3238ca88b1efc5b5d6df213127b40ee4fac160d730dad3eb9c2e0b9086ada9525b2857eb9f9255eb401b841979098e92e4b947262f72af1a98dd3f2664d550ba8bd581e2afa4559bdb0d11711b252651642f6b49c385e3a9db1229d2fcc3063f9c305caa2f62e6acd3568da01',
+                '0xf90191f9018ef9018b01b90187f90184b86df86b1401a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00100a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e03a04a466308d2644bc8e169b3202117709fb424f2ec2df2e6c8280291744d2cbaa7f800b90112f9010ff9010cb841af7fac4977966e607c1ab78a4e2bd26bc32fc7cdffefaf0cc79e079decee66ae10311cd30102117d74711d6fc614070fe04f30f3524c2c29935c0cbd9fca319401b8416e97d848d1c9770bb00901ccb0f9b41780a8c431bd9ff87b90069476a6225f1a0dfda69f377de01e36981bd4784d3b95c880c2d72c7da6a43ff2644bafd985a200b84199bf76a3459768a97107e5e663f0beea08e774d1a620fa95438bed6a520b72a047d2799293739d8532f7506f2aa56f4f2cfe5517c221da8e470bf6865986aa9d01b84151ebd23b7daa77ee835b541e783f5fcf92b891b8a592ff44035c03862d1a2c9b368f49a99d02536041c96cae31cabe5e63c62e6bf7ac336f83c84633c0bda62d00',
                 '0xf8dff8ddf85502b852f850c0c685616c696365f846e201a038e47a7b719dce63662aeaf43440326f551b8a7ee198cee35cb5d517f2d296a2e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f85202b84ff84de3e201a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501c483626f62e3e201a0a2c791857d936d97cc584df15995fb9e6a3aff25630796d718e2f8ba105b0488f102afeee3e202a02bdf15e9913a52d9f36bb7e62634a6079cc32fc2fe975aadfcbc67b7e3a8a61bc8876372797374616cc0'
             ]
 
@@ -421,7 +411,7 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(3),
                     remainMessageCount: new BN(3),
                     networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                    validators
+                    validators: VALIDATORS
                 });
 
                 describe('when send RELAY_MESSAGE[1]', () => {
@@ -442,7 +432,7 @@ contract('BtpMessageVerifier', (accounts) => {
                             messageCount: new BN(3),
                             remainMessageCount: new BN(0),
                             networkSectionHash: '0xccb41e470a2b1d74baacdda37355c199e8a1dba368bfaefd4516eb5668e36e60',
-                            validators
+                            validators: VALIDATORS
                         });
                     });
                 });
@@ -450,7 +440,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when send RELAY_MESSAGE for another network', () => {
-            const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1e01a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00200a0273e85733c50a59785a41c066ee49e642480c73882d9ca9e67b19dd69c79417801a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb8415fa6b0f5498d2c390f0f97158921efd90c4f99534a6f20dd1bc342166e70e7b102dc98ea4cba4914c01c80567033f8cf603ecb8e4f7004dbce9ca1ef2ad0d78e00b8419ab9a2a11d6a196dd0ac7fb87a509cee8422ec1aec1703ed43ad5b304aa16f412c14a5d1823cd430f2d5070a23623e202159fdebacf1c14d1e4372b079ad012101b841ca9e0a69255c4eccb3b702b97a533ce66167510f2a7dbbeca19ded9cdf95a5d309b1bb90f3ea2a5730c1769681cacf73b918b3bec41107b6580d5cd69f82806501b841eb86aba95074b07faba1589e3549dc2407531a7590869983b5b520e31ab1b0827382d813075db80ce064cac7c0c8bdcd20de325ecf1dc2f2def7bcad7bbe0a6400ce028ccbf800c685616c696365f800';
+            const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1e01a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00200a0273e85733c50a59785a41c066ee49e642480c73882d9ca9e67b19dd69c79417801a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb8413d9785ac576e0587d4c1e6a7f4581eb876f8f01a759c15ee1deff20ebe12927f36a3a5725c9b9fc5914f18bf1ebd42efeee46f13e10758916f3b75540908641c00b84164c794f1121e2d40a558523a8001d6a58461f84bcd119f3145d5c518c134b42b3a4b84165a38863b8b555f3c977793f67a64e8cf76ac1ef92503cfdc3e870f2b00b841511f7b80e962d1e8c0bbf3d23516fa08f2772ba73771136498f1fa9a842bfcae4bf34397004b609650c3406e3f7d26b40bf0a6f73ebf7d31479f6aeda456ab0b01b841ae82418a2a900973be91e44d8493303a0bda790f937b127e43c953484041eedb25cad687df3bfc43347d7e6eac6f5849786421eeb5fc0d9d2bb375abe1126af601ce028ccbf800c685616c696365f800';
 
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
@@ -461,7 +451,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
         describe('when send RELAY_MESSAGE with invalid signatures', () => {
             describe('has enough the quorum', () => {
-                const RELAY_MESSAGE = '0xf901f8f901f5f901e301b901dff901dcb8c5f8c31401a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f85494944db52183a8cc6e118346780314963ae1de158b943c9e099a48d4bc432dd4c5be73dcb3e069cb3aa194acf71c78a1f0b6def45660f7352d30d0be7d80a394055126ca715a1f532d6ba57b41373bd460241346b90112f9010ff9010cb84136c70ddd4f0ccfe6ee52a2f312d5aca50a7649c7b629b50f549e4c3d211617b64e483bea14f7ff03aa940eee17e9062b5e870fac4d89f80528d86e9c04df411300b8411a8fe4a69174fd0cbc586a72e0ed0e295fe7af0c60d9af2437b30b23f0c723f16bd56b2676d41d07d915883f5cedd3f57269381357420e9979749e0ee409db7600b841d678040fc3d706dde3ecce95ef920752803767c75ec7ff4796a5e4f8803b63361879ba2c464a6fae1a62f5dfdc51dab2ff4e53173064a2574bc7cc9b18ba092c01b841c2218bee0c3ac96e7c978b7f3b394386a657109e098eada5fd99d415720270ef50d1fb73b7ec0e3ebdeab42f530f088e948bc7e17bdda844bb26dcd935c23f1700ce028ccbf800c685616c696365f800';
+                const RELAY_MESSAGE = '0xf901f8f901f5f901e301b901dff901dcb8c5f8c31401a0ec7919d99cfa1c0750f9aeeaec2ddd7b6b23b682f30022156a9e8615f66c88e4c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e944fe6e85b23709cbf74e98f81d5869e2b46b9721f9482878eadbf424a7ea546ae23e20e1ce0d12fb347b90112f9010ff9010cb841471ed82abea405da27de0c377e2df70ed47b8fa62e6cb85d3b6fa69eca98053e5bb2a338838f413670c228c7988dd99f702633cbc5263995cc2ca377432fb7fc00b8418ceadbbb69f2338f9ce20a97a87539c8c47afdb29176a957aa8e77ef68dd385f252bc66b4166d79dd978c607b6f326a8ce9b9fa24295a93a552de8716432eb3100b841bd330b366d2052994685800744703180765d47eb0a1d3ecc7d4cae366e823c5f3e194397b527606f641d6a781c4bdc40c83c3a2cf8d5ab1ccd3d567cbc476f9c00b841ec891a27ea8b67e95b1e63e99b67eb8cf5f52e941718a16d878435c957f29a3f3040516e91792722ebf2f9d07a4582a9ca0b5f6a53c61fccbccb17dc55ccb12e01ce028ccbf800c685616c696365f800';
 
                 it('returns messages', async () => {
                     let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
@@ -470,7 +460,7 @@ contract('BtpMessageVerifier', (accounts) => {
             });
 
             describe('has lack of quorum', () => {
-                const RELAY_MESSAGE = '0xf901f8f901f5f901e301b901dff901dcb8c5f8c31401a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f85494944db52183a8cc6e118346780314963ae1de158b943c9e099a48d4bc432dd4c5be73dcb3e069cb3aa194acf71c78a1f0b6def45660f7352d30d0be7d80a394055126ca715a1f532d6ba57b41373bd460241346b90112f9010ff9010cb841d678040fc3d706dde3ecce95ef920752803767c75ec7ff4796a5e4f8803b63361879ba2c464a6fae1a62f5dfdc51dab2ff4e53173064a2574bc7cc9b18ba092c01b841d678040fc3d706dde3ecce95ef920752803767c75ec7ff4796a5e4f8803b63361879ba2c464a6fae1a62f5dfdc51dab2ff4e53173064a2574bc7cc9b18ba092c01b841d678040fc3d706dde3ecce95ef920752803767c75ec7ff4796a5e4f8803b63361879ba2c464a6fae1a62f5dfdc51dab2ff4e53173064a2574bc7cc9b18ba092c01b841c2218bee0c3ac96e7c978b7f3b394386a657109e098eada5fd99d415720270ef50d1fb73b7ec0e3ebdeab42f530f088e948bc7e17bdda844bb26dcd935c23f1700ce028ccbf800c685616c696365f800';
+                const RELAY_MESSAGE = '0xf901f8f901f5f901e301b901dff901dcb8c5f8c31401a06f83a1850e8b5f7965c707b466e912a885722a7520c281a07cfe9e51f50f15d8c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e01a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e948ba4ab599a7e56cf5be3869083a72ec93b6b61029482878eadbf424a7ea546ae23e20e1ce0d12fb347b90112f9010ff9010cb84105ab183c57b4bb3d91638c7415410772feb52eb8953d9e8b55ecf4d68a5f33bd1954ba570cb3db034b75435d0bc48bbd43d5a0a51b953c83526bef52db25489f01b8416dedea340f2f5d6cf097d82de0d75f89174b7155ffe860e55877cda86d64e03f69446be9c9a88f069957d976e034089448b2aab993c8aaf73988c78723a538e201b8417d4ba124dc49eb58f6f2cc9dece0f205eb337d27f91dcb795f21aec9c3aa78ec03b3e0e3a0e27233f9c56a550f18f741e575fd9bbc990d843e87d52b392470d700b841b53fb696b1328ae51f0f4746bd4721325dd7c90b288f5bc4f5baa31d43cccfaa6474f0686f6a2de047a99a156515c766ffff99114f74f7dce788ce5d4d68107000ce028ccbf800c685616c696365f800';
 
                 it('reverts', async () => {
                     await expectRevert(
@@ -482,14 +472,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         describe('when send RELAY_MESSAGE with changing validators', () => {
-            const RELAY_MESSAGE = '0xf901caf901c7f901c401b901c0f901bdb8a6f8a41401a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e00f800b858f856f85494944db52183a8cc6e118346780314963ae1de158b943c9e099a48d4bc432dd4c5be73dcb3e069cb3aa194acf71c78a1f0b6def45660f7352d30d0be7d80a394055126ca715a1f532d6ba57b41373bd460241346b90112f9010ff9010cb8411f74037a22703ae781200d518e0c1d145827dd9a57686c3a1050b760d545846e09e8dfc6f3bb09c7c6c24b69704af3d6b00f9660676fad56004b3cfe68a1848b00b841e45e17102c4f6e2af99fa87a27ec315fdce5aaa1ea2469dbcc86da23af10a1d80f382a7a4a7d5a3b52ebd7cf5b7d7abcea6a5484e4be658e2bf1501e379dc46700b8415bfd44f792ec0f2fe08b70325d6a1708ff420107b7b0d07a2658c53fc40b6ae763cb4c122141679b67c44a7fb3268a3604b41d21cf2c1f580fc69b0f6c94058d00b84115a783dee29200fd25e7ddbe9171850142a03e389fe1c38b391951fc0e2be63d00406a04e862e970037f8f8f165290ac26522e1363466ef8ae1490469c7ed72701';
-
-            const validators = [
-                '0x944db52183a8cc6e118346780314963ae1de158b',
-                '0x3c9e099a48d4bc432dd4c5be73dcb3e069cb3aa1',
-                '0xacf71c78a1f0b6def45660f7352d30d0be7d80a3',
-                '0x055126ca715a1f532d6ba57b41373bd460241346'
-            ];
+            const RELAY_MESSAGE = '0xf901caf901c7f901c401b901c0f901bdb8a6f8a41401a04dde9282f6974d1bd10b33438eb7f744ea9d67e889fd0bf3e2b4daf3df433e07c00101a0b791b4b069c561ca31093f825f083f6cc3c8e5ad5135625becd2ff77a8ccfa1e00f800b858f856f854940a9e59d8bede1d139b40b275d0c7fcab6820d6a9940b10209d62329898f219b898f461a4df659bf545948d379c4e61b7b1d97210fbb90c4288d37a3a810994a9c64b9a1326aa0f0258a721859422efe35b0365b90112f9010ff9010cb84163aa67676dd8dde45d1c68d1eeac735e995b59784c5343997dc9177584ef835e78822987b1153ab66edd9ec41d909498f6ba403ee118904ce97cf4aa0307dceb00b841d8afea151e53d1784e0e06eab06121ad9040774ede50b79c776cd55f9022d3b361be4075fbe8e5c2f6540f4a3c9ad3bd27ca12f5cc33656cdd4f6fc31214acd400b841a486a972f3bce39809f89b7ea9c313a1f3bcfba806ab1bcb1a301352cc57215138a80f1636b696b5bbf2d2c5690654398b7bf7a446c636b8688b85de34534dc201b841ccdc9dd69c5c2005a785186dac0487835fae3a1693e457931afc63ae8182370f3081bf4701bd832c98b3ef3d85c5bc58876f79cd05413b9b939cf6ea0ceed89500';
 
             describe('after changed state', () => {
                 beforeEach(async () => {
@@ -503,11 +486,17 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(0),
                     remainMessageCount: new BN(0),
                     networkSectionHash: '0x39ea97ede1d7b3019f4f1b4ce6b463d4189dc86f620e5ced3611fded5ae41995',
-                    validators
+                    validators: [
+                        '0x0a9e59d8bede1d139b40b275d0c7fcab6820d6a9',
+                        '0x0b10209d62329898f219b898f461a4df659bf545',
+                        '0x8d379c4e61b7b1d97210fbb90c4288d37a3a8109',
+                        '0xa9c64b9a1326aa0f0258a721859422efe35b0365'
+
+                    ]
                 });
 
                 describe('send RELAY_MESSAGE signed by changed validators', () => {
-                    const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1e01a0e67c4b3b5bca332a79c0fe9bedb7594ef9bfc429e957587fd47a16525ffd4d45c00100a039ea97ede1d7b3019f4f1b4ce6b463d4189dc86f620e5ced3611fded5ae4199501a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb8419a25843917fe773046b812733fa62b25c9d10d2845eede8ccab8f335797ddea81fd2697ad3acdf6e4434bb2ab5a6e899405f411138172ac15dc3ee6edc043bfd00b841e35320badc46222b169942dcd257acf697a067a63256942195400171eb69ef3b4f9c37466c1ae7b8ac1b573aea55e4964da7b4bb034cc485ef924f51fc8127e200b84113ab8ac7790218ffabfe1d18e1a9a3e6e1e2a308328df410c99c342ec25823a627910e27287aefe6a6513d20884c572910987fee9fdc7ac4bedf1208d691f4b800b8417dc67f1a979f02c7349badbed8892aebc46f510e9ecfcdb54400c7fcc8f09bf454f1e56986ddd93db96841718c34bfaa36606f356edd1741eab6ea469fc0b90d01ce028ccbf800c685616c696365f800';
+                    const RELAY_MESSAGE = '0xf901a0f9019df9018b01b90187f90184b86df86b1e01a04dde9282f6974d1bd10b33438eb7f744ea9d67e889fd0bf3e2b4daf3df433e07c00100a039ea97ede1d7b3019f4f1b4ce6b463d4189dc86f620e5ced3611fded5ae4199501a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501f800b90112f9010ff9010cb841f3c316bbb2d40b2f73bfb17ef41108aa1dc9b82061fa0052ead3d336d55001406cef71e2e116eec7853485b603a0632f59ab8c2e2997a8ff6e71793874b360f300b841957629a681a5691d5482fd63fca39e2fff9d2fa970b9d71de321b3f683b41a31272a12f9fafb18ef0bd4e6c04802b75f8ec4093ba3ff5add98e26713d11ec58f01b841bf5faa1fd57bf67cc425d5d3ed8eb8b775bd023015d418db3783ecb464dbbc8a59bd168dd3491b028b802ac27343b5d26f36459bafa739474807e490c81ac16700b841b4ad75fbdc8ad125c5baf5fc55533be35bc0b6ce4b018c86fcc80f6304481abd066b927ec7470d6b149c6e6a511cf3fd4fa6b3a765bec57a585795ac8cafe41d01ce028ccbf800c685616c696365f800';
 
                     it('returns messages', async () => {
                         let msgs = await this.instance.handleRelayMessage.call('', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE);
@@ -519,9 +508,11 @@ contract('BtpMessageVerifier', (accounts) => {
     });
 
     describe('when has installed with block update which has generated with message', () => {
+        const SRC_NETWORK_ID = '0x1.icon'
+        const SRC_BMC_BTP_ADDR = 'btp://' + SRC_NETWORK_ID + '/' + 'srcBmcCA';
         const NETWORK_TYPE_ID = new BN(1);
         const FIRST_BLOCK_UPDATE = '0xf8a40a00a0177b09e6b788d2a5f9d7572265f8a54176a83783e6d1d99d1865bc24e04fb493c00101f80001a09c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501b858f856f85494524122f6386c9cd3342ecc377dbc9dcb036dd2e0948103611a29623db06a937b24f52d70cf44c1c41494910d15f35a3e685968d8596512efa56d840bb3c59451226eee21a3d3758727886df161c108f5857f3f';
-        const validators = [
+        const VALIDATORS = [
             '0x524122f6386c9cd3342ecc377dbc9dcb036dd2e0',
             '0x8103611a29623db06a937b24f52d70cf44c1c414',
             '0x910d15f35a3e685968d8596512efa56d840bb3c5',
@@ -534,7 +525,7 @@ contract('BtpMessageVerifier', (accounts) => {
         });
 
         shouldHaveImmutableState.call(this, {
-            srcNetworkId: url.parse(SRC_NETWORK_ID).host,
+            srcNetworkId: SRC_NETWORK_ID,
             networkTypeId: NETWORK_TYPE_ID,
         });
 
@@ -545,7 +536,7 @@ contract('BtpMessageVerifier', (accounts) => {
             messageCount: new BN(1),
             remainMessageCount: new BN(1),
             networkSectionHash: '0x7239515338d40afd6e908375975f969a503d75b40821bfa8412736980ff2f2b9',
-            validators
+            validators: VALIDATORS
         });
 
         describe('when miss RELAY_MESSAGE = [MessageProof], and send RELAY_MESSAGE = [BlockUpdate]', () => {
@@ -599,29 +590,9 @@ contract('BtpMessageVerifier', (accounts) => {
                     messageCount: new BN(1),
                     remainMessageCount: new BN(0),
                     networkSectionHash: '0x7239515338d40afd6e908375975f969a503d75b40821bfa8412736980ff2f2b9',
-                    validators
+                    validators: VALIDATORS
                 });
             });
-        });
-    });
-
-    describe('multiple src network id formats', () => {
-        beforeEach('..', async () => {
-            const FIRST_BLOCK_HEADER = '0xf8430e00a0a2a824778e04bb8ea209bbb72f4d03cfcef676a87e51dd86332a10d7bac666cdc00201f80000f80097d6d594295f731277f78fd0f2fb918e4f04f6adc7d4c9fe';
-            this.instance1 = await BtpMessageVerifier.new();
-            this.instance2 = await BtpMessageVerifier.new();
-            await this.instance1.initialize(BMC, 'btp://0x2.icon', new BN(2), FIRST_BLOCK_HEADER, SEQUENCE_OFFSET);
-            await this.instance2.initialize(BMC, '0x2.icon', new BN(2), FIRST_BLOCK_HEADER, SEQUENCE_OFFSET);
-        });
-
-        it('has source network id', async () => {
-            expect(await this.instance1.getSrcNetworkId())
-                .to.equal('0x2.icon');
-        });
-
-        it('has source network id', async () => {
-            expect(await this.instance2.getSrcNetworkId())
-                .to.equal('0x2.icon');
         });
     });
 });

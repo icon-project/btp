@@ -125,13 +125,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
     }
 
     function getSrcNetworkId() public view returns (string memory) {
-        // TODO only support {network address}.{account identifier} format
-        string memory scheme = "btp://";
-        if (Utils.substring(srcNetworkId, 0, scheme.length()).compareTo(scheme)) {
-            return Utils.substring(srcNetworkId, scheme.length(), srcNetworkId.length());
-        } else {
-            return srcNetworkId;
-        }
+        return srcNetworkId;
     }
 
     function getNetworkTypeId() public view returns (uint256) {
@@ -180,7 +174,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
 
     function checkAccessible(string memory _from) private view {
         (string memory net, ) = _from.splitBTPAddress();
-        require(getSrcNetworkId().compareTo(net), ERR_UNAUTHORIZED);
+        require(keccak256(abi.encodePacked(srcNetworkId)) == keccak256(abi.encodePacked(net)), ERR_UNAUTHORIZED);
     }
 
     function checkNextMessageSn(uint256 sn) private view {
