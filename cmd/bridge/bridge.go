@@ -17,6 +17,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"unsafe"
@@ -63,10 +64,7 @@ func (c *bridge) relay() {
 	var err error
 	for _, s := range c.ss {
 		c._log("before relay", s)
-		//if wait for result
-		if s.GetResultParam != nil && s.TransactionResult == nil {
-			return
-		}
+		c.l.Debugln("TransactionParam:" + hex.EncodeToString(s.TransactionParam.([]byte)))
 		if s.GetResultParam == nil {
 			s.TransactionResult = nil
 			if s.GetResultParam, err = c.s.Relay(s); err != nil {
@@ -305,10 +303,10 @@ func NewBridge(cfg *module.Config, ks, pw []byte, l log.Logger) (*bridge, error)
 		log.FieldKeyWallet: c.w.Address()[2:],
 		log.FieldKeyChain:  fmt.Sprintf("%s", cfg.Dst.Address.NetworkID()),
 	})
-	if c.r, err = newReceiver(cfg, c.l); err != nil {
+	if c.r, err = NewReceiver(cfg, c.l); err != nil {
 		return nil, err
 	}
-	if c.s, err = newSender(cfg, c.w, c.l); err != nil {
+	if c.s, err = NewSender(cfg, c.w, c.l); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -331,7 +329,7 @@ func newWallet(cfg *module.Config, ks, pw []byte) (w module.Wallet, err error) {
 	return
 }
 
-func newReceiver(cfg *module.Config, l log.Logger) (r module.Receiver, err error) {
+func NewReceiver(cfg *module.Config, l log.Logger) (r module.Receiver, err error) {
 	switch cfg.Src.Address.BlockChain() {
 	case chainNameIcon:
 		r = iconbridge.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
@@ -343,7 +341,7 @@ func newReceiver(cfg *module.Config, l log.Logger) (r module.Receiver, err error
 	return
 }
 
-func newSender(cfg *module.Config, w module.Wallet, l log.Logger) (s module.Sender, err error) {
+func NewSender(cfg *module.Config, w module.Wallet, l log.Logger) (s module.Sender, err error) {
 	switch cfg.Dst.Address.BlockChain() {
 	case chainNameIcon:
 		s = iconbridge.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)

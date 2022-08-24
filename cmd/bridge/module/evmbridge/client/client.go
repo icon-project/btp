@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/icon-project/btp/common/log"
 )
 
@@ -220,7 +221,7 @@ func (c *Client) Poll(cb func(bh *types.Header) error) error {
 			var bh *types.Header
 			if bh, err = c.GetHeaderByHeight(current); err != nil {
 				if ethereum.NotFound == err {
-					c.log.Debug("Block not ready, will retry ", current)
+					c.log.Trace("Block not ready, will retry ", current)
 				} else {
 					c.log.Error("Unable to get block ", current, err)
 				}

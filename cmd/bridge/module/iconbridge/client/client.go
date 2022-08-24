@@ -29,8 +29,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/icon-project/btp/cmd/bridge/module"
 	"github.com/icon-project/btp/cmd/bridge/module/iconbridge/wallet"
-	"github.com/icon-project/btp/cmd/btpsimple/module"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
