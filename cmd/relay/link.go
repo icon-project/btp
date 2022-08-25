@@ -18,6 +18,8 @@ package main
 
 import (
 	"fmt"
+	"path"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/bsc"
 	bscChain "github.com/icon-project/btp/chain/bsc"
@@ -25,7 +27,6 @@ import (
 	iconChain "github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
-	"path"
 )
 
 func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modLevels map[string]string) error {
@@ -44,7 +45,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		}
 
 	case ReverseDirection:
-		dstCfg := module.Config{
+		dstCfg := chain.Config{
 			Src: cfg.Dst,
 			Dst: cfg.Src,
 		}
@@ -67,7 +68,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 			return err
 		}
 
-		dstCfg := module.Config{
+		dstCfg := chain.Config{
 			Src: cfg.Dst,
 			Dst: cfg.Src,
 		}
@@ -95,8 +96,8 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 	return nil
 }
 
-func newChain(name string, cfg module.Config, l log.Logger, w wallet.Wallet, linkErrCh chan error) (module.Chain, error) {
-	var chain module.Chain
+func newChain(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, linkErrCh chan error) (chain.Chain, error) {
+	var chain chain.Chain
 	switch name {
 	case ICON:
 		chain = iconChain.NewChain(&cfg, l)
@@ -117,8 +118,8 @@ func newChain(name string, cfg module.Config, l log.Logger, w wallet.Wallet, lin
 	return chain, nil
 }
 
-func newSender(s string, srcCfg module.BaseConfig, dstCfg module.BaseConfig, w wallet.Wallet, l log.Logger) module.Sender {
-	var sender module.Sender
+func newSender(s string, srcCfg chain.BaseConfig, dstCfg chain.BaseConfig, w wallet.Wallet, l log.Logger) chain.Sender {
+	var sender chain.Sender
 
 	switch s {
 	case ICON:

@@ -19,12 +19,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/icon-project/btp/chain"
 	"io/ioutil"
 	stdlog "log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/icon-project/btp/chain"
 
 	"github.com/spf13/cobra"
 
@@ -50,11 +51,11 @@ const (
 )
 
 type Config struct {
-	module.Config `json:",squash"`     //instead of `mapstructure:",squash"`
-	LogLevel      string               `json:"log_level"`
-	ConsoleLevel  string               `json:"console_level"`
-	LogForwarder  *log.ForwarderConfig `json:"log_forwarder,omitempty"`
-	LogWriter     *log.WriterConfig    `json:"log_writer,omitempty"`
+	chain.Config `json:",squash"` //instead of `mapstructure:",squash"`
+	LogLevel     string               `json:"log_level"`
+	ConsoleLevel string               `json:"console_level"`
+	LogForwarder *log.ForwarderConfig `json:"log_forwarder,omitempty"`
+	LogWriter    *log.WriterConfig    `json:"log_writer,omitempty"`
 }
 
 func (c *Config) Wallet(passwd, secret string, keyStore json.RawMessage) (wallet.Wallet, error) {
