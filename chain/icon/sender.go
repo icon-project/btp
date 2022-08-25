@@ -58,7 +58,7 @@ type sender struct {
 	cb                 module.ReceiveCallback
 }
 
-func (s *sender) newTransactionParam(params interface{}, method string) *TransactionParam {
+func (s *sender) newTransactionParam(method string, params interface{}) *TransactionParam {
 	p := &TransactionParam{
 		Version:     NewHexInt(JsonrpcApiVersion),
 		FromAddress: Address(s.w.Address()),
@@ -78,61 +78,39 @@ type transactionParamMessage struct {
 	messages string
 }
 
-func (s *sender) newRelayTransactionParam(prev string, tpm *transactionParamMessage) (*TransactionParam, error) {
-	rmp := &BMCRelayMethodParams{
-		Prev:     prev,
-		Messages: tpm.messages,
-	}
-	p := &TransactionParam{
-		Version:     NewHexInt(JsonrpcApiVersion),
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.Account()),
-		NetworkID:   HexInt(s.dst.NetworkID()),
-		StepLimit:   NewHexInt(s.opt.StepLimit),
-		DataType:    "call",
-		Data: &CallData{
-			Method: BMCRelayMethod,
-			Params: rmp,
-		},
-	}
-	return p, nil
-}
-
-func (s *sender) newFragmentTransactionPram(prev string, tpm *transactionParamMessage, idx int) *TransactionParam {
-	msgLen := txSizeLimit
-	if len(tpm.messages) < msgLen {
-		msgLen = len(tpm.messages)
-	}
+func (s *sender) sendFragment(msg []byte, idx int) (module.GetResultParam, error) {
 	fmp := &BMCFragmentMethodParams{
-		Prev: prev, Messages: tpm.messages[:msgLen], Index: NewHexInt(int64(idx))}
-	tpm.messages = tpm.messages[msgLen:]
-	return s.newTransactionParam(fmp, BMCFragmentMethod)
+		Prev:     s.src.String(),
+		Messages: base64.URLEncoding.EncodeToString(msg),
+		Index:    NewHexInt(int64(idx)),
+	}
+	p := s.newTransactionParam(BMCFragmentMethod, fmp)
+	return s.sendTransaction(p)
 }
 
 func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
-	p := segment.TransactionParam.([]byte)
-	//TODO Refactoring ( transactionParamMessage -> []byte )
-	tpm := &transactionParamMessage{messages: base64.URLEncoding.EncodeToString(p)}
-
-	idx := len(tpm.messages) / txSizeLimit
+	msg := segment.TransactionParam.([]byte)
+	idx := len(msg) / txSizeLimit
 	if idx == 0 {
-		t, err := s.newRelayTransactionParam(s.src.String(), tpm)
-		if err != nil {
-			return nil, err
+		rmp := &BMCRelayMethodParams{
+			Prev:     s.src.String(),
+			Messages: base64.URLEncoding.EncodeToString(msg),
 		}
-		return s.sendTransaction(t)
+		return s.sendTransaction(s.newTransactionParam(BMCRelayMethod, rmp))
 	} else {
-		tp := s.newFragmentTransactionPram(s.src.String(), tpm, idx*-1)
-		ret, err := s.sendTransaction(tp)
+		ret, err := s.sendFragment(msg[:txSizeLimit], idx*-1)
 		if err != nil {
 			return nil, err
 		}
-		for idx--; idx >= 0; idx-- {
-			tp := s.newFragmentTransactionPram(s.src.String(), tpm, idx)
-			_, err := s.sendTransaction(tp)
-			if err != nil {
-				return nil, err
+		msg = msg[txSizeLimit:]
+		for idx--; idx > 0; idx-- {
+			if ret, err = s.sendFragment(msg[:txSizeLimit], idx); err != nil {
+				return ret, err
 			}
+			msg = msg[txSizeLimit:]
+		}
+		if ret, err = s.sendFragment(msg[:], idx); err != nil {
+			return ret, err
 		}
 		return ret, err
 	}
