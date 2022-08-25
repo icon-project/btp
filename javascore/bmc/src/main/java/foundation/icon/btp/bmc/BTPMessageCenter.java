@@ -622,30 +622,42 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             }
         } else {
             sn = sn.negate();
+            ErrorMessage errorMsg = null;
             try {
-                ErrorMessage errorMsg = ErrorMessage.fromBytes(msg.getPayload());
-                try {
-                    BSHScoreInterface service = getService(svc);
-                    service.handleBTPError(msg.getSrc().toString(), svc, sn, errorMsg.getCode(), errorMsg.getMsg() == null ? "" : errorMsg.getMsg());
-                } catch (BTPException e) {
-                    logger.println("handleService","fail to getService",
-                            "code:", e.getCode(), "msg:", e.getMessage());
-                    ErrorOnBTPError(svc, sn, errorMsg.getCode(), errorMsg.getMsg(), e.getCode(), e.getMessage());
-                } catch (UserRevertedException e) {
-                    logger.println("handleService", "fail to service.handleBTPError",
-                            "code:", e.getCode(), "msg:", e.getMessage());
-                    ErrorOnBTPError(svc, sn, errorMsg.getCode(), errorMsg.getMsg(), e.getCode(), e.getMessage());
-                } catch (Exception e) {
-                    logger.println("handleService", "fail to service.handleBTPError",
-                            "Exception:", e.toString());
-                    ErrorOnBTPError(svc, sn, -1, null, -1, e.getMessage());
-                }
+                errorMsg = ErrorMessage.fromBytes(msg.getPayload());
             } catch (Exception e) {
                 logger.println("handleService", "fail to ErrorMessage.fromBytes",
                         "Exception:", e.toString());
-                ErrorOnBTPError(svc, sn, -1, null, -1, e.getMessage());
+                emitErrorOnBTPError(svc, sn, -1, null, -1, e.getMessage());
+                return;
+            }
+            try {
+                BSHScoreInterface service = getService(svc);
+                service.handleBTPError(msg.getSrc().toString(), svc, sn, errorMsg.getCode(), errorMsg.getMsg() == null ? "" : errorMsg.getMsg());
+            } catch (BTPException e) {
+                logger.println("handleService","fail to getService",
+                        "code:", e.getCode(), "msg:", e.getMessage());
+                emitErrorOnBTPError(svc, sn, errorMsg.getCode(), errorMsg.getMsg(), e.getCode(), e.getMessage());
+            } catch (UserRevertedException e) {
+                logger.println("handleService", "fail to service.handleBTPError",
+                        "code:", e.getCode(), "msg:", e.getMessage());
+                emitErrorOnBTPError(svc, sn, errorMsg.getCode(), errorMsg.getMsg(), e.getCode(), e.getMessage());
+            } catch (Exception e) {
+                logger.println("handleService", "fail to service.handleBTPError",
+                        "Exception:", e.toString());
+                emitErrorOnBTPError(svc, sn, errorMsg.getCode(), errorMsg.getMsg(), -1, e.getMessage());
             }
         }
+    }
+
+    private void emitErrorOnBTPError(String _svc, BigInteger _seq, long _code, String _msg, long _ecode, String _emsg) {
+        ErrorOnBTPError(
+                _svc,
+                _seq,
+                BigInteger.valueOf(_code),
+                _msg == null ? "" : _msg,
+                BigInteger.valueOf(_ecode),
+                _emsg == null ? "" : _emsg);
     }
 
     @External
@@ -749,7 +761,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @EventLog(indexed = 2)
-    public void ErrorOnBTPError(String _svc, BigInteger _seq, long _code, String _msg, long _ecode, String _emsg) {
+    public void ErrorOnBTPError(String _svc, BigInteger _seq, BigInteger _code, String _msg, BigInteger _ecode, String _emsg) {
     }
 
     @External
