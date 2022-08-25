@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/icon-project/btp/chain"
 
 	"github.com/icon-project/btp/common/jsonrpc"
@@ -223,7 +224,7 @@ func (r *RelayMessage) SetNumberOfEvent(numberOfEvent int) {
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
-	EventProofs []*module.EventProof
+	EventProofs []*chain.EventProof
 }
 
 type ConsensusStates struct {

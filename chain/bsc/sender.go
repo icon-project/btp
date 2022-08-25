@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/icon-project/btp/chain/bsc/binding"
 
 	"github.com/icon-project/btp/chain"
@@ -44,8 +45,8 @@ const (
 
 type sender struct {
 	c   *Client
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 	w   Wallet
 	l   log.Logger
 	opt struct {
@@ -61,7 +62,7 @@ type sender struct {
 	}
 	evtReq             *BlockRequest
 	isFoundOffsetBySeq bool
-	cb                 module.ReceiveCallback
+	cb                 chain.ReceiveCallback
 
 	mutex sync.Mutex
 }
@@ -82,7 +83,7 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 	return p, nil
 }
 
-func (s *sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) error {
+func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
 	//p := segment.TransactionParam.(*TransactionParam)
 	cd := CallData{}
 	rmp := cd.Params.(BMCRelayMethodParams)
@@ -98,7 +99,7 @@ func (s *sender) UpdateSegment(bp *module.BlockProof, segment *module.Segment) e
 	return err
 }
 
-func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
+func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	p := segment.TransactionParam.([]byte)
@@ -120,7 +121,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	return thp, nil
 }
 
-func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, error) {
+func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	if txh, ok := p.(*TransactionHashParam); ok {
 		for {
 			_, pending, err := s.c.GetTransaction(txh.Hash)
@@ -154,7 +155,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 	}
 }
 
-func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
+func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	var status binding.TypesLinkStats
 	status, err := s.bmc.GetStatus(nil, s.src.String())
 	if err != nil {
@@ -162,7 +163,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 		return nil, err
 	}
 
-	ls := &module.BMCLinkStatus{}
+	ls := &chain.BMCLinkStatus{}
 	ls.TxSeq = status.TxSeq
 	ls.RxSeq = status.RxSeq
 	ls.Verifier.Height = status.Verifier.Height.Int64()
@@ -171,7 +172,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	return ls, nil
 }
 
-func (s *sender) MonitorLoop(height int64, cb module.MonitorCallback, scb func()) error {
+func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
 	s.l.Debugf("MonitorLoop (sender) connected")
 	br := &BlockRequest{
 		Height: big.NewInt(height),
@@ -194,7 +195,7 @@ func (s *sender) TxSizeLimit() int {
 	return int(math.Round(float64(txSizeLimit)))
 }
 
-func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) module.Sender {
+func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) chain.Sender {
 	s := &sender{
 		src: src,
 		dst: dst,

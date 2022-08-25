@@ -20,18 +20,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
+
 	"github.com/gorilla/websocket"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/intconv"
-	"math/big"
 
 	"github.com/icon-project/btp/common/log"
 )
 
 type Receiver struct {
 	c   *Client
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 	l   log.Logger
 	opt struct {
 	}
@@ -143,7 +145,7 @@ func (r *Receiver) StopReceiveLoop() {
 	r.c.CloseAllMonitor()
 }
 
-func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) *Receiver {
+func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) *Receiver {
 	r := &Receiver{
 		src: src,
 		dst: dst,

@@ -45,24 +45,24 @@ const (
 )
 
 type SimpleChain struct {
-	s       module.Sender
-	r       module.Receiver
-	src     module.BtpAddress
+	s       chain.Sender
+	r       chain.Receiver
+	src     chain.BtpAddress
 	acc     *mta.ExtAccumulator
-	dst     module.BtpAddress
-	bs      *module.BMCLinkStatus //getstatus(dst.src)
-	relayCh chan *module.RelayMessage
+	dst     chain.BtpAddress
+	bs      *chain.BMCLinkStatus //getstatus(dst.src)
+	relayCh chan *chain.RelayMessage
 	l       log.Logger
-	cfg     *module.Config
+	cfg     *chain.Config
 
-	rms             []*module.RelayMessage
+	rms             []*chain.RelayMessage
 	rmsMtx          sync.RWMutex
 	rmSeq           uint64
 	heightOfDst     int64
-	lastBlockUpdate *module.BlockUpdate
+	lastBlockUpdate *chain.BlockUpdate
 }
 
-func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
+func (s *SimpleChain) _hasWait(rm *chain.RelayMessage) bool {
 	for _, segment := range rm.Segments {
 		if segment != nil && segment.GetResultParam != nil && segment.TransactionResult == nil {
 			return true
@@ -71,7 +71,7 @@ func (s *SimpleChain) _hasWait(rm *module.RelayMessage) bool {
 	return false
 }
 
-func (s *SimpleChain) _log(prefix string, rm *module.RelayMessage, segment *module.Segment, segmentIdx int) {
+func (s *SimpleChain) _log(prefix string, rm *chain.RelayMessage, segment *chain.Segment, segmentIdx int) {
 	if segment == nil {
 		s.l.Debugf("%s rm:%d bu:%d ~ %d rps:%d",
 			prefix,
@@ -133,8 +133,8 @@ func (s *SimpleChain) isOverLimit(size int) bool {
 	return s.s.TxSizeLimit() < size
 }
 
-func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.Segment, error) {
-	segments := make([]*module.Segment, 0)
+func (s *SimpleChain) Segment(rm *chain.RelayMessage, height int64) ([]*chain.Segment, error) {
+	segments := make([]*chain.Segment, 0)
 	var err error
 	msg := &RelayMessage{
 		BlockUpdates:  make([][]byte, 0),
@@ -153,7 +153,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 		}
 		size += buSize
 		if s.isOverLimit(size) {
-			segment := &module.Segment{
+			segment := &chain.Segment{
 				Height:              msg.GetHeight(),
 				NumberOfBlockUpdate: msg.GetNumberOfBlockUpdate(),
 			}
@@ -197,7 +197,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 		trp := &ReceiptProof{
 			Index:       rp.Index,
 			Proof:       rp.Proof,
-			EventProofs: make([]*module.EventProof, 0),
+			EventProofs: make([]*chain.EventProof, 0),
 		}
 		for j, ep := range rp.EventProofs {
 			if s.isOverLimit(len(ep.Proof)) {
@@ -209,7 +209,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 					return nil, fmt.Errorf("BlockProof + ReceiptProof + EventProof > limit")
 				}
 				//
-				segment := &module.Segment{
+				segment := &chain.Segment{
 					Height:              msg.GetHeight(),
 					NumberOfBlockUpdate: msg.GetNumberOfBlockUpdate(),
 					EventSequence:       big.NewInt(msg.GetEventSequence()),
@@ -235,7 +235,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 				trp = &ReceiptProof{
 					Index:       rp.Index,
 					Proof:       rp.Proof,
-					EventProofs: make([]*module.EventProof, 0),
+					EventProofs: make([]*chain.EventProof, 0),
 				}
 			}
 			trp.EventProofs = append(trp.EventProofs, ep)
@@ -249,7 +249,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 		msg.ReceiptProofs = append(msg.ReceiptProofs, b)
 	}
 	//
-	segment := &module.Segment{
+	segment := &chain.Segment{
 		Height:              msg.GetHeight(),
 		NumberOfBlockUpdate: msg.GetNumberOfBlockUpdate(),
 		EventSequence:       big.NewInt(msg.GetEventSequence()),
@@ -265,7 +265,7 @@ func (s *SimpleChain) Segment(rm *module.RelayMessage, height int64) ([]*module.
 	return segments, nil
 }
 
-func (s *SimpleChain) UpdateSegment(bp *module.BlockProof, segment *module.Segment) error {
+func (s *SimpleChain) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
 	//p := segment.TransactionParam.(*TransactionParam)
 	cd := CallData{}
 	rmp := cd.Params.(BMCRelayMethodParams)
@@ -285,7 +285,7 @@ func (s *SimpleChain) UpdateSegment(bp *module.BlockProof, segment *module.Segme
 	return err
 }
 
-func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
+func (s *SimpleChain) result(rm *chain.RelayMessage, segment *chain.Segment) {
 	var err error
 	segment.TransactionResult, err = s.s.GetResult(segment.GetResultParam)
 	if err != nil {
@@ -314,10 +314,10 @@ func (s *SimpleChain) result(rm *module.RelayMessage, segment *module.Segment) {
 	}
 }
 
-func (s *SimpleChain) _rm() *module.RelayMessage {
-	rm := &module.RelayMessage{
+func (s *SimpleChain) _rm() *chain.RelayMessage {
+	rm := &chain.RelayMessage{
 		From:         s.src,
-		BlockUpdates: make([]*module.BlockUpdate, 0),
+		BlockUpdates: make([]*chain.BlockUpdate, 0),
 		Seq:          s.rmSeq,
 	}
 	s.rms = append(s.rms, rm)
@@ -325,7 +325,7 @@ func (s *SimpleChain) _rm() *module.RelayMessage {
 	return rm
 }
 
-func (s *SimpleChain) addRelayMessage(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+func (s *SimpleChain) addRelayMessage(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
 
@@ -442,7 +442,7 @@ rmLoop:
 	return nil
 }
 
-func (s *SimpleChain) updateMTA(bu *module.BlockUpdate) {
+func (s *SimpleChain) updateMTA(bu *chain.BlockUpdate) {
 	next := s.acc.Height() + 1
 	if next < bu.Height {
 		s.l.Panicf("found missing block next:%d bu:%d", next, bu.Height)
@@ -474,14 +474,14 @@ func (s *SimpleChain) OnBlockOfDst(height int64) error {
 	return nil
 }
 
-func (s *SimpleChain) OnBlockOfSrc(bu *module.BlockUpdate, rps []*module.ReceiptProof) {
+func (s *SimpleChain) OnBlockOfSrc(bu *chain.BlockUpdate, rps []*chain.ReceiptProof) {
 	s.l.Tracef("OnBlockOfSrc height:%d, bu.Height:%d", s.acc.Height(), bu.Height)
 	s.updateMTA(bu)
 	s.addRelayMessage(bu, rps)
 	s.relayCh <- nil
 }
 
-func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockProof, error) {
+func (s *SimpleChain) newBlockProof(height int64, header []byte) (*chain.BlockProof, error) {
 	//at := s.bs.Verifier.Height
 	//w, err := s.acc.WitnessForWithAccLength(height-s.acc.Offset(), at-s.bs.Verifier.Offset)
 	//TODO refactoring Duplicate rlp decode
@@ -497,9 +497,9 @@ func (s *SimpleChain) newBlockProof(height int64, header []byte) (*module.BlockP
 	}
 
 	s.l.Debugf("newBlockProof height:%d, at:%d, w:%d", height, at, len(w))
-	bp := &module.BlockProof{
+	bp := &chain.BlockProof{
 		Header: header,
-		BlockWitness: &module.BlockWitness{
+		BlockWitness: &chain.BlockWitness{
 			Height:  at,
 			Witness: mta.WitnessesToHashes(w),
 		},
@@ -565,7 +565,7 @@ func (s *SimpleChain) init() error {
 	}
 	atomic.StoreInt64(&s.heightOfDst, s.bs.CurrentHeight)
 	if s.relayCh == nil {
-		s.relayCh = make(chan *module.RelayMessage, 2)
+		s.relayCh = make(chan *chain.RelayMessage, 2)
 		go func() {
 			s.l.Debugln("start relayLoop")
 			defer func() {
@@ -612,7 +612,7 @@ func (s *SimpleChain) monitorHeight() int64 {
 	return atomic.LoadInt64(&s.heightOfDst)
 }
 
-func (s *SimpleChain) Serve(sender module.Sender) error {
+func (s *SimpleChain) Serve(sender chain.Sender) error {
 	s.s = sender
 	s.r = NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
 
@@ -669,7 +669,7 @@ func (s *SimpleChain) Monitoring() error {
 	}
 }
 
-func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
+func NewChain(cfg *chain.Config, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
@@ -677,13 +677,13 @@ func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
 		//fmt.Sprintf("%s->%s", cfg.Src.Address.NetworkAddress(), cfg.Dst.Address.NetworkAddress())}),
 		fmt.Sprintf("%s", cfg.Dst.Address.NetworkID())}),
 		cfg: cfg,
-		rms: make([]*module.RelayMessage, 0),
+		rms: make([]*chain.RelayMessage, 0),
 	}
 	s._rm()
 	return s
 }
 
-func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *module.BlockProof) {
+func dumpBlockProof(acc *mta.ExtAccumulator, height int64, bp *chain.BlockProof) {
 	if n, err := acc.GetNode(height); err != nil {
 		fmt.Printf("height:%d, accLen:%d, err:%+v", height, acc.Len(), err)
 	} else {

@@ -2,10 +2,11 @@ package icon
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/mbt"
-	"math/big"
 )
 
 const (
@@ -19,7 +20,7 @@ type BTPRelayMessage struct {
 	height     int64
 	messageSeq int
 	Messages   []*TypePrefixedMessage
-	segments   *module.Segment
+	segments   *chain.Segment
 }
 
 func (rm *BTPRelayMessage) Height() int64 {
@@ -30,7 +31,7 @@ func (rm *BTPRelayMessage) MessageSeq() int {
 	return rm.messageSeq
 }
 
-func (rm *BTPRelayMessage) Segments() *module.Segment {
+func (rm *BTPRelayMessage) Segments() *chain.Segment {
 	return rm.segments
 }
 
@@ -43,7 +44,7 @@ func (rm *BTPRelayMessage) SetMessageSeq(seq int) {
 }
 
 func (rm *BTPRelayMessage) SetSegments(tpm []byte, height int64, seq int64) {
-	rm.segments = &module.Segment{
+	rm.segments = &chain.Segment{
 		Height:           height,
 		TransactionParam: tpm,
 		EventSequence:    big.NewInt(seq),

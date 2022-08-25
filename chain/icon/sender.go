@@ -47,15 +47,15 @@ var (
 
 type sender struct {
 	c   *Client
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 	w   Wallet
 	l   log.Logger
 	opt struct {
 		StepLimit int64
 	}
 	isFoundOffsetBySeq bool
-	cb                 module.ReceiveCallback
+	cb                 chain.ReceiveCallback
 }
 
 func (s *sender) newTransactionParam(method string, params interface{}) *TransactionParam {
@@ -78,7 +78,7 @@ type transactionParamMessage struct {
 	messages string
 }
 
-func (s *sender) sendFragment(msg []byte, idx int) (module.GetResultParam, error) {
+func (s *sender) sendFragment(msg []byte, idx int) (chain.GetResultParam, error) {
 	fmp := &BMCFragmentMethodParams{
 		Prev:     s.src.String(),
 		Messages: base64.URLEncoding.EncodeToString(msg),
@@ -88,7 +88,7 @@ func (s *sender) sendFragment(msg []byte, idx int) (module.GetResultParam, error
 	return s.sendTransaction(p)
 }
 
-func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
+func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	msg := segment.TransactionParam.([]byte)
 	idx := len(msg) / txSizeLimit
 	if idx == 0 {
@@ -116,7 +116,7 @@ func (s *sender) Relay(segment *module.Segment) (module.GetResultParam, error) {
 	}
 }
 
-func (s *sender) sendTransaction(p *TransactionParam) (module.GetResultParam, error) {
+func (s *sender) sendTransaction(p *TransactionParam) (chain.GetResultParam, error) {
 	thp := &TransactionHashParam{}
 SignLoop:
 	for {
@@ -154,7 +154,7 @@ SignLoop:
 	}
 }
 
-func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, error) {
+func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
 	if txh, ok := p.(*TransactionHashParam); ok {
 		for {
 			txr, err := s.c.GetTransactionResult(txh)
@@ -174,7 +174,7 @@ func (s *sender) GetResult(p module.GetResultParam) (module.TransactionResult, e
 	}
 }
 
-func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
+func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	p := &CallParam{
 		FromAddress: Address(s.w.Address()),
 		ToAddress:   Address(s.dst.Account()),
@@ -191,7 +191,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	ls := &module.BMCLinkStatus{}
+	ls := &chain.BMCLinkStatus{}
 	if ls.TxSeq, err = bs.TxSeq.BigInt(); err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (s *sender) GetStatus() (*module.BMCLinkStatus, error) {
 	return ls, nil
 }
 
-func (s *sender) MonitorLoop(height int64, cb module.MonitorCallback, scb func()) error {
+func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
 	br := &BlockRequest{
 		Height: NewHexInt(height),
 	}
@@ -246,7 +246,7 @@ func (s *sender) TxSizeLimit() int {
 	return txSizeLimit
 }
 
-func NewSender(src, dst module.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) module.Sender {
+func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) chain.Sender {
 	s := &sender{
 		src: src,
 		dst: dst,

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package module
+package chain
 
 import (
 	"encoding/json"
+
 	"github.com/icon-project/btp/common/config"
 )
 
@@ -33,9 +34,9 @@ type BaseConfig struct {
 
 type Config struct {
 	config.FileConfig `json:",squash"` //instead of `mapstructure:",squash"`
-	Src               BaseConfig       `json:"src"`
-	Dst               BaseConfig       `json:"dst"`
-	MaxSizeTx         bool             `json:"maxSizeTx"`
-	Direction         string           `json:"direction"`
-	Offset            int64            `json:"offset"`
+	Src               BaseConfig `json:"src"`
+	Dst               BaseConfig `json:"dst"`
+	MaxSizeTx         bool       `json:"maxSizeTx"`
+	Direction         string     `json:"direction"`
+	Offset            int64      `json:"offset"`
 }

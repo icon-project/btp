@@ -3,6 +3,9 @@ package bsc
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -10,12 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/icon-project/btp/cmd/btp2/module"
-	"github.com/icon-project/btp/cmd/btp2/module/bsc/binding"
+
+	"github.com/icon-project/btp/chain"
+	"github.com/icon-project/btp/chain/bsc/binding"
+
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/log"
-	"math/big"
-	"testing"
 )
 
 // LogProof contains everything that's necessary
@@ -29,10 +32,10 @@ type LogProof struct {
 	LogIndex uint   `json:"logIndex"`
 }
 
-func GenerateReceiptProof_(height int64) ([]*module.ReceiptProof, error) {
+func GenerateReceiptProof_(height int64) ([]*chain.ReceiptProof, error) {
 	client := NewClient("http://localhost:8545", log.New())
 
-	rps := make([]*module.ReceiptProof, 0)
+	rps := make([]*chain.ReceiptProof, 0)
 
 	trieDB := trie.NewDatabase(memorydb.New())
 	trieObj, _ := trie.New(common.Hash{}, trieDB) // empty trie
@@ -52,7 +55,7 @@ func GenerateReceiptProof_(height int64) ([]*module.ReceiptProof, error) {
 	var idx uint
 
 	for _, receipt := range receipts {
-		rp := &module.ReceiptProof{}
+		rp := &chain.ReceiptProof{}
 
 		i, _ := codec.RLP.MarshalToBytes(receipt.TransactionIndex)
 		proof, err := codec.RLP.MarshalToBytes(*MakeReceipt(receipt))
@@ -68,9 +71,9 @@ func GenerateReceiptProof_(height int64) ([]*module.ReceiptProof, error) {
 				continue
 			}
 			if bmcMsg, err := binding.UnpackEventLog(eventLog.Data); err == nil {
-				rp.Events = append(rp.Events, &module.Event{
+				rp.Events = append(rp.Events, &chain.Event{
 					Message:  bmcMsg.Msg,
-					Next:     module.BtpAddress(bmcMsg.Next),
+					Next:     chain.BtpAddress(bmcMsg.Next),
 					Sequence: bmcMsg.Seq,
 				})
 			}
@@ -78,7 +81,7 @@ func GenerateReceiptProof_(height int64) ([]*module.ReceiptProof, error) {
 			if err != nil {
 				return nil, err
 			}
-			rp.EventProofs = append(rp.EventProofs, &module.EventProof{
+			rp.EventProofs = append(rp.EventProofs, &chain.EventProof{
 				Index: int(eventLog.Index),
 				Proof: proof,
 			})

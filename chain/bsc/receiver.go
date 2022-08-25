@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -30,11 +32,10 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
-
-	"math/big"
 
 	"github.com/icon-project/btp/common/log"
 )
@@ -45,8 +46,8 @@ const (
 
 type receiver struct {
 	c   *Client
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 	log log.Logger
 	opt struct {
 	}
@@ -55,10 +56,10 @@ type receiver struct {
 	isFoundOffsetBySeq bool
 }
 
-func (r *receiver) newBlockUpdate(v *BlockNotification) (*module.BlockUpdate, error) {
+func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
 	var err error
 
-	bu := &module.BlockUpdate{
+	bu := &chain.BlockUpdate{
 		BlockHash: v.Hash.Bytes(),
 		Height:    v.Height.Int64(),
 	}
@@ -123,8 +124,8 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	}
 }
 
-func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProof, error) {
-	rps := make([]*module.ReceiptProof, 0)
+func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
+	rps := make([]*chain.ReceiptProof, 0)
 
 	block, err := r.c.GetBlockByHeight(v.Height)
 	if err != nil {
@@ -150,7 +151,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 	receiptTrie, err := trieFromReceipts(receipts) // receiptTrie.Hash() == block.ReceiptHash
 
 	for _, receipt := range receipts {
-		rp := &module.ReceiptProof{}
+		rp := &chain.ReceiptProof{}
 
 		for _, eventLog := range receipt.Logs {
 			if eventLog.Address != srcContractAddress {
@@ -158,9 +159,9 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 			}
 
 			if bmcMsg, err := binding.UnpackEventLog(eventLog.Data); err == nil {
-				rp.Events = append(rp.Events, &module.Event{
+				rp.Events = append(rp.Events, &chain.Event{
 					Message:  bmcMsg.Msg,
-					Next:     module.BtpAddress(bmcMsg.Next),
+					Next:     chain.BtpAddress(bmcMsg.Next),
 					Sequence: bmcMsg.Seq,
 				})
 			}
@@ -169,7 +170,7 @@ func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*module.ReceiptProo
 			if err != nil {
 				return nil, err
 			}
-			rp.EventProofs = append(rp.EventProofs, &module.EventProof{
+			rp.EventProofs = append(rp.EventProofs, &chain.EventProof{
 				Index: int(eventLog.Index),
 				Proof: proof,
 			})
@@ -233,7 +234,7 @@ func receiptProof(receiptTrie *trie.Trie, key []byte) ([][]byte, error) {
 	return proofs, nil
 }
 
-func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb module.ReceiveCallback, scb func()) error {
+func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb chain.ReceiveCallback, scb func()) error {
 	r.log.Debugf("ReceiveLoop connected")
 	br := &BlockRequest{
 		Height: big.NewInt(height),
@@ -242,7 +243,7 @@ func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb module.ReceiveCall
 	//if seq < 1 {
 	//	r.isFoundOffsetBySeq = true
 	//}
-	if seq.Cmp(module.BigIntOne) < 0 {
+	if seq.Cmp(chain.BigIntOne) < 0 {
 		r.isFoundOffsetBySeq = true
 	}
 	r.consensusStates, err = r.c.GetLatestConsensusState()
@@ -251,8 +252,8 @@ func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb module.ReceiveCall
 	}
 	return r.c.MonitorBlock(br,
 		func(v *BlockNotification) error {
-			var bu *module.BlockUpdate
-			var rps []*module.ReceiptProof
+			var bu *chain.BlockUpdate
+			var rps []*chain.ReceiptProof
 			if bu, err = r.newBlockUpdate(v); err != nil {
 				return err
 			}
@@ -272,7 +273,7 @@ func (r *receiver) StopReceiveLoop() {
 	r.c.CloseAllMonitor()
 }
 
-func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) module.Receiver {
+func NewReceiver(src, dst chain.BtpAddress, endpoint string, opt map[string]interface{}, l log.Logger) chain.Receiver {
 	r := &receiver{
 		src: src,
 		dst: dst,
@@ -289,8 +290,8 @@ func NewReceiver(src, dst module.BtpAddress, endpoint string, opt map[string]int
 	return r
 }
 
-func (r *receiver) GetBlockUpdate(height int64) (*module.BlockUpdate, error) {
-	var bu *module.BlockUpdate
+func (r *receiver) GetBlockUpdate(height int64) (*chain.BlockUpdate, error) {
+	var bu *chain.BlockUpdate
 	v := &BlockNotification{Height: big.NewInt(height)}
 	bu, err := r.newBlockUpdate(v)
 	return bu, err

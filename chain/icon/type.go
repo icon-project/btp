@@ -381,7 +381,7 @@ type RelayMessage struct {
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
-	EventProofs []*module.EventProof
+	EventProofs []*chain.EventProof
 }
 
 type Block struct {

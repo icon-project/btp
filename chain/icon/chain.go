@@ -35,16 +35,16 @@ type chainInfo struct {
 }
 
 type SimpleChain struct {
-	s  module.Sender
+	s  chain.Sender
 	r  *Receiver
 	ci *chainInfo
 
-	src module.BtpAddress
-	dst module.BtpAddress
+	src chain.BtpAddress
+	dst chain.BtpAddress
 
-	bs  *module.BMCLinkStatus
+	bs  *chain.BMCLinkStatus
 	l   log.Logger
-	cfg *module.Config
+	cfg *chain.Config
 
 	bds []*BTPBlockData
 	rms []*BTPRelayMessage
@@ -56,7 +56,7 @@ type SimpleChain struct {
 	relayble bool
 }
 
-func (s *SimpleChain) _log(prefix string, rm *BTPRelayMessage, segment *module.Segment, segmentIdx int) {
+func (s *SimpleChain) _log(prefix string, rm *BTPRelayMessage, segment *chain.Segment, segmentIdx int) {
 	if segment == nil {
 		s.l.Debugf("%s rm message seq:%, rm height:%, relayLen:%d",
 			prefix,
@@ -218,7 +218,7 @@ func (s *SimpleChain) updateSegments(h int64, seq *big.Int) error {
 	return nil
 }
 
-func (s *SimpleChain) result(segment *module.Segment) {
+func (s *SimpleChain) result(segment *chain.Segment) {
 	s.rmsMtx.Lock()
 	defer s.rmsMtx.Unlock()
 	var err error
@@ -420,7 +420,7 @@ func (s *SimpleChain) monitorHeight() int64 {
 	return atomic.LoadInt64(&s.heightOfDst)
 }
 
-func (s *SimpleChain) Serve(sender module.Sender) error {
+func (s *SimpleChain) Serve(sender chain.Sender) error {
 	s.s = sender
 	s.r = NewReceiver(s.src, s.dst, s.cfg.Src.Endpoint, s.cfg.Src.Options, s.l)
 	s.ci = &chainInfo{}
@@ -498,7 +498,7 @@ func (s *SimpleChain) Monitoring() error {
 	}
 }
 
-func NewChain(cfg *module.Config, l log.Logger) *SimpleChain {
+func NewChain(cfg *chain.Config, l log.Logger) *SimpleChain {
 	s := &SimpleChain{
 		src: cfg.Src.Address,
 		dst: cfg.Dst.Address,
