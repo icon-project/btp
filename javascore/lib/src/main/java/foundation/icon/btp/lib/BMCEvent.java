@@ -48,5 +48,5 @@ public interface BMCEvent {
      * @param _emsg  ( BTPException message )
      */
     @EventLog(indexed = 2)
-    void ErrorOnBTPError(String _svc, BigInteger _seq, long _code, String _msg, long _ecode, String _emsg);
+    void ErrorOnBTPError(String _svc, BigInteger _seq, BigInteger _code, String _msg, BigInteger _ecode, String _emsg);
 }
