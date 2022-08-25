@@ -75,11 +75,14 @@ contract BtpMessageVerifier is IBMV, Initializable {
         bytes memory _msg
     ) external onlyBmc returns (bytes[] memory) {
         checkAccessible(_prev);
-        require(_sn >= sequenceOffset, ERR_INVALID_ARGS);
-        checkNextMessageSn(_sn - sequenceOffset);
+        uint256 _sequenceOffset = sequenceOffset;
+        require(_sn >= _sequenceOffset, ERR_INVALID_ARGS);
+        checkNextMessageSn(_sn - _sequenceOffset);
         RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
         bytes[] memory messages;
-        uint256 remainMessageCount = messageCount - (nextMessageSn - firstMessageSn);
+        uint256 _messageCount = messageCount;
+        uint256 _firstMessageSn = firstMessageSn;
+        uint256 remainMessageCount = _messageCount - (nextMessageSn - _firstMessageSn);
         for (uint256 i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TYPE_BLOCK_UPDATE) {
                 require(remainMessageCount == 0, Errors.ERR_UNKNOWN);
@@ -94,7 +97,7 @@ contract BtpMessageVerifier is IBMV, Initializable {
                     validators = header.nextValidators;
                 }
                 if (header.messageRoot != bytes32(0)) {
-                    uint256 messageSn = firstMessageSn + messageCount;
+                    uint256 messageSn = _firstMessageSn + _messageCount;
                     if (messageSn < header.messageSn) {
                         revert(Errors.ERR_NOT_VERIFIABLE);
                     } else if (messageSn > header.messageSn) {
@@ -178,9 +181,10 @@ contract BtpMessageVerifier is IBMV, Initializable {
     }
 
     function checkNextMessageSn(uint256 sn) private view {
-        if (nextMessageSn < sn) {
+        uint256 _nextMessageSn = nextMessageSn;
+        if (_nextMessageSn < sn) {
             revert(Errors.ERR_NOT_VERIFIABLE);
-        } else if (nextMessageSn > sn) {
+        } else if (_nextMessageSn > sn) {
             revert(Errors.ERR_ALREADY_VERIFIED);
         }
     }
@@ -188,9 +192,11 @@ contract BtpMessageVerifier is IBMV, Initializable {
     function checkHeaderWithState(Header memory header) private view {
         require(networkId == header.networkId, Errors.ERR_UNKNOWN);
         require(networkSectionHash == header.prevNetworkSectionHash, Errors.ERR_UNKNOWN);
-        if (nextMessageSn < header.messageSn) {
+
+        uint256 _nextMessageSn = nextMessageSn;
+        if (_nextMessageSn < header.messageSn) {
             revert(Errors.ERR_NOT_VERIFIABLE);
-        } else if (nextMessageSn > header.messageSn) {
+        } else if (_nextMessageSn > header.messageSn) {
             revert(Errors.ERR_ALREADY_VERIFIED);
         }
     }
