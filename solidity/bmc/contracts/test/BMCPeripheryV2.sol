@@ -158,33 +158,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
                 return;
             }
 
-            if (_sm.serviceType.compareTo("FeeGathering")) {
-                Types.GatherFeeMessage memory _gatherFee;
-                try this.tryDecodeGatherFeeMessage(_sm.payload) returns (
-                    Types.GatherFeeMessage memory res
-                ) {
-                    _gatherFee = res;
-                } catch {
-                    _sendError(_prev, _msg, BMC_ERR, BMCRevertParseFailure);
-                    return;
-                }
-
-                for (uint256 i = 0; i < _gatherFee.svcs.length; i++) {
-                    _bshAddr = IBMCManagement(bmcManagement)
-                        .getBshServiceByName(_gatherFee.svcs[i]);
-                    //  If 'svc' not found, ignore
-                    if (_bshAddr != address(0)) {
-                        try
-                            IBSH(_bshAddr).handleFeeGathering(
-                                _gatherFee.fa,
-                                _gatherFee.svcs[i]
-                            )
-                        {} catch {
-                            //  If BSH contract throws a revert error, ignore and continue
-                        }
-                    }
-                }
-            } else if (_sm.serviceType.compareTo("Link")) {
+            if (_sm.serviceType.compareTo("Link")) {
                 string memory _to = _sm.payload.decodePropagateMessage();
                 Types.Link memory link = IBMCManagement(bmcManagement).getLink(
                     _prev
@@ -327,14 +301,6 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         returns (Types.BMCService memory)
     {
         return _msg.decodeBMCService();
-    }
-
-    function tryDecodeGatherFeeMessage(bytes calldata _msg)
-        external
-        pure
-        returns (Types.GatherFeeMessage memory)
-    {
-        return _msg.decodeGatherFeeMessage();
     }
 
     function _sendMessage(string memory _to, bytes memory _serializedMsg)

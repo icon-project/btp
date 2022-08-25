@@ -341,19 +341,6 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
             errMsg
         ));
     }
-
-    /**
-       @notice Handle Gather Fee Request from ICON.
-       @dev Every BSH must implement this function
-       @param _fa    BTP Address of Fee Aggregator in ICON
-       @param _svc   Name of the service
-   */
-    function handleFeeGathering(
-        string calldata _fa,
-        string calldata _svc
-    ) external override onlyBMC {
-        checkService(_svc);
-    }
     /* ========================================= */
 
     function sendBTPMessage(

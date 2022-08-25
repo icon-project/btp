@@ -59,11 +59,6 @@ library Types {
         bytes payload;
     }
 
-    struct GatherFeeMessage {
-        string fa; //  BTP address of Fee Aggregator
-        string[] svcs; //  a list of services
-    }
-
     struct Tuple {
         string _prev;
         string _to;

@@ -13,7 +13,6 @@ contract DebugBSH is IBSH {
     event SendMessage(address _bmc, string _svc, string _to, uint _sn, bytes _msg);
     event HandleMessageSuccess(string _from, string _svc, uint _sn, bytes _msg);
     event HandleMessageFailure(string _from, string _svc, uint _sn, uint _code, string _msg);
-    event HandleFeeGathering(string _fa, string _svc);
 
     constructor(address _bmc, string memory _svc) {
         bmc = _bmc;
@@ -74,10 +73,6 @@ contract DebugBSH is IBSH {
             _sn,
             "DebugBSH: Failure"
         );
-    }
-
-    function handleFeeGathering(string calldata _fa, string calldata _svc) external override     {
-        emit HandleFeeGathering(_fa, _svc);
     }
 
 }

@@ -28,20 +28,6 @@ library RLPDecodeStruct {
             );
     }
 
-    function decodeGatherFeeMessage(bytes memory _rlp)
-        internal
-        pure
-        returns (Types.GatherFeeMessage memory)
-    {
-        RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        RLPDecode.RLPItem[] memory subList = ls[1].toList();
-        string[] memory _svcs = new string[](subList.length);
-        for (uint256 i = 0; i < subList.length; i++) {
-            _svcs[i] = string(subList[i].toBytes());
-        }
-        return Types.GatherFeeMessage(string(ls[0].toBytes()), _svcs);
-    }
-
     function decodePropagateMessage(bytes memory _rlp)
         internal
         pure

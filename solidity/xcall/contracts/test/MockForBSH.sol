@@ -91,20 +91,4 @@ contract MockForBSH is IBMC, Initializable {
     event ErrorHandleBTPError(
         string err
     );
-
-    function intercallHandleFeeGathering(
-        address _addr,
-        string memory _fa,
-        string memory _svc
-    ) external {
-        try IBSH(_addr).handleFeeGathering(_fa, _svc) {
-
-        } catch Error(string memory err) {
-            emit ErrorHandleFeeGathering(err);
-        }
-    }
-
-    event ErrorHandleFeeGathering(
-        string err
-    );
 }
