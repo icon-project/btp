@@ -75,14 +75,4 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
                 }),
                 prev, svc, sn, errCode, errMsg);
     }
-
-    @Test
-    void handleFeeGatheringShouldMakeEventLog() {
-        ((MockBSHScoreClient) mockBSH).handleFeeGathering(
-                MockBSHIntegrationTest.eventLogChecker(HandleFeeGatheringEventLog::eventLogs, (el) -> {
-                    assertEquals(fa, el.getFa());
-                    assertEquals(svc, el.getSvc());
-                }),
-                fa, svc);
-    }
 }

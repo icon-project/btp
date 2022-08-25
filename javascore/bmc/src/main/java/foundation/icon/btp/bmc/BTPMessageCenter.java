@@ -45,7 +45,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
 
     public enum Internal {
-        Init, Link, Unlink, FeeGathering, Sack;
+        Init, Link, Unlink, Sack;
 
         public static Internal of(String s) {
             for (Internal internal : values()) {
@@ -59,7 +59,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     //
     private final BTPAddress btpAddr;
-    private final VarDB<BMCProperties> properties = Context.newVarDB("properties", BMCProperties.class);
 
     //
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
@@ -77,14 +76,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     public BTPMessageCenter(String _net) {
         this.btpAddr = new BTPAddress(BTPAddress.PROTOCOL_BTP, _net, Context.getAddress().toString());
-    }
-
-    public BMCProperties getProperties() {
-        return properties.getOrDefault(BMCProperties.DEFAULT);
-    }
-
-    public void setProperties(BMCProperties properties) {
-        this.properties.set(properties);
     }
 
     @External(readonly = true)
@@ -436,23 +427,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             link.setSackNext(sackNext);
             putLink(link);
         }
-
-        //feeGathering
-        BMCProperties properties = getProperties();
-        Address feeAggregator = properties.getFeeAggregator();
-        long feeGatheringTerm = properties.getFeeGatheringTerm();
-        long feeGatheringNext = properties.getFeeGatheringNext();
-        if (services.size() > 0 && feeAggregator != null &&
-                feeGatheringTerm > 0 &&
-                feeGatheringNext <= currentHeight) {
-            String[] svcs = ArrayUtil.toStringArray(services.keySet());
-            sendFeeGathering(feeAggregator, svcs);
-            while(feeGatheringNext <= currentHeight) {
-                feeGatheringNext += feeGatheringTerm;
-            }
-            properties.setFeeGatheringNext(feeGatheringNext);
-            setProperties(properties);
-        }
     }
 
     private void handleMessage(BTPAddress prev, BTPMessage msg) {
@@ -492,10 +466,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 case Unlink:
                     UnlinkMessage unlinkMsg = UnlinkMessage.fromBytes(payload);
                     handleUnlink(prev, unlinkMsg);
-                    break;
-                case FeeGathering:
-                    FeeGatheringMessage feeGatheringMsg = FeeGatheringMessage.fromBytes(payload);
-                    handleFeeGathering(prev, feeGatheringMsg);
                     break;
                 case Sack:
                     SackMessage sackMsg = SackMessage.fromBytes(payload);
@@ -564,37 +534,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.setSackHeight(msg.getHeight());
         link.setSackSeq(msg.getSeq());
         putLink(link);
-    }
-
-    private void handleFeeGathering(BTPAddress prev, FeeGatheringMessage msg) {
-        logger.println("handleFeeGathering", "prev:", prev, "msg:", msg.toString());
-        if (!prev.net().equals(msg.getFa().net())) {
-            throw BMCException.unknown("not allowed GatherFeeMessage from:"+prev.net());
-        }
-        String[] svcs = msg.getSvcs();
-        if (svcs.length < 1) {
-            throw BMCException.unknown("requires svcs.length > 1");
-        }
-        String fa = msg.getFa().toString();
-        for (String svc : svcs) {
-            try {
-                BSHScoreInterface service = getService(svc);
-                service.handleFeeGathering(fa, svc);
-            } catch (BTPException e) {
-                if (!BMCException.Code.NotExistsBSH.equals(e)) {
-                    //TODO exception handling
-                    logger.println("handleGatherFee", svc, e);
-                }
-            } catch (UserRevertedException e) {
-                //TODO exception handling
-                logger.println("handleGatherFee", "fail to service.handleFeeGathering",
-                        "code:", e.getCode(), "msg:", e.getMessage());
-            } catch (Exception e) {
-                //TODO handle uncatchable exception?
-                logger.println("handleGatherFee", "fail to service.handleFeeGathering",
-                        "Exception:", e.toString());
-            }
-        }
     }
 
     private void handleService(BTPAddress prev, BTPMessage msg) {
@@ -738,16 +677,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         sackMsg.setHeight(height);
         sackMsg.setSeq(seq);
         sendInternal(link, Internal.Sack, sackMsg.toBytes());
-    }
-
-    private void sendFeeGathering(Address addr, String[] svcs) {
-        logger.println("sendFeeGathering", "addr:", addr, "svcs:", StringUtil.toString(svcs));
-        BTPAddress fa = new BTPAddress(BTPAddress.PROTOCOL_BTP, btpAddr.net(), addr.toString());
-        FeeGatheringMessage feeGatheringMsg = new FeeGatheringMessage();
-        feeGatheringMsg.setFa(fa);
-        feeGatheringMsg.setSvcs(svcs);
-        handleFeeGathering(btpAddr, feeGatheringMsg);
-        propagateInternal(Internal.FeeGathering, feeGatheringMsg.toBytes());
     }
 
     private void propagateInternal(Internal internal, byte[] payload) {
@@ -982,52 +911,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             arr[i] = s;
         }
         return arr;
-    }
-
-    @External
-    public void sendFeeGathering() {
-        requireOwnerAccess();
-        if (services.size() == 0) {
-            throw BMCException.unknown("services is empty");
-        }
-        Address feeAggregator = getFeeAggregator();
-        if (feeAggregator == null) {
-            throw BMCException.unknown("feeAggregator is null");
-        }
-        String[] svcs = ArrayUtil.toStringArray(services.keySet());
-        sendFeeGathering(feeAggregator, svcs);
-    }
-
-    @External(readonly = true)
-    public long getFeeGatheringTerm() {
-        BMCProperties properties = getProperties();
-        return properties.getFeeGatheringTerm();
-    }
-
-    @External
-    public void setFeeGatheringTerm(long _value) {
-        requireOwnerAccess();
-        BMCProperties properties = getProperties();
-        if (_value < 0) {
-            throw BMCException.unknown("invalid param");
-        }
-        properties.setFeeGatheringTerm(_value);
-        properties.setFeeGatheringNext(Context.getBlockHeight()+_value);
-        setProperties(properties);
-    }
-
-    @External(readonly = true)
-    public Address getFeeAggregator() {
-        BMCProperties properties = getProperties();
-        return properties.getFeeAggregator();
-    }
-
-    @External
-    public void setFeeAggregator(Address _addr) {
-        requireOwnerAccess();
-        BMCProperties properties = getProperties();
-        properties.setFeeAggregator(_addr);
-        setProperties(properties);
     }
 
     /* Delegate OwnerManager */

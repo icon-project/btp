@@ -353,6 +353,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
         handleResponse(_sn, response);
     }
 
+    /* Removed FeeGathering feature
     @External
     public void handleFeeGathering(String _fa, String _svc) {
         require(Context.getCaller().equals(bmc), "Only BMC");
@@ -384,6 +385,7 @@ public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, Ow
             }
         }
     }
+     */
 
     private BigInteger[] coinNamesToIds(List<String> coinNames) {
         BigInteger[] ids = new BigInteger[coinNames.size()];

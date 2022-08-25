@@ -58,9 +58,6 @@ public interface MockBMC {
     @External
     void intercallHandleBTPError(Address _addr, String _src, String _svc, BigInteger _sn, long _code, String _msg);
 
-    @External
-    void intercallHandleFeeGathering(Address _addr, String _fa, String _svc);
-
     @External(readonly = true)
     BMVStatus intercallGetStatus(Address _addr);
 }

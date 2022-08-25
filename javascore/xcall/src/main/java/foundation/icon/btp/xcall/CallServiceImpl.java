@@ -233,13 +233,6 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         CSMessageResponse res = new CSMessageResponse(_sn, CSMessageResponse.BTP_ERROR, errMsg);
         handleResponse(_src, _sn, res.toBytes());
     }
-
-    @Override
-    @External
-    public void handleFeeGathering(String _fa, String _svc) {
-        onlyBMC();
-        checkService(_svc);
-    }
     /* ========================================= */
 
     private void sendBTPMessage(String netTo, int msgType, BigInteger sn, byte[] data) {

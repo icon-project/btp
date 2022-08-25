@@ -62,8 +62,4 @@ public final class BSHScoreInterface implements BSH {
     Context.call(this.address, "handleBTPError", _src, _svc, _sn, _code, _msg);
   }
 
-  @Override
-  public void handleFeeGathering(String _fa, String _svc) {
-    Context.call(this.address, "handleFeeGathering", _fa, _svc);
-  }
 }

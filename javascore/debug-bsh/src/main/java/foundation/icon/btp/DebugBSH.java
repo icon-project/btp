@@ -47,11 +47,6 @@ public class DebugBSH {
     }
 
     @External
-    public void handleFeeGathering(String _fa, String _svc) {
-        HandleFeeGathering(_fa, _svc);
-    }
-
-    @External
     public void sendMessage(String _to, byte[] _msg) {
         var sn = generateSerialNumber();
         var svc = svcDB.get();
@@ -76,9 +71,6 @@ public class DebugBSH {
 
     @EventLog
     public void HandleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg) { }
-
-    @EventLog
-    public void HandleFeeGathering(String _fa, String _svc) { }
 }
 
 class BMCScore {

@@ -47,13 +47,4 @@ public interface BSH {
     @External
     void handleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg);
 
-    /**
-     * Handle the gatherFee
-     * Accept call only from the BMC.
-     *
-     * @param _fa String ( BTP Address of Fee-aggregator contract )
-     * @param _svc String ( name of the service )
-     */
-    @External
-    void handleFeeGathering(String _fa, String _svc);
 }

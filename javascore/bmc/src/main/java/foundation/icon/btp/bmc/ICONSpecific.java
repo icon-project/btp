@@ -117,24 +117,6 @@ public interface ICONSpecific {
     ServiceCandidate[] getServiceCandidates();
 
     /**
-     * Optional External method
-     */
-    @External
-    void sendFeeGathering();
-
-    @External(readonly = true)
-    long getFeeGatheringTerm();
-
-    @External
-    void setFeeGatheringTerm(long _value);
-
-    @External(readonly = true)
-    Address getFeeAggregator();
-
-    @External
-    void setFeeAggregator(Address _addr);
-
-    /**
      * Drop the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *

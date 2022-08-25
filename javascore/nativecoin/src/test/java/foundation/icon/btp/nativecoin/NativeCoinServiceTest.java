@@ -511,6 +511,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                         NativeCoinService.SERVICE, BigInteger.ONE, 0, ""));
     }
 
+    /* Removed FeeGathering feature
     @Test
     void handleFeeGatheringShouldIRC31Transfer() {//how to clear feeBalances as zero?
         //mint
@@ -575,6 +576,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         AssertNCSException.assertUnknown(() ->
                 ncsBSH.handleFeeGathering(link.toString(), NativeCoinService.SERVICE));
     }
+     */
 
     @Test
     void coinIdShouldReturnFullValue() {

@@ -40,8 +40,4 @@ public interface MockBSH extends BSH {
 
     @EventLog
     void HandleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg);
-
-    @EventLog
-    void HandleFeeGathering(String _fa, String _svc);
-
 }

@@ -107,17 +107,6 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     }
 
     @Test
-    void handleFeeGathering() {
-        ((MockBMCScoreClient) mockBMC).intercallHandleFeeGathering(
-                MockBSHIntegrationTest.eventLogChecker(HandleFeeGatheringEventLog::eventLogs, (el) -> {
-                    assertEquals(fa, el.getFa());
-                    assertEquals(svc, el.getSvc());
-                }),
-                MockBSHIntegrationTest.mockBSHClient._address(),
-                fa, svc);
-    }
-
-    @Test
     void intercallGetStatus() {
         BMVStatus status = mockBMC.intercallGetStatus(MockBMVIntegrationTest.mockBMVClient._address());
         System.out.println(status);

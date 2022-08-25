@@ -43,11 +43,6 @@ public class MockBSHImpl implements MockBSH {
     }
 
     @External
-    public void handleFeeGathering(String _fa, String _svc) {
-        HandleFeeGathering(_fa, _svc);
-    }
-
-    @External
     public void intercallSendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
         BMCScoreInterface bmc = new BMCScoreInterface(_bmc);
         try {
@@ -62,7 +57,4 @@ public class MockBSHImpl implements MockBSH {
 
     @EventLog
     public void HandleBTPError(String _src, String _svc, BigInteger _sn, long _code, String _msg) { }
-
-    @EventLog
-    public void HandleFeeGathering(String _fa, String _svc) { }
 }

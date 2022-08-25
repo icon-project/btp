@@ -89,12 +89,6 @@ public class MockBMCImpl implements MockBMC {
         bsh.handleBTPError(_src, _svc, _sn, _code, _msg);
     }
 
-    @External
-    public void intercallHandleFeeGathering(Address _addr, String _fa, String _svc) {
-        BSHScoreInterface bsh = new BSHScoreInterface(_addr);
-        bsh.handleFeeGathering(_fa, _svc);
-    }
-
     @External(readonly = true)
     public BMVStatus intercallGetStatus(Address _addr) {
         BMVScoreInterface bmv = new BMVScoreInterface(_addr);

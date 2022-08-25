@@ -126,18 +126,6 @@ public class MessageTest implements BMCIntegrationTest {
         };
     }
 
-    static Consumer<List<BMCMessage>> feeGatheringMessageChecker(BTPAddress fa, List<String> services, int size) {
-        return (bmcMessages) -> {
-            List<FeeGatheringMessage> feeGatheringMessages = BMCIntegrationTest.internalMessages(
-                    bmcMessages, BTPMessageCenter.Internal.FeeGathering, FeeGatheringMessage::fromBytes);
-            assertEquals(size, feeGatheringMessages.size());
-            assertTrue(feeGatheringMessages.stream()
-                    .allMatch((feeGatheringMsg) -> feeGatheringMsg.getFa().equals(fa)
-                            && services.size() == feeGatheringMsg.getSvcs().length
-                            && services.containsAll(Arrays.asList(feeGatheringMsg.getSvcs()))));
-        };
-    }
-
     @Test
     void sackMessageShouldUpdateSackHeightAndSackSeq() {
         SackMessage sackMessage = new SackMessage();
@@ -189,68 +177,6 @@ public class MessageTest implements BMCIntegrationTest {
         ((BMCScoreClient) bmc).handleRelayMessage(notExistsSackMessageCheck, link, relayMessage.toBase64String());
         sackTerm = 0;
         iconSpecific.setLinkSackTerm(link, sackTerm);
-    }
-
-    @Test
-    void feeGatheringMessageShouldCallHandleFeeGathering() {
-        //handleRelayMessage -> BSHMock.handleFeeGathering -> EventLog
-        FeeGatheringMessage feeGatheringMessage = new FeeGatheringMessage();
-        BTPAddress fa = new BTPAddress(
-                BTPAddress.PROTOCOL_BTP,
-                net,
-                ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString());
-        feeGatheringMessage.setFa(fa);
-        feeGatheringMessage.setSvcs(new String[]{svc});
-        List<BTPMessage> btpMessages = new ArrayList<>();
-        btpMessages.add(btpMessage(BTPMessageCenter.Internal.FeeGathering, feeGatheringMessage.toBytes()));
-
-        MockRelayMessage relayMessage = new MockRelayMessage();
-        relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        ((BMCScoreClient) bmc).handleRelayMessage(
-                MockBSHIntegrationTest.eventLogChecker(HandleFeeGatheringEventLog::eventLogs, (el) -> {
-                    assertEquals(fa.toString(), el.getFa());
-                    assertEquals(svc, el.getSvc());
-                }),
-                link, relayMessage.toBase64String());
-    }
-
-    @Test
-    void handleRelayMessageShouldSendFeeGatheringMessage() {
-        //if gatherFeeTerm > 0 && gatherFeeNext <= blockHeight
-        int gatherFeeTerm = 2;
-        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
-
-        Address feeAggregator = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT);
-        iconSpecific.setFeeAggregator(feeAggregator);
-        BTPAddress fa = new BTPAddress(BTPAddress.PROTOCOL_BTP, btpAddress.net(), feeAggregator.toString());
-
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        List<String> services = new ArrayList<>(bmc.getServices().keySet());
-
-        List<String> links = Arrays.asList(bmc.getLinks());
-        Consumer<TransactionResult> feeGatheringMessageCheck = (txr) -> {
-            feeGatheringMessageChecker(fa, services, links.size())
-                    .accept(BMCIntegrationTest.bmcMessages(txr, links::contains));
-        };
-        ((BMCScoreClient) bmc).handleRelayMessage(feeGatheringMessageCheck, link, new MockRelayMessage().toBase64String());
-        gatherFeeTerm = 0;
-        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
-    }
-
-    @Test
-    void handleRelayMessageShouldNotSendFeeGatheringMessage() {
-        //check FeeGathering notExists
-        int gatherFeeTerm = 10;
-        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
-
-        List<String> links = Arrays.asList(bmc.getLinks());
-        Consumer<TransactionResult> notExistsSackMessageCheck = (txr) -> {
-            assertFalse(BMCIntegrationTest.bmcMessages(txr, links::contains).stream()
-                    .anyMatch((bmcMsg) -> bmcMsg.getType().equals(BTPMessageCenter.Internal.FeeGathering.name())));
-        };
-        ((BMCScoreClient) bmc).handleRelayMessage(notExistsSackMessageCheck, link, new MockRelayMessage().toBase64String());
-        gatherFeeTerm = 0;
-        iconSpecific.setFeeGatheringTerm(gatherFeeTerm);
     }
 
     @Test
