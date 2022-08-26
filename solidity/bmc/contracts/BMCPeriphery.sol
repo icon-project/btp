@@ -104,6 +104,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
 
         (uint256 _height,) = IBMV(_bmvAddr).getStatus();
         IBMCManagement(bmcManagement).updateRelayStats(
+            _prev,
             msg.sender,
             _height - _prevHeight,
             serializedMsgs.length

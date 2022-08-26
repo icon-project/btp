@@ -97,17 +97,17 @@ interface IBMCManagement {
        @notice Registers relay for the network.
        @dev Caller must be an operator of BTP network.
        @param _link     BTP Address of connected BMC
-       @param _addrs     A list of Relays
+       @param _addr     The address of relay
      */
-    function addRelay(string calldata _link, address[] memory _addrs) external;
+    function addRelay(string calldata _link, address _addr) external;
 
     /**
        @notice Unregisters Relay for the network.
        @dev Caller must be an operator of BTP network.
        @param _link     BTP Address of connected BMC
-       @param _addrs     A list of Relays
+       @param _addr     The address of relay
      */
-    function removeRelay(string calldata _link, address _addrs) external;
+    function removeRelay(string calldata _link, address _addr) external;
 
     /**
        @notice Get registered services.
@@ -246,12 +246,14 @@ interface IBMCManagement {
 
     /**
         @notice Update relay status. Only called by BMC periphery.
-        @param _relay relay address
+        @param _prev BTP Address of the previous BMC
+        @param _addr address of relay
         @param _blockCountVal increment value for block counter
         @param _msgCountVal increment value for message counter
      */
     function updateRelayStats(
-        address _relay,
+        string memory _prev,
+        address _addr,
         uint256 _blockCountVal,
         uint256 _msgCountVal
     ) external;

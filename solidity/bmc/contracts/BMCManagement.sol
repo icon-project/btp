@@ -30,8 +30,7 @@ contract BMCManagement is IBMCManagement, Initializable {
 
     mapping(string => address) private bshServices;
     mapping(string => address) private bmvServices;
-    //FIXME relay status should store by link and address of relay
-    mapping(address => Types.RelayStats) private relayStats;
+    mapping(string => Types.RelayStats) private relayStats; //key=concat(link, address of relay)
     mapping(string => string) private routes;
     mapping(string => Types.Link) internal links; // should be private, temporarily set internal for testing
     string[] private listBMVNames;
@@ -41,8 +40,6 @@ contract BMCManagement is IBMCManagement, Initializable {
     address private bmcPeriphery;
 
     uint256 public serialNo;
-
-    address[] private addrs;
 
     // Use to search by substring
     mapping(string => string) private getRouteDstFromNet;
@@ -221,7 +218,7 @@ contract BMCManagement is IBMCManagement, Initializable {
    */
     function addLink(string calldata _link) external override hasPermission {
         (string memory _net, ) = _link.splitBTPAddress();
-        require(bmvServices[_net] != address(0), "BMCRevertNotExistsBMV");
+        require(bmvServices[_net] != address(0), "NotExistsBMV");
         require(
             links[_link].isConnected == false,
             "AlreadyExistsLink"
@@ -252,7 +249,7 @@ contract BMCManagement is IBMCManagement, Initializable {
        @param _link    BTP Address of connected BMC
    */
     function removeLink(string calldata _link) external override hasPermission {
-        require(links[_link].isConnected == true, "BMCRevertNotExistsLink");
+        require(links[_link].isConnected == true, "NotExistsLink");
         delete links[_link];
         (string memory _net, ) = _link.splitBTPAddress();
         delete getLinkFromNet[_net];
@@ -392,15 +389,22 @@ contract BMCManagement is IBMCManagement, Initializable {
        @param _link     BTP Address of connected BMC
        @param _addr     the address of Relay
     */
-    function addRelay(string memory _link, address[] memory _addr)
+    function addRelay(string memory _link, address _addr)
         external
         override
         hasPermission
     {
         require(links[_link].isConnected == true, "NotExistsLink");
-        links[_link].relays = _addr;
-        for (uint256 i = 0; i < _addr.length; i++)
-            relayStats[_addr[i]] = Types.RelayStats(_addr[i], 0, 0);
+        string memory _linkRelay = _link.concat(_addr.toString());
+        require(relayStats[_linkRelay].addr == address(0), "alreadyExistsBMR");
+        relayStats[_linkRelay] = Types.RelayStats(_addr, 0, 0);
+
+        address[] memory relays = new address[](links[_link].relays.length + 1);
+        for (uint256 i = 0; i < links[_link].relays.length; i++) {
+            relays[i] = links[_link].relays[i];
+        }
+        relays[links[_link].relays.length] = _addr;
+        links[_link].relays = relays;
     }
 
     /**
@@ -414,17 +418,20 @@ contract BMCManagement is IBMCManagement, Initializable {
         override
         hasPermission
     {
-        require(
-            links[_link].isConnected == true && links[_link].relays.length != 0,
-            "Unauthorized"
-        );
-        for (uint256 i = 0; i < links[_link].relays.length; i++) {
+        require(links[_link].isConnected == true, "NotExistsLink");
+        string memory _linkRelay = _link.concat(_addr.toString());
+        require(relayStats[_linkRelay].addr == _addr, "NotExistsBMR");
+        delete relayStats[_linkRelay];
+
+        address[] memory relays = new address[](links[_link].relays.length - 1);
+        uint256 j = 0;
+        for (uint256 i = 0; i < relays.length; i++) {
             if (links[_link].relays[i] != _addr) {
-                addrs.push(links[_link].relays[i]);
+                relays[i] = links[_link].relays[i];
             }
+            j++;
         }
-        links[_link].relays = addrs;
-        delete addrs;
+        links[_link].relays = relays;
     }
 
     /**
@@ -440,7 +447,7 @@ contract BMCManagement is IBMCManagement, Initializable {
     {
         _relays = new Types.RelayStats[](links[_link].relays.length);
         for (uint256 i = 0; i < links[_link].relays.length; i++) {
-            _relays[i] = relayStats[links[_link].relays[i]];
+            _relays[i] = relayStats[_link.concat(links[_link].relays[i].toString())];
         }
     }
 
@@ -514,7 +521,6 @@ contract BMCManagement is IBMCManagement, Initializable {
         return false;
     }
 
-    //todo: commented temp         //onlyBMCPeriphery
     function updateLinkRxSeq(string calldata _prev, uint256 _val)
         external
         override
@@ -560,12 +566,14 @@ contract BMCManagement is IBMCManagement, Initializable {
     }
 
     function updateRelayStats(
-        address relay,
+        string memory _prev,
+        address _addr,
         uint256 _blockCountVal,
         uint256 _msgCountVal
     ) external override onlyBMCPeriphery {
-        relayStats[relay].blockCount += _blockCountVal;
-        relayStats[relay].msgCount += _msgCountVal;
+        string memory _linkRelay = _prev.concat(_addr.toString());
+        relayStats[_linkRelay].blockCount += _blockCountVal;
+        relayStats[_linkRelay].msgCount += _msgCountVal;
     }
 
     function resolveRoute(string memory _dstNet)
