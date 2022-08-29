@@ -95,7 +95,7 @@ func (s *SimpleChain) relay() error {
 		}
 
 		if s.rms[i].Segments() == nil {
-			s.rms[i].SetSegments(b, s.rms[i].Height(), int64(s.rms[i].MessageSeq()))
+			s.rms[i].SetSegments(s.rms[i].Height(), b, int64(s.rms[i].MessageSeq()))
 		}
 
 		if s.rms[i].Segments().GetResultParam == nil {
@@ -477,7 +477,6 @@ func (s *SimpleChain) Monitoring() error {
 		err := s.r.ReceiveLoop(
 			h,
 			s.cfg.Src.Nid,
-			false,
 			s.OnBlockOfSrc,
 			func() {
 				s.l.Debugf("Connect ReceiveLoop")

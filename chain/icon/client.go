@@ -246,10 +246,10 @@ func (c *Client) MonitorBTP(p *BTPRequest, cb func(conn *websocket.Conn, v *BTPN
 		switch t := v.(type) {
 		case *BTPNotification:
 			if err := cb(conn, t); err != nil {
-				c.l.Debugf("MonitorBlock callback return err:%+v", err)
+				c.l.Debugf("MonitorBTP callback return err:%+v", err)
 			}
 		case WSEvent:
-			c.l.Debugf("MonitorBlock WSEvent %s %+v", conn.LocalAddr().String(), t)
+			c.l.Debugf("MonitorBTP WSEvent %s %+v", conn.LocalAddr().String(), t)
 			switch t {
 			case WSEventInit:
 				if scb != nil {

@@ -43,7 +43,7 @@ func (rm *BTPRelayMessage) SetMessageSeq(seq int) {
 	rm.messageSeq = seq
 }
 
-func (rm *BTPRelayMessage) SetSegments(tpm []byte, height int64, seq int64) {
+func (rm *BTPRelayMessage) SetSegments(height int64, tpm []byte, seq int64) {
 	rm.segments = &chain.Segment{
 		Height:           height,
 		TransactionParam: tpm,
