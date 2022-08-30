@@ -127,47 +127,47 @@ contract BtpMessageVerifier is IBMV, Initializable {
         return messages;
     }
 
-    function getSrcNetworkId() public view returns (string memory) {
+    function getSrcNetworkId() external view returns (string memory) {
         return srcNetworkId;
     }
 
-    function getNetworkTypeId() public view returns (uint256) {
+    function getNetworkTypeId() external view returns (uint256) {
         return networkTypeId;
     }
 
-    function getNetworkId() public view returns (uint256) {
+    function getNetworkId() external view returns (uint256) {
         return networkId;
     }
 
-    function getHeight() public view returns (uint256) {
+    function getHeight() external view returns (uint256) {
         return height;
     }
 
-    function getNetworkSectionHash() public view returns (bytes32) {
+    function getNetworkSectionHash() external view returns (bytes32) {
         return networkSectionHash;
     }
 
-    function getMessageRoot() public view returns (bytes32) {
+    function getMessageRoot() external view returns (bytes32) {
         return messageRoot;
     }
 
-    function getMessageCount() public view returns (uint256) {
+    function getMessageCount() external view returns (uint256) {
         return messageCount;
     }
 
-    function getRemainMessageCount() public view returns (uint256) {
+    function getRemainMessageCount() external view returns (uint256) {
         return messageCount - (nextMessageSn - firstMessageSn);
     }
 
-    function getNextMessageSn() public view returns (uint256) {
+    function getNextMessageSn() external view returns (uint256) {
         return nextMessageSn;
     }
 
-    function getValidators(uint256 nth) public view returns (address) {
+    function getValidators(uint256 nth) external view returns (address) {
         return validators[nth];
     }
 
-    function getValidatorsCount() public view returns (uint256) {
+    function getValidatorsCount() external view returns (uint256) {
         return validators.length;
     }
 
