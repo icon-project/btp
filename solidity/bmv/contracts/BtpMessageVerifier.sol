@@ -7,18 +7,18 @@ import "./libraries/String.sol";
 import "./libraries/RLPEncode.sol";
 import "./libraries/RelayMessageLib.sol";
 import "./libraries/Utils.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract BtpMessageVerifier is IBMV, Initializable {
+contract BtpMessageVerifier is IBMV {
     using BlockUpdateLib for Header;
     using MessageProofLib for MessageProof;
     using RelayMessageLib for RelayMessage;
     using String for string;
 
-    address private bmc;
+    address private immutable bmc;
     string private srcNetworkId;
-    uint256 private networkTypeId;
-    uint256 private networkId;
+    uint256 private immutable networkTypeId;
+    uint256 private immutable networkId;
+
     uint256 private height;
     bytes32 private networkSectionHash;
     bytes32 private messageRoot;
@@ -36,13 +36,13 @@ contract BtpMessageVerifier is IBMV, Initializable {
         _;
     }
 
-    function initialize(
+    constructor(
         address _bmc,
         string memory _srcNetworkId,
         uint256 _networkTypeId,
         bytes memory _firstBlockHeader,
         uint256 _sequenceOffset
-    ) external initializer {
+    ) {
         bmc = _bmc;
         srcNetworkId = _srcNetworkId;
         networkTypeId = _networkTypeId;

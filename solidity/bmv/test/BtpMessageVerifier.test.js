@@ -31,8 +31,7 @@ contract('BtpMessageVerifier', (accounts) => {
             const FIRST_BLOCK_UPDATE = '0xf8a40a00a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00201f80001a041791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7ab858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e944fe6e85b23709cbf74e98f81d5869e2b46b9721f94ccefbb67c172b02e70b699884b76e39806eefe00';
 
             beforeEach(async () => {
-                this.instance = await BtpMessageVerifier.new();
-                await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+                this.instance = await BtpMessageVerifier.new(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
             });
 
             describe('sends RelayMessage=[MessageProof]', () => {
@@ -130,8 +129,7 @@ contract('BtpMessageVerifier', (accounts) => {
 
         beforeEach(async () => {
             const FIRST_BLOCK_UPDATE = '0xf8850a01a07335dc4b60092f2d5aa4b419bf4ea1fe7e76b6a74f7177a26b20733a20d75081c00101f80000f800b858f856f8549435343874344652abe559b226f00abec23a98a7a594cfb89e639a3b69704631cadae3517165fbf06e1e944fe6e85b23709cbf74e98f81d5869e2b46b9721f94ccefbb67c172b02e70b699884b76e39806eefe00';
-            this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, SRC_NETWORK_ID, 1, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            this.instance = await BtpMessageVerifier.new(BMC, SRC_NETWORK_ID, 1, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         describe('when send RELAY_MESSAGE = [BlockUpdate, MessageProof]', () => {
@@ -396,8 +394,7 @@ contract('BtpMessageVerifier', (accounts) => {
         ];
 
         beforeEach(async () => {
-            this.instance = await BtpMessageVerifier.new();
-            await this.instance.initialize(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
+            this.instance = await BtpMessageVerifier.new(BMC, SRC_NETWORK_ID, NETWORK_TYPE_ID, FIRST_BLOCK_UPDATE, SEQUENCE_OFFSET);
         });
 
         describe('when miss RELAY_MESSAGE = [MessageProof], and send RELAY_MESSAGE = [BlockUpdate]', () => {
