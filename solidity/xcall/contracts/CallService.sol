@@ -105,8 +105,7 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
     function cleanupCallRequest(
         uint256 sn
     ) internal {
-        Types.CallRequest memory _null;
-        requests[sn] = _null;
+        delete requests[sn];
         emit CallRequestCleared(sn);
     }
 
@@ -221,8 +220,8 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         }
 
         // cleanup
-        Types.CSMessageRequest memory _null;
-        proxyReqs[_reqId] = _null;
+        delete proxyReqs[_reqId];
+
         // send response only when there was a rollback
         if (req.rollback) {
             bytes memory payload = Types.CSMessageResponse(
@@ -395,7 +394,7 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
                 require(req.rollback.length > 0, "NoRollbackData");
                 req.enabled=true;
                 requests[res.sn]=req;
-                RollbackMessage(res.sn, req.rollback, res.msg);
+                emit RollbackMessage(res.sn, req.rollback, res.msg);
             }
         }
     }
@@ -477,7 +476,7 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
             _protocol,
             true
         );
-        FixedFeesUpdated(_net, _relay, _protocol);
+        emit FixedFeesUpdated(_net, _relay, _protocol);
     }
 
     /**
