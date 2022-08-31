@@ -143,6 +143,8 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     public void executeCall(BigInteger _reqId) {
         CSMessageRequest req = proxyReqs.get(_reqId);
         Context.require(req != null, "InvalidRequestId");
+        // cleanup
+        proxyReqs.set(_reqId, null);
 
         BTPAddress from = BTPAddress.valueOf(req.getFrom());
         CSMessageResponse msgRes = null;
@@ -160,8 +162,6 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
             logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
         } finally {
-            // cleanup
-            proxyReqs.set(_reqId, null);
             // send response only when there was a rollback
             if (needResponse) {
                 BigInteger sn = getNextSn();
@@ -176,14 +176,14 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         CallRequest req = requests.get(_sn);
         Context.require(req != null, "InvalidSerialNum");
         Context.require(req.enabled(), "RollbackNotEnabled");
+        cleanupCallRequest(_sn);
+
         try {
             BTPAddress callSvc = new BTPAddress(net.get(), Context.getAddress().toString());
             DAppProxy proxy = new DAppProxy(req.getFrom());
             proxy.handleCallMessage(callSvc.toString(), req.getRollback());
         } catch (Exception e) {
             logger.println("executeRollback", "Exception:", e.toString());
-        } finally {
-            cleanupCallRequest(_sn);
         }
     }
 

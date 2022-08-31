@@ -199,6 +199,8 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
     ) external override {
         Types.CSMessageRequest memory req = proxyReqs[_reqId];
         require(!isNullCSMessageRequest(req), "InvalidRequestId");
+        // cleanup
+        delete proxyReqs[_reqId];
 
         //TODO require BTPAddress validation
         (string memory netFrom, ) = req.from.splitBTPAddress();
@@ -218,9 +220,6 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
             errMsg = string("unknownError");
 //            errMsg = string("unknownError ").concat(Strings.bytesToHex(err));
         }
-
-        // cleanup
-        delete proxyReqs[_reqId];
 
         // send response only when there was a rollback
         if (req.rollback) {
@@ -255,6 +254,7 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         Types.CallRequest memory req = requests[_sn];
         require(!isNullCallRequest(req), "InvalidSerialNum");
         require(req.enabled, "RollbackNotEnabled");
+        cleanupCallRequest(_sn);
 
         try this.tryHandleCallMessage(
             req.from,
@@ -264,7 +264,6 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         } catch {
             //logging
         }
-        cleanupCallRequest(_sn);
     }
 
     /* Implementation-specific eventlog */
