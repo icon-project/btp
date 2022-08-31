@@ -15,24 +15,37 @@ contract BtpMessageVerifier is IBMV {
     using String for string;
 
     address private immutable bmc;
-    string private srcNetworkId;
     uint256 private immutable networkTypeId;
     uint256 private immutable networkId;
+    uint256 private immutable sequenceOffset;
+    string private srcNetworkId;
+    StateDB private db;
 
-    uint256 private height;
-    bytes32 private networkSectionHash;
-    bytes32 private messageRoot;
-    uint256 private messageCount;
-    uint256 private nextMessageSn;
-    address[] private validators;
-    uint256 private sequenceOffset;
-    uint256 private firstMessageSn;
+    // @dev wrap state variables to avoid stack too deep error
+    struct StateDB {
+        bytes32 networkSectionHash;
+        bytes32 messageRoot;
+        uint256 height;
+        uint256 messageCount;
+        uint256 firstMessageSn;
+        uint256 nextMessageSn;
+        address[] validators;
+    }
 
     string private constant ERR_UNAUTHORIZED = "bmv: Unauthorized";
     string private constant ERR_INVALID_ARGS = "bmv: InvalidArgs";
 
     modifier onlyBmc() {
         require(msg.sender == bmc, ERR_UNAUTHORIZED);
+        _;
+    }
+
+    modifier onlyBtpNetwork(string memory _from) {
+        (string memory network, ) = _from.splitBTPAddress();
+        require(
+            keccak256(abi.encodePacked(srcNetworkId)) == keccak256(abi.encodePacked(network)),
+            ERR_UNAUTHORIZED
+        );
         _;
     }
 
@@ -49,23 +62,26 @@ contract BtpMessageVerifier is IBMV {
         sequenceOffset = _sequenceOffset;
 
         Header memory header = BlockUpdateLib.decodeHeader(_firstBlockHeader);
-        networkId = header.networkId;
-        height = header.mainHeight;
-        nextMessageSn = header.messageSn;
-        firstMessageSn = header.messageSn;
-        messageCount = header.messageCount;
-        messageRoot = header.messageRoot;
-        networkSectionHash = header.getNetworkSectionHash();
         require(header.nextValidators.length > 0, Errors.ERR_UNKNOWN);
-        validators = header.nextValidators;
+
+        networkId = header.networkId;
+        db = StateDB(
+            header.getNetworkSectionHash(),
+            header.messageRoot,
+            header.mainHeight,
+            header.messageCount,
+            header.messageSn,
+            header.messageSn,
+            header.nextValidators
+        );
     }
 
     function getStatus() external view returns (uint256, bytes memory) {
         bytes[] memory extra = new bytes[](3);
         extra[0] = RLPEncode.encodeUint(sequenceOffset);
-        extra[1] = RLPEncode.encodeUint(firstMessageSn);
-        extra[2] = RLPEncode.encodeUint(messageCount);
-        return (height, RLPEncode.encodeList(extra));
+        extra[1] = RLPEncode.encodeUint(db.firstMessageSn);
+        extra[2] = RLPEncode.encodeUint(db.messageCount);
+        return (db.height, RLPEncode.encodeList(extra));
     }
 
     function handleRelayMessage(
@@ -73,57 +89,57 @@ contract BtpMessageVerifier is IBMV {
         string memory _prev,
         uint256 _sn,
         bytes memory _msg
-    ) external onlyBmc returns (bytes[] memory) {
-        checkAccessible(_prev);
-        uint256 _sequenceOffset = sequenceOffset;
-        require(_sn >= _sequenceOffset, ERR_INVALID_ARGS);
-        checkNextMessageSn(_sn - _sequenceOffset);
+    ) external onlyBmc onlyBtpNetwork(_prev) returns (bytes[] memory messages) {
+        require(_sn >= sequenceOffset, ERR_INVALID_ARGS);
+
+        StateDB memory _db = db;
+        uint256 remainMessageCount = _db.messageCount - (_db.nextMessageSn - _db.firstMessageSn);
+
+        checkMessageSn(_db.nextMessageSn, _sn - sequenceOffset);
         RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
-        bytes[] memory messages;
-        uint256 _messageCount = messageCount;
-        uint256 _firstMessageSn = firstMessageSn;
-        uint256 remainMessageCount = _messageCount - (nextMessageSn - _firstMessageSn);
+
         for (uint256 i = 0; i < rms.length; i++) {
             if (rms[i].typ == RelayMessageLib.TYPE_BLOCK_UPDATE) {
                 require(remainMessageCount == 0, Errors.ERR_UNKNOWN);
                 (Header memory header, Proof memory proof) = rms[i].toBlockUpdate();
-                checkHeaderWithState(header);
-                checkBlockUpdateProof(header, proof);
 
-                // update state
-                height = header.mainHeight;
-                networkSectionHash = header.getNetworkSectionHash();
+                require(networkId == header.networkId, Errors.ERR_UNKNOWN);
+                require(_db.networkSectionHash == header.prevNetworkSectionHash, Errors.ERR_UNKNOWN);
+                checkMessageSn(_db.nextMessageSn, header.messageSn);
+                checkBlockProof(header, proof, _db.validators);
+
+                _db.height = header.mainHeight;
+                _db.networkSectionHash = header.getNetworkSectionHash();
                 if (header.hasNextValidators) {
-                    validators = header.nextValidators;
+                    _db.validators = header.nextValidators;
                 }
                 if (header.messageRoot != bytes32(0)) {
-                    uint256 messageSn = _firstMessageSn + _messageCount;
-                    if (messageSn < header.messageSn) {
-                        revert(Errors.ERR_NOT_VERIFIABLE);
-                    } else if (messageSn > header.messageSn) {
-                        revert(Errors.ERR_ALREADY_VERIFIED);
-                    }
-                    messageRoot = header.messageRoot;
-                    firstMessageSn = header.messageSn;
-                    remainMessageCount = messageCount = header.messageCount;
+                    uint256 messageSn = _db.firstMessageSn + _db.messageCount;
+                    checkMessageSn(messageSn, header.messageSn);
+                    _db.messageRoot = header.messageRoot;
+                    _db.firstMessageSn = header.messageSn;
+                    remainMessageCount = _db.messageCount = header.messageCount;
                 }
             } else if (rms[i].typ == RelayMessageLib.TYPE_MESSAGE_PROOF) {
                 MessageProof memory mp = rms[i].toMessageProof();
-
-                // compare roots of `block update` and `message proof`
                 (bytes32 root, uint256 leafCount) = mp.calculate();
-                if (root != messageRoot || leafCount != messageCount) {
-                    revert(Errors.ERR_UNKNOWN);
-                }
-
-                // collect messages
+                require(root == _db.messageRoot && leafCount == _db.messageCount, Errors.ERR_UNKNOWN);
                 messages = Utils.append(messages, mp.mesgs);
-
-                // update state
                 remainMessageCount -= mp.mesgs.length;
-                nextMessageSn += mp.mesgs.length;
+                _db.nextMessageSn += mp.mesgs.length;
             }
         }
+
+        if (_db.height != 0) {
+            db.height = _db.height;
+        }
+        db.networkSectionHash = _db.networkSectionHash;
+        db.messageRoot = _db.messageRoot;
+        db.messageCount = _db.messageCount;
+        db.firstMessageSn = _db.firstMessageSn;
+        db.nextMessageSn = _db.nextMessageSn;
+        db.validators = _db.validators;
+
         return messages;
     }
 
@@ -140,76 +156,58 @@ contract BtpMessageVerifier is IBMV {
     }
 
     function getHeight() external view returns (uint256) {
-        return height;
+        return db.height;
     }
 
     function getNetworkSectionHash() external view returns (bytes32) {
-        return networkSectionHash;
+        return db.networkSectionHash;
     }
 
     function getMessageRoot() external view returns (bytes32) {
-        return messageRoot;
+        return db.messageRoot;
     }
 
     function getMessageCount() external view returns (uint256) {
-        return messageCount;
+        return db.messageCount;
     }
 
     function getRemainMessageCount() external view returns (uint256) {
-        return messageCount - (nextMessageSn - firstMessageSn);
+        return db.messageCount - (db.nextMessageSn - db.firstMessageSn);
     }
 
     function getNextMessageSn() external view returns (uint256) {
-        return nextMessageSn;
+        return db.nextMessageSn;
     }
 
     function getValidators(uint256 nth) external view returns (address) {
-        return validators[nth];
+        return db.validators[nth];
     }
 
     function getValidatorsCount() external view returns (uint256) {
-        return validators.length;
+        return db.validators.length;
     }
 
-    function hasQuorumOf(uint256 votes) private view returns (bool) {
-        return votes * 3 > validators.length * 2;
+    function hasQuorumOf(uint256 nvalidators, uint256 votes) private pure returns (bool) {
+        return votes * 3 > nvalidators * 2;
     }
 
-    function checkAccessible(string memory _from) private view {
-        (string memory net, ) = _from.splitBTPAddress();
-        require(keccak256(abi.encodePacked(srcNetworkId)) == keccak256(abi.encodePacked(net)), ERR_UNAUTHORIZED);
-    }
-
-    function checkNextMessageSn(uint256 sn) private view {
-        uint256 _nextMessageSn = nextMessageSn;
-        if (_nextMessageSn < sn) {
+    function checkMessageSn(uint256 expected, uint256 actual) private pure {
+        if (expected < actual) {
             revert(Errors.ERR_NOT_VERIFIABLE);
-        } else if (_nextMessageSn > sn) {
+        } else if (expected > actual) {
             revert(Errors.ERR_ALREADY_VERIFIED);
         }
     }
 
-    function checkHeaderWithState(Header memory header) private view {
-        require(networkId == header.networkId, Errors.ERR_UNKNOWN);
-        require(networkSectionHash == header.prevNetworkSectionHash, Errors.ERR_UNKNOWN);
-
-        uint256 _nextMessageSn = nextMessageSn;
-        if (_nextMessageSn < header.messageSn) {
-            revert(Errors.ERR_NOT_VERIFIABLE);
-        } else if (_nextMessageSn > header.messageSn) {
-            revert(Errors.ERR_ALREADY_VERIFIED);
-        }
-    }
-
-    function checkBlockUpdateProof(Header memory header, Proof memory proof) private view {
+    function checkBlockProof(Header memory header, Proof memory proof, address[] memory validators) private view {
         uint256 votes = 0;
         bytes32 decision = header.getNetworkTypeSectionDecisionHash(srcNetworkId, networkTypeId);
-        for (uint256 j = 0; j < proof.signatures.length && !hasQuorumOf(votes); j++) {
-            address signer = Utils.recoverSigner(decision, proof.signatures[j]);
-            if (signer == validators[j]) {
+        for (uint256 i = 0; i < proof.signatures.length && !hasQuorumOf(validators.length, votes); i++) {
+            address signer = Utils.recoverSigner(decision, proof.signatures[i]);
+            if (signer == validators[i]) {
                 votes++;
             }
         }
-        require(hasQuorumOf(votes), Errors.ERR_UNKNOWN);
+        require(hasQuorumOf(validators.length, votes), Errors.ERR_UNKNOWN);
     }
 }
