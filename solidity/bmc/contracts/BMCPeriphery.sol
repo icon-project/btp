@@ -18,8 +18,8 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     using String for string;
     using ParseAddress for address;
     using RLPDecodeStruct for bytes;
-    using RLPEncodeStruct for Types.BMCMessage;
-    using RLPEncodeStruct for Types.Response;
+    using RLPEncodeStruct for Types.BTPMessage;
+    using RLPEncodeStruct for Types.ErrorMessage;
 
     uint256 internal constant UNKNOWN_ERR = 0;
     uint256 internal constant BMC_ERR = 10;
@@ -111,28 +111,32 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         );
 
         // dispatch BTP Messages
-        Types.BMCMessage memory _message;
+        Types.BTPMessage memory btpMsg;
         for (uint256 i = 0; i < serializedMsgs.length; i++) {
             try this.tryDecodeBTPMessage(serializedMsgs[i]) returns (
-                Types.BMCMessage memory _decoded
+                Types.BTPMessage memory _decoded
             ) {
-                _message = _decoded;
+                btpMsg = _decoded;
             } catch {
                 // ignore BTPMessage parse failure
                 continue;
             }
 
-            if (_message.dst.compareTo(bmcBtpAddress)) {
-                handleMessage(_prev, _message);
+            if (btpMsg.dst.compareTo(bmcBtpAddress)) {
+                if (btpMsg.svc.compareTo("bmc")) {
+                    handleInternal(_prev, btpMsg);
+                } else {
+                    handleService(_prev, btpMsg);
+                }
             } else {
-                (_net, ) = _message.dst.splitBTPAddress();
+                (_net, ) = btpMsg.dst.splitBTPAddress();
                 try IBMCManagement(bmcManagement).resolveRoute(_net) returns (
                     string memory _nextLink,
                     string memory
                 ) {
                     _sendMessage(_nextLink, serializedMsgs[i]);
                 } catch Error(string memory _error) {
-                    _sendError(_prev, _message, BMC_ERR, _error);
+                    _sendError(_prev, btpMsg, BMC_ERR, _error);
                 }
             }
         }
@@ -140,124 +144,125 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
             _prev,
             serializedMsgs.length
         );
+
     }
 
-    function handleMessage(string calldata _prev, Types.BMCMessage memory _msg)
+    function handleInternal(string calldata _prev, Types.BTPMessage memory _msg)
+    internal
+    {
+        Types.BMCService memory _sm;
+        try this.tryDecodeBMCService(_msg.message) returns (
+            Types.BMCService memory res
+        ) {
+            _sm = res;
+        } catch {
+            _sendError(_prev, _msg, BMC_ERR, BMCRevertParseFailure);
+            return;
+        }
+
+        if (_sm.serviceType.compareTo("Link")) {
+            string memory _to = _sm.payload.decodePropagateMessage();
+            Types.Link memory link = IBMCManagement(bmcManagement).getLink(
+                _prev
+            );
+            bool check;
+            if (link.isConnected) {
+                for (uint256 i = 0; i < link.reachable.length; i++)
+                    if (_to.compareTo(link.reachable[i])) {
+                        check = true;
+                        break;
+                    }
+                if (!check) {
+                    string[] memory _links = new string[](1);
+                    _links[0] = _to;
+                    IBMCManagement(bmcManagement).updateLinkReachable(
+                        _prev,
+                        _links
+                    );
+                }
+            }
+        } else if (_sm.serviceType.compareTo("Unlink")) {
+            string memory _to = _sm.payload.decodePropagateMessage();
+            Types.Link memory link = IBMCManagement(bmcManagement).getLink(
+                _prev
+            );
+            if (link.isConnected) {
+                for (uint256 i = 0; i < link.reachable.length; i++) {
+                    if (_to.compareTo(link.reachable[i]))
+                        IBMCManagement(bmcManagement).deleteLinkReachable(
+                            _prev,
+                            i
+                        );
+                }
+            }
+        } else if (_sm.serviceType.compareTo("Init")) {
+            string[] memory _links = _sm.payload.decodeInitMessage();
+            IBMCManagement(bmcManagement).updateLinkReachable(
+                _prev,
+                _links
+            );
+        } else if (_sm.serviceType.compareTo("Sack")) {
+            // skip this case since it has been removed from internal services
+
+        } else revert(BMCRevertNotExistsInternalHandler);
+    }
+
+    function handleService(string calldata _prev, Types.BTPMessage memory _msg)
         internal
     {
-        address _bshAddr;
-        if (_msg.svc.compareTo("bmc")) {
-            Types.BMCService memory _sm;
-            try this.tryDecodeBMCService(_msg.message) returns (
-                Types.BMCService memory res
-            ) {
-                _sm = res;
-            } catch {
-                _sendError(_prev, _msg, BMC_ERR, BMCRevertParseFailure);
-                return;
-            }
+        address _bshAddr = IBMCManagement(bmcManagement).getBshServiceByName(
+            _msg.svc
+        );
+        if (_bshAddr == address(0)) {
+            _sendError(_prev, _msg, BMC_ERR, BMCRevertNotExistsBSH);
+            return;
+        }
 
-            if (_sm.serviceType.compareTo("Link")) {
-                string memory _to = _sm.payload.decodePropagateMessage();
-                Types.Link memory link = IBMCManagement(bmcManagement).getLink(
-                    _prev
-                );
-                bool check;
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++)
-                        if (_to.compareTo(link.reachable[i])) {
-                            check = true;
-                            break;
-                        }
-                    if (!check) {
-                        string[] memory _links = new string[](1);
-                        _links[0] = _to;
-                        IBMCManagement(bmcManagement).updateLinkReachable(
-                            _prev,
-                            _links
-                        );
-                    }
-                }
-            } else if (_sm.serviceType.compareTo("Unlink")) {
-                string memory _to = _sm.payload.decodePropagateMessage();
-                Types.Link memory link = IBMCManagement(bmcManagement).getLink(
-                    _prev
-                );
-                if (link.isConnected) {
-                    for (uint256 i = 0; i < link.reachable.length; i++) {
-                        if (_to.compareTo(link.reachable[i]))
-                            IBMCManagement(bmcManagement).deleteLinkReachable(
-                                _prev,
-                                i
-                            );
-                    }
-                }
-            } else if (_sm.serviceType.compareTo("Init")) {
-                string[] memory _links = _sm.payload.decodeInitMessage();
-                IBMCManagement(bmcManagement).updateLinkReachable(
+        if (_msg.sn >= 0) {
+            (string memory _net, ) = _msg.src.splitBTPAddress();
+            try IBSH(_bshAddr).handleBTPMessage(
+                _net,
+                _msg.svc,
+                uint256(_msg.sn),
+                _msg.message
+            ){
+            } catch Error(string memory reason) {
+                _sendError(_prev, _msg, BSH_ERR, reason);
+            } catch (bytes memory) {
+                _sendError(
                     _prev,
-                    _links
+                    _msg,
+                    BSH_ERR,
+                    BMCRevertUnknownHandleBTPMessage
                 );
-            } else if (_sm.serviceType.compareTo("Sack")) {
-                // skip this case since it has been removed from internal services
-            } else revert(BMCRevertNotExistsInternalHandler);
-        } else {
-            _bshAddr = IBMCManagement(bmcManagement).getBshServiceByName(
-                _msg.svc
-            );
-            if (_bshAddr == address(0)) {
-                _sendError(_prev, _msg, BMC_ERR, BMCRevertNotExistsBSH);
-                return;
             }
-
-            if (_msg.sn >= 0) {
-                (string memory _net, ) = _msg.src.splitBTPAddress();
-                try
-                    IBSH(_bshAddr).handleBTPMessage(
-                        _net,
-                        _msg.svc,
-                        uint256(_msg.sn),
-                        _msg.message
-                    )
-                {} catch Error(string memory reason) {
-                    _sendError(_prev, _msg, BSH_ERR, reason);
-                } catch (bytes memory) {
-                    _sendError(
-                        _prev,
-                        _msg,
-                        BSH_ERR,
-                        BMCRevertUnknownHandleBTPMessage
-                    );
-                }
-            } else {
-                Types.Response memory _res = _msg.message.decodeResponse();
-                uint256 _errCode;
-                bytes memory _errMsg;
-                try
-                    IBSH(_bshAddr).handleBTPError(
-                        _msg.src,
-                        _msg.svc,
-                        uint256(_msg.sn * -1),
-                        _res.code,
-                        _res.message
-                    )
-                {} catch Error(string memory reason) {
-                    _errCode = BSH_ERR;
-                    _errMsg = bytes(reason);
-                } catch (bytes memory) {
-                    _errCode = UNKNOWN_ERR;
-                    _errMsg = bytes(BMCRevertUnknownHandleBTPError);
-                }
-                if (_errMsg.length > 0) {
-                    emit ErrorOnBTPError(
-                        _msg.svc,
-                        _msg.sn * -1,
-                        _res.code,
-                        _res.message,
-                        _errCode,
-                        string(_errMsg)
-                    );
-                }
+        } else {
+            Types.ErrorMessage memory _res = _msg.message.decodeErrorMessage();
+            uint256 _errCode;
+            bytes memory _errMsg;
+            try IBSH(_bshAddr).handleBTPError(
+                _msg.src,
+                _msg.svc,
+                uint256(_msg.sn * -1),
+                _res.code,
+                _res.message
+            ){
+            } catch Error(string memory reason) {
+                _errCode = BSH_ERR;
+                _errMsg = bytes(reason);
+            } catch (bytes memory) {
+                _errCode = UNKNOWN_ERR;
+                _errMsg = bytes(BMCRevertUnknownHandleBTPError);
+            }
+            if (_errMsg.length > 0) {
+                emit ErrorOnBTPError(
+                    _msg.svc,
+                    _msg.sn * -1,
+                    _res.code,
+                    _res.message,
+                    _errCode,
+                    string(_errMsg)
+                );
             }
         }
     }
@@ -268,14 +273,14 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     function tryDecodeBTPMessage(bytes memory _rlp)
         external
         pure
-        returns (Types.BMCMessage memory)
+        returns (Types.BTPMessage memory)
     {
-        return _rlp.decodeBMCMessage();
+        return _rlp.decodeBTPMessage();
     }
 
     //  @dev Solidity does not allow using try_catch with internal function
     //  Thus, work-around solution is the followings
-    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR Response
+    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR ErrorMessage
     function tryDecodeBMCService(bytes calldata _msg)
         external
         pure
@@ -297,20 +302,19 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
 
     function _sendError(
         string calldata _prev,
-        Types.BMCMessage memory _message,
+        Types.BTPMessage memory _message,
         uint256 _errCode,
         string memory _errMsg
     ) internal {
         if (_message.sn > 0) {
-            bytes memory _serializedMsg = Types
-                .BMCMessage(
+            bytes memory _serializedMsg = Types.BTPMessage(
                     bmcBtpAddress,
                     _message.src,
                     _message.svc,
                     _message.sn * -1,
-                    Types.Response(_errCode, _errMsg).encodeResponse()
+                    Types.ErrorMessage(_errCode, _errMsg).encodeErrorMessage()
                 )
-                .encodeBMCMessage();
+                .encodeBTPMessage();
             _sendMessage(_prev, _serializedMsg);
         }
     }
@@ -347,9 +351,8 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         (string memory _nextLink, string memory _dst) = IBMCManagement(
             bmcManagement
         ).resolveRoute(_to);
-        bytes memory _rlp = Types
-            .BMCMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
-            .encodeBMCMessage();
+        bytes memory _rlp = Types.BTPMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
+            .encodeBTPMessage();
         _sendMessage(_nextLink, _rlp);
     }
 

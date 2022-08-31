@@ -46,7 +46,7 @@ library Types {
         uint256 msgCount;
     }
 
-    struct BMCMessage {
+    struct BTPMessage {
         string src; //  an address of BMC (i.e. btp://1234.PARA/0x1234)
         string dst; //  an address of destination BMC
         string svc; //  service name of BSH
@@ -64,7 +64,7 @@ library Types {
         string _to;
     }
 
-    struct Response {
+    struct ErrorMessage {
         uint256 code;
         string message;
     }

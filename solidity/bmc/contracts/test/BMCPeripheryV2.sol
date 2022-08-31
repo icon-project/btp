@@ -18,8 +18,8 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
     using String for string;
     using ParseAddress for address;
     using RLPDecodeStruct for bytes;
-    using RLPEncodeStruct for Types.BMCMessage;
-    using RLPEncodeStruct for Types.Response;
+    using RLPEncodeStruct for Types.BTPMessage;
+    using RLPEncodeStruct for Types.ErrorMessage;
 
     uint256 internal constant UNKNOWN_ERR = 0;
     uint256 internal constant BMC_ERR = 10;
@@ -111,10 +111,10 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         );
 
         // dispatch BTP Messages
-        Types.BMCMessage memory _message;
+        Types.BTPMessage memory _message;
         for (uint256 i = 0; i < serializedMsgs.length; i++) {
             try this.tryDecodeBTPMessage(serializedMsgs[i]) returns (
-                Types.BMCMessage memory _decoded
+                Types.BTPMessage memory _decoded
             ) {
                 _message = _decoded;
             } catch {
@@ -142,7 +142,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         );
     }
 
-    function handleMessage(string calldata _prev, Types.BMCMessage memory _msg)
+    function handleMessage(string calldata _prev, Types.BTPMessage memory _msg)
     internal
     {
         address _bshAddr;
@@ -230,7 +230,7 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
                     );
                 }
             } else {
-                Types.Response memory _res = _msg.message.decodeResponse();
+                Types.ErrorMessage memory _res = _msg.message.decodeErrorMessage();
                 uint256 _errCode;
                 bytes memory _errMsg;
                 try
@@ -268,14 +268,14 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
     function tryDecodeBTPMessage(bytes memory _rlp)
     external
     pure
-    returns (Types.BMCMessage memory)
+    returns (Types.BTPMessage memory)
     {
-        return _rlp.decodeBMCMessage();
+        return _rlp.decodeBTPMessage();
     }
 
     //  @dev Solidity does not allow using try_catch with internal function
     //  Thus, work-around solution is the followings
-    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR Response
+    //  If there is any error throwing, BMC contract can catch it, then reply back a RC_ERR ErrorMessage
     function tryDecodeBMCService(bytes calldata _msg)
     external
     pure
@@ -297,20 +297,19 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
 
     function _sendError(
         string calldata _prev,
-        Types.BMCMessage memory _message,
+        Types.BTPMessage memory _message,
         uint256 _errCode,
         string memory _errMsg
     ) internal {
         if (_message.sn > 0) {
-            bytes memory _serializedMsg = Types
-            .BMCMessage(
+            bytes memory _serializedMsg = Types.BTPMessage(
                 bmcBtpAddress,
                 _message.src,
                 _message.svc,
                 _message.sn * -1,
-                Types.Response(_errCode, _errMsg).encodeResponse()
+                Types.ErrorMessage(_errCode, _errMsg).encodeErrorMessage()
             )
-            .encodeBMCMessage();
+            .encodeBTPMessage();
             _sendMessage(_prev, _serializedMsg);
         }
     }
@@ -347,9 +346,8 @@ contract BMCPeripheryV2 is IBMCPeriphery, Initializable {
         (string memory _nextLink, string memory _dst) = IBMCManagement(
             bmcManagement
         ).resolveRoute(_to);
-        bytes memory _rlp = Types
-        .BMCMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
-        .encodeBMCMessage();
+        bytes memory _rlp = Types.BTPMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
+            .encodeBTPMessage();
         _sendMessage(_nextLink, _rlp);
         revert("Upgrade successfully");
     }

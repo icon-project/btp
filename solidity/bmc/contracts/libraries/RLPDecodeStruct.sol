@@ -49,14 +49,14 @@ library RLPDecodeStruct {
             _links[i] = string(rlpLinks[i].toBytes());
     }
 
-    function decodeBMCMessage(bytes memory _rlp)
+    function decodeBTPMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.BMCMessage memory)
+        returns (Types.BTPMessage memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         return
-            Types.BMCMessage(
+            Types.BTPMessage(
                 string(ls[0].toBytes()),
                 string(ls[1].toBytes()),
                 string(ls[2].toBytes()),
@@ -65,13 +65,13 @@ library RLPDecodeStruct {
             );
     }
 
-    function decodeResponse(bytes memory _rlp)
+    function decodeErrorMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.Response memory)
+        returns (Types.ErrorMessage memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        return Types.Response(ls[0].toUint(), string(ls[1].toBytes()));
+        return Types.ErrorMessage(ls[0].toUint(), string(ls[1].toBytes()));
     }
 
 }

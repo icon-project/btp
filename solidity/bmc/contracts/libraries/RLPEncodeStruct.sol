@@ -25,7 +25,7 @@ library RLPEncodeStruct {
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-    function encodeBMCMessage(Types.BMCMessage memory _bm)
+    function encodeBTPMessage(Types.BTPMessage memory _bm)
         internal
         pure
         returns (bytes memory)
@@ -41,7 +41,7 @@ library RLPEncodeStruct {
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-    function encodeResponse(Types.Response memory _res)
+    function encodeErrorMessage(Types.ErrorMessage memory _res)
         internal
         pure
         returns (bytes memory)
