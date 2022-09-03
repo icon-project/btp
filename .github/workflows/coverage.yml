@@ -1,0 +1,72 @@
+name: Code Coverage with Codecov
+
+on:
+  push:
+    branches:
+      - coverage
+  pull_request:
+    branches:
+      - main
+jobs:
+  Coverage-Codecov:
+    runs-on: ubuntu-latest
+    container:
+      image: iconbridge/build
+      options: --user 1001
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Javascore BMC coverage
+      working-directory: ./javascore/bmc
+      run: |
+        gradle test
+
+    - name: Javascore BMV coverage
+      working-directory: ./javascore/bmv
+      continue-on-error: true
+      run: |
+        gradle test
+
+    - name: Javascore BSH coverage
+      working-directory: ./javascore/bsh
+      run: |
+        gradle test
+
+    - name: Javascore nativecoin coverage
+      working-directory: ./javascore/nativecoin
+      run: |
+        gradle test
+
+    - name: Javascore test-lib coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+    - name: Javascore xcall coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+
+    - name: GO test common
+      working-directory: ./common
+      run: |
+        go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
+    # - name: GO test common
+    #   working-directory: ./common
+    #   run: |
+    #     go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
+    # - name: Solidity BTS coverage
+    #   working-directory: ./solidity/bts
+    #   run: |
+    #     yarn install
+    #     cp .env.example .env
+    #     truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
+    # - name: Solidity BMC coverage
+    #   working-directory: ./solidity/bmc
+    #   run: |
+    #     yarn install
+    #     PRIVATE_KEY=$PRIVATE_KEY BSC_RPC_URI=$BSC_RPC_URI BSC_NID=$BSC_NID BMC_BTP_NET=$BSC_BMC_NET BSC_NID=97 \
+    #     truffle run coverage || exit 0
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
