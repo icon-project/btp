@@ -10,9 +10,9 @@ on:
 jobs:
   Javascore-Coverage:
     runs-on: ubuntu-latest
-    # container:
-    #   image: iconbridge/build
-    #   options: --user 1001
+    container:
+      image: iconbridge/build
+      options: --user 1001
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
