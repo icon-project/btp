@@ -8,11 +8,11 @@ on:
     branches:
       - main
 jobs:
-  Coverage-Codecov:
+  Javascore-Coverage:
     runs-on: ubuntu-latest
-    container:
-      image: iconbridge/build
-      options: --user 1001
+    # container:
+    #   image: iconbridge/build
+    #   options: --user 1001
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -52,21 +52,17 @@ jobs:
       working-directory: ./common
       run: |
         go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
-    # - name: GO test common
-    #   working-directory: ./common
-    #   run: |
-    #     go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
-    # - name: Solidity BTS coverage
-    #   working-directory: ./solidity/bts
-    #   run: |
-    #     yarn install
-    #     cp .env.example .env
-    #     truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
-    # - name: Solidity BMC coverage
-    #   working-directory: ./solidity/bmc
-    #   run: |
-    #     yarn install
-    #     PRIVATE_KEY=$PRIVATE_KEY BSC_RPC_URI=$BSC_RPC_URI BSC_NID=$BSC_NID BMC_BTP_NET=$BSC_BMC_NET BSC_NID=97 \
-    #     truffle run coverage || exit 0
+
+    - name: Solidity BMC coverage
+      working-directory: ./solidity/bmc
+      run: |
+        yarn install
+        truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
+    - name: Solidity BMV coverage
+      working-directory: ./solidity/bmc
+      run: |
+        yarn install
+        truffle run coverage || exit 0
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

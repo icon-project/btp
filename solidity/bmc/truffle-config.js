@@ -66,7 +66,7 @@ module.exports = {
             }
         }
     },
-    plugins: ["truffle-plugin-verify", "@chainsafe/truffle-plugin-abigen"],
+    plugins: ["truffle-plugin-verify", "@chainsafe/truffle-plugin-abigen","solidity-coverage"],
     db: {
         enabled: false
     }
