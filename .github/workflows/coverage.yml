@@ -59,7 +59,12 @@ jobs:
         yarn install
         truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
     - name: Solidity BMV coverage
-      working-directory: ./solidity/bmc
+      working-directory: ./solidity/bmv
+      run: |
+        yarn install
+        truffle run coverage || exit 0
+    - name: Solidity xcall
+      working-directory: ./solidity/xcall
       run: |
         yarn install
         truffle run coverage || exit 0
