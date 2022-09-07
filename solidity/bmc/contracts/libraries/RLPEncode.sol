@@ -9,6 +9,8 @@ pragma solidity >=0.8.0 <0.8.5;
  * https://github.com/bakaoh/solidity-rlp-encode.git
  */
 library RLPEncode {
+    bytes internal constant NULL = hex"f800";
+
     int8 internal constant MAX_INT8 = type(int8).max;
     int16 internal constant MAX_INT16 = type(int16).max;
     int24 internal constant MAX_INT24 = type(int24).max;
@@ -186,6 +188,14 @@ library RLPEncode {
         bytes memory encoded = new bytes(1);
         encoded[0] = (self ? bytes1(0x01) : bytes1(0x00));
         return encoded;
+    }
+
+    /**
+     * @dev RLP encodes null.
+     * @return bytes for null
+     */
+    function encodeNull() internal pure returns (bytes memory) {
+        return NULL;
     }
 
     /*

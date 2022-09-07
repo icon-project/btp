@@ -132,6 +132,21 @@ library RLPDecode {
         return true;
     }
 
+    function isNull(RLPItem memory item) internal pure returns (bool) {
+        if (item.len != 2) return false;
+
+        uint8 byte0;
+        uint8 itemLen;
+        uint256 memPtr = item.memPtr;
+        assembly {
+            byte0 := byte(0, mload(memPtr))
+            memPtr := add(memPtr, 1)
+            itemLen := byte(0, mload(memPtr))
+        }
+        if (byte0 != LIST_LONG_START || itemLen != 0) return false;
+        return true;
+    }
+
     /** RLPItem conversions into data types **/
 
     // @returns raw rlp encoding in bytes

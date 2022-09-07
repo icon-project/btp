@@ -132,6 +132,21 @@ library RLPDecode {
         return true;
     }
 
+    function isNull(RLPItem memory item) internal pure returns (bool) {
+        if (item.len != 2) return false;
+
+        uint8 byte0;
+        uint8 itemLen;
+        uint256 memPtr = item.memPtr;
+        assembly {
+            byte0 := byte(0, mload(memPtr))
+            memPtr := add(memPtr, 1)
+            itemLen := byte(0, mload(memPtr))
+        }
+        if (byte0 != LIST_LONG_START || itemLen != 0) return false;
+        return true;
+    }
+
     /** RLPItem conversions into data types **/
 
     // @returns raw rlp encoding in bytes
@@ -203,7 +218,6 @@ library RLPDecode {
         if ((toBytes(item)[0] & 0x80) == 0x80) {
             return int256(toUint(item)) - int256(2**(toBytes(item).length * 8));
         }
-
         return int256(toUint(item));
     }
 
@@ -272,7 +286,7 @@ library RLPDecode {
                 let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
                 memPtr := add(memPtr, 1) // skip over the first byte
 
-            /* 32 byte word size */
+                /* 32 byte word size */
                 let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
                 itemLen := add(dataLen, add(byteLen, 1))
             }
