@@ -16,8 +16,11 @@
 
 package foundation.icon.btp.bmc;
 
+import foundation.icon.btp.mock.ChainScore;
+import foundation.icon.btp.mock.ChainScoreClient;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.ScoreIntegrationTest;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
@@ -30,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class OwnershipTest implements BMCIntegrationTest {
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
     static String string = "";
-    static String btpAddress = "";
+    static String btpAddress = Faker.btpLink().toString();
     static int intVal = 0;
     static long longVal = 0;
     static BigInteger bigInteger = BigInteger.ZERO;
@@ -55,6 +58,28 @@ public class OwnershipTest implements BMCIntegrationTest {
             System.out.println("clear owner address:"+address);
             removeOwner(address);
         }
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+        System.out.println("OwnershipTest:beforeAll start");
+        Address testerAddress = Address.of(tester);
+        BigInteger balance = client._balance(testerAddress);
+
+        //the caller should have enough balance more than StepLimit * StepPrice
+        BigInteger stepPrice = new ChainScoreClient(
+                client.endpoint(),
+                client._nid(),
+                client._wallet(),
+                new Address(ChainScore.ADDRESS.toString())).getStepPrice();
+        BigInteger minBalance = client._stepLimit().multiply(stepPrice);
+        if (balance.compareTo(minBalance) < 0) {
+            client._transfer(testerAddress, minBalance.multiply(BigInteger.TEN), null);
+
+            balance = client._balance(testerAddress);
+            System.out.println(tester.getAddress() + ":" + balance);
+        }
+        System.out.println("OwnershipTest:beforeAll start");
     }
 
     @Override

@@ -62,24 +62,25 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
+        System.out.println("BTPLinkManagementTest:beforeAll start");
         Address mockBMVAddress = MockBMVIntegrationTest.mockBMVClient._address();
         BMVManagementTest.addVerifier(linkBtpAddress.net(), mockBMVAddress);
         BMVManagementTest.addVerifier(secondLinkBtpAddress.net(), mockBMVAddress);
-        System.out.println("beforeAll end");
+        System.out.println("BTPLinkManagementTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("BTPLinkManagementTest:afterAll start");
         BMVManagementTest.clearVerifier(linkBtpAddress.net());
         BMVManagementTest.clearVerifier(secondLinkBtpAddress.net());
-        System.out.println("afterAll end");
+        System.out.println("BTPLinkManagementTest:afterAll end");
     }
 
     @Override
     public void clearIfExists(TestInfo testInfo) {
         LinkManagementTest.clearLink(link);
+        LinkManagementTest.clearLink(secondLink);
     }
 
     @Test

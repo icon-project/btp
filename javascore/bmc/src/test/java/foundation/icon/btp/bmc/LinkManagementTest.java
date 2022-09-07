@@ -136,21 +136,21 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
+        System.out.println("LinkManagementTest:beforeAll start");
         Address mockBMVAddress = MockBMVIntegrationTest.mockBMVClient._address();
         BMVManagementTest.addVerifier(
                 linkBtpAddress.net(), mockBMVAddress);
         BMVManagementTest.addVerifier(
                 secondLinkBtpAddress.net(), mockBMVAddress);
-        System.out.println("beforeAll end");
+        System.out.println("LinkManagementTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("LinkManagementTest:afterAll start");
         BMVManagementTest.clearVerifier(linkBtpAddress.net());
         BMVManagementTest.clearVerifier(secondLinkBtpAddress.net());
-        System.out.println("afterAll end");
+        System.out.println("LinkManagementTest:afterAll end");
     }
 
     @Override
@@ -235,8 +235,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
         //addLinkShouldSendLinkMessage
         String secondLink = secondLinkBtpAddress.toString();
-        List<String> links = new ArrayList<>();
-        links.add(link);
+        List<String> links = Arrays.asList(bmc.getLinks());
 
         Consumer<TransactionResult> linkMessageCheck = (txr) -> {
             initMessageChecker(links)

@@ -914,18 +914,21 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void addBTPLink(String _link, long _networkId) {
+        requireOwnerAccess();
+
         setBTPLink(_link, _networkId, BigInteger.ZERO);
         addLink(_link);
     }
 
     @External
     public void setBTPLinkNetworkId(String _link, long _networkId) {
+        requireOwnerAccess();
+
         Link link = getLink(BTPAddress.valueOf(_link));
         setBTPLink(_link, _networkId, link.getTxSeq());
     }
 
     private void setBTPLink(String _link, long _networkId, BigInteger offset) {
-        requireOwnerAccess();
         if (_networkId < 1) {
             throw BMCException.unknown("_networkId should be greater than zero");
         }

@@ -35,21 +35,21 @@ public class DropMessageTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
     static BigInteger seq = BigInteger.ONE;
-    
+
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
+        System.out.println("DropMessageTest:beforeAll start");
         BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
         LinkManagementTest.addLink(link);
-        System.out.println("beforeAll end");
+        System.out.println("DropMessageTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("DropMessageTest:afterAll start");
         LinkManagementTest.clearLink(link);
         BMVManagementTest.clearVerifier(net);
-        System.out.println("afterAll end");
+        System.out.println("DropMessageTest:afterAll end");
     }
 
     @Override

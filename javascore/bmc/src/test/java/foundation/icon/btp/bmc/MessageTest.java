@@ -49,25 +49,25 @@ public class MessageTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
+        System.out.println("MessageTest:beforeAll start");
         BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
         LinkManagementTest.addLink(link);
         BMRManagementTest.addRelay(link, relay);
 
         BSHManagementTest.clearService(svc);
         BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
-        System.out.println("beforeAll end");
+        System.out.println("MessageTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("MessageTest:afterAll start");
         BSHManagementTest.clearService(svc);
 
         BMRManagementTest.clearRelay(link, relay);
         LinkManagementTest.clearLink(link);
         BMVManagementTest.clearVerifier(net);
-        System.out.println("afterAll end");
+        System.out.println("MessageTest:afterAll end");
     }
 
     static BTPMessage btpMessage(BTPMessageCenter.Internal internal, byte[] payload) {
@@ -346,7 +346,7 @@ public class MessageTest implements BMCIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
 
         BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getTx_seq().add(BigInteger.ONE);
-        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
+        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).sendMessage(
                 BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
                     assertEquals(link, el.getNext());
                     assertEquals(seq, el.getSeq());

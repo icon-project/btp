@@ -26,6 +26,7 @@ import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
 
+import java.math.BigInteger;
 import java.util.List;
 
 @ScoreClient(suffix = "Client")
@@ -47,6 +48,9 @@ public interface ChainScore {
 
     @External
     void setRevision(int code);
+
+    @External(readonly = true)
+    BigInteger getStepPrice();
 
     @External
     long openBTPNetwork(String networkTypeName, String name, Address owner);
