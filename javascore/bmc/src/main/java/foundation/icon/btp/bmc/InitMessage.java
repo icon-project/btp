@@ -52,19 +52,18 @@ public class InitMessage {
     public static InitMessage readObject(ObjectReader reader) {
         InitMessage obj = new InitMessage();
         reader.beginList();
-        if (reader.beginNullableList()) {
-            BTPAddress[] links = null;
-            List<BTPAddress> linksList = new ArrayList<>();
-            while(reader.hasNext()) {
-                linksList.add(reader.readNullable(BTPAddress.class));
-            }
-            links = new BTPAddress[linksList.size()];
-            for(int i=0; i<linksList.size(); i++) {
-                links[i] = (BTPAddress)linksList.get(i);
-            }
-            obj.setLinks(links);
-            reader.end();
+        reader.beginList();
+        BTPAddress[] links = null;
+        List<BTPAddress> linksList = new ArrayList<>();
+        while(reader.hasNext()) {
+            linksList.add(reader.readNullable(BTPAddress.class));
         }
+        links = new BTPAddress[linksList.size()];
+        for(int i=0; i<linksList.size(); i++) {
+            links[i] = (BTPAddress)linksList.get(i);
+        }
+        obj.setLinks(links);
+        reader.end();
         reader.end();
         return obj;
     }
@@ -72,15 +71,11 @@ public class InitMessage {
     public void writeObject(ObjectWriter writer) {
         writer.beginList(1);
         BTPAddress[] links = this.getLinks();
-        if (links != null) {
-            writer.beginNullableList(links.length);
-            for(BTPAddress v : links) {
-                writer.write(v);
-            }
-            writer.end();
-        } else {
-            writer.writeNull();
+        writer.beginList(links.length);
+        for(BTPAddress v : links) {
+            writer.writeNullable(v);
         }
+        writer.end();
         writer.end();
     }
 
