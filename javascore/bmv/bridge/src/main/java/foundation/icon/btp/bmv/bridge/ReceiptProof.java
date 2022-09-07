@@ -65,4 +65,14 @@ public class ReceiptProof {
     public BigInteger getHeight() {
         return height;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ReceiptProof{");
+        sb.append("index=").append(index);
+        sb.append(", events=").append(events);
+        sb.append(", height=").append(height);
+        sb.append('}');
+        return sb.toString();
+    }
 }

@@ -22,11 +22,19 @@ import foundation.icon.icx.data.BTPNetworkInfo;
 import foundation.icon.icx.data.Base64;
 import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.jsonrpc.Address;
+import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import score.ByteArrayObjectWriter;
+import score.Context;
+import score.ObjectReader;
+import score.ObjectWriter;
+import score.annotation.Keep;
+import scorex.util.ArrayList;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MockGovTest implements MockGovIntegrationTest {
     static final String NETWORK_TYPE_NAME = "icon";
     static final String NETWORK_NAME = "0x1.icon";
-
-    static IconService iconService = new IconService(new HttpProvider(mockGovClient.endpoint()));
 
     @BeforeAll
     public static void beforeAll() {
@@ -53,15 +59,10 @@ public class MockGovTest implements MockGovIntegrationTest {
         byte[] message = "testMessage".getBytes();
         chainScoreClient.sendBTPMessage(
                 (txr) -> {
-                    Base64[] base64Messages = null;
-                    try {
-                        base64Messages = iconService.btpGetMessages(txr.getBlockHeight().add(BigInteger.ONE),
-                                BigInteger.valueOf(networkId)).execute();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    assertEquals(1, base64Messages.length);
-                    assertArrayEquals(message, base64Messages[0].decode());
+                    long height = txr.getBlockHeight().longValue() + 1;
+                    byte[][] messages = MockGovIntegrationTest.getMessages(height, networkId);
+                    assertEquals(1, messages.length);
+                    assertArrayEquals(message, messages[0]);
                 },
                 networkId, message);
 

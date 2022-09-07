@@ -47,11 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface ScoreIntegrationTest {
 
-    void internalBeforeEach(TestInfo testInfo);
+    default void internalBeforeEach(TestInfo testInfo) {}
 
-    void internalAfterEach(TestInfo testInfo);
+    default void internalAfterEach(TestInfo testInfo) {}
 
-    void clearIfExists(TestInfo testInfo);
+    default void clearIfExists(TestInfo testInfo) {}
 
     @BeforeEach
     default void beforeEach(TestInfo testInfo) {

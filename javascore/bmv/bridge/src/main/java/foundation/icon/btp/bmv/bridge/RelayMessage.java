@@ -63,4 +63,11 @@ public class RelayMessage {
         return tmp;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RelayMessage{");
+        sb.append("receiptProofs=").append(receiptProofs);
+        sb.append('}');
+        return sb.toString();
+    }
 }

@@ -22,14 +22,6 @@ import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.TestInfo;
 
 public interface BTPIntegrationTest extends ScoreIntegrationTest {
-    @Override
-    default void internalBeforeEach(TestInfo testInfo) {}
-
-    @Override
-    default void internalAfterEach(TestInfo testInfo) {}
-
-    @Override
-    default void clearIfExists(TestInfo testInfo) {}
 
     interface Faker extends ScoreIntegrationTest.Faker {
 
