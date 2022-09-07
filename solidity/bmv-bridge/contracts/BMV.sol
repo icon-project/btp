@@ -9,10 +9,8 @@ import "./libraries/Types.sol";
 import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncode.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-contract BMV is IBMV, Initializable {
-    using String for string;
+contract BMV is IBMV {
+    using Strings for string;
     using RLPDecodeStruct for bytes;
 
     address private bmcAddr;
@@ -20,11 +18,11 @@ contract BMV is IBMV, Initializable {
     uint256 private height;
     bytes[] internal msgs;
 
-    function initialize(
+    constructor (
         address _bmcAddr,
         string memory _netAddr,
         uint256 _height
-    ) public initializer {
+    ) {
         bmcAddr = _bmcAddr;
         netAddr = _netAddr;
         height = _height;
