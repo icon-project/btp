@@ -26,7 +26,6 @@ import foundation.icon.btp.mock.MockRelayMessage;
 import foundation.icon.btp.test.*;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -400,7 +399,9 @@ public class MessageTest implements BMCIntegrationTest {
         BTPMessage assumeMsg = new BTPMessage();
         assumeMsg.setSrc(linkBtpAddress);
         assumeMsg.setSvc(svc);
+        assumeMsg.setDst(BTPAddress.parse(""));
         assumeMsg.setSn(sn);
+        assumeMsg.setPayload(new byte[0]);
 
         BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         BigInteger rxSeq = status.getRx_seq().add(BigInteger.ONE);

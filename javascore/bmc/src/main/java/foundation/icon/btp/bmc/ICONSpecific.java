@@ -120,13 +120,13 @@ public interface ICONSpecific {
      * Drop the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
-     * @param _link String ( BTP Address of connected BMC )
+     * @param _src String ( BTP Address of source BMC )
      * @param _seq  Integer ( number of the message from connected BMC )
      * @param _svc  String ( number of the message from connected BMC )
      * @param _sn   Integer ( serial number of the message, must be positive )
      */
     @External
-    void dropMessage(String _link, BigInteger _seq, String _svc, BigInteger _sn);
+    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn);
 
     /**
      * Schedule to drop message

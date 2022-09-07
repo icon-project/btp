@@ -754,28 +754,31 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @External
-    public void dropMessage(String _link, BigInteger _seq, String _svc, BigInteger _sn) {
+    public void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn) {
         requireOwnerAccess();
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
+        BTPAddress src = BTPAddress.valueOf(_src);
+        BTPAddress next = resolveNext(src);
+        Link link = getLink(next);
         if(link.getRxSeq().add(BigInteger.ONE).compareTo(_seq) != 0) {
             throw BMCException.unknown("invalid _seq");
         }
         if(!services.containsKey(_svc)) {
-            throw BMCException.unknown("invalid _svc");
+            throw BMCException.notExistsBSH();
         }
-        if(_sn.compareTo(BigInteger.ZERO) <= 0) {
-            throw BMCException.unknown("invalid _sn");
+        if(_sn.compareTo(BigInteger.ZERO) < 0) {
+            throw BMCException.invalidSn();
         }
         link.setRxSeq(_seq);
         putLink(link);
 
         BTPMessage assumeMsg = new BTPMessage();
-        assumeMsg.setSrc(target);
+        assumeMsg.setSrc(src);
+        assumeMsg.setDst(BTPAddress.parse(""));
         assumeMsg.setSvc(_svc);
         assumeMsg.setSn(_sn);
-        sendError(target, assumeMsg, BMCException.drop());
-        MessageDropped(_link, _seq, assumeMsg.toBytes());
+        assumeMsg.setPayload(new byte[0]);
+        sendError(next, assumeMsg, BMCException.drop());
+        MessageDropped(next.toString(), _seq, assumeMsg.toBytes());
     }
 
     @External
