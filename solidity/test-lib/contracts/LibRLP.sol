@@ -2,10 +2,10 @@
 pragma solidity >=0.8.0 <0.8.5;
 pragma abicoder v2;
 
-import "../libraries/RLPEncode.sol";
-import "../libraries/RLPDecode.sol";
+import "./libraries/RLPEncode.sol";
+import "./libraries/RLPDecode.sol";
 
-contract TestLibRLP {
+contract LibRLP {
     using RLPEncode for *;
     using RLPDecode for *;
 
@@ -25,35 +25,19 @@ contract TestLibRLP {
         return self.encodeString();
     }
 
-    function encodeAddress(address self)
-        external
-        pure
-        returns (bytes memory)
-    {
+    function encodeAddress(address self) external pure returns (bytes memory) {
         return self.encodeAddress();
     }
 
-    function encodeUint(uint256 self)
-        external
-        pure
-        returns (bytes memory)
-    {
+    function encodeUint(uint256 self) external pure returns (bytes memory) {
         return self.encodeUint();
     }
 
-    function encodeInt(int256 self)
-        external
-        pure
-        returns (bytes memory)
-    {
+    function encodeInt(int256 self) external pure returns (bytes memory) {
         return self.encodeInt();
     }
 
-    function encodeBool(bool self)
-        external
-        pure
-        returns (bytes memory)
-    {
+    function encodeBool(bool self) external pure returns (bytes memory) {
         return self.encodeBool();
     }
 
@@ -63,6 +47,11 @@ contract TestLibRLP {
         returns (bytes memory)
     {
         return self.encodeList();
+    }
+
+    function encodeNull() external pure returns (bytes memory)
+    {
+        return RLPEncode.encodeNull();
     }
 
     function decodeBytes(bytes memory rlpBytes)
@@ -89,27 +78,15 @@ contract TestLibRLP {
         return rlpBytes.toRlpItem().toAddress();
     }
 
-    function decodeUint(bytes memory rlpBytes)
-        external
-        pure
-        returns (uint256)
-    {
+    function decodeUint(bytes memory rlpBytes) external pure returns (uint256) {
         return rlpBytes.toRlpItem().toUint();
     }
 
-    function decodeInt(bytes memory rlpBytes)
-        external
-        pure
-        returns (int256)
-    {
+    function decodeInt(bytes memory rlpBytes) external pure returns (int256) {
         return rlpBytes.toRlpItem().toInt();
     }
 
-    function decodeBool(bytes memory rlpBytes)
-        external
-        pure
-        returns (bool)
-    {
+    function decodeBool(bytes memory rlpBytes) external pure returns (bool) {
         return rlpBytes.toRlpItem().toBoolean();
     }
 

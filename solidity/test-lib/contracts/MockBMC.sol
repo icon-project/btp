@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.0 <0.8.5;
 
-import "../interfaces/IBMC.sol";
-import "../interfaces/IBSH.sol";
-import "../libraries/ParseAddress.sol";
-import "../libraries/Integers.sol";
+import "./interfaces/IBMC.sol";
+import "./interfaces/IBMV.sol";
+import "./interfaces/IBSH.sol";
+import "./libraries/ParseAddress.sol";
+import "./libraries/Integers.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-contract MockForBSH is IBMC, Initializable {
+contract MockBMC is IBMC {
     using ParseAddress for address;
     using Integers for uint;
 
     string private net;
     string private btpAddress;
 
-    function initialize(
+    constructor(
         string memory _net
-    ) public initializer {
+    ) {
         net = _net;
         btpAddress = string(abi.encodePacked("btp://", _net, "/", address(this).toString()));
     }
@@ -39,6 +38,31 @@ contract MockForBSH is IBMC, Initializable {
         return btpAddress;
     }
 
+    function handleRelayMessage(
+        address _addr,
+        string calldata _prev,
+        uint256 _seq,
+        bytes calldata _msg
+    ) external {
+        try IBMV(_addr).handleRelayMessage(btpAddress, _prev, _seq, _msg) returns (
+            bytes[] memory _ret
+        ){
+            emit HandleRelayMessage(_ret);
+        } catch Error(string memory err) {
+            emit ErrorHandleRelayMessage(err);
+        } catch (bytes memory _err) {
+            emit ErrorHandleRelayMessage("Unknown");
+        }
+    }
+
+    event HandleRelayMessage(
+        bytes[] _ret
+    );
+
+    event ErrorHandleRelayMessage(
+        string err
+    );
+
     function sendMessage(
         string memory _to,
         string memory _svc,
@@ -55,7 +79,7 @@ contract MockForBSH is IBMC, Initializable {
         bytes _msg
     );
 
-    function intercallHandleBTPMessage(
+    function handleBTPMessage(
         address _addr,
         string memory _from,
         string memory _svc,
@@ -66,6 +90,8 @@ contract MockForBSH is IBMC, Initializable {
 
         } catch Error(string memory err) {
             emit ErrorHandleBTPMessage(err);
+        } catch (bytes memory _err) {
+            emit ErrorHandleBTPMessage("Unknown");
         }
     }
 
@@ -73,7 +99,7 @@ contract MockForBSH is IBMC, Initializable {
         string err
     );
 
-    function intercallHandleBTPError(
+    function handleBTPError(
         address _addr,
         string memory _src,
         string memory _svc,
@@ -85,6 +111,8 @@ contract MockForBSH is IBMC, Initializable {
 
         } catch Error(string memory err) {
             emit ErrorHandleBTPError(err);
+        } catch (bytes memory _err) {
+            emit ErrorHandleBTPError("Unknown");
         }
     }
 

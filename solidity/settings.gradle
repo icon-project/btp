@@ -1,0 +1,8 @@
+rootProject.name = 'solidity'
+include (
+        'bmc',
+        'bmv-bridge',
+        'test-lib',
+        'xcall',
+)
+

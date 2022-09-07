@@ -1,0 +1,21 @@
+version = '1.0-SNAPSHOT'
+
+web3j {
+    // cause Unsupported type encountered: tuple => it's not allowed struct array in struct, not fully support ABIv2
+    // refer https://github.com/web3j/web3j/issues/935
+//    excludedContracts = []
+    generatedPackageName = "foundation.icon.btp.mock"
+}
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:0.9.1")
+
+    //for test package
+    implementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+    implementation("org.junit.jupiter:junit-jupiter-params:5.7.2")
+    runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
+
+    implementation("com.github.javafaker:javafaker:1.0.2")
+
+    testImplementation("foundation.icon:javaee-unittest:0.9.4")
+}
