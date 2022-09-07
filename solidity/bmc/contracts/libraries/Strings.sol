@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.8.5;
 
 /**
- * String Library
+ * Strings Library
  *
  * This is a simple library of string functions which try to simplify
  * string operations in solidity.
@@ -12,7 +12,7 @@ pragma solidity >=0.8.0 <0.8.5;
  * The original library was modified. If you want to know more about the original version
  * please check this link: https://github.com/willitscale/solidity-util.git
  */
-library String {
+library Strings {
     /**
      * splitBTPAddress
      *
@@ -31,6 +31,23 @@ library String {
     {
         string[] memory temp = split(_base, "/");
         return (temp[2], temp[3]);
+    }
+
+    function bytesToHex(bytes memory buffer) public pure returns (string memory) {
+        if (buffer.length == 0) {
+            return string("0x");
+        }
+        // Fixed buffer size for hexadecimal convertion
+        bytes memory converted = new bytes(buffer.length * 2);
+
+        bytes memory _base = "0123456789abcdef";
+
+        for (uint256 i = 0; i < buffer.length; i++) {
+            converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+        }
+
+        return string(abi.encodePacked("0x", converted));
     }
 
     /**
@@ -200,5 +217,48 @@ library String {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Lower
+     *
+     * Converts all the values of a string to their corresponding lower case
+     * value.
+     *
+     * @param _base When being used for a data type this is the extended object
+     *              otherwise this is the string base to convert to lower case
+     * @return string
+     */
+    function lower(string memory _base)
+        internal
+        pure
+        returns (string memory) {
+        bytes memory _baseBytes = bytes(_base);
+        for (uint i = 0; i < _baseBytes.length; i++) {
+            _baseBytes[i] = _lower(_baseBytes[i]);
+        }
+        return string(_baseBytes);
+    }
+
+    /**
+     * Lower
+     *
+     * Convert an alphabetic character to lower case and return the original
+     * value when not alphabetic
+     *
+     * @param _b1 The byte to be converted to lower case
+     * @return bytes1 The converted value if the passed value was alphabetic
+     *                and in a upper case otherwise returns the original value
+     */
+    function _lower(bytes1 _b1)
+        private
+        pure
+        returns (bytes1) {
+
+        if (_b1 >= 0x41 && _b1 <= 0x5A) {
+            return bytes1(uint8(_b1) + 32);
+        }
+
+        return _b1;
     }
 }

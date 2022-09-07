@@ -9,30 +9,33 @@ import "./interfaces/IBMCManagement.sol";
 import "./libraries/ParseAddress.sol";
 import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncodeStruct.sol";
-import "./libraries/String.sol";
+import "./libraries/Strings.sol";
 import "./libraries/Types.sol";
+import "./libraries/Utils.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract BMCPeriphery is IBMCPeriphery, Initializable {
-    using String for string;
+    using Strings for string;
     using ParseAddress for address;
     using RLPDecodeStruct for bytes;
     using RLPEncodeStruct for Types.BTPMessage;
     using RLPEncodeStruct for Types.ErrorMessage;
+    using Utils for uint256[];
 
     uint256 internal constant UNKNOWN_ERR = 0;
     uint256 internal constant BMC_ERR = 10;
+    uint256 internal constant BMC_ERR_CODE_DROP = 22;
+    string internal constant BMC_ERR_NAME_DROP = "Drop";
     uint256 internal constant BMV_ERR = 25;
     uint256 internal constant BSH_ERR = 40;
 
-    string internal constant BMCRevertUnauthorized = "Unauthorized";
+    string internal constant BMC_INTERNAL_SERVICE = "bmc";
+    string internal constant BMCRevertUnauthorized = "11:Unauthorized";
     string internal constant BMCRevertParseFailure = "ParseFailure";
-    string internal constant BMCRevertNotExistsBSH = "NotExistsBSH";
-    string internal constant BMCRevertNotExistsLink = "NotExistsLink";
-    string internal constant BMCRevertInvalidSn = "InvalidSn";
-    string internal constant BMCRevertInvalidSeqNumber =
-        "InvalidSeqNumber";
+    string internal constant BMCRevertNotExistsBSH = "16:NotExistsBSH";
+    string internal constant BMCRevertNotExistsLink = "18:NotExistsLink";
+    string internal constant BMCRevertInvalidSn = "12:InvalidSn";
     string internal constant BMCRevertNotExistsInternalHandler =
         "NotExistsInternalHandler";
     string internal constant BMCRevertUnknownHandleBTPError =
@@ -42,6 +45,13 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
 
     string private bmcBtpAddress; // a network address, i.e. btp://1234.pra/0xabcd
     address private bmcManagement;
+
+    uint256[] private drops;
+
+    modifier onlyBMCManagement() {
+        require(msg.sender == bmcManagement, BMCRevertUnauthorized);
+        _;
+    }
 
     function initialize(string memory _network, address _bmcManagementAddr)
         public
@@ -84,21 +94,18 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         external
         override
     {
-        (string memory _net, ) = _prev.splitBTPAddress();
+        (string memory prevNet, ) = _prev.splitBTPAddress();
         address _bmvAddr = IBMCManagement(bmcManagement).getBmvServiceByNet(
-            _net
+            prevNet
         );
 
         require(_bmvAddr != address(0), "NotExistsBMV");
         (uint256 _prevHeight,) = IBMV(_bmvAddr).getStatus();
 
+        uint256 rxSeq = IBMCManagement(bmcManagement).getLink(_prev).rxSeq;
         // decode and verify relay message
         bytes[] memory serializedMsgs = IBMV(_bmvAddr).handleRelayMessage(
-            bmcBtpAddress,
-            _prev,
-            IBMCManagement(bmcManagement).getLinkRxSeq(_prev),
-            _msg
-        );
+            bmcBtpAddress, _prev, rxSeq, _msg);
 
         require(IBMCManagement(bmcManagement).isLinkRelay(_prev, msg.sender), BMCRevertUnauthorized);
 
@@ -109,6 +116,9 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
             _height - _prevHeight,
             serializedMsgs.length
         );
+
+        bool dropped = false;
+        drops = IBMCManagement(bmcManagement).getScheduledDropMessages(_prev);
 
         // dispatch BTP Messages
         Types.BTPMessage memory btpMsg;
@@ -121,33 +131,45 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 // ignore BTPMessage parse failure
                 continue;
             }
-
-            if (btpMsg.dst.compareTo(bmcBtpAddress)) {
-                if (btpMsg.svc.compareTo("bmc")) {
-                    handleInternal(_prev, btpMsg);
-                } else {
-                    handleService(_prev, btpMsg);
+            rxSeq++;
+            if (drops.length > 0 && drops.removeFromUints(rxSeq)) {
+                if (btpMsg.sn > 0) {
+                    _sendError(_prev, prevNet, btpMsg, BMC_ERR_CODE_DROP, BMC_ERR_NAME_DROP);
                 }
+                emit MessageDropped(_prev, rxSeq, serializedMsgs[i]);
+                dropped = true;
             } else {
-                (_net, ) = btpMsg.dst.splitBTPAddress();
-                try IBMCManagement(bmcManagement).resolveRoute(_net) returns (
-                    string memory _nextLink,
-                    string memory
-                ) {
-                    _sendMessage(_nextLink, serializedMsgs[i]);
-                } catch Error(string memory _error) {
-                    _sendError(_prev, btpMsg, BMC_ERR, _error);
+                if (btpMsg.dst.compareTo(bmcBtpAddress)) {
+                    if (btpMsg.svc.compareTo(BMC_INTERNAL_SERVICE)) {
+                        handleInternal(_prev, prevNet, btpMsg);
+                    } else {
+                        handleService(_prev, prevNet, btpMsg);
+                    }
+                } else {
+                    (string memory dstNet, ) = btpMsg.dst.splitBTPAddress();
+                    try IBMCManagement(bmcManagement).resolveRoute(dstNet) returns (
+                        string memory nextLink,
+                        string memory
+                    ) {
+                        (string memory nextNet, ) = nextLink.splitBTPAddress();
+                        _sendMessage(nextLink, nextNet, serializedMsgs[i]);
+                    } catch Error(string memory _error) {
+                        _sendError(_prev, prevNet, btpMsg, BMC_ERR, _error);
+                    }
                 }
             }
         }
+        if (dropped) {
+            IBMCManagement(bmcManagement).setScheduledDropMessages(_prev, drops);
+        }
         IBMCManagement(bmcManagement).updateLinkRxSeq(
-            _prev,
+            prevNet,
             serializedMsgs.length
         );
 
     }
 
-    function handleInternal(string calldata _prev, Types.BTPMessage memory _msg)
+    function handleInternal(string calldata _prev, string memory prevNet, Types.BTPMessage memory _msg)
     internal
     {
         Types.BMCService memory _sm;
@@ -156,50 +178,21 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         ) {
             _sm = res;
         } catch {
-            _sendError(_prev, _msg, BMC_ERR, BMCRevertParseFailure);
+            _sendError(_prev, prevNet, _msg, BMC_ERR, BMCRevertParseFailure);
             return;
         }
 
         if (_sm.serviceType.compareTo("Link")) {
-            string memory _to = _sm.payload.decodePropagateMessage();
-            Types.Link memory link = IBMCManagement(bmcManagement).getLink(
-                _prev
-            );
-            bool check;
-            if (link.isConnected) {
-                for (uint256 i = 0; i < link.reachable.length; i++)
-                    if (_to.compareTo(link.reachable[i])) {
-                        check = true;
-                        break;
-                    }
-                if (!check) {
-                    string[] memory _links = new string[](1);
-                    _links[0] = _to;
-                    IBMCManagement(bmcManagement).updateLinkReachable(
-                        _prev,
-                        _links
-                    );
-                }
-            }
-        } else if (_sm.serviceType.compareTo("Unlink")) {
-            string memory _to = _sm.payload.decodePropagateMessage();
-            Types.Link memory link = IBMCManagement(bmcManagement).getLink(
-                _prev
-            );
-            if (link.isConnected) {
-                for (uint256 i = 0; i < link.reachable.length; i++) {
-                    if (_to.compareTo(link.reachable[i]))
-                        IBMCManagement(bmcManagement).deleteLinkReachable(
-                            _prev,
-                            i
-                        );
-                }
-            }
-        } else if (_sm.serviceType.compareTo("Init")) {
-            string[] memory _links = _sm.payload.decodeInitMessage();
             IBMCManagement(bmcManagement).updateLinkReachable(
-                _prev,
-                _links
+                prevNet, _sm.payload.decodePropagateMessage(), false
+            );
+        } else if (_sm.serviceType.compareTo("Unlink")) {
+            IBMCManagement(bmcManagement).updateLinkReachable(
+                prevNet, _sm.payload.decodePropagateMessage(), true
+            );
+        } else if (_sm.serviceType.compareTo("Init")) {
+            IBMCManagement(bmcManagement).setLinkReachable(
+                prevNet, _sm.payload.decodeInitMessage()
             );
         } else if (_sm.serviceType.compareTo("Sack")) {
             // skip this case since it has been removed from internal services
@@ -207,14 +200,14 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         } else revert(BMCRevertNotExistsInternalHandler);
     }
 
-    function handleService(string calldata _prev, Types.BTPMessage memory _msg)
+    function handleService(string calldata _prev, string memory prevNet, Types.BTPMessage memory _msg)
         internal
     {
         address _bshAddr = IBMCManagement(bmcManagement).getBshServiceByName(
             _msg.svc
         );
         if (_bshAddr == address(0)) {
-            _sendError(_prev, _msg, BMC_ERR, BMCRevertNotExistsBSH);
+            _sendError(_prev, prevNet, _msg, BMC_ERR, BMCRevertNotExistsBSH);
             return;
         }
 
@@ -227,14 +220,9 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 _msg.message
             ){
             } catch Error(string memory reason) {
-                _sendError(_prev, _msg, BSH_ERR, reason);
+                _sendError(_prev, prevNet, _msg, BSH_ERR, reason);
             } catch (bytes memory) {
-                _sendError(
-                    _prev,
-                    _msg,
-                    BSH_ERR,
-                    BMCRevertUnknownHandleBTPMessage
-                );
+                _sendError(_prev, prevNet, _msg, BSH_ERR, BMCRevertUnknownHandleBTPMessage);
             }
         } else {
             Types.ErrorMessage memory _res = _msg.message.decodeErrorMessage();
@@ -289,19 +277,19 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         return _msg.decodeBMCService();
     }
 
-    function _sendMessage(string memory _to, bytes memory _serializedMsg)
+    function _sendMessage(string memory next, string memory net, bytes memory _serializedMsg)
         internal
     {
-        IBMCManagement(bmcManagement).updateLinkTxSeq(_to);
         emit Message(
-            _to,
-            IBMCManagement(bmcManagement).getLinkTxSeq(_to),
+            next,
+            IBMCManagement(bmcManagement).updateLinkTxSeq(net),
             _serializedMsg
         );
     }
 
     function _sendError(
         string calldata _prev,
+        string memory prevNet,
         Types.BTPMessage memory _message,
         uint256 _errCode,
         string memory _errMsg
@@ -315,7 +303,7 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                     Types.ErrorMessage(_errCode, _errMsg).encodeErrorMessage()
                 )
                 .encodeBTPMessage();
-            _sendMessage(_prev, _serializedMsg);
+            _sendMessage(_prev, prevNet, _serializedMsg);
         }
     }
 
@@ -333,27 +321,28 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
         uint256 _sn,
         bytes memory _msg
     ) external override {
-        require(
-            msg.sender == bmcManagement ||
-                IBMCManagement(bmcManagement).getBshServiceByName(_svc) ==
-                msg.sender,
-            BMCRevertUnauthorized
-        );
+        address bshAddress = IBMCManagement(bmcManagement).getBshServiceByName(_svc);
+        require(bshAddress != address(0), BMCRevertNotExistsBSH);
+        require(bshAddress == msg.sender, BMCRevertUnauthorized);
         require(_sn >= 0, BMCRevertInvalidSn);
-        //  In case BSH sends a REQUEST_COIN_TRANSFER,
-        //  but '_to' is a network which is not supported by BMC
-        //  revert() therein
-        if (
-            IBMCManagement(bmcManagement).getBmvServiceByNet(_to) == address(0)
-        ) {
-            revert(BMCRevertNotExistsLink);
-        }
-        (string memory _nextLink, string memory _dst) = IBMCManagement(
+
+        (string memory next, string memory dst) = IBMCManagement(
             bmcManagement
         ).resolveRoute(_to);
-        bytes memory _rlp = Types.BTPMessage(bmcBtpAddress, _dst, _svc, int256(_sn), _msg)
+        bytes memory _rlp = Types.BTPMessage(bmcBtpAddress, dst, _svc, int256(_sn), _msg)
             .encodeBTPMessage();
-        _sendMessage(_nextLink, _rlp);
+        (string memory nextNet, ) = next.splitBTPAddress();
+        _sendMessage(next, nextNet, _rlp);
+    }
+
+    function sendInternal(
+        string memory _next,
+        uint256 _seq,
+        bytes memory _msg
+    ) external override onlyBMCManagement {
+        bytes memory _rlp = Types.BTPMessage(bmcBtpAddress, _next, BMC_INTERNAL_SERVICE, 0, _msg)
+            .encodeBTPMessage();
+        emit Message(_next, _seq, _rlp);
     }
 
     /*
@@ -371,16 +360,55 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
     {
         Types.Link memory link = IBMCManagement(bmcManagement).getLink(_link);
         require(link.isConnected == true, BMCRevertNotExistsLink);
-        (string memory _net, ) = _link.splitBTPAddress();
-        (uint256 _height, bytes memory extra) = IBMV(
-            IBMCManagement(bmcManagement).getBmvServiceByNet(_net)
+        (string memory net, ) = _link.splitBTPAddress();
+        (uint256 height, bytes memory extra) = IBMV(
+            IBMCManagement(bmcManagement).getBmvServiceByNet(net)
         ).getStatus();
         return
             Types.LinkStats(
                 link.rxSeq,
                 link.txSeq,
-                Types.VerifierStats(_height, extra),
+                Types.VerifierStats(height, extra),
                 block.number
             );
+    }
+
+    /**
+        @notice (EventLog) Drop the message of the connected BMC
+        @param _link String ( BTP Address of connected BMC )
+        @param _seq  Integer ( sequence number of the message from connected BMC )
+        @param _msg  Bytes ( serialized bytes of BTP Message )
+    */
+    event MessageDropped(string _link, uint256 _seq, bytes _msg);
+
+    /**
+        @notice Drop the message of the connected BMC
+        @dev Caller must be an BMCManagement.
+        @param _src  String ( BTP Address of source BMC to drop )
+        @param _link String ( BTP Address of previous BMC to drop )
+        @param _seq  Integer ( Sequence number to drop )
+        @param _svc  String ( Name of the service to drop )
+        @param _sn   Integer ( Serial number of the message to drop )
+        @param _txSeq  Integer ( Sequence number of the error message to send to source )
+    */
+    function dropMessage(
+        string memory _src,
+        string memory _link,
+        uint256 _seq,
+        string memory _svc,
+        uint256 _sn,
+        uint256 _txSeq
+    ) external override onlyBMCManagement {
+        //instead _sendError
+        emit Message(_link, _seq,
+            Types.BTPMessage(
+                bmcBtpAddress,
+                _src,
+                _svc,
+                int256(_sn) * -1,
+                Types.ErrorMessage(BMC_ERR_CODE_DROP, BMC_ERR_NAME_DROP).encodeErrorMessage())
+            .encodeBTPMessage());
+        emit MessageDropped(_link, _txSeq,
+            Types.BTPMessage(_src, "", _svc, int256(_sn), bytes("")).encodeBTPMessage());
     }
 }

@@ -8,7 +8,7 @@ import "../interfaces/IBMV.sol";
 import "../libraries/ParseAddress.sol";
 import "../libraries/RLPEncode.sol";
 import "../libraries/RLPEncodeStruct.sol";
-import "../libraries/String.sol";
+import "../libraries/Strings.sol";
 import "../libraries/Types.sol";
 import "../libraries/Utils.sol";
 
@@ -21,48 +21,68 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     using RLPEncode for string;
     using RLPEncodeStruct for uint256;
     using RLPEncodeStruct for Types.BMCService;
-    using String for string;
-    using Utils for uint256;
+    using RLPEncodeStruct for string[];
+    using RLPEncodeStruct for string;
+    using Strings for string;
     using Utils for string[];
+    using Utils for address[];
+    using Utils for uint256[];
+
+    string internal constant BMCRevertInvalidAddress = "InvalidAddress";
+    string internal constant BMCRevertAlreadyExistsBMV = "13:AlreadyExistsBMV";
+    string internal constant BMCRevertNotExistsBMV = "14:NotExistsBMV";
+    string internal constant BMCRevertAlreadyExistsBSH = "15:AlreadyExistsBSH";
+    string internal constant BMCRevertNotExistsBSH = "16:NotExistsBSH";
+    string internal constant BMCRevertAlreadyExistsLink = "17:AlreadyExistsLink";
+    string internal constant BMCRevertNotExistsLink = "18:NotExistsLink";
+    string internal constant BMCRevertAlreadyExistsRoute = "10:AlreadyExistRoute";
+    string internal constant BMCRevertNotExistsRoute = "10:NotExistsRoute";
+    string internal constant BMCRevertAlreadyExistsBMR = "19:AlreadyExistsBMR";
+    string internal constant BMCRevertNotExistsBMR = "20:NotExistsBMR";
+    string internal constant BMCRevertUnauthorized = "11:Unauthorized";
+    string internal constant BMCRevertUnreachable = "21:Unreachable";
+    string internal constant BMCRevertInvalidSn = "12:InvalidSn";
+    string internal constant BMCRevertInvalidSeq = "10:InvalidSeq";
 
     mapping(address => bool) private _owners;
     uint256 private numOfOwner;
 
-    mapping(string => address) private bshServices;
-    mapping(string => address) private bmvServices;
-    mapping(string => Types.RelayStats) private relayStats; //key=concat(link, address of relay)
-    mapping(string => string) private routes;
-    mapping(string => Types.Link) internal links; // should be private, temporarily set internal for testing
-    string[] private listBMVNames;
-    string[] private listBSHNames;
-    string[] private listRouteKeys;
-    string[] private listLinkNames;
+    mapping(string => address) private bshMap;//svc of bsh => address of BSH
+    mapping(string => address) private bmvMap;//net of bmv => address of BMV
+    mapping(string => Types.Link) private linkMap; //net of link => Types.Link
+    mapping(string => string[]) private reachableMap;//net of link => list of reachable of link
+    mapping(string => Types.Route) private routeMap;//net of destination => Types.Route
+    mapping(string => address[]) private relayMap; //net => list of address of relay
+    mapping(string => mapping(address => Types.RelayStats)) private relayStats; //link => address of relay => Types.RelayStats
+    mapping(string => uint256[]) private drops;//link => list of sequence to drop
+    string[] private bmvKeyList;//list of net of bmv
+    string[] private bshKeyList;//list of svc of bsh
+    string[] private routeList;//list of destination of route
+    string[] private linkList;//list of link
     address private bmcPeriphery;
 
-    uint256 public serialNo;
-
-    // Use to search by substring
-    mapping(string => string) private getRouteDstFromNet;
-    mapping(string => string) private getLinkFromNet;
-    mapping(string => Types.Tuple) private getLinkFromReachableNet;
-
-    uint256 private constant BLOCK_INTERVAL_MSEC = 1000;
-
-    modifier hasPermission {
-        //  As Soliditty Security Consideration mentioned: https://docs.soliditylang.org/en/v0.6.2/security-considerations.html
-        //  tx.origin should not be used in checking authorization
-        //  However, PyScore implementation have used both 'msg.sender' and 'tx.orgin'
-        //  Thus, this code just follows it
-        require(
-            _owners[msg.sender] == true || _owners[tx.origin] == true,
-            "Unauthorized"
-        );
+    modifier hasPermission() {
+        require(_owners[msg.sender] == true, "11:Unauthorized");
         _;
     }
 
     modifier onlyBMCPeriphery() {
-        require(msg.sender == bmcPeriphery, "Unauthorized");
+        require(msg.sender == bmcPeriphery, "onlyBMCPeriphery");
         _;
+    }
+
+    function requireLink(
+        string memory _link
+    ) internal view returns (string memory) {
+        (string memory net, ) = _link.splitBTPAddress();
+        require(linkMap[net].isConnected == true, BMCRevertNotExistsLink);
+        return net;
+    }
+
+    function requireValidAddress(
+        address addr
+    ) internal pure {
+        require(addr != address(0), BMCRevertInvalidAddress);
     }
 
     function initialize() public initializer {
@@ -71,9 +91,12 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     }
 
     function setBMCPeriphery(address _addr) external override hasPermission {
-        require(_addr != address(0), "InvalidAddress");
-        require(_addr != bmcPeriphery, "AlreadyExistsBMCPeriphery");
+        requireValidAddress(_addr);
         bmcPeriphery = _addr;
+    }
+
+    function getBMCPeriphery() external view override returns (address) {
+        return bmcPeriphery;
     }
 
     /*****************************************************************************************
@@ -89,6 +112,8 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _owner    Address of a new Onwer.
    */
     function addOwner(address _owner) external override hasPermission {
+        requireValidAddress(_owner);
+        require(_owners[_owner] == false, "10:AlreadyExists");
         _owners[_owner] = true;
         numOfOwner++;
     }
@@ -100,8 +125,8 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _owner    Address of an Owner to be removed.
      */
     function removeOwner(address _owner) external override hasPermission {
+        require(_owners[_owner] == true, "10:NotExists");
         require(numOfOwner > 1, "LastOwner");
-        require(_owners[_owner] == true, "NotExistsPermission");
         delete _owners[_owner];
         numOfOwner--;
     }
@@ -126,10 +151,10 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(_addr != address(0), "InvalidAddress");
-        require(bshServices[_svc] == address(0), "AlreadyExistsBSH");
-        bshServices[_svc] = _addr;
-        listBSHNames.push(_svc);
+        requireValidAddress(_addr);
+        require(bshMap[_svc] == address(0), BMCRevertAlreadyExistsBSH);
+        bshMap[_svc] = _addr;
+        bshKeyList.push(_svc);
     }
 
     /**
@@ -138,9 +163,9 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _svc     Name of the service
    */
     function removeService(string memory _svc) external override hasPermission {
-        require(bshServices[_svc] != address(0), "NotExistsBSH");
-        delete bshServices[_svc];
-        listBSHNames.remove(_svc);
+        require(bshMap[_svc] != address(0), BMCRevertNotExistsBSH);
+        delete bshMap[_svc];
+        bshKeyList.removeFromStrings(_svc);
     }
 
     /**
@@ -154,12 +179,12 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     returns (Types.Service[] memory)
     {
         Types.Service[] memory services = new Types.Service[](
-            listBSHNames.length
+            bshKeyList.length
         );
-        for (uint256 i = 0; i < listBSHNames.length; i++) {
+        for (uint256 i = 0; i < bshKeyList.length; i++) {
             services[i] = Types.Service(
-                listBSHNames[i],
-                bshServices[listBSHNames[i]]
+                bshKeyList[i],
+                bshMap[bshKeyList[i]]
             );
         }
         return services;
@@ -176,9 +201,10 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(bmvServices[_net] == address(0), "AlreadyExistsBMV");
-        bmvServices[_net] = _addr;
-        listBMVNames.push(_net);
+        requireValidAddress(_addr);
+        require(bmvMap[_net] == address(0), BMCRevertAlreadyExistsBMV);
+        bmvMap[_net] = _addr;
+        bmvKeyList.push(_net);
     }
 
     /**
@@ -191,9 +217,9 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(bmvServices[_net] != address(0), "NotExistsBMV");
-        delete bmvServices[_net];
-        listBMVNames.remove(_net);
+        require(bmvMap[_net] != address(0), BMCRevertNotExistsBMV);
+        delete bmvMap[_net];
+        bmvKeyList.removeFromStrings(_net);
     }
 
     /**
@@ -207,12 +233,12 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     returns (Types.Verifier[] memory)
     {
         Types.Verifier[] memory verifiers =
-        new Types.Verifier[](listBMVNames.length);
+        new Types.Verifier[](bmvKeyList.length);
 
-        for (uint256 i = 0; i < listBMVNames.length; i++) {
+        for (uint256 i = 0; i < bmvKeyList.length; i++) {
             verifiers[i] = Types.Verifier(
-                listBMVNames[i],
-                bmvServices[listBMVNames[i]]
+                bmvKeyList[i],
+                bmvMap[bmvKeyList[i]]
             );
         }
         return verifiers;
@@ -224,30 +250,26 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _link    BTP Address of connected BMC
    */
     function addLink(string calldata _link) external override hasPermission {
-        (string memory _net, ) = _link.splitBTPAddress();
-        require(bmvServices[_net] != address(0), "NotExistsBMV");
-        require(
-            links[_link].isConnected == false,
-            "AlreadyExistsLink"
-        );
-        links[_link] = Types.Link(
-            new address[](0),
-            new string[](0),
+        (string memory net, ) = _link.splitBTPAddress();
+        require(bmvMap[net] != address(0), BMCRevertNotExistsBMV);
+        require(linkMap[net].isConnected == false,BMCRevertAlreadyExistsLink);
+
+        // propagate an event "Link"
+        propagateInternal(
+            Types.BMCService("Link", _link.encodePropagateMessage())
+            .encodeBMCService());
+        bytes memory initMsg = Types.BMCService("Init", linkList.encodeInitMessage())
+        .encodeBMCService();
+        // store link
+        linkMap[net] = Types.Link(
+            _link,
             0,
             0,
             true
         );
-
-        // propagate an event "LINK"
-        propagateInternal("Link", _link);
-
-        string[] memory _links = listLinkNames;
-
-        listLinkNames.push(_link);
-        getLinkFromNet[_net] = _link;
-
+        linkList.push(_link);
         // init link
-        sendInternal(_link, "Init", _links);
+        sendInternal(_link, net, initMsg);
     }
 
     /**
@@ -256,12 +278,26 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _link    BTP Address of connected BMC
    */
     function removeLink(string calldata _link) external override hasPermission {
-        require(links[_link].isConnected == true, "NotExistsLink");
-        delete links[_link];
-        (string memory _net, ) = _link.splitBTPAddress();
-        delete getLinkFromNet[_net];
-        propagateInternal("Unlink", _link);
-        listLinkNames.remove(_link);
+        string memory net = requireLink(_link);
+
+        for (uint256 i = 0; i < routeList.length; i++) {
+            (string memory dstNet, ) = routeList[i].splitBTPAddress();
+            if (routeMap[dstNet].next.compareTo(_link)) {
+                revert("10:referred by route");
+            }
+        }
+        propagateInternal(
+            Types.BMCService("Unlink", _link.encodePropagateMessage())
+            .encodeBMCService());
+
+        for (uint256 i = 0; i < relayMap[net].length; i++) {
+            delete relayStats[_link][relayMap[net][i]];
+        }
+        delete relayMap[net];
+        delete reachableMap[net];
+        delete linkMap[net];
+        linkList.removeFromStrings(_link);
+        delete drops[_link];
     }
 
     /**
@@ -269,71 +305,26 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @return _links   An array of links ( BTP Addresses of the BMCs ).
     */
     function getLinks() external view override returns (string[] memory) {
-        return listLinkNames;
+        return linkList;
     }
 
     function propagateInternal(
-        string memory _serviceType,
-        string calldata _link
+        bytes memory serializedMsg
     ) private {
-        bytes memory _rlpBytes;
-        _rlpBytes = abi.encodePacked(_rlpBytes, _link.encodeString());
-
-        _rlpBytes = abi.encodePacked(
-            _rlpBytes.length.addLength(false),
-            _rlpBytes
-        );
-
-        // encode payload
-        _rlpBytes = abi
-        .encodePacked(_rlpBytes.length.addLength(false), _rlpBytes)
-        .encodeBytes();
-
-        for (uint256 i = 0; i < listLinkNames.length; i++) {
-            if (links[listLinkNames[i]].isConnected) {
-                (string memory _net, ) = listLinkNames[i].splitBTPAddress();
-                IBMCPeriphery(bmcPeriphery).sendMessage(
-                    _net,
-                    "bmc",
-                    0,
-                    Types.BMCService(_serviceType, _rlpBytes).encodeBMCService()
-                );
-            }
+        for (uint256 i = 0; i < linkList.length; i++) {
+            (string memory net, ) = linkList[i].splitBTPAddress();
+            sendInternal(linkList[i], net, serializedMsg);
         }
     }
 
     function sendInternal(
-        string memory _target,
-        string memory _serviceType,
-        string[] memory _links
+        string memory link,
+        string memory linkNet,
+        bytes memory serializedMsg
     ) private {
-        bytes memory _rlpBytes;
-        if (_links.length == 0) {
-            _rlpBytes = abi.encodePacked(RLPEncodeStruct.LIST_SHORT_START);
-        } else {
-            for (uint256 i = 0; i < _links.length; i++)
-                _rlpBytes = abi.encodePacked(
-                    _rlpBytes,
-                    _links[i].encodeString()
-                );
-            // encode target's reachable list
-            _rlpBytes = abi.encodePacked(
-                _rlpBytes.length.addLength(false),
-                _rlpBytes
-            );
-        }
-        // encode payload
-        _rlpBytes = abi
-        .encodePacked(_rlpBytes.length.addLength(false), _rlpBytes)
-        .encodeBytes();
-
-        (string memory _net, ) = _target.splitBTPAddress();
-        IBMCPeriphery(bmcPeriphery).sendMessage(
-            _net,
-            "bmc",
-            0,
-            Types.BMCService(_serviceType, _rlpBytes).encodeBMCService()
-        );
+        linkMap[linkNet].txSeq++;
+        IBMCPeriphery(bmcPeriphery).sendInternal(
+            link, linkMap[linkNet].txSeq, serializedMsg);
     }
 
     /**
@@ -347,16 +338,12 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(bytes(routes[_dst]).length == 0, "AlreadyExistRoute");
-        //  Verify _dst and _link format address
-        //  these two strings must follow BTP format address
-        //  If one of these is failed, revert()
-        (string memory _net, ) = _dst.splitBTPAddress();
-        _link.splitBTPAddress();
+        (string memory dstNet, ) = _dst.splitBTPAddress();
+        require(bytes(routeMap[dstNet].dst).length == 0, BMCRevertAlreadyExistsRoute);
+        requireLink(_link);
 
-        routes[_dst] = _link; //  map _dst to _link
-        listRouteKeys.push(_dst); //  push _dst key into an array of route keys
-        getRouteDstFromNet[_net] = _dst;
+        routeMap[dstNet] = Types.Route(_dst, _link);
+        routeList.push(_dst);
     }
 
     /**
@@ -365,14 +352,10 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @param _dst     BTP Address of the destination BMC
     */
     function removeRoute(string memory _dst) external override hasPermission {
-        //  @dev No need to check if _dst is a valid BTP format address
-        //  since it was checked when adding route at the beginning
-        //  If _dst does not match, revert()
-        require(bytes(routes[_dst]).length != 0, "NotExistRoute");
-        delete routes[_dst];
-        (string memory _net, ) = _dst.splitBTPAddress();
-        delete getRouteDstFromNet[_net];
-        listRouteKeys.remove(_dst);
+        (string memory dstNet, ) = _dst.splitBTPAddress();
+        require(bytes(routeMap[dstNet].dst).length > 0, BMCRevertNotExistsRoute);
+        delete routeMap[dstNet];
+        routeList.removeFromStrings(_dst);
     }
 
     /**
@@ -380,12 +363,10 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
        @return _routes An array of Route.
     */
     function getRoutes() external view override returns (Types.Route[] memory) {
-        Types.Route[] memory _routes = new Types.Route[](listRouteKeys.length);
-        for (uint256 i = 0; i < listRouteKeys.length; i++) {
-            _routes[i] = Types.Route(
-                listRouteKeys[i],
-                routes[listRouteKeys[i]]
-            );
+        Types.Route[] memory _routes = new Types.Route[](routeList.length);
+        for (uint256 i = 0; i < routeList.length; i++) {
+            (string memory dstNet, ) = routeList[i].splitBTPAddress();
+            _routes[i] = routeMap[dstNet];
         }
         return _routes;
     }
@@ -401,17 +382,13 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(links[_link].isConnected == true, "NotExistsLink");
-        string memory _linkRelay = _link.concat(_addr.toString());
-        require(relayStats[_linkRelay].addr == address(0), "alreadyExistsBMR");
-        relayStats[_linkRelay] = Types.RelayStats(_addr, 0, 0);
+        requireValidAddress(_addr);
+        string memory net = requireLink(_link);
 
-        address[] memory relays = new address[](links[_link].relays.length + 1);
-        for (uint256 i = 0; i < links[_link].relays.length; i++) {
-            relays[i] = links[_link].relays[i];
-        }
-        relays[links[_link].relays.length] = _addr;
-        links[_link].relays = relays;
+        require(relayStats[_link][_addr].addr == address(0), BMCRevertAlreadyExistsBMR);
+        relayStats[_link][_addr] = Types.RelayStats(_addr, 0, 0);
+
+        relayMap[net].push(_addr);
     }
 
     /**
@@ -425,20 +402,13 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     hasPermission
     {
-        require(links[_link].isConnected == true, "NotExistsLink");
-        string memory _linkRelay = _link.concat(_addr.toString());
-        require(relayStats[_linkRelay].addr == _addr, "NotExistsBMR");
-        delete relayStats[_linkRelay];
+        string memory net = requireLink(_link);
 
-        address[] memory relays = new address[](links[_link].relays.length - 1);
-        uint256 j = 0;
-        for (uint256 i = 0; i < relays.length; i++) {
-            if (links[_link].relays[i] != _addr) {
-                relays[i] = links[_link].relays[i];
-            }
-            j++;
-        }
-        links[_link].relays = relays;
+        require(relayStats[_link][_addr].addr == _addr, BMCRevertNotExistsBMR);
+        delete relayStats[_link][_addr];
+        //@Notice the order may be changed after remove
+        //  arr[index of remove]=arr[last index]
+        relayMap[net].removeFromAddresses(_addr);
     }
 
     /**
@@ -452,10 +422,86 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     returns (Types.RelayStats[] memory _relays)
     {
-        _relays = new Types.RelayStats[](links[_link].relays.length);
-        for (uint256 i = 0; i < links[_link].relays.length; i++) {
-            _relays[i] = relayStats[_link.concat(links[_link].relays[i].toString())];
+        string memory net = requireLink(_link);
+
+        _relays = new Types.RelayStats[](relayMap[net].length);
+        for (uint256 i = 0; i < _relays.length; i++) {
+            _relays[i] = relayStats[_link][relayMap[net][i]];
         }
+    }
+
+    /**
+        @notice Schedule to drop message
+        @dev Called by the operator to manage the BTP network.
+        @param _link String (BTP Address of connected BMC)
+        @param _seq  Integer ( sequence number of the message from connected BMC )
+     */
+    function scheduleDropMessage(
+        string memory _link,
+        uint256 _seq
+    ) external override hasPermission {
+        string memory net = requireLink(_link);
+        require(linkMap[net].rxSeq < _seq, "10:Invalid _seq");
+        require(!drops[_link].containsFromUints(_seq), "10:AlreadyExists _seq");
+        drops[_link].push(_seq);
+    }
+
+    /**
+        @notice Cancel the scheduled drop of message
+        @dev Called by the operator to manage the BTP network.
+        @param _link String (BTP Address of connected BMC)
+        @param _seq  Integer ( sequence number of the message from connected BMC )
+     */
+    function cancelDropMessage(
+        string memory _link,
+        uint256 _seq
+    ) external override hasPermission {
+        requireLink(_link);
+        require(drops[_link].containsFromUints(_seq), "10:NotExists _seq");
+        //@Notice the order may be changed after remove
+        //  arr[index of remove]=arr[last index]
+        drops[_link].removeFromUints(_seq);
+    }
+
+    /**
+        @notice Get the list of unprocessed the scheduled drop of message
+        @param _link String ( BTP Address of connected BMC )
+        @return A list of registered sequences to drop
+     */
+    function getScheduledDropMessages(
+        string memory _link
+    ) external view override returns (uint256[] memory) {
+        requireLink(_link);
+
+        return drops[_link];
+    }
+
+    /**
+        @notice Drop the next message that to be relayed from a specific network
+        @dev Called by the operator to manage the BTP network.
+        @param _src  String ( BTP Address of source BMC )
+        @param _seq  Integer ( number of the message from connected BMC )
+        @param _svc  String ( number of the message from connected BMC )
+        @param _sn   Integer ( serial number of the message, must be positive )
+     */
+    function dropMessage(
+        string calldata _src,
+        uint256 _seq,
+        string calldata _svc,
+        uint256 _sn
+    ) external override hasPermission {
+        (string memory srcNet, ) = _src.splitBTPAddress();
+        (string memory next, ) = resolveNext(srcNet);
+
+        string memory net = requireLink(next);
+        require(_seq == (linkMap[net].rxSeq + 1), BMCRevertInvalidSeq);
+        require(bshMap[_svc] != address(0), BMCRevertNotExistsBSH);
+        require(_sn > 0, BMCRevertInvalidSn);
+
+        linkMap[net].rxSeq++;
+        linkMap[net].txSeq++;
+        IBMCPeriphery(bmcPeriphery).dropMessage(
+            _src, next, linkMap[net].rxSeq, _svc, _sn, linkMap[net].txSeq);
     }
 
     /******************************* Use for BMC Service *************************************/
@@ -465,7 +511,7 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     returns (address)
     {
-        return bshServices[_serviceName];
+        return bshMap[_serviceName];
     }
 
     function getBmvServiceByNet(string memory _net)
@@ -474,7 +520,7 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     returns (address)
     {
-        return bmvServices[_net];
+        return bmvMap[_net];
     }
 
     function getLink(string memory _to)
@@ -483,34 +529,8 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     returns (Types.Link memory)
     {
-        return links[_to];
-    }
-
-    function getLinkRxSeq(string calldata _prev)
-    external
-    view
-    override
-    returns (uint256)
-    {
-        return links[_prev].rxSeq;
-    }
-
-    function getLinkTxSeq(string calldata _prev)
-    external
-    view
-    override
-    returns (uint256)
-    {
-        return links[_prev].txSeq;
-    }
-
-    function getLinkRelays(string calldata _prev)
-    external
-    view
-    override
-    returns (address[] memory)
-    {
-        return links[_prev].relays;
+        (string memory _net, ) = _to.splitBTPAddress();
+        return linkMap[_net];
     }
 
     function isLinkRelay(string calldata _prev, address _addr)
@@ -519,57 +539,47 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     override
     returns (bool)
     {
-        address[] memory relays = links[_prev].relays;
-        for (uint256 i = 0; i < relays.length; i++) {
-            if (_addr == relays[i]) {
-                return true;
+        return relayStats[_prev][_addr].addr != address(0);
+    }
+
+    function updateLinkRxSeq(string memory net, uint256 _val)
+    external
+    override
+    onlyBMCPeriphery
+    {
+        linkMap[net].rxSeq += _val;
+    }
+
+    function updateLinkTxSeq(string memory net)
+    external
+    override
+    onlyBMCPeriphery
+    returns (uint256)
+    {
+        linkMap[net].txSeq++;
+        return linkMap[net].txSeq;
+    }
+
+    function setLinkReachable(string memory _net, string[] memory _reachable)
+    external
+    override
+    onlyBMCPeriphery
+    {
+        reachableMap[_net] = _reachable;
+    }
+
+    function updateLinkReachable(string memory _net, string memory _reachable, bool _remove)
+    external
+    override
+    onlyBMCPeriphery
+    {
+        if (_remove) {
+            reachableMap[_net].removeFromStrings(_reachable);
+        } else {
+            if (!reachableMap[_net].containsFromStrings(_reachable)) {
+                reachableMap[_net].push(_reachable);
             }
         }
-        return false;
-    }
-
-    function updateLinkRxSeq(string calldata _prev, uint256 _val)
-    external
-    override
-    onlyBMCPeriphery
-    {
-        links[_prev].rxSeq += _val;
-    }
-
-    function updateLinkTxSeq(string memory _prev)
-    external
-    override
-    onlyBMCPeriphery
-    {
-        links[_prev].txSeq++;
-    }
-
-    function updateLinkReachable(string memory _prev, string[] memory _to)
-    external
-    override
-    onlyBMCPeriphery
-    {
-        for (uint256 i = 0; i < _to.length; i++) {
-            links[_prev].reachable.push(_to[i]);
-            (string memory _net, ) = _to[i].splitBTPAddress();
-            getLinkFromReachableNet[_net] = Types.Tuple(_prev, _to[i]);
-        }
-    }
-
-    function deleteLinkReachable(string memory _prev, uint256 _index)
-    external
-    override
-    onlyBMCPeriphery
-    {
-        (string memory _net, ) = links[_prev]
-        .reachable[_index]
-        .splitBTPAddress();
-        delete getLinkFromReachableNet[_net];
-        delete links[_prev].reachable[_index];
-        links[_prev].reachable[_index] = links[_prev].reachable[
-        links[_prev].reachable.length - 1
-        ];
-        links[_prev].reachable.pop();
     }
 
     function updateRelayStats(
@@ -578,9 +588,36 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         uint256 _blockCountVal,
         uint256 _msgCountVal
     ) external override onlyBMCPeriphery {
-        string memory _linkRelay = _prev.concat(_addr.toString());
-        relayStats[_linkRelay].blockCount += _blockCountVal;
-        relayStats[_linkRelay].msgCount += _msgCountVal;
+        relayStats[_prev][_addr].blockCount += _blockCountVal;
+        relayStats[_prev][_addr].msgCount += _msgCountVal;
+    }
+
+    function resolveNext(string memory _dstNet)
+    internal
+    view
+    returns (string memory, string memory)
+    {
+        // search in routeMap
+        if (bytes(routeMap[_dstNet].dst).length > 0) {
+            return (routeMap[_dstNet].next, routeMap[_dstNet].dst);
+        }
+
+        // search in linkMap
+        if (linkMap[_dstNet].isConnected) {
+            return (linkMap[_dstNet].btpAddress, linkMap[_dstNet].btpAddress);
+        }
+
+        // search in reachableMap
+        for (uint i =0 ; i < linkList.length; i++) {
+            (string memory net, ) = linkList[i].splitBTPAddress();
+            for (uint j=0; j < reachableMap[net].length; j++) {
+                (string memory rnet, ) = reachableMap[net][j].splitBTPAddress();
+                if (rnet.compareTo(_dstNet)) {
+                    return (linkList[i], reachableMap[net][j]);
+                }
+            }
+        }
+        revert(BMCRevertUnreachable);
     }
 
     function resolveRoute(string memory _dstNet)
@@ -588,26 +625,22 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     view
     override
     onlyBMCPeriphery
-    returns (string memory, string memory)
+    returns (string memory next, string memory dst)
     {
-        // search in routes
-        string memory _dst = getRouteDstFromNet[_dstNet];
-        if (bytes(_dst).length != 0) return (routes[_dst], _dst);
+        return resolveNext(_dstNet);
+    }
 
-        // search in links
-        _dst = getLinkFromNet[_dstNet];
-        if (bytes(_dst).length != 0) return (_dst, _dst);
-
-        // search link by reachable net
-        Types.Tuple memory res = getLinkFromReachableNet[_dstNet];
-
-        require(
-            bytes(res._to).length > 0,
-            string("Unreachable: ").concat(_dstNet).concat(
-                " is unreachable"
-            )
-        );
-        return (res._prev, res._to);
+    /**
+        @notice Cancel the scheduled drop of message
+        @dev Called by the operator to manage the BTP network.
+        @param _link String (BTP Address of connected BMC)
+        @param _seqList []Integer ( list of sequence number )
+     */
+    function setScheduledDropMessages(
+        string memory _link,
+        uint256[] memory _seqList
+    ) external override onlyBMCPeriphery {
+        drops[_link] = _seqList;
     }
     /*******************************************************************************************/
 }

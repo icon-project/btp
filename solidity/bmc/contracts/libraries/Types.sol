@@ -26,8 +26,7 @@ library Types {
     }
 
     struct Link {
-        address[] relays; //  Address of multiple Relays handle for this link network
-        string[] reachable; //  A BTP Address of the next BMC that can be reach using this link
+        string btpAddress;
         uint256 rxSeq;
         uint256 txSeq;
         bool isConnected;
@@ -54,18 +53,14 @@ library Types {
         bytes message; //  serialized Service Message from BSH
     }
 
+    struct ErrorMessage {
+        uint256 code;
+        string message;
+    }
+
     struct BMCService {
         string serviceType;
         bytes payload;
     }
 
-    struct Tuple {
-        string _prev;
-        string _to;
-    }
-
-    struct ErrorMessage {
-        uint256 code;
-        string message;
-    }
 }
