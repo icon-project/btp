@@ -253,38 +253,6 @@ library RLPEncode {
     }
 
     /**
-     * @dev Copies a piece of memory to another location.
-     * @notice From: https://github.com/Arachnid/solidity-stringutils/blob/master/src/strings.sol.
-     * @param _dest Destination location.
-     * @param _src Source location.
-     * @param _len Length of memory to copy.
-     */
-    function memcpy(
-        uint256 _dest,
-        uint256 _src,
-        uint256 _len
-    ) private pure {
-        uint256 dest = _dest;
-        uint256 src = _src;
-        uint256 len = _len;
-
-        for (; len >= 32; len -= 32) {
-            assembly {
-                mstore(dest, mload(src))
-            }
-            dest += 32;
-            src += 32;
-        }
-
-        uint256 mask = 256**(32 - len) - 1;
-        assembly {
-            let srcpart := and(mload(src), not(mask))
-            let destpart := and(mload(dest), mask)
-            mstore(dest, or(destpart, srcpart))
-        }
-    }
-
-    /**
      * @dev Flattens a list of byte strings into one byte string.
      * @notice From: https://github.com/sammayo/solidity-rlp-encoder/blob/master/RLPEncode.sol.
      * @param _list List of byte strings to flatten.
@@ -320,6 +288,35 @@ library RLPEncode {
         }
 
         return flattened;
+    }
+
+    /**
+     * @dev Copies a piece of memory to another location.
+     * @notice From: https://github.com/Arachnid/solidity-stringutils/blob/master/src/strings.sol.
+     * @param dest Destination location.
+     * @param src Source location.
+     * @param len Length of memory to copy.
+     */
+    function memcpy(uint dest, uint src, uint len) private pure {
+        // Copy word-length chunks while possible
+        for(; len >= 32; len -= 32) {
+            assembly {
+                mstore(dest, mload(src))
+            }
+            dest += 32;
+            src += 32;
+        }
+
+        // Copy remaining bytes
+        uint mask = type(uint).max;
+        if (len > 0) {
+            mask = 256 ** (32 - len) - 1;
+            assembly {
+                let srcpart := and(mload(src), not(mask))
+                let destpart := and(mload(dest), mask)
+                mstore(dest, or(destpart, srcpart))
+            }
+        }
     }
 
     /**
