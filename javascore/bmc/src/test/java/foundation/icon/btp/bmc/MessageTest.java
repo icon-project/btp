@@ -367,7 +367,7 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
 
-        AssertBMCException.assertUnreachable(() -> MockBSHIntegrationTest.mockBSH.intercallSendMessage(
+        AssertBMCException.assertUnreachable(() -> MockBSHIntegrationTest.mockBSH.sendMessage(
                 ((BMCScoreClient) bmc)._address(),
                 Faker.btpNetwork(), svc, sn, payload));
     }
@@ -379,7 +379,7 @@ public class MessageTest implements BMCIntegrationTest {
 
         String notRegisteredSvc = BTPIntegrationTest.Faker.btpService();
 
-        AssertBMCException.assertNotExistsBSH(() -> MockBSHIntegrationTest.mockBSH.intercallSendMessage(
+        AssertBMCException.assertNotExistsBSH(() -> MockBSHIntegrationTest.mockBSH.sendMessage(
                 ((BMCScoreClient) bmc)._address(),
                 Faker.btpNetwork(), notRegisteredSvc, sn, payload));
     }

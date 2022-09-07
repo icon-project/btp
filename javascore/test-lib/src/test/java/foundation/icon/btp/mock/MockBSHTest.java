@@ -39,7 +39,7 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
     static String fa = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString();
 
     @Test
-    void intercallSendMessage() {
+    void sendMessageShouldMakeEventLogs() {
         ((MockBSHScoreClient) mockBSH).intercallSendMessage(
                 MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
                     assertEquals(to, el.getTo());

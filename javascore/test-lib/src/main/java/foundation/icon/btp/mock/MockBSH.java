@@ -33,7 +33,7 @@ public interface MockBSH extends BSH {
     String SERVICE = "mock";
 
     @External
-    void intercallSendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg);
+    void sendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg);
 
     @EventLog
     void HandleBTPMessage(String _from, String _svc, BigInteger _sn, byte[] _msg);

@@ -51,7 +51,7 @@ public class MockBMCImpl implements MockBMC {
     }
 
     @External
-    public void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg) {
+    public void handleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg) {
         BMVScoreInterface bmv = new BMVScoreInterface(_addr);
         try {
             byte[][] ret = bmv.handleRelayMessage(btpAddress, _prev, _seq, _msg);
@@ -78,20 +78,15 @@ public class MockBMCImpl implements MockBMC {
     }
 
     @External
-    public void intercallHandleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg) {
+    public void handleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg) {
         BSHScoreInterface bsh = new BSHScoreInterface(_addr);
         bsh.handleBTPMessage(_from, _svc, _sn, _msg);
     }
 
     @External
-    public void intercallHandleBTPError(Address _addr, String _src, String _svc, BigInteger _sn, long _code, String _msg) {
+    public void handleBTPError(Address _addr, String _src, String _svc, BigInteger _sn, long _code, String _msg) {
         BSHScoreInterface bsh = new BSHScoreInterface(_addr);
         bsh.handleBTPError(_src, _svc, _sn, _code, _msg);
     }
 
-    @External(readonly = true)
-    public BMVStatus intercallGetStatus(Address _addr) {
-        BMVScoreInterface bmv = new BMVScoreInterface(_addr);
-        return bmv.getStatus();
-    }
 }

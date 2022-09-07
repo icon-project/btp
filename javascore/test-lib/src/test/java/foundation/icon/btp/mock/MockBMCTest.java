@@ -52,12 +52,12 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     }
 
     @Test
-    void intercallBMVhandleRelayMessageShouldMakeEventLog() {
+    void handleRelayMessageShouldMakeEventLog() {
         byte[][] msgs = new byte[][]{msg};
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(msgs);
 
-        ((MockBMCScoreClient) mockBMC).intercallHandleRelayMessage(
+        ((MockBMCScoreClient) mockBMC).handleRelayMessage(
                 MockBMCIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs,
                         (el) -> assertArrayEquals(msgs, el.getRet())),
                 MockBMVIntegrationTest.mockBMVClient._address(),
@@ -66,9 +66,6 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
     @Test
     void sendMessageShouldMakeEventLog() {
-        MockRelayMessage relayMessage = new MockRelayMessage();
-        relayMessage.setBtpMessages(new byte[][]{msg});
-
         ((MockBMCScoreClient) mockBMC).sendMessage(
                 MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
                     assertEquals(to, el.getTo());
@@ -81,7 +78,7 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
     @Test
     void handleBTPMessage() {
-        ((MockBMCScoreClient) mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) mockBMC).handleBTPMessage(
                 MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
                     assertEquals(to, el.getFrom());
                     assertEquals(svc, el.getSvc());
@@ -94,7 +91,7 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
     @Test
     void handleBTPError() {
-        ((MockBMCScoreClient) mockBMC).intercallHandleBTPError(
+        ((MockBMCScoreClient) mockBMC).handleBTPError(
                 MockBSHIntegrationTest.eventLogChecker(HandleBTPErrorEventLog::eventLogs, (el) -> {
                     assertEquals(prev, el.getSrc());
                     assertEquals(svc, el.getSvc());
@@ -106,9 +103,4 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
                 prev, svc, sn, errCode, errMsg);
     }
 
-    @Test
-    void intercallGetStatus() {
-        BMVStatus status = mockBMC.intercallGetStatus(MockBMVIntegrationTest.mockBMVClient._address());
-        System.out.println(status);
-    }
 }

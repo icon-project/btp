@@ -102,7 +102,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
 
         long offset = number.numberBetween(0, Long.MAX_VALUE);
         mockBMV.setOffset(offset);
-        assertEquals(lastHeight,
+        assertEquals(offset,
                 MockBMVProperties.fromBytes(mockBMV.getStatus().getExtra())
                         .getOffset());
     }

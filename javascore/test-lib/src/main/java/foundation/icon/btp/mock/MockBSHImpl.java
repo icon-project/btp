@@ -43,7 +43,7 @@ public class MockBSHImpl implements MockBSH {
     }
 
     @External
-    public void intercallSendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
+    public void sendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
         BMCScoreInterface bmc = new BMCScoreInterface(_bmc);
         try {
             bmc.sendMessage(_to, _svc, _sn, _msg);

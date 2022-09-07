@@ -155,7 +155,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(reqId, el.getReqId());
             assertArrayEquals(request.getData(), el.getData());
         });
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallServiceImpl.SERVICE, srcSn, csMsg.toBytes());
     }
@@ -178,7 +178,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var response = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
         var checker = CSIntegrationTest.notExistsEventLogChecker(CallRequestClearedEventLog::eventLogs);
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
@@ -190,7 +190,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var response = new CSMessageResponse(srcSn, CSMessageResponse.FAILURE, "java.lang.IllegalArgumentException");
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
         var checker = CSIntegrationTest.notExistsEventLogChecker(RollbackMessageEventLog::eventLogs);
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
@@ -281,7 +281,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         byte[] data = requestMap.get(srcSn).getData();
         var request = new CSMessageRequest(from.account(), fakeTo.account(), srcSn, true, data);
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
-        MockBMCIntegrationTest.mockBMC.intercallHandleBTPMessage(csAddress,
+        MockBMCIntegrationTest.mockBMC.handleBTPMessage(csAddress,
                 linkNet, CallServiceImpl.SERVICE, srcSn, csMsg.toBytes());
 
         // expect executeCall failure
@@ -316,7 +316,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.getSn());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.notExistsEventLogChecker(CallRequestClearedEventLog::eventLogs));
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
@@ -348,7 +348,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var checker = CSIntegrationTest.eventLogChecker(CallRequestClearedEventLog::eventLogs, (el) -> {
             assertEquals(srcSn, el.getSn());
         }).andThen(CSIntegrationTest.notExistsEventLogChecker(RollbackMessageEventLog::eventLogs));
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPMessage(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
     }
@@ -374,7 +374,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.notExistsEventLogChecker(CallRequestClearedEventLog::eventLogs));
         var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).intercallHandleBTPError(
+        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPError(
                 checker, csAddress,
                 btpAddress.toString(), CallServiceImpl.SERVICE, srcSn, 1, "BTPError");
     }
