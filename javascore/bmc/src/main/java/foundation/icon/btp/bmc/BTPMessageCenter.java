@@ -62,7 +62,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     //
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
-    private final ArrayDB<ServiceCandidate> serviceCandidates = Context.newArrayDB("serviceCandidates", ServiceCandidate.class);
     private final BranchDB<String, BranchDB<Address, ArrayDB<byte[]>>> fragments = Context.newBranchDB("fragments", byte[].class);
     private final DictDB<String, DropSequences> drops = Context.newDictDB("drops", DropSequences.class);
 
@@ -125,9 +124,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
         if (services.containsKey(_svc) || INTERNAL_SERVICE.equals(_svc)) {
             throw BMCException.alreadyExistsBSH();
-        }
-        if (getServiceCandidateIndex(_svc, _addr) >= 0) {
-            removeServiceCandidate(_svc, _addr);
         }
         services.put(_svc, _addr);
     }
@@ -853,51 +849,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             throw BMCException.notExistsBMR();
         }
         relays.remove(_addr);
-    }
-
-    private int getServiceCandidateIndex(String svc, Address addr) {
-        for (int i = 0; i < serviceCandidates.size(); i++) {
-            ServiceCandidate sc = serviceCandidates.get(i);
-            if (sc.getSvc().equals(svc) && sc.getAddress().equals(addr)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    @External
-    public void addServiceCandidate(String _svc, Address _addr) {
-        if (getServiceCandidateIndex(_svc, _addr) >= 0) {
-            throw BMCException.unknown("already exists ServiceCandidate");
-        }
-        ServiceCandidate sc = new ServiceCandidate();
-        sc.setSvc(_svc);
-        sc.setAddress(_addr);
-        sc.setOwner(Context.getOrigin());
-        serviceCandidates.add(sc);
-    }
-
-    @External
-    public void removeServiceCandidate(String _svc, Address _addr) {
-        requireOwnerAccess();
-        int idx = getServiceCandidateIndex(_svc, _addr);
-        if (idx < 0) {
-            throw BMCException.unknown("not exists ServiceCandidate");
-        }
-        ServiceCandidate last = serviceCandidates.pop();
-        if (idx != serviceCandidates.size()) {
-            serviceCandidates.set(idx, last);
-        }
-    }
-
-    @External(readonly = true)
-    public ServiceCandidate[] getServiceCandidates() {
-        int size = this.serviceCandidates.size();
-        ServiceCandidate[] serviceCandidates = new ServiceCandidate[size];
-        for (int i = 0; i < size; i++) {
-            serviceCandidates[i] = this.serviceCandidates.get(i);
-        }
-        return serviceCandidates;
     }
 
     @External(readonly = true)

@@ -81,42 +81,6 @@ public interface ICONSpecific {
     BMRStatus[] getRelays(String _link);
 
     /**
-     * Registers candidate for the smart contract for the service.
-     * Called by the BSH-Owner.
-     *
-     * @param _svc  String (the name of the service)
-     * @param _addr Address (the address of the smart contract handling the service)
-     */
-    @External
-    void addServiceCandidate(String _svc, Address _addr);
-
-    /**
-     * Unregisters candidate for the smart contract for the service.
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _svc  String (the name of the service)
-     * @param _addr Address (the address of the smart contract handling the service)
-     */
-    @External
-    void removeServiceCandidate(String _svc, Address _addr);
-
-    /**
-     * Get registered service candidate
-     *
-     * @return A list of service candidates
-     * <br>For Example::<br>
-     * [
-     * {
-     * "svc":"the name of the service",
-     * "address":"cx...",
-     * "owner":"hx...",
-     * }
-     * ]
-     */
-    @External(readonly = true)
-    ServiceCandidate[] getServiceCandidates();
-
-    /**
      * Drop the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
