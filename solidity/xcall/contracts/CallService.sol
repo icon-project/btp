@@ -166,8 +166,9 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         accruedFeeTable[Types.FEE_RELAY]=accruedFeeTable[Types.FEE_RELAY]+feeConfig.relay;
         accruedFeeTable[Types.FEE_PROTOCOL]=accruedFeeTable[Types.FEE_PROTOCOL]+msg.value-feeConfig.relay;
 
-        // send message
         uint256 sn = getNextSn();
+        emit CallMessageSent(caller, _to, sn, _data);
+
         bool rollbackEnabled = _rollback.length > 0;
         if (rollbackEnabled) {
             requests[sn] = Types.CallRequest(
@@ -177,6 +178,8 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
                 false
             );
         }
+
+        // send message
         bytes memory payload = Types.CSMessageRequest(
             caller.toString(),
             dstAccount,
@@ -185,7 +188,6 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
             _data
         ).encodeCSMessageRequest();
         sendBTPMessage(netTo, Types.CS_REQUEST, sn, payload);
-        emit CallMessageSent(caller, _to, sn, _data);
         return sn;
     }
 
@@ -201,6 +203,11 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
         require(!isNullCSMessageRequest(req), "InvalidRequestId");
         // cleanup
         delete proxyReqs[_reqId];
+
+        uint256 sn = 0;
+        if (req.rollback) {
+            sn = getNextSn();
+        }
 
         //TODO require BTPAddress validation
         (string memory netFrom, ) = req.from.splitBTPAddress();
@@ -228,7 +235,6 @@ contract CallService is IBSH, ICallService, IFixedFees, Initializable {
                 errCode,
                 errMsg
             ).encodeCSMessageResponse();
-            uint256 sn = getNextSn();
             sendBTPMessage(netFrom, Types.CS_RESPONSE, sn, payload);
         }
     }
