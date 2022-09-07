@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.8.5;
 
 /**
- * String Library
+ * Strings Library
  *
  * This is a simple library of string functions which try to simplify
  * string operations in solidity.
@@ -12,7 +12,7 @@ pragma solidity >=0.8.0 <0.8.5;
  * The original library was modified. If you want to know more about the original version
  * please check this link: https://github.com/willitscale/solidity-util.git
  */
-library String {
+library Strings {
     /**
      * splitBTPAddress
      *
@@ -31,6 +31,23 @@ library String {
     {
         string[] memory temp = split(_base, "/");
         return (temp[2], temp[3]);
+    }
+
+    function bytesToHex(bytes memory buffer) internal pure returns (string memory) {
+        if (buffer.length == 0) {
+            return string("0x");
+        }
+        // Fixed buffer size for hexadecimal convertion
+        bytes memory converted = new bytes(buffer.length * 2);
+
+        bytes memory _base = "0123456789abcdef";
+
+        for (uint256 i = 0; i < buffer.length; i++) {
+            converted[i * 2] = _base[uint8(buffer[i]) >> 4 & 0xf];
+            converted[i * 2 + 1] = _base[uint8(buffer[i]) & 0xf];
+        }
+
+        return string(abi.encodePacked("0x", converted));
     }
 
     /**
@@ -203,53 +220,45 @@ library String {
     }
 
     /**
-     * toString
+     * Lower
      *
-     * Compares the characters of two strings, to ensure that they have an
-     * identical footprint
+     * Converts all the values of a string to their corresponding lower case
+     * value.
      *
-     * @param _i uint256 integer to convert to string
-     * @return string string representation of _i
+     * @param _base When being used for a data type this is the extended object
+     *              otherwise this is the string base to convert to lower case
+     * @return string
      */
-    function toString(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) return "0";
-        uint256 len;
-        for (uint256 j = _i; j != 0; j /= 10) {
-            len++;
+    function lower(string memory _base)
+        internal
+        pure
+        returns (string memory) {
+        bytes memory _baseBytes = bytes(_base);
+        for (uint i = 0; i < _baseBytes.length; i++) {
+            _baseBytes[i] = _lower(_baseBytes[i]);
         }
-        bytes memory bstr = new bytes(len);
-        for (uint256 k = len; k > 0; k--) {
-            bstr[k - 1] = bytes1(uint8(48 + (_i % 10)));
-            _i /= 10;
-        }
-        return string(bstr);
+        return string(_baseBytes);
     }
 
-    function parseAddress(string memory _a) internal pure returns (address) {
-        bytes memory tmp = bytes(_a);
-        uint160 iaddr = 0;
-        uint160 b1;
-        uint160 b2;
-        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
-            iaddr *= 256;
-            b1 = uint160(uint8(tmp[i]));
-            b2 = uint160(uint8(tmp[i + 1]));
-            if ((b1 >= 97) && (b1 <= 102)) {
-                b1 -= 87;
-            } else if ((b1 >= 65) && (b1 <= 70)) {
-                b1 -= 55;
-            } else if ((b1 >= 48) && (b1 <= 57)) {
-                b1 -= 48;
-            }
-            if ((b2 >= 97) && (b2 <= 102)) {
-                b2 -= 87;
-            } else if ((b2 >= 65) && (b2 <= 70)) {
-                b2 -= 55;
-            } else if ((b2 >= 48) && (b2 <= 57)) {
-                b2 -= 48;
-            }
-            iaddr += (b1 * 16 + b2);
+    /**
+     * Lower
+     *
+     * Convert an alphabetic character to lower case and return the original
+     * value when not alphabetic
+     *
+     * @param _b1 The byte to be converted to lower case
+     * @return bytes1 The converted value if the passed value was alphabetic
+     *                and in a upper case otherwise returns the original value
+     */
+    function _lower(bytes1 _b1)
+        private
+        pure
+        returns (bytes1) {
+
+        if (_b1 >= 0x41 && _b1 <= 0x5A) {
+            return bytes1(uint8(_b1) + 32);
         }
-        return address(iaddr);
+
+        return _b1;
     }
 }

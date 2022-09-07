@@ -4,7 +4,8 @@ pragma abicoder v2;
 
 import "./interfaces/IBMV.sol";
 
-import "./libraries/String.sol";
+import "./libraries/Strings.sol";
+import "./libraries/ParseAddress.sol";
 import "./libraries/Types.sol";
 import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncode.sol";
@@ -54,13 +55,13 @@ contract BMV is IBMV {
         string memory _currentAddr,
         string memory _fromAddr
     ) internal view {
-        (string memory _net, ) = _fromAddr.splitBTPAddress();
+        (string memory _net,) = _fromAddr.splitBTPAddress();
         require(netAddr.compareTo(_net), "BMVRevert: Invalid previous BMC");
         require(msg.sender == bmcAddr, "BMVRevert: Invalid BMC");
         (, string memory _contractAddr) = _currentAddr.splitBTPAddress();
 
         require(
-            _contractAddr.parseAddress() == bmcAddr,
+            ParseAddress.parseAddress(_contractAddr) == bmcAddr,
             "BMVRevert: Invalid BMC"
         );
     }
@@ -90,13 +91,15 @@ contract BMV is IBMV {
         for (uint256 i = 0; i < relayMsg.receiptProofs.length; i++) {
             rp = relayMsg.receiptProofs[i];
             if (rp.height < height) {
-                continue; // ignore lower block height
+                continue;
+                // ignore lower block height
             }
             height = rp.height;
             for (uint256 j = 0; j < rp.events.length; j++) {
                 ev = rp.events[j];
                 if (ev.seq < next_seq) {
-                    continue;  // ignore lower sequence number
+                    continue;
+                    // ignore lower sequence number
                 } else if (ev.seq > next_seq) {
                     revert("BMVRevertInvalidSequence");
                 }
