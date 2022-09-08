@@ -17,14 +17,13 @@
 package foundation.icon.btp.bmc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import foundation.icon.btp.lib.*;
+import foundation.icon.btp.lib.BMC;
+import foundation.icon.btp.lib.BMCScoreClient;
+import foundation.icon.btp.lib.BMCStatus;
+import foundation.icon.btp.lib.OwnerManagerScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,27 +34,29 @@ import java.util.stream.Collectors;
 
 public interface BMCIntegrationTest extends BTPIntegrationTest {
 
-    DefaultScoreClient bmcClient = DefaultScoreClient.of(System.getProperties());
-    @ScoreClient
-    BMC bmc = new BMCScoreClient(bmcClient);
-    @ScoreClient
-    ICONSpecific iconSpecific = new ICONSpecificScoreClient(bmcClient);
-    @ScoreClient
-    OwnerManager ownerManager = new OwnerManagerScoreClient(bmcClient);
+    BMCScoreClient bmc = BMCScoreClient._of(System.getProperties());
+    ICONSpecificScoreClient iconSpecific = new ICONSpecificScoreClient(bmc);
+    OwnerManagerScoreClient ownerManager = new OwnerManagerScoreClient(bmc);
 
-    DefaultScoreClient bmcClientWithTester = new DefaultScoreClient(bmcClient.endpoint(), bmcClient._nid(), tester, bmcClient._address());
-    BMC bmcWithTester = new BMCScoreClient(bmcClientWithTester);
-    ICONSpecific iconSpecificWithTester = new ICONSpecificScoreClient(bmcClientWithTester);
-    OwnerManager ownerManagerWithTester = new OwnerManagerScoreClient(bmcClientWithTester);
+    BMCScoreClient bmcWithTester = new BMCScoreClient(bmc.endpoint(), bmc._nid(), tester, bmc._address());
+    ICONSpecificScoreClient iconSpecificWithTester = new ICONSpecificScoreClient(bmcWithTester);
+    OwnerManagerScoreClient ownerManagerWithTester = new OwnerManagerScoreClient(bmcWithTester);
+
+    static Consumer<TransactionResult> messageEvent(
+            Consumer<MessageEventLog> consumer) {
+        return eventLogChecker(
+                MessageEventLog::eventLogs,
+                consumer);
+    }
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                bmcClient._address(), supplier, consumer);
+                bmc._address(), supplier, consumer);
     }
 
     static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<MessageEventLog> filter) {
-        return MessageEventLog.eventLogs(txr, bmcClient._address(), filter).stream()
+        return MessageEventLog.eventLogs(txr, bmc._address(), filter).stream()
                 .map(MessageEventLog::getMsg)
                 .collect(Collectors.toList());
     }
@@ -63,7 +64,7 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     static List<BMCMessage> bmcMessages(TransactionResult txr, Predicate<String> nextPredicate) {
         return btpMessages(txr,
                 (el) -> el.getMsg().getSvc().equals(BTPMessageCenter.INTERNAL_SERVICE) &&
-                            nextPredicate.test(el.getNext())).stream()
+                        nextPredicate.test(el.getNext())).stream()
                 .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
                 .collect(Collectors.toList());
     }
@@ -76,6 +77,13 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 .filter((bmcMsg) -> bmcMsg.getType().equals(internal.name()))
                 .map((bmcMsg) -> mapFunc.apply(bmcMsg.getPayload()))
                 .collect(Collectors.toList());
+    }
+
+    static Consumer<TransactionResult> messageDroppedEvent(
+            Consumer<MessageDroppedEventLog> consumer) {
+        return eventLogChecker(
+                MessageDroppedEventLog::eventLogs,
+                consumer);
     }
 
     static BMCStatus getStatus(BMC bmc, String _link) {

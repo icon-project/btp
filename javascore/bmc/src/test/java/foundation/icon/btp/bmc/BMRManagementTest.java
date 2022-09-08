@@ -22,7 +22,11 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.AssertRevertedException;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.util.Arrays;
 
@@ -38,7 +42,7 @@ public class BMRManagementTest implements BMCIntegrationTest {
     @BeforeAll
     static void beforeAll() {
         System.out.println("BMRManagementTest:beforeAll start");
-        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
+        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMV._address());
         LinkManagementTest.addLink(link);
         System.out.println("BMRManagementTest:beforeAll end");
     }

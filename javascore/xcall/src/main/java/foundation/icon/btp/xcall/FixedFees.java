@@ -16,11 +16,13 @@
 
 package foundation.icon.btp.xcall;
 
+import foundation.icon.score.client.ScoreClient;
 import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
 
+@ScoreClient
 public interface FixedFees {
     /**
      * Gets the fixed fee for the given network address and type.

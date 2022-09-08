@@ -16,14 +16,13 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMCScoreClient;
 import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.BTPException;
-import foundation.icon.btp.mock.MockBSH;
-import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.btp.mock.MockRelayMessage;
-import foundation.icon.btp.test.*;
+import foundation.icon.btp.test.BTPIntegrationTest;
+import foundation.icon.btp.test.MockBMVIntegrationTest;
+import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import org.junit.jupiter.api.AfterAll;
@@ -43,19 +42,19 @@ public class MessageTest implements BMCIntegrationTest {
     static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
-    static Address relay = Address.of(bmcClient._wallet());
+    static Address relay = Address.of(bmc._wallet());
     static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
-    static String svc = MockBSH.SERVICE;
+    static String svc = MockBSHIntegrationTest.SERVICE;
 
     @BeforeAll
     static void beforeAll() {
         System.out.println("MessageTest:beforeAll start");
-        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
+        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMV._address());
         LinkManagementTest.addLink(link);
         BMRManagementTest.addRelay(link, relay);
 
         BSHManagementTest.clearService(svc);
-        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
+        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSH._address());
         System.out.println("MessageTest:beforeAll end");
     }
 
@@ -156,7 +155,7 @@ public class MessageTest implements BMCIntegrationTest {
             sackMessageChecker(height, seq)
                     .accept(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)));
         };
-        ((BMCScoreClient) bmc).handleRelayMessage(sackMessageCheck, link, relayMessage.toBase64String());
+        bmc.handleRelayMessage(sackMessageCheck, link, relayMessage.toBase64String());
         sackTerm = 0;
         iconSpecific.setLinkSackTerm(link, sackTerm);
     }
@@ -173,7 +172,7 @@ public class MessageTest implements BMCIntegrationTest {
             assertFalse(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)).stream()
                     .anyMatch((bmcMsg) -> bmcMsg.getType().equals(BTPMessageCenter.Internal.Sack.name())));
         };
-        ((BMCScoreClient) bmc).handleRelayMessage(notExistsSackMessageCheck, link, relayMessage.toBase64String());
+        bmc.handleRelayMessage(notExistsSackMessageCheck, link, relayMessage.toBase64String());
         sackTerm = 0;
         iconSpecific.setLinkSackTerm(link, sackTerm);
     }
@@ -187,13 +186,15 @@ public class MessageTest implements BMCIntegrationTest {
         btpMessages.add(btpMessage(svc, sn, payload));
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        ((BMCScoreClient) bmc).handleRelayMessage(
-                MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
-                    assertEquals(net, el.getFrom());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(payload, el.getMsg());
-                }),
+        bmc.handleRelayMessage(
+                MockBSHIntegrationTest.handleBTPMessageEvent(
+                        (el) -> {
+                            assertEquals(net, el.getFrom());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(payload, el.getMsg());
+                        }
+                ),
                 link,
                 relayMessage.toBase64String());
     }
@@ -209,14 +210,16 @@ public class MessageTest implements BMCIntegrationTest {
         btpMessages.add(btpMessage(svc, sn.negate(), errorMessage.toBytes()));
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        ((BMCScoreClient) bmc).handleRelayMessage(
-                MockBSHIntegrationTest.eventLogChecker(HandleBTPErrorEventLog::eventLogs, (el) -> {
-                    assertEquals(link, el.getSrc());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertEquals(errorMessage.getCode(), el.getCode());
-                    assertEquals(errorMessage.getMsg(), el.getMsg());
-                }),
+        bmc.handleRelayMessage(
+                MockBSHIntegrationTest.handleBTPErrorEvent(
+                        (el) -> {
+                            assertEquals(link, el.getSrc());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertEquals(errorMessage.getCode(), el.getCode());
+                            assertEquals(errorMessage.getMsg(), el.getMsg());
+                        }
+                ),
                 link,
                 relayMessage.toBase64String());
     }
@@ -263,13 +266,15 @@ public class MessageTest implements BMCIntegrationTest {
             if (i == 0) {
                 iconSpecific.handleFragment(link, fragments[i], -1 * last);
             } else if (i == last) {
-                ((ICONSpecificScoreClient) iconSpecific).handleFragment(
-                        MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
-                            assertEquals(net, el.getFrom());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(payload, el.getMsg());
-                        }),
+                iconSpecific.handleFragment(
+                        MockBSHIntegrationTest.handleBTPMessageEvent(
+                                (el) -> {
+                                    assertEquals(net, el.getFrom());
+                                    assertEquals(svc, el.getSvc());
+                                    assertEquals(sn, el.getSn());
+                                    assertArrayEquals(payload, el.getMsg());
+                                }
+                        ),
                         link, fragments[i], 0);
             } else {
                 iconSpecific.handleFragment(link, fragments[i], last - i);
@@ -284,8 +289,8 @@ public class MessageTest implements BMCIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
 
         BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getTx_seq().add(BigInteger.ONE);
-        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).sendMessage(
-                BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
+        MockBSHIntegrationTest.mockBSH.sendMessage(
+                BMCIntegrationTest.messageEvent((el) -> {
                     assertEquals(link, el.getNext());
                     assertEquals(seq, el.getSeq());
                     BTPMessage btpMessage = el.getMsg();
@@ -295,7 +300,7 @@ public class MessageTest implements BMCIntegrationTest {
                     assertEquals(sn, btpMessage.getSn());
                     assertArrayEquals(payload, btpMessage.getPayload());
                 }),
-                ((BMCScoreClient) bmc)._address(),
+                bmc._address(),
                 net, svc, sn, payload);
     }
 
@@ -305,7 +310,7 @@ public class MessageTest implements BMCIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
 
         AssertBMCException.assertUnreachable(() -> MockBSHIntegrationTest.mockBSH.sendMessage(
-                ((BMCScoreClient) bmc)._address(),
+                bmc._address(),
                 Faker.btpNetwork(), svc, sn, payload));
     }
 
@@ -317,7 +322,7 @@ public class MessageTest implements BMCIntegrationTest {
         String notRegisteredSvc = BTPIntegrationTest.Faker.btpService();
 
         AssertBMCException.assertNotExistsBSH(() -> MockBSHIntegrationTest.mockBSH.sendMessage(
-                ((BMCScoreClient) bmc)._address(),
+                bmc._address(),
                 Faker.btpNetwork(), notRegisteredSvc, sn, payload));
     }
 
@@ -344,12 +349,12 @@ public class MessageTest implements BMCIntegrationTest {
         BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
         BigInteger rxSeq = status.getRx_seq().add(BigInteger.ONE);
         BigInteger txSeq = status.getTx_seq().add(BigInteger.ONE);
-        ((ICONSpecificScoreClient)iconSpecific).dropMessage(
-                BMCIntegrationTest.eventLogChecker(MessageDroppedEventLog::eventLogs, (el) -> {
+        iconSpecific.dropMessage(
+                BMCIntegrationTest.messageDroppedEvent((el) -> {
                     assertEquals(link, el.getLink());
                     assertEquals(rxSeq, el.getSeq());
                     assertEqualsBTPMessage(assumeMsg, el.getMsg());
-                }).andThen(BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
+                }).andThen(BMCIntegrationTest.messageEvent((el) -> {
                     assertEquals(link, el.getNext());
                     assertEquals(txSeq, el.getSeq());
                     BTPMessage btpMsg = new BTPMessage();

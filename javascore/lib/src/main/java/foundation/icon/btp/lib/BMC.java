@@ -16,12 +16,14 @@
 
 package foundation.icon.btp.lib;
 
+import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.External;
 
 import java.math.BigInteger;
 import java.util.Map;
 
+@ScoreClient
 public interface BMC {
     /**
      * Registers BMV for the network.

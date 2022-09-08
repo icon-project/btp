@@ -28,11 +28,12 @@ import score.UserRevertedException;
 import java.math.BigInteger;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class IRC31SupplierTest implements IRC31IntegrationTest {
 
-    static Address caller = Address.of(irc31Client._wallet());
+    static Address caller = Address.of(irc31Supplier._wallet());
     static Address owner = caller;
     static BigInteger id = BigInteger.ONE;
     static BigInteger value = BigInteger.ONE;
@@ -160,28 +161,28 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
 
     public static void mint(Address to, BigInteger id, BigInteger value) {
         balanceCheck(to, id, value, () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).mint(
+                irc31Supplier.mint(
                         mintChecker(caller, to, id, value),
                         to, id, value));
     }
 
     public static void burn(Address from, BigInteger id, BigInteger value) {
         balanceCheck(from, id, value.negate(), () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).burn(
+                irc31Supplier.burn(
                         burnChecker(caller, from, id, value),
                         from, id, value));
     }
 
     public static void mintBatch(Address to, BigInteger[] ids, BigInteger[] values) {
         balanceBatchCheck(to, ids, values, () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).mintBatch(
+                irc31Supplier.mintBatch(
                         mintBatchChecker(caller, to, ids, values),
                         to, ids, values));
     }
 
     public static void burnBatch(Address from, BigInteger[] ids, BigInteger[] values) {
         balanceBatchCheck(from, ids, values, () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).burnBatch(
+                irc31Supplier.burnBatch(
                         burnBatchChecker(caller, from, ids, values),
                         from, ids, values), false);
     }
@@ -212,7 +213,7 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
 
     @Test
     void setTokenURI() {
-        ((IRC31SupplierScoreClient) irc31Supplier).setTokenURI(
+        irc31Supplier.setTokenURI(
                 IRC31IntegrationTest.eventLogChecker(URIEventLog::eventLogs, (el) -> {
                     assertEquals(id, el.getId());
                     assertEquals(uri, el.getValue());
@@ -224,20 +225,20 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
     //test for IRC31
     static void transferFrom(Address from, Address to, BigInteger id, BigInteger value) {
         balanceCheck(to, id, value, () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).transferFrom(
+                irc31Supplier.transferFrom(
                         transferFromChecker(caller, from, to, id, value),
                         from, to, id, value, null));
     }
 
     static void transferFromBatch(Address from, Address to, BigInteger[] ids, BigInteger[] values) {
         balanceBatchCheck(to, ids, values, () ->
-                ((IRC31SupplierScoreClient) irc31Supplier).transferFromBatch(
+                irc31Supplier.transferFromBatch(
                         transferFromBatchChecker(caller, from, to, ids, values),
                         from, to, ids, values, null));
     }
 
     public static void setApprovalForAll(Address operator, boolean approved) {
-        ((IRC31SupplierScoreClient) irc31Supplier).setApprovalForAll(
+        irc31Supplier.setApprovalForAll(
                 IRC31IntegrationTest.eventLogChecker(ApprovalForAllEventLog::eventLogs, (el) -> {
                     //caller must be registered owner of OwnerBasedIRC31Supplier
                     assertEquals(caller, el.getOwner());

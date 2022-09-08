@@ -23,50 +23,29 @@ import foundation.icon.btp.lib.OwnerManagerScoreClient;
 import foundation.icon.btp.nativecoin.irc31.IRC31IntegrationTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
-import foundation.icon.btp.test.SendMessageEventLog;
-import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import foundation.icon.icx.Wallet;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestMethodOrder;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface NCSIntegrationTest extends BTPIntegrationTest {
 
-    DefaultScoreClient ncsClient = DefaultScoreClient.of(
+    NCSScoreClient ncs = new NCSScoreClient(DefaultScoreClient.of(
             System.getProperties(), Map.of(
-                    "_bmc", MockBMCIntegrationTest.mockBMCClient._address(),
-                    "_irc31", IRC31IntegrationTest.irc31Client._address()));
+                    "_bmc", MockBMCIntegrationTest.mockBMC._address(),
+                    "_irc31", IRC31IntegrationTest.irc31Supplier._address())));
+    OwnerManager ncsOwnerManager = new OwnerManagerScoreClient(ncs);
+    BSH ncsBSH = new BSHScoreClient(ncs);
 
-    @ScoreClient
-    NCS ncs = new NCSScoreClient(ncsClient);
-
-    @ScoreClient
-    BSH ncsBSH = new BSHScoreClient(ncsClient);
-
-    @ScoreClient
-    OwnerManager ncsOwnerManager = new OwnerManagerScoreClient(ncsClient);
-
-    Wallet tester = ScoreIntegrationTest.getOrGenerateWallet("tester.", System.getProperties());
-    DefaultScoreClient ncsClientWithTester = new DefaultScoreClient(
-            ncsClient.endpoint(), ncsClient._nid(), tester, ncsClient._address());
-    NCS ncsWithTester = new NCSScoreClient(ncsClientWithTester);
-    OwnerManager ncsOwnerManagerWithTester = new OwnerManagerScoreClient(ncsClientWithTester);
+    NCSScoreClient ncsWithTester = new NCSScoreClient(ncs.endpoint(), ncs._nid(), tester, ncs._address());
+    OwnerManager ncsOwnerManagerWithTester = new OwnerManagerScoreClient(ncsWithTester);
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                ncsClient._address(), supplier, consumer);
+                ncs._address(), supplier, consumer);
     }
 
 }

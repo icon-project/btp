@@ -46,7 +46,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(btpMessages.toArray(new byte[btpMessages.size()][]));
 
-        ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+        mockBMV.handleRelayMessage(
                 MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
                     assertArrayEquals(relayMessage.getBtpMessages(), el.getRet());
                 }),
@@ -61,7 +61,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         //noinspection ThrowableNotThrown
         AssertBTPException.assertBTPException(
                 new BTPException.BMV(relayMessage.getRevertCode(), relayMessage.getRevertMessage()),
-                () -> ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+                () -> mockBMV.handleRelayMessage(
                         (txr)->{},
                         bmc, prev, seq, relayMessage.toBytes())
         );
@@ -74,7 +74,7 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         relayMessage.setLastHeight(2L);
         relayMessage.setOffset(1L);
 
-        ((MockBMVScoreClient) mockBMV).handleRelayMessage(
+        mockBMV.handleRelayMessage(
                 MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
                     assertArrayEquals(new byte[][]{}, el.getRet());
                 }),

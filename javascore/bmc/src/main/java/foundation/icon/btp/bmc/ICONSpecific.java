@@ -21,9 +21,10 @@ import foundation.icon.btp.lib.BMRStatus;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
-
+import foundation.icon.score.client.ScoreClient;
 import java.math.BigInteger;
 
+@ScoreClient
 public interface ICONSpecific {
 
     /**

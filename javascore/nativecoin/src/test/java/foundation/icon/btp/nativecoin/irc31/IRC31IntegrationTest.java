@@ -18,14 +18,11 @@ package foundation.icon.btp.nativecoin.irc31;
 
 import foundation.icon.btp.lib.OwnerManager;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
-import foundation.icon.btp.nativecoin.TransferStartEventLog;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.TestInfo;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,21 +37,17 @@ public interface IRC31IntegrationTest extends ScoreIntegrationTest {
     @Override
     default void clearIfExists(TestInfo testInfo) {}
 
-    DefaultScoreClient irc31Client = DefaultScoreClient.of("irc31.", System.getProperties());
-    @ScoreClient
-    IRC31Supplier irc31Supplier = new IRC31SupplierScoreClient(irc31Client);
-    @ScoreClient
-    OwnerManager irc31OwnerManager = new OwnerManagerScoreClient(irc31Client);
+    IRC31SupplierScoreClient irc31Supplier = IRC31SupplierScoreClient._of("irc31.", System.getProperties());
+    OwnerManager irc31OwnerManager = new OwnerManagerScoreClient(irc31Supplier);
 
-    DefaultScoreClient irc31ClientWithTester = new DefaultScoreClient(
-            irc31Client.endpoint(), irc31Client._nid(), tester, irc31Client._address());
-    IRC31Supplier irc31SupplierWithTester = new IRC31SupplierScoreClient(irc31ClientWithTester);
-    OwnerManager irc31OwnerManagerWithTester = new OwnerManagerScoreClient(irc31ClientWithTester);
+    IRC31SupplierScoreClient irc31SupplierWithTester = new IRC31SupplierScoreClient(
+            irc31Supplier.endpoint(), irc31Supplier._nid(), tester, irc31Supplier._address());
+    OwnerManager irc31OwnerManagerWithTester = new OwnerManagerScoreClient(irc31SupplierWithTester);
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                irc31Client._address(), supplier, consumer);
+                irc31Supplier._address(), supplier, consumer);
     }
 
 }

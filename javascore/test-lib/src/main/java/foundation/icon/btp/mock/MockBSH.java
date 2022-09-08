@@ -30,8 +30,6 @@ import java.math.BigInteger;
 @ScoreClient
 public interface MockBSH extends BSH {
 
-    String SERVICE = "mock";
-
     @External
     void sendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg);
 

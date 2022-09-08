@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.mock;
 
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.*;
 import foundation.icon.jsonrpc.Address;
@@ -32,7 +31,7 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     static BTPAddress btpAddress = new BTPAddress(
             BTPAddress.PROTOCOL_BTP,
             BTPIntegrationTest.Faker.btpLink().net(),
-            mockBMCClient._address().toString());
+            mockBMC._address().toString());
     static BTPAddress prevBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String prev = prevBtpAddress.toString();
     static BigInteger seq = BigInteger.ONE;
@@ -57,49 +56,55 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
         MockRelayMessage relayMessage = new MockRelayMessage();
         relayMessage.setBtpMessages(msgs);
 
-        ((MockBMCScoreClient) mockBMC).handleRelayMessage(
-                MockBMCIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs,
+        mockBMC.handleRelayMessage(
+                MockBMCIntegrationTest.handleRelayMessageEvent(
                         (el) -> assertArrayEquals(msgs, el.getRet())),
-                MockBMVIntegrationTest.mockBMVClient._address(),
+                MockBMVIntegrationTest.mockBMV._address(),
                 prev, seq, relayMessage.toBytes());
     }
 
     @Test
     void sendMessageShouldMakeEventLog() {
-        ((MockBMCScoreClient) mockBMC).sendMessage(
-                MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
-                    assertEquals(to, el.getTo());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
-                }),
+        mockBMC.sendMessage(
+                MockBMCIntegrationTest.sendMessageEvent(
+                        (el) -> {
+                            assertEquals(to, el.getTo());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(msg, el.getMsg());
+                        }
+                ),
                 to, svc, sn, msg);
     }
 
     @Test
     void handleBTPMessage() {
-        ((MockBMCScoreClient) mockBMC).handleBTPMessage(
-                MockBSHIntegrationTest.eventLogChecker(HandleBTPMessageEventLog::eventLogs, (el) -> {
-                    assertEquals(to, el.getFrom());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
-                }),
-                MockBSHIntegrationTest.mockBSHClient._address(),
+        mockBMC.handleBTPMessage(
+                MockBSHIntegrationTest.handleBTPMessageEvent(
+                        (el) -> {
+                            assertEquals(to, el.getFrom());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(msg, el.getMsg());
+                        }
+                ),
+                MockBSHIntegrationTest.mockBSH._address(),
                 to, svc, sn, msg);
     }
 
     @Test
     void handleBTPError() {
-        ((MockBMCScoreClient) mockBMC).handleBTPError(
-                MockBSHIntegrationTest.eventLogChecker(HandleBTPErrorEventLog::eventLogs, (el) -> {
-                    assertEquals(prev, el.getSrc());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertEquals(errCode, el.getCode());
-                    assertEquals(errMsg, el.getMsg());
-                }),
-                MockBSHIntegrationTest.mockBSHClient._address(),
+        mockBMC.handleBTPError(
+                MockBSHIntegrationTest.handleBTPErrorEvent(
+                        (el) -> {
+                            assertEquals(prev, el.getSrc());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertEquals(errCode, el.getCode());
+                            assertEquals(errMsg, el.getMsg());
+                        }
+                ),
+                MockBSHIntegrationTest.mockBSH._address(),
                 prev, svc, sn, errCode, errMsg);
     }
 

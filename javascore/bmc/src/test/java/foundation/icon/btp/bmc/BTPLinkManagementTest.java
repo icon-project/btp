@@ -17,31 +17,20 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.mock.MockBSH;
-import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
-import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.icx.IconService;
-import foundation.icon.icx.data.Base64;
-import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.jsonrpc.Address;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BTPLinkManagementTest implements BMCIntegrationTest {
     static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
@@ -51,7 +40,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     static void addBTPLink(String link, long networkId) {
         List<String> links = Arrays.asList(bmc.getLinks());
-        ((ICONSpecificScoreClient) iconSpecific).addBTPLink(
+        iconSpecific.addBTPLink(
                 BTPBlockIntegrationTest.bmcMessageChecker(
                         networkId,
                         LinkManagementTest.initMessageChecker(links)),
@@ -63,7 +52,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
     @BeforeAll
     static void beforeAll() {
         System.out.println("BTPLinkManagementTest:beforeAll start");
-        Address mockBMVAddress = MockBMVIntegrationTest.mockBMVClient._address();
+        Address mockBMVAddress = MockBMVIntegrationTest.mockBMV._address();
         BMVManagementTest.addVerifier(linkBtpAddress.net(), mockBMVAddress);
         BMVManagementTest.addVerifier(secondLinkBtpAddress.net(), mockBMVAddress);
         System.out.println("BTPLinkManagementTest:beforeAll end");
@@ -85,7 +74,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void addBTPLinkAndRemoveLinkShouldSuccess() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
         addBTPLink(link, networkId);
 
         LinkManagementTest.removeLink(link);
@@ -98,7 +87,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void addBTPLinkShouldRevertDuplicatedNetworkId() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
         addBTPLink(link, networkId);
 
         AssertBMCException.assertUnknown(() -> iconSpecific.addBTPLink(secondLink, networkId));
@@ -109,7 +98,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
         LinkManagementTest.addLink(link);
         assertEquals(0, iconSpecific.getBTPLinkNetworkId(link));
 
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
         iconSpecific.setBTPLinkNetworkId(link, networkId);
         assertEquals(networkId, iconSpecific.getBTPLinkNetworkId(link));
     }
@@ -122,7 +111,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void setBTPLinkNetworkIdShouldRevertDuplicatedNetworkId() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
         addBTPLink(link, networkId);
 
         LinkManagementTest.addLink(secondLink);

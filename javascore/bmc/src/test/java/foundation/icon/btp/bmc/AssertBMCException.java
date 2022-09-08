@@ -19,9 +19,6 @@ package foundation.icon.btp.bmc;
 import foundation.icon.btp.test.AssertBTPException;
 import org.junit.jupiter.api.function.Executable;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @SuppressWarnings("ThrowableNotThrown")
 public class AssertBMCException {
 

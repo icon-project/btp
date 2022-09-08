@@ -174,7 +174,7 @@ public interface ScoreIntegrationTest {
         };
     }
 
-    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
+    static <T> Consumer<TransactionResult> eventLogShouldNotExistsChecker(
             Address address, EventLogsSupplier<T> supplier) {
         return (txr) -> {
             List<T> eventLogs = supplier.apply(txr, address, null);

@@ -25,13 +25,13 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class FixedFeesEventLog {
+public class FixedFeesUpdatedEventLog {
     private static final String SIGNATURE = "FixedFeesUpdated(str,int,int)";
     private final String net;
     private final BigInteger relay;
     private final BigInteger protocol;
 
-    public FixedFeesEventLog(TransactionResult.EventLog el) {
+    public FixedFeesUpdatedEventLog(TransactionResult.EventLog el) {
         this.net = el.getIndexed().get(1);
         this.relay = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
                 el.getData().get(0));
@@ -51,10 +51,10 @@ public class FixedFeesEventLog {
         return protocol;
     }
 
-    public static List<FixedFeesEventLog> eventLogs(TransactionResult txr,
-                                                    Address address,
-                                                    Predicate<FixedFeesEventLog> filter) {
+    public static List<FixedFeesUpdatedEventLog> eventLogs(TransactionResult txr,
+                                                           Address address,
+                                                           Predicate<FixedFeesUpdatedEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(
-                txr, FixedFeesEventLog.SIGNATURE, address, FixedFeesEventLog::new, filter);
+                txr, FixedFeesUpdatedEventLog.SIGNATURE, address, FixedFeesUpdatedEventLog::new, filter);
     }
 }

@@ -20,12 +20,9 @@ import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVScoreClient;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.mock.MockBMCScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
-import foundation.icon.btp.test.HandleRelayMessageEventLog;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
 import org.junit.jupiter.api.Test;
 import scorex.util.ArrayList;
 
@@ -39,14 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
     static DefaultScoreClient bmvClient = DefaultScoreClient.of(
             System.getProperties(),
-            Map.of("_bmc", MockBMCIntegrationTest.mockBMCClient._address(),
+            Map.of("_bmc", MockBMCIntegrationTest.mockBMC._address(),
                     "_net",BTPMessageVerifierUnitTest.prev.net(),
                     "_offset", BigInteger.ZERO));
 
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),
-            MockBMCIntegrationTest.mockBMCClient._address().toString());
+            MockBMCIntegrationTest.mockBMC._address().toString());
 
-    @ScoreClient
     static BMV bmv = new BMVScoreClient(bmvClient);
 
     @Test
@@ -58,8 +54,8 @@ public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
         ReceiptProof rp = new ReceiptProof(0, List.of(ed), height);
         RelayMessage rm = new RelayMessage(new ArrayList<>(List.of(rp)));
 
-        ((MockBMCScoreClient)MockBMCIntegrationTest.mockBMC).intercallHandleRelayMessage(
-                MockBMCIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs,
+        MockBMCIntegrationTest.mockBMC.handleRelayMessage(
+                MockBMCIntegrationTest.handleRelayMessageEvent(
                         (el) -> assertArrayEquals(new byte[][]{msg.getBytes()}, el.getRet())),
                 bmvClient._address(),
                 BTPMessageVerifierUnitTest.prev.toString(),

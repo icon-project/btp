@@ -17,12 +17,10 @@
 package foundation.icon.btp.nativecoin;
 
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.mock.MockBMCScoreClient;
 import foundation.icon.btp.nativecoin.irc31.IRC31IntegrationTest;
 import foundation.icon.btp.nativecoin.irc31.IRC31SupplierTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
-import foundation.icon.btp.test.SendMessageEventLog;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.RevertedException;
@@ -38,15 +36,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.security.MessageDigest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NativeCoinServiceTest implements NCSIntegrationTest {
 
-    static Address ncsAddress = ncsClient._address();
-    static Address owner = Address.of(ncsClient._wallet());
+    static Address ncsAddress = ncs._address();
+    static Address owner = Address.of(ncs._wallet());
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static String linkNet = BTPIntegrationTest.Faker.btpNetwork();
     static Address testerAddress = Address.of(tester);
@@ -85,7 +82,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 .andThen(sendMessageEventLogChecker(transaction, snContainer))
                 .andThen(IRC31SupplierTest.transferFromBatchChecker(
                         ncsAddress, from, ncsAddress, coinIds, coinValues));
-        Executable executable = () -> ((NCSScoreClient) ncs).transferBatch(
+        Executable executable = () -> ncs.transferBatch(
                 checker,
                 nativeCoinValue,
                 coinNames, coinValues, to.toString());
@@ -110,10 +107,10 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         BigInteger[] coinValues = coinValues(assets);
         Address from = new Address(transaction.getFrom());
         Consumer<TransactionResult> checker = IRC31SupplierTest.burnBatchChecker(
-                ncsAddress, ncsAddress, coinIds, coinValues)
+                        ncsAddress, ncsAddress, coinIds, coinValues)
                 .andThen(transferEndEventLogChecker(from, sn, response));
         balanceBatchCheck(from, transaction.getAssets(), () ->
-                        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
+                        MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                                 checker,
                                 ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes()),
                 BalanceCheckType.unlock);
@@ -131,7 +128,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         balanceBatchCheck(
                 from,
                 transaction.getAssets(),
-                () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPError(
+                () -> MockBMCIntegrationTest.mockBMC.handleBTPError(
                         transferEndEventLogChecker(from, sn, response),
                         ncsAddress, link.toString(), NativeCoinService.SERVICE, sn, code, msg),
                 BalanceCheckType.refund);
@@ -160,17 +157,18 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
     }
 
     static Consumer<TransactionResult> sendMessageEventLogChecker(TransferTransaction transaction, BigInteger[] snContainer) {
-        return MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
-            assertEquals(BTPAddress.valueOf(transaction.getTo()).net(), el.getTo());
-            assertEquals(NativeCoinService.SERVICE, el.getSvc());
-            if (snContainer != null) {
-                snContainer[0] = el.getSn();
-            }
-//            assertEquals(sn, el.getSn());
-            NCSMessage ncsMessage = NCSMessage.fromBytes(el.getMsg());
-            assertEquals(NCSMessage.REQUEST_COIN_TRANSFER, ncsMessage.getServiceType());
-            AssertNCS.assertEqualsTransferRequest(transaction, TransferRequest.fromBytes(ncsMessage.getData()));
-        });
+        return MockBMCIntegrationTest.sendMessageEvent(
+                (el) -> {
+                    assertEquals(BTPAddress.valueOf(transaction.getTo()).net(), el.getTo());
+                    assertEquals(NativeCoinService.SERVICE, el.getSvc());
+                    if (snContainer != null) {
+                        snContainer[0] = el.getSn();
+                    }
+//                  assertEquals(sn, el.getSn());
+                    NCSMessage ncsMessage = NCSMessage.fromBytes(el.getMsg());
+                    assertEquals(NCSMessage.REQUEST_COIN_TRANSFER, ncsMessage.getServiceType());
+                    AssertNCS.assertEqualsTransferRequest(transaction, TransferRequest.fromBytes(ncsMessage.getData()));
+                });
     }
 
     static void lockedBalanceCheck(Address address, Asset asset, Executable executable) {
@@ -288,7 +286,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
 
     static BigInteger[] coinIds(List<Asset> assets) {
         BigInteger[] res = new BigInteger[assets.size()];
-        for(int i = 0 ; i < assets.size() ; i++ ) {
+        for (int i = 0; i < assets.size(); i++) {
             String coinName = assets.get(i).getCoinName();
             String coinId = ncs.coinId(coinName);
             res[i] = new BigInteger(coinId, 16);
@@ -350,7 +348,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 .andThen(sendMessageEventLogChecker(transaction));
         ScoreIntegrationTest.balanceCheck(ncsAddress, asset.getAmount(), () ->
                 lockedBalanceCheck(new Address(transaction.getFrom()), asset, () ->
-                        ((NCSScoreClient) ncs).transferNativeCoin(
+                        ncs.transferNativeCoin(
                                 checker,
                                 asset.getAmount(),
                                 transaction.getTo())));
@@ -369,7 +367,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                         ncsAddress, from, ncsAddress, coinId, asset.getAmount()));
         IRC31SupplierTest.balanceCheck(ncsAddress, coinId, coinValue, () ->
                 lockedBalanceCheck(from, asset, () ->
-                        ((NCSScoreClient) ncs).transfer(
+                        ncs.transfer(
                                 checker,
                                 asset.getCoinName(), asset.getAmount(), transaction.getTo())
                 )
@@ -411,17 +409,18 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         BigInteger sn = BigInteger.ONE;
         Consumer<TransactionResult> checker = IRC31SupplierTest.mintBatchChecker(
                 ncsAddress, to, coinIds, coinValues).andThen(
-                MockBMCIntegrationTest.eventLogChecker(SendMessageEventLog::eventLogs, (el) -> {
-                    assertEquals(linkNet, el.getTo());
-                    assertEquals(NativeCoinService.SERVICE, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    NCSMessage ncsMsg = NCSMessage.fromBytes(el.getMsg());
-                    assertEquals(NCSMessage.REPONSE_HANDLE_SERVICE, ncsMsg.getServiceType());
-                    TransferResponse response = TransferResponse.fromBytes(ncsMsg.getData());
-                    assertEquals(TransferResponse.RC_OK, response.getCode());
-                    assertEquals(TransferResponse.OK_MSG, response.getMessage());
-                }));
-        Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+                MockBMCIntegrationTest.sendMessageEvent(
+                        (el) -> {
+                            assertEquals(linkNet, el.getTo());
+                            assertEquals(NativeCoinService.SERVICE, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            NCSMessage ncsMsg = NCSMessage.fromBytes(el.getMsg());
+                            assertEquals(NCSMessage.REPONSE_HANDLE_SERVICE, ncsMsg.getServiceType());
+                            TransferResponse response = TransferResponse.fromBytes(ncsMsg.getData());
+                            assertEquals(TransferResponse.RC_OK, response.getCode());
+                            assertEquals(TransferResponse.OK_MSG, response.getMessage());
+                        }));
+        Executable executable = () -> MockBMCIntegrationTest.mockBMC
                 .handleBTPMessage(
                         checker,
                         ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
@@ -454,7 +453,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         ncsMessage.setData(response.toBytes());
 
         BigInteger sn = BigInteger.ONE;
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC).handleBTPMessage(
+        MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 NCSIntegrationTest.eventLogChecker(UnknownResponseEventLog::eventLogs, (el) -> {
                     assertEquals(linkNet, el.getFrom());
                     assertEquals(sn, el.getSn());
@@ -535,7 +534,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
         BigInteger[] coinValues = coinValues(coinAssets);
 
         Address faAddr = new Address(fa.account());
-        Executable executable = () -> ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+        Executable executable = () -> MockBMCIntegrationTest.mockBMCClient
                 .handleFeeGathering(
                         IRC31SupplierTest.transferFromBatchChecker(
                                 ncsAddress, ncsAddress, faAddr, coinIds, coinValues),
@@ -564,7 +563,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
 
         TransferTransaction feeTransaction = transferTransaction(
                 ncsAddress, linkFa, BigInteger.ZERO, feeAssets);
-        ((MockBMCScoreClient) MockBMCIntegrationTest.mockBMC)
+        MockBMCIntegrationTest.mockBMCClient
                 .handleFeeGathering(
                         transferStartEventLogChecker(feeTransaction)
                                 .andThen(sendMessageEventLogChecker(feeTransaction)),
