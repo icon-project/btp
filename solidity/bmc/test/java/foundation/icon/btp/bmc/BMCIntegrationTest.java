@@ -23,7 +23,6 @@ import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.EVMIntegrationTest;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,6 +58,55 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
         }
     }
 
+    BMCManagement bmcWithTester = EVMIntegrationTest.load(bmcManagement, tester);
+
+    static Consumer<TransactionReceipt> messageEvent(
+            Consumer<BMCPeriphery.MessageEventResponse> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                bmcPeriphery.getContractAddress(),
+                BMCPeriphery::getMessageEvents,
+                consumer);
+    }
+
+    static List<BTPMessage> btpMessages(TransactionReceipt txr, Predicate<BMCPeriphery.MessageEventResponse> filter) {
+        return EVMIntegrationTest.eventLogs(
+                txr,
+                bmcPeriphery.getContractAddress(),
+                BMCPeriphery::getMessageEvents,
+                filter).stream()
+                .map((el) -> BTPMessage.fromBytes(el._msg))
+                .collect(Collectors.toList());
+    }
+
+    String INTERNAL_SERVICE = "bmc";
+
+    static List<BMCMessage> bmcMessages(TransactionReceipt txr, Predicate<String> nextPredicate) {
+        return btpMessages(txr, (el) -> nextPredicate.test(el._next)).stream()
+                .filter((msg) -> msg.getSvc().equals(INTERNAL_SERVICE))
+                .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
+                .collect(Collectors.toList());
+    }
+
+    enum Internal {Init, Link, Unlink, Sack}
+
+    static <T> List<T> internalMessages(
+            List<BMCMessage> bmcMessages,
+            Internal internal,
+            Function<byte[], T> mapFunc) {
+        return bmcMessages.stream()
+                .filter((bmcMsg) -> bmcMsg.getType().equals(internal.name()))
+                .map((bmcMsg) -> mapFunc.apply(bmcMsg.getPayload()))
+                .collect(Collectors.toList());
+    }
+
+    static Consumer<TransactionReceipt> messageDroppedEvent(
+            Consumer<BMCPeriphery.MessageDroppedEventResponse> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                bmcPeriphery.getContractAddress(),
+                BMCPeriphery::getMessageDroppedEvents,
+                consumer);
+    }
+
     static BTPAddress btpAddress() {
         try {
             return BTPAddress.valueOf(bmcPeriphery.getBmcBtpAddress().send());
@@ -81,68 +129,4 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
             throw new RuntimeException(e);
         }
     }
-
-    BMCManagement bmcWithTester = EVMIntegrationTest.load(bmcManagement, tester);
-
-    static Consumer<TransactionReceipt> messageEvent(
-            Consumer<BMCPeriphery.MessageEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                bmcPeriphery.getContractAddress(),
-                BMCPeriphery::getMessageEvents,
-                consumer);
-    }
-
-    static Consumer<TransactionReceipt> messageEvents(
-            Consumer<List<BMCPeriphery.MessageEventResponse>> consumer,
-            Predicate<BMCPeriphery.MessageEventResponse> filter) {
-        return EVMIntegrationTest.eventLogsChecker(
-                bmcPeriphery.getContractAddress(),
-                BMCPeriphery::getMessageEvents,
-                (l) -> {
-                    if (filter != null) {
-                        l = l.stream()
-                                .filter(filter)
-                                .collect(Collectors.toList());
-                    }
-                    consumer.accept(l);
-                });
-    }
-
-    static List<BTPMessage> btpMessages(TransactionReceipt txr, Predicate<BMCPeriphery.MessageEventResponse> filter) {
-        List<BTPMessage> msgs = new ArrayList<>();
-        messageEvents((l) -> {
-            msgs.addAll(l.stream().map((el) -> BTPMessage.fromBytes(el._msg))
-                    .collect(Collectors.toList()));
-        }, filter).accept(txr);
-        return msgs;
-    }
-
-    String INTERNAL_SERVICE = "bmc";
-    static List<BMCMessage> bmcMessages(TransactionReceipt txr, Predicate<String> nextPredicate) {
-        return btpMessages(txr, (el) -> nextPredicate.test(el._next)).stream()
-                .filter((msg) -> msg.getSvc().equals(INTERNAL_SERVICE))
-                .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
-                .collect(Collectors.toList());
-    }
-
-    enum Internal {Init, Link, Unlink}
-
-    static <T> List<T> internalMessages(
-            List<BMCMessage> bmcMessages,
-            Internal internal,
-            Function<byte[], T> mapFunc) {
-        return bmcMessages.stream()
-                .filter((bmcMsg) -> bmcMsg.getType().equals(internal.name()))
-                .map((bmcMsg) -> mapFunc.apply(bmcMsg.getPayload()))
-                .collect(Collectors.toList());
-    }
-
-    static Consumer<TransactionReceipt> messageDroppedEvent(
-            Consumer<BMCPeriphery.MessageDroppedEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                bmcPeriphery.getContractAddress(),
-                BMCPeriphery::getMessageDroppedEvents,
-                consumer);
-    }
-
 }

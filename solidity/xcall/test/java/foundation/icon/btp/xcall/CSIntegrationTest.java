@@ -45,6 +45,12 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionReceipt> rollbackMessageEventShouldNotExists() {
+        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
+                callService.getContractAddress(),
+                CallService::getRollbackMessageEvents);
+    }
+
     static Consumer<TransactionReceipt> callRequestClearedEvent(
             Consumer<CallService.CallRequestClearedEventResponse> consumer) {
         return EVMIntegrationTest.eventLogChecker(
@@ -53,7 +59,11 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
-
+    static Consumer<TransactionReceipt> callRequestClearedEventShouldNotExists() {
+        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
+                callService.getContractAddress(),
+                CallService::getCallRequestClearedEvents);
+    }
 
     static Consumer<TransactionReceipt> messageReceivedEvent(
             Consumer<DAppProxySample.MessageReceivedEventResponse> consumer) {

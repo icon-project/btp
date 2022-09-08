@@ -176,10 +176,7 @@ public class CallServiceTest implements CSIntegrationTest {
                     assertEquals(from.toString(), el._from);
                     assertArrayEquals(requestMap.get(srcSn).getData(), el._data);
                 });
-        checker = checker.andThen(
-                EVMIntegrationTest.notExistsEventLogChecker(
-                        MockBMCIntegrationTest.mockBMC.getContractAddress(),
-                        MockBMC::getMessageEvents));
+        checker = checker.andThen(MockBMCIntegrationTest.sendMessageEventShouldNotExists());
         checker.accept(callService.executeCall(reqId).send());
     }
 
@@ -190,10 +187,7 @@ public class CallServiceTest implements CSIntegrationTest {
         var response = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
         var checker = MockBMCIntegrationTest.shouldSuccessHandleBTPMessage();
-        checker = checker.andThen(
-                EVMIntegrationTest.notExistsEventLogChecker(
-                        csAddress,
-                        CallService::getCallRequestClearedEvents));
+        checker = checker.andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
                 linkNet, SERVICE, dstSn, csMsg.toBytes()).send());
@@ -207,10 +201,7 @@ public class CallServiceTest implements CSIntegrationTest {
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
         System.out.println(CSMessageResponse.fromBytes(csMsg.getData()));
         var checker = MockBMCIntegrationTest.shouldSuccessHandleBTPMessage();
-        checker = checker.andThen(
-                EVMIntegrationTest.notExistsEventLogChecker(
-                        csAddress,
-                        CallService::getCallRequestClearedEvents));
+        checker = checker.andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
                 linkNet, SERVICE, dstSn, csMsg.toBytes()).send());
@@ -335,9 +326,7 @@ public class CallServiceTest implements CSIntegrationTest {
                     assertEquals(srcSn, el._sn);
                     assertArrayEquals(requestMap.get(srcSn).getRollback(), el._rollback);
                 }));
-        checker = checker.andThen(EVMIntegrationTest.notExistsEventLogChecker(
-                csAddress,
-                CallService::getCallRequestClearedEvents));
+        checker = checker.andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
                 linkNet, SERVICE, dstSn, csMsg.toBytes()).send());
@@ -376,10 +365,7 @@ public class CallServiceTest implements CSIntegrationTest {
                         (el) -> {
                             assertEquals(srcSn, el._sn);
                         }));
-        checker = checker.andThen(
-                EVMIntegrationTest.notExistsEventLogChecker(
-                        csAddress,
-                        CallService::getRollbackMessageEvents));
+        checker = checker.andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
                 linkNet, SERVICE, dstSn, csMsg.toBytes()).send());
@@ -409,9 +395,7 @@ public class CallServiceTest implements CSIntegrationTest {
                             assertEquals(srcSn, el._sn);
                             assertArrayEquals(requestMap.get(srcSn).getRollback(), el._rollback);
                         }));
-        checker = checker.andThen(EVMIntegrationTest.notExistsEventLogChecker(
-                csAddress,
-                CallService::getCallRequestClearedEvents));
+        checker = checker.andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPError(
                 csAddress,
                 btpAddress.toString(), SERVICE, srcSn, BigInteger.ONE, "BTPError").send());

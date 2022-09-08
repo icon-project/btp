@@ -44,6 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -51,11 +52,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface EVMIntegrationTest {
 
-    default void internalBeforeEach(TestInfo testInfo) {}
+    default void internalBeforeEach(TestInfo testInfo) {
+    }
 
-    default void internalAfterEach(TestInfo testInfo) {}
+    default void internalAfterEach(TestInfo testInfo) {
+    }
 
-    default void clearIfExists(TestInfo testInfo) {}
+    default void clearIfExists(TestInfo testInfo) {
+    }
 
     @BeforeEach
     default void beforeEach(TestInfo testInfo) {
@@ -82,7 +86,7 @@ public interface EVMIntegrationTest {
     }
 
     int DEFAULT_RPC_PORT = 8545;
-    Web3j w3j = Web3j.build(new HttpService("http://localhost:"+DEFAULT_RPC_PORT));
+    Web3j w3j = Web3j.build(new HttpService("http://localhost:" + DEFAULT_RPC_PORT));
     ContractGasProvider cgp = new DefaultGasProvider();
     Credentials credentials = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63");
     BigInteger chainId = getChainId(w3j);
@@ -108,7 +112,7 @@ public interface EVMIntegrationTest {
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Contract> T deploy(Class<T> clazz, Object ... params) {
+    static <T extends Contract> T deploy(Class<T> clazz, Object... params) {
         T contract = null;
         try {
             if (params != null && params.length > 0) {
@@ -122,7 +126,7 @@ public interface EVMIntegrationTest {
                 Method method = clazz.getDeclaredMethod("deploy", parameterTypes.toArray(new Class[0]));
                 List<Object> parameters = new ArrayList<>(Arrays.asList(w3j, tm, cgp));
                 parameters.addAll(Arrays.asList(params));
-                RemoteCall<T> remoteCall = (RemoteCall<T>)method.invoke(null, parameters.toArray());
+                RemoteCall<T> remoteCall = (RemoteCall<T>) method.invoke(null, parameters.toArray());
                 contract = remoteCall.send();
             } else {
                 String binary = (String) clazz.getDeclaredField("BINARY").get(null);
@@ -172,7 +176,7 @@ public interface EVMIntegrationTest {
 
     @SuppressWarnings("unchecked")
     static <T extends Contract> T load(T contract, Credentials credentials) {
-        return (T)load(contract.getClass(), contract.getContractAddress(), newTransactionManager(credentials));
+        return (T) load(contract.getClass(), contract.getContractAddress(), newTransactionManager(credentials));
     }
 
     @SuppressWarnings("unchecked")
@@ -183,29 +187,10 @@ public interface EVMIntegrationTest {
                     Web3j.class,
                     TransactionManager.class,
                     ContractGasProvider.class);
-            return (T)method.invoke(null, address, w3j, tm, cgp);
+            return (T) method.invoke(null, address, w3j, tm, cgp);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    static <T extends BaseEventResponse> List<T> eventLogs(
-            TransactionReceipt txr,
-            String contractAddress,
-            Function<TransactionReceipt, List<T>> mapperFunc,
-            Predicate<T> filter) {
-        Predicate<T> predicate = contractAddress == null ? null :
-                (el) -> el.log.getAddress().equals(contractAddress);
-        if (filter != null) {
-            predicate = predicate == null ? filter : predicate.and(filter);
-        }
-        List<T> l = mapperFunc.apply(txr);
-        if (predicate != null) {
-            return l.stream()
-                    .filter(predicate)
-                    .collect(Collectors.toList());
-        }
-        return l;
     }
 
     @FunctionalInterface
@@ -213,9 +198,23 @@ public interface EVMIntegrationTest {
         List<T> apply(TransactionReceipt txr);
     }
 
-    @FunctionalInterface
-    interface FilteredEventLogsSupplier<T extends BaseEventResponse> {
-        List<T> apply(TransactionReceipt txr, String address, Predicate<T> filter);
+    static <T extends BaseEventResponse> List<T> eventLogs(
+            TransactionReceipt txr,
+            String address,
+            EventLogsSupplier<T> supplier,
+            Predicate<T> filter) {
+        Predicate<T> predicate = address == null ? null :
+                (el) -> el.log.getAddress().equals(address);
+        if (filter != null) {
+            predicate = predicate == null ? filter : predicate.and(filter);
+        }
+        List<T> l = supplier.apply(txr);
+        if (predicate != null) {
+            return l.stream()
+                    .filter(predicate)
+                    .collect(Collectors.toList());
+        }
+        return l;
     }
 
     static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(
@@ -243,7 +242,7 @@ public interface EVMIntegrationTest {
         };
     }
 
-    static <T extends BaseEventResponse> Consumer<TransactionReceipt> notExistsEventLogChecker(
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogShouldNotExistsChecker(
             String address, EventLogsSupplier<T> supplier) {
         return (txr) -> {
             List<T> eventLogs = supplier.apply(txr).stream()
@@ -258,7 +257,7 @@ public interface EVMIntegrationTest {
     static Credentials generateCredentials() {
         try {
             ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-            System.out.println("generate keyPair:"+ Numeric.toHexStringWithPrefix(ecKeyPair.getPrivateKey()));
+            System.out.println("generate keyPair:" + Numeric.toHexStringWithPrefix(ecKeyPair.getPrivateKey()));
             return Credentials.create(ecKeyPair);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException(e);

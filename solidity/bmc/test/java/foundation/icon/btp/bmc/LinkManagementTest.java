@@ -85,8 +85,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     static boolean isExistsLink(String link) {
-        return getLinks().stream()
-                .anyMatch((v) -> v.equals(link));
+        return getLinks().contains(link);
     }
 
     static void addLink(String link) {

@@ -37,11 +37,17 @@ public interface MockBMCIntegrationTest {
     }
 
     static Consumer<TransactionReceipt> sendMessageEvent(
-            Consumer<MockBMC.MessageEventResponse> consumer) {
+            Consumer<MockBMC.SendMessageEventResponse> consumer) {
         return EVMIntegrationTest.eventLogChecker(
                 mockBMC.getContractAddress(),
-                MockBMC::getMessageEvents,
+                MockBMC::getSendMessageEvents,
                 consumer);
+    }
+
+    static Consumer<TransactionReceipt> sendMessageEventShouldNotExists() {
+        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
+                mockBMC.getContractAddress(),
+                MockBMC::getSendMessageEvents);
     }
 
     static Consumer<TransactionReceipt> handleRelayMessageEvent(

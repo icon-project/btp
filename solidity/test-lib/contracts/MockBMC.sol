@@ -69,10 +69,10 @@ contract MockBMC is IBMC {
         uint256 _sn,
         bytes memory _msg
     ) external override {
-        emit Message(_to, _svc, _sn, _msg);
+        emit SendMessage(_to, _svc, _sn, _msg);
     }
 
-    event Message(
+    event SendMessage(
         string _to,
         string _svc,
         uint256 _sn,
