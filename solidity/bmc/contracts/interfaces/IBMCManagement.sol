@@ -247,38 +247,6 @@ interface IBMCManagement {
         returns (string memory, string memory);
 
     /**
-        @notice Schedule to drop message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    function scheduleDropMessage(
-        string memory _link,
-        uint256 _seq
-    ) external;
-
-    /**
-        @notice Cancel the scheduled drop of message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    function cancelDropMessage(
-        string memory _link,
-        uint256 _seq
-    ) external;
-
-    /**
-        @notice Get the list of unprocessed the scheduled drop of message
-        @param _link String ( BTP Address of connected BMC )
-        @return A list of registered sequences to drop
-     */
-    function getScheduledDropMessages(string memory _link)
-        external
-        view
-    returns (uint256[] memory);
-
-    /**
         @notice Drop the next message that to be relayed from a specific network
         @dev Called by the operator to manage the BTP network.
         @param _src String ( BTP Address of source BMC )
@@ -293,14 +261,4 @@ interface IBMCManagement {
         uint256 _sn
     ) external;
 
-    /**
-        @notice Cancel the scheduled drop of message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seqList []Integer ( list of sequence number )
-     */
-    function setScheduledDropMessages(
-        string memory _link,
-        uint256[] memory _seqList
-    ) external;
 }

@@ -117,9 +117,6 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
             serializedMsgs.length
         );
 
-        bool dropped = false;
-        drops = IBMCManagement(bmcManagement).getScheduledDropMessages(_prev);
-
         // dispatch BTP Messages
         Types.BTPMessage memory btpMsg;
         for (uint256 i = 0; i < serializedMsgs.length; i++) {
@@ -131,36 +128,24 @@ contract BMCPeriphery is IBMCPeriphery, Initializable {
                 // ignore BTPMessage parse failure
                 continue;
             }
-            rxSeq++;
-            if (drops.length > 0 && drops.removeFromUints(rxSeq)) {
-                if (btpMsg.sn > 0) {
-                    _sendError(_prev, prevNet, btpMsg, BMC_ERR_CODE_DROP, BMC_ERR_NAME_DROP);
-                }
-                emit MessageDropped(_prev, rxSeq, serializedMsgs[i]);
-                dropped = true;
-            } else {
-                if (btpMsg.dst.compareTo(bmcBtpAddress)) {
-                    if (btpMsg.svc.compareTo(BMC_INTERNAL_SERVICE)) {
-                        handleInternal(_prev, prevNet, btpMsg);
-                    } else {
-                        handleService(_prev, prevNet, btpMsg);
-                    }
+            if (btpMsg.dst.compareTo(bmcBtpAddress)) {
+                if (btpMsg.svc.compareTo(BMC_INTERNAL_SERVICE)) {
+                    handleInternal(_prev, prevNet, btpMsg);
                 } else {
-                    (string memory dstNet, ) = btpMsg.dst.splitBTPAddress();
-                    try IBMCManagement(bmcManagement).resolveRoute(dstNet) returns (
-                        string memory nextLink,
-                        string memory
-                    ) {
-                        (string memory nextNet, ) = nextLink.splitBTPAddress();
-                        _sendMessage(nextLink, nextNet, serializedMsgs[i]);
-                    } catch Error(string memory _error) {
-                        _sendError(_prev, prevNet, btpMsg, BMC_ERR, _error);
-                    }
+                    handleService(_prev, prevNet, btpMsg);
+                }
+            } else {
+                (string memory dstNet, ) = btpMsg.dst.splitBTPAddress();
+                try IBMCManagement(bmcManagement).resolveRoute(dstNet) returns (
+                    string memory nextLink,
+                    string memory
+                ) {
+                    (string memory nextNet, ) = nextLink.splitBTPAddress();
+                    _sendMessage(nextLink, nextNet, serializedMsgs[i]);
+                } catch Error(string memory _error) {
+                    _sendError(_prev, prevNet, btpMsg, BMC_ERR, _error);
                 }
             }
-        }
-        if (dropped) {
-            IBMCManagement(bmcManagement).setScheduledDropMessages(_prev, drops);
         }
         IBMCManagement(bmcManagement).updateLinkRxSeq(
             prevNet,

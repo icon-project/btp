@@ -145,19 +145,4 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
-    static Consumer<TransactionReceipt> messageDroppedEvents(
-            Consumer<List<BMCPeriphery.MessageDroppedEventResponse>> consumer,
-            Predicate<BMCPeriphery.MessageDroppedEventResponse> filter) {
-        return EVMIntegrationTest.eventLogsChecker(
-                bmcPeriphery.getContractAddress(),
-                BMCPeriphery::getMessageDroppedEvents,
-                (l) -> {
-                    if (filter != null) {
-                        l = l.stream()
-                                .filter(filter)
-                                .collect(Collectors.toList());
-                    }
-                    consumer.accept(l);
-                });
-    }
 }

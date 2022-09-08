@@ -93,39 +93,6 @@ public interface ICONSpecific {
     void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn);
 
     /**
-     * Schedule to drop message
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link String (BTP Address of connected BMC)
-     * @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    @External
-    void scheduleDropMessage(String _link, BigInteger _seq);
-
-    /**
-     * Cancel the scheduled drop of message
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link String ( BTP Address of connected BMC )
-     * @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    @External
-    void cancelDropMessage(String _link, BigInteger _seq);
-
-    /**
-     * Get the list of unprocessed the scheduled drop of message
-     *
-     * @param _link String ( BTP Address of connected BMC )
-     * @return A list of registered sequences to drop
-     * <br>For Example::<br>
-     * [
-     * "0x1"
-     * ]
-     */
-    @External(readonly = true)
-    BigInteger[] getScheduledDropMessages(String _link);
-
-    /**
      * (EventLog) Drop the message of the connected BMC
      * if sn of message is less than zero
      *

@@ -73,6 +73,7 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() throws Exception {
+        System.out.println("OwnershipTest:beforeAll start");
         BigInteger balance = w3j.ethGetBalance(tester.getAddress(), DefaultBlockParameterName.LATEST).send().getBalance();
         if (balance.compareTo(BigInteger.ZERO) == 0) {
             Transfer transfer = new Transfer(w3j, tm);
@@ -81,6 +82,7 @@ public class OwnershipTest implements BMCIntegrationTest {
             balance = w3j.ethGetBalance(tester.getAddress(), DefaultBlockParameterName.LATEST).send().getBalance();
             System.out.println(tester.getAddress() + ":" + balance);
         }
+        System.out.println("OwnershipTest:beforeAll start");
     }
 
     @Override
@@ -190,16 +192,6 @@ public class OwnershipTest implements BMCIntegrationTest {
     @Test
     void dropMessageShouldRevertUnauthorized() {
         assertUnauthorized(() -> bmcWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger).send());
-    }
-
-    @Test
-    void scheduleDropMessageShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.scheduleDropMessage(btpAddress, bigInteger).send());
-    }
-
-    @Test
-    void cancelDropMessageShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.scheduleDropMessage(btpAddress, bigInteger).send());
     }
 
 }

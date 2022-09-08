@@ -221,68 +221,6 @@ public class MessageTest implements BMCIntegrationTest {
                 relayMessage.toBase64String());
     }
 
-    @Test
-    void handleRelayMessageShouldDropAndSendErrorMessageAndMakeEventLog() {
-        //BMC.dropMessage(BMC.getStatus().getRx_seq().add(BigInteger.ONE))
-        //BMC.handleRelayMessage -> BMC.Message(str,int,bytes)
-        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
-        BigInteger rxSeq = status.getRx_seq().add(BigInteger.ONE);
-        DropMessageTest.scheduleDropMessage(link, rxSeq);
-
-        BigInteger txSeq = status.getTx_seq().add(BigInteger.ONE);
-
-        BigInteger sn = BigInteger.ONE;
-        byte[] payload = BTPIntegrationTest.Faker.btpLink().toBytes();
-        List<BTPMessage> btpMessages = new ArrayList<>();
-        btpMessages.add(btpMessage(svc, sn, payload));
-        MockRelayMessage relayMessage = new MockRelayMessage();
-        relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        ((BMCScoreClient) bmc).handleRelayMessage(
-                BMCIntegrationTest.eventLogChecker(MessageDroppedEventLog::eventLogs, (el) -> {
-                    assertEquals(link, el.getLink());
-                    assertEquals(rxSeq, el.getSeq());
-                    assertEqualsBTPMessage(btpMessages.get(0), el.getMsg());
-                }).andThen(BMCIntegrationTest.eventLogChecker(MessageEventLog::eventLogs, (el) -> {
-                    assertEquals(link, el.getNext());
-                    assertEquals(txSeq, el.getSeq());
-                    assertEqualsErrorMessage(btpMessages.get(0), el.getMsg(), BMCException.drop());
-                })).andThen(MockBSHIntegrationTest.notExistsEventLogChecker(
-                        HandleBTPMessageEventLog::eventLogs)),
-                link,
-                relayMessage.toBase64String());
-
-        assertFalse(DropMessageTest.isExistsScheduledDropMessage(link, rxSeq));
-    }
-
-    @Test
-    void handleRelayMessageShouldDropAndMakeEventLog() {
-        //BMC.dropMessage
-        //BMC.handleRelayMessage -> BMC.DropMessage(str,int,bytes)
-        BigInteger seq = BMCIntegrationTest.getStatus(bmc, link).getRx_seq().add(BigInteger.ONE);
-        DropMessageTest.scheduleDropMessage(link, seq);
-
-        ErrorMessage errorMessage = new ErrorMessage();
-        errorMessage.setCode(0);
-        errorMessage.setMsg("error");
-        BigInteger sn = BigInteger.ONE.negate();
-        byte[] payload = errorMessage.toBytes();
-        List<BTPMessage> btpMessages = new ArrayList<>();
-        btpMessages.add(btpMessage(svc, sn, payload));
-        MockRelayMessage relayMessage = new MockRelayMessage();
-        relayMessage.setBtpMessages(toBytesArray(btpMessages));
-        ((BMCScoreClient) bmc).handleRelayMessage(
-                BMCIntegrationTest.eventLogChecker(MessageDroppedEventLog::eventLogs, (el) -> {
-                    assertEquals(link, el.getLink());
-                    assertEquals(seq, el.getSeq());
-                    assertEqualsBTPMessage(btpMessages.get(0), el.getMsg());
-                }).andThen(MockBSHIntegrationTest.notExistsEventLogChecker(
-                        HandleBTPMessageEventLog::eventLogs)),
-                link,
-                relayMessage.toBase64String());
-
-        assertFalse(DropMessageTest.isExistsScheduledDropMessage(link, seq));
-    }
-
     static String[] fragments(byte[] bytes, int count) {
         int len = bytes.length;
         if (len < count || count < 1) {

@@ -54,7 +54,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     mapping(string => Types.Route) private routeMap;//net of destination => Types.Route
     mapping(string => address[]) private relayMap; //net => list of address of relay
     mapping(string => mapping(address => Types.RelayStats)) private relayStats; //link => address of relay => Types.RelayStats
-    mapping(string => uint256[]) private drops;//link => list of sequence to drop
     string[] private bmvKeyList;//list of net of bmv
     string[] private bshKeyList;//list of svc of bsh
     string[] private routeList;//list of destination of route
@@ -297,7 +296,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         delete reachableMap[net];
         delete linkMap[net];
         linkList.removeFromStrings(_link);
-        delete drops[_link];
     }
 
     /**
@@ -428,52 +426,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
         for (uint256 i = 0; i < _relays.length; i++) {
             _relays[i] = relayStats[_link][relayMap[net][i]];
         }
-    }
-
-    /**
-        @notice Schedule to drop message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    function scheduleDropMessage(
-        string memory _link,
-        uint256 _seq
-    ) external override hasPermission {
-        string memory net = requireLink(_link);
-        require(linkMap[net].rxSeq < _seq, "10:Invalid _seq");
-        require(!drops[_link].containsFromUints(_seq), "10:AlreadyExists _seq");
-        drops[_link].push(_seq);
-    }
-
-    /**
-        @notice Cancel the scheduled drop of message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    function cancelDropMessage(
-        string memory _link,
-        uint256 _seq
-    ) external override hasPermission {
-        requireLink(_link);
-        require(drops[_link].containsFromUints(_seq), "10:NotExists _seq");
-        //@Notice the order may be changed after remove
-        //  arr[index of remove]=arr[last index]
-        drops[_link].removeFromUints(_seq);
-    }
-
-    /**
-        @notice Get the list of unprocessed the scheduled drop of message
-        @param _link String ( BTP Address of connected BMC )
-        @return A list of registered sequences to drop
-     */
-    function getScheduledDropMessages(
-        string memory _link
-    ) external view override returns (uint256[] memory) {
-        requireLink(_link);
-
-        return drops[_link];
     }
 
     /**
@@ -628,19 +580,6 @@ contract BMCManagementV2 is IBMCManagement, Initializable {
     returns (string memory next, string memory dst)
     {
         return resolveNext(_dstNet);
-    }
-
-    /**
-        @notice Cancel the scheduled drop of message
-        @dev Called by the operator to manage the BTP network.
-        @param _link String (BTP Address of connected BMC)
-        @param _seqList []Integer ( list of sequence number )
-     */
-    function setScheduledDropMessages(
-        string memory _link,
-        uint256[] memory _seqList
-    ) external override onlyBMCPeriphery {
-        drops[_link] = _seqList;
     }
     /*******************************************************************************************/
 }
