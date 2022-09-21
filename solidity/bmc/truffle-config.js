@@ -45,6 +45,13 @@ module.exports = {
             network_id: '97',
             //networkCheckTimeout: 1000000,
             //timeoutBlocks: 2000
+        },
+
+        // iconloop testbed
+        testbed: {
+            host: "20.20.1.222",
+            port: 8545,
+            network_id: "*"
         }
     },
 

@@ -46,6 +46,13 @@ module.exports = {
           port: 8545,            // Standard Ethereum port (default: none)
           network_id: "*",       // Any network (default: none)
       },
+
+      // iconloop testbed
+      testbed: {
+          host: "20.20.1.222",
+          port: 8545,
+          network_id: "*",
+      },
     //
     // An additional network, but with some advanced options…
     // advanced: {

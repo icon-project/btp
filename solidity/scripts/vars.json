@@ -1,0 +1,17 @@
+{
+    "deployment_network": "testbed",
+    "deployment": {
+        "network_id": "0x3.eth",
+        "network_type_id": 2,
+        "first_block_header": "0xf8430e00a0a2a824778e04bb8ea209bbb72f4d03cfcef676a87e51dd86332a10d7bac666cdc00201f80000f80097d6d594295f731277f78fd0f2fb918e4f04f6adc7d4c9fe",
+        "sequence_offset": 0,
+        "service_name": "debugbsh"
+    },
+    "relayer": {
+        "address": "0x59b02d4d2f94ea5c55230715a58ebb0b703bcd4b"
+    },
+    "target": {
+        "network_id": "0x2.icon",
+        "bmc_address": "cx9e093444ab5a1046ea5aabdddeabc599c41fe713"
+    }
+}
