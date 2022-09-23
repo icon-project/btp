@@ -16,6 +16,14 @@ jobs:
       with:
         submodules: recursive
 
+    - uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 11
+    - uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 6.7.1
+
     - name: Javascore BMC coverage
       working-directory: ./javascore/bmc
       run: |
