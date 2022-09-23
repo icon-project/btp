@@ -8,7 +8,7 @@ on:
     branches:
       - main
 jobs:
-  Javascore-Coverage:
+  Coverage:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -22,7 +22,7 @@ jobs:
         java-version: 11
     - uses: gradle/gradle-build-action@v2
       with:
-        gradle-version: 6.7.1
+        gradle-version: 7
 
     - name: Javascore BMC coverage
       working-directory: ./javascore/bmc
