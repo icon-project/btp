@@ -15,6 +15,48 @@ jobs:
       uses: actions/checkout@v3
       with:
         submodules: recursive
+
+    - name: Javascore BMC coverage
+      working-directory: ./javascore/bmc
+      run: |
+        gradle test
+
+    - name: Javascore BMV coverage
+      working-directory: ./javascore/bmv
+      continue-on-error: true
+      run: |
+        gradle test
+
+    - name: Javascore BSH coverage
+      working-directory: ./javascore/bsh
+      run: |
+        gradle test
+
+    - name: Javascore nativecoin coverage
+      working-directory: ./javascore/nativecoin
+      run: |
+        gradle test
+
+    - name: Javascore test-lib coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+    - name: Javascore xcall coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+
+    - name: GO test common
+      working-directory: ./common
+      run: |
+        go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
+  Solidity-Coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
@@ -23,46 +65,11 @@ jobs:
         cache-dependency-path: |
           solidity/bmv/package-lock.json
           solidity/xcall/package-lock.json
-    # - name: Javascore BMC coverage
-    #   working-directory: ./javascore/bmc
-    #   run: |
-    #     gradle test
-
-    # - name: Javascore BMV coverage
-    #   working-directory: ./javascore/bmv
-    #   continue-on-error: true
-    #   run: |
-    #     gradle test
-
-    # - name: Javascore BSH coverage
-    #   working-directory: ./javascore/bsh
-    #   run: |
-    #     gradle test
-
-    # - name: Javascore nativecoin coverage
-    #   working-directory: ./javascore/nativecoin
-    #   run: |
-    #     gradle test
-
-    # - name: Javascore test-lib coverage
-    #   working-directory: ./javascore/test-lib
-    #   run: |
-    #     gradle test
-    # - name: Javascore xcall coverage
-    #   working-directory: ./javascore/test-lib
-    #   run: |
-    #     gradle test
-
-    # - name: GO test common
-    #   working-directory: ./common
-    #   run: |
-    #     go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
-
-    # - name: Solidity BMC coverage
-    #   working-directory: ./solidity/bmc
-    #   run: |
-    #     yarn install
-    #     truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
+    - name: Solidity BMC coverage
+      working-directory: ./solidity/bmc
+      run: |
+        yarn install
+        truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
 
     - name: Solidity BMV coverage
       working-directory: ./solidity/bmv
