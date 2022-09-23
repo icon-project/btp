@@ -58,13 +58,7 @@ jobs:
       working-directory: ./common
       run: |
         go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
-  Solidity-Coverage:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
@@ -77,19 +71,19 @@ jobs:
       working-directory: ./solidity/bmc
       run: |
         yarn install
+        npm install -g truffle
         truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
 
     - name: Solidity BMV coverage
       working-directory: ./solidity/bmv
       run: |
-        npm install
-        npm install -g truffle
+        yarn install
         truffle run coverage || exit 0
 
     - name: Solidity xcall
       working-directory: ./solidity/xcall
       run: |
-        npm install
+        yarn install
         truffle run coverage || exit 0
 
     - name: Upload coverage to Codecov
