@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16
-        cache: 'npm'
+        cache: 'yarn'
         cache-dependency-path: |
           solidity/bmv/package-lock.json
           solidity/xcall/package-lock.json
@@ -67,14 +67,14 @@ jobs:
     - name: Solidity BMV coverage
       working-directory: ./solidity/bmv
       run: |
-        npm install
+        yarn install
         npm install -g truffle
         truffle run coverage || exit 0
 
     - name: Solidity xcall
       working-directory: ./solidity/xcall
       run: |
-        npm install
+        yarn install
         truffle run coverage || exit 0
 
     - name: Upload coverage to Codecov
