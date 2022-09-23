@@ -16,12 +16,14 @@
 
 package foundation.icon.btp.nativecoin;
 
+import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.External;
 import score.annotation.Payable;
 
 import java.math.BigInteger;
 
+@ScoreClient
 public interface NCS {
 
     /**

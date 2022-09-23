@@ -16,29 +16,35 @@
 
 package foundation.icon.btp.test;
 
-import foundation.icon.btp.mock.MockBSH;
 import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.util.function.Consumer;
 
 public interface MockBSHIntegrationTest {
+    String SERVICE = "mock";
 
-    DefaultScoreClient mockBSHClient = DefaultScoreClient.of("bsh-mock.", System.getProperties());
-    MockBSH mockBSH = new MockBSHScoreClient(mockBSHClient);
+    MockBSHScoreClient mockBSH = MockBSHScoreClient._of("bsh-mock.", System.getProperties());
+
+    static Consumer<TransactionResult> handleBTPMessageEvent(
+            Consumer<HandleBTPMessageEventLog> consumer) {
+        return eventLogChecker(
+                HandleBTPMessageEventLog::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> handleBTPErrorEvent(
+            Consumer<HandleBTPErrorEventLog> consumer) {
+        return eventLogChecker(
+                HandleBTPErrorEventLog::eventLogs,
+                consumer);
+    }
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                mockBSHClient._address(), supplier, consumer);
-    }
-
-    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
-            ScoreIntegrationTest.EventLogsSupplier<T> supplier) {
-        return ScoreIntegrationTest.notExistsEventLogChecker(
-                mockBSHClient._address(), supplier);
+                mockBSH._address(), supplier, consumer);
     }
 
 }

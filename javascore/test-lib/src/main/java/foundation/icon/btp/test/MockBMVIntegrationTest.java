@@ -16,23 +16,20 @@
 
 package foundation.icon.btp.test;
 
-import foundation.icon.btp.mock.MockBMV;
 import foundation.icon.btp.mock.MockBMVScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.util.function.Consumer;
 
 public interface MockBMVIntegrationTest {
 
-    DefaultScoreClient mockBMVClient = DefaultScoreClient.of("bmv-mock.", System.getProperties());
-    MockBMV mockBMV = new MockBMVScoreClient(mockBMVClient);
+    MockBMVScoreClient mockBMV = MockBMVScoreClient._of("bmv-mock.", System.getProperties());
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                mockBMVClient._address(), supplier, consumer);
+                mockBMV._address(), supplier, consumer);
     }
 
 }

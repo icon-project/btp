@@ -21,9 +21,10 @@ import foundation.icon.btp.lib.BMRStatus;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
-
+import foundation.icon.score.client.ScoreClient;
 import java.math.BigInteger;
 
+@ScoreClient
 public interface ICONSpecific {
 
     /**
@@ -81,85 +82,16 @@ public interface ICONSpecific {
     BMRStatus[] getRelays(String _link);
 
     /**
-     * Registers candidate for the smart contract for the service.
-     * Called by the BSH-Owner.
-     *
-     * @param _svc  String (the name of the service)
-     * @param _addr Address (the address of the smart contract handling the service)
-     */
-    @External
-    void addServiceCandidate(String _svc, Address _addr);
-
-    /**
-     * Unregisters candidate for the smart contract for the service.
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _svc  String (the name of the service)
-     * @param _addr Address (the address of the smart contract handling the service)
-     */
-    @External
-    void removeServiceCandidate(String _svc, Address _addr);
-
-    /**
-     * Get registered service candidate
-     *
-     * @return A list of service candidates
-     * <br>For Example::<br>
-     * [
-     * {
-     * "svc":"the name of the service",
-     * "address":"cx...",
-     * "owner":"hx...",
-     * }
-     * ]
-     */
-    @External(readonly = true)
-    ServiceCandidate[] getServiceCandidates();
-
-    /**
      * Drop the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
-     * @param _link String ( BTP Address of connected BMC )
+     * @param _src String ( BTP Address of source BMC )
      * @param _seq  Integer ( number of the message from connected BMC )
      * @param _svc  String ( number of the message from connected BMC )
      * @param _sn   Integer ( serial number of the message, must be positive )
      */
     @External
-    void dropMessage(String _link, BigInteger _seq, String _svc, BigInteger _sn);
-
-    /**
-     * Schedule to drop message
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link String (BTP Address of connected BMC)
-     * @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    @External
-    void scheduleDropMessage(String _link, BigInteger _seq);
-
-    /**
-     * Cancel the scheduled drop of message
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link String ( BTP Address of connected BMC )
-     * @param _seq  Integer ( sequence number of the message from connected BMC )
-     */
-    @External
-    void cancelDropMessage(String _link, BigInteger _seq);
-
-    /**
-     * Get the list of unprocessed the scheduled drop of message
-     *
-     * @param _link String ( BTP Address of connected BMC )
-     * @return A list of registered sequences to drop
-     * <br>For Example::<br>
-     * [
-     * "0x1"
-     * ]
-     */
-    @External(readonly = true)
-    BigInteger[] getScheduledDropMessages(String _link);
+    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn);
 
     /**
      * (EventLog) Drop the message of the connected BMC

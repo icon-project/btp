@@ -22,7 +22,13 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.AssertRevertedException;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,18 +41,18 @@ public class BMRManagementTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
-        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
+        System.out.println("BMRManagementTest:beforeAll start");
+        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMV._address());
         LinkManagementTest.addLink(link);
-        System.out.println("beforeAll end");
+        System.out.println("BMRManagementTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("BMRManagementTest:afterAll start");
         LinkManagementTest.clearLink(link);
         BMVManagementTest.clearVerifier(net);
-        System.out.println("afterAll end");
+        System.out.println("BMRManagementTest:afterAll end");
     }
 
     @Override
@@ -55,8 +61,8 @@ public class BMRManagementTest implements BMCIntegrationTest {
     }
 
     static boolean isExistsRelay(String link, Address address) {
-        return ScoreIntegrationTest.indexOf(
-                iconSpecific.getRelays(link), address) >= 0;
+        return Arrays.stream(iconSpecific.getRelays(link))
+                .anyMatch((v) -> v.getAddress().equals(address));
     }
 
     static void addRelay(String link, Address address) {

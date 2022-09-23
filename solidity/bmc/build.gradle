@@ -1,0 +1,16 @@
+version = '1.0-SNAPSHOT'
+
+web3j {
+    // cause Unsupported type encountered: tuple => it's not allowed struct array in struct, not fully support ABIv2
+    // getStatus returns libraries/Types.LinkStats that contains array of RelayStats
+    // Using IBMCManagement.getRelayStatusByLink(_link)
+    excludedContracts = [
+            'String'
+    ]
+    generatedPackageName = "foundation.icon.btp.bmc"
+}
+
+dependencies {
+    testImplementation project(':test-lib')
+    testImplementation("foundation.icon:javaee-unittest:0.9.4")
+}

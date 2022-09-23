@@ -21,7 +21,9 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp =
-            abi.encodePacked(_bs.serviceType.encodeString(), _bs.payload);
+            abi.encodePacked(
+                _bs.serviceType.encodeString(),
+                _bs.payload.encodeBytes());
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
@@ -51,6 +53,28 @@ library RLPEncodeStruct {
                 _res.code.encodeUint(),
                 _res.message.encodeString()
             );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
+    function encodeInitMessage(string[] memory _links)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory _rlp;
+        for (uint256 i = 0; i < _links.length; i++) {
+            _rlp = abi.encodePacked(_rlp, _links[i].encodeString());
+        }
+        _rlp = abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
+    function encodePropagateMessage(string memory _link)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory _rlp = abi.encodePacked(_link.encodeString());
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 

@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMCScoreClient;
 import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
@@ -83,7 +82,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     static boolean isExistsLink(String link) {
-        return ScoreIntegrationTest.indexOf(bmc.getLinks(), link) >= 0;
+        return Arrays.asList(bmc.getLinks()).contains(link);
     }
 
     static void addLink(String link) {
@@ -92,7 +91,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
             initMessageChecker(links)
                     .accept(BMCIntegrationTest.bmcMessages(txr, (next) -> next.equals(link)));
         };
-        ((BMCScoreClient) bmc).addLink(transactionResultChecker, link);
+        bmc.addLink(transactionResultChecker, link);
         assertTrue(isExistsLink(link));
     }
 
@@ -136,21 +135,21 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
-        Address mockBMVAddress = MockBMVIntegrationTest.mockBMVClient._address();
+        System.out.println("LinkManagementTest:beforeAll start");
+        Address mockBMVAddress = MockBMVIntegrationTest.mockBMV._address();
         BMVManagementTest.addVerifier(
                 linkBtpAddress.net(), mockBMVAddress);
         BMVManagementTest.addVerifier(
                 secondLinkBtpAddress.net(), mockBMVAddress);
-        System.out.println("beforeAll end");
+        System.out.println("LinkManagementTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("LinkManagementTest:afterAll start");
         BMVManagementTest.clearVerifier(linkBtpAddress.net());
         BMVManagementTest.clearVerifier(secondLinkBtpAddress.net());
-        System.out.println("afterAll end");
+        System.out.println("LinkManagementTest:afterAll end");
     }
 
     @Override
@@ -235,8 +234,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
         //addLinkShouldSendLinkMessage
         String secondLink = secondLinkBtpAddress.toString();
-        List<String> links = new ArrayList<>();
-        links.add(link);
+        List<String> links = Arrays.asList(bmc.getLinks());
 
         Consumer<TransactionResult> linkMessageCheck = (txr) -> {
             initMessageChecker(links)
@@ -246,7 +244,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
                     .accept(BMCIntegrationTest.bmcMessages(txr, copy::remove));
             assertEquals(0, copy.size());
         };
-        ((BMCScoreClient) bmc).addLink(linkMessageCheck, secondLink);
+        bmc.addLink(linkMessageCheck, secondLink);
         assertTrue(isExistsLink(secondLink));
 
         //RemoveLinkShouldSendUnlinkMessage
@@ -256,7 +254,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
                     .accept(BMCIntegrationTest.bmcMessages(txr, copy::remove));
             assertEquals(0, copy.size());
         };
-        ((BMCScoreClient) bmc).removeLink(unlinkMessageCheck, secondLink);
+        bmc.removeLink(unlinkMessageCheck, secondLink);
         assertFalse(isExistsLink(secondLink));
     }
 

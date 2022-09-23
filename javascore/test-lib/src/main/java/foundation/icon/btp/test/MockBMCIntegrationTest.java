@@ -16,23 +16,44 @@
 
 package foundation.icon.btp.test;
 
-import foundation.icon.btp.mock.MockBMC;
 import foundation.icon.btp.mock.MockBMCScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.util.function.Consumer;
 
 public interface MockBMCIntegrationTest {
 
-    DefaultScoreClient mockBMCClient = DefaultScoreClient.of("bmc-mock.", System.getProperties());
-    MockBMC mockBMC = new MockBMCScoreClient(mockBMCClient);
+    MockBMCScoreClient mockBMC = MockBMCScoreClient._of("bmc-mock.", System.getProperties());
+
+    static Consumer<TransactionResult> sendMessageEvent(
+            Consumer<SendMessageEventLog> consumer) {
+        return eventLogChecker(
+                SendMessageEventLog::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> sendMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(SendMessageEventLog::eventLogs);
+    }
+
+    static Consumer<TransactionResult> handleRelayMessageEvent(
+            Consumer<HandleRelayMessageEventLog> consumer) {
+        return eventLogChecker(
+                HandleRelayMessageEventLog::eventLogs,
+                consumer);
+    }
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                mockBMCClient._address(), supplier, consumer);
+                mockBMC._address(), supplier, consumer);
+    }
+
+    static <T> Consumer<TransactionResult> eventLogShouldNotExistsChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier) {
+        return ScoreIntegrationTest.eventLogShouldNotExistsChecker(
+                mockBMC._address(), supplier);
     }
 
 }

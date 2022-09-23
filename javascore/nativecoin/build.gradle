@@ -7,6 +7,12 @@ dependencies {
     implementation project(':lib')
     implementation("com.github.sink772:javaee-tokens:0.6.0")
 
+    //for generate ScoreClient
+    compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
+    annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    compileOnly("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    compileOnly project(':icon-sdk-java')
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 

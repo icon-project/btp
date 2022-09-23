@@ -16,6 +16,7 @@
 
 package foundation.icon.btp.xcall;
 
+import foundation.icon.score.client.ScoreClient;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -23,6 +24,7 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
+@ScoreClient
 public interface CallService {
 
     /*======== At the source CALL_BSH ========*/

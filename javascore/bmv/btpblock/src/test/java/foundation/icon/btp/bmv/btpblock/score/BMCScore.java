@@ -54,13 +54,13 @@ public class BMCScore extends Score {
         super(other);
     }
 
-    public Bytes intercallHandleRelayMessage(Wallet wallet, Address bmv, String prev, BigInteger seq, byte[] msg)
+    public Bytes handleRelayMessage(Wallet wallet, Address bmv, String prev, BigInteger seq, byte[] msg)
             throws IOException, ResultTimeoutException {
         RpcObject.Builder builder = new RpcObject.Builder()
                 .put("_addr", new RpcValue(bmv))
                 .put("_prev", new RpcValue(prev))
                 .put("_seq", new RpcValue(seq))
                 .put("_msg", new RpcValue(msg));
-        return this.invoke(wallet, "intercallHandleRelayMessage", builder.build(), BigInteger.ZERO, Constants.DEFAULT_STEPS.multiply(BigInteger.valueOf(100)));
+        return this.invoke(wallet, "handleRelayMessage", builder.build(), BigInteger.ZERO, Constants.DEFAULT_STEPS.multiply(BigInteger.valueOf(100)));
     }
 }

@@ -16,10 +16,7 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMCScoreClient;
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.mock.MockBSH;
-import foundation.icon.btp.mock.MockBSHScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
@@ -38,33 +35,33 @@ public class BTPBlockMessageTest implements BMCIntegrationTest {
     static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
-    static Address relay = Address.of(bmcClient._wallet());
+    static Address relay = Address.of(bmc._wallet());
     static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
-    static String svc = MockBSH.SERVICE;
+    static String svc = MockBSHIntegrationTest.SERVICE;
     static long networkId;
 
     @BeforeAll
     static void beforeAll() {
-        System.out.println("beforeAll start");
-        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMVClient._address());
-        networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmcClient._address());
+        System.out.println("BTPBlockMessageTest:beforeAll start");
+        BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMV._address());
+        networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
         BTPLinkManagementTest.addBTPLink(link, networkId);
         BMRManagementTest.addRelay(link, relay);
 
         BSHManagementTest.clearService(svc);
-        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSHClient._address());
-        System.out.println("beforeAll end");
+        BSHManagementTest.addService(svc, MockBSHIntegrationTest.mockBSH._address());
+        System.out.println("BTPBlockMessageTest:beforeAll end");
     }
 
     @AfterAll
     static void afterAll() {
-        System.out.println("afterAll start");
+        System.out.println("BTPBlockMessageTest:afterAll start");
         BSHManagementTest.clearService(svc);
 
         BMRManagementTest.clearRelay(link, relay);
         LinkManagementTest.clearLink(link);
         BMVManagementTest.clearVerifier(net);
-        System.out.println("afterAll end");
+        System.out.println("BTPBlockMessageTest:afterAll end");
     }
 
     @Test
@@ -73,7 +70,7 @@ public class BTPBlockMessageTest implements BMCIntegrationTest {
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
 
-        ((MockBSHScoreClient) MockBSHIntegrationTest.mockBSH).intercallSendMessage(
+        MockBSHIntegrationTest.mockBSH.sendMessage(
                 BTPBlockIntegrationTest.btpMessageChecker(networkId,
                         (msgList) -> {
                             assertEquals(1, msgList.size());
@@ -84,7 +81,7 @@ public class BTPBlockMessageTest implements BMCIntegrationTest {
                             assertEquals(sn, btpMessage.getSn());
                             assertArrayEquals(payload, btpMessage.getPayload());
                         }),
-                ((BMCScoreClient) bmc)._address(),
+                bmc._address(),
                 net, svc, sn, payload);
     }
 

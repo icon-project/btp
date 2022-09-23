@@ -18,10 +18,9 @@ package foundation.icon.btp.xcall;
 
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
-import foundation.icon.icx.Wallet;
+import foundation.icon.btp.xcall.sample.DAppProxySampleScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
-import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.util.Map;
@@ -29,30 +28,72 @@ import java.util.function.Consumer;
 
 public interface CSIntegrationTest extends BTPIntegrationTest {
 
-    DefaultScoreClient csClient = DefaultScoreClient.of(
+    CallServiceScoreClient callSvc = new CallServiceScoreClient(DefaultScoreClient.of(
             System.getProperties(), Map.of(
-                    "_bmc", MockBMCIntegrationTest.mockBMCClient._address()));
-    DefaultScoreClient sampleClient = DefaultScoreClient.of("sample.",
-            System.getProperties(), Map.of(
-                    "_callService", csClient._address()));
+                    "_bmc", MockBMCIntegrationTest.mockBMC._address())));
+    FixedFeesScoreClient fixedFees = new FixedFeesScoreClient(callSvc);
 
-    @ScoreClient
-    CallService callSvc = new CallServiceScoreClient(csClient);
+    DAppProxySampleScoreClient sampleClient = new DAppProxySampleScoreClient(
+            DefaultScoreClient.of("sample.",
+                    System.getProperties(), Map.of(
+                            "_callService", callSvc._address())));
 
-    Wallet tester = ScoreIntegrationTest.getOrGenerateWallet("tester.", System.getProperties());
-    DefaultScoreClient csClientWithTester = new DefaultScoreClient(
-            csClient.endpoint(), csClient._nid(), tester, csClient._address());
-    CallService callSvcWithTester = new CallServiceScoreClient(csClientWithTester);
+    CallService callSvcWithTester = new CallServiceScoreClient(
+            callSvc.endpoint(), callSvc._nid(), tester, callSvc._address());
+
+    static Consumer<TransactionResult> callMessageEvent(
+            Consumer<CallMessageEventLog> consumer) {
+        return eventLogChecker(
+                CallMessageEventLog::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> rollbackMessageEvent(
+            Consumer<RollbackMessageEventLog> consumer) {
+        return eventLogChecker(
+                RollbackMessageEventLog::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(RollbackMessageEventLog::eventLogs);
+    }
+
+    static Consumer<TransactionResult> callRequestClearedEvent(
+            Consumer<CallRequestClearedEventLog> consumer) {
+        return eventLogChecker(
+                CallRequestClearedEventLog::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> callRequestClearedEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallRequestClearedEventLog::eventLogs);
+    }
+
+    static Consumer<TransactionResult> fixedFeesUpdatedEvent(
+            Consumer<FixedFeesUpdatedEventLog> consumer) {
+        return eventLogChecker(
+                FixedFeesUpdatedEventLog::eventLogs,
+                consumer);
+    }
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
-                csClient._address(), supplier, consumer);
+                callSvc._address(), supplier, consumer);
     }
 
-    static <T> Consumer<TransactionResult> notExistsEventLogChecker(
+    static <T> Consumer<TransactionResult> eventLogShouldNotExistsChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier) {
-        return ScoreIntegrationTest.notExistsEventLogChecker(
-                csClient._address(), supplier);
+        return ScoreIntegrationTest.eventLogShouldNotExistsChecker(
+                callSvc._address(), supplier);
+    }
+
+    static Consumer<TransactionResult> messageReceivedEvent(
+            Consumer<MessageReceivedEventLog> consumer) {
+        return ScoreIntegrationTest.eventLogChecker(
+                sampleClient._address(),
+                MessageReceivedEventLog::eventLogs,
+                consumer);
     }
 }

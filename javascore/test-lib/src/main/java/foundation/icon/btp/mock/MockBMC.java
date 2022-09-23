@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.mock;
 
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
@@ -37,7 +36,7 @@ public interface MockBMC {
 
     //for BMV
     @External
-    void intercallHandleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg);
+    void handleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg);
 
     @EventLog
     void HandleRelayMessage(byte[] _ret);
@@ -53,11 +52,9 @@ public interface MockBMC {
     void SendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
 
     @External
-    void intercallHandleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg);
+    void handleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg);
 
     @External
-    void intercallHandleBTPError(Address _addr, String _src, String _svc, BigInteger _sn, long _code, String _msg);
+    void handleBTPError(Address _addr, String _src, String _svc, BigInteger _sn, long _code, String _msg);
 
-    @External(readonly = true)
-    BMVStatus intercallGetStatus(Address _addr);
 }

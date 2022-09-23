@@ -1,4 +1,5 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+require("dotenv").config();
 
 var privKeys = [
     "0x1deb607f38b0bd1390df3b312a1edc11a00a34f248b5d53f4157de054f3c71ae",
@@ -44,6 +45,13 @@ module.exports = {
             network_id: '97',
             //networkCheckTimeout: 1000000,
             //timeoutBlocks: 2000
+        },
+
+        // iconloop testbed
+        testbed: {
+            host: "20.20.1.222",
+            port: 8545,
+            network_id: "*"
         }
     },
 
@@ -66,7 +74,7 @@ module.exports = {
             }
         }
     },
-    plugins: ["truffle-plugin-verify", "@chainsafe/truffle-plugin-abigen","solidity-coverage"],
+    plugins: ["truffle-plugin-verify", "@chainsafe/truffle-plugin-abigen", "truffle-contract-size", "solidity-coverage"],
     db: {
         enabled: false
     }

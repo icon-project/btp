@@ -22,8 +22,6 @@ import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import java.util.function.Predicate;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,38 +29,6 @@ public class BSHManagementTest implements BMCIntegrationTest {
 
     static String svc = BTPIntegrationTest.Faker.btpService();
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT);
-
-    static boolean isExistsServiceCandidate(String svc, Address address, Address owner) {
-        Predicate<ServiceCandidate> predicate = (o) -> o.getSvc().equals(svc) &&
-                o.getAddress().equals(address) &&
-                o.getOwner().equals(owner);
-        return ScoreIntegrationTest.indexOf(
-                iconSpecific.getServiceCandidates(), predicate) >= 0;
-    }
-
-    static void addServiceCandidate(String svc, Address address) {
-        iconSpecificWithTester.addServiceCandidate(svc, address);
-        assertTrue(isExistsServiceCandidate(svc, address, Address.of(tester)));
-    }
-
-    static boolean isExistsServiceCandidate(String svc, Address address) {
-        Predicate<ServiceCandidate> predicate = (o) -> o.getSvc().equals(svc) &&
-                o.getAddress().equals(address);
-        return ScoreIntegrationTest.indexOf(
-                iconSpecific.getServiceCandidates(), predicate) >= 0;
-    }
-
-    static void removeServiceCandidate(String svc, Address address) {
-        iconSpecific.removeServiceCandidate(svc, address);
-        assertFalse(isExistsServiceCandidate(svc, address));
-    }
-
-    static void clearServiceCandidate(String svc, Address address) {
-        if(isExistsServiceCandidate(svc, address)) {
-            System.out.println("clear service candidate svc:"+svc);
-            removeServiceCandidate(svc, address);
-        }
-    }
 
     static boolean isExistsService(String svc, Address address) {
         return ScoreIntegrationTest.contains(bmc.getServices(), svc,
@@ -92,45 +58,12 @@ public class BSHManagementTest implements BMCIntegrationTest {
 
     @Override
     public void clearIfExists(TestInfo testInfo) {
-        clearServiceCandidate(svc, address);
         clearService(svc);
-    }
-
-    @Test
-    void addServiceCandidateShouldSuccess() {
-        addServiceCandidate(svc, address);
-    }
-
-    @Test
-    void addServiceCandidateShouldRevertAlreadyExists() {
-        addServiceCandidate(svc, address);
-
-        AssertBMCException.assertUnknown(() -> addServiceCandidate(svc, address));
-    }
-
-    @Test
-    void removeServiceCandidateShouldSuccess() {
-        addServiceCandidate(svc, address);
-
-        removeServiceCandidate(svc, address);
-    }
-
-    @Test
-    void removeServiceCandidateShouldRevertNotExists() {
-        AssertBMCException.assertUnknown(() -> removeServiceCandidate(svc, address));
     }
 
     @Test
     void addServiceShouldSuccess() {
         addService(svc, address);
-    }
-
-    @Test
-    void addServiceCandidateAndAddServiceShouldRemoveServiceCandidate() {
-        addServiceCandidate(svc, address);
-        addService(svc, address);
-
-        assertFalse(isExistsServiceCandidate(svc, address));
     }
 
     @Test

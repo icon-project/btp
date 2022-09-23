@@ -16,9 +16,11 @@
 
 package foundation.icon.btp.lib;
 
+import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.External;
 
+@ScoreClient
 public interface OwnerManager {
     /**
      * Registers the Owner.

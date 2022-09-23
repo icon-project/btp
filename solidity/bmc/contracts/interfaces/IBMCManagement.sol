@@ -13,6 +13,12 @@ interface IBMCManagement {
     function setBMCPeriphery(address _addr) external;
 
     /**
+       @notice Get address of BMC periphery.
+       @return address of BMC periphery
+     */
+    function getBMCPeriphery() external view returns (address);
+
+    /**
        @notice Adding another Onwer.
        @dev Caller must be an Onwer of BTP network
        @param _owner    Address of a new Onwer.
@@ -180,36 +186,6 @@ interface IBMCManagement {
         returns (Types.Link memory);
 
     /**
-        @notice Get rotation sequence by link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
-        @return Rotation sequence
-     */
-    function getLinkRxSeq(string calldata _prev)
-        external
-        view
-        returns (uint256);
-
-    /**
-        @notice Get transaction sequence by link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
-        @return Transaction sequence
-     */
-    function getLinkTxSeq(string calldata _prev)
-        external
-        view
-        returns (uint256);
-
-    /**
-        @notice Get relays by link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
-        @return List of relays' addresses
-     */
-    function getLinkRelays(string calldata _prev)
-        external
-        view
-        returns (address[] memory);
-
-    /**
        @notice Checking whether one specific address has Owner role.
        @dev Caller can be ANY
        @param _prev BTP Address of the previous BMC
@@ -219,30 +195,32 @@ interface IBMCManagement {
 
     /**
         @notice Update rotation sequence by link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
+        @param net Network Address of the previous BMC
         @param _val increment value
      */
-    function updateLinkRxSeq(string calldata _prev, uint256 _val) external;
+    function updateLinkRxSeq(string memory net, uint256 _val) external;
 
     /**
         @notice Increase transaction sequence by 1.
-        @param _prev BTP Address of the previous BMC
+        @param net Network Address of the next BMC
      */
-    function updateLinkTxSeq(string memory _prev) external;
+    function updateLinkTxSeq(string memory net) external returns (uint256);
 
     /**
-        @notice Add a reachable BTP address to link. Only called by BMC periphery.
-        @param _prev BTP Address of the previous BMC
-        @param _to BTP Address of the reachable
+        @notice Set list of reachable BTP address to link. Only called by BMC periphery.
+        @param _net Network Address of the connected BMC
+        @param _reachable list of BTP Address to add
      */
-    function updateLinkReachable(string memory _prev, string[] memory _to)
+    function setLinkReachable(string memory _net, string[] memory _reachable)
         external;
 
     /**
-        @notice Remove a reachable BTP address. Only called by BMC periphery.
-        @param _index reachable index to remove
+        @notice Update a reachable BTP address to link. Only called by BMC periphery.
+        @param _net Network Address of the connected BMC
+        @param _reachable reachable to update
      */
-    function deleteLinkReachable(string memory _prev, uint256 _index) external;
+    function updateLinkReachable(string memory _net, string memory _reachable, bool _remove)
+        external;
 
     /**
         @notice Update relay status. Only called by BMC periphery.
@@ -267,5 +245,20 @@ interface IBMCManagement {
         external
         view
         returns (string memory, string memory);
+
+    /**
+        @notice Drop the next message that to be relayed from a specific network
+        @dev Called by the operator to manage the BTP network.
+        @param _src String ( BTP Address of source BMC )
+        @param _seq  Integer ( number of the message from connected BMC )
+        @param _svc  String ( number of the message from connected BMC )
+        @param _sn   Integer ( serial number of the message, must be positive )
+     */
+    function dropMessage(
+        string calldata _src,
+        uint256 _seq,
+        string calldata _svc,
+        uint256 _sn
+    ) external;
 
 }

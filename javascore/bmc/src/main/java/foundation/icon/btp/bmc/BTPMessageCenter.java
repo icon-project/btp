@@ -16,17 +16,24 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.*;
-import foundation.icon.score.util.ArrayUtil;
+import foundation.icon.btp.lib.BMC;
+import foundation.icon.btp.lib.BMCEvent;
+import foundation.icon.btp.lib.BMRStatus;
+import foundation.icon.btp.lib.BMVScoreInterface;
+import foundation.icon.btp.lib.BMVStatus;
+import foundation.icon.btp.lib.BSHScoreInterface;
+import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.lib.BTPException;
+import foundation.icon.btp.lib.OwnerManager;
+import foundation.icon.btp.lib.OwnerManagerImpl;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
-import score.UserRevertedException;
-import score.VarDB;
+import score.Address;
 import score.ArrayDB;
 import score.BranchDB;
-import score.DictDB;
-import score.Address;
 import score.Context;
+import score.DictDB;
+import score.UserRevertedException;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Payable;
@@ -62,9 +69,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     //
     private final OwnerManager ownerManager = new OwnerManagerImpl("owners");
-    private final ArrayDB<ServiceCandidate> serviceCandidates = Context.newArrayDB("serviceCandidates", ServiceCandidate.class);
     private final BranchDB<String, BranchDB<Address, ArrayDB<byte[]>>> fragments = Context.newBranchDB("fragments", byte[].class);
-    private final DictDB<String, DropSequences> drops = Context.newDictDB("drops", DropSequences.class);
 
     //
     private final Verifiers verifiers = new Verifiers("verifiers");
@@ -125,9 +130,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
         if (services.containsKey(_svc) || INTERNAL_SERVICE.equals(_svc)) {
             throw BMCException.alreadyExistsBSH();
-        }
-        if (getServiceCandidateIndex(_svc, _addr) >= 0) {
-            removeServiceCandidate(_svc, _addr);
         }
         services.put(_svc, _addr);
     }
@@ -223,7 +225,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         Link link = links.remove(target);
         link.getRelays().clear();
 
-        drops.set(_link, null);
         BigInteger networkId = btpLinkNetworkIds.get(_link);
         if (networkId != null) {
             btpLinkNetworkIds.set(_link, null);
@@ -368,12 +369,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         relay.setMsgCount(relay.getMsgCount().add(BigInteger.valueOf(msgCount)));
         relays.put(relay.getAddress(), relay);
 
-        int oldDropSequencesLen = 0;
-        DropSequences dropSequences = null;
         if (msgCount > 0) {
             link.setRxSeq(rxSeq.add(BigInteger.valueOf(msgCount)));
-            dropSequences = drops.get(_prev);
-            oldDropSequencesLen = dropSequences == null ? 0 : dropSequences.size();
         }
         putLink(link);
 
@@ -389,30 +386,18 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             }
             logger.println("handleRelayMessage", "BTPMessage = ", msg);
             if (msg != null) {
-                rxSeq = rxSeq.add(BigInteger.ONE);
-                if (dropSequences != null && dropSequences.remove(rxSeq)) {
-                    if (msg.getSn().compareTo(BigInteger.ZERO) > 0) {
-                        sendError(prev, msg, BMCException.drop());
-                    }
-                    MessageDropped(_prev, rxSeq, serializedMsg);
+                logger.println("handleRelayMessage", "btpAddr = ", btpAddr.net(), ", to = ", msg.getDst().net());
+                if (btpAddr.net().equals(msg.getDst().net())) {
+                    handleMessage(prev, msg);
                 } else {
-                    logger.println("handleRelayMessage", "btpAddr = ", btpAddr.net(), ", to = ", msg.getDst().net());
-                    if (btpAddr.net().equals(msg.getDst().net())) {
-                        handleMessage(prev, msg);
-                    } else {
-                        try {
-                            BTPAddress next = resolveNext(msg.getDst());
-                            sendMessage(next, msg);
-                        } catch (BTPException e) {
-                            sendError(prev, msg, e);
-                        }
+                    try {
+                        BTPAddress next = resolveNext(msg.getDst());
+                        sendMessage(next, msg);
+                    } catch (BTPException e) {
+                        sendError(prev, msg, e);
                     }
                 }
             }
-        }
-
-        if (dropSequences != null && oldDropSequencesLen != dropSequences.size()) {
-            drops.set(_prev, dropSequences);
         }
 
         //sack
@@ -754,59 +739,31 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @External
-    public void dropMessage(String _link, BigInteger _seq, String _svc, BigInteger _sn) {
+    public void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn) {
         requireOwnerAccess();
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
+        BTPAddress src = BTPAddress.valueOf(_src);
+        BTPAddress next = resolveNext(src);
+        Link link = getLink(next);
         if(link.getRxSeq().add(BigInteger.ONE).compareTo(_seq) != 0) {
             throw BMCException.unknown("invalid _seq");
         }
         if(!services.containsKey(_svc)) {
-            throw BMCException.unknown("invalid _svc");
+            throw BMCException.notExistsBSH();
         }
-        if(_sn.compareTo(BigInteger.ZERO) <= 0) {
-            throw BMCException.unknown("invalid _sn");
+        if(_sn.compareTo(BigInteger.ZERO) < 0) {
+            throw BMCException.invalidSn();
         }
         link.setRxSeq(_seq);
         putLink(link);
 
         BTPMessage assumeMsg = new BTPMessage();
-        assumeMsg.setSrc(target);
+        assumeMsg.setSrc(src);
+        assumeMsg.setDst(BTPAddress.parse(""));
         assumeMsg.setSvc(_svc);
         assumeMsg.setSn(_sn);
-        sendError(target, assumeMsg, BMCException.drop());
-        MessageDropped(_link, _seq, assumeMsg.toBytes());
-    }
-
-    @External
-    public void scheduleDropMessage(String _link, BigInteger _seq) {
-        requireOwnerAccess();
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
-        if(link.getRxSeq().compareTo(_seq) >= 0) {
-            throw BMCException.unknown("invalid _seq");
-        }
-        DropSequences dropSequences = drops.getOrDefault(_link, new DropSequences());
-        dropSequences.add(_seq);
-        drops.set(_link, dropSequences);
-    }
-
-    @External
-    public void cancelDropMessage(String _link, BigInteger _seq) {
-        requireOwnerAccess();
-        requireLink(BTPAddress.valueOf(_link));
-        DropSequences dropSequences = drops.get(_link);
-        if (dropSequences == null || !dropSequences.remove(_seq)) {
-            throw BMCException.unknown("not exists");
-        }
-        drops.set(_link, dropSequences);
-    }
-
-    @External(readonly = true)
-    public BigInteger[] getScheduledDropMessages(String _link) {
-        requireLink(BTPAddress.valueOf(_link));
-        DropSequences dropSequences = drops.getOrDefault(_link, new DropSequences());
-        return dropSequences.getSequences() == null ? new BigInteger[]{} : dropSequences.getSequences();
+        assumeMsg.setPayload(new byte[0]);
+        sendError(next, assumeMsg, BMCException.drop());
+        MessageDropped(next.toString(), _seq, assumeMsg.toBytes());
     }
 
     @EventLog(indexed = 2)
@@ -850,51 +807,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             throw BMCException.notExistsBMR();
         }
         relays.remove(_addr);
-    }
-
-    private int getServiceCandidateIndex(String svc, Address addr) {
-        for (int i = 0; i < serviceCandidates.size(); i++) {
-            ServiceCandidate sc = serviceCandidates.get(i);
-            if (sc.getSvc().equals(svc) && sc.getAddress().equals(addr)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    @External
-    public void addServiceCandidate(String _svc, Address _addr) {
-        if (getServiceCandidateIndex(_svc, _addr) >= 0) {
-            throw BMCException.unknown("already exists ServiceCandidate");
-        }
-        ServiceCandidate sc = new ServiceCandidate();
-        sc.setSvc(_svc);
-        sc.setAddress(_addr);
-        sc.setOwner(Context.getOrigin());
-        serviceCandidates.add(sc);
-    }
-
-    @External
-    public void removeServiceCandidate(String _svc, Address _addr) {
-        requireOwnerAccess();
-        int idx = getServiceCandidateIndex(_svc, _addr);
-        if (idx < 0) {
-            throw BMCException.unknown("not exists ServiceCandidate");
-        }
-        ServiceCandidate last = serviceCandidates.pop();
-        if (idx != serviceCandidates.size()) {
-            serviceCandidates.set(idx, last);
-        }
-    }
-
-    @External(readonly = true)
-    public ServiceCandidate[] getServiceCandidates() {
-        int size = this.serviceCandidates.size();
-        ServiceCandidate[] serviceCandidates = new ServiceCandidate[size];
-        for (int i = 0; i < size; i++) {
-            serviceCandidates[i] = this.serviceCandidates.get(i);
-        }
-        return serviceCandidates;
     }
 
     @External(readonly = true)
@@ -960,18 +872,21 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void addBTPLink(String _link, long _networkId) {
+        requireOwnerAccess();
+
         setBTPLink(_link, _networkId, BigInteger.ZERO);
         addLink(_link);
     }
 
     @External
     public void setBTPLinkNetworkId(String _link, long _networkId) {
+        requireOwnerAccess();
+
         Link link = getLink(BTPAddress.valueOf(_link));
         setBTPLink(_link, _networkId, link.getTxSeq());
     }
 
     private void setBTPLink(String _link, long _networkId, BigInteger offset) {
-        requireOwnerAccess();
         if (_networkId < 1) {
             throw BMCException.unknown("_networkId should be greater than zero");
         }

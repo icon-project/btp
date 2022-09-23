@@ -1,5 +1,6 @@
 package foundation.icon.btp.bmv.bridge;
 
+import foundation.icon.score.util.StringUtil;
 import score.ObjectReader;
 
 import java.math.BigInteger;
@@ -41,5 +42,15 @@ public class EventDataBTPMessage {
 
     public byte[] getMsg() {
         return msg;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("EventDataBTPMessage{");
+        sb.append("next_bmc='").append(next_bmc).append('\'');
+        sb.append(", seq=").append(seq);
+        sb.append(", msg=").append(StringUtil.toString(msg));
+        sb.append('}');
+        return sb.toString();
     }
 }

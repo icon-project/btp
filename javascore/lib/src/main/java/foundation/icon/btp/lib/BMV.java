@@ -16,10 +16,12 @@
 
 package foundation.icon.btp.lib;
 
+import foundation.icon.score.client.ScoreClient;
 import score.annotation.External;
 
 import java.math.BigInteger;
 
+@ScoreClient
 public interface BMV {
     /**
      * Decodes Relay Messages and process BTP Messages

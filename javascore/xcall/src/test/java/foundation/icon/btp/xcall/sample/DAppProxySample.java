@@ -18,6 +18,7 @@ package foundation.icon.btp.xcall.sample;
 
 import foundation.icon.btp.xcall.CallRequest;
 import foundation.icon.btp.xcall.CallServiceReceiver;
+import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -29,6 +30,7 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
+@ScoreClient
 public class DAppProxySample implements CallServiceReceiver {
     private final Address callSvc;
     private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);

@@ -4,15 +4,14 @@ pragma abicoder v2;
 
 import "./interfaces/IBMV.sol";
 
-import "./libraries/String.sol";
+import "./libraries/Strings.sol";
+import "./libraries/ParseAddress.sol";
 import "./libraries/Types.sol";
 import "./libraries/RLPDecodeStruct.sol";
 import "./libraries/RLPEncode.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-contract BMV is IBMV, Initializable {
-    using String for string;
+contract BMV is IBMV {
+    using Strings for string;
     using RLPDecodeStruct for bytes;
 
     address private bmcAddr;
@@ -20,11 +19,11 @@ contract BMV is IBMV, Initializable {
     uint256 private height;
     bytes[] internal msgs;
 
-    function initialize(
+    constructor (
         address _bmcAddr,
         string memory _netAddr,
         uint256 _height
-    ) public initializer {
+    ) {
         bmcAddr = _bmcAddr;
         netAddr = _netAddr;
         height = _height;
@@ -56,13 +55,13 @@ contract BMV is IBMV, Initializable {
         string memory _currentAddr,
         string memory _fromAddr
     ) internal view {
-        (string memory _net, ) = _fromAddr.splitBTPAddress();
+        (string memory _net,) = _fromAddr.splitBTPAddress();
         require(netAddr.compareTo(_net), "BMVRevert: Invalid previous BMC");
         require(msg.sender == bmcAddr, "BMVRevert: Invalid BMC");
         (, string memory _contractAddr) = _currentAddr.splitBTPAddress();
 
         require(
-            _contractAddr.parseAddress() == bmcAddr,
+            ParseAddress.parseAddress(_contractAddr) == bmcAddr,
             "BMVRevert: Invalid BMC"
         );
     }
@@ -92,13 +91,15 @@ contract BMV is IBMV, Initializable {
         for (uint256 i = 0; i < relayMsg.receiptProofs.length; i++) {
             rp = relayMsg.receiptProofs[i];
             if (rp.height < height) {
-                continue; // ignore lower block height
+                continue;
+                // ignore lower block height
             }
             height = rp.height;
             for (uint256 j = 0; j < rp.events.length; j++) {
                 ev = rp.events[j];
                 if (ev.seq < next_seq) {
-                    continue;  // ignore lower sequence number
+                    continue;
+                    // ignore lower sequence number
                 } else if (ev.seq > next_seq) {
                     revert("BMVRevertInvalidSequence");
                 }
