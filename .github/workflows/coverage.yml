@@ -22,7 +22,7 @@ jobs:
         java-version: 11
     - uses: gradle/gradle-build-action@v2
       with:
-        gradle-version: 7
+        gradle-version: 6.9.2
 
     - name: Javascore BMC coverage
       working-directory: ./javascore/bmc
