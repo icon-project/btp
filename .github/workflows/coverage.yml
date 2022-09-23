@@ -21,7 +21,7 @@ jobs:
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 12
     # - name: Javascore BMC coverage
     #   working-directory: ./javascore/bmc
     #   run: |
