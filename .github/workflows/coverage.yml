@@ -64,6 +64,7 @@ jobs:
       working-directory: ./solidity/bmv
       run: |
         yarn install
+        npm install -g truffle
         truffle run coverage || exit 0
 
     - name: Solidity xcall
