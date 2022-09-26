@@ -1,4 +1,5 @@
 version = '0.1.0'
+apply plugin: "jacoco"
 
 dependencies {
     compileOnly("foundation.icon:javaee-api:$javaeeVersion")
@@ -110,4 +111,19 @@ test {
         systemProperty 'bmc-mock.scoreFilePath', tasks.getByPath(":test-lib:optimizedJarMockBMC").outputJarName
         systemProperty 'bmc-mock.params._net', scoreTest.nid+'.icon'
     }
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        xml.destination file("${buildDir}/reports/jacoco/report.xml")
+        html.enabled true
+        csv.enabled true
+    }
+    subprojects.each {
+        sourceSets it.sourceSets.main
+    }
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 }

@@ -1,0 +1,92 @@
+name: Code Coverage with Codecov
+
+on:
+  push:
+    branches:
+      - feature/140-code-coverage-codecov
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  Coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 11
+    - uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 6.7.1
+
+    - name: Javascore BMC coverage
+      working-directory: ./javascore/bmc
+      run: |
+        gradle test
+    - name: Javascore BMV coverage
+      working-directory: ./javascore/bmv/bridge
+      continue-on-error: true
+      run: |
+        gradle test
+    - name: Javascore BMV coverage
+      working-directory: ./javascore/bmv/btpblock
+      continue-on-error: true
+      run: |
+        gradle test
+    - name: Javascore BMV coverage
+      working-directory: ./javascore/bmv/icon
+      continue-on-error: true
+      run: |
+        gradle test
+    - name: Javascore BSH coverage
+      working-directory: ./javascore/bsh
+      run: |
+        gradle test
+    - name: Javascore nativecoin coverage
+      working-directory: ./javascore/nativecoin
+      run: |
+        gradle test
+    - name: Javascore test-lib coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+    - name: Javascore xcall coverage
+      working-directory: ./javascore/test-lib
+      run: |
+        gradle test
+    - name: GO test common
+      working-directory: ./common
+      run: |
+        go test ./... -race -covermode=atomic -coverprofile=coverage.out || exit 0
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: 'npm'
+        cache-dependency-path: |
+          solidity/bmv/package-lock.json
+          solidity/xcall/package-lock.json
+    - name: Solidity BMC coverage
+      working-directory: ./solidity/bmc
+      run: |
+        yarn install
+        npm install -g truffle
+        truffle run coverage || exit 0 # Bug on truffle to compile while running coverage and it fails, so exit 0
+    - name: Solidity BMV coverage
+      working-directory: ./solidity/bmv
+      run: |
+        yarn install
+        truffle run coverage || exit 0
+    - name: Solidity xcall
+      working-directory: ./solidity/xcall
+      run: |
+        yarn install
+        truffle run coverage || exit 0
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3

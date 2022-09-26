@@ -1,5 +1,5 @@
 # BTP (Block Transmission Protocol) Relay System
-
+[![codecov](https://codecov.io/gh/icon-project/btp/branch/iconloop-v2/graph/badge.svg?token=6HB95U5TXG)](https://codecov.io/gh/icon-project/btp)
 ## Introduction
 
 We need to build a usable [BTP](doc/btp.md) Relay System which can deliver digital tokens between multiple chains.
