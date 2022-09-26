@@ -81,8 +81,8 @@ jobs:
     - name: Solidity BMV coverage
       working-directory: ./solidity/bmv
       run: |
-        yarn install
-        truffle run coverage || exit 0
+        npm ci
+        npm run test:coverage
     - name: Solidity xcall
       working-directory: ./solidity/xcall
       run: |
