@@ -82,7 +82,7 @@ jobs:
       working-directory: ./solidity/bmv
       run: |
         cp .env.example .env
-        npm install
+        npm ci
         npm run test:coverage
     - name: Solidity xcall
       working-directory: ./solidity/xcall
