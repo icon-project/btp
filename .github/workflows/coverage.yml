@@ -81,6 +81,7 @@ jobs:
     - name: Solidity BMV coverage
       working-directory: ./solidity/bmv
       run: |
+        cp .env.example .env
         npm ci
         npm run test:coverage
     - name: Solidity xcall
