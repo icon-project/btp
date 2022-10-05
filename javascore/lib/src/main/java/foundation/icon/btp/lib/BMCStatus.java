@@ -26,11 +26,6 @@ public class BMCStatus {
     private BigInteger tx_seq;
     private Map verifier;
 
-    private int sack_term; //0: disable sack
-    private long sack_next;
-    private long sack_height;
-    private BigInteger sack_seq;
-
     private long cur_height;
 
     @Keep
@@ -64,46 +59,6 @@ public class BMCStatus {
     }
 
     @Keep
-    public int getSack_term() {
-        return sack_term;
-    }
-
-    @Keep
-    public void setSack_term(int sack_term) {
-        this.sack_term = sack_term;
-    }
-
-    @Keep
-    public long getSack_next() {
-        return sack_next;
-    }
-
-    @Keep
-    public void setSack_next(long sack_next) {
-        this.sack_next = sack_next;
-    }
-
-    @Keep
-    public long getSack_height() {
-        return sack_height;
-    }
-
-    @Keep
-    public void setSack_height(long sack_height) {
-        this.sack_height = sack_height;
-    }
-
-    @Keep
-    public BigInteger getSack_seq() {
-        return sack_seq;
-    }
-
-    @Keep
-    public void setSack_seq(BigInteger sack_seq) {
-        this.sack_seq = sack_seq;
-    }
-
-    @Keep
     public long getCur_height() {
         return cur_height;
     }
@@ -119,10 +74,6 @@ public class BMCStatus {
         sb.append("rx_seq=").append(rx_seq);
         sb.append(", tx_seq=").append(tx_seq);
         sb.append(", verifier=").append(verifier);
-        sb.append(", sack_term=").append(sack_term);
-        sb.append(", sack_next=").append(sack_next);
-        sb.append(", sack_height=").append(sack_height);
-        sb.append(", sack_seq=").append(sack_seq);
         sb.append(", cur_height=").append(cur_height);
         sb.append('}');
         return sb.toString();

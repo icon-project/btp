@@ -33,12 +33,6 @@ public class Link {
     private BigInteger rxSeq;
     private BigInteger txSeq;
 
-    //SackProperties
-    private int sackTerm; //0: disable sack
-    private long sackNext;
-    private long sackHeight;
-    private BigInteger sackSeq;
-
     //with suffix("reachable") ArrayDB<String>
     private List<BTPAddress> reachable;
 
@@ -66,38 +60,6 @@ public class Link {
         this.txSeq = txSeq;
     }
 
-    public int getSackTerm() {
-        return sackTerm;
-    }
-
-    public void setSackTerm(int sackTerm) {
-        this.sackTerm = sackTerm;
-    }
-
-    public long getSackNext() {
-        return sackNext;
-    }
-
-    public void setSackNext(long sackNext) {
-        this.sackNext = sackNext;
-    }
-
-    public long getSackHeight() {
-        return sackHeight;
-    }
-
-    public void setSackHeight(long sackHeight) {
-        this.sackHeight = sackHeight;
-    }
-
-    public BigInteger getSackSeq() {
-        return sackSeq;
-    }
-
-    public void setSackSeq(BigInteger sackSeq) {
-        this.sackSeq = sackSeq;
-    }
-
     public List<BTPAddress> getReachable() {
         return reachable;
     }
@@ -121,10 +83,6 @@ public class Link {
         sb.append(", addr=").append(addr);
         sb.append(", rxSeq=").append(rxSeq);
         sb.append(", txSeq=").append(txSeq);
-        sb.append(", sackTerm=").append(sackTerm);
-        sb.append(", sackNext=").append(sackNext);
-        sb.append(", sackHeight=").append(sackHeight);
-        sb.append(", sackSeq=").append(sackSeq);
         sb.append(", reachable=").append(reachable);
         sb.append('}');
         return sb.toString();
@@ -140,10 +98,6 @@ public class Link {
         obj.setAddr(reader.readNullable(BTPAddress.class));
         obj.setRxSeq(reader.readNullable(BigInteger.class));
         obj.setTxSeq(reader.readNullable(BigInteger.class));
-        obj.setSackTerm(reader.readInt());
-        obj.setSackNext(reader.readLong());
-        obj.setSackHeight(reader.readLong());
-        obj.setSackSeq(reader.readNullable(BigInteger.class));
         if (reader.beginNullableList()) {
             List<BTPAddress> reachable = new ArrayList<>();
             while(reader.hasNext()) {
@@ -157,14 +111,10 @@ public class Link {
     }
 
     public void writeObject(ObjectWriter writer) {
-        writer.beginList(16);
+        writer.beginList(4);
         writer.writeNullable(this.getAddr());
         writer.writeNullable(this.getRxSeq());
         writer.writeNullable(this.getTxSeq());
-        writer.write(this.getSackTerm());
-        writer.write(this.getSackNext());
-        writer.write(this.getSackHeight());
-        writer.writeNullable(this.getSackSeq());
         List<BTPAddress> reachable = this.getReachable();
         if (reachable != null) {
             writer.beginNullableList(reachable.size());

@@ -40,16 +40,6 @@ public interface ICONSpecific {
     void handleFragment(String _prev, String _msg, int _idx);
 
     /**
-     * Set properties of link for term of sending SACK message
-     * Called by the operator to manage the BTP network.
-     *
-     * @param _link  String (BTP Address of connected BMC)
-     * @param _value Integer (Term of sending SACK message, block count)
-     */
-    @External
-    void setLinkSackTerm(String _link, int _value);
-
-    /**
      * TODO [TBD] add 'addRelay' to IIP-25.BMC.Writable methods
      * Registers relay for the network.
      * Called by the operator to manage the BTP network.

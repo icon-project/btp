@@ -52,7 +52,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
 
     public enum Internal {
-        Init, Link, Unlink, Sack;
+        Init, Link, Unlink;
 
         public static Internal of(String s) {
             for (Internal internal : values()) {
@@ -202,7 +202,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.setAddr(target);
         link.setRxSeq(BigInteger.ZERO);
         link.setTxSeq(BigInteger.ZERO);
-        link.setSackSeq(BigInteger.ZERO);
         link.setReachable(new ArrayList<>());
         putLink(link);
 
@@ -241,10 +240,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         map.put("rx_seq", link.getRxSeq());
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
         map.put("verifier", verifier.getStatus());
-        map.put("sack_term", link.getSackTerm());
-        map.put("sack_next", link.getSackNext());
-        map.put("sack_height", link.getSackHeight());
-        map.put("sack_seq", link.getSackSeq());
         map.put("cur_height", Context.getBlockHeight());
         return map;
     }
@@ -333,7 +328,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void handleRelayMessage(String _prev, String _msg) {
-        //FIXME Throws INVALID_RELAY_MSG=25?
         byte[] msgBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
         handleRelayMessage(_prev, msgBytes);
     }
@@ -399,19 +393,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 }
             }
         }
-
-        //sack
-        link = getLink(prev);
-        long sackTerm = link.getSackTerm();
-        long sackNext = link.getSackNext();
-        if (sackTerm > 0 && sackNext <= currentHeight) {
-            sendSack(prev, status.getHeight(), link.getRxSeq());
-            while(sackNext <= currentHeight) {
-                sackNext += sackTerm;
-            }
-            link.setSackNext(sackNext);
-            putLink(link);
-        }
     }
 
     private void handleMessage(BTPAddress prev, BTPMessage msg) {
@@ -451,10 +432,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 case Unlink:
                     UnlinkMessage unlinkMsg = UnlinkMessage.fromBytes(payload);
                     handleUnlink(prev, unlinkMsg);
-                    break;
-                case Sack:
-                    SackMessage sackMsg = SackMessage.fromBytes(payload);
-                    handleSack(prev, sackMsg);
                     break;
             }
         } catch (BTPException e) {
@@ -513,13 +490,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
     }
 
-    private void handleSack(BTPAddress prev, SackMessage msg) {
-        logger.println("handleSack", "prev:", prev, "msg:", msg.toString());
-        Link link = getLink(prev);
-        link.setSackHeight(msg.getHeight());
-        link.setSackSeq(msg.getSeq());
-        putLink(link);
-    }
 
     private void handleService(BTPAddress prev, BTPMessage msg) {
         //TODO throttling in a tx, EOA_LIMIT, handleService_LIMIT each Link
@@ -598,9 +568,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
 
         Map.Entry<BTPAddress, BTPAddress> routePath = resolveRoutePath(_to);
-
-        //TODO (txSeq > sackSeq && (currentHeight - sackHeight) > THRESHOLD) ? revert
-        //  THRESHOLD = (delayLimit * NUM_OF_ROTATION)
         BTPMessage btpMsg = new BTPMessage();
         btpMsg.setSrc(btpAddr);
         btpMsg.setDst(routePath.getKey());
@@ -654,14 +621,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         btpMsg.setSn(BigInteger.ZERO);
         btpMsg.setPayload(bmcMsg.toBytes());
         sendMessage(link, btpMsg);
-    }
-
-    private void sendSack(BTPAddress link, long height, BigInteger seq) {
-        logger.println("sendSack", "link:", link, "height:", height, "seq:", seq);
-        SackMessage sackMsg = new SackMessage();
-        sackMsg.setHeight(height);
-        sackMsg.setSeq(seq);
-        sendInternal(link, Internal.Sack, sackMsg.toBytes());
     }
 
     private void propagateInternal(Internal internal, byte[] payload) {
@@ -768,19 +727,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @EventLog(indexed = 2)
     public void MessageDropped(String _link, BigInteger _seq, byte[] _msg) {}
-
-    @External
-    public void setLinkSackTerm(String _link, int _value) {
-        requireOwnerAccess();
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
-        if (_value < 0) {
-            throw BMCException.unknown("invalid param");
-        }
-        link.setSackTerm(_value);
-        link.setSackNext(Context.getBlockHeight()+_value);
-        putLink(link);
-    }
 
     @External
     public void addRelay(String _link, Address _addr) {

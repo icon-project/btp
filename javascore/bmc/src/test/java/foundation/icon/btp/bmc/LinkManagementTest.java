@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
@@ -44,8 +43,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
     static String secondLink = secondLinkBtpAddress.toString();
     static String dst = BTPIntegrationTest.Faker.btpLink().toString();
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
-
-    static int sackTerm = 10;
 
     static Consumer<List<BMCMessage>> initMessageChecker(List<String> links) {
         return (bmcMessages) -> {
@@ -277,26 +274,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
 //        }
 //        System.out.println("afterLinkRequiredTests end on "+testInfo.getDisplayName());
 //    }
-
-    @Test
-    void setLinkSackTermShouldSuccess() {
-        iconSpecific.setLinkSackTerm(link, sackTerm);
-        BMCStatus status = BMCIntegrationTest.getStatus(bmc, link);
-        assertEquals(sackTerm, status.getSack_term());
-    }
-
-    @Test
-    void setLinkSackTermShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(
-                () -> iconSpecific.setLinkSackTerm(secondLink, sackTerm));
-    }
-
-    @Test
-    void setLinkSackTermShouldRevertIllegalArgument() {
-        int invalidValue = -1;
-        AssertBMCException.assertUnknown(
-                () -> iconSpecific.setLinkSackTerm(link, invalidValue));
-    }
 
     @Test
     void addRouteShouldSuccess() {

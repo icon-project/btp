@@ -167,11 +167,6 @@ public class OwnershipTest implements BMCIntegrationTest {
     }
 
     @Test
-    void setLinkSackTermShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.setLinkSackTerm(btpAddress, intVal));
-    }
-
-    @Test
     void addRouteShouldRevertUnauthorized() {
         assertUnauthorized(() -> bmcWithTester.addRoute(btpAddress, btpAddress));
     }
