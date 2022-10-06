@@ -865,6 +865,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             try {
                 Context.call(CHAIN_SCORE, "sendBTPMessage", networkId, serializedMsg);
             } catch (Exception e) {
+                link.setTxSeq(link.getTxSeq().subtract(BigInteger.ONE));
+                putLink(link);
                 throw BMCException.unknown(e.toString());
             }
         }
