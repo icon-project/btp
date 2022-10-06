@@ -65,6 +65,11 @@ public class BTPAddress {
         return toString().equals(that.toString());
     }
 
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
+
     public boolean isValid() {
         return (!(protocol == null || protocol.isEmpty())) &&
                 (!(net == null || net.isEmpty())) &&

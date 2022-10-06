@@ -17,12 +17,14 @@
 package foundation.icon.btp.lib;
 
 import foundation.icon.score.client.ScoreClient;
+import foundation.icon.score.client.ScoreInterface;
 import score.Address;
 import score.annotation.External;
 
 import java.math.BigInteger;
 import java.util.Map;
 
+@ScoreInterface
 @ScoreClient
 public interface BMC {
     /**
@@ -77,6 +79,7 @@ public interface BMC {
      */
     @External
     void removeService(String _svc);
+
     /**
      * Get registered services.
      *
@@ -143,6 +146,7 @@ public interface BMC {
      */
     @External
     void addRoute(String _dst, String _link);
+
     /**
      * Remove route to the BMC.
      * Called by the operator to manage the BTP network.
@@ -151,6 +155,7 @@ public interface BMC {
      */
     @External
     void removeRoute(String _dst);
+
     /**
      * Get routing information.
      *

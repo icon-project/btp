@@ -17,10 +17,12 @@
 package foundation.icon.btp.lib;
 
 import foundation.icon.score.client.ScoreClient;
+import foundation.icon.score.client.ScoreInterface;
 import score.annotation.External;
 
 import java.math.BigInteger;
 
+@ScoreInterface
 @ScoreClient
 public interface BSH {
     /**
