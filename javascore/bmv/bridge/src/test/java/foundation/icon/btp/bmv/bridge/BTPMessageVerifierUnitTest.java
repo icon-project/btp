@@ -20,6 +20,7 @@ import com.iconloop.score.test.Account;
 import com.iconloop.score.test.Score;
 import com.iconloop.score.test.ServiceManager;
 import com.iconloop.score.test.TestBase;
+import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.score.util.StringUtil;
@@ -32,7 +33,6 @@ import scorex.util.ArrayList;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,8 +70,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 bmc.toString(), prev.toString(), seq, toBytes(rm));
         assertEquals(rm.getReceiptProofs().length, ret.length);
         assertArrayEquals(msg.getBytes(), ret[0]);
-        Map<String, Object> map = (Map<String, Object>) score.call("getStatus");
-        assertEquals(height, map.get("height"));
+        BMVStatus status = (BMVStatus) score.call("getStatus");
+        assertEquals(height.longValue(), status.getHeight());
     }
 
     static byte[] toBytes(List<EventDataBTPMessage> events) {
