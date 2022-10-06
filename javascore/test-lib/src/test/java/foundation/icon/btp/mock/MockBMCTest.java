@@ -17,15 +17,17 @@
 package foundation.icon.btp.mock;
 
 import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.lib.BTPException;
 import foundation.icon.btp.test.*;
 import foundation.icon.jsonrpc.Address;
+import foundation.icon.score.test.AssertRevertedException;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     static BTPAddress btpAddress = new BTPAddress(
@@ -41,7 +43,8 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     static BigInteger sn = BigInteger.ONE;
     static long errCode = 1;
     static String errMsg = "err" + svc;
-    static String fa = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT).toString();
+    static BigInteger forward = BigInteger.ONE;
+    static BigInteger backward = BigInteger.TWO;
 
     @Test
     void btpAddress() {
@@ -68,13 +71,98 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
         mockBMC.sendMessage(
                 MockBMCIntegrationTest.sendMessageEvent(
                         (el) -> {
+                            assertEquals(mockBMC.getNsn(), el.getNsn());
                             assertEquals(to, el.getTo());
                             assertEquals(svc, el.getSvc());
                             assertEquals(sn, el.getSn());
                             assertArrayEquals(msg, el.getMsg());
                         }
                 ),
+                mockBMC.getFee(to, true),
                 to, svc, sn, msg);
+    }
+
+    @Test
+    void sendMessageWithFee() {
+        BigInteger forward = BigInteger.ONE;
+        BigInteger backward = BigInteger.TWO;
+        mockBMC.setFee(forward, backward);
+        assertEquals(forward, mockBMC.getFee(to, false));
+        assertEquals(forward.add(backward), mockBMC.getFee(to, true));
+
+        mockBMC.sendMessage(
+                MockBMCIntegrationTest.sendMessageEvent(
+                        (el) -> {
+                            assertEquals(mockBMC.getNsn(), el.getNsn());
+                            assertEquals(to, el.getTo());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(sn, el.getSn());
+                            assertArrayEquals(msg, el.getMsg());
+                        }
+                ),
+                mockBMC.getFee(to, true),
+                to, svc, sn, msg);
+
+        mockBMC.sendMessage(
+                MockBMCIntegrationTest.sendMessageEvent(
+                        (el) -> {
+                            assertEquals(mockBMC.getNsn(), el.getNsn());
+                            assertEquals(to, el.getTo());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(BigInteger.ZERO, el.getSn());
+                            assertArrayEquals(msg, el.getMsg());
+                        }
+                ),
+                mockBMC.getFee(to, false),
+                to, svc, BigInteger.ZERO, msg);
+    }
+
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    void sendMessageShouldRevertIfNotEnoughFee() {
+        mockBMC.setFee(forward, backward);
+        assertEquals(forward, mockBMC.getFee(to, false));
+        assertEquals(forward.add(backward), mockBMC.getFee(to, true));
+
+        AssertBTPException.assertBTPException(new BTPException.BMC(0, "not enough fee"), () ->
+                mockBMC.sendMessage(
+                        BigInteger.ZERO,
+                        to, svc, sn, msg));
+
+        AssertBTPException.assertBTPException(new BTPException.BMC(0, "not enough fee"), () ->
+                mockBMC.sendMessage(
+                        BigInteger.ZERO,
+                        to, svc, BigInteger.ZERO, msg));
+    }
+
+    @Test
+    void sendMessageShouldMakeEventLogIfResponse() {
+        mockBMC.addResponse(to, svc, sn);
+        assertTrue(mockBMC.hasResponse(to, svc, sn));
+
+        mockBMC.sendMessage(
+                MockBMCIntegrationTest.sendMessageEvent(
+                        (el) -> {
+                            assertEquals(mockBMC.getNsn(), el.getNsn());
+                            assertEquals(to, el.getTo());
+                            assertEquals(svc, el.getSvc());
+                            assertEquals(BigInteger.ZERO, el.getSn());
+                            assertArrayEquals(msg, el.getMsg());
+                        }
+                ),
+                BigInteger.ZERO,
+                to, svc, sn.negate(), msg);
+
+        assertFalse(mockBMC.hasResponse(to, svc, sn));
+    }
+
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    void sendMessageShouldRevertIfNotExistsResponse() {
+        AssertBTPException.assertBTPException(new BTPException.BMC(0, "not exists response"), () ->
+                mockBMC.sendMessage(
+                        BigInteger.ZERO,
+                        to, svc, sn.negate(), msg));
     }
 
     @Test

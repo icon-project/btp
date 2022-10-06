@@ -31,6 +31,7 @@ public class BTPMessage {
     private String svc;
     private BigInteger sn;
     private byte[] payload;
+    private FeeInfo feeInfo;
 
     public BTPAddress getSrc() {
         return src;
@@ -72,6 +73,14 @@ public class BTPMessage {
         this.payload = payload;
     }
 
+    public FeeInfo getFeeInfo() {
+        return feeInfo;
+    }
+
+    public void setFeeInfo(FeeInfo feeInfo) {
+        this.feeInfo = feeInfo;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BTPMessage{");
@@ -80,6 +89,7 @@ public class BTPMessage {
         sb.append(", svc='").append(svc).append('\'');
         sb.append(", sn=").append(sn);
         sb.append(", payload=").append(StringUtil.bytesToHex(payload));
+        sb.append(", feeInfo=").append(feeInfo);
         sb.append('}');
         return sb.toString();
     }
@@ -91,22 +101,24 @@ public class BTPMessage {
     public static BTPMessage readObject(ObjectReader reader) {
         BTPMessage obj = new BTPMessage();
         reader.beginList();
-        obj.setSrc(reader.readNullable(BTPAddress.class));
-        obj.setDst(reader.readNullable(BTPAddress.class));
-        obj.setSvc(reader.readNullable(String.class));
-        obj.setSn(reader.readNullable(BigInteger.class));
-        obj.setPayload(reader.readNullable(byte[].class));
+        obj.setSrc(reader.read(BTPAddress.class));
+        obj.setDst(reader.read(BTPAddress.class));
+        obj.setSvc(reader.read(String.class));
+        obj.setSn(reader.read(BigInteger.class));
+        obj.setPayload(reader.read(byte[].class));
+        obj.setFeeInfo(reader.readNullable(FeeInfo.class));
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
-        writer.beginList(5);
-        writer.writeNullable(this.getSrc());
-        writer.writeNullable(this.getDst());
-        writer.writeNullable(this.getSvc());
-        writer.writeNullable(this.getSn());
-        writer.writeNullable(this.getPayload());
+        writer.beginList(6);
+        writer.write(this.getSrc());
+        writer.write(this.getDst());
+        writer.write(this.getSvc());
+        writer.write(this.getSn());
+        writer.write(this.getPayload());
+        writer.writeNullable(this.getFeeInfo());
         writer.end();
     }
 

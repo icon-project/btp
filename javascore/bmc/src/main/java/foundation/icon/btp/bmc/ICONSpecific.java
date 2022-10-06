@@ -18,10 +18,11 @@ package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
 import foundation.icon.btp.lib.BMRStatus;
+import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
-import foundation.icon.score.client.ScoreClient;
+
 import java.math.BigInteger;
 
 @ScoreClient
@@ -75,13 +76,15 @@ public interface ICONSpecific {
      * Drop the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
-     * @param _src String ( BTP Address of source BMC )
-     * @param _seq  Integer ( number of the message from connected BMC )
-     * @param _svc  String ( number of the message from connected BMC )
-     * @param _sn   Integer ( serial number of the message, must be positive )
+     * @param _src        String ( BTP Address of source BMC )
+     * @param _seq        Integer ( number of the message from connected BMC )
+     * @param _svc        String ( number of the message from connected BMC )
+     * @param _sn         Integer ( serial number of the message, must be positive or zero )
+     * @param _feeNetwork String ( Network Address of the relay fee of the message )
+     * @param _feeValues  Integer[] ( list of relay fees of the message )
      */
     @External
-    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn);
+    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn, String _feeNetwork, BigInteger[] _feeValues);
 
     /**
      * (EventLog) Drop the message of the connected BMC
@@ -125,4 +128,5 @@ public interface ICONSpecific {
 
     @External(readonly = true)
     long getBTPLinkOffset(String _link);
+
 }

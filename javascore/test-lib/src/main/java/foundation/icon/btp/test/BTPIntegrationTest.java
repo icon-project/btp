@@ -19,7 +19,6 @@ package foundation.icon.btp.test;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.test.ScoreIntegrationTest;
-import org.junit.jupiter.api.TestInfo;
 
 public interface BTPIntegrationTest extends ScoreIntegrationTest {
 

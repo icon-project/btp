@@ -23,7 +23,12 @@ import foundation.icon.jsonrpc.IconJsonModule;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.RevertedException;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.function.Executable;
 import score.UserRevertedException;
 
@@ -47,33 +52,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface ScoreIntegrationTest {
 
-    default void internalBeforeEach(TestInfo testInfo) {}
-
-    default void internalAfterEach(TestInfo testInfo) {}
-
     default void clearIfExists(TestInfo testInfo) {}
 
     @BeforeEach
     default void beforeEach(TestInfo testInfo) {
         System.out.println("=".repeat(100));
-        System.out.println("beforeEach start " + testInfo.getTestMethod().orElseThrow());
-        System.out.println("clearIfExists start");
+        System.out.println("beforeEach clearIfExists start " + testInfo.getTestMethod().orElseThrow());
         clearIfExists(testInfo);
-        System.out.println("clearIfExists end");
-        internalBeforeEach(testInfo);
-        System.out.println("beforeEach end " + testInfo.getTestMethod().orElseThrow());
+        System.out.println("beforeEach clearIfExists end " + testInfo.getTestMethod().orElseThrow());
         System.out.println("-".repeat(100));
     }
 
     @AfterEach
     default void afterEach(TestInfo testInfo) {
         System.out.println("-".repeat(100));
-        System.out.println("afterEach start " + testInfo.getTestMethod().orElseThrow());
-        internalAfterEach(testInfo);
-        System.out.println("clearIfExists start");
+        System.out.println("afterEach clearIfExists start " + testInfo.getTestMethod().orElseThrow());
         clearIfExists(testInfo);
-        System.out.println("clearIfExists end");
-        System.out.println("afterEach end " + testInfo.getTestMethod().orElseThrow());
+        System.out.println("afterEach clearIfExists end " + testInfo.getTestMethod().orElseThrow());
         System.out.println("=".repeat(100));
     }
 
@@ -158,6 +153,13 @@ public interface ScoreIntegrationTest {
         assertEquals(balance.add(value), client._balance(address));
     }
 
+    static <T> Consumer<TransactionResult> balanceChecker(Address address, BigInteger value) {
+        BigInteger preBalance = client._balance(address);
+        return (txr) -> {
+            assertEquals(preBalance.add(value), client._balance(address));
+        };
+    }
+
     @FunctionalInterface
     interface EventLogsSupplier<T> {
         List<T> apply(TransactionResult txr, Address address, Predicate<T> filter);
@@ -220,6 +222,10 @@ public interface ScoreIntegrationTest {
             byte[] bytes = new byte[length];
             random.nextBytes(bytes);
             return bytes;
+        }
+
+        static int positive(int bound) {
+            return random.nextInt(bound)+1;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class MessageEventLog {
         return sb.toString();
     }
 
-    static List<MessageEventLog> eventLogs(
+    public static List<MessageEventLog> eventLogs(
             TransactionResult txr, Address address, Predicate<MessageEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
                 MessageEventLog.SIGNATURE,

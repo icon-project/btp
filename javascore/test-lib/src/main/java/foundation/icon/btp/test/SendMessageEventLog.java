@@ -31,19 +31,26 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SendMessageEventLog {
-    static final String SIGNATURE = "SendMessage(str,str,int,bytes)";
+    static final String SIGNATURE = "SendMessage(int,str,str,int,bytes)";
+    private BigInteger nsn;
     private String to;
     private String svc;
     private BigInteger sn;
     private byte[] msg;
 
     public SendMessageEventLog(TransactionResult.EventLog el) {
+        this.nsn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
+                el.getIndexed().get(1));
         this.to = el.getData().get(0);
         this.svc = el.getData().get(1);
         this.sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(
                 el.getData().get(2));
         this.msg = IconJsonModule.ByteArrayDeserializer.BYTE_ARRAY.convert(
                 el.getData().get(3));
+    }
+
+    public BigInteger getNsn() {
+        return nsn;
     }
 
     public String getTo() {
@@ -65,7 +72,8 @@ public class SendMessageEventLog {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SendMessageEventLog{");
-        sb.append("to='").append(to).append('\'');
+        sb.append("nsn=").append(nsn);
+        sb.append(", to='").append(to).append('\'');
         sb.append(", svc='").append(svc).append('\'');
         sb.append(", sn=").append(sn);
         sb.append(", msg=").append(StringUtil.toString(msg));

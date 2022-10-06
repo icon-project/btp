@@ -63,21 +63,19 @@ public class OwnershipTest implements BMCIntegrationTest {
     @BeforeAll
     static void beforeAll() {
         System.out.println("OwnershipTest:beforeAll start");
-        Address testerAddress = Address.of(tester);
-        BigInteger balance = client._balance(testerAddress);
 
         //the caller should have enough balance more than StepLimit * StepPrice
-        BigInteger stepPrice = new ChainScoreClient(
+        ChainScoreClient chainScore = new ChainScoreClient(
                 client.endpoint(),
                 client._nid(),
                 client._wallet(),
-                new Address(ChainScore.ADDRESS.toString())).getStepPrice();
+                new Address(ChainScore.ADDRESS.toString()));
+        BigInteger stepPrice = chainScore.getStepPrice();
         BigInteger minBalance = client._stepLimit().multiply(stepPrice);
-        if (balance.compareTo(minBalance) < 0) {
+        Address testerAddress = Address.of(tester);
+        if (client._balance(testerAddress).compareTo(minBalance) < 0) {
             client._transfer(testerAddress, minBalance.multiply(BigInteger.TEN), null);
-
-            balance = client._balance(testerAddress);
-            System.out.println(tester.getAddress() + ":" + balance);
+            System.out.println("transferred "+tester.getAddress() + ":" + client._balance(testerAddress));
         }
         System.out.println("OwnershipTest:beforeAll start");
     }
@@ -188,7 +186,7 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void dropMessageShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger));
+        assertUnauthorized(() -> iconSpecificWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger, "", new BigInteger[]{}));
     }
 
     @Test
@@ -199,6 +197,11 @@ public class OwnershipTest implements BMCIntegrationTest {
     @Test
     void setBTPLinkNetworkIdShouldRevertUnauthorized() {
         assertUnauthorized(() -> iconSpecificWithTester.setBTPLinkNetworkId(btpAddress, longPositiveNumber));
+    }
+
+    @Test
+    void setFeeTableShouldRevertUnauthorized() {
+        assertUnauthorized(() -> bmcWithTester.setFeeTable(new String[]{string}, new BigInteger[][]{{bigInteger}}));
     }
 
 }

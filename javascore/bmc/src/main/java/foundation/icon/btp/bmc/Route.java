@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,77 +16,77 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.score.util.StringUtil;
+import foundation.icon.btp.lib.BTPAddress;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-public class BMCMessage {
-    private String type;
-    private byte[] payload;
+public class Route {
+    private BTPAddress destination;
+    private BTPAddress next;
 
-    public BMCMessage() {
+    public Route() {
     }
 
-    public BMCMessage(String type, byte[] payload) {
-        this.type = type;
-        this.payload = payload;
+    public Route(BTPAddress destination, BTPAddress next) {
+        this.destination = destination;
+        this.next = next;
     }
 
-    public String getType() {
-        return type;
+    public BTPAddress getDestination() {
+        return destination;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setDestination(BTPAddress destination) {
+        this.destination = destination;
     }
 
-    public byte[] getPayload() {
-        return payload;
+    public BTPAddress getNext() {
+        return next;
     }
 
-    public void setPayload(byte[] payload) {
-        this.payload = payload;
+    public void setNext(BTPAddress next) {
+        this.next = next;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("BMCMessage{");
-        sb.append("type='").append(type).append('\'');
-        sb.append(", payload=").append(StringUtil.toString(payload));
+        final StringBuilder sb = new StringBuilder("Route{");
+        sb.append("destination=").append(destination);
+        sb.append(", next=").append(next);
         sb.append('}');
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, BMCMessage obj) {
+    public static void writeObject(ObjectWriter writer, Route obj) {
         obj.writeObject(writer);
     }
 
-    public static BMCMessage readObject(ObjectReader reader) {
-        BMCMessage obj = new BMCMessage();
+    public static Route readObject(ObjectReader reader) {
+        Route obj = new Route();
         reader.beginList();
-        obj.setType(reader.readNullable(String.class));
-        obj.setPayload(reader.readNullable(byte[].class));
+        obj.setDestination(reader.readNullable(BTPAddress.class));
+        obj.setNext(reader.readNullable(BTPAddress.class));
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
         writer.beginList(2);
-        writer.writeNullable(this.getType());
-        writer.writeNullable(this.getPayload());
+        writer.writeNullable(this.getDestination());
+        writer.writeNullable(this.getNext());
         writer.end();
     }
 
-    public static BMCMessage fromBytes(byte[] bytes) {
+    public static Route fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return BMCMessage.readObject(reader);
+        return Route.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        BMCMessage.writeObject(writer, this);
+        Route.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

@@ -20,6 +20,7 @@ import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -45,11 +46,30 @@ public interface MockBMC {
     @External(readonly = true)
     String getBtpAddress();
 
+    @Payable
     @External
-    void sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
+    BigInteger sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
 
-    @EventLog
-    void SendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
+    @EventLog(indexed = 1)
+    void SendMessage(BigInteger _nsn, String _to, String _svc, BigInteger _sn, byte[] _msg);
+
+    @External(readonly = true)
+    BigInteger getNsn();
+
+    @External
+    void addResponse(String _to, String _svc, BigInteger _sn);
+
+    @External(readonly = true)
+    boolean hasResponse(String _to, String _svc, BigInteger _sn);
+
+    @External
+    void clearResponse();
+
+    @External
+    void setFee(BigInteger _forward, BigInteger _backward);
+
+    @External(readonly = true)
+    BigInteger getFee(String _to, boolean _response);
 
     @External
     void handleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg);

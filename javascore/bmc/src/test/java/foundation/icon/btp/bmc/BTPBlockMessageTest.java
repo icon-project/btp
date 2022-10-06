@@ -36,7 +36,6 @@ public class BTPBlockMessageTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
     static Address relay = Address.of(bmc._wallet());
-    static BTPAddress btpAddress = BTPAddress.valueOf(bmc.getBtpAddress());
     static String svc = MockBSHIntegrationTest.SERVICE;
     static long networkId;
 

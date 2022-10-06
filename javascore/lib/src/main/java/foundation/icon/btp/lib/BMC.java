@@ -19,7 +19,9 @@ package foundation.icon.btp.lib;
 import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.client.ScoreInterface;
 import score.Address;
+import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 import java.util.Map;
@@ -172,14 +174,17 @@ public interface BMC {
     /**
      * Sends the message to a specific network.
      * Only allowed to be called by registered BSHs.
+     * _sn : positive for two-way message, zero for one-way message, negative for response
      *
      * @param _to  String ( Network Address of destination network )
      * @param _svc String ( name of the service )
-     * @param _sn  Integer ( serial number of the message, must be positive )
+     * @param _sn  Integer ( serial number of the message )
      * @param _msg Bytes ( serialized bytes of Service Message )
+     * @return Integer ( network serial number of message )
      */
+    @Payable
     @External
-    void sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
+    BigInteger sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg);
 
     /**
      * It verifies and decodes the Relay Message with BMV and dispatches BTP Messages to registered BSHs.
@@ -199,4 +204,89 @@ public interface BMC {
      */
     @External(readonly = true)
     String getBtpAddress();
+
+    /**
+     * Sets fee table
+     * Called by the operator to manage the BTP network.
+     *
+     * @param _dst   String[] ( List of BTP Network Address of the destination BMC )
+     * @param _value Integer[][] ( List of lists of relay fees in the path including return path.
+     *               If it provides an empty relay fee list, then it removes the entry from the table. )
+     */
+    @External
+    void setFeeTable(String[] _dst, BigInteger[][] _value);
+
+    /**
+     * Get fee to the target network
+     * _response should be true if it uses positive value for _sn of {@link #sendMessage}.
+     * If _to is not reachable, then it reverts.
+     * If _to does not exist in the fee table, then it returns zero.
+     *
+     * @param _to       String ( BTP Network Address of the destination BMC )
+     * @param _response Boolean ( Whether the responding fee is included )
+     * @return Integer (The fee of sending a message to a given destination network )
+     */
+    @External(readonly = true)
+    BigInteger getFee(String _to, boolean _response);
+
+    /**
+     * Get fee table
+     * It reverts if the one of destination networks is not reachable.
+     * If there is no corresponding fee table, then it returns an empty list.
+     *
+     * @param _dst String[] ( List of BTP Network Address of the destination BMC )
+     * @return Integer[][] ( List of lists of relay fees in the path including return path )
+     */
+    @External(readonly = true)
+    BigInteger[][] getFeeTable(String[] _dst);
+
+    /**
+     * Sends the claim message to a given network if a claimable reward exists.
+     * It expects a response, so it would use a positive serial number for the message.
+     * If _network is the current network then it transfers a reward and a sender pays nothing.
+     * If the <sender> is FeeHandler, then it transfers the remaining reward to the receiver.
+     * If _receiver is empty, then it would be burned on the target.
+     *
+     * @param _network  String ( Network address to claim )
+     * @param _receiver String ( Address of the receiver of target chain )
+     */
+    @Payable
+    @External
+    void claimReward(String _network, String _receiver);
+
+    /**
+     * FIXME
+     * @param _network
+     * @param _receiver
+     * @param _amount
+     * @param _sn
+     * @param _nsn
+     */
+    @EventLog
+    void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn);
+
+    /**
+     * It returns the amount of claimable reward to the target
+     *
+     * @param _network String ( Network address to claim )
+     * @param _addr    Address ( Address of the relay )
+     * @return Integer (The claimable reward to the target )
+     */
+    @External(readonly = true)
+    BigInteger getReward(String _network, Address _addr);
+
+    /**
+     * Sets the address to handle the remaining reward fee.
+     * @param _addr Address ( the address to handle the remaining reward fee )
+     */
+    @External
+    void setFeeHandler(Address _addr);
+
+    /**
+     * Gets the address to handle the remaining reward fee.
+     *
+     * @return Address ( the address to handle the remaining reward fee )
+     */
+    @External(readonly = true)
+    Address getFeeHandler();
 }

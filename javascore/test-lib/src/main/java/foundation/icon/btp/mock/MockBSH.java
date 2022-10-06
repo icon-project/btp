@@ -21,6 +21,7 @@ import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -30,8 +31,12 @@ import java.math.BigInteger;
 @ScoreClient
 public interface MockBSH extends BSH {
 
+    @Payable
     @External
     void sendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg);
+
+    @EventLog(indexed = 1)
+    void SendMessage(BigInteger _nsn, String _to, String _svc, BigInteger _sn, byte[] _msg);
 
     @EventLog
     void HandleBTPMessage(String _from, String _svc, BigInteger _sn, byte[] _msg);

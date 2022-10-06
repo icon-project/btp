@@ -65,7 +65,7 @@ public class EnumerableDictDB<K, V> {
         indexes.set(ensureKeyType(key), i);
     }
 
-    private K getKey(Integer i) {
+    public K getKey(Integer i) {
         return (i != null) ? keys.get(i) : null;
     }
 
@@ -74,7 +74,7 @@ public class EnumerableDictDB<K, V> {
     }
 
     @SuppressWarnings("unchecked")
-    private V getValue(Integer i) {
+    public V getValue(Integer i) {
         return (i != null) ? (V) values.get(i) : null;
     }
 
@@ -112,10 +112,6 @@ public class EnumerableDictDB<K, V> {
             }
         }
         return false;
-    }
-
-    public V getByIndex(int i) {
-        return getValue(i);
     }
 
     public V get(K key) {

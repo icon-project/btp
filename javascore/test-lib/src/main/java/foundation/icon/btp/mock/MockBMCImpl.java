@@ -18,19 +18,24 @@ package foundation.icon.btp.mock;
 
 import foundation.icon.btp.lib.*;
 import score.Address;
+import score.ArrayDB;
 import score.Context;
 import score.UserRevertedException;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
 public class MockBMCImpl implements MockBMC {
-
-    private VarDB<String> net = Context.newVarDB("net", String.class);
-    private String btpAddress;
+    public static final String DEFAULT_NET = "0x1.icon";
+    private final VarDB<String> net = Context.newVarDB("net", String.class);
+    private final VarDB<BigInteger> nsn = Context.newVarDB("nsn", BigInteger.class);
+    private final VarDB<BigInteger> forward = Context.newVarDB("forward", BigInteger.class);
+    private final VarDB<BigInteger> backward = Context.newVarDB("backward", BigInteger.class);
+    private final ArrayDB<String> responseList = Context.newArrayDB("responseList", String.class);
 
     public MockBMCImpl(@Optional String _net) {
         if (_net != null) {
@@ -41,20 +46,18 @@ public class MockBMCImpl implements MockBMC {
     @External
     public void setNet(String _net) {
         net.set(_net);
-        btpAddress = new BTPAddress(
-                BTPAddress.PROTOCOL_BTP, _net, Context.getAddress().toString()).toString();
     }
 
     @External(readonly = true)
     public String getNet() {
-        return net.get();
+        return net.getOrDefault(DEFAULT_NET);
     }
 
     @External
     public void handleRelayMessage(Address _addr, String _prev, BigInteger _seq, byte[] _msg) {
         BMVScoreInterface bmv = new BMVScoreInterface(_addr);
         try {
-            byte[][] ret = bmv.handleRelayMessage(btpAddress, _prev, _seq, _msg);
+            byte[][] ret = bmv.handleRelayMessage(getBtpAddress(), _prev, _seq, _msg);
             HandleRelayMessage(MockRelayMessage.toBytes(ret));
         } catch (UserRevertedException e) {
             throw BTPException.of(e);
@@ -62,19 +65,109 @@ public class MockBMCImpl implements MockBMC {
     }
 
     @EventLog
-    public void HandleRelayMessage(byte[] _ret) { }
-
-    @External
-    public void sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg) {
-        SendMessage(_to, _svc, _sn, _msg);
+    public void HandleRelayMessage(byte[] _ret) {
     }
-
-    @EventLog
-    public void SendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg) { }
 
     @External(readonly = true)
     public String getBtpAddress() {
-        return btpAddress;
+        return new BTPAddress(
+                BTPAddress.PROTOCOL_BTP, getNet(), Context.getAddress().toString()).toString();
+    }
+
+    private void require(boolean condition, String message) {
+        if (!condition) {
+            throw new BTPException.BMC(0, message);
+        }
+    }
+
+    @Payable
+    @External
+    public BigInteger sendMessage(String _to, String _svc, BigInteger _sn, byte[] _msg) {
+        int snCompare = _sn.compareTo(BigInteger.ZERO);
+        BigInteger fee = getFee(_to, snCompare > 0);
+        if (snCompare < 0) {
+            require(removeResponse(toResponse(_to, _svc, _sn.negate())),
+                    "not exists response");
+            fee = BigInteger.ZERO;
+            //response is one way message;
+            _sn = BigInteger.ZERO;
+
+        }
+        require(Context.getValue().compareTo(fee) >= 0, "not enough fee");
+        BigInteger nextNsn = getNsn().add(BigInteger.ONE);
+        nsn.set(nextNsn);
+        SendMessage(nextNsn, _to, _svc, _sn, _msg);
+        return nextNsn;
+    }
+
+    @EventLog(indexed = 1)
+    public void SendMessage(BigInteger _nsn, String _to, String _svc, BigInteger _sn, byte[] _msg) {
+    }
+
+    @External(readonly = true)
+    public BigInteger getNsn() {
+        return nsn.getOrDefault(BigInteger.ZERO);
+    }
+
+    private String toResponse(String _to, String _svc, BigInteger _sn) {
+        return _to + _svc + _sn;
+    }
+
+    @External
+    public void addResponse(String _to, String _svc, BigInteger _sn) {
+        String response = toResponse(_to, _svc, _sn);
+        if (getResponseIndex(response) < 0) {
+            responseList.add(response);
+        }
+    }
+
+    private boolean removeResponse(String response) {
+        int idx = getResponseIndex(response);
+        if (idx >= 0) {
+            String last = responseList.pop();
+            if (idx < responseList.size()) {
+                responseList.set(idx, last);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private int getResponseIndex(String response) {
+        for (int i = 0; i < responseList.size(); i++) {
+            if (responseList.get(i).equals(response)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @External(readonly = true)
+    public boolean hasResponse(String _to, String _svc, BigInteger _sn) {
+        return getResponseIndex(toResponse(_to, _svc, _sn)) >= 0;
+    }
+
+    @External
+    public void clearResponse() {
+        int size = responseList.size();
+        for (int i = 0; i < size; i++) {
+            responseList.removeLast();
+        }
+    }
+
+    @External
+    public void setFee(BigInteger _forward, BigInteger _backward) {
+        forward.set(_forward);
+        backward.set(_backward);
+    }
+
+    @External(readonly = true)
+    public BigInteger getFee(String _to, boolean _response) {
+        BigInteger fee = forward.getOrDefault(BigInteger.ZERO);
+        if (_response) {
+            fee = fee.add(backward.getOrDefault(BigInteger.ZERO));
+        }
+        return fee;
     }
 
     @External

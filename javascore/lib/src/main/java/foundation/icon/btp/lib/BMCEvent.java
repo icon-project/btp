@@ -41,12 +41,13 @@ public interface BMCEvent {
      * indexed: 2
      *
      * @param _svc   String ( name of the service )
-     * @param _seq   Integer ( serial number of the message, must be positive )
+     * @param _sn   Integer ( serial number of the message, must be positive )
      * @param _code  Integer ( error code )
      * @param _msg   String ( error message )
      * @param _ecode ( BTPException code )
      * @param _emsg  ( BTPException message )
      */
     @EventLog(indexed = 2)
-    void ErrorOnBTPError(String _svc, BigInteger _seq, BigInteger _code, String _msg, BigInteger _ecode, String _emsg);
+    void ErrorOnBTPError(String _svc, BigInteger _sn, BigInteger _code, String _msg, BigInteger _ecode, String _emsg);
+
 }

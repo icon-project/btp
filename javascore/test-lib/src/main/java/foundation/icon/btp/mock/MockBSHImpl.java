@@ -20,9 +20,11 @@ import foundation.icon.btp.lib.BMCScoreInterface;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.score.util.Logger;
 import score.Address;
+import score.Context;
 import score.UserRevertedException;
 import score.annotation.EventLog;
 import score.annotation.External;
+import score.annotation.Payable;
 
 import java.math.BigInteger;
 
@@ -42,15 +44,20 @@ public class MockBSHImpl implements MockBSH {
         HandleBTPError(_src, _svc, _sn, _code, _msg);
     }
 
+    @Payable
     @External
     public void sendMessage(Address _bmc, String _to, String _svc, BigInteger _sn, byte[] _msg) {
         BMCScoreInterface bmc = new BMCScoreInterface(_bmc);
         try {
-            bmc.sendMessage(_to, _svc, _sn, _msg);
+            BigInteger nsn = bmc.sendMessage(Context.getValue(), _to, _svc, _sn, _msg);
+            SendMessage(nsn, _to, _svc, _sn, _msg);
         } catch (UserRevertedException e) {
             throw BTPException.of(e);
         }
     }
+
+    @EventLog(indexed = 1)
+    public void SendMessage(BigInteger _nsn, String _to, String _svc, BigInteger _sn, byte[] _msg) {}
 
     @EventLog
     public void HandleBTPMessage(String _from, String _svc, BigInteger _sn, byte[] _msg) { }

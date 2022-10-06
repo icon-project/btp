@@ -52,6 +52,9 @@ public interface ChainScore {
     @External(readonly = true)
     BigInteger getStepPrice();
 
+    @External(readonly = true)
+    BigInteger getStepCost(String type);
+
     @External
     long openBTPNetwork(String networkTypeName, String name, Address owner);
 

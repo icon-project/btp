@@ -76,4 +76,17 @@ public class ArrayUtil {
         }
     }
 
+    public static BigInteger sum(BigInteger[] arr) {
+        BigInteger sum = BigInteger.ZERO;
+        for (BigInteger v : arr) {
+            sum = sum.add(v);
+        }
+        return sum;
+    }
+    public static BigInteger[] copyOf(BigInteger[] original, int newLength) {
+        BigInteger[] copy = new BigInteger[newLength];
+        System.arraycopy(original, 0, copy, 0,
+                Math.min(original.length, newLength));
+        return copy;
+    }
 }

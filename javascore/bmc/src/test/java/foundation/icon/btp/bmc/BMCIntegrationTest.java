@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import foundation.icon.btp.lib.BMC;
 import foundation.icon.btp.lib.BMCScoreClient;
 import foundation.icon.btp.lib.BMCStatus;
+import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
@@ -37,6 +38,8 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     BMCScoreClient bmc = BMCScoreClient._of(System.getProperties());
     ICONSpecificScoreClient iconSpecific = new ICONSpecificScoreClient(bmc);
     OwnerManagerScoreClient ownerManager = new OwnerManagerScoreClient(bmc);
+
+    BTPAddress btpAddress = BTPAddress.parse(bmc.getBtpAddress());
 
     BMCScoreClient bmcWithTester = new BMCScoreClient(bmc.endpoint(), bmc._nid(), tester, bmc._address());
     ICONSpecificScoreClient iconSpecificWithTester = new ICONSpecificScoreClient(bmcWithTester);
