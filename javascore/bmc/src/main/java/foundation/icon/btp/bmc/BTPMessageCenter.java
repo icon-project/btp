@@ -52,7 +52,6 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     public static final String INTERNAL_SERVICE = "bmc";
     public static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
-    public static final Address BURN_ADDRESS = Address.fromString("hx1000000000000000000000000000000000000000");
 
     public enum Internal {
         Init, Link, Unlink, ClaimReward, Response;
@@ -437,11 +436,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     public void claimReward(String _network, String _receiver) {
         Address caller = Context.getCaller();
         Address fh = getFeeHandler();
-        //FIXME [TBD] To transfer remainFee, '_receiver.isEmpty()' condition should be removed
-        //If _receiver is empty, caller's reward will be burned.
-        //specially if caller is feeHandler, the reward is remained fee.
-        //If feeHandler has own reward and want burn it, BURN_ADDRESS could be used at _receiver
-        if (fh != null && fh.equals(caller) && _receiver.isEmpty()) {
+        if (fh != null && fh.equals(caller)) {
             caller = Context.getAddress();
         }
         BigInteger reward = getReward(_network, caller);
@@ -450,11 +445,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
         rewards.at(caller).set(_network, BigInteger.ZERO);
         if (_network.equals(btpAddr.net())) {
-            if (_receiver.isEmpty()) {
-                burnReward(reward);
-            } else {
-                Context.transfer(toAddress(_receiver), reward);
-            }
+            Context.transfer(toAddress(_receiver), reward);
         } else {
             ClaimRewardMessage msg = new ClaimRewardMessage(reward, _receiver);
             BMCMessage bmcMessage = new BMCMessage(Internal.ClaimReward.name(), msg.toBytes());
@@ -466,11 +457,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     @EventLog
-    public void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn) {}
-
-    private void burnReward(BigInteger reward) {
-        //FIXME How to burn
-        Context.transfer(BURN_ADDRESS, reward);
+    public void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn) {
     }
 
     @External(readonly = true)
@@ -690,11 +677,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                 BigInteger reward = claimMsg.getAmount();
                 if (reward.compareTo(BigInteger.ZERO) > 0) {
                     String receiver = claimMsg.getReceiver();
-                    if (receiver == null || receiver.isEmpty()) {
-                        burnReward(reward);
-                    } else {
-                        addReward(toAddress(receiver), btpAddr.net(), reward);
-                    }
+                    addReward(toAddress(receiver), btpAddr.net(), reward);
                 }
                 sendInternalResponse(src.net(), sn, ResponseMessage.CODE_SUCCESS);
                 break;

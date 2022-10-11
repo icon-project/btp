@@ -245,7 +245,6 @@ public interface BMC {
      * It expects a response, so it would use a positive serial number for the message.
      * If _network is the current network then it transfers a reward and a sender pays nothing.
      * If the <sender> is FeeHandler, then it transfers the remaining reward to the receiver.
-     * If _receiver is empty, then it would be burned on the target.
      *
      * @param _network  String ( Network address to claim )
      * @param _receiver String ( Address of the receiver of target chain )

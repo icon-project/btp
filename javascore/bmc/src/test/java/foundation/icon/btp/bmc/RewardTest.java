@@ -241,35 +241,6 @@ public class RewardTest implements BMCIntegrationTest {
         bmc.claimReward(checker, btpAddress.net(), receiver.toString());
     }
 
-    static Consumer<TransactionResult> icxBurnChecker(final BigInteger reward) {
-        return (txr) -> {
-            //TODO how to check burn?
-            List<ICXTransferEventLog> elList = ICXTransferEventLog.eventLogs(txr, null,
-                    (el) -> el.getFrom().equals(bmc._address()) && el.getTo().equals(BTPMessageCenter.BURN_ADDRESS)
-            );
-            assertEquals(1, elList.size());
-            assertEquals(reward, elList.get(0).getAmount());
-        };
-    }
-
-    @Test
-    void claimRewardShouldBurnIfReceiverIsEmpty() {
-        boolean isRemain = false;
-        BigInteger reward = ensureReward(btpAddress.net(), isRemain);
-        Consumer<TransactionResult> checker = icxBurnChecker(reward)
-                .andThen(rewardConsumedChecker(btpAddress.net(), isRemain));
-        bmc.claimReward(checker, btpAddress.net(), "");
-    }
-
-    @Test
-    void handleRelayMessageShouldBurnIfClaimRewardMessageReceiverIsEmpty() {
-        BigInteger amount = BigInteger.ONE;
-        BTPMessage msg = btpMessageForClaimReward(amount, "");
-        Consumer<TransactionResult> checker = icxBurnChecker(amount);
-        bmc.handleRelayMessage(checker, link.toString(),
-                MessageTest.mockRelayMessage(msg).toBase64String());
-    }
-
     @SuppressWarnings("ThrowableNotThrown")
     @ParameterizedTest
     @MethodSource("claimRewardShouldRevertArguments")
@@ -320,7 +291,7 @@ public class RewardTest implements BMCIntegrationTest {
         String feeNetwork = link.net();
         BigInteger reward = ensureReward(feeNetwork, isRemain);
         Address address = rewardAddress(isRemain);
-        String receiver = "";
+        String receiver = relay.toString();
         AtomicReference<BigInteger> sn = new AtomicReference<>();
         Consumer<TransactionResult> checker = claimRewardMessageChecker(reward, receiver)
                 .andThen(rewardConsumedChecker(feeNetwork, isRemain))
@@ -350,18 +321,4 @@ public class RewardTest implements BMCIntegrationTest {
         assertEquals(reward, bmc.getReward(feeNetwork, address));
     }
 
-    @Test
-    void claimRewardShouldBurnRemainFeeIfCallerIsFeeHandler() {
-        System.out.println("setFeeHandlerShouldSuccess");
-        Address feeHandler = Address.of(tester);
-        bmc.setFeeHandler(feeHandler);
-        assertEquals(feeHandler, bmc.getFeeHandler());
-
-        System.out.println("claimRewardShouldBurnRemainFee");
-        boolean isRemain = true;
-        BigInteger reward = ensureReward(btpAddress.net(), isRemain);
-        Consumer<TransactionResult> checker = icxBurnChecker(reward)
-                .andThen(rewardConsumedChecker(btpAddress.net(), isRemain));
-        bmcWithTester.claimReward(checker, btpAddress.net(), "");
-    }
 }
