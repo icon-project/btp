@@ -561,26 +561,26 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
         // dispatch BTPMessages
         for (byte[] serializedMsg : serializedMsgs) {
+            rxSeq = rxSeq.add(BigInteger.ONE);
             BTPMessage msg = null;
             try {
                 msg = BTPMessage.fromBytes(serializedMsg);
             } catch (Exception e) {
-                //TODO [TBD] ignore BTPMessage parse failure?
-                logger.println("handleRelayMessage","fail to parse BTPMessage err:", e.getMessage());
+                logger.println("handleRelayMessage",
+                        "fail to parse BTPMessage rxSeq:",rxSeq,
+                        ", msg:", serializedMsg,
+                        ", err:", e.toString());
+                throw BMCException.unknown("fail to parse BTPMessage");
             }
-            logger.println("handleRelayMessage", "BTPMessage = ", msg);
-            if (msg != null) {
-                logger.println("handleRelayMessage", "btpAddr = ", btpAddr.net(), ", to = ", msg.getDst().net());
-                accumulateFee(caller, msg.getFeeInfo());
-                if (btpAddr.net().equals(msg.getDst().net())) {
-                    handleMessage(prev, msg);
-                } else {
-                    try {
-                        Route route = resolveRoute(msg.getDst().net());
-                        sendMessage(route.getNext(), msg.toBytes());
-                    } catch (BTPException e) {
-                        sendError(prev, msg, e);
-                    }
+            accumulateFee(caller, msg.getFeeInfo());
+            if (btpAddr.net().equals(msg.getDst().net())) {
+                handleMessage(prev, msg);
+            } else {
+                try {
+                    Route route = resolveRoute(msg.getDst().net());
+                    sendMessage(route.getNext(), msg.toBytes());
+                } catch (BTPException e) {
+                    sendError(prev, msg, e);
                 }
             }
         }
