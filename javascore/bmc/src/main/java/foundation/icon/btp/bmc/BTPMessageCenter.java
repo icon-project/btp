@@ -480,6 +480,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External
     public void setFeeHandler(Address _addr) {
+        requireOwnerAccess();
         feeHandler.set(_addr);
     }
 

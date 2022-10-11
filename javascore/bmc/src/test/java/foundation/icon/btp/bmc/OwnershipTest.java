@@ -204,4 +204,9 @@ public class OwnershipTest implements BMCIntegrationTest {
         assertUnauthorized(() -> bmcWithTester.setFeeTable(new String[]{string}, new BigInteger[][]{{bigInteger}}));
     }
 
+    @Test
+    void setFeeHandlerShouldRevertUnauthorized() {
+        assertUnauthorized(() -> bmcWithTester.setFeeHandler(address));
+    }
+
 }
