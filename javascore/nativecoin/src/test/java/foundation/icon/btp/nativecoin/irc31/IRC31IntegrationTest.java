@@ -19,21 +19,12 @@ package foundation.icon.btp.nativecoin.irc31;
 import foundation.icon.btp.lib.OwnerManager;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.TestInfo;
 
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public interface IRC31IntegrationTest extends ScoreIntegrationTest {
-    @Override
-    default void internalBeforeEach(TestInfo testInfo) {}
-
-    @Override
-    default void internalAfterEach(TestInfo testInfo) {}
-
     @Override
     default void clearIfExists(TestInfo testInfo) {}
 
@@ -49,5 +40,4 @@ public interface IRC31IntegrationTest extends ScoreIntegrationTest {
         return ScoreIntegrationTest.eventLogChecker(
                 irc31Supplier._address(), supplier, consumer);
     }
-
 }
