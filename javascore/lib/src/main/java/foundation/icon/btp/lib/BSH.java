@@ -42,7 +42,7 @@ public interface BSH {
      * Handle the error on delivering the message.
      * Accept the error only from the BMC.
      *
-     * @param _src String ( BTP Address of BMC that generated the error )
+     * @param _src String ( Network Address of BMC that generated the error )
      * @param _svc String ( name of the service )
      * @param _sn Integer ( serial number of the original message )
      * @param _code Integer ( code of the error )

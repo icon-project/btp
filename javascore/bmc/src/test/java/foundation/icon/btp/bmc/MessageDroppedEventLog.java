@@ -26,19 +26,23 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class MessageDroppedEventLog {
-    static final String SIGNATURE = "MessageDropped(str,int,bytes)";
-    private String link;
+    static final String SIGNATURE = "MessageDropped(str,int,bytes,int,str)";
+    private String prev;
     private BigInteger seq;
     private BTPMessage msg;
+    private BigInteger ecode;
+    private String emsg;
 
     public MessageDroppedEventLog(TransactionResult.EventLog el) {
-        this.link = el.getIndexed().get(1);
+        this.prev = el.getIndexed().get(1);
         this.seq = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getIndexed().get(2));
         this.msg = BTPMessage.fromBytes(IconJsonModule.ByteArrayDeserializer.BYTE_ARRAY.convert(el.getData().get(0)));
+        this.ecode = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(1));
+        this.emsg = el.getData().get(2);
     }
 
-    public String getLink() {
-        return link;
+    public String getPrev() {
+        return prev;
     }
 
     public BigInteger getSeq() {
@@ -49,12 +53,22 @@ public class MessageDroppedEventLog {
         return msg;
     }
 
+    public BigInteger getEcode() {
+        return ecode;
+    }
+
+    public String getEmsg() {
+        return emsg;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MessageDroppedEventLog{");
-        sb.append("link='").append(link).append('\'');
+        sb.append("prev='").append(prev).append('\'');
         sb.append(", seq=").append(seq);
         sb.append(", msg=").append(msg);
+        sb.append(", ecode=").append(ecode);
+        sb.append(", emsg='").append(emsg).append('\'');
         sb.append('}');
         return sb.toString();
     }

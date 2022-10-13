@@ -16,7 +16,6 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.util.StringUtil;
 import score.ByteArrayObjectWriter;
 import score.Context;
@@ -26,26 +25,27 @@ import score.ObjectWriter;
 import java.math.BigInteger;
 
 public class BTPMessage {
-    private BTPAddress src;
-    private BTPAddress dst;
+    private String src;
+    private String dst;
     private String svc;
     private BigInteger sn;
     private byte[] payload;
+    private BigInteger nsn;
     private FeeInfo feeInfo;
 
-    public BTPAddress getSrc() {
+    public String getSrc() {
         return src;
     }
 
-    public void setSrc(BTPAddress src) {
+    public void setSrc(String src) {
         this.src = src;
     }
 
-    public BTPAddress getDst() {
+    public String getDst() {
         return dst;
     }
 
-    public void setDst(BTPAddress dst) {
+    public void setDst(String dst) {
         this.dst = dst;
     }
 
@@ -73,6 +73,14 @@ public class BTPMessage {
         this.payload = payload;
     }
 
+    public BigInteger getNsn() {
+        return nsn;
+    }
+
+    public void setNsn(BigInteger nsn) {
+        this.nsn = nsn;
+    }
+
     public FeeInfo getFeeInfo() {
         return feeInfo;
     }
@@ -89,6 +97,7 @@ public class BTPMessage {
         sb.append(", svc='").append(svc).append('\'');
         sb.append(", sn=").append(sn);
         sb.append(", payload=").append(StringUtil.bytesToHex(payload));
+        sb.append(", nsn=").append(nsn);
         sb.append(", feeInfo=").append(feeInfo);
         sb.append('}');
         return sb.toString();
@@ -101,23 +110,25 @@ public class BTPMessage {
     public static BTPMessage readObject(ObjectReader reader) {
         BTPMessage obj = new BTPMessage();
         reader.beginList();
-        obj.setSrc(reader.read(BTPAddress.class));
-        obj.setDst(reader.read(BTPAddress.class));
-        obj.setSvc(reader.read(String.class));
-        obj.setSn(reader.read(BigInteger.class));
-        obj.setPayload(reader.read(byte[].class));
+        obj.setSrc(reader.readString());
+        obj.setDst(reader.readString());
+        obj.setSvc(reader.readString());
+        obj.setSn(reader.readBigInteger());
+        obj.setPayload(reader.readByteArray());
+        obj.setNsn(reader.readBigInteger());
         obj.setFeeInfo(reader.readNullable(FeeInfo.class));
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
-        writer.beginList(6);
+        writer.beginList(7);
         writer.write(this.getSrc());
         writer.write(this.getDst());
         writer.write(this.getSvc());
         writer.write(this.getSn());
         writer.write(this.getPayload());
+        writer.write(this.getNsn());
         writer.writeNullable(this.getFeeInfo());
         writer.end();
     }

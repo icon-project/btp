@@ -29,6 +29,13 @@ import java.util.List;
 public class InitMessage {
     private BTPAddress[] links;
 
+    public InitMessage() {
+    }
+
+    public InitMessage(BTPAddress[] links) {
+        this.links = links;
+    }
+
     public BTPAddress[] getLinks() {
         return links;
     }

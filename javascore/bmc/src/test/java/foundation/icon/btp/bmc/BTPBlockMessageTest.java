@@ -22,16 +22,18 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.btp.test.MockGovIntegrationTest;
 import foundation.icon.jsonrpc.Address;
+import foundation.icon.jsonrpc.model.TransactionResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BTPBlockMessageTest implements BMCIntegrationTest {
+public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
     static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
@@ -68,18 +70,31 @@ public class BTPBlockMessageTest implements BMCIntegrationTest {
         //BSHMock.sendMessage -> ChainSCORE.sendBTPMessage
         BigInteger sn = BigInteger.ONE;
         byte[] payload = Faker.btpLink().toBytes();
+        BigInteger nsn = bmc.getNetworkSn();
 
+        BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, link)
+                .getTx_seq();
+        Consumer<TransactionResult> checker = (txr) -> {
+            assertEquals(txSeq.add(BigInteger.ONE),
+                    BTPBlockIntegrationTest.nextMessageSn(txr, networkId));
+        };
+        checker = checker.andThen(BTPBlockIntegrationTest.btpMessageChecker(networkId, (msgList) -> {
+            assertEquals(1, msgList.size());
+            BTPMessage btpMessage = msgList.get(0);
+            assertEquals(btpAddress.net(), btpMessage.getSrc());
+            assertEquals(net, btpMessage.getDst());
+            assertEquals(svc, btpMessage.getSvc());
+            assertEquals(sn, btpMessage.getSn());
+            assertEquals(nsn.add(BigInteger.ONE), btpMessage.getNsn());
+            assertArrayEquals(payload, btpMessage.getPayload());
+        }));
+        checker = checker.andThen(MessageTest.btpEventChecker(
+                btpAddress.net(),
+                nsn.add(BigInteger.ONE),
+                linkBtpAddress,
+                BTPMessageCenter.Event.SEND));
         MockBSHIntegrationTest.mockBSH.sendMessage(
-                BTPBlockIntegrationTest.btpMessageChecker(networkId,
-                        (msgList) -> {
-                            assertEquals(1, msgList.size());
-                            BTPMessage btpMessage = msgList.get(0);
-                            assertEquals(btpAddress, btpMessage.getSrc());
-                            assertEquals(linkBtpAddress, btpMessage.getDst());
-                            assertEquals(svc, btpMessage.getSvc());
-                            assertEquals(sn, btpMessage.getSn());
-                            assertArrayEquals(payload, btpMessage.getPayload());
-                        }),
+                checker,
                 bmc._address(),
                 net, svc, sn, payload);
     }

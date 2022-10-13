@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
-import foundation.icon.btp.lib.BMCEvent;
 import foundation.icon.btp.lib.BMRStatus;
 import foundation.icon.btp.lib.BMVScoreInterface;
 import foundation.icon.btp.lib.BMVStatus;
@@ -34,7 +33,6 @@ import score.ArrayDB;
 import score.BranchDB;
 import score.Context;
 import score.DictDB;
-import score.UserRevertedException;
 import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
@@ -47,7 +45,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManager {
+public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     private static final Logger logger = Logger.getLogger(BTPMessageCenter.class);
 
     public static final String INTERNAL_SERVICE = "bmc";
@@ -64,6 +62,10 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             }
             throw new IllegalArgumentException();
         }
+    }
+
+    public enum Event {
+        SEND, DROP, ROUTE, ERROR, RECEIVE, REPLY;
     }
 
     //
@@ -83,9 +85,9 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     private final VarDB<BigInteger> networkSn = Context.newVarDB("networkSn", BigInteger.class);
 
     private final Fees fees = new Fees("fees");
-    //Map<SourceNetwork, Map<Service, Map<SerialNumber, FeeInfo>>>
-    private final BranchDB<String,BranchDB<String,DictDB<BigInteger, FeeInfo>>> responseFeeInfos
-            = Context.newBranchDB("responseFeeInfos", FeeInfo.class);
+    //Map<SourceNetwork, Map<Service, Map<SerialNumber, ResponseInfo>>>
+    private final BranchDB<String, BranchDB<String, DictDB<BigInteger, ResponseInfo>>> responseInfos
+            = Context.newBranchDB("responseInfos", ResponseInfo.class);
     private final BranchDB<Address, DictDB<String, BigInteger>> rewards
             = Context.newBranchDB("rewards", BigInteger.class);
     private final VarDB<Address> feeHandler = Context.newVarDB("feeHandler", Address.class);
@@ -169,46 +171,48 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         return new BSHScoreInterface(address);
     }
 
-    private void requireLink(BTPAddress link) {
-        if (!links.containsKey(link)) {
+    private void requireLink(String net) {
+        if (!links.containsKey(net)) {
             throw BMCException.notExistsLink();
         }
     }
 
-    private Link getLink(BTPAddress link) {
-        requireLink(link);
-        return links.get(link);
+    private Link getLink(String net) {
+        Link link = links.get(net);
+        if (link == null) {
+            throw BMCException.notExistsLink();
+        } else {
+            return link;
+        }
+    }
+
+    private Link getLink(BTPAddress address) {
+        Link link = links.get(address.net());
+        if (link == null || !link.getAddr().equals(address)) {
+            throw BMCException.notExistsLink();
+        }
+        return link;
     }
 
     private void putLink(Link link) {
-        links.put(link.getAddr(), link);
+        links.put(link.getAddr().net(), link);
     }
 
     @External
     public void addLink(String _link) {
         requireOwnerAccess();
         BTPAddress target = BTPAddress.valueOf(_link);
-        if (!verifiers.containsKey(target.net())) {
+        String net = target.net();
+        if (!verifiers.containsKey(net)) {
             throw BMCException.notExistsBMV();
         }
-        if (links.containsKey(target)) {
+        if (links.containsKey(net)) {
             throw BMCException.alreadyExistsLink();
         }
 
-        BTPAddress[] prevLinks = new BTPAddress[links.size()];
-        int i = 0;
-        for (BTPAddress link : links.keySet()) {
-            if (link.net().equals(target.net())) {
-                throw BMCException.alreadyExistsLink();
-            }
-            prevLinks[i++] = link;
-        }
-        InitMessage initMsg = new InitMessage();
-        initMsg.setLinks(prevLinks);
-
-        LinkMessage linkMsg = new LinkMessage();
-        linkMsg.setLink(target);
-        propagateInternal(Internal.Link, linkMsg.toBytes());
+        BTPAddress[] prevLinks = propagateInternal(new BMCMessage(
+                Internal.Link.name(),
+                new LinkMessage(target).toBytes()).toBytes());
 
         Link link = new Link();
         link.setAddr(target);
@@ -217,38 +221,40 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         link.setReachable(new ArrayList<>());
         putLink(link);
 
-        sendInternal(target, Internal.Init, initMsg.toBytes());
+        sendInternal(target, new BMCMessage(Internal.Init.name(),
+                new InitMessage(prevLinks).toBytes()).toBytes());
     }
 
     @External
     public void removeLink(String _link) {
         requireOwnerAccess();
         BTPAddress target = BTPAddress.valueOf(_link);
-        if (!links.containsKey(target)) {
+        String net = target.net();
+        Link link = links.remove(net);
+        if (link == null || !link.getAddr().equals(target)) {
             throw BMCException.notExistsLink();
         }
-        if (routes.containsNext(target)) {
+        if (routes.containsValue(net)) {
             throw BMCException.unknown("could not remove, referred by route");
         }
-        UnlinkMessage unlinkMsg = new UnlinkMessage();
-        unlinkMsg.setLink(target);
-        propagateInternal(Internal.Unlink, unlinkMsg.toBytes());
-        Link link = links.remove(target);
-        link.getRelays().clear();
 
+        link.getRelays().clear();
         BigInteger networkId = btpLinkNetworkIds.get(_link);
         if (networkId != null) {
             btpLinkNetworkIds.set(_link, null);
             btpLinkOffset.set(networkId, null);
         }
+        fees.remove(net);
 
-        fees.remove(target.net());
+        propagateInternal(new BMCMessage(
+                Internal.Unlink.name(),
+                new UnlinkMessage(target).toBytes()).toBytes());
     }
 
     @External(readonly = true)
     public Map getStatus(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
-        Link link = getLink(target);
+        Link link = getLink(target.net());
         Map<String, Object> map = new HashMap<>();
         map.put("tx_seq", link.getTxSeq());
         map.put("rx_seq", link.getRxSeq());
@@ -260,11 +266,11 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External(readonly = true)
     public String[] getLinks() {
-        List<BTPAddress> keySet = links.keySet();
-        int len = keySet.size();
+        List<Link> values = links.values();
+        int len = values.size();
         String[] links = new String[len];
         for (int i = 0; i < len; i++) {
-            links[i] = keySet.get(i).toString();
+            links[i] = values.get(i).getAddr().toString();
         }
         return links;
     }
@@ -275,50 +281,27 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (_dst.equals(_link)) {
             throw BMCException.unknown("invalid _dst");
         }
-        BTPAddress dst = BTPAddress.valueOf(_dst);
-        if (routes.containsKey(dst.net())) {
+        if (routes.containsKey(_dst)) {
             throw BMCException.unknown("already exists route");
         }
+
         //TODO [TBD] check reachable
-        BTPAddress target = BTPAddress.valueOf(_link);
-        requireLink(target);
-        routes.put(dst.net(), new Route(dst, target));
+        requireLink(_link);
+        routes.put(_dst, _link);
     }
 
     @External
     public void removeRoute(String _dst) {
         requireOwnerAccess();
-        BTPAddress dst = BTPAddress.valueOf(_dst);
-        Route old = routes.get(dst.net());
-        if (old == null || !old.getDestination().equals(dst)){
+        if (routes.remove(_dst) == null) {
             throw BMCException.unknown("not exists route");
         }
-        routes.remove(dst.net());
-        fees.remove(dst.net());
-    }
-
-    static Map<String, String> toMap(Route route) {
-        Map<String, String> map = new HashMap<>();
-        map.put("destination", route.getDestination().toString());
-        map.put("next", route.getNext().toString());
-        return map;
+        fees.remove(_dst);
     }
 
     @External(readonly = true)
     public Map getRoutes() {
-        Map<String, Map<String, String>> routeMap = new HashMap<>();
-        for(Link link : links.values()) {
-            routeMap.put(link.getAddr().net(), toMap(new Route(link.getAddr(),link.getAddr())));
-            for (BTPAddress reachable : link.getReachable()) {
-                if (!routeMap.containsKey(reachable.net())) {
-                    routeMap.put(reachable.net(), toMap(new Route(reachable,link.getAddr())));
-                }
-            }
-        }
-        for(Route route : routes.values()) {
-            routeMap.put(route.getDestination().net(), toMap(route));
-        }
-        return routeMap;
+        return routes.toMap();
     }
 
     @External
@@ -327,27 +310,23 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         if (_dst.length != _value.length) {
             throw BMCException.unknown("invalid array length");
         }
-        for (int i=0; i<_dst.length; i++){
+        for (int i = 0; i < _dst.length; i++) {
             String dstNet = _dst[i];
             BigInteger[] values = _value[i];
             if (values != null && values.length > 0) {
                 if ((values.length % 2) != 0) {
-                    throw BMCException.unknown("length of _value["+i+"] must be even");
+                    throw BMCException.unknown("length of _value[" + i + "] must be even");
                 }
-                for (int j=0; j<values.length; j++){
+                for (int j = 0; j < values.length; j++) {
                     if (values[j].compareTo(BigInteger.ZERO) < 0) {
-                        throw BMCException.unknown("_value["+i+"]["+j+"] must be positive");
+                        throw BMCException.unknown("_value[" + i + "][" + j + "] must be positive");
                     }
                 }
                 int hop = values.length / 2;
                 if (hop == 1) {
-                    if (resolveRouteFromLinks(dstNet) == null) {
-                        throw BMCException.notExistsLink();
-                    }
+                    requireLink(dstNet);
                 } else {
-                    if (routes.get(dstNet) == null && resolveRouteFromReachable(dstNet) == null) {
-                        throw BMCException.unreachable();
-                    }
+                    resolveNext(dstNet);
                 }
                 fees.put(dstNet, new Fee(dstNet, values));
             } else {
@@ -367,15 +346,15 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External(readonly = true)
     public BigInteger getFee(String _to, boolean _response) {
-        resolveRoute(_to);
+        resolveNext(_to);
         return ArrayUtil.sum(getFeeList(_to, _response));
     }
 
     @External(readonly = true)
     public BigInteger[][] getFeeTable(String[] _dst) {
         BigInteger[][] ret = new BigInteger[_dst.length][];
-        for (int i=0; i<_dst.length; i++) {
-            resolveRoute(_dst[i]);
+        for (int i = 0; i < _dst.length; i++) {
+            resolveNext(_dst[i]);
             ret[i] = getFeeList(_dst[i], true);
         }
         return ret;
@@ -396,7 +375,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             BigInteger[] feeList = feeInfo.getValues();
             if (feeList.length > 0) {
                 BigInteger sum = BigInteger.ZERO;
-                for(BigInteger v : feeList) {
+                for (BigInteger v : feeList) {
                     sum = sum.add(v);
                 }
                 collectRemainFee(feeInfo.getNetwork(), sum);
@@ -476,46 +455,34 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         return feeHandler.get();
     }
 
-    private Route resolveRouteFromLinks(String _net) {
-        int size = links.size();
-        for (int i = 0; i < size; i++) {
-            BTPAddress key = links.getKey(i);
-            if (_net.equals(key.net())) {
-                return new Route(key, key);
-            }
-        }
-        return null;
-    }
-
-    private Route resolveRouteFromReachable(String _net) {
+    private BTPAddress resolveNextFromReachable(String _net) {
         int size = links.size();
         for (int i = 0; i < size; i++) {
             Link link = links.getValue(i);
             for (BTPAddress reachable : link.getReachable()) {
                 if (_net.equals(reachable.net())) {
-                    return new Route(reachable, link.getAddr());
+                    return link.getAddr();
                 }
             }
         }
         return null;
     }
 
-    private Route resolveRoute(String _net) {
-        Route route = resolveRouteFromLinks(_net);
-        if (route != null) {
-            return route;
+    private BTPAddress resolveNext(String _net) {
+        if (links.containsKey(_net)) {
+            return links.get(_net).getAddr();
         }
 
-        route = routes.get(_net);
-        if (route != null) {
-            return route;
+        String nextNet = routes.get(_net);
+        if (nextNet != null) {
+            return getLink(nextNet).getAddr();
         }
 
-        route = resolveRouteFromReachable(_net);
-        if (route == null) {
-            throw BMCException.unreachable();
+        BTPAddress next = resolveNextFromReachable(_net);
+        if (next != null) {
+            return next;
         }
-        return route;
+        throw BMCException.unreachable();
     }
 
     @External
@@ -536,11 +503,9 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         byte[][] serializedMsgs = null;
         try {
             serializedMsgs = verifier.handleRelayMessage(btpAddr.toString(), _prev, rxSeq, msgBytes);
-        } catch (UserRevertedException e) {
-            logger.println("handleRelayMessage",
-                    "fail to verifier.handleRelayMessage",
-                    "code:", e.getCode(), "msg:", e.getMessage());
-            throw BTPException.of(e);
+        } catch (Exception e) {
+            logger.println("handleRelayMessage", "fail to verify", e.toString());
+            throw BTPException.of(e, BTPException.Type.BMV);
         }
         long msgCount = serializedMsgs.length;
 
@@ -572,37 +537,56 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                         ", err:", e.toString());
                 throw BMCException.unknown("fail to parse BTPMessage");
             }
+            //TODO [TBD] needs nsn validation?
+//                int snCompare = msg.getSn().compareTo(BigInteger.ZERO);
+//                if (isInvalidSn(snCompare, msg.getNsn().compareTo(BigInteger.ZERO))) {
+//                    throw BMCException.invalidSn();
+//                }
+
             accumulateFee(caller, msg.getFeeInfo());
-            if (btpAddr.net().equals(msg.getDst().net())) {
-                handleMessage(prev, msg);
-            } else {
-                try {
-                    Route route = resolveRoute(msg.getDst().net());
-                    sendMessage(route.getNext(), msg.toBytes());
-                } catch (BTPException e) {
-                    sendError(prev, msg, e);
+            try {
+                if (btpAddr.net().equals(msg.getDst())) {
+                    handleMessage(msg);
+                    emitBTPEvent(msg, null, Event.RECEIVE);
+                } else {
+                    BTPAddress next = resolveNext(msg.getDst());
+                    sendMessage(next, msg.toBytes());
+                    emitBTPEvent(msg, next, Event.ROUTE);
+                }
+            } catch (BTPException e) {
+                if (msg.getSn().compareTo(BigInteger.ZERO) > 0) {
+                    try {
+                        sendError(prev, msg, e);
+                    } catch (BTPException e2) {
+                        //abnormal case, if ChainScore.sendBTPMessage revert
+                        collectRemainFee(msg.getFeeInfo());
+                        emitMessageDropped(prev, rxSeq, msg, e2);
+                    }
+                } else {
+                    collectRemainFee(msg.getFeeInfo());
+                    emitMessageDropped(prev, rxSeq, msg, e);
                 }
             }
         }
     }
 
-    private void handleMessage(BTPAddress prev, BTPMessage msg) {
-        BTPAddress src = msg.getSrc();
+    private void handleMessage(BTPMessage msg) {
+        String src = msg.getSrc();
         String svc = msg.getSvc();
         BigInteger sn = msg.getSn();
         byte[] payload = msg.getPayload();
         FeeInfo feeInfo = msg.getFeeInfo();
         int snCompare = sn.compareTo(BigInteger.ZERO);
-        if (snCompare > -1) {
-            DictDB<BigInteger, FeeInfo> responseFeeInfosDictDb = null;
+        if (snCompare >= 0) {
+            DictDB<BigInteger, ResponseInfo> responseInfoDictDb = null;
             if (feeInfo != null) {
                 if (snCompare > 0) {
-                    responseFeeInfosDictDb = responseFeeInfos.at(src.net()).at(msg.getSvc());
-                    FeeInfo oldFeeInfo = responseFeeInfosDictDb.get(sn);
-                    if (oldFeeInfo != null) {
-                        collectRemainFee(oldFeeInfo);
+                    responseInfoDictDb = responseInfos.at(src).at(msg.getSvc());
+                    ResponseInfo oldInfo = responseInfoDictDb.get(sn);
+                    if (oldInfo != null) {
+                        collectRemainFee(oldInfo.getFeeInfo());
                     }
-                    responseFeeInfosDictDb.set(sn, msg.getFeeInfo());
+                    responseInfoDictDb.set(sn, new ResponseInfo(msg.getNsn(), msg.getFeeInfo()));
                 } else {
                     collectRemainFee(feeInfo);
                 }
@@ -613,49 +597,34 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                     internalHandleBTPMessage(src, sn, payload);
                 } else {
                     BSHScoreInterface service = getService(svc);
-                    service.handleBTPMessage(src.net(), svc, sn, payload);
+                    service.handleBTPMessage(src, svc, sn, payload);
                 }
             } catch (Exception e) {
-                if (responseFeeInfosDictDb != null) {
-                    responseFeeInfosDictDb.set(sn, null);
+                if (responseInfoDictDb != null) {
+                    responseInfoDictDb.set(sn, null);
                 }
-                sendError(prev, msg, toBTPException(e));
+                throw BTPException.of(e, BTPException.Type.BSH);
             }
         } else {
             sn = sn.negate();
             collectRemainFee(feeInfo);
-            long eCode = -1;
-            String eMsg = null;
             try {
                 ErrorMessage errorMsg = ErrorMessage.fromBytes(payload);
-                eCode = errorMsg.getCode();
-                eMsg = errorMsg.getMsg() == null ? "" : errorMsg.getMsg();
+                long eCode = errorMsg.getCode();
+                String eMsg = errorMsg.getMsg() == null ? "" : errorMsg.getMsg();
                 if (svc.equals(INTERNAL_SERVICE)) {
                     internalHandleBTPError(src, sn, eCode, eMsg);
                 } else {
                     BSHScoreInterface service = getService(svc);
-                    service.handleBTPError(src.toString(), svc, sn, eCode, eMsg);
+                    service.handleBTPError(src, svc, sn, eCode, eMsg);
                 }
             } catch (Exception e) {
-                BTPException be = toBTPException(e);
-                logger.println("handleMessage", "fail to handleBTPError",
-                        "code:", be.getCode(), "msg:", be.getMessage());
-                emitErrorOnBTPError(svc, sn, eCode, eMsg, be.getCode(), be.getMessage());
+                throw BTPException.of(e, BTPException.Type.BSH);
             }
         }
     }
 
-    private BTPException toBTPException(Exception e) {
-        if (e instanceof BTPException) {
-            return (BTPException)e;
-        } else if (e instanceof UserRevertedException) {
-            return BTPException.of((UserRevertedException) e);
-        } else {
-            return BTPException.unknown(e.toString());
-        }
-    }
-
-    private void internalHandleBTPMessage(BTPAddress src, BigInteger sn, byte[] msg) {
+    private void internalHandleBTPMessage(String src, BigInteger sn, byte[] msg) {
         BMCMessage bmcMsg = BMCMessage.fromBytes(msg);
         Internal internal = Internal.of(bmcMsg.getType());
         byte[] payload = bmcMsg.getPayload();
@@ -679,7 +648,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                     String receiver = claimMsg.getReceiver();
                     addReward(toAddress(receiver), btpAddr.net(), reward);
                 }
-                sendInternalResponse(src.net(), sn, ResponseMessage.CODE_SUCCESS);
+                sendInternalResponse(src, sn, ResponseMessage.CODE_SUCCESS);
                 break;
             case Response:
                 ResponseMessage responseMsg = ResponseMessage.fromBytes(payload);
@@ -689,8 +658,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
     }
 
-    private void addReachable(BTPAddress _link, BTPAddress ... reachable) {
-        Link link = getLink(_link);
+    private void addReachable(String net, BTPAddress... reachable) {
+        Link link = getLink(net);
         List<BTPAddress> list = link.getReachable();
         for (BTPAddress address : reachable) {
             if (!list.contains(address)) {
@@ -700,8 +669,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         putLink(link);
     }
 
-    private void removeReachable(BTPAddress _link, BTPAddress address) {
-        Link link = getLink(_link);
+    private void removeReachable(String net, BTPAddress address) {
+        Link link = getLink(net);
         link.getReachable().remove(address);
         putLink(link);
     }
@@ -721,24 +690,19 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
     }
 
-    private void internalHandleBTPError(BTPAddress src, BigInteger sn, long code, String msg) {
+    private void internalHandleBTPError(String src, BigInteger sn, long code, String msg) {
         logger.println("internalHandleBTPError",
                 "src:", src, "src:", sn, "code:", code, "msg:", msg);
         handleResponse(sn, false);
     }
 
-    private void emitErrorOnBTPError(String _svc, BigInteger _sn, long _code, String _msg, long _ecode, String _emsg) {
-        ErrorOnBTPError(
-                _svc,
-                _sn,
-                BigInteger.valueOf(_code),
-                _msg == null ? "" : _msg,
-                BigInteger.valueOf(_ecode),
-                _emsg == null ? "" : _emsg);
+    @External(readonly = true)
+    public BigInteger getNetworkSn() {
+        return networkSn.getOrDefault(BigInteger.ZERO);
     }
 
     private BigInteger nextNetworkSn() {
-        BigInteger sn = networkSn.getOrDefault(BigInteger.ZERO);
+        BigInteger sn = getNetworkSn();
         sn = sn.add(BigInteger.ONE);
         networkSn.set(sn);
         return sn;
@@ -763,79 +727,75 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     }
 
     private BigInteger sendMessageWithFee(String _to, String _svc, BigInteger _sn, byte[] msg, boolean isResponse) {
-        Route route = resolveRoute(_to);
+        BTPAddress next = resolveNext(_to);
         BTPMessage btpMsg = new BTPMessage();
-        btpMsg.setSrc(btpAddr);
-        btpMsg.setDst(route.getDestination());
+        btpMsg.setSrc(btpAddr.net());
+        btpMsg.setDst(_to);
         btpMsg.setSvc(_svc);
         btpMsg.setSn(isResponse ? BigInteger.ZERO : _sn);
         btpMsg.setPayload(msg);
 
-        BigInteger nsn = nextNetworkSn();
-        FeeInfo feeInfo;
+        Event event;
         if (isResponse) {
-            DictDB<BigInteger, FeeInfo> responseFeeInfosDictDb = responseFeeInfos.at(_to).at(_svc);
-            feeInfo = responseFeeInfosDictDb.get(_sn);
-            if (feeInfo == null) {
+            DictDB<BigInteger, ResponseInfo> responseInfoDictDb = responseInfos.at(_to).at(_svc);
+            ResponseInfo responseInfo = responseInfoDictDb.get(_sn);
+            if (responseInfo == null) {
                 throw BMCException.unknown("not exists response");
             }
-            responseFeeInfosDictDb.set(_sn, null);
+            responseInfoDictDb.set(_sn, null);
             collectRemainFee(btpAddr.net(), Context.getValue());
+            btpMsg.setNsn(responseInfo.getNsn().negate());
+            btpMsg.setFeeInfo(responseInfo.getFeeInfo());
+            event = Event.REPLY;
         } else {
             BigInteger[] values = getFeeList(_to, _sn.compareTo(BigInteger.ZERO) > 0);
             BigInteger remain = Context.getValue().subtract(ArrayUtil.sum(values));
-            if (remain.compareTo(BigInteger.ZERO) < 0 ) {
+            if (remain.compareTo(BigInteger.ZERO) < 0) {
                 logger.println("sendMessage", "not enough fee", remain);
                 throw BMCException.unknown("not enough fee");
             }
-            feeInfo = new FeeInfo(btpAddr.net(), values);
             collectRemainFee(btpAddr.net(), remain);
+            btpMsg.setNsn(nextNetworkSn());
+            btpMsg.setFeeInfo(new FeeInfo(btpAddr.net(), values));
+            event = Event.SEND;
         }
-
-        btpMsg.setFeeInfo(feeInfo);
-        sendMessage(route.getNext(), btpMsg);
-        return nsn;
-    }
-
-    private void sendMessage(BTPAddress next, BTPMessage msg) {
-        sendMessage(next, msg.toBytes());
+        sendMessage(next, btpMsg.toBytes());
+        emitBTPEvent(btpMsg, next, event);
+        return btpMsg.getNsn();
     }
 
     private void sendError(BTPAddress prev, BTPMessage msg, BTPException e) {
         FeeInfo feeInfo = msg.getFeeInfo();
-        if (msg.getSn().compareTo(BigInteger.ZERO) > 0) {
-            if (feeInfo != null) {
-                String feeNet = feeInfo.getNetwork();
-                BigInteger[] feeList = feeInfo.getValues();
-                if (feeNet != null && feeList != null && feeList.length > 0) {
-                    int hop = getFeeList(msg.getSrc().net(), false).length;
-                    if (hop > 0) {
-                        if (feeList.length > hop) {
-                            //swap not-consumed and to-be-consumed
-                            int remainLen = feeList.length-hop;
-                            BigInteger[] nextFeeList = new BigInteger[feeList.length];
-                            System.arraycopy(feeList, remainLen, nextFeeList, 0, hop);
-                            System.arraycopy(feeList, 0, nextFeeList, hop, remainLen);
-                            feeInfo.setValues(nextFeeList);
-                        }
+        if (feeInfo != null) {
+            String feeNet = feeInfo.getNetwork();
+            BigInteger[] feeList = feeInfo.getValues();
+            if (feeNet != null && feeList != null && feeList.length > 0) {
+                int hop = getFeeList(msg.getSrc(), false).length;
+                if (hop > 0) {
+                    if (feeList.length > hop) {
+                        //swap not-consumed and to-be-consumed
+                        int remainLen = feeList.length - hop;
+                        BigInteger[] nextFeeList = new BigInteger[feeList.length];
+                        System.arraycopy(feeList, remainLen, nextFeeList, 0, hop);
+                        System.arraycopy(feeList, 0, nextFeeList, hop, remainLen);
+                        feeInfo.setValues(nextFeeList);
                     }
                 }
             }
-            ErrorMessage errMsg = new ErrorMessage();
-            errMsg.setCode(e.getCode());
-            errMsg.setMsg(e.getMessage());
-            BTPMessage btpMsg = new BTPMessage();
-            btpMsg.setSrc(btpAddr);
-            btpMsg.setDst(msg.getSrc());
-            btpMsg.setSvc(msg.getSvc());
-            btpMsg.setSn(msg.getSn().negate());
-            btpMsg.setPayload(errMsg.toBytes());
-            btpMsg.setFeeInfo(feeInfo);
-            sendMessage(prev, btpMsg);
-        } else {
-            collectRemainFee(feeInfo);
-            //TODO emit MessageDropped(ErrorOnUnidirectionalMessage)
         }
+        ErrorMessage errMsg = new ErrorMessage();
+        errMsg.setCode(e.getCode());
+        errMsg.setMsg(e.getMessage());
+        BTPMessage btpMsg = new BTPMessage();
+        btpMsg.setSrc(btpAddr.net());
+        btpMsg.setDst(msg.getSrc());
+        btpMsg.setSvc(msg.getSvc());
+        btpMsg.setSn(msg.getSn().negate());
+        btpMsg.setPayload(errMsg.toBytes());
+        btpMsg.setNsn(msg.getNsn().negate());
+        btpMsg.setFeeInfo(feeInfo);
+        sendMessage(prev, btpMsg.toBytes());
+        emitBTPEvent(msg, prev, Event.ERROR);
     }
 
     private void sendMessage(BTPAddress next, byte[] serializedMsg) {
@@ -851,7 +811,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             } catch (Exception e) {
                 link.setTxSeq(link.getTxSeq().subtract(BigInteger.ONE));
                 putLink(link);
-                throw BMCException.unknown(e.toString());
+                throw BMCException.unknown("fail to sendBTPMessage :" + e);
             }
         }
     }
@@ -864,37 +824,50 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         sendMessageWithFee(net, INTERNAL_SERVICE, sn, bmcMessage.toBytes(), true);
     }
 
-    private void sendInternal(BTPAddress link, Internal internal, byte[] payload) {
-        BMCMessage bmcMsg = new BMCMessage();
-        bmcMsg.setType(internal.name());
-        bmcMsg.setPayload(payload);
-
+    private void sendInternal(BTPAddress next, byte[] payload) {
         BTPMessage btpMsg = new BTPMessage();
-        btpMsg.setSrc(btpAddr);
-        btpMsg.setDst(link);
+        btpMsg.setSrc(btpAddr.net());
+        btpMsg.setDst(next.net());
         btpMsg.setSvc(INTERNAL_SERVICE);
         btpMsg.setSn(BigInteger.ZERO);
-        btpMsg.setPayload(bmcMsg.toBytes());
-        sendMessage(link, btpMsg);
+        btpMsg.setPayload(payload);
+        btpMsg.setNsn(nextNetworkSn());
+        emitBTPEvent(btpMsg, next, Event.SEND);
+        sendMessage(next, btpMsg.toBytes());
     }
 
-    private void propagateInternal(Internal internal, byte[] payload) {
-        for (BTPAddress link : links.keySet()) {
-            sendInternal(link, internal, payload);
+    private BTPAddress[] propagateInternal(byte[] payload) {
+        BTPAddress[] addrs = new BTPAddress[links.size()];
+        int i = 0;
+        for (Link link : links.values()) {
+            BTPAddress next = link.getAddr();
+            addrs[i++] = next;
+            sendInternal(next, payload);
         }
+        return addrs;
     }
 
     @EventLog(indexed = 2)
     public void Message(String _next, BigInteger _seq, byte[] _msg) {
     }
 
+    private void emitBTPEvent(BTPMessage msg, BTPAddress next, Event event) {
+        BigInteger nsn = msg.getNsn();
+        String _next = next == null ? "" : next.toString();
+        if (nsn.compareTo(BigInteger.ZERO) < 0) {
+            BTPEvent(msg.getDst(), nsn.negate(), _next, event.name());
+        } else {
+            BTPEvent(msg.getSrc(), nsn, _next, event.name());
+        }
+    }
+
     @EventLog(indexed = 2)
-    public void ErrorOnBTPError(String _svc, BigInteger _sn, BigInteger _code, String _msg, BigInteger _ecode, String _emsg) {
+    public void BTPEvent(String _src, BigInteger _nsn, String _next, String _event) {
     }
 
     @External
     public void handleFragment(String _prev, String _msg, int _idx) {
-        logger.println("handleFragment", "_prev",_prev,"_idx:",_idx, "len(_msg):"+_msg.length());
+        logger.println("handleFragment", "_prev", _prev, "_idx:", _idx, "len(_msg):" + _msg.length());
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
         Relays relays = link.getRelays();
@@ -925,8 +898,8 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
             int last = Integer.parseInt(new String(fragments.get(INDEX_LAST)));
             if (_idx == 0) {
                 int total = 0;
-                byte[][] bytesArr = new byte[last+1][];
-                for(int i = 0; i < last; i++){
+                byte[][] bytesArr = new byte[last + 1][];
+                for (int i = 0; i < last; i++) {
                     bytesArr[i] = fragments.get(i + INDEX_OFFSET);
                     total += bytesArr[i].length;
                 }
@@ -938,7 +911,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
                     System.arraycopy(bytes, 0, msgBytes, pos, bytes.length);
                     pos += bytes.length;
                 }
-                logger.println("handleFragment", "handleRelayMessage","fragments:",last+1, "len:"+total);
+                logger.println("handleFragment", "handleRelayMessage", "fragments:", last + 1, "len:" + total);
                 handleRelayMessage(_prev, msgBytes);
             } else {
                 fragments.set(INDEX_NEXT, Integer.toString(_idx - 1).getBytes());
@@ -952,41 +925,63 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
         }
     }
 
+    static boolean isInvalidSn(int snCompare, int nsnCompare) {
+        return (nsnCompare == 0 ||
+                (nsnCompare > 0 && snCompare < 0) ||
+                (nsnCompare < 0 && snCompare > 0));
+    }
+
     @External
-    public void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn, String _feeNetwork, BigInteger[] _feeValues) {
+    public void dropMessage(
+            String _src, BigInteger _seq, String _svc, BigInteger _sn, BigInteger _nsn,
+            String _feeNetwork, BigInteger[] _feeValues) {
         requireOwnerAccess();
-        BTPAddress src = BTPAddress.valueOf(_src);
-        BTPAddress next = resolveRoute(src.net()).getNext();
-        Link link = getLink(next);
-        if(link.getRxSeq().add(BigInteger.ONE).compareTo(_seq) != 0) {
+        BTPAddress prev = resolveNext(_src);
+        Link link = links.get(prev.net());
+        if (link.getRxSeq().add(BigInteger.ONE).compareTo(_seq) != 0) {
             throw BMCException.unknown("invalid _seq");
         }
-        if(!services.containsKey(_svc)) {
+        if (!services.containsKey(_svc)) {
             throw BMCException.notExistsBSH();
         }
-        if(_sn.compareTo(BigInteger.ZERO) < 0) {
+        int snCompare = _sn.compareTo(BigInteger.ZERO);
+        if (isInvalidSn(snCompare, _nsn.compareTo(BigInteger.ZERO))) {
             throw BMCException.invalidSn();
         }
         link.setRxSeq(_seq);
         putLink(link);
 
         BTPMessage assumeMsg = new BTPMessage();
-        assumeMsg.setSrc(src);
-        assumeMsg.setDst(BTPAddress.parse(""));
+        assumeMsg.setSrc(_src);
+        assumeMsg.setDst("");
         assumeMsg.setSvc(_svc);
         assumeMsg.setSn(_sn);
         assumeMsg.setPayload(new byte[0]);
+        assumeMsg.setNsn(_nsn);
         if (!_feeNetwork.isEmpty()) {
             assumeMsg.setFeeInfo(new FeeInfo(_feeNetwork, _feeValues));
             accumulateFee(Context.getAddress(), assumeMsg.getFeeInfo());
         }
-        MessageDropped(next.toString(), _seq, assumeMsg.toBytes());
-        sendError(next, assumeMsg, BMCException.drop());
+        BMCException e = BMCException.drop();
+        if (snCompare > 0) {
+            sendError(prev, assumeMsg, e);
+        } else {
+            emitMessageDropped(prev, _seq, assumeMsg, e);
+        }
     }
 
-    //FIXME add reason to MessageDropped
+    private void emitMessageDropped(BTPAddress prev, BigInteger seq, BTPMessage msg, BTPException e) {
+        emitBTPEvent(msg, null, Event.DROP);
+        String emsg = e.getMessage();
+        if (emsg == null) {
+            emsg = e.toString();
+        }
+        MessageDropped(prev.toString(), seq, msg.toBytes(), e.getCode(), emsg);
+    }
+
     @EventLog(indexed = 2)
-    public void MessageDropped(String _link, BigInteger _seq, byte[] _msg) {}
+    public void MessageDropped(String _prev, BigInteger _seq, byte[] _msg, long _ecode, String _emsg) {
+    }
 
     @External
     public void addRelay(String _link, Address _addr) {
@@ -1073,7 +1068,7 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
     //FIXME fallback is required?
     @Payable
     public void fallback() {
-        logger.println("fallback","value:", Context.getValue());
+        logger.println("fallback", "value:", Context.getValue());
     }
 
     @External
@@ -1106,13 +1101,13 @@ public class BTPMessageCenter implements BMC, BMCEvent, ICONSpecific, OwnerManag
 
     @External(readonly = true)
     public long getBTPLinkNetworkId(String _link) {
-        requireLink(BTPAddress.valueOf(_link));
+        getLink(BTPAddress.valueOf(_link));
         return btpLinkNetworkIds.getOrDefault(_link, BigInteger.ZERO).longValue();
     }
 
     @External(readonly = true)
     public long getBTPLinkOffset(String _link) {
-        requireLink(BTPAddress.valueOf(_link));
+        getLink(BTPAddress.valueOf(_link));
         BigInteger networkId = btpLinkNetworkIds.get(_link);
         if (networkId == null) {
             throw BMCException.unknown("not exists networkId");

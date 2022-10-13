@@ -27,7 +27,9 @@ import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -82,12 +84,27 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 .collect(Collectors.toList());
     }
 
+    static Consumer<TransactionResult> claimRewardEvent(
+            Consumer<ClaimRewardEventLog> consumer) {
+        return eventLogChecker(
+                ClaimRewardEventLog::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> messageDroppedEvent(
             Consumer<MessageDroppedEventLog> consumer) {
         return eventLogChecker(
                 MessageDroppedEventLog::eventLogs,
                 consumer);
     }
+
+    static Consumer<TransactionResult> btpEvent(
+            Consumer<BTPEventEventLog> consumer) {
+        return eventLogChecker(
+                BTPEventEventLog::eventLogs,
+                consumer);
+    }
+
 
     static BMCStatus getStatus(BMC bmc, String _link) {
         ObjectMapper mapper = client.mapper();

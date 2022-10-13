@@ -73,29 +73,31 @@ public interface ICONSpecific {
     BMRStatus[] getRelays(String _link);
 
     /**
-     * Drop the next message that to be relayed from a specific network
+     * Drops the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
-     * @param _src        String ( BTP Address of source BMC )
-     * @param _seq        Integer ( number of the message from connected BMC )
-     * @param _svc        String ( number of the message from connected BMC )
-     * @param _sn         Integer ( serial number of the message, must be positive or zero )
+     * @param _src        String ( Network Address of source BMC )
+     * @param _seq        Integer ( sequence number of the message from connected BMC )
+     * @param _svc        String ( the name of the service of the message )
+     * @param _sn         Integer ( serial number of the message )
+     * @param _nsn        Integer ( network serial number of the message )
      * @param _feeNetwork String ( Network Address of the relay fee of the message )
      * @param _feeValues  Integer[] ( list of relay fees of the message )
      */
     @External
-    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn, String _feeNetwork, BigInteger[] _feeValues);
+    void dropMessage(String _src, BigInteger _seq, String _svc, BigInteger _sn, BigInteger _nsn, String _feeNetwork, BigInteger[] _feeValues);
 
     /**
      * (EventLog) Drop the message of the connected BMC
-     * if sn of message is less than zero
      *
-     * @param _link String ( BTP Address of connected BMC )
+     * @param _prev String ( BTP Address of the previous BMC )
      * @param _seq  Integer ( sequence number of the message from connected BMC )
      * @param _msg  Bytes ( serialized bytes of BTP Message )
+     * @param _ecode Integer ( error code )
+     * @param _emsg  String ( error message )
      */
     @EventLog(indexed = 2)
-    void MessageDropped(String _link, BigInteger _seq, byte[] _msg);
+    void MessageDropped(String _prev, BigInteger _seq, byte[] _msg, long _ecode, String _emsg);
 
     /**
      * Registers the BTPLink to connect that use the BTP-Block instead of Event-Log to send message.

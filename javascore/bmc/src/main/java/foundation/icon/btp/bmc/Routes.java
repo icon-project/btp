@@ -16,27 +16,14 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.data.EnumerableDictDB;
 import foundation.icon.score.util.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class Routes extends EnumerableDictDB<String, Route> {
+public class Routes extends EnumerableDictDB<String, String> {
     private static final Logger logger = Logger.getLogger(Routes.class);
 
     public Routes(String id) {
-        super(id, String.class, Route.class);
-    }
-
-    public boolean containsNext(BTPAddress target) {
-        for (Route route : values()) {
-            if (route.getNext().equals(target)) {
-                return true;
-            }
-        }
-        return false;
+        super(id, String.class, String.class);
     }
 
 }

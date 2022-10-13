@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,14 +66,15 @@ public class MessageTest implements BMCIntegrationTest {
         bmcMessage.setType(BTPMessageCenter.Internal.Init.name());
         bmcMessage.setPayload(initMessage.toBytes());
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
         msg.setSn(BigInteger.ZERO);
         msg.setPayload(bmcMessage.toBytes());
+        msg.setNsn(BigInteger.ONE);
         msg.setFeeInfo(null);
         bmc.handleRelayMessage(
-                msg.getSrc().toString(),
+                link.toString(),
                 mockRelayMessage(msg).toBase64String());
     }
 
@@ -125,7 +127,28 @@ public class MessageTest implements BMCIntegrationTest {
         assertEquals(o1.getSvc(), o2.getSvc());
         assertEquals(o1.getSn(), o2.getSn());
         assertArrayEquals(o1.getPayload(), o2.getPayload());
+        assertEquals(o1.getNsn(), o2.getNsn());
         assertEqualsFeeInfo(o1.getFeeInfo(), o2.getFeeInfo());
+    }
+
+    static Consumer<TransactionResult> btpEventChecker(
+            BTPMessage msg, BTPAddress next, BTPMessageCenter.Event event) {
+        if (msg.getNsn().compareTo(BigInteger.ZERO) > 0) {
+            return btpEventChecker(msg.getSrc(), msg.getNsn(), next, event);
+        } else {
+            return btpEventChecker(msg.getDst(), msg.getNsn().negate(), next, event);
+        }
+    }
+
+    static Consumer<TransactionResult> btpEventChecker(
+            String src, BigInteger nsn, BTPAddress next, BTPMessageCenter.Event event) {
+        return BMCIntegrationTest.btpEvent(
+                (el) -> {
+                    assertEquals(src, el.getSrc());
+                    assertEquals(nsn, el.getNsn());
+                    assertEquals(next == null ? "" : next.toString(), el.getNext());
+                    assertEquals(event.name(), el.getEvent());
+                });
     }
 
     @ParameterizedTest
@@ -137,19 +160,26 @@ public class MessageTest implements BMCIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
         FeeInfo feeInfo = new FeeInfo(btpAddress.net(), emptyFeeValues);
 
+        BigInteger nsn = bmc.getNetworkSn();
         BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
             assertEquals(next.toString(), el.getNext());
             assertEquals(txSeq.add(BigInteger.ONE), el.getSeq());
             BTPMessage btpMessage = el.getMsg();
-            assertEquals(btpAddress, btpMessage.getSrc());
-            assertEquals(dst, btpMessage.getDst());
+            assertEquals(btpAddress.net(), btpMessage.getSrc());
+            assertEquals(dst.net(), btpMessage.getDst());
             assertEquals(svc, btpMessage.getSvc());
             assertEquals(sn, btpMessage.getSn());
             assertArrayEquals(payload, btpMessage.getPayload());
+            assertEquals(nsn.add(BigInteger.ONE), btpMessage.getNsn());
             assertEqualsFeeInfo(feeInfo, btpMessage.getFeeInfo());
         });
+        checker = checker.andThen(btpEventChecker(
+                btpAddress.net(),
+                nsn.add(BigInteger.ONE),
+                next,
+                BTPMessageCenter.Event.SEND));
         MockBSHIntegrationTest.mockBSH.sendMessage(
                 checker,
                 bmc._address(),
@@ -229,40 +259,40 @@ public class MessageTest implements BMCIntegrationTest {
             BTPAddress src, BTPAddress dst, BTPAddress prev, BTPAddress next,
             String svc, BigInteger sn, BTPException expectBTPError) {
         System.out.println(display);
+        int snCompare = sn.compareTo(BigInteger.ZERO);
+        if (snCompare < 0) {
+            throw new IllegalArgumentException("sn should be positive or zero");
+        }
+
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(src);
-        msg.setDst(dst);
+        msg.setSrc(src.net());
+        msg.setDst(dst.net());
         msg.setSvc(svc);
         msg.setSn(sn);
         msg.setPayload(Faker.btpLink().toBytes());
+        msg.setNsn(BigInteger.ONE);
         msg.setFeeInfo(new FeeInfo(src.net(), emptyFeeValues));
 
         System.out.println("handleRelayMessageShouldIncreaseRxSeq");
         Consumer<TransactionResult> checker = rxSeqChecker(prev);
         if (expectBTPError != null) {
-            System.out.println("handleRelayMessageShouldReplyBTPError");
-            checker = checker.andThen(replyBTPErrorChecker(prev, msg, expectBTPError));
+            if (snCompare > 0) {
+                System.out.println("handleRelayMessageShouldReplyBTPError");
+                checker = checker.andThen(replyBTPErrorChecker(prev, msg, expectBTPError));
+            } else {//snCompare == 0
+                System.out.println("handleRelayMessageShouldDrop");
+                checker = checker.andThen(dropChecker(prev, msg, expectBTPError));
+            }
         } else {
             if (!dst.equals(btpAddress)) {
-                if (next != null) {
-                    System.out.println("handleRelayMessageShouldSendToNext");
-                    checker = checker.andThen(routeChecker(next, msg));
-                } else {
-                    System.out.println("handleRelayMessageShouldDrop");
-//                    checker = checker.andThen(dropChecker(prev, msg));
-                }
+                System.out.println("handleRelayMessageShouldSendToNext");
+                checker = checker.andThen(routeChecker(next, msg));
             } else {
-                if (svc.equals(MessageTest.svc)) {
-                    System.out.println("handleRelayMessageShouldCallHandleBTPMessage");
-                    checker = checker.andThen(handleBTPMessageChecker(msg));
-                    if (sn.compareTo(BigInteger.ZERO) > 0) {
-                        //handleRelayMessageShouldStoreFeeInfo
-                        System.out.println("handleRelayMessageShouldStoreResponse");
-                        checker = checker.andThen(storeFeeInfoChecker(prev, msg));
-                    }
-                } else {
-                    System.out.println("handleRelayMessageShouldDrop");
-//                    checker = checker.andThen(dropChecker(prev, msg));
+                System.out.println("handleRelayMessageShouldCallHandleBTPMessage");
+                checker = checker.andThen(handleBTPMessageChecker(msg));
+                if (snCompare > 0) {
+                    System.out.println("handleRelayMessageShouldStoreResponse");
+                    checker = checker.andThen(responseChecker(prev, msg));
                 }
             }
         }
@@ -285,11 +315,11 @@ public class MessageTest implements BMCIntegrationTest {
     static Consumer<TransactionResult> handleBTPMessageChecker(
             final BTPMessage msg) {
         return MockBSHIntegrationTest.handleBTPMessageEvent((el) -> {
-            assertEquals(msg.getSrc().net(), el.getFrom());
+            assertEquals(msg.getSrc(), el.getFrom());
             assertEquals(msg.getSvc(), el.getSvc());
             assertEquals(msg.getSn(), el.getSn());
             assertArrayEquals(msg.getPayload(), el.getMsg());
-        });
+        }).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.RECEIVE));
     }
 
     static Consumer<TransactionResult> sendMessageChecker(
@@ -305,13 +335,21 @@ public class MessageTest implements BMCIntegrationTest {
 
     static Consumer<TransactionResult> routeChecker(
             final BTPAddress next, final BTPMessage msg) {
+        return routeChecker(next, msg, (v) -> v).andThen(
+                btpEventChecker(msg, next, BTPMessageCenter.Event.ROUTE));
+    }
+
+    static Consumer<TransactionResult> routeChecker(
+            final BTPAddress next, final BTPMessage msg,
+            Function<FeeInfo, FeeInfo> feeInfoSupplier) {
         BTPMessage routeMsg = new BTPMessage();
         routeMsg.setSrc(msg.getSrc());
         routeMsg.setDst(msg.getDst());
         routeMsg.setSvc(msg.getSvc());
         routeMsg.setSn(msg.getSn());
         routeMsg.setPayload(msg.getPayload());
-        routeMsg.setFeeInfo(msg.getFeeInfo());
+        routeMsg.setNsn(msg.getNsn());
+        routeMsg.setFeeInfo(feeInfoSupplier.apply(msg.getFeeInfo()));
         return sendMessageChecker(next, routeMsg);
     }
 
@@ -322,20 +360,35 @@ public class MessageTest implements BMCIntegrationTest {
         return errMsg;
     }
 
-    Consumer<TransactionResult> replyBTPErrorChecker(
+    static Consumer<TransactionResult> replyBTPErrorChecker(
             final BTPAddress prev, final BTPMessage msg, final BTPException exception) {
+        return replyBTPErrorChecker(prev, msg, exception, (v) -> v);
+    }
+
+    static Consumer<TransactionResult> replyBTPErrorChecker(
+            final BTPAddress prev, final BTPMessage msg, final BTPException exception,
+            Function<FeeInfo, FeeInfo> feeInfoSupplier) {
         BTPMessage replyMsg = new BTPMessage();
-        replyMsg.setSrc(btpAddress);
+        replyMsg.setSrc(btpAddress.net());
         replyMsg.setDst(msg.getSrc());
         replyMsg.setSvc(msg.getSvc());
         replyMsg.setSn(msg.getSn().negate());
         replyMsg.setPayload(toErrorMessage(exception).toBytes());
-        replyMsg.setFeeInfo(msg.getFeeInfo());
-        return sendMessageChecker(prev, replyMsg);
+        replyMsg.setNsn(msg.getNsn().negate());
+        replyMsg.setFeeInfo(feeInfoSupplier.apply(msg.getFeeInfo()));
+        return sendMessageChecker(prev, replyMsg).andThen(
+                btpEventChecker(msg.getSrc(), msg.getNsn(), prev, BTPMessageCenter.Event.ERROR));
     }
 
-    Consumer<TransactionResult> storeFeeInfoChecker(
+    static Consumer<TransactionResult> responseChecker(
             final BTPAddress prev, final BTPMessage msg) {
+        return responseChecker(prev, msg, (v) ->
+                new FeeInfo(v.getNetwork(), emptyFeeValues));
+    }
+
+    static Consumer<TransactionResult> responseChecker(
+            final BTPAddress prev, final BTPMessage msg,
+            Function<FeeInfo, FeeInfo> feeInfoSupplier) {
         return (txr) -> {
             BTPMessage resp = new BTPMessage();
             resp.setSrc(msg.getDst());
@@ -343,27 +396,28 @@ public class MessageTest implements BMCIntegrationTest {
             resp.setSvc(msg.getSvc());
             resp.setSn(BigInteger.ZERO);
             resp.setPayload(msg.getPayload());
-            resp.setFeeInfo(new FeeInfo(
-                    msg.getFeeInfo().getNetwork(),
-                    emptyFeeValues));
-            Consumer<TransactionResult> checker = sendMessageChecker(
-                    prev, resp);
+            resp.setNsn(msg.getNsn().negate());
+            resp.setFeeInfo(feeInfoSupplier.apply(msg.getFeeInfo()));
+            Consumer<TransactionResult> checker = sendMessageChecker(prev, resp)
+                    .andThen(btpEventChecker(msg.getSrc(), msg.getNsn(), prev, BTPMessageCenter.Event.REPLY));
             MockBSHIntegrationTest.mockBSH.sendMessage(
                     checker,
                     bmc._address(),
-                    resp.getDst().net(), resp.getSvc(), msg.getSn().negate(), resp.getPayload());
+                    resp.getDst(), resp.getSvc(), msg.getSn().negate(), resp.getPayload());
         };
     }
 
     static Consumer<TransactionResult> dropChecker(
-            final BTPAddress prev, final BTPMessage msg) {
+            final BTPAddress prev, final BTPMessage msg, final BTPException e) {
         BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, prev.toString())
                 .getRx_seq();
         return BMCIntegrationTest.messageDroppedEvent((el) -> {
-            assertEquals(prev.toString(), el.getLink());
+            assertEquals(prev.toString(), el.getPrev());
             assertEquals(rxSeq.add(BigInteger.ONE), el.getSeq());
             assertEqualsBTPMessage(msg, el.getMsg());
-        });
+            assertEquals(BigInteger.valueOf(e.getCode()), el.getEcode());
+            assertEquals(e.getMessage(), el.getEmsg());
+        }).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.DROP));
     }
 
     static Stream<Arguments> handleRelayMessageShouldSuccessArguments() {
@@ -382,7 +436,7 @@ public class MessageTest implements BMCIntegrationTest {
                         "unidirectionalHandleRelayMessageShouldNotReplyBTPError",
                         link, btpAddress, link, null,
                         Faker.btpService(), BigInteger.ZERO,
-                        null),
+                        BMCException.notExistsBSH()),
                 Arguments.of(
                         "bidirectionalHandleRelayMessageShouldReplyBTPError",
                         link, btpAddress, link, null,
@@ -392,12 +446,12 @@ public class MessageTest implements BMCIntegrationTest {
                         "handleRelayMessageInIntermediate",
                         secondLink, link, secondLink, link,
                         svc, BigInteger.ZERO,
-                        null),
+                        null, BTPMessageCenter.Event.ROUTE),
                 Arguments.of(
                         "handleRelayMessageShouldNotReplyBTPErrorInIntermediate",
                         secondLink, Faker.btpLink(), secondLink, null,
                         svc, BigInteger.ZERO,
-                        null),
+                        BMCException.unreachable()),
                 Arguments.of(
                         "handleRelayMessageShouldReplyBTPErrorInIntermediate",
                         secondLink, Faker.btpLink(), secondLink, null,
@@ -410,22 +464,23 @@ public class MessageTest implements BMCIntegrationTest {
     void handleRelayMessageShouldCallHandleBTPError() {
         ErrorMessage errorMsg = toErrorMessage(BMCException.unknown("error"));
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(svc);
         msg.setSn(BigInteger.ONE.negate());
         msg.setPayload(errorMsg.toBytes());
+        msg.setNsn(BigInteger.ONE.negate());
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), emptyFeeValues));
         Consumer<TransactionResult> checker = MockBSHIntegrationTest.handleBTPErrorEvent(
                 (el) -> {
-                    assertEquals(msg.getSrc().toString(), el.getSrc());
+                    assertEquals(msg.getSrc(), el.getSrc());
                     assertEquals(msg.getSvc(), el.getSvc());
                     assertEquals(msg.getSn().negate(), el.getSn());
                     assertEquals(errorMsg.getCode(), el.getCode());
                     assertEquals(errorMsg.getMsg(), el.getMsg());
                 }
-        );
+        ).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.RECEIVE));
         bmc.handleRelayMessage(
                 checker,
                 link.toString(),
@@ -434,11 +489,12 @@ public class MessageTest implements BMCIntegrationTest {
 
     static BTPMessage btpMessageForSuccess(BTPAddress src) {
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(src);
-        msg.setDst(btpAddress);
+        msg.setSrc(src.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(svc);
         msg.setSn(BigInteger.ONE);
         msg.setPayload(Faker.btpLink().toBytes());
+        msg.setNsn(BigInteger.ONE);
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), emptyFeeValues));
         return msg;
@@ -516,44 +572,48 @@ public class MessageTest implements BMCIntegrationTest {
     @MethodSource("dropMessageShouldSuccessArguments")
     void dropMessageShouldSuccess(
             String display,
-            BigInteger sn) {
+            BigInteger sn, BigInteger nsn) {
         System.out.println(display);
 
-        BTPMessage assumeMsg = new BTPMessage();
-        assumeMsg.setSrc(link);
-        assumeMsg.setSvc(svc);
-        assumeMsg.setDst(BTPAddress.parse(""));
-        assumeMsg.setSn(sn);
-        assumeMsg.setPayload(new byte[0]);
-        assumeMsg.setFeeInfo(new FeeInfo(
+        BTPMessage msg = new BTPMessage();
+        msg.setSrc(link.net());
+        msg.setDst("");
+        msg.setSvc(svc);
+        msg.setSn(sn);
+        msg.setPayload(new byte[0]);
+        msg.setNsn(nsn);
+        msg.setFeeInfo(new FeeInfo(
                 link.net(), emptyFeeValues));
 
         System.out.println("dropMessageShouldIncreaseRxSeqAndDrop");
         BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
                 .getRx_seq();
-        Consumer<TransactionResult> checker = rxSeqChecker(link)
-                .andThen(dropChecker(link, assumeMsg));
+        Consumer<TransactionResult> checker = rxSeqChecker(link);
         if (sn.compareTo(BigInteger.ZERO) > 0) {
             System.out.println("dropMessageShouldReplyBTPError");
-            checker = checker.andThen(replyBTPErrorChecker(link, assumeMsg, BMCException.drop()));
+            checker = checker.andThen(replyBTPErrorChecker(link, msg, BMCException.drop()));
+        } else {
+            checker = checker.andThen(dropChecker(link, msg, BMCException.drop()));
         }
         iconSpecific.dropMessage(checker,
-                assumeMsg.getSrc().toString(),
-                rxSeq.add(BigInteger.ONE),
-                assumeMsg.getSvc(),
-                sn,
-                assumeMsg.getFeeInfo().getNetwork(),
-                assumeMsg.getFeeInfo().getValues());
+                msg.getSrc(), rxSeq.add(BigInteger.ONE), msg.getSvc(), sn, nsn,
+                msg.getFeeInfo().getNetwork(), msg.getFeeInfo().getValues());
     }
 
     static Stream<Arguments> dropMessageShouldSuccessArguments() {
         return Stream.of(
                 Arguments.of(
                         "unidirectionalDropMessage",
-                        BigInteger.ZERO),
+                        BigInteger.ZERO, BigInteger.ONE),
                 Arguments.of(
                         "bidirectionalDropMessage",
-                        BigInteger.ONE)
+                        BigInteger.ONE, BigInteger.ONE),
+                Arguments.of(
+                        "replyBTPErrorDropMessage",
+                        BigInteger.ONE.negate(), BigInteger.ONE.negate()),
+                Arguments.of(
+                        "replyDropMessage",
+                        BigInteger.ZERO, BigInteger.ONE.negate())
         );
     }
 
@@ -563,13 +623,14 @@ public class MessageTest implements BMCIntegrationTest {
     void dropMessageShouldRevert(
             String display,
             BTPException exception,
-            BTPAddress src, String svc, BigInteger sn) {
+            String src, BigInteger diffSeq, String svc, BigInteger sn, BigInteger nsn) {
         System.out.println(display);
         BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
                 .getRx_seq();
         AssertBTPException.assertBTPException(exception, () ->
                 iconSpecific.dropMessage(
-                        src.toString(), rxSeq.add(BigInteger.ONE), svc, sn, "", new BigInteger[]{}));
+                        src, rxSeq.add(diffSeq), svc, sn, nsn,
+                        "", new BigInteger[]{}));
     }
 
     static Stream<Arguments> dropMessageShouldRevertArguments() {
@@ -577,34 +638,53 @@ public class MessageTest implements BMCIntegrationTest {
                 Arguments.of(
                         "dropMessageShouldRevertUnreachable",
                         BMCException.unreachable(),
-                        Faker.btpLink(),
+                        Faker.btpNetwork(),
+                        BigInteger.ONE,
                         svc,
-                        BigInteger.ZERO),
+                        BigInteger.ZERO, BigInteger.ONE),
+                Arguments.of(
+                        "dropMessageShouldRevertInvalidSeqIfLessThan",
+                        BMCException.unknown("invalid _seq"),
+                        link.net(),
+                        BigInteger.ZERO,
+                        svc,
+                        BigInteger.ZERO, BigInteger.ONE),
+                Arguments.of(
+                        "dropMessageShouldRevertInvalidSeqIfGreaterThan",
+                        BMCException.unknown("invalid _seq"),
+                        link.net(),
+                        BigInteger.TWO,
+                        svc,
+                        BigInteger.ZERO, BigInteger.ONE),
                 Arguments.of(
                         "dropMessageShouldRevertNotExistsBSH",
                         BMCException.notExistsBSH(),
-                        link,
+                        link.net(),
+                        BigInteger.ONE,
                         Faker.btpService(),
-                        BigInteger.ZERO),
+                        BigInteger.ZERO, BigInteger.ONE),
                 Arguments.of(
-                        "dropMessageShouldRevertInvalidSn",
+                        "dropMessageShouldRevertInvalidSnIfZeroNsn",
                         BMCException.invalidSn(),
-                        link,
+                        link.net(),
+                        BigInteger.ONE,
                         svc,
-                        BigInteger.ONE.negate())
+                        BigInteger.ZERO, BigInteger.ZERO),
+                Arguments.of(
+                        "dropMessageShouldRevertInvalidSnIfNegativeSnAndPositiveNsn",
+                        BMCException.invalidSn(),
+                        link.net(),
+                        BigInteger.ONE,
+                        svc,
+                        BigInteger.ONE.negate(), BigInteger.ONE),
+                Arguments.of(
+                        "dropMessageShouldRevertInvalidSnIfPositiveSnAndNegativeNsn",
+                        BMCException.invalidSn(),
+                        link.net(),
+                        BigInteger.ONE,
+                        svc,
+                        BigInteger.ONE, BigInteger.ONE.negate())
         );
     }
 
-    @Test
-    void dropMessageShouldRevertInvalidSeq() {
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
-                .getRx_seq();
-        String src = link.toString();
-        BigInteger sn = BigInteger.ZERO;
-        FeeInfo feeInfo = new FeeInfo(link.net(), emptyFeeValues);
-        AssertBMCException.assertUnknown(() -> iconSpecific.dropMessage(
-                src, rxSeq, svc, sn, feeInfo.getNetwork(), feeInfo.getValues()));
-        AssertBMCException.assertUnknown(() -> iconSpecific.dropMessage(
-                src, rxSeq.add(BigInteger.TWO), svc, sn, feeInfo.getNetwork(), feeInfo.getValues()));
-    }
 }

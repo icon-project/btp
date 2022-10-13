@@ -26,7 +26,6 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.test.ICXTransferEventLog;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import foundation.icon.score.util.ArrayUtil;
 import org.junit.jupiter.api.AfterAll;
@@ -91,11 +90,12 @@ public class RewardTest implements BMCIntegrationTest {
 
     static BTPMessage btpMessageForReward(String net, BigInteger[] values) {
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(svc);
         msg.setSn(BigInteger.ZERO);
         msg.setPayload(Faker.btpLink().toBytes());
+        msg.setNsn(BigInteger.ONE);
         msg.setFeeInfo(new FeeInfo(net, values));
         return msg;
     }
@@ -142,6 +142,17 @@ public class RewardTest implements BMCIntegrationTest {
         };
     }
 
+    static Consumer<TransactionResult> claimRewardEventChecker(
+            String net, String receiver, BigInteger amount, AtomicReference<BigInteger> snContainer) {
+        return BMCIntegrationTest.claimRewardEvent(
+                (el) -> {
+                    assertEquals(net, el.getNetwork());
+                    assertEquals(receiver, el.getReceiver());
+                    assertEquals(amount, el.getAmount());
+                    snContainer.set(el.getSn());
+                });
+    }
+
     @Test
     void claimRewardShouldSendClaimRewardMessageAndHandleRelayMessageShouldRefundRewardIfError() {
         System.out.println("claimRewardShouldSendClaimRewardMessage");
@@ -153,14 +164,7 @@ public class RewardTest implements BMCIntegrationTest {
         AtomicReference<BigInteger> sn = new AtomicReference<>();
         Consumer<TransactionResult> checker = claimRewardMessageChecker(reward, receiver)
                 .andThen(rewardConsumedChecker(feeNetwork, isRemain))
-                .andThen(BMCIntegrationTest.eventLogChecker(
-                        ClaimRewardEventLog::eventLogs,
-                        (el) -> {
-                            assertEquals(feeNetwork, el.getNetwork());
-                            assertEquals(receiver, el.getReceiver());
-                            assertEquals(reward, el.getAmount());
-                            sn.set(el.getSn());
-                        }));
+                .andThen(claimRewardEventChecker(feeNetwork, receiver, reward, sn));
         bmc.claimReward(checker,
                 bmc.getFee(feeNetwork, true),
                 feeNetwork, receiver);
@@ -168,11 +172,12 @@ public class RewardTest implements BMCIntegrationTest {
         System.out.println("handleRelayMessageShouldRefundRewardIfError");
         ErrorMessage errorMsg = MessageTest.toErrorMessage(BMCException.unknown("error"));
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
         msg.setSn(sn.get().negate());
         msg.setPayload(errorMsg.toBytes());
+        msg.setNsn(BigInteger.ONE.negate());
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
         bmc.handleRelayMessage(link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
@@ -183,11 +188,12 @@ public class RewardTest implements BMCIntegrationTest {
         ClaimRewardMessage claimRewardMessage = new ClaimRewardMessage(amount, receiver);
         BMCMessage bmcMessage = new BMCMessage(BTPMessageCenter.Internal.ClaimReward.name(), claimRewardMessage.toBytes());
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
         msg.setSn(BigInteger.ONE);
         msg.setPayload(bmcMessage.toBytes());
+        msg.setNsn(BigInteger.ONE);
         msg.setFeeInfo(new FeeInfo(
                 link.net(), MessageWithFeeTest.reverse(linkFee.getValues())));
         return msg;
@@ -295,14 +301,7 @@ public class RewardTest implements BMCIntegrationTest {
         AtomicReference<BigInteger> sn = new AtomicReference<>();
         Consumer<TransactionResult> checker = claimRewardMessageChecker(reward, receiver)
                 .andThen(rewardConsumedChecker(feeNetwork, isRemain))
-                .andThen(BMCIntegrationTest.eventLogChecker(
-                        ClaimRewardEventLog::eventLogs,
-                        (el) -> {
-                            assertEquals(feeNetwork, el.getNetwork());
-                            assertEquals(receiver, el.getReceiver());
-                            assertEquals(reward, el.getAmount());
-                            sn.set(el.getSn());
-                        }));
+                .andThen(claimRewardEventChecker(feeNetwork, receiver, reward, sn));
         bmcWithTester.claimReward(checker,
                 bmc.getFee(feeNetwork, true),
                 feeNetwork, receiver);
@@ -310,11 +309,12 @@ public class RewardTest implements BMCIntegrationTest {
         System.out.println("handleRelayMessageShouldRefundRewardIfError");
         ErrorMessage errorMsg = MessageTest.toErrorMessage(BMCException.unknown("error"));
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link);
-        msg.setDst(btpAddress);
+        msg.setSrc(link.net());
+        msg.setDst(btpAddress.net());
         msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
         msg.setSn(sn.get().negate());
         msg.setPayload(errorMsg.toBytes());
+        msg.setNsn(BigInteger.ONE.negate());
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
         bmc.handleRelayMessage(link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());

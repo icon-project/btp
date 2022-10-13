@@ -26,42 +26,35 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RouteManagementTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
-    static BTPAddress dst = BTPIntegrationTest.Faker.btpLink();
+    static String dst = BTPIntegrationTest.Faker.btpNetwork();
 
     @SuppressWarnings("unchecked")
-    static boolean isExistsRoute(BTPAddress dst, BTPAddress link) {
+    static boolean isExistsRoute(String dst, String link) {
         System.out.println(bmc.getRoutes());
         return ScoreIntegrationTest.contains(
-                bmc.getRoutes(), dst.net(),
-                (obj) -> {
-                    Map<String, String> map = (Map<String, String>) obj;
-                    return map.get("destination").equals(dst.toString()) &&
-                            map.get("next").equals(link.toString());
-                });
+                bmc.getRoutes(), dst, link::equals);
     }
 
-    static boolean isExistsRoute(BTPAddress dst) {
-        return bmc.getRoutes().containsKey(dst.net());
+    static boolean isExistsRoute(String dst) {
+        return bmc.getRoutes().containsKey(dst);
     }
 
-    static void addRoute(BTPAddress dst, BTPAddress link) {
-        bmc.addRoute(dst.toString(), link.toString());
+    static void addRoute(String dst, String link) {
+        bmc.addRoute(dst, link);
         assertTrue(isExistsRoute(dst, link));
     }
 
-    static void removeRoute(BTPAddress dst) {
-        bmc.removeRoute(dst.toString());
+    static void removeRoute(String dst) {
+        bmc.removeRoute(dst);
         assertFalse(isExistsRoute(dst));
     }
 
-    static void clearRoute(BTPAddress dst) {
+    static void clearRoute(String dst) {
         if (isExistsRoute(dst)) {
             System.out.println("clear route dst:" + dst);
             removeRoute(dst);
@@ -92,25 +85,25 @@ public class RouteManagementTest implements BMCIntegrationTest {
 
     @Test
     void addRouteShouldSuccess() {
-        addRoute(dst, link);
+        addRoute(dst, link.net());
     }
 
     @Test
     void addRouteShouldRevertAlreadyExists() {
-        addRoute(dst, link);
+        addRoute(dst, link.net());
 
-        AssertBMCException.assertUnknown(() -> addRoute(dst, link));
+        AssertBMCException.assertUnknown(() -> addRoute(dst, link.net()));
     }
 
     @Test
     void addRouteShouldRevertNotExistsLink() {
         AssertBMCException.assertNotExistsLink(
-                () -> addRoute(dst, Faker.btpLink()));
+                () -> addRoute(dst, Faker.btpNetwork()));
     }
 
     @Test
     void removeRouteShouldSuccess() {
-        addRoute(dst, link);
+        addRoute(dst, link.net());
 
         removeRoute(dst);
     }
@@ -122,7 +115,7 @@ public class RouteManagementTest implements BMCIntegrationTest {
 
     @Test
     void removeLinkShouldRevertReferred() {
-        addRoute(dst, link);
+        addRoute(dst, link.net());
 
         AssertBMCException.assertUnknown(() -> LinkManagementTest.removeLink(link.toString()));
     }

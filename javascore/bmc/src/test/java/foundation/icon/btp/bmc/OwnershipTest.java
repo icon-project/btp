@@ -34,6 +34,7 @@ public class OwnershipTest implements BMCIntegrationTest {
     static Address address = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
     static String string = "";
     static String btpAddress = Faker.btpLink().toString();
+    static String netAddress = Faker.btpNetwork();
     static int intVal = 0;
     static long longVal = 0;
     static BigInteger bigInteger = BigInteger.ZERO;
@@ -166,12 +167,12 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void addRouteShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addRoute(btpAddress, btpAddress));
+        assertUnauthorized(() -> bmcWithTester.addRoute(netAddress, netAddress));
     }
 
     @Test
     void removeRouteShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeRoute(btpAddress));
+        assertUnauthorized(() -> bmcWithTester.removeRoute(netAddress));
     }
 
     @Test
@@ -186,7 +187,7 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void dropMessageShouldRevertUnauthorized() {
-        assertUnauthorized(() -> iconSpecificWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger, "", new BigInteger[]{}));
+        assertUnauthorized(() -> iconSpecificWithTester.dropMessage(netAddress, bigInteger, string, bigInteger, bigInteger, "", new BigInteger[]{}));
     }
 
     @Test
@@ -201,7 +202,7 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void setFeeTableShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.setFeeTable(new String[]{string}, new BigInteger[][]{{bigInteger}}));
+        assertUnauthorized(() -> bmcWithTester.setFeeTable(new String[]{netAddress}, new BigInteger[][]{{bigInteger}}));
     }
 
     @Test

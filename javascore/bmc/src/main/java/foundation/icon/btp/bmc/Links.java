@@ -16,17 +16,16 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.score.data.EnumerableDictDB;
 import foundation.icon.score.util.Logger;
 
 import java.util.Map;
 
-public class Links extends EnumerableDictDB<BTPAddress, Link> {
+public class Links extends EnumerableDictDB<String, Link> {
     private static final Logger logger = Logger.getLogger(Links.class);
 
     public Links(String id) {
-        super(id, BTPAddress.class, Link.class);
+        super(id, String.class, Link.class);
     }
 
     public Link ensureRelays(Link link) {
@@ -38,24 +37,24 @@ public class Links extends EnumerableDictDB<BTPAddress, Link> {
     }
 
     @Override
-    public Link get(BTPAddress key) {
+    public Link get(String key) {
         return ensureRelays(super.get(key));
     }
 
     @Override
-    public Link put(BTPAddress key, Link value) {
+    public Link put(String key, Link value) {
         return ensureRelays(super.put(key, value));
     }
 
     @Override
-    public Link remove(BTPAddress key) {
+    public Link remove(String key) {
         return ensureRelays(super.remove(key));
     }
 
     @Override
-    public Map<BTPAddress, Link> toMap() {
-        Map<BTPAddress, Link> map = super.toMap();
-        for(Map.Entry<BTPAddress, Link> entry : map.entrySet()) {
+    public Map<String, Link> toMap() {
+        Map<String, Link> map = super.toMap();
+        for(Map.Entry<String, Link> entry : map.entrySet()) {
             ensureRelays(entry.getValue());
         }
         return map;

@@ -27,17 +27,19 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class ClaimRewardEventLog {
-    static final String SIGNATURE = "ClaimReward(str,str,int,int)";
+    static final String SIGNATURE = "ClaimReward(str,str,int,int,int)";
     private String network;
     private String receiver;
     private BigInteger amount;
     private BigInteger sn;
+    private BigInteger nsn;
 
     public ClaimRewardEventLog(TransactionResult.EventLog el) {
         this.network = el.getData().get(0);
         this.receiver = el.getData().get(1);
         this.amount = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(2));
         this.sn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(3));
+        this.nsn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(4));
     }
 
     public String getNetwork() {
@@ -56,6 +58,10 @@ public class ClaimRewardEventLog {
         return sn;
     }
 
+    public BigInteger getNsn() {
+        return nsn;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClaimRewardEventLog{");
@@ -63,6 +69,7 @@ public class ClaimRewardEventLog {
         sb.append(", receiver='").append(receiver).append('\'');
         sb.append(", amount=").append(amount);
         sb.append(", sn=").append(sn);
+        sb.append(", nsn=").append(nsn);
         sb.append('}');
         return sb.toString();
     }

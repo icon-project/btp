@@ -31,12 +31,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public interface BTPBlockIntegrationTest {
+public interface BTPBlockIntegrationTest extends BMCIntegrationTest {
     IconService iconService = new IconService(
             new HttpProvider(DefaultScoreClient.url(System.getProperties())));
 
-
-    static <T> Consumer<TransactionResult> btpMessageChecker(
+    static Consumer<TransactionResult> btpMessageChecker(
             long networkId, Consumer<List<BTPMessage>> consumer) {
         return (txr) -> {
             consumer.accept(
@@ -77,4 +76,13 @@ public interface BTPBlockIntegrationTest {
                 .map((m) -> BTPMessage.fromBytes(m.decode()));
     }
 
+    static BigInteger nextMessageSn(TransactionResult txr, long networkId) {
+        try {
+            return BTPBlockIntegrationTest.iconService.btpGetNetworkInfo(
+                    txr.getBlockHeight().add(BigInteger.ONE),
+                    BigInteger.valueOf(networkId)).execute().getNextMessageSN();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

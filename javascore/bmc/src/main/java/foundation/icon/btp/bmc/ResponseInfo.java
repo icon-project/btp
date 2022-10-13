@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,64 +16,78 @@
 
 package foundation.icon.btp.bmc;
 
-import foundation.icon.btp.lib.BTPAddress;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-public class UnlinkMessage {
-    private BTPAddress link;
+import java.math.BigInteger;
 
-    public UnlinkMessage() {
+public class ResponseInfo {
+    private BigInteger nsn;
+    private FeeInfo feeInfo;
+
+    public ResponseInfo() {
     }
 
-    public UnlinkMessage(BTPAddress link) {
-        this.link = link;
+    public ResponseInfo(BigInteger nsn, FeeInfo feeInfo) {
+        this.nsn = nsn;
+        this.feeInfo = feeInfo;
     }
 
-    public BTPAddress getLink() {
-        return link;
+    public BigInteger getNsn() {
+        return nsn;
     }
 
-    public void setLink(BTPAddress link) {
-        this.link = link;
+    public void setNsn(BigInteger nsn) {
+        this.nsn = nsn;
+    }
+
+    public FeeInfo getFeeInfo() {
+        return feeInfo;
+    }
+
+    public void setFeeInfo(FeeInfo feeInfo) {
+        this.feeInfo = feeInfo;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("UnlinkMessage{");
-        sb.append("link=").append(link);
+        final StringBuilder sb = new StringBuilder("ResponseInfo{");
+        sb.append("nsn=").append(nsn);
+        sb.append(", feeInfo=").append(feeInfo);
         sb.append('}');
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, UnlinkMessage obj) {
+    public static void writeObject(ObjectWriter writer, ResponseInfo obj) {
         obj.writeObject(writer);
     }
 
-    public static UnlinkMessage readObject(ObjectReader reader) {
-        UnlinkMessage obj = new UnlinkMessage();
+    public static ResponseInfo readObject(ObjectReader reader) {
+        ResponseInfo obj = new ResponseInfo();
         reader.beginList();
-        obj.setLink(reader.readNullable(BTPAddress.class));
+        obj.setNsn(reader.readBigInteger());
+        obj.setFeeInfo(reader.readNullable(FeeInfo.class));
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
-        writer.beginList(1);
-        writer.writeNullable(this.getLink());
+        writer.beginList(2);
+        writer.write(this.getNsn());
+        writer.writeNullable(this.getFeeInfo());
         writer.end();
     }
 
-    public static UnlinkMessage fromBytes(byte[] bytes) {
+    public static ResponseInfo fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return UnlinkMessage.readObject(reader);
+        return ResponseInfo.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        UnlinkMessage.writeObject(writer, this);
+        ResponseInfo.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

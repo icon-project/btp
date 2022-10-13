@@ -143,8 +143,8 @@ public interface BMC {
      * May fail if there more than one BMC for the network.
      * Called by the operator to manage the BTP network.
      *
-     * @param _dst  String ( BTP Address of the destination BMC )
-     * @param _link String ( BTP Address of the next BMC for the destination )
+     * @param _dst  String ( Network Address of the destination BMC )
+     * @param _link String ( Network Address of the next BMC for the destination )
      */
     @External
     void addRoute(String _dst, String _link);
@@ -153,7 +153,7 @@ public interface BMC {
      * Remove route to the BMC.
      * Called by the operator to manage the BTP network.
      *
-     * @param _dst String ( BTP Address of the destination BMC )
+     * @param _dst String ( Network Address of the destination BMC )
      */
     @External
     void removeRoute(String _dst);
@@ -161,11 +161,11 @@ public interface BMC {
     /**
      * Get routing information.
      *
-     * @return A dictionary with the BTP Address of the destination BMC as key and the BTP Address of the next as value.
+     * @return A dictionary with the Network Address of the destination BMC as key and the Network Address of the next as value.
      *
      * <br>For Example::<br>
      * {
-     * "btp://0x2.iconee/cx1d6e4decae8160386f4ecbfc7e97a1bc5f74d35b": "btp://0x1.iconee/cx9f8a75111fd611710702e76440ba9adaffef8656"
+     *   "0x2.iconee": "0x1.iconee"
      * }
      */
     @External(readonly = true)
@@ -254,12 +254,15 @@ public interface BMC {
     void claimReward(String _network, String _receiver);
 
     /**
-     * FIXME
-     * @param _network
-     * @param _receiver
-     * @param _amount
-     * @param _sn
-     * @param _nsn
+     * (EventLog) Logs the claim message.
+     * <p>
+     * indexed: 0
+     *
+     * @param _network String ( Network address to claim )
+     * @param _receiver String ( Address of the receiver of target chain )
+     * @param _amount Integer ( Amount of reward to claim )
+     * @param _sn Integer ( Serial number of the claim message )
+     * @param _nsn  Integer ( Network serial number of the claim message )
      */
     @EventLog
     void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn);
@@ -288,4 +291,35 @@ public interface BMC {
      */
     @External(readonly = true)
     Address getFeeHandler();
+
+    @External(readonly = true)
+    BigInteger getNetworkSn();
+
+    /**
+     * (EventLog) Sends the message to the next BMC.
+     * The relay monitors this event.
+     * <p>
+     * indexed: 2
+     *
+     * @param _next String ( BTP Address of the BMC to handle the message )
+     * @param _seq  Integer ( sequence number of the message from current BMC to the next )
+     * @param _msg  Bytes ( serialized bytes of BTP Message )
+     */
+    @EventLog(indexed = 2)
+    void Message(String _next, BigInteger _seq, byte[] _msg);
+
+    /**
+     * (EventLog) Logs the event that handle the message
+     * The tracker monitors this event.
+     * <p>
+     * indexed: 2
+     *
+     * @param _src String ( Network Address of source BMC )
+     * @param _nsn Integer ( Network serial number )
+     * @param _next String ( BTP Address of the BMC to handle the message )
+     * @param _event String ( Event )
+     */
+    @EventLog(indexed = 2)
+    void BTPEvent(String _src, BigInteger _nsn, String _next, String _event);
+
 }

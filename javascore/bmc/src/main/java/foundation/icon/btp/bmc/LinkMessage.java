@@ -25,6 +25,13 @@ import score.ObjectWriter;
 public class LinkMessage {
     private BTPAddress link;
 
+    public LinkMessage() {
+    }
+
+    public LinkMessage(BTPAddress link) {
+        this.link = link;
+    }
+
     public BTPAddress getLink() {
         return link;
     }

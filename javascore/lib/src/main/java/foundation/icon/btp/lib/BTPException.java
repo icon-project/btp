@@ -26,7 +26,7 @@ public class BTPException extends UserRevertException {
      * BTPException.BMV => 25 ~ 39
      * BTPException.BSH => 40 ~
      */
-    enum Type {
+    public enum Type {
         BTP(0),
         BMC(10),
         BMV(25),
@@ -94,8 +94,24 @@ public class BTPException extends UserRevertException {
         this.type = Type.valueOf(code);
     }
 
-    public static BTPException of(UserRevertedException e) {
-        return new BTPException(e);
+    BTPException(Type type, Throwable cause) {
+        super(cause.getMessage(), cause);
+        this.type = type;
+        this.code = type.apply(0);
+    }
+
+    public static BTPException of(Throwable cause) {
+        return of(cause, Type.BTP);
+    }
+
+    public static BTPException of(Throwable cause, Type defaultType) {
+        if (cause instanceof BTPException) {
+            return (BTPException)cause;
+        } else if (cause instanceof UserRevertedException) {
+            return new BTPException((UserRevertedException) cause);
+        } else {
+            return new BTPException(defaultType, cause);
+        }
     }
 
     public Type getType() {
