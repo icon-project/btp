@@ -301,7 +301,16 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
 
     @External(readonly = true)
     public Map getRoutes() {
-        return routes.toMap();
+        Map<String, String> map = new HashMap<>();
+        for (Link link : links.values()) {
+            for(BTPAddress reachable : link.getReachable()) {
+                if (!map.containsKey(reachable.net())) {
+                    map.put(reachable.net(), link.getAddr().net());
+                }
+            }
+        }
+        map.putAll(routes.toMap());
+        return map;
     }
 
     @External
