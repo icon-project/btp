@@ -27,9 +27,7 @@ import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -60,6 +58,12 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 bmc._address(), supplier, consumer);
     }
 
+    static <T> Consumer<TransactionResult> eventLogsChecker(
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
+        return ScoreIntegrationTest.eventLogsChecker(
+                bmc._address(), supplier, consumer);
+    }
+
     static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<MessageEventLog> filter) {
         return MessageEventLog.eventLogs(txr, bmc._address(), filter).stream()
                 .map(MessageEventLog::getMsg)
@@ -67,9 +71,12 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     }
 
     static List<BMCMessage> bmcMessages(TransactionResult txr, Predicate<String> nextPredicate) {
-        return btpMessages(txr,
-                (el) -> el.getMsg().getSvc().equals(BTPMessageCenter.INTERNAL_SERVICE) &&
-                        nextPredicate.test(el.getNext())).stream()
+        Predicate<MessageEventLog> filter = (el) ->
+                el.getMsg().getSvc().equals(BTPMessageCenter.INTERNAL_SERVICE);
+        if (nextPredicate != null) {
+            filter = filter.and((el) -> nextPredicate.test(el.getNext()));
+        }
+        return btpMessages(txr, filter).stream()
                 .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
                 .collect(Collectors.toList());
     }
@@ -91,6 +98,13 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionResult> claimRewardResultEvent(
+            Consumer<ClaimRewardResultEventLog> consumer) {
+        return eventLogChecker(
+                ClaimRewardResultEventLog::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> messageDroppedEvent(
             Consumer<MessageDroppedEventLog> consumer) {
         return eventLogChecker(
@@ -99,12 +113,11 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     }
 
     static Consumer<TransactionResult> btpEvent(
-            Consumer<BTPEventEventLog> consumer) {
-        return eventLogChecker(
+            Consumer<List<BTPEventEventLog>> consumer) {
+        return eventLogsChecker(
                 BTPEventEventLog::eventLogs,
                 consumer);
     }
-
 
     static BMCStatus getStatus(BMC bmc, String _link) {
         ObjectMapper mapper = client.mapper();

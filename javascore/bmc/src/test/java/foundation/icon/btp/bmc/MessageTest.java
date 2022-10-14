@@ -143,12 +143,12 @@ public class MessageTest implements BMCIntegrationTest {
     static Consumer<TransactionResult> btpEventChecker(
             String src, BigInteger nsn, BTPAddress next, BTPMessageCenter.Event event) {
         return BMCIntegrationTest.btpEvent(
-                (el) -> {
-                    assertEquals(src, el.getSrc());
-                    assertEquals(nsn, el.getNsn());
-                    assertEquals(next == null ? "" : next.toString(), el.getNext());
-                    assertEquals(event.name(), el.getEvent());
-                });
+                (l) -> assertTrue(l.stream().anyMatch((el) ->
+                        el.getSrc().equals(src) &&
+                                el.getNsn().equals(nsn) &&
+                                el.getNext().equals(next == null ? "" : next.toString()) &&
+                                el.getEvent().equals(event.name())
+                )));
     }
 
     @ParameterizedTest
@@ -247,7 +247,8 @@ public class MessageTest implements BMCIntegrationTest {
     @Test
     void sendMessageShouldRevertUnauthorized() {
         AssertBMCException.assertUnauthorized(() -> bmc.sendMessage(
-                (txr) -> {},
+                (txr) -> {
+                },
                 link.net(), svc, BigInteger.ZERO, Faker.btpLink().toBytes()));
     }
 
@@ -278,7 +279,7 @@ public class MessageTest implements BMCIntegrationTest {
         if (expectBTPError != null) {
             if (snCompare > 0) {
                 System.out.println("handleRelayMessageShouldReplyBTPError");
-                checker = checker.andThen(replyBTPErrorChecker(prev, msg, expectBTPError));
+                checker = checker.andThen(responseMessageChecker(prev, msg, expectBTPError));
             } else {//snCompare == 0
                 System.out.println("handleRelayMessageShouldDrop");
                 checker = checker.andThen(dropChecker(prev, msg, expectBTPError));
@@ -353,31 +354,30 @@ public class MessageTest implements BMCIntegrationTest {
         return sendMessageChecker(next, routeMsg);
     }
 
-    static ErrorMessage toErrorMessage(BTPException exception) {
-        ErrorMessage errMsg = new ErrorMessage();
-        errMsg.setCode(exception.getCode());
-        errMsg.setMsg(exception.getMessage());
-        return errMsg;
-    }
-
-    static Consumer<TransactionResult> replyBTPErrorChecker(
+    static Consumer<TransactionResult> responseMessageChecker(
             final BTPAddress prev, final BTPMessage msg, final BTPException exception) {
-        return replyBTPErrorChecker(prev, msg, exception, (v) -> v);
+        return responseMessageChecker(prev, msg, exception, (v) -> v);
     }
 
-    static Consumer<TransactionResult> replyBTPErrorChecker(
+    static Consumer<TransactionResult> responseMessageChecker(
             final BTPAddress prev, final BTPMessage msg, final BTPException exception,
             Function<FeeInfo, FeeInfo> feeInfoSupplier) {
-        BTPMessage replyMsg = new BTPMessage();
-        replyMsg.setSrc(btpAddress.net());
-        replyMsg.setDst(msg.getSrc());
-        replyMsg.setSvc(msg.getSvc());
-        replyMsg.setSn(msg.getSn().negate());
-        replyMsg.setPayload(toErrorMessage(exception).toBytes());
-        replyMsg.setNsn(msg.getNsn().negate());
-        replyMsg.setFeeInfo(feeInfoSupplier.apply(msg.getFeeInfo()));
-        return sendMessageChecker(prev, replyMsg).andThen(
-                btpEventChecker(msg.getSrc(), msg.getNsn(), prev, BTPMessageCenter.Event.ERROR));
+        ResponseMessage errMsg = BTPMessageCenter.toResponseMessage(exception);
+        BTPMessage response = new BTPMessage();
+        response.setSrc(btpAddress.net());
+        response.setDst(msg.getSrc());
+        response.setSvc(msg.getSvc());
+        response.setSn(exception == null ? BigInteger.ZERO : msg.getSn().negate());
+        response.setPayload(exception == null ?
+                new BMCMessage(
+                        BTPMessageCenter.Internal.Response.name(),
+                        errMsg.toBytes()).toBytes() :
+                errMsg.toBytes());
+        response.setNsn(msg.getNsn().negate());
+        response.setFeeInfo(feeInfoSupplier.apply(msg.getFeeInfo()));
+        return sendMessageChecker(prev, response).andThen(
+                btpEventChecker(msg.getSrc(), msg.getNsn(), prev,
+                        exception == null ? BTPMessageCenter.Event.REPLY : BTPMessageCenter.Event.ERROR));
     }
 
     static Consumer<TransactionResult> responseChecker(
@@ -462,13 +462,13 @@ public class MessageTest implements BMCIntegrationTest {
 
     @Test
     void handleRelayMessageShouldCallHandleBTPError() {
-        ErrorMessage errorMsg = toErrorMessage(BMCException.unknown("error"));
+        ResponseMessage responseMsg = BTPMessageCenter.toResponseMessage(BMCException.unknown("error"));
         BTPMessage msg = new BTPMessage();
         msg.setSrc(link.net());
         msg.setDst(btpAddress.net());
         msg.setSvc(svc);
         msg.setSn(BigInteger.ONE.negate());
-        msg.setPayload(errorMsg.toBytes());
+        msg.setPayload(responseMsg.toBytes());
         msg.setNsn(BigInteger.ONE.negate());
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), emptyFeeValues));
@@ -477,8 +477,8 @@ public class MessageTest implements BMCIntegrationTest {
                     assertEquals(msg.getSrc(), el.getSrc());
                     assertEquals(msg.getSvc(), el.getSvc());
                     assertEquals(msg.getSn().negate(), el.getSn());
-                    assertEquals(errorMsg.getCode(), el.getCode());
-                    assertEquals(errorMsg.getMsg(), el.getMsg());
+                    assertEquals(responseMsg.getCode(), el.getCode());
+                    assertEquals(responseMsg.getMsg(), el.getMsg());
                 }
         ).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.RECEIVE));
         bmc.handleRelayMessage(
@@ -591,7 +591,7 @@ public class MessageTest implements BMCIntegrationTest {
         Consumer<TransactionResult> checker = rxSeqChecker(link);
         if (sn.compareTo(BigInteger.ZERO) > 0) {
             System.out.println("dropMessageShouldReplyBTPError");
-            checker = checker.andThen(replyBTPErrorChecker(link, msg, BMCException.drop()));
+            checker = checker.andThen(responseMessageChecker(link, msg, BMCException.drop()));
         } else {
             checker = checker.andThen(dropChecker(link, msg, BMCException.drop()));
         }

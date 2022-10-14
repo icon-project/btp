@@ -65,7 +65,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     }
 
     public enum Event {
-        SEND, DROP, ROUTE, ERROR, RECEIVE, REPLY;
+        SEND, DROP, ROUTE, ERROR, RECEIVE, REPLY
     }
 
     //
@@ -91,7 +91,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     private final BranchDB<Address, DictDB<String, BigInteger>> rewards
             = Context.newBranchDB("rewards", BigInteger.class);
     private final VarDB<Address> feeHandler = Context.newVarDB("feeHandler", Address.class);
-    private final VarDB<BigInteger> internalSn = Context.newVarDB("internalSn", BigInteger.class);
+    //Map<NetworkSn, BMCRequest>
     private final DictDB<BigInteger, BMCRequest> requests = Context.newDictDB("requests", BMCRequest.class);
 
     public BTPMessageCenter(String _net) {
@@ -285,7 +285,6 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
             throw BMCException.unknown("already exists route");
         }
 
-        //TODO [TBD] check reachable
         requireLink(_link);
         routes.put(_dst, _link);
     }
@@ -344,12 +343,12 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         }
     }
 
-    private BigInteger[] getFeeList(String net, boolean response) {
+    private BigInteger[] getFeeList(String net, boolean includeBackward) {
         Fee fee = fees.get(net);
         if (fee == null) {
             return new BigInteger[]{};
         }
-        return response ? fee.getValues() :
+        return includeBackward ? fee.getValues() :
                 ArrayUtil.copyOf(fee.getValues(), fee.getValues().length / 2);
     }
 
@@ -404,13 +403,6 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         }
     }
 
-    private BigInteger nextInternalSn() {
-        BigInteger sn = internalSn.getOrDefault(BigInteger.ZERO);
-        sn = sn.add(BigInteger.ONE);
-        internalSn.set(sn);
-        return sn;
-    }
-
     static Address toAddress(String s) {
         try {
             return Address.fromString(s);
@@ -434,18 +426,22 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         rewards.at(caller).set(_network, BigInteger.ZERO);
         if (_network.equals(btpAddr.net())) {
             Context.transfer(toAddress(_receiver), reward);
+            ClaimReward(caller, _network, _receiver, reward, BigInteger.ZERO);
         } else {
-            ClaimRewardMessage msg = new ClaimRewardMessage(reward, _receiver);
-            BMCMessage bmcMessage = new BMCMessage(Internal.ClaimReward.name(), msg.toBytes());
-            BigInteger sn = nextInternalSn();
-            requests.set(sn, new BMCRequest(_network, bmcMessage, caller));
-            BigInteger nsn = sendMessageWithFee(_network, INTERNAL_SERVICE, sn, bmcMessage.toBytes(), false);
-            ClaimReward(_network, _receiver, reward, sn, nsn);
+            BMCMessage bmcMessage = new BMCMessage(Internal.ClaimReward.name(),
+                    new ClaimRewardMessage(reward, _receiver).toBytes());
+            BigInteger nsn = sendMessageWithFee(_network, INTERNAL_SERVICE, null, bmcMessage.toBytes(), false, true);
+            requests.set(nsn, new BMCRequest(_network, bmcMessage, caller));
+            ClaimReward(caller, _network, _receiver, reward, nsn);
         }
     }
 
-    @EventLog
-    public void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn) {
+    @EventLog(indexed = 2)
+    public void ClaimReward(Address _sender, String _network, String _receiver, BigInteger _amount, BigInteger _nsn) {
+    }
+
+    @EventLog(indexed = 2)
+    public void ClaimRewardResult(Address _sender, String _network, BigInteger _nsn, BigInteger _result) {
     }
 
     @External(readonly = true)
@@ -509,12 +505,12 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         BMVStatus prevStatus = verifier.getStatus();
 
         // decode and verify relay message
-        byte[][] serializedMsgs = null;
+        byte[][] serializedMsgs;
         try {
             serializedMsgs = verifier.handleRelayMessage(btpAddr.toString(), _prev, rxSeq, msgBytes);
         } catch (Exception e) {
             logger.println("handleRelayMessage", "fail to verify", e.toString());
-            throw BTPException.of(e, BTPException.Type.BMV);
+            throw BTPException.of(e);
         }
         long msgCount = serializedMsgs.length;
 
@@ -536,7 +532,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         // dispatch BTPMessages
         for (byte[] serializedMsg : serializedMsgs) {
             rxSeq = rxSeq.add(BigInteger.ONE);
-            BTPMessage msg = null;
+            BTPMessage msg;
             try {
                 msg = BTPMessage.fromBytes(serializedMsg);
             } catch (Exception e) {
@@ -603,7 +599,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
 
             try {
                 if (svc.equals(INTERNAL_SERVICE)) {
-                    internalHandleBTPMessage(src, sn, payload);
+                    internalHandleBTPMessage(src, msg.getNsn(), payload);
                 } else {
                     BSHScoreInterface service = getService(svc);
                     service.handleBTPMessage(src, svc, sn, payload);
@@ -618,11 +614,11 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
             sn = sn.negate();
             collectRemainFee(feeInfo);
             try {
-                ErrorMessage errorMsg = ErrorMessage.fromBytes(payload);
-                long eCode = errorMsg.getCode();
-                String eMsg = errorMsg.getMsg() == null ? "" : errorMsg.getMsg();
+                ResponseMessage responseMessage = ResponseMessage.fromBytes(payload);
+                long eCode = responseMessage.getCode();
+                String eMsg = responseMessage.getMsg() == null ? "" : responseMessage.getMsg();
                 if (svc.equals(INTERNAL_SERVICE)) {
-                    internalHandleBTPError(src, sn, eCode, eMsg);
+                    internalHandleBTPError(src, msg.getNsn(), eCode, eMsg);
                 } else {
                     BSHScoreInterface service = getService(svc);
                     service.handleBTPError(src, svc, sn, eCode, eMsg);
@@ -633,7 +629,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         }
     }
 
-    private void internalHandleBTPMessage(String src, BigInteger sn, byte[] msg) {
+    private void internalHandleBTPMessage(String src, BigInteger nsn, byte[] msg) {
         BMCMessage bmcMsg = BMCMessage.fromBytes(msg);
         Internal internal = Internal.of(bmcMsg.getType());
         byte[] payload = bmcMsg.getPayload();
@@ -653,16 +649,13 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
             case ClaimReward:
                 ClaimRewardMessage claimMsg = ClaimRewardMessage.fromBytes(payload);
                 BigInteger reward = claimMsg.getAmount();
-                if (reward.compareTo(BigInteger.ZERO) > 0) {
-                    String receiver = claimMsg.getReceiver();
-                    addReward(toAddress(receiver), btpAddr.net(), reward);
-                }
-                sendInternalResponse(src, sn, ResponseMessage.CODE_SUCCESS);
+                Address receiver = toAddress(claimMsg.getReceiver());
+                addReward(receiver, btpAddr.net(), reward);
+                sendInternalResponse(src, nsn);
                 break;
             case Response:
                 ResponseMessage responseMsg = ResponseMessage.fromBytes(payload);
-                handleResponse(responseMsg.getRequestSn(),
-                        ResponseMessage.CODE_SUCCESS == responseMsg.getCode());
+                handleResponse(nsn.negate(), responseMsg.getCode());
                 break;
         }
     }
@@ -684,25 +677,26 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         putLink(link);
     }
 
-    private void handleResponse(BigInteger sn, boolean success) {
-        BMCRequest request = requests.get(sn);
+    private void handleResponse(BigInteger nsn, long result) {
+        BMCRequest request = requests.get(nsn);
         if (request != null) {
-            requests.set(sn, null);
-            BMCMessage requestBmcMsg = request.getMsg();
-            if (Internal.ClaimReward.name().equals(requestBmcMsg.getType())) {
-                if (!success) {
-                    ClaimRewardMessage requestClaimMsg =
-                            ClaimRewardMessage.fromBytes(requestBmcMsg.getPayload());
-                    addReward(request.getCaller(), request.getDst(), requestClaimMsg.getAmount());
+            requests.set(nsn, null);
+            BMCMessage bmcMessage = request.getMsg();
+            if (Internal.ClaimReward.name().equals(bmcMessage.getType())) {
+                ClaimRewardMessage claimMsg =
+                        ClaimRewardMessage.fromBytes(bmcMessage.getPayload());
+                if (ResponseMessage.CODE_SUCCESS != result) {
+                    addReward(request.getCaller(), request.getDst(), claimMsg.getAmount());
                 }
+                ClaimRewardResult(request.getCaller(), request.getDst(), nsn, BigInteger.valueOf(result));
             }
         }
     }
 
-    private void internalHandleBTPError(String src, BigInteger sn, long code, String msg) {
+    private void internalHandleBTPError(String src, BigInteger nsn, long code, String msg) {
         logger.println("internalHandleBTPError",
-                "src:", src, "src:", sn, "code:", code, "msg:", msg);
-        handleResponse(sn, false);
+                "src:", src, "nsn:", nsn, "code:", code, "msg:", msg);
+        handleResponse(nsn.negate(), code);
     }
 
     @External(readonly = true)
@@ -736,6 +730,10 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     }
 
     private BigInteger sendMessageWithFee(String _to, String _svc, BigInteger _sn, byte[] msg, boolean isResponse) {
+        return sendMessageWithFee(_to, _svc, _sn, msg, isResponse, false);
+    }
+
+    private BigInteger sendMessageWithFee(String _to, String _svc, BigInteger _sn, byte[] msg, boolean isResponse, boolean fillSnByNsn) {
         BTPAddress next = resolveNext(_to);
         BTPMessage btpMsg = new BTPMessage();
         btpMsg.setSrc(btpAddr.net());
@@ -757,6 +755,11 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
             btpMsg.setFeeInfo(responseInfo.getFeeInfo());
             event = Event.REPLY;
         } else {
+            btpMsg.setNsn(nextNetworkSn());
+            if (fillSnByNsn) {
+                _sn = btpMsg.getNsn();
+                btpMsg.setSn(_sn);
+            }
             BigInteger[] values = getFeeList(_to, _sn.compareTo(BigInteger.ZERO) > 0);
             BigInteger remain = Context.getValue().subtract(ArrayUtil.sum(values));
             if (remain.compareTo(BigInteger.ZERO) < 0) {
@@ -764,13 +767,27 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
                 throw BMCException.unknown("not enough fee");
             }
             collectRemainFee(btpAddr.net(), remain);
-            btpMsg.setNsn(nextNetworkSn());
             btpMsg.setFeeInfo(new FeeInfo(btpAddr.net(), values));
             event = Event.SEND;
         }
         sendMessage(next, btpMsg.toBytes());
         emitBTPEvent(btpMsg, next, event);
         return btpMsg.getNsn();
+    }
+
+    static ResponseMessage toResponseMessage(BTPException exception) {
+        if (exception == null) {
+            return new ResponseMessage(ResponseMessage.CODE_SUCCESS, "");
+        }
+        long code = ResponseMessage.CODE_UNKNOWN;
+        if (BMCException.Code.Unreachable.code == exception.getCodeOfType()) {
+            code = ResponseMessage.CODE_NO_ROUTE;
+        } else if (BMCException.Code.NotExistsBSH.code == exception.getCodeOfType()) {
+            code = ResponseMessage.CODE_NO_BSH;
+        } else if (BTPException.Type.BSH.equals(exception.getType())) {
+            code = ResponseMessage.CODE_REVERT;
+        }
+        return new ResponseMessage(code, exception.getMessage());
     }
 
     private void sendError(BTPAddress prev, BTPMessage msg, BTPException e) {
@@ -792,15 +809,12 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
                 }
             }
         }
-        ErrorMessage errMsg = new ErrorMessage();
-        errMsg.setCode(e.getCode());
-        errMsg.setMsg(e.getMessage());
         BTPMessage btpMsg = new BTPMessage();
         btpMsg.setSrc(btpAddr.net());
         btpMsg.setDst(msg.getSrc());
         btpMsg.setSvc(msg.getSvc());
         btpMsg.setSn(msg.getSn().negate());
-        btpMsg.setPayload(errMsg.toBytes());
+        btpMsg.setPayload(toResponseMessage(e).toBytes());
         btpMsg.setNsn(msg.getNsn().negate());
         btpMsg.setFeeInfo(feeInfo);
         sendMessage(prev, btpMsg.toBytes());
@@ -825,12 +839,11 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         }
     }
 
-    private void sendInternalResponse(String net, BigInteger sn, long code) {
-        ResponseMessage responseMessage = new ResponseMessage();
-        responseMessage.setRequestSn(sn);
-        responseMessage.setCode(code);
-        BMCMessage bmcMessage = new BMCMessage(Internal.Response.name(), responseMessage.toBytes());
-        sendMessageWithFee(net, INTERNAL_SERVICE, sn, bmcMessage.toBytes(), true);
+    private void sendInternalResponse(String net, BigInteger nsn) {
+        sendMessageWithFee(net, INTERNAL_SERVICE, nsn,
+                new BMCMessage(Internal.Response.name(),
+                        toResponseMessage(null).toBytes()).toBytes(),
+                true);
     }
 
     private void sendInternal(BTPAddress next, byte[] payload) {
@@ -1074,7 +1087,6 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         return ownerManager.isOwner(_addr);
     }
 
-    //FIXME fallback is required?
     @Payable
     public void fallback() {
         logger.println("fallback", "value:", Context.getValue());

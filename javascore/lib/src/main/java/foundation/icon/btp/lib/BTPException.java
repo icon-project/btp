@@ -70,10 +70,6 @@ public class BTPException extends UserRevertException {
     private final Type type;
     private final int code;
 
-    BTPException(Code c) {
-        this(Type.BTP, c, c.name());
-    }
-
     BTPException(Code code, String message) {
         this(Type.BTP, code, message);
     }
@@ -88,29 +84,35 @@ public class BTPException extends UserRevertException {
         this.code = type.apply(code);
     }
 
-    BTPException(UserRevertedException e) {
-        super(e.getMessage(), e);
-        this.code = e.getCode();
+    BTPException(Throwable cause, int code) {
+        super(cause);
+        this.code = code;
         this.type = Type.valueOf(code);
     }
 
-    BTPException(Type type, Throwable cause) {
-        super(cause.getMessage(), cause);
+    BTPException(Type type, Throwable cause, int code) {
+        super(cause);
         this.type = type;
-        this.code = type.apply(0);
+        this.code = type.apply(code);
     }
 
     public static BTPException of(Throwable cause) {
-        return of(cause, Type.BTP);
+        if (cause instanceof BTPException) {
+            return (BTPException)cause;
+        } else if (cause instanceof UserRevertedException) {
+            return new BTPException(cause, ((UserRevertedException) cause).getCode());
+        } else {
+            return new BTPException(cause, 0);
+        }
     }
 
     public static BTPException of(Throwable cause, Type defaultType) {
         if (cause instanceof BTPException) {
             return (BTPException)cause;
         } else if (cause instanceof UserRevertedException) {
-            return new BTPException((UserRevertedException) cause);
+            return new BTPException(defaultType, cause, ((UserRevertedException) cause).getCode());
         } else {
-            return new BTPException(defaultType, cause);
+            return new BTPException(defaultType, cause, 0);
         }
     }
 

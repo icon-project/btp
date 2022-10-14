@@ -206,7 +206,7 @@ public interface BMC {
     String getBtpAddress();
 
     /**
-     * Sets fee table
+     * Sets the fee table
      * Called by the operator to manage the BTP network.
      *
      * @param _dst   String[] ( List of BTP Network Address of the destination BMC )
@@ -217,7 +217,7 @@ public interface BMC {
     void setFeeTable(String[] _dst, BigInteger[][] _value);
 
     /**
-     * Get fee to the target network
+     * Gets the fee to the target network
      * _response should be true if it uses positive value for _sn of {@link #sendMessage}.
      * If _to is not reachable, then it reverts.
      * If _to does not exist in the fee table, then it returns zero.
@@ -230,7 +230,7 @@ public interface BMC {
     BigInteger getFee(String _to, boolean _response);
 
     /**
-     * Get fee table
+     * Gets the fee table
      * It reverts if the one of destination networks is not reachable.
      * If there is no corresponding fee table, then it returns an empty list.
      *
@@ -254,18 +254,34 @@ public interface BMC {
     void claimReward(String _network, String _receiver);
 
     /**
-     * (EventLog) Logs the claim message.
+     * (EventLog) Logs the claim.
+     * If it claims the reward in it's own network,
+     * _network is current network and _nsn is zero.
      * <p>
-     * indexed: 0
+     * indexed: 2
      *
+     * @param _sender Address ( Address of the sender )
      * @param _network String ( Network address to claim )
      * @param _receiver String ( Address of the receiver of target chain )
      * @param _amount Integer ( Amount of reward to claim )
-     * @param _sn Integer ( Serial number of the claim message )
      * @param _nsn  Integer ( Network serial number of the claim message )
      */
-    @EventLog
-    void ClaimReward(String _network, String _receiver, BigInteger _amount, BigInteger _sn, BigInteger _nsn);
+    @EventLog(indexed = 2)
+    void ClaimReward(Address _sender, String _network, String _receiver, BigInteger _amount, BigInteger _nsn);
+
+    /**
+     * (EventLog) Logs the result of claim at receiving the response or error.
+     * _result : 0 for success, others for failure
+     * <p>
+     * indexed: 2
+     *
+     * @param _sender Address ( Address of the sender )
+     * @param _network String ( Network address to claim )
+     * @param _nsn  Integer ( Network serial number of the claim message )
+     * @param _result Integer ( Result of processing )
+     */
+    @EventLog(indexed = 2)
+    void ClaimRewardResult(Address _sender, String _network, BigInteger _nsn, BigInteger _result);
 
     /**
      * It returns the amount of claimable reward to the target

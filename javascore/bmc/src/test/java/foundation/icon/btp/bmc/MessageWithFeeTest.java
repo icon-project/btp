@@ -278,7 +278,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
                 .andThen(rewardChecker(msg));
         if (expectBTPError != null) {
             System.out.println("handleRelayMessageShouldReplyBTPError");
-            checker = checker.andThen(replyBTPErrorChecker(prev, msg, expectBTPError));
+            checker = checker.andThen(responseMessageChecker(prev, msg, expectBTPError));
         } else {
             if (!dst.equals(btpAddress)) {
                 if (next != null) {
@@ -323,9 +323,9 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
         return MessageTest.routeChecker(next, msg, MessageWithFeeTest::consume);
     }
 
-    static Consumer<TransactionResult> replyBTPErrorChecker(
+    static Consumer<TransactionResult> responseMessageChecker(
             final BTPAddress prev, final BTPMessage msg, final BTPException exception) {
-        return MessageTest.replyBTPErrorChecker(prev, msg, exception,
+        return MessageTest.responseMessageChecker(prev, msg, exception,
                 (v) -> tailSwap(consume(v), 1));
     }
 
@@ -397,13 +397,13 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
 
     @Test
     void handleRelayMessageShouldCallHandleBTPError() {
-        ErrorMessage errorMsg = MessageTest.toErrorMessage(BMCException.unknown("error"));
+        ResponseMessage responseMsg = BTPMessageCenter.toResponseMessage(BMCException.unknown("error"));
         BTPMessage msg = new BTPMessage();
         msg.setSrc(link.net());
         msg.setDst(btpAddress.net());
         msg.setSvc(svc);
         msg.setSn(BigInteger.ONE.negate());
-        msg.setPayload(errorMsg.toBytes());
+        msg.setPayload(responseMsg.toBytes());
         msg.setNsn(BigInteger.ONE.negate());
         msg.setFeeInfo(new FeeInfo(
                 btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
@@ -412,8 +412,8 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
                     assertEquals(msg.getSrc(), el.getSrc());
                     assertEquals(msg.getSvc(), el.getSvc());
                     assertEquals(msg.getSn().negate(), el.getSn());
-                    assertEquals(errorMsg.getCode(), el.getCode());
-                    assertEquals(errorMsg.getMsg(), el.getMsg());
+                    assertEquals(responseMsg.getCode(), el.getCode());
+                    assertEquals(responseMsg.getMsg(), el.getMsg());
                 }
         );
         bmc.handleRelayMessage(
@@ -463,7 +463,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
         Consumer<TransactionResult> checker = MessageTest.rxSeqChecker(link);
         if (sn.compareTo(BigInteger.ZERO) > 0) {
             System.out.println("dropMessageShouldReplyBTPError");
-            checker = checker.andThen(replyBTPErrorChecker(link, msg, BMCException.drop()));
+            checker = checker.andThen(responseMessageChecker(link, msg, BMCException.drop()));
         } else {
             checker = checker.andThen(dropChecker(link, msg, BMCException.drop()));
         }

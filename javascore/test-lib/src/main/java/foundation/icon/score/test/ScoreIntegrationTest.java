@@ -153,10 +153,19 @@ public interface ScoreIntegrationTest {
         assertEquals(balance.add(value), client._balance(address));
     }
 
-    static <T> Consumer<TransactionResult> balanceChecker(Address address, BigInteger value) {
+    static Consumer<TransactionResult> balanceChecker(Address address, BigInteger value) {
+        return balanceChecker(address, value, false);
+    }
+
+    static Consumer<TransactionResult> balanceChecker(Address address, BigInteger value, boolean subtractTxFee) {
         BigInteger preBalance = client._balance(address);
         return (txr) -> {
-            assertEquals(preBalance.add(value), client._balance(address));
+            BigInteger expectBalance = preBalance.add(value);
+            if (subtractTxFee) {
+                expectBalance = expectBalance.subtract(
+                        txr.getStepPrice().multiply(txr.getStepUsed()));
+            }
+            assertEquals(expectBalance, client._balance(address));
         };
     }
 

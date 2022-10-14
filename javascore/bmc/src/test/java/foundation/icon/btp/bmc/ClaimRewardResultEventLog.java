@@ -26,20 +26,18 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class ClaimRewardEventLog {
-    static final String SIGNATURE = "ClaimReward(Address,str,str,int,int)";
+public class ClaimRewardResultEventLog {
+    static final String SIGNATURE = "ClaimRewardResult(Address,str,int,int)";
     private Address sender;
     private String network;
-    private String receiver;
-    private BigInteger amount;
     private BigInteger nsn;
+    private BigInteger result;
 
-    public ClaimRewardEventLog(TransactionResult.EventLog el) {
+    public ClaimRewardResultEventLog(TransactionResult.EventLog el) {
         this.sender = new Address(el.getIndexed().get(1));
         this.network = el.getIndexed().get(2);
-        this.receiver = el.getData().get(0);
-        this.amount = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(1));
-        this.nsn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(2));
+        this.nsn = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(0));
+        this.result = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getData().get(1));
     }
 
     public Address getSender() {
@@ -50,36 +48,31 @@ public class ClaimRewardEventLog {
         return network;
     }
 
-    public String getReceiver() {
-        return receiver;
-    }
-
-    public BigInteger getAmount() {
-        return amount;
-    }
-
     public BigInteger getNsn() {
         return nsn;
     }
 
+    public BigInteger getResult() {
+        return result;
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClaimRewardEventLog{");
+        final StringBuilder sb = new StringBuilder("ClaimRewardResultEventLog{");
         sb.append("sender=").append(sender);
         sb.append(", network='").append(network).append('\'');
-        sb.append(", receiver='").append(receiver).append('\'');
-        sb.append(", amount=").append(amount);
         sb.append(", nsn=").append(nsn);
+        sb.append(", result=").append(result);
         sb.append('}');
         return sb.toString();
     }
 
-    public static List<ClaimRewardEventLog> eventLogs(
-            TransactionResult txr, Address address, Predicate<ClaimRewardEventLog> filter) {
+    public static List<ClaimRewardResultEventLog> eventLogs(
+            TransactionResult txr, Address address, Predicate<ClaimRewardResultEventLog> filter) {
         return ScoreIntegrationTest.eventLogs(txr,
-                ClaimRewardEventLog.SIGNATURE,
+                ClaimRewardResultEventLog.SIGNATURE,
                 address,
-                ClaimRewardEventLog::new,
+                ClaimRewardResultEventLog::new,
                 filter);
     }
 }

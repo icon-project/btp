@@ -21,19 +21,22 @@ import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-import java.math.BigInteger;
-
 public class ResponseMessage {
-    public static final int CODE_SUCCESS = 0;
-    private BigInteger requestSn;
-    private long code;
+    public static final long CODE_SUCCESS = 0;
+    public static final long CODE_UNKNOWN = 1;
+    public static final long CODE_NO_ROUTE = 2;
+    public static final long CODE_NO_BSH = 3;
+    public static final long CODE_REVERT = 4;
 
-    public BigInteger getRequestSn() {
-        return requestSn;
+    private long code;
+    private String msg;
+
+    public ResponseMessage() {
     }
 
-    public void setRequestSn(BigInteger requestSn) {
-        this.requestSn = requestSn;
+    public ResponseMessage(long code, String msg) {
+        this.code = code;
+        this.msg = msg;
     }
 
     public long getCode() {
@@ -44,11 +47,19 @@ public class ResponseMessage {
         this.code = code;
     }
 
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ResponseMessage{");
-        sb.append("requestSn=").append(requestSn);
-        sb.append(", code=").append(code);
+        sb.append("code=").append(code);
+        sb.append(", msg='").append(msg).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -60,16 +71,16 @@ public class ResponseMessage {
     public static ResponseMessage readObject(ObjectReader reader) {
         ResponseMessage obj = new ResponseMessage();
         reader.beginList();
-        obj.setRequestSn(reader.readBigInteger());
         obj.setCode(reader.readLong());
+        obj.setMsg(reader.readNullable(String.class));
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
         writer.beginList(2);
-        writer.write(this.getRequestSn());
         writer.write(this.getCode());
+        writer.writeNullable(this.getMsg());
         writer.end();
     }
 

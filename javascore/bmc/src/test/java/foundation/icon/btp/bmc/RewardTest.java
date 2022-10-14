@@ -26,6 +26,7 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
+import foundation.icon.score.test.ICXTransferEventLog;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import foundation.icon.score.util.ArrayUtil;
 import org.junit.jupiter.api.AfterAll;
@@ -37,7 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -72,7 +72,7 @@ public class RewardTest implements BMCIntegrationTest {
         BigInteger minBalance = chainScore.getStepCost("contractCall").multiply(stepPrice);
         if (client._balance(bmc._address()).compareTo(minBalance) < 0) {
             client._transfer(bmc._address(), minBalance, null);
-            System.out.println("transferred "+bmc._address() + ":" + client._balance(bmc._address()));
+            System.out.println("transferred " + bmc._address() + ":" + client._balance(bmc._address()));
         }
         System.out.println("RewardTest:beforeAll end");
     }
@@ -105,9 +105,9 @@ public class RewardTest implements BMCIntegrationTest {
     }
 
     static BigInteger ensureReward(String net, boolean isRemain) {
-        System.out.println(isRemain ?
+        System.out.println("ensureReward " + (isRemain ?
                 "handleRelayMessageShouldAccumulateRemainFee" :
-                "handleRelayMessageShouldAccumulateRewardIfClaimRewardMessage");
+                "handleRelayMessageShouldAccumulateRewardIfClaimRewardMessage"));
         Address address = rewardAddress(isRemain);
         BigInteger preReward = bmc.getReward(net, address);
         if (preReward.compareTo(BigInteger.ZERO) < 1) {
@@ -123,16 +123,16 @@ public class RewardTest implements BMCIntegrationTest {
         return preReward;
     }
 
-    static Consumer<TransactionResult> rewardConsumedChecker(String net, boolean isRemain) {
+    static Consumer<TransactionResult> rewardChecker(String net, Address address, BigInteger amount) {
+        BigInteger preReward = bmc.getReward(net, address);
         return (txr) -> {
-            assertEquals(BigInteger.ZERO, bmc.getReward(net, rewardAddress(isRemain)));
+            assertEquals(preReward.add(amount), bmc.getReward(net, address));
         };
     }
 
     static Consumer<TransactionResult> claimRewardMessageChecker(BigInteger amount, String receiver) {
         return (txr) -> {
-            List<BMCMessage> bmcMessages = BMCIntegrationTest.bmcMessages(
-                    txr, (next) -> next.equals(link.toString()));
+            List<BMCMessage> bmcMessages = BMCIntegrationTest.bmcMessages(txr, null);
             List<ClaimRewardMessage> rewardMessages = BMCIntegrationTest.internalMessages(
                     bmcMessages, BTPMessageCenter.Internal.ClaimReward, ClaimRewardMessage::fromBytes);
             assertEquals(rewardMessages.size(), 1);
@@ -143,45 +143,148 @@ public class RewardTest implements BMCIntegrationTest {
     }
 
     static Consumer<TransactionResult> claimRewardEventChecker(
-            String net, String receiver, BigInteger amount, AtomicReference<BigInteger> snContainer) {
+            Address sender, String net, String receiver, BigInteger amount, BigInteger nsn) {
         return BMCIntegrationTest.claimRewardEvent(
                 (el) -> {
+                    assertEquals(sender, el.getSender());
                     assertEquals(net, el.getNetwork());
                     assertEquals(receiver, el.getReceiver());
                     assertEquals(amount, el.getAmount());
-                    snContainer.set(el.getSn());
+                    assertEquals(nsn, el.getNsn());
                 });
     }
 
-    @Test
-    void claimRewardShouldSendClaimRewardMessageAndHandleRelayMessageShouldRefundRewardIfError() {
-        System.out.println("claimRewardShouldSendClaimRewardMessage");
-        boolean isRemain = false;
-        String feeNetwork = link.net();
-        BigInteger reward = ensureReward(feeNetwork, isRemain);
-        Address address = rewardAddress(isRemain);
-        String receiver = address.toString();
-        AtomicReference<BigInteger> sn = new AtomicReference<>();
-        Consumer<TransactionResult> checker = claimRewardMessageChecker(reward, receiver)
-                .andThen(rewardConsumedChecker(feeNetwork, isRemain))
-                .andThen(claimRewardEventChecker(feeNetwork, receiver, reward, sn));
-        bmc.claimReward(checker,
-                bmc.getFee(feeNetwork, true),
-                feeNetwork, receiver);
+    static Consumer<TransactionResult> claimRewardResultEventChecker(
+            BigInteger nsn, String net, BigInteger result) {
+        return BMCIntegrationTest.claimRewardResultEvent(
+                (el) -> {
+                    assertEquals(nsn, el.getNsn());
+                    assertEquals(net, el.getNetwork());
+                    assertEquals(result, el.getResult());
+                });
+    }
 
-        System.out.println("handleRelayMessageShouldRefundRewardIfError");
-        ErrorMessage errorMsg = MessageTest.toErrorMessage(BMCException.unknown("error"));
+    static BTPMessage btpMessageForResponse(String feeNetwork, ResponseMessage responseMessage) {
         BTPMessage msg = new BTPMessage();
-        msg.setSrc(link.net());
+        msg.setSrc(feeNetwork);
         msg.setDst(btpAddress.net());
         msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
-        msg.setSn(sn.get().negate());
-        msg.setPayload(errorMsg.toBytes());
-        msg.setNsn(BigInteger.ONE.negate());
+        BigInteger nsn = bmc.getNetworkSn();
+        if (responseMessage.getCode() == ResponseMessage.CODE_SUCCESS) {
+            msg.setSn(BigInteger.ZERO);
+            BMCMessage bmcMsg = new BMCMessage(BTPMessageCenter.Internal.Response.name(),
+                    responseMessage.toBytes());
+            msg.setPayload(bmcMsg.toBytes());
+        } else {
+            msg.setSn(nsn.negate());
+            msg.setPayload(responseMessage.toBytes());
+        }
+        msg.setNsn(nsn.negate());
         msg.setFeeInfo(new FeeInfo(
-                btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
-        bmc.handleRelayMessage(link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
-        assertEquals(reward, bmc.getReward(feeNetwork, address));
+                btpAddress.net(),
+                FeeManagementTest.backward(
+                        bmc.getFeeTable(new String[]{feeNetwork})[0])));
+        return msg;
+    }
+
+    @ParameterizedTest
+    @MethodSource("claimRewardShouldSuccessArguments")
+    void claimRewardShouldSuccess(
+            String display,
+            boolean isRemain,
+            String feeNetwork,
+            BTPException error) {
+        System.out.println(display);
+        if (isRemain) {
+            Address feeHandler = Address.of(tester);
+            bmc.setFeeHandler(feeHandler);
+            assertEquals(feeHandler, bmc.getFeeHandler());
+        }
+
+        Address sender = rewardAddress(isRemain);
+        Address receiver;
+        BigInteger reward = ensureReward(feeNetwork, isRemain);
+        BigInteger pay;
+        Consumer<TransactionResult> checker = rewardChecker(feeNetwork, sender, reward.negate());
+        if (feeNetwork.equals(btpAddress.net())) {
+            System.out.println("claimRewardShouldTransfer");
+            receiver = Address.of(tester);
+            pay = BigInteger.ZERO;
+            checker = checker.andThen(claimRewardEventChecker(
+                            sender, feeNetwork, receiver.toString(), reward, BigInteger.ZERO))
+                    .andThen(ScoreIntegrationTest.balanceChecker(receiver, reward, isRemain))
+                    .andThen(ScoreIntegrationTest.eventLogChecker(
+                            bmc._address(),
+                            ICXTransferEventLog::eventLogs,
+                            (el) -> {
+                                assertEquals(bmc._address(), el.getFrom());
+                                assertEquals(receiver, el.getTo());
+                                assertEquals(reward, el.getAmount());
+                            }));
+        } else {
+            System.out.println("claimRewardShouldSendClaimRewardMessage");
+            receiver = relay;
+            pay = bmc.getFee(feeNetwork, true);
+            BigInteger nsn = bmc.getNetworkSn();
+            checker = checker.andThen(claimRewardEventChecker(
+                            sender, feeNetwork, receiver.toString(), reward, nsn.add(BigInteger.ONE)))
+                    .andThen(claimRewardMessageChecker(reward, receiver.toString()));
+        }
+        (isRemain ? bmcWithTester : bmc).claimReward(
+                checker,
+                pay,
+                feeNetwork, receiver.toString());
+
+        if (!feeNetwork.equals(btpAddress.net())) {
+            ResponseMessage responseMessage = BTPMessageCenter.toResponseMessage(error);
+            BTPMessage msg = btpMessageForResponse(feeNetwork, responseMessage);
+            BigInteger afterReward;
+            if (error != null) {
+                System.out.println("handleRelayMessageShouldRollbackIfError");
+                afterReward = reward;
+            } else {
+                System.out.println("handleRelayMessageShouldClearClaimRequest");
+                afterReward = bmc.getReward(feeNetwork, sender);
+            }
+            checker = claimRewardResultEventChecker(
+                    msg.getNsn().negate(),
+                    feeNetwork,
+                    BigInteger.valueOf(responseMessage.getCode()));
+            bmc.handleRelayMessage(
+                    checker,
+                    link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
+            assertEquals(afterReward, bmc.getReward(feeNetwork, sender));
+        }
+    }
+
+    static Stream<Arguments> claimRewardShouldSuccessArguments() {
+        return Stream.of(
+                Arguments.of(
+                        "claimRewardShouldTransfer",
+                        false,
+                        btpAddress.net(),
+                        null),
+                Arguments.of(
+                        "claimRewardShouldTransferWithFeeHandler",
+                        true,
+                        btpAddress.net(),
+                        null),
+                Arguments.of(
+                        "claimRewardShouldSuccess",
+                        false,
+                        link.net(),
+                        null),
+                Arguments.of(
+                        "claimRewardShouldRollback",
+                        false,
+                        link.net(),
+                        BMCException.unknown("error")),
+                Arguments.of(
+                        "claimRewardShouldRollbackWithFeeHandler",
+                        true,
+                        link.net(),
+                        null)
+        );
     }
 
     static BTPMessage btpMessageForClaimReward(BigInteger amount, String receiver) {
@@ -199,28 +302,12 @@ public class RewardTest implements BMCIntegrationTest {
         return msg;
     }
 
-    static Consumer<TransactionResult> responseMessageChecker(BigInteger sn, long code) {
-        return (txr) -> {
-            List<BMCMessage> bmcMessages = BMCIntegrationTest.bmcMessages(
-                    txr, (next) -> next.equals(link.toString()));
-            List<ResponseMessage> responseMessages = BMCIntegrationTest.internalMessages(
-                    bmcMessages, BTPMessageCenter.Internal.Response, ResponseMessage::fromBytes);
-            assertEquals(responseMessages.size(), 1);
-            ResponseMessage resp = responseMessages.get(0);
-            assertEquals(sn, resp.getRequestSn());
-            assertEquals(code, resp.getCode());
-        };
-    }
-
     @Test
     void handleRelayMessageShouldAccumulateRewardToReceiverAndSendResponse() {
         BigInteger amount = BigInteger.ONE;
         BTPMessage msg = btpMessageForClaimReward(amount, relay.toString());
-        BigInteger preReward = bmc.getReward(btpAddress.net(), relay);
-        Consumer<TransactionResult> checker = (txr) -> {
-            assertEquals(preReward.add(amount), bmc.getReward(btpAddress.net(), relay));
-        };
-        checker = checker.andThen(responseMessageChecker(msg.getSn(), ResponseMessage.CODE_SUCCESS));
+        Consumer<TransactionResult> checker = rewardChecker(btpAddress.net(), relay, amount)
+                .andThen(MessageWithFeeTest.responseMessageChecker(link, msg, null));
         bmc.handleRelayMessage(
                 checker,
                 link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
@@ -230,21 +317,11 @@ public class RewardTest implements BMCIntegrationTest {
     void handleRelayMessageShouldSendErrorIfInvalidReceiver() {
         BigInteger amount = BigInteger.ONE;
         BTPMessage msg = btpMessageForClaimReward(amount, "invalid");
-        Consumer<TransactionResult> checker = MessageWithFeeTest.replyBTPErrorChecker(
+        Consumer<TransactionResult> checker = MessageWithFeeTest.responseMessageChecker(
                 link, msg, BMCException.unknown("invalid address format"));
         bmc.handleRelayMessage(
                 checker,
                 link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
-    }
-
-    @Test
-    void claimRewardShouldTransfer() {
-        boolean isRemain = false;
-        Address receiver = Address.of(tester);
-        BigInteger reward = ensureReward(btpAddress.net(), isRemain);
-        Consumer<TransactionResult> checker = rewardConsumedChecker(btpAddress.net(), isRemain)
-                .andThen(ScoreIntegrationTest.balanceChecker(receiver, reward));
-        bmc.claimReward(checker, btpAddress.net(), receiver.toString());
     }
 
     @SuppressWarnings("ThrowableNotThrown")
@@ -255,7 +332,7 @@ public class RewardTest implements BMCIntegrationTest {
             BTPException exception,
             String network, String receiver, BigInteger fee) {
         System.out.println(display);
-        if (network.equals(link.net()) || network.equals(btpAddress.net())){
+        if (network.equals(link.net()) || network.equals(btpAddress.net())) {
             ensureReward(network, false);
         }
         AssertBTPException.assertBTPException(exception, () ->
@@ -282,43 +359,7 @@ public class RewardTest implements BMCIntegrationTest {
                         link.net(),
                         relay.toString(),
                         BigInteger.ZERO)
-                );
-    }
-
-    @Test
-    void claimRewardShouldSendRemainFeeIfCallerIsFeeHandler() {
-        System.out.println("setFeeHandlerShouldSuccess");
-        Address feeHandler = Address.of(tester);
-        bmc.setFeeHandler(feeHandler);
-        assertEquals(feeHandler, bmc.getFeeHandler());
-
-        System.out.println("claimRewardShouldSendRemainFee");
-        boolean isRemain = true;
-        String feeNetwork = link.net();
-        BigInteger reward = ensureReward(feeNetwork, isRemain);
-        Address address = rewardAddress(isRemain);
-        String receiver = relay.toString();
-        AtomicReference<BigInteger> sn = new AtomicReference<>();
-        Consumer<TransactionResult> checker = claimRewardMessageChecker(reward, receiver)
-                .andThen(rewardConsumedChecker(feeNetwork, isRemain))
-                .andThen(claimRewardEventChecker(feeNetwork, receiver, reward, sn));
-        bmcWithTester.claimReward(checker,
-                bmc.getFee(feeNetwork, true),
-                feeNetwork, receiver);
-
-        System.out.println("handleRelayMessageShouldRefundRewardIfError");
-        ErrorMessage errorMsg = MessageTest.toErrorMessage(BMCException.unknown("error"));
-        BTPMessage msg = new BTPMessage();
-        msg.setSrc(link.net());
-        msg.setDst(btpAddress.net());
-        msg.setSvc(BTPMessageCenter.INTERNAL_SERVICE);
-        msg.setSn(sn.get().negate());
-        msg.setPayload(errorMsg.toBytes());
-        msg.setNsn(BigInteger.ONE.negate());
-        msg.setFeeInfo(new FeeInfo(
-                btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
-        bmc.handleRelayMessage(link.toString(), MessageTest.mockRelayMessage(msg).toBase64String());
-        assertEquals(reward, bmc.getReward(feeNetwork, address));
+        );
     }
 
 }
