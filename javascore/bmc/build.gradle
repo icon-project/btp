@@ -1,4 +1,5 @@
 version = '0.1.0'
+apply plugin: "jacoco"
 
 dependencies {
     compileOnly("foundation.icon:javaee-api:$javaeeVersion")
@@ -113,4 +114,19 @@ test {
         systemProperty 'validator.keyStore', scoreTest.default.keyStore
         systemProperty 'validator.keyPassword', scoreTest.default.resolvedKeyPassword
     }
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        xml.destination file("${buildDir}/reports/jacoco/report.xml")
+        html.enabled true
+        csv.enabled true
+    }
+    subprojects.each {
+        sourceSets it.sourceSets.main
+    }
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 }

@@ -72,7 +72,7 @@ module.exports = {
             }
         }
     },
-    plugins: ["truffle-plugin-verify", "truffle-contract-size"],
+    plugins: ["truffle-plugin-verify", "truffle-contract-size", "solidity-coverage"],
     db: {
         enabled: false
     }
