@@ -32,9 +32,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CallServiceImplTest implements CSIntegrationTest {
-    static final BigInteger EXA = BigInteger.TEN.pow(18);
     static Address csAddress = callSvc._address();
     static Address sampleAddress = sampleClient._address();
     static Address fakeAddress = ScoreIntegrationTest.Faker.address(Address.Type.CONTRACT);
@@ -44,6 +44,9 @@ class CallServiceImplTest implements CSIntegrationTest {
     static BigInteger srcSn = BigInteger.ZERO;
     static BigInteger reqId = BigInteger.ZERO;
     static Map<BigInteger, MessageRequest> requestMap = new HashMap<>();
+
+    static BigInteger forwardFee, backwardFee, protocolFee;
+    static Address protocolFeeHandler = ScoreIntegrationTest.Faker.address(Address.Type.EOA);
     static Map<String, BigInteger> accruedFees = new HashMap<>();
 
     private static class MessageRequest {
@@ -66,6 +69,13 @@ class CallServiceImplTest implements CSIntegrationTest {
 
     @BeforeAll
     static void beforeAll() {
+        forwardFee = BigInteger.TEN;
+        backwardFee = BigInteger.TWO;
+        MockBMCIntegrationTest.mockBMC.setFee(forwardFee, backwardFee);
+
+        protocolFee = BigInteger.valueOf(3);
+        feeManager.setProtocolFee(protocolFee);
+        assertNull(feeManager.getProtocolFeeHandler());
     }
 
     private BigInteger getNextSn() {
@@ -82,49 +92,34 @@ class CallServiceImplTest implements CSIntegrationTest {
         return reqId;
     }
 
-    private BigInteger getFixedFee(String net, String type) {
-        return fixedFees.fixedFee(net, type);
+    private BigInteger getFee(String net, boolean rollback) {
+        return feeManager.getFee(net, rollback);
     }
 
-    private BigInteger getTotalFixedFees(String net) {
-        return fixedFees.totalFixedFees(net);
-    }
-
-    private BigInteger getAccruedFees(String type) {
-        return fixedFees.accruedFees(type);
-    }
-
-    private void accumulateFees(String net) {
-        final String[] types = {"relay", "protocol"};
-        if (accruedFees.isEmpty()) {
-            for (String type : types) {
-                accruedFees.put(type, getFixedFee(net, type));
-            }
-        } else {
-            for (String type : types) {
-                BigInteger fee = getFixedFee(net, type);
-                accruedFees.put(type, fee.add(accruedFees.get(type)));
-            }
-        }
+    private void accumulateFee(BigInteger totalFee, BigInteger protocolFee) {
+        BigInteger relayFee = totalFee.subtract(protocolFee);
+        accruedFees.merge("relay", relayFee, (a, b) -> b.add(a));
+        accruedFees.merge("protocol", protocolFee, (a, b) -> b.add(a));
     }
 
     @Order(0)
     @Test
-    void sendCallMessageFromDAppProxy() {
-        byte[] data = "sendCallMessageFromDAppProxy".getBytes();
+    void sendCallMessageWithoutRollback() {
+        byte[] data = "sendCallMessageWithoutRollback".getBytes();
         var sn = getNextSn();
         requestMap.put(sn, new MessageRequest(data, null));
         var request = new CSMessageRequest(sampleAddress.toString(), to.account(), sn, false, data);
         var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
             assertEquals(linkNet, el.getTo());
-            assertEquals(CallServiceImpl.SERVICE, el.getSvc());
-            assertEquals(sn, el.getSn());
+            assertEquals(CallService.NAME, el.getSvc());
+            assertEquals(BigInteger.ZERO, el.getSn()); // one-way message
             CSMessage csMessage = CSMessage.fromBytes(el.getMsg());
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getTotalFixedFees(to.net());
-        accumulateFees(to.net());
+        BigInteger fee = getFee(to.net(), false);
+        assertEquals(forwardFee.add(protocolFee), fee);
+        accumulateFee(fee, protocolFee);
         Map<String, Object> params = new HashMap<>();
         params.put("_to", to.toString());
         params.put("_data", data);
@@ -148,7 +143,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         });
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, srcSn, csMsg.toBytes());
+                linkNet, CallService.NAME, srcSn, csMsg.toBytes());
     }
 
     @Order(2)
@@ -171,7 +166,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var checker = CSIntegrationTest.callRequestClearedEventShouldNotExists();
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
+                linkNet, CallService.NAME, dstSn, csMsg.toBytes());
     }
 
     @Order(4)
@@ -183,14 +178,13 @@ class CallServiceImplTest implements CSIntegrationTest {
         var checker = CSIntegrationTest.rollbackMessageEventShouldNotExists();
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
+                linkNet, CallService.NAME, dstSn, csMsg.toBytes());
     }
 
     @Order(5)
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     void maxPayloadsTest() {
-        BigInteger fee = getTotalFixedFees(to.net());
         byte[][][] cases = {
                 {new byte[CallServiceImpl.MAX_DATA_SIZE + 1], null},
                 {new byte[CallServiceImpl.MAX_DATA_SIZE], new byte[CallServiceImpl.MAX_ROLLBACK_SIZE + 1]},
@@ -202,33 +196,11 @@ class CallServiceImplTest implements CSIntegrationTest {
             if (c[1] != null) {
                 params.put("_rollback", c[1]);
             }
+            BigInteger fee = getFee(to.net(), c[1] != null);
             AssertRevertedException.assertUserReverted(0, () ->
                     sampleClient._send(fee, "sendMessage", params)
             );
         }
-    }
-
-    @Order(9)
-    @Test
-    void fixedFeesTest() {
-        BigInteger defaultTotalFees = getTotalFixedFees(to.net());
-        assertEquals(BigInteger.valueOf(11).multiply(EXA), defaultTotalFees);
-
-        // new fees for the net
-        BigInteger relayFee = BigInteger.TWO.multiply(EXA);
-        BigInteger protocolFee = EXA;
-
-        var checker = CSIntegrationTest.fixedFeesUpdatedEvent((el) -> {
-            assertEquals(to.net(), el.getNet());
-            assertEquals(relayFee, el.getRelayFee());
-            assertEquals(protocolFee, el.getProtocolFee());
-        });
-        fixedFees.setFixedFees(checker, to.net(), relayFee, protocolFee);
-
-        assertEquals(relayFee, getFixedFee(to.net(), "relay"));
-        assertEquals(protocolFee, getFixedFee(to.net(), "protocol"));
-        assertEquals(relayFee.add(protocolFee), getTotalFixedFees(to.net()));
-        assertEquals(defaultTotalFees, getTotalFixedFees("default"));
     }
 
     @Order(10)
@@ -245,14 +217,14 @@ class CallServiceImplTest implements CSIntegrationTest {
         var request = new CSMessageRequest(sampleAddress.toString(), fakeTo.account(), sn, true, data);
         var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
             assertEquals(linkNet, el.getTo());
-            assertEquals(CallServiceImpl.SERVICE, el.getSvc());
+            assertEquals(CallService.NAME, el.getSvc());
             assertEquals(sn, el.getSn());
             CSMessage csMessage = CSMessage.fromBytes(el.getMsg());
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
         });
-        BigInteger fee = getTotalFixedFees(to.net());
-        accumulateFees(to.net());
+        BigInteger fee = getFee(to.net(), true);
+        accumulateFee(fee, protocolFee);
         Map<String, Object> params = new HashMap<>();
         params.put("_to", fakeTo.toString());
         params.put("_data", data);
@@ -269,14 +241,16 @@ class CallServiceImplTest implements CSIntegrationTest {
         var request = new CSMessageRequest(from.account(), fakeTo.account(), srcSn, true, data);
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(csAddress,
-                linkNet, CallServiceImpl.SERVICE, srcSn, csMsg.toBytes());
+                linkNet, CallService.NAME, srcSn, csMsg.toBytes());
+        // add response info to BMC mock
+        MockBMCIntegrationTest.mockBMC.addResponse(fakeTo.net(), CallService.NAME, srcSn);
 
         // expect executeCall failure
         var reqId = getNextReqId();
         var response = new CSMessageResponse(srcSn, CSMessageResponse.FAILURE, "java.lang.IllegalArgumentException");
         var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
             assertEquals(linkNet, el.getTo());
-            assertEquals(CallServiceImpl.SERVICE, el.getSvc());
+            assertEquals(CallService.NAME, el.getSvc());
             CSMessage csMessage = CSMessage.fromBytes(el.getMsg());
             assertEquals(CSMessage.RESPONSE, csMessage.getType());
             AssertCallService.assertEqualsCSMessageResponse(response, CSMessageResponse.fromBytes(csMessage.getData()));
@@ -305,7 +279,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
+                linkNet, CallService.NAME, dstSn, csMsg.toBytes());
     }
 
     @Order(14)
@@ -324,9 +298,20 @@ class CallServiceImplTest implements CSIntegrationTest {
 
     @Order(15)
     @Test
+    void setProtocolFeeHandler() {
+        BigInteger feeBalance = callSvc._balance();
+        assertEquals(accruedFees.get("protocol"), feeBalance);
+
+        assertEquals(BigInteger.ZERO, callSvc._balance(protocolFeeHandler));
+        feeManager.setProtocolFeeHandler(protocolFeeHandler);
+        assertEquals(feeBalance, callSvc._balance(protocolFeeHandler));
+    }
+
+    @Order(16)
+    @Test
     void handleBTPMessageWithSuccessResponse() {
         // prepare another call request
-        _sendCallMessageWithRollback(BigInteger.TWO); // +1 due to executeCall response
+        _sendCallMessageWithRollback(BigInteger.ONE);
 
         // check the CallRequestCleared event
         var dstSn = BigInteger.TEN;
@@ -337,16 +322,22 @@ class CallServiceImplTest implements CSIntegrationTest {
         }).andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
-                linkNet, CallServiceImpl.SERVICE, dstSn, csMsg.toBytes());
+                linkNet, CallService.NAME, dstSn, csMsg.toBytes());
     }
 
-    @Order(19)
+    @Order(17)
     @Test
-    void verifyAccruedFees() {
-        final String[] types = {"relay", "protocol"};
-        for (String type : types) {
-            assertEquals(accruedFees.get(type), getAccruedFees(type));
-        }
+    void verifyFeeTransfer() {
+        assertEquals(BigInteger.ZERO, callSvc._balance());
+        assertEquals(accruedFees.get("protocol"), callSvc._balance(protocolFeeHandler));
+    }
+
+    @Order(18)
+    @Test
+    void resetProtocolFeeHandler() {
+        assertEquals(protocolFeeHandler, feeManager.getProtocolFeeHandler());
+        feeManager._send("setProtocolFeeHandler", null);
+        assertNull(feeManager.getProtocolFeeHandler());
     }
 
     @Order(20)
@@ -363,7 +354,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
         MockBMCIntegrationTest.mockBMC.handleBTPError(
                 checker, csAddress,
-                btpAddress.toString(), CallServiceImpl.SERVICE, srcSn, 1, "BTPError");
+                btpAddress.toString(), CallService.NAME, srcSn, 1, "BTPError");
     }
 
     @Order(21)

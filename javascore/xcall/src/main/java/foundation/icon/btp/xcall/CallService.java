@@ -26,6 +26,10 @@ import java.math.BigInteger;
 
 @ScoreClient
 public interface CallService {
+    /**
+     * The name of CallService.
+     */
+    String NAME = "xcall";
 
     /*======== At the source CALL_BSH ========*/
     /**

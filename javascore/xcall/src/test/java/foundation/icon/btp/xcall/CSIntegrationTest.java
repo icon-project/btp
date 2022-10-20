@@ -31,15 +31,13 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
     CallServiceScoreClient callSvc = new CallServiceScoreClient(DefaultScoreClient.of(
             System.getProperties(), Map.of(
                     "_bmc", MockBMCIntegrationTest.mockBMC._address())));
-    FixedFeesScoreClient fixedFees = new FixedFeesScoreClient(callSvc);
+
+    FeeManageScoreClient feeManager = new FeeManageScoreClient(callSvc);
 
     DAppProxySampleScoreClient sampleClient = new DAppProxySampleScoreClient(
             DefaultScoreClient.of("sample.",
                     System.getProperties(), Map.of(
                             "_callService", callSvc._address())));
-
-    CallService callSvcWithTester = new CallServiceScoreClient(
-            callSvc.endpoint(), callSvc._nid(), tester, callSvc._address());
 
     static Consumer<TransactionResult> callMessageEvent(
             Consumer<CallMessageEventLog> consumer) {
@@ -68,13 +66,6 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
 
     static Consumer<TransactionResult> callRequestClearedEventShouldNotExists() {
         return eventLogShouldNotExistsChecker(CallRequestClearedEventLog::eventLogs);
-    }
-
-    static Consumer<TransactionResult> fixedFeesUpdatedEvent(
-            Consumer<FixedFeesUpdatedEventLog> consumer) {
-        return eventLogChecker(
-                FixedFeesUpdatedEventLog::eventLogs,
-                consumer);
     }
 
     static <T> Consumer<TransactionResult> eventLogChecker(

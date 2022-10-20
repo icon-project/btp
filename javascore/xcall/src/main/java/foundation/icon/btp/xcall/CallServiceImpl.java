@@ -33,9 +33,8 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
-public class CallServiceImpl implements BSH, CallService, FixedFees {
+public class CallServiceImpl implements BSH, CallService, FeeManage {
     private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
-    public static final String SERVICE = "xcall";
     public static final int MAX_DATA_SIZE = 2048;
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
@@ -48,13 +47,9 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     private final DictDB<BigInteger, CSMessageRequest> proxyReqs = Context.newDictDB("proxyReqs", CSMessageRequest.class);
 
     // for fee-related operations
-    private static final BigInteger EXA = BigInteger.valueOf(1_000_000_000_000_000_000L);
-    private static final String DEFAULT = "default";
     private final VarDB<Address> admin = Context.newVarDB("admin", Address.class);
-    // netAddr => FeeConfig
-    private final DictDB<String, FeeConfig> feeTable = Context.newDictDB("feeTable", FeeConfig.class);
-    // fees type ==> accrued fees
-    private final DictDB<String, BigInteger> accruedFees = Context.newDictDB("accruedFees", BigInteger.class);
+    private final VarDB<Address> feeHandler = Context.newVarDB("feeHandler", Address.class);
+    private final VarDB<BigInteger> protocolFee = Context.newVarDB("protocolFee", BigInteger.class);
 
     public CallServiceImpl(Address _bmc) {
         // set bmc address only for the first deploy
@@ -63,11 +58,6 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
             BMCScoreInterface bmcInterface = new BMCScoreInterface(_bmc);
             BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
             net.set(btpAddress.net());
-        }
-        // set default fees to (10, 1) ICX
-        if (feeTable.get(DEFAULT) == null) {
-            FeeConfig fees = new FeeConfig(EXA.multiply(BigInteger.TEN), EXA);
-            feeTable.set(DEFAULT, fees);
         }
     }
 
@@ -84,7 +74,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     }
 
     private void checkService(String _svc) {
-        Context.require(SERVICE.equals(_svc), "InvalidServiceName");
+        Context.require(NAME.equals(_svc), "InvalidServiceName");
     }
 
     private BigInteger getNextSn() {
@@ -117,24 +107,31 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         Context.require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");
         Context.require(_rollback == null || _rollback.length <= MAX_ROLLBACK_SIZE, "MaxRollbackSizeExceeded");
 
+        boolean needResponse = _rollback != null;
         BTPAddress dst = BTPAddress.valueOf(_to);
         BigInteger value = Context.getValue();
-        FeeConfig fees = getFees(dst.net());
-        Context.require(value.compareTo(fees.getTotalFees()) >= 0, "InsufficientFee");
-        // accumulate fees per type
-        BigInteger relayFee = fees.getFee("relay");
-        BigInteger protocolFee = value.subtract(relayFee); // residual goes to protocol fee
-        accruedFees.set("relay", accruedFees("relay").add(relayFee));
-        accruedFees.set("protocol", accruedFees("protocol").add(protocolFee));
+        BigInteger requiredFee = getFee(dst.net(), needResponse);
+        Context.require(value.compareTo(requiredFee) >= 0, "InsufficientFee");
 
+        // handle protocol fee
+        Address feeHandler = getProtocolFeeHandler();
+        BigInteger protocolFee = getProtocolFee();
+        if (feeHandler != null && protocolFee.signum() > 0) {
+            // we trust fee handler, it should just accept the protocol fee and return
+            // assume that no reentrant cases occur here
+            Context.transfer(feeHandler, protocolFee);
+        }
+
+        BigInteger relayFee = value.subtract(protocolFee);
         BigInteger sn = getNextSn();
-        CallMessageSent(caller, dst.toString(), sn, _data);
-        if (_rollback != null) {
+        if (needResponse) {
             CallRequest req = new CallRequest(caller, dst.toString(), _rollback);
             requests.set(sn, req);
         }
-        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), sn, _rollback != null, _data);
-        sendBTPMessage(dst.net(), CSMessage.REQUEST, sn, msgReq.toBytes());
+        CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), sn, needResponse, _data);
+        BigInteger nsn = sendBTPMessage(relayFee, dst.net(), CSMessage.REQUEST,
+                needResponse ? sn : BigInteger.ZERO, msgReq.toBytes());
+        CallMessageSent(caller, dst.toString(), sn, nsn, _data);
         return sn;
     }
 
@@ -145,11 +142,6 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         Context.require(req != null, "InvalidRequestId");
         // cleanup
         proxyReqs.set(_reqId, null);
-
-        BigInteger sn = null;
-        if (req.needRollback()) {
-            sn = getNextSn();
-        }
 
         BTPAddress from = BTPAddress.valueOf(req.getFrom());
         CSMessageResponse msgRes = null;
@@ -168,7 +160,8 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         } finally {
             // send response only when there was a rollback
             if (req.needRollback()) {
-                sendBTPMessage(from.net(), CSMessage.RESPONSE, sn, msgRes.toBytes());
+                BigInteger sn = req.getSn().negate();
+                sendBTPMessage(BigInteger.ZERO, from.net(), CSMessage.RESPONSE, sn, msgRes.toBytes());
             }
         }
     }
@@ -200,7 +193,7 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=3)
-    private void CallMessageSent(Address _from, String _to, BigInteger _sn, byte[] _data) {}
+    private void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data) {}
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=1)
@@ -238,10 +231,10 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
     }
     /* ========================================= */
 
-    private void sendBTPMessage(String netTo, int msgType, BigInteger sn, byte[] data) {
+    private BigInteger sendBTPMessage(BigInteger value, String netTo, int msgType, BigInteger sn, byte[] data) {
         CSMessage msg = new CSMessage(msgType, data);
         BMCScoreInterface bmc = new BMCScoreInterface(this.bmc.get());
-        bmc.sendMessage(netTo, SERVICE, sn, msg.toBytes());
+        return bmc.sendMessage(value, netTo, NAME, sn, msg.toBytes());
     }
 
     private void handleRequest(String netFrom, BigInteger sn, byte[] data) {
@@ -292,42 +285,42 @@ public class CallServiceImpl implements BSH, CallService, FixedFees {
         admin.set(_address);
     }
 
-    private FeeConfig getFees(String _net) {
-        FeeConfig fees = feeTable.get(_net);
-        if (fees == null) {
-            fees = feeTable.get(DEFAULT);
+    @External
+    public void setProtocolFeeHandler(@Optional Address _addr) {
+        checkCallerOrThrow(admin(), "OnlyAdmin");
+        feeHandler.set(_addr);
+        if (_addr != null) {
+            var accruedFees = Context.getBalance(Context.getAddress());
+            if (accruedFees.signum() > 0) {
+                Context.transfer(_addr, accruedFees);
+            }
         }
-        return fees;
     }
 
     @External(readonly=true)
-    public BigInteger fixedFee(String _net, String _type) {
-        FeeConfig fees = getFees(_net);
-        return fees.getFee(_type);
-    }
-
-    @External(readonly=true)
-    public BigInteger totalFixedFees(String _net) {
-        FeeConfig fees = getFees(_net);
-        return fees.getTotalFees();
+    public Address getProtocolFeeHandler() {
+        return feeHandler.get();
     }
 
     @External
-    public void setFixedFees(String _net, BigInteger _relay, BigInteger _protocol) {
+    public void setProtocolFee(BigInteger _value) {
         checkCallerOrThrow(admin(), "OnlyAdmin");
-        if (_net.isEmpty() || _net.indexOf('/') != -1 || _net.indexOf(':') != -1) {
-            Context.revert("InvalidNetworkAddress");
-        }
-        FeeConfig fees = new FeeConfig(_relay, _protocol);
-        feeTable.set(_net, fees);
-        FixedFeesUpdated(_net, _relay, _protocol);
+        Context.require(_value.signum() >= 0, "ValueShouldBePositive");
+        protocolFee.set(_value);
     }
 
     @External(readonly=true)
-    public BigInteger accruedFees(String _type) {
-        return accruedFees.getOrDefault(_type, BigInteger.ZERO);
+    public BigInteger getProtocolFee() {
+        return protocolFee.getOrDefault(BigInteger.ZERO);
     }
 
-    @EventLog(indexed=1)
-    public void FixedFeesUpdated(String _net, BigInteger _relay, BigInteger _protocol) {}
+    @External(readonly=true)
+    public BigInteger getFee(String _net, boolean _rollback) {
+        if (_net.isEmpty() || _net.indexOf('/') != -1 || _net.indexOf(':') != -1) {
+            Context.revert("InvalidNetworkAddress");
+        }
+        BMCScoreInterface bmc = new BMCScoreInterface(this.bmc.get());
+        var relayFee = bmc.getFee(_net, _rollback);
+        return getProtocolFee().add(relayFee);
+    }
 }
