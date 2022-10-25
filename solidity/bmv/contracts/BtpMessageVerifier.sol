@@ -76,7 +76,8 @@ contract BtpMessageVerifier is IBMV {
         );
     }
 
-    function getStatus() external view returns (uint256, bytes memory) {
+    /// @inheritdoc IBMV
+    function getStatus() external view override returns (uint256, bytes memory) {
         bytes[] memory extra = new bytes[](3);
         extra[0] = RLPEncode.encodeUint(sequenceOffset);
         extra[1] = RLPEncode.encodeUint(db.firstMessageSn);
@@ -84,18 +85,16 @@ contract BtpMessageVerifier is IBMV {
         return (db.height, RLPEncode.encodeList(extra));
     }
 
+    /// @inheritdoc IBMV
     function handleRelayMessage(
         string memory,
         string memory _prev,
         uint256 _sn,
         bytes memory _msg
     ) external onlyBmc onlyBtpNetwork(_prev) returns (bytes[] memory messages) {
-        require(_sn >= sequenceOffset, ERR_INVALID_ARGS);
-
         StateDB memory _db = db;
+        require(_db.nextMessageSn == _sn + sequenceOffset, ERR_INVALID_ARGS);
         uint256 remainMessageCount = _db.messageCount - (_db.nextMessageSn - _db.firstMessageSn);
-
-        checkMessageSn(_db.nextMessageSn, _sn - sequenceOffset);
         RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
 
         for (uint256 i = 0; i < rms.length; i++) {
@@ -107,7 +106,6 @@ contract BtpMessageVerifier is IBMV {
                 require(_db.networkSectionHash == header.prevNetworkSectionHash, Errors.ERR_UNKNOWN);
                 checkMessageSn(_db.nextMessageSn, header.messageSn);
                 checkBlockProof(header, proof, _db.validators);
-
                 _db.height = header.mainHeight;
                 _db.networkSectionHash = header.getNetworkSectionHash();
                 if (header.hasNextValidators) {
@@ -199,6 +197,7 @@ contract BtpMessageVerifier is IBMV {
         }
     }
 
+    /// @dev Check whether valid signatures from verifiers meets quorum
     function checkBlockProof(Header memory header, Proof memory proof, address[] memory validators) private view {
         uint256 votes = 0;
         bytes32 decision = header.getNetworkTypeSectionDecisionHash(srcNetworkId, networkTypeId);
