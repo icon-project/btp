@@ -90,12 +90,9 @@ contract BtpMessageVerifier is IBMV {
         uint256 _sn,
         bytes memory _msg
     ) external onlyBmc onlyBtpNetwork(_prev) returns (bytes[] memory messages) {
-        require(_sn >= sequenceOffset, ERR_INVALID_ARGS);
-
         StateDB memory _db = db;
+        require(_db.nextMessageSn == _sn - sequenceOffset, ERR_INVALID_ARGS);
         uint256 remainMessageCount = _db.messageCount - (_db.nextMessageSn - _db.firstMessageSn);
-
-        checkMessageSn(_db.nextMessageSn, _sn - sequenceOffset);
         RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
 
         for (uint256 i = 0; i < rms.length; i++) {
