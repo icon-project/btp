@@ -26,6 +26,7 @@ type BaseConfig struct {
 	Address      BtpAddress             `json:"address"`
 	Endpoint     string                 `json:"endpoint"`
 	Nid          int64                  `json:"nid"`
+	BridgeMode   bool                   `json:"bridgeMode"`
 	KeyStoreData json.RawMessage        `json:"key_store"`
 	KeyStorePass string                 `json:"key_password,omitempty"`
 	KeySecret    string                 `json:"key_secret,omitempty"`
@@ -34,9 +35,9 @@ type BaseConfig struct {
 
 type Config struct {
 	config.FileConfig `json:",squash"` //instead of `mapstructure:",squash"`
-	Src               BaseConfig `json:"src"`
-	Dst               BaseConfig `json:"dst"`
-	MaxSizeTx         bool       `json:"maxSizeTx"`
-	Direction         string     `json:"direction"`
-	Offset            int64      `json:"offset"`
+	Src               BaseConfig       `json:"src"`
+	Dst               BaseConfig       `json:"dst"`
+	MaxSizeTx         bool             `json:"maxSizeTx"`
+	Direction         string           `json:"direction"`
+	Offset            int64            `json:"offset"`
 }

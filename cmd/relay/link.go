@@ -24,7 +24,6 @@ import (
 	"github.com/icon-project/btp/chain/bsc"
 	bscChain "github.com/icon-project/btp/chain/bsc"
 	"github.com/icon-project/btp/chain/icon"
-	iconChain "github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
 )
@@ -100,7 +99,7 @@ func newChain(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, link
 	var chain chain.Chain
 	switch name {
 	case ICON:
-		chain = iconChain.NewChain(&cfg, l)
+		chain = icon.NewChain(&cfg, l)
 	case ETH:
 		chain = bscChain.NewChain(&cfg, l)
 	default:
@@ -108,7 +107,7 @@ func newChain(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, link
 	}
 
 	go func() {
-		err := chain.Serve(newSender(cfg.Src.Address.BlockChain(), cfg.Src, cfg.Dst, w, l))
+		err := chain.Serve(newSender(cfg.Dst.Address.BlockChain(), cfg.Src, cfg.Dst, w, l))
 		select {
 		case linkErrCh <- err:
 		default:

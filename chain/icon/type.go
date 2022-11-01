@@ -431,12 +431,6 @@ type NetworkInfo struct {
 	LastNSHash      HexBytes `json:"lastNSHash"`
 }
 
-//type BTPBlock struct {
-//	BTPBlockUpdate
-//	Proof    []byte
-//	Messages [][]byte
-//}
-
 type BTPBlockUpdate struct {
 	BTPBlockHeader []byte
 	BTPBlockProof  []byte

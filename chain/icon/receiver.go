@@ -56,22 +56,32 @@ func (r *Receiver) GetBTPBlockHeader(height int64, nid int64) ([]byte, error) {
 	return h, nil
 }
 
-func (r *Receiver) GetBTPMessage(height int64, nid int64) ([][]byte, error) {
+func (r *Receiver) GetBTPMessage(height int64, nid int64) ([]string, error) {
 	pr := &BTPBlockParam{Height: HexInt(intconv.FormatInt(height)), NetworkId: HexInt(intconv.FormatInt(nid))}
 	mgs, err := r.c.GetBTPMessage(pr)
 	if err != nil {
 		return nil, err
 	}
-	result := make([][]byte, 0)
-	for _, mg := range mgs {
-		m, err := base64.StdEncoding.DecodeString(mg)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, m)
-	}
 
-	return result, nil
+	return mgs, nil
+}
+
+func (r *Receiver) getBTPLinkOffset() (offset int64, err error) {
+	p := &CallParam{
+		ToAddress: Address(r.src.Account()),
+		DataType:  "call",
+		Data: CallData{
+			Method: "getBTPLinkOffset",
+			Params: BMCStatusParams{
+				Target: r.dst.String(),
+			},
+		},
+	}
+	var ret HexInt
+	if err = r.c.Call(p, &ret); err != nil {
+		return
+	}
+	return ret.Value()
 }
 
 func (r *Receiver) GetBTPProof(height int64, nid int64) ([]byte, error) {

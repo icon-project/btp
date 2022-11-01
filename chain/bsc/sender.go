@@ -17,7 +17,6 @@
 package bsc
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -30,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/icon-project/btp/chain/bsc/binding"
+	"github.com/icon-project/btp/common/wallet"
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/codec"
@@ -83,28 +83,9 @@ func (s *sender) newTransactionParam(prev string, rm *RelayMessage) (*Transactio
 	return p, nil
 }
 
-func (s *sender) UpdateSegment(bp *chain.BlockProof, segment *chain.Segment) error {
-	//p := segment.TransactionParam.(*TransactionParam)
-	cd := CallData{}
-	rmp := cd.Params.(BMCRelayMethodParams)
-	msg := &RelayMessage{}
-	b, err := base64.URLEncoding.DecodeString(rmp.Messages)
-	if _, err = codec.RLP.UnmarshalFromBytes(b, msg); err != nil {
-		return err
-	}
-	if msg.BlockProof, err = codec.RLP.MarshalToBytes(bp); err != nil {
-		return err
-	}
-	segment.TransactionParam, err = s.newTransactionParam(rmp.Prev, msg)
-	return err
-}
-
 func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	p := segment.TransactionParam.([]byte)
-
-	t, err := s.c.newTransactOpts(s.w)
+	t, err := s.c.NewTransactOpts(s.w.(*wallet.EvmWallet).Skey)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +96,9 @@ func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 		s.l.Errorf("handleRelayMessage: ", err.Error())
 		return nil, err
 	}
-	thp := &TransactionHashParam{}
-	thp.Hash = tx.Hash()
-	//s.l.Debugf("HandleRelayMessage tx hash:%s, prev %s, msg: %s", thp.Hash, rmp.Prev, base64.URLEncoding.EncodeToString([]byte(rmp.Messages)))
-	return thp, nil
+	txh := tx.Hash()
+	return txh, nil
+
 }
 
 func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
