@@ -5,3 +5,11 @@ __pycache__
 build/
 bin/
 node_modules/
+**/*.jar
+
+#for test
+cmd/bridge/pkg
+**/*.sh
+**/*.json
+docker-compose/
+/hub/

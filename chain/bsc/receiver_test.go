@@ -14,6 +14,7 @@ func TestReceiver_GetReceiptProofs(t *testing.T) {
 	var src, dst chain.BtpAddress
 	err := src.Set("btp://0x97.icon/0xAaFc8EeaEE8d9C8bD3262CCE3D73E56DeE3FB776")
 	err = dst.Set("btp://0xf8aac3.icon/cxea19a7d6e9a926767d1d05eea467299fe461c0eb")
+	seq := 100
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -21,7 +22,7 @@ func TestReceiver_GetReceiptProofs(t *testing.T) {
 	r := NewReceiver(src, dst, "http://localhost:8545", nil, log.New())
 
 	blockNotification := &BlockNotification{Height: big.NewInt(191)}
-	receiptProofs, err := r.(*receiver).newReceiptProofs(blockNotification)
+	receiptProofs, err := r.(*receiver).newReceiptProofs(blockNotification, big.NewInt(int64(seq)))
 
 	//fmt.Println(receiptProofs[0].Proof)
 

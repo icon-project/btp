@@ -105,10 +105,25 @@ dist-java-bmc: $(JAVASCORE_DIST_DIR)/bmc.jar
     ./gradlew :bmc:optimizedJar ; \
     cp ./bmc/build/libs/bmc-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmc.jar
 
+dist-java-xcall: $(JAVASCORE_DIST_DIR)/xcall.jar
+	cd javascore ; \
+    ./gradlew :bmc:optimizedJar ; \
+    cp ./bmc/build/libs/bmc-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmc.jar
+
 dist-java-bmv-icon: $(JAVASCORE_DIST_DIR)/bmv-icon.jar
 	cd javascore ; \
     ./gradlew :bmv:icon:optimizedJar ; \
     cp ./bmv/icon/build/libs/bmv-icon-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmv-icon.jar
+
+dist-java-bmv-btpblock: $(JAVASCORE_DIST_DIR)/bmv-btpblock.jar
+	cd javascore ; \
+    ./gradlew :bmv:btpblock:optimizedJar ; \
+    cp ./bmv/btpblock/build/libs/bmv-btpblock-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmv-btpblock.jar
+
+dist-java-bmv-bridge: $(JAVASCORE_DIST_DIR)/bmv-bridge.jar
+	cd javascore ; \
+    ./gradlew :bmv:bridge:optimizedJar ; \
+    cp ./bmv/bridge/build/libs/bmv-bridge-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bmv-bridge.jar
 
 dist-java-bsh: $(JAVASCORE_DIST_DIR)/bsh.jar
 	cd javascore ; \
@@ -116,6 +131,14 @@ dist-java-bsh: $(JAVASCORE_DIST_DIR)/bsh.jar
     cp ./bsh/build/libs/bsh-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bsh.jar ; \
     ./gradlew :bsh:optimizedJarIRC2 ; \
     cp ./bsh/build/libs/irc2-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc2.jar
+
+dist-java-debug-bsh: $(JAVASCORE_DIST_DIR)/bsh.jar
+	cd javascore ; \
+    ./gradlew :bsh:optimizedJar ; \
+    cp ./bsh/build/libs/bsh-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/bsh.jar ; \
+    ./gradlew :bsh:optimizedJarIRC2 ; \
+    cp ./bsh/build/libs/irc2-?.?.?-*.jar $(JAVASCORE_DIST_DIR)/irc2.jar
+
 
 dist-java-nativecoin: $(JAVASCORE_DIST_DIR)/nativecoin.jar
 	cd javascore ; \
@@ -129,7 +152,7 @@ dist-java-feeaggregation: $(JAVASCORE_DIST_DIR)/fee-aggregation.jar
     ./gradlew :fee-aggregation:optimizedJar ; \
     cp ./fee-aggregation/build/libs/fee-aggregation-?.?-*.jar $(JAVASCORE_DIST_DIR)/fee-aggregation.jar ; \
 
-dist-java: dist-java-bmc dist-java-bmv-icon dist-java-bsh dist-java-nativecoin dist-java-feeaggregation
+dist-java: dist-java-bmc dist-java-bmv-icon dist-java-bmv-btpblock dist-java-bmv-bridge dist-java-bsh dist-java-nativecoin dist-java-feeaggregation
 
 clean-java-build:
 	cd javascore ; \

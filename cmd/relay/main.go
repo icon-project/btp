@@ -42,7 +42,8 @@ var (
 )
 
 const (
-	DefaultKeyStorePass = "btp2"
+	//DefaultKeyStorePass = "btp2"
+	DefaultKeyStorePass = ""
 	BothDirection       = "both"
 	FrontDirection      = "front"
 	ReverseDirection    = "reverse"
@@ -168,20 +169,20 @@ func main() {
 	rootPFlags.String("src.address", "", "BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("src.endpoint", "", "Endpoint of source blockchain")
 	rootPFlags.StringToString("src.options", nil, "Options, comma-separated 'key=value'")
+	rootPFlags.Int64("src.nid", 1, "source network id")
+	rootPFlags.Bool("src.bridgeMode", false, "bridge mode( trustless )")
+	rootPFlags.String("src.key_store", "", "Source network id")
+	rootPFlags.String("src.key_password", "", "Source password of keyStore")
+	rootPFlags.String("src.key_secret", "", "Source Secret(password) file for keyStore")
+
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
-
-	//BTP2.0
-	rootPFlags.Int64("src.nid", 1, "source network id")
-	rootPFlags.Int64("src.key_store", 1, "Source network id")
-	rootPFlags.Int64("src.key_password", 1, "Source password of keyStore")
-	rootPFlags.Int64("src.key_secret", 1, "Source Secret(password) file for keyStore")
-
 	rootPFlags.Int64("dst.nid", 1, "Destination network id")
-	rootPFlags.Int64("dst.key_store", 1, "Destination network id")
-	rootPFlags.Int64("dst.key_password", 1, "Destination password of keyStore")
-	rootPFlags.Int64("dst.key_secret", 1, "Destination Secret(password) file for keyStore")
+	rootPFlags.Bool("dst.bridgeMode", false, "bridge mode( trustless )")
+	rootPFlags.String("dst.key_store", "", "Source network id")
+	rootPFlags.String("dst.key_password", "", "Source password of keyStore")
+	rootPFlags.String("dst.key_secret", "", "Source Secret(password) file for keyStore")
 
 	rootPFlags.String("direction", "both", "btp2.0 network direction ( both, front, reverse)")
 	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
