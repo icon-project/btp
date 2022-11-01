@@ -1,8 +1,6 @@
 package chain
 
-import (
-	"math/big"
-)
+import "math/big"
 
 var BigIntOne = big.NewInt(1)
 
@@ -23,7 +21,6 @@ type BlockProof struct {
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
-	Height      int64 //Bridge only
 	EventProofs []*EventProof
 	Events      []*Event
 }
@@ -87,7 +84,7 @@ type Sender interface {
 	TxSizeLimit() int
 }
 
-type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof) error
+type ReceiveCallback func(bu *BlockUpdate, rps []*ReceiptProof)
 
 type Receiver interface {
 	ReceiveLoop(height int64, seq *big.Int, cb ReceiveCallback, scb func()) error

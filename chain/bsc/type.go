@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -126,27 +125,51 @@ type BMCRelayMethodParams struct {
 	Messages string `json:"_msg"`
 }
 
+type BMCStatus struct {
+	TxSeq    HexInt `json:"tx_seq"`
+	RxSeq    HexInt `json:"rx_seq"`
+	Verifier struct {
+		Height     HexInt `json:"height"`
+		Offset     HexInt `json:"offset"`
+		LastHeight HexInt `json:"last_height"`
+	} `json:"verifier"`
+	BMRs []struct {
+		Address      Address `json:"address"`
+		BlockCount   HexInt  `json:"block_count"`
+		MessageCount HexInt  `json:"msg_count"`
+	} `json:"relays"`
+	BMRIndex         HexInt `json:"relay_idx"`
+	RotateHeight     HexInt `json:"rotate_height"`
+	RotateTerm       HexInt `json:"rotate_term"`
+	DelayLimit       HexInt `json:"delay_limit"`
+	MaxAggregation   HexInt `json:"max_agg"`
+	CurrentHeight    HexInt `json:"cur_height"`
+	RxHeight         HexInt `json:"rx_height"`
+	RxHeightSrc      HexInt `json:"rx_height_src"`
+	BlockIntervalSrc HexInt `json:"block_interval_src"`
+	BlockIntervalDst HexInt `json:"block_interval_dst"`
+}
+
 type TransactionHashParam struct {
 	Hash common.Hash
 }
 
 type BlockRequest struct {
-	Height      *big.Int
-	FilterQuery *ethereum.FilterQuery
+	Height       *big.Int       `json:"height"`
+	EventFilters []*EventFilter `json:"eventFilters,omitempty"`
 }
 
-//type EventFilter struct {
-//	Addr      Address   `json:"addr,omitempty"`
-//	Signature string    `json:"event"`
-//	Indexed   []*string `json:"indexed,omitempty"`
-//	Data      []*string `json:"data,omitempty"`
-//}
+type EventFilter struct {
+	Addr      Address   `json:"addr,omitempty"`
+	Signature string    `json:"event"`
+	Indexed   []*string `json:"indexed,omitempty"`
+	Data      []*string `json:"data,omitempty"`
+}
 
 type BlockNotification struct {
 	Hash   common.Hash
 	Height *big.Int
 	Header *types.Header
-	Logs   []types.Log
 }
 
 type BlockUpdate struct {
@@ -155,18 +178,47 @@ type BlockUpdate struct {
 	EvmHeader   []byte
 }
 
-type ExtraField struct {
-	ExtraVanity []byte
-}
-
 type RelayMessage struct {
-	Receipts [][]byte
+	BlockUpdates  [][]byte
+	BlockProof    []byte
+	ReceiptProofs [][]byte
+	//
+	height              int64
+	numberOfBlockUpdate int
+	eventSequence       int64
+	numberOfEvent       int
 }
 
-type Receipt struct {
-	Index  int64
-	Events []byte
-	Height int64
+func (r *RelayMessage) GetHeight() int64 {
+	return r.height
+}
+
+func (r *RelayMessage) GetNumberOfBlockUpdate() int {
+	return r.numberOfBlockUpdate
+}
+
+func (r *RelayMessage) GetEventSequence() int64 {
+	return r.eventSequence
+}
+
+func (r *RelayMessage) GetNumberOfEvent() int {
+	return r.numberOfEvent
+}
+
+func (r *RelayMessage) SetHeight(height int64) {
+	r.height = height
+}
+
+func (r *RelayMessage) SetNumberOfBlockUpdate(numberOfBlockUpdate int) {
+	r.numberOfBlockUpdate = numberOfBlockUpdate
+}
+
+func (r *RelayMessage) SetEventSequence(eventSequence int64) {
+	r.eventSequence = eventSequence
+}
+
+func (r *RelayMessage) SetNumberOfEvent(numberOfEvent int) {
+	r.numberOfEvent = numberOfEvent
 }
 
 type ReceiptProof struct {
@@ -269,6 +321,47 @@ func MakeLog(log *types.Log) *EVMLog {
 		BlockHash:   log.BlockHash.Bytes(),
 		Index:       log.Index,
 		Removed:     log.Removed,
+	}
+}
+
+type Receipt struct {
+	// Consensus fields: These fields are defined by the Yellow Paper
+	Type              uint8
+	PostState         []byte
+	Status            uint64
+	CumulativeGasUsed uint64
+	Bloom             []byte
+	Logs              []*EVMLog
+
+	TxHash          common.Hash
+	ContractAddress common.Address
+	GasUsed         uint64
+
+	BlockHash        common.Hash
+	BlockNumber      uint64
+	TransactionIndex uint
+}
+
+func MakeReceipt(receipt *types.Receipt) *Receipt {
+	logs := make([]*EVMLog, len(receipt.Logs))
+
+	for _, log := range receipt.Logs {
+		logs = append(logs, MakeLog(log))
+	}
+
+	return &Receipt{
+		Type:              receipt.Type,
+		PostState:         receipt.PostState,
+		Status:            receipt.Status,
+		CumulativeGasUsed: receipt.CumulativeGasUsed,
+		Bloom:             receipt.Bloom.Bytes(),
+		Logs:              logs,
+		TxHash:            receipt.TxHash,
+		ContractAddress:   receipt.ContractAddress,
+		GasUsed:           receipt.GasUsed,
+		BlockHash:         receipt.BlockHash,
+		BlockNumber:       receipt.BlockNumber.Uint64(),
+		TransactionIndex:  receipt.TransactionIndex,
 	}
 }
 

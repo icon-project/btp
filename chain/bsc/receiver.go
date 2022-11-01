@@ -22,9 +22,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"sort"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -36,21 +34,14 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/cmd/bridge/module/evmbridge/client"
-
-	//"github.com/icon-project/btp/cmd/bridge/module"
-	//"github.com/icon-project/btp/cmd/bridge/module/evmbridge/client"
+	"github.com/icon-project/btp/chain/bsc/binding"
 	"github.com/icon-project/btp/common/codec"
 
 	"github.com/icon-project/btp/common/log"
 )
 
 const (
-	EPOCH               = 200
-	EventSignature      = "Message(string,uint256,bytes)"
-	EventIndexSignature = 0
-	EventIndexNext      = 1
-	EventIndexSequence  = 2
+	EPOCH = 200
 )
 
 type receiver struct {
@@ -60,21 +51,9 @@ type receiver struct {
 	log log.Logger
 	opt struct {
 	}
-
+	consensusStates    ConsensusStates
 	evtReq             *BlockRequest
 	isFoundOffsetBySeq bool
-}
-
-func logToEvent(el *types.Log) (*chain.Event, error) {
-	bm, err := client.UnpackEventLog(el.Data)
-	if err != nil {
-		return nil, err
-	}
-	return &chain.Event{
-		Next:     chain.BtpAddress(bm.Next),
-		Sequence: bm.Seq,
-		Message:  bm.Msg,
-	}, nil
 }
 
 func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, error) {
@@ -96,10 +75,18 @@ func (r *receiver) newBlockUpdate(v *BlockNotification) (*chain.BlockUpdate, err
 		return nil, fmt.Errorf("mismatch block hash with BlockNotification")
 	}
 
+	/*proof, err := r.c.GetProof(v.Height, HexToAddress(r.src.ContractAddress()))
+	if err != nil {
+		return nil, err
+	}*/
+
+	if (v.Height.Int64() % EPOCH) == 0 {
+		r.consensusStates, err = r.c.GetLatestConsensusState()
+	}
+
 	update := &BlockUpdate{}
 	update.BlockHeader, _ = codec.RLP.MarshalToBytes(*header)
-	//TODO get validators
-	//update.Validators = header.Extra format marshal
+	update.Validators = r.consensusStates.NextValidatorSet
 	buf := new(bytes.Buffer)
 	encodeSigHeader(buf, v.Header)
 	update.EvmHeader = buf.Bytes()
@@ -137,42 +124,72 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	}
 }
 
-func (r *receiver) newReceiptProofs(v *BlockNotification, seq *big.Int) ([]*chain.ReceiptProof, error) {
-	rpsMap := make(map[uint]*chain.ReceiptProof)
+func (r *receiver) newReceiptProofs(v *BlockNotification) ([]*chain.ReceiptProof, error) {
 	rps := make([]*chain.ReceiptProof, 0)
-EpLoop:
-	for _, el := range v.Logs {
-		evt, err := logToEvent(&el)
-		r.log.Debugf("event[seq:%d next:%s] seq:%d dst:%s",
-			evt.Sequence, evt.Next, seq, r.dst.String())
-		if err != nil {
-			return nil, err
-		}
-		if evt.Sequence.Int64() <= seq.Int64() {
-			continue EpLoop
-		}
-		//below statement is unnecessary if 'next' is indexed
-		if evt.Next.String() != r.dst.String() {
-			continue EpLoop
-		}
-		rp, ok := rpsMap[el.TxIndex]
-		if !ok {
-			rp = &chain.ReceiptProof{
-				Index:  int(el.TxIndex),
-				Events: make([]*chain.Event, 0),
-				Height: int64(el.BlockNumber),
-			}
-			rpsMap[el.TxIndex] = rp
-		}
-		rp.Events = append(rp.Events, evt)
+
+	block, err := r.c.GetBlockByHeight(v.Height)
+	if err != nil {
+		return nil, err
 	}
-	if len(rpsMap) > 0 {
-		for _, rp := range rpsMap {
+
+	if len(block.Transactions()) == 0 {
+		return rps, nil
+	}
+
+	receipts, err := r.c.GetBlockReceipts(block)
+	if err != nil {
+		return nil, err
+	}
+
+	if block.GasUsed() == 0 {
+		r.log.Println("Block %s has 0 gas", block.Number(), len(block.Transactions()))
+		return rps, nil
+	}
+
+	srcContractAddress := HexToAddress(r.src.ContractAddress())
+
+	receiptTrie, err := trieFromReceipts(receipts) // receiptTrie.Hash() == block.ReceiptHash
+
+	for _, receipt := range receipts {
+		rp := &chain.ReceiptProof{}
+
+		for _, eventLog := range receipt.Logs {
+			if eventLog.Address != srcContractAddress {
+				continue
+			}
+
+			if bmcMsg, err := binding.UnpackEventLog(eventLog.Data); err == nil {
+				rp.Events = append(rp.Events, &chain.Event{
+					Message:  bmcMsg.Msg,
+					Next:     chain.BtpAddress(bmcMsg.Next),
+					Sequence: bmcMsg.Seq,
+				})
+			}
+
+			proof, err := codec.RLP.MarshalToBytes(*MakeLog(eventLog))
+			if err != nil {
+				return nil, err
+			}
+			rp.EventProofs = append(rp.EventProofs, &chain.EventProof{
+				Index: int(eventLog.Index),
+				Proof: proof,
+			})
+		}
+
+		if len(rp.Events) > 0 {
+			key, err := rlp.EncodeToBytes(receipt.TransactionIndex)
+			r.log.Debugf("newReceiptProofs: height:%d hash:%s key:%d", v.Height, block.ReceiptHash(), key)
+			proofs, err := receiptProof(receiptTrie, key)
+			if err != nil {
+				return nil, err
+			}
+			rp.Index = int(receipt.TransactionIndex)
+			rp.Proof, err = codec.RLP.MarshalToBytes(proofs)
+			if err != nil {
+				return nil, err
+			}
 			rps = append(rps, rp)
 		}
-		sort.Slice(rps, func(i int, j int) bool {
-			return rps[i].Index < rps[j].Index
-		})
 	}
 	return rps, nil
 }
@@ -218,35 +235,29 @@ func receiptProof(receiptTrie *trie.Trie, key []byte) ([][]byte, error) {
 }
 
 func (r *receiver) ReceiveLoop(height int64, seq *big.Int, cb chain.ReceiveCallback, scb func()) error {
-	var err error
-	fq := &ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(r.src.ContractAddress())},
-		Topics: [][]common.Hash{
-			{crypto.Keccak256Hash([]byte(EventSignature))},
-			//{crypto.Keccak256Hash([]byte(r.dst.String()))}, //if 'next' is indexed
-		},
-	}
-	r.log.Debugf("ReceiveLoop height:%d seq:%d filterQuery[Address:%s,Topic:%s]",
-		height, seq, fq.Addresses[0].String(), fq.Topics[0][0].Hex())
+	r.log.Debugf("ReceiveLoop connected")
 	br := &BlockRequest{
-		Height:      big.NewInt(height),
-		FilterQuery: fq,
+		Height: big.NewInt(height),
 	}
-	started := false
+	var err error
+	//if seq < 1 {
+	//	r.isFoundOffsetBySeq = true
+	//}
+	if seq.Cmp(chain.BigIntOne) < 0 {
+		r.isFoundOffsetBySeq = true
+	}
+	r.consensusStates, err = r.c.GetLatestConsensusState()
+	if err != nil {
+		r.log.Errorf(err.Error())
+	}
 	return r.c.MonitorBlock(br,
 		func(v *BlockNotification) error {
-			if !started {
-				started = true
-				scb()
-			}
-
 			var bu *chain.BlockUpdate
 			var rps []*chain.ReceiptProof
-
 			if bu, err = r.newBlockUpdate(v); err != nil {
 				return err
 			}
-			if rps, err = r.newReceiptProofs(v, seq); err != nil {
+			if rps, err = r.newReceiptProofs(v); err != nil {
 				return err
 			} else if r.isFoundOffsetBySeq {
 				cb(bu, rps)

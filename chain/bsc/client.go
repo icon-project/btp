@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 ICON Foundation
+ * Copyright 2021 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"math/big"
-	"strings"
-	"time"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +27,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/icon-project/btp/chain/bsc/systemcontracts"
+	"github.com/icon-project/btp/common/wallet"
+	"math/big"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/icon-project/btp/common/log"
 )
@@ -50,19 +52,25 @@ var (
 	BlockRetryLimit                   = 5
 )
 
+type jsonError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 type Wallet interface {
 	Sign(data []byte) ([]byte, error)
 	Address() string
 }
 
 type Client struct {
-	uri          string
-	log          log.Logger
-	subscription *rpc.ClientSubscription
-	ethClient    *ethclient.Client
-	rpcClient    *rpc.Client
-	chainID      *big.Int
-	stop         <-chan bool
+	log                   log.Logger
+	subscription          *rpc.ClientSubscription
+	ethClient             *ethclient.Client
+	rpcClient             *rpc.Client
+	chainID               *big.Int
+	tendermintLightClient *systemcontracts.Tendermintlightclient
+	stop                  <-chan bool
 }
 
 func toBlockNumArg(number *big.Int) string {
@@ -87,8 +95,33 @@ func newTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit u
 	})
 }
 
-func (c *Client) NewTransactOpts(k *ecdsa.PrivateKey) (*bind.TransactOpts, error) {
-	txo, err := bind.NewKeyedTransactorWithChainID(k, c.chainID)
+func (c *Client) GetRevertMessage(hash common.Hash) (string, error) {
+	tx, _, err := c.ethClient.TransactionByHash(context.Background(), hash)
+	if err != nil {
+		return "", err
+	}
+
+	from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
+	if err != nil {
+		return "", err
+	}
+
+	msg := ethereum.CallMsg{
+		From:     from,
+		To:       tx.To(),
+		Gas:      tx.Gas(),
+		GasPrice: tx.GasPrice(),
+		Value:    tx.Value(),
+		Data:     tx.Data(),
+	}
+
+	_, err = c.ethClient.CallContract(context.Background(), msg, nil)
+	return err.Error(), nil
+
+}
+
+func (c *Client) newTransactOpts(w Wallet) (*bind.TransactOpts, error) {
+	txo, err := bind.NewKeyedTransactorWithChainID(w.(*wallet.EvmWallet).Skey, c.chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,25 +177,22 @@ func (c *Client) GetTransaction(hash common.Hash) (*types.Transaction, bool, err
 func (c *Client) GetBlockByHeight(height *big.Int) (*types.Block, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	return c.ethClient.BlockByNumber(ctx, height)
+	block, err := c.ethClient.BlockByNumber(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
-func (c *Client) GetHeaderByHeight(height *big.Int) (*types.Header, error) {
+func (c *Client) GetHeaderByHeight(height *big.Int) (*types.Block, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
-	return c.ethClient.HeaderByNumber(ctx, height)
+	block, err := c.ethClient.BlockByNumber(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
-
-//TODO delete
-//func (c *Client) GetHeaderByHeight(height *big.Int) (*types.Block, error) {
-//	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-//	defer cancel()
-//	block, err := c.ethClient.BlockByNumber(ctx, height)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return block, nil
-//}
 
 func (c *Client) GetProof(height *big.Int, addr common.Address) (StorageProof, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
@@ -188,138 +218,105 @@ func (c *Client) GetBlockReceipts(block *types.Block) ([]*types.Receipt, error) 
 	return receipts, nil
 }
 
-func (c *Client) FilterLogs(fq ethereum.FilterQuery) ([]types.Log, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-	defer cancel()
-	logs, err := c.ethClient.FilterLogs(ctx, fq)
-	if err != nil {
-		return nil, err
-	}
-	return logs, nil
-}
-
 func (c *Client) GetChainID() (*big.Int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 	return c.ethClient.ChainID(ctx)
 }
 
-func (c *Client) GetBlockNumber() (uint64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
-	defer cancel()
-	return c.ethClient.BlockNumber(ctx)
+func (c *Client) GetLatestConsensusState() (ConsensusStates, error) {
+	callOpts := &bind.CallOpts{
+		Pending: true,
+		Context: context.Background(),
+	}
+	lastHeight, _ := c.tendermintLightClient.LatestHeight(callOpts)
+	return c.tendermintLightClient.LightClientConsensusStates(callOpts, lastHeight)
 }
 
-// Poll deprecated
-func (c *Client) Poll(cb func(bh *types.Header) error) error {
-	n, err := c.GetBlockNumber()
+func (c *Client) GetConsensusState(height *big.Int) (ConsensusStates, error) {
+	callOpts := &bind.CallOpts{
+		Pending: true,
+		Context: context.Background(),
+	}
+	return c.tendermintLightClient.LightClientConsensusStates(callOpts, height.Uint64())
+}
+
+func (c *Client) MonitorBlock(p *BlockRequest, cb func(b *BlockNotification) error) error {
+	return c.Poll(p, cb)
+}
+
+func (c *Client) Poll(p *BlockRequest, cb func(b *BlockNotification) error) error {
+	go func() {
+		current := p.Height
+		var retry = BlockRetryLimit
+		for {
+			select {
+			case <-c.stop:
+				return
+			default:
+				// Exhausted all error retries
+				if retry == 0 {
+					c.log.Error("Polling failed, retries exceeded")
+					//l.sysErr <- ErrFatalPolling
+					return
+				}
+
+				latestHeader, err := c.ethClient.HeaderByNumber(context.Background(), current) // c.GetHeaderByHeight(current)
+				if err != nil {
+					c.log.Error("Unable to get latest block ", current, err)
+					retry--
+					<-time.After(BlockRetryInterval)
+					continue
+				}
+
+				if latestHeader.Number.Cmp(current) < 0 {
+					c.log.Debug("Block not ready, will retry", "target:", current, "latest:", latestHeader.Number)
+					<-time.After(BlockRetryInterval)
+					continue
+				}
+
+				v := &BlockNotification{
+					Height: current,
+					Hash:   latestHeader.Hash(),
+					Header: latestHeader,
+				}
+
+				if err := cb(v); err != nil {
+					c.log.Errorf(err.Error())
+				}
+
+				current.Add(current, big.NewInt(1))
+				retry = BlockRetryLimit
+			}
+		}
+	}()
+	return nil
+}
+
+func (c *Client) Monitor(cb func(b *BlockNotification) error) error {
+	subch := make(chan *types.Header)
+	sub, err := c.ethClient.SubscribeNewHead(context.Background(), subch)
 	if err != nil {
 		return err
 	}
-	current := new(big.Int).SetUint64(n)
-	var retry = BlockRetryLimit
-	for {
-		select {
-		case <-c.stop:
-			return nil
-		default:
-			// Exhausted all error retries
-			if retry == 0 {
-				c.log.Error("Polling failed, retries exceeded")
-				//l.sysErr <- ErrFatalPolling
-				return fmt.Errorf("Polling failed, retries exceeded")
-			}
-			var bh *types.Header
-			if bh, err = c.GetHeaderByHeight(current); err != nil {
-				if ethereum.NotFound == err {
-					c.log.Trace("Block not ready, will retry ", current)
-				} else {
-					c.log.Error("Unable to get block ", current, err)
+
+	go func() {
+		for {
+			select {
+			case err := <-sub.Err():
+				c.log.Fatal(err)
+			case header := <-subch:
+				b := &BlockNotification{Hash: header.Hash(), Height: header.Number, Header: header}
+				err := cb(b)
+				if err != nil {
+					return
 				}
-				retry--
-				<-time.After(BlockRetryInterval)
-				continue
+				c.log.Debugf("MonitorBlock %v", header.Number.Int64())
 			}
+		}
+	}()
 
-			if err = cb(bh); err != nil {
-				c.log.Errorf("Poll callback return err:%+v", err)
-				return err
-			}
-
-			current.Add(current, big.NewInt(1))
-			retry = BlockRetryLimit
-		}
-	}
-}
-
-func (c *Client) MonitorBlock(br *BlockRequest, cb func(b *BlockNotification) error) error {
-	onBlockHeader := func(bh *types.Header) error {
-		bn := &BlockNotification{
-			Hash:   bh.Hash(),
-			Height: bh.Number,
-			Header: bh,
-		}
-		if br.FilterQuery != nil {
-			var err error
-			fq := *br.FilterQuery
-			fq.BlockHash = &bn.Hash
-			if bn.Logs, err = c.FilterLogs(fq); err != nil {
-				c.log.Info("Unable to get logs ", err)
-				return err
-			}
-			c.log.Tracef("FilterLogs height:%d hash:%s logs:%d",
-				bn.Height.Int64(), fq.BlockHash.Hex(), len(bn.Logs))
-		}
-		return cb(bn)
-	}
-	var (
-		h   *big.Int
-		one = big.NewInt(1)
-	)
-	return c.Monitor(func(bh *types.Header) error {
-		if h == nil {
-			h = new(big.Int).Set(br.Height)
-			for ; h.Cmp(bh.Number) < 0; h = h.Add(h, one) {
-				if tbh, err := c.GetHeaderByHeight(h); err != nil {
-					c.log.Errorf("failure GetHeaderByHeight(%v) err:%+v", h, err)
-					return err
-				} else if err = onBlockHeader(tbh); err != nil {
-					return err
-				}
-			}
-		}
-		return onBlockHeader(bh)
-	})
-}
-
-func (c *Client) Monitor(cb func(bh *types.Header) error) error {
-	if strings.HasPrefix(c.uri, "http") {
-		return c.Poll(cb)
-	}
-	var (
-		s   ethereum.Subscription
-		err error
-		ch  = make(chan *types.Header)
-	)
-	if s, err = c.ethClient.SubscribeNewHead(context.Background(), ch); err != nil {
-		if rpc.ErrNotificationsUnsupported == err {
-			c.log.Infoln("%v, try polling", err)
-			return c.Poll(cb)
-		}
-		return err
-	}
-	for {
-		select {
-		case err = <-s.Err():
-			return err
-		case bh := <-ch:
-			if err = cb(bh); err != nil {
-				c.log.Errorf("MonitorBlock callback return err:%+v", err)
-				return err
-			}
-			c.log.Debugf("MonitorBlock %v", bh.Number.Int64())
-		}
-	}
+	return nil
 }
 
 func (c *Client) CloseMonitor() {
@@ -334,51 +331,72 @@ func (c *Client) CloseAllMonitor() {
 	c.CloseMonitor()
 }
 
-func (c *Client) GetBackend() bind.ContractBackend {
-	return c.ethClient
-}
-
-func (c *Client) GetRevertMessage(hash common.Hash) (string, error) {
-	tx, _, err := c.ethClient.TransactionByHash(context.Background(), hash)
-	if err != nil {
-		return "", err
-	}
-
-	from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
-	if err != nil {
-		return "", err
-	}
-
-	msg := ethereum.CallMsg{
-		From:     from,
-		To:       tx.To(),
-		Gas:      tx.Gas(),
-		GasPrice: tx.GasPrice(),
-		Value:    tx.Value(),
-		Data:     tx.Data(),
-	}
-
-	_, err = c.ethClient.CallContract(context.Background(), msg, nil)
-	return err.Error(), nil
-
-}
-
-func NewClient(uri string, l log.Logger) *Client {
+func NewClient(uri string, log log.Logger) *Client {
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump} }
 	rpcClient, err := rpc.Dial(uri)
 	if err != nil {
-		l.Fatal("Error creating client", err)
+		log.Fatal("Error creating client", err)
 	}
 	c := &Client{
-		uri:       uri,
 		rpcClient: rpcClient,
 		ethClient: ethclient.NewClient(rpcClient),
-		log:       l,
+		log:       log,
 	}
 	c.chainID, _ = c.GetChainID()
-	l.Tracef("Client Connected Chain ID: ", c.chainID)
+	log.Tracef("Client Connected Chain ID: ", c.chainID)
+	c.tendermintLightClient, err = systemcontracts.NewTendermintlightclient(tendermintLightClientContractAddr, c.ethClient)
 	if err != nil {
 		c.log.Error("Error creating tendermintLightclient system contract", err)
 	}
+	opts := BinanceOptions{}
+	opts.SetBool(IconOptionsDebug, true)
 	return c
+}
+
+const (
+	IconOptionsDebug   = "debug"
+	IconOptionsTimeout = "timeout"
+)
+
+type BinanceOptions map[string]string
+
+func (opts BinanceOptions) Set(key, value string) {
+	opts[key] = value
+}
+func (opts BinanceOptions) Get(key string) string {
+	if opts == nil {
+		return ""
+	}
+	v := opts[key]
+	if len(v) == 0 {
+		return ""
+	}
+	return v
+}
+func (opts BinanceOptions) Del(key string) {
+	delete(opts, key)
+}
+func (opts BinanceOptions) SetBool(key string, value bool) {
+	opts.Set(key, strconv.FormatBool(value))
+}
+func (opts BinanceOptions) GetBool(key string) (bool, error) {
+	return strconv.ParseBool(opts.Get(key))
+}
+func (opts BinanceOptions) SetInt(key string, v int64) {
+	opts.Set(key, strconv.FormatInt(v, 10))
+}
+func (opts BinanceOptions) GetInt(key string) (int64, error) {
+	return strconv.ParseInt(opts.Get(key), 10, 64)
+}
+func (opts BinanceOptions) ToHeaderValue() string {
+	if opts == nil {
+		return ""
+	}
+	strs := make([]string, len(opts))
+	i := 0
+	for k, v := range opts {
+		strs[i] = fmt.Sprintf("%s=%s", k, v)
+		i++
+	}
+	return strings.Join(strs, ",")
 }

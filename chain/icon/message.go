@@ -16,11 +16,6 @@ const (
 	RelayMessageTypeBlockProof
 )
 
-type RelayMessageImpl interface {
-	Segments() *chain.Segment
-	Size() (int, error)
-}
-
 type BTPRelayMessage struct {
 	height     int64
 	messageSeq int
@@ -94,8 +89,8 @@ func NewRelayMessage() *BTPRelayMessage {
 }
 
 type BTPBlockData struct {
-	Height int64
-	//MessageCnt    int64
+	Height        int64
+	MessageCnt    int64
 	Bu            *BTPBlockUpdate
 	Mt            *mbt.MerkleBinaryTree
 	PartialOffset int
