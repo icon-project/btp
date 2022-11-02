@@ -52,7 +52,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     public static final Address CHAIN_SCORE = Address.fromString("cx0000000000000000000000000000000000000000");
 
     public enum Internal {
-        Init, Link, Unlink, ClaimReward, Response;
+        Init, Link, Unlink, Claim, Response;
 
         public static Internal of(String s) {
             for (Internal internal : values()) {
@@ -101,6 +101,11 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     @External(readonly = true)
     public String getBtpAddress() {
         return btpAddr.toString();
+    }
+
+    @External(readonly = true)
+    public String getNetworkAddress() {
+        return btpAddr.net();
     }
 
     @External
@@ -336,7 +341,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
                 } else {
                     resolveNext(dstNet);
                 }
-                fees.put(dstNet, new Fee(dstNet, values));
+                fees.put(dstNet, new FeeInfo(dstNet, values));
             } else {
                 fees.remove(dstNet);
             }
@@ -344,7 +349,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     }
 
     private BigInteger[] getFeeList(String net, boolean includeBackward) {
-        Fee fee = fees.get(net);
+        FeeInfo fee = fees.get(net);
         if (fee == null) {
             return new BigInteger[]{};
         }
@@ -428,8 +433,8 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
             Context.transfer(toAddress(_receiver), reward);
             ClaimReward(caller, _network, _receiver, reward, BigInteger.ZERO);
         } else {
-            BMCMessage bmcMessage = new BMCMessage(Internal.ClaimReward.name(),
-                    new ClaimRewardMessage(reward, _receiver).toBytes());
+            BMCMessage bmcMessage = new BMCMessage(Internal.Claim.name(),
+                    new ClaimMessage(reward, _receiver).toBytes());
             BigInteger nsn = sendMessageWithFee(_network, INTERNAL_SERVICE, null, bmcMessage.toBytes(), false, true);
             requests.set(nsn, new BMCRequest(_network, bmcMessage, caller));
             ClaimReward(caller, _network, _receiver, reward, nsn);
@@ -634,9 +639,21 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         Internal internal = Internal.of(bmcMsg.getType());
         byte[] payload = bmcMsg.getPayload();
         switch (internal) {
-            case Init:
-                InitMessage initMsg = InitMessage.fromBytes(payload);
-                addReachable(src, initMsg.getLinks());
+            case Claim:
+                ClaimMessage claimMsg = ClaimMessage.fromBytes(payload);
+                BigInteger reward = claimMsg.getAmount();
+                Address receiver = toAddress(claimMsg.getReceiver());
+                addReward(receiver, btpAddr.net(), reward);
+                try {
+                    sendInternalResponse(src, nsn);
+                } catch (Exception e) {
+                    addReward(receiver, btpAddr.net(), reward.negate());
+                    throw e;
+                }
+                break;
+            case Response:
+                ResponseMessage responseMsg = ResponseMessage.fromBytes(payload);
+                handleResponse(nsn.negate(), responseMsg.getCode());
                 break;
             case Link:
                 LinkMessage linkMsg = LinkMessage.fromBytes(payload);
@@ -646,17 +663,12 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
                 UnlinkMessage unlinkMsg = UnlinkMessage.fromBytes(payload);
                 removeReachable(src, unlinkMsg.getLink());
                 break;
-            case ClaimReward:
-                ClaimRewardMessage claimMsg = ClaimRewardMessage.fromBytes(payload);
-                BigInteger reward = claimMsg.getAmount();
-                Address receiver = toAddress(claimMsg.getReceiver());
-                addReward(receiver, btpAddr.net(), reward);
-                sendInternalResponse(src, nsn);
+            case Init:
+                InitMessage initMsg = InitMessage.fromBytes(payload);
+                addReachable(src, initMsg.getLinks());
                 break;
-            case Response:
-                ResponseMessage responseMsg = ResponseMessage.fromBytes(payload);
-                handleResponse(nsn.negate(), responseMsg.getCode());
-                break;
+            default:
+                throw BMCException.unknown("not exists internal handler");
         }
     }
 
@@ -682,14 +694,16 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         if (request != null) {
             requests.set(nsn, null);
             BMCMessage bmcMessage = request.getMsg();
-            if (Internal.ClaimReward.name().equals(bmcMessage.getType())) {
-                ClaimRewardMessage claimMsg =
-                        ClaimRewardMessage.fromBytes(bmcMessage.getPayload());
+            if (Internal.Claim.name().equals(bmcMessage.getType())) {
+                ClaimMessage claimMsg =
+                        ClaimMessage.fromBytes(bmcMessage.getPayload());
                 if (ResponseMessage.CODE_SUCCESS != result) {
                     addReward(request.getCaller(), request.getDst(), claimMsg.getAmount());
                 }
                 ClaimRewardResult(request.getCaller(), request.getDst(), nsn, BigInteger.valueOf(result));
             }
+        } else {
+            throw BMCException.unknown("not exists request");
         }
     }
 
@@ -785,7 +799,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         } else if (BMCException.Code.NotExistsBSH.code == exception.getCodeOfType()) {
             code = ResponseMessage.CODE_NO_BSH;
         } else if (BTPException.Type.BSH.equals(exception.getType())) {
-            code = ResponseMessage.CODE_REVERT;
+            code = ResponseMessage.CODE_BSH_REVERT;
         }
         return new ResponseMessage(code, exception.getMessage());
     }

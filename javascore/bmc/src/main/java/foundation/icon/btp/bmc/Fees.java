@@ -19,10 +19,10 @@ package foundation.icon.btp.bmc;
 import foundation.icon.score.data.EnumerableDictDB;
 import foundation.icon.score.util.Logger;
 
-public class Fees extends EnumerableDictDB<String, Fee> {
+public class Fees extends EnumerableDictDB<String, FeeInfo> {
     private static final Logger logger = Logger.getLogger(Fees.class);
 
     public Fees(String id) {
-        super(id, String.class, Fee.class);
+        super(id, String.class, FeeInfo.class);
     }
 }

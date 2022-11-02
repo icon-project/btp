@@ -45,13 +45,6 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     ICONSpecificScoreClient iconSpecificWithTester = new ICONSpecificScoreClient(bmcWithTester);
     OwnerManagerScoreClient ownerManagerWithTester = new OwnerManagerScoreClient(bmcWithTester);
 
-    static Consumer<TransactionResult> messageEvent(
-            Consumer<MessageEventLog> consumer) {
-        return eventLogChecker(
-                MessageEventLog::eventLogs,
-                consumer);
-    }
-
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
@@ -62,6 +55,13 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
         return ScoreIntegrationTest.eventLogsChecker(
                 bmc._address(), supplier, consumer);
+    }
+
+    static Consumer<TransactionResult> messageEvent(
+            Consumer<MessageEventLog> consumer) {
+        return eventLogChecker(
+                MessageEventLog::eventLogs,
+                consumer);
     }
 
     static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<MessageEventLog> filter) {

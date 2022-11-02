@@ -30,10 +30,10 @@ import java.math.BigInteger;
 @ScoreClient
 public interface MockBMC {
     @External
-    void setNet(String _net);
+    void setNetworkAddress(String _net);
 
     @External(readonly = true)
-    String getNet();
+    String getNetworkAddress();
 
     //for BMV
     @External
@@ -54,7 +54,7 @@ public interface MockBMC {
     void SendMessage(BigInteger _nsn, String _to, String _svc, BigInteger _sn, byte[] _msg);
 
     @External(readonly = true)
-    BigInteger getNsn();
+    BigInteger getNetworkSn();
 
     @External
     void addResponse(String _to, String _svc, BigInteger _sn);

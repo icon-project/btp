@@ -37,7 +37,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BTPMessageVerifierUnitTest extends TestBase {
+public class BMVUnitTest extends TestBase {
     static final ServiceManager sm = getServiceManager();
     static final Account owner = sm.createAccount();
 

@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.btp.mock.MockRelayMessage;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.jsonrpc.Address;
@@ -30,24 +29,24 @@ import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FeeManagementTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static BTPAddress reachable = BTPIntegrationTest.Faker.btpLink();
     static Address relay = Address.of(bmc._wallet());
     static int MAX_FEE_VALUE = 10;
-    static Fee linkFee = fakeFee(link.net());
-    static Fee reachableFee = fakeFee(reachable.net(), 1, linkFee);
+    static FeeInfo linkFee = fakeFee(link.net());
+    static FeeInfo reachableFee = fakeFee(reachable.net(), 1, linkFee);
 
-    static Fee fakeFee(String net) {
+    static FeeInfo fakeFee(String net) {
         return fakeFee(net, 1, null);
     }
 
-    static Fee fakeFee(String net, int addHop, Fee fee) {
+    static FeeInfo fakeFee(String net, int addHop, FeeInfo fee) {
         List<BigInteger> values = new ArrayList<>();
 
         int offset = 0;
@@ -60,16 +59,16 @@ public class FeeManagementTest implements BMCIntegrationTest {
             values.add(offset, BigInteger.valueOf(
                     ScoreIntegrationTest.Faker.positive(MAX_FEE_VALUE)));
         }
-        return new Fee(net, values.toArray(BigInteger[]::new));
+        return new FeeInfo(net, values.toArray(BigInteger[]::new));
     }
 
-    static Fee fakeFee(String net, BigInteger[] inner, BigInteger[] outer) {
+    static FeeInfo fakeFee(String net, BigInteger[] inner, BigInteger[] outer) {
         List<BigInteger> values = new ArrayList<>();
         values.addAll(Arrays.asList(forward(inner)));
         values.addAll(Arrays.asList(forward(outer)));
         values.addAll(Arrays.asList(backward(outer)));
         values.addAll(Arrays.asList(backward(inner)));
-        return new Fee(net, values.toArray(BigInteger[]::new));
+        return new FeeInfo(net, values.toArray(BigInteger[]::new));
     }
 
     static BigInteger[] forward(BigInteger[] values) {
@@ -98,16 +97,16 @@ public class FeeManagementTest implements BMCIntegrationTest {
         System.out.println("FeeManagementTest:afterAll end");
     }
 
-    static void setFeeTable(Fee... fees) {
+    static void setFeeTable(FeeInfo... fees) {
         setFeeTable(Arrays.asList(fees));
     }
 
-    static void setFeeTable(List<Fee> fees) {
+    static void setFeeTable(List<FeeInfo> fees) {
         String[] _dst = fees.stream()
-                .map(Fee::getDestination)
+                .map(FeeInfo::getNetwork)
                 .toArray(String[]::new);
         BigInteger[][] _value = fees.stream()
-                .map(Fee::getValues)
+                .map(FeeInfo::getValues)
                 .toArray(BigInteger[][]::new);
         bmc.setFeeTable(_dst, _value);
 
@@ -127,11 +126,11 @@ public class FeeManagementTest implements BMCIntegrationTest {
                 bmc.setFeeTable(new String[]{Faker.btpNetwork()}, new BigInteger[][]{}));
 
         System.out.println("setFeeTableShouldRevertOddValues");
-        Fee oddValues = new Fee(Faker.btpNetwork(), new BigInteger[]{BigInteger.ZERO});
+        FeeInfo oddValues = new FeeInfo(Faker.btpNetwork(), new BigInteger[]{BigInteger.ZERO});
         AssertBMCException.assertUnknown(() -> setFeeTable(oddValues));
 
         System.out.println("setFeeTableShouldRevertNegativeValue");
-        Fee negativeValues = new Fee(Faker.btpNetwork(),
+        FeeInfo negativeValues = new FeeInfo(Faker.btpNetwork(),
                 new BigInteger[]{BigInteger.ZERO, BigInteger.ONE.negate()});
         AssertBMCException.assertUnknown(() -> setFeeTable(negativeValues));
 

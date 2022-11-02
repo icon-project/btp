@@ -206,6 +206,15 @@ public interface BMC {
     String getBtpAddress();
 
     /**
+     * TODO [TBD] add 'getNetworkAddress' to IIP-25.BMC.Read-only methods
+     * Returns Network Address of BMC
+     *
+     * @return String (Network Address of BMC)
+     */
+    @External(readonly = true)
+    String getNetworkAddress();
+
+    /**
      * Sets the fee table
      * Called by the operator to manage the BTP network.
      *

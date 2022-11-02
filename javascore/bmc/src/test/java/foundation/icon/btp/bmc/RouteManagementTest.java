@@ -35,7 +35,6 @@ public class RouteManagementTest implements BMCIntegrationTest {
 
     @SuppressWarnings("unchecked")
     static boolean isExistsRoute(String dst, String link) {
-        System.out.println(bmc.getRoutes());
         return ScoreIntegrationTest.contains(
                 bmc.getRoutes(), dst, link::equals);
     }

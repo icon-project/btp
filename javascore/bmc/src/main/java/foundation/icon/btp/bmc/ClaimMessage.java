@@ -23,14 +23,14 @@ import score.ObjectWriter;
 
 import java.math.BigInteger;
 
-public class ClaimRewardMessage {
+public class ClaimMessage {
     private BigInteger amount;
     private String receiver;
 
-    public ClaimRewardMessage() {
+    public ClaimMessage() {
     }
 
-    public ClaimRewardMessage(BigInteger amount, String receiver) {
+    public ClaimMessage(BigInteger amount, String receiver) {
         this.amount = amount;
         this.receiver = receiver;
     }
@@ -53,19 +53,19 @@ public class ClaimRewardMessage {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClaimRewardMessage{");
+        final StringBuilder sb = new StringBuilder("ClaimMessage{");
         sb.append("amount=").append(amount);
         sb.append(", receiver='").append(receiver).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, ClaimRewardMessage obj) {
+    public static void writeObject(ObjectWriter writer, ClaimMessage obj) {
         obj.writeObject(writer);
     }
 
-    public static ClaimRewardMessage readObject(ObjectReader reader) {
-        ClaimRewardMessage obj = new ClaimRewardMessage();
+    public static ClaimMessage readObject(ObjectReader reader) {
+        ClaimMessage obj = new ClaimMessage();
         reader.beginList();
         obj.setAmount(reader.readBigInteger());
         obj.setReceiver(reader.readString());
@@ -80,14 +80,14 @@ public class ClaimRewardMessage {
         writer.end();
     }
 
-    public static ClaimRewardMessage fromBytes(byte[] bytes) {
+    public static ClaimMessage fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return ClaimRewardMessage.readObject(reader);
+        return ClaimMessage.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        ClaimRewardMessage.writeObject(writer, this);
+        ClaimMessage.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

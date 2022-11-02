@@ -39,17 +39,17 @@ public class MockBMCImpl implements MockBMC {
 
     public MockBMCImpl(@Optional String _net) {
         if (_net != null) {
-            setNet(_net);
+            setNetworkAddress(_net);
         }
     }
 
     @External
-    public void setNet(String _net) {
+    public void setNetworkAddress(String _net) {
         net.set(_net);
     }
 
     @External(readonly = true)
-    public String getNet() {
+    public String getNetworkAddress() {
         return net.getOrDefault(DEFAULT_NET);
     }
 
@@ -71,7 +71,7 @@ public class MockBMCImpl implements MockBMC {
     @External(readonly = true)
     public String getBtpAddress() {
         return new BTPAddress(
-                BTPAddress.PROTOCOL_BTP, getNet(), Context.getAddress().toString()).toString();
+                BTPAddress.PROTOCOL_BTP, getNetworkAddress(), Context.getAddress().toString()).toString();
     }
 
     private void require(boolean condition, String message) {
@@ -94,7 +94,7 @@ public class MockBMCImpl implements MockBMC {
 
         }
         require(Context.getValue().compareTo(fee) >= 0, "not enough fee");
-        BigInteger nextNsn = getNsn().add(BigInteger.ONE);
+        BigInteger nextNsn = getNetworkSn().add(BigInteger.ONE);
         nsn.set(nextNsn);
         SendMessage(nextNsn, _to, _svc, _sn, _msg);
         return nextNsn;
@@ -105,7 +105,7 @@ public class MockBMCImpl implements MockBMC {
     }
 
     @External(readonly = true)
-    public BigInteger getNsn() {
+    public BigInteger getNetworkSn() {
         return nsn.getOrDefault(BigInteger.ZERO);
     }
 
@@ -115,6 +115,8 @@ public class MockBMCImpl implements MockBMC {
 
     @External
     public void addResponse(String _to, String _svc, BigInteger _sn) {
+        Context.require(_sn.compareTo(BigInteger.ZERO) > 0,
+                "_sn should be positive");
         String response = toResponse(_to, _svc, _sn);
         if (getResponseIndex(response) < 0) {
             responseList.add(response);
@@ -172,6 +174,9 @@ public class MockBMCImpl implements MockBMC {
 
     @External
     public void handleBTPMessage(Address _addr, String _from, String _svc, BigInteger _sn, byte[] _msg) {
+        if (_sn.compareTo(BigInteger.ZERO) > 0) {
+            addResponse(_from, _svc, _sn);
+        }
         BSHScoreInterface bsh = new BSHScoreInterface(_addr);
         bsh.handleBTPMessage(_from, _svc, _sn, _msg);
     }

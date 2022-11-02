@@ -73,7 +73,7 @@ public interface ICONSpecific {
     BMRStatus[] getRelays(String _link);
 
     /**
-     * Drops the next message that to be relayed from a specific network
+     * (EventLog) Drops the next message that to be relayed from a specific network
      * Called by the operator to manage the BTP network.
      *
      * @param _src        String ( Network Address of source BMC )
@@ -89,6 +89,8 @@ public interface ICONSpecific {
 
     /**
      * (EventLog) Drop the message of the connected BMC
+     * <p>
+     * indexed: 2
      *
      * @param _prev String ( BTP Address of the previous BMC )
      * @param _seq  Integer ( sequence number of the message from connected BMC )

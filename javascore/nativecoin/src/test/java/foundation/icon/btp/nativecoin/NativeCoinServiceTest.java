@@ -56,7 +56,7 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
     static long code = 1;
     static String msg = "err";
 
-    static String net = MockBMCIntegrationTest.mockBMC.getNet();
+    static String net = MockBMCIntegrationTest.mockBMC.getNetworkAddress();
     static BTPAddress fa = new BTPAddress(BTPAddress.PROTOCOL_BTP, net, testerAddress.toString());
     static BTPAddress linkFa = new BTPAddress(BTPAddress.PROTOCOL_BTP, linkNet, testerAddress.toString());
     static BigInteger feeRatio = BigInteger.TEN;

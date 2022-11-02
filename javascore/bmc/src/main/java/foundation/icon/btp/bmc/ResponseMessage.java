@@ -26,7 +26,7 @@ public class ResponseMessage {
     public static final long CODE_UNKNOWN = 1;
     public static final long CODE_NO_ROUTE = 2;
     public static final long CODE_NO_BSH = 3;
-    public static final long CODE_REVERT = 4;
+    public static final long CODE_BSH_REVERT = 4;
 
     private long code;
     private String msg;

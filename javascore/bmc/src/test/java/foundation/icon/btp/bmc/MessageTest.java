@@ -20,10 +20,12 @@ import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.btp.mock.MockRelayMessage;
 import foundation.icon.btp.test.AssertBTPException;
+import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
+import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -251,7 +253,6 @@ public class MessageTest implements BMCIntegrationTest {
                 },
                 link.net(), svc, BigInteger.ZERO, Faker.btpLink().toBytes()));
     }
-
 
     @ParameterizedTest
     @MethodSource("handleRelayMessageShouldSuccessArguments")
@@ -509,7 +510,7 @@ public class MessageTest implements BMCIntegrationTest {
     @Test
     void handleRelayMessageShouldRevertNotExistsLink() {
         AssertBMCException.assertNotExistsLink(() ->
-                bmc.handleRelayMessage(Faker.btpLink().toString(),
+                bmc.handleRelayMessage(new BTPAddress(link.net(), Faker.btpLink().account()).toString(),
                         mockRelayMessage(btpMessageForSuccess(link)).toBase64String()));
     }
 

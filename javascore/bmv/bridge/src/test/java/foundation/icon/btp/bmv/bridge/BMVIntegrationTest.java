@@ -22,6 +22,7 @@ import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
+import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import org.junit.jupiter.api.Test;
 import scorex.util.ArrayList;
@@ -29,15 +30,16 @@ import scorex.util.ArrayList;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
+public class BMVIntegrationTest implements BTPIntegrationTest {
     static DefaultScoreClient bmvClient = DefaultScoreClient.of(
             System.getProperties(),
             Map.of("_bmc", MockBMCIntegrationTest.mockBMC._address(),
-                    "_net",BTPMessageVerifierUnitTest.prev.net(),
+                    "_net", BMVUnitTest.prev.net(),
                     "_offset", BigInteger.ZERO));
 
     static final BTPAddress bmc = new BTPAddress(BTPIntegrationTest.Faker.btpNetwork(),
@@ -54,13 +56,14 @@ public class BTPMessageVerifierIntegrationTest implements BTPIntegrationTest {
         ReceiptProof rp = new ReceiptProof(0, List.of(ed), height);
         RelayMessage rm = new RelayMessage(new ArrayList<>(List.of(rp)));
 
+        Consumer<TransactionResult> checker = MockBMCIntegrationTest.handleRelayMessageEvent(
+                (el) -> assertArrayEquals(new byte[][]{msg.getBytes()}, el.getRet()));
         MockBMCIntegrationTest.mockBMC.handleRelayMessage(
-                MockBMCIntegrationTest.handleRelayMessageEvent(
-                        (el) -> assertArrayEquals(new byte[][]{msg.getBytes()}, el.getRet())),
+                checker,
                 bmvClient._address(),
-                BTPMessageVerifierUnitTest.prev.toString(),
+                BMVUnitTest.prev.toString(),
                 seq,
-                BTPMessageVerifierUnitTest.toBytes(rm));
+                BMVUnitTest.toBytes(rm));
         BMVStatus status = bmv.getStatus();
         assertEquals(height.longValue(), status.getHeight());
     }

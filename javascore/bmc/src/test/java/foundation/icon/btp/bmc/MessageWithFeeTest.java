@@ -50,12 +50,12 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
     static String svc = MockBSHIntegrationTest.SERVICE;
     static Address relay = Address.of(bmc._wallet());
 
-    static Fee linkFee = FeeManagementTest.fakeFee(link.net());
-    static Fee reachableFee = FeeManagementTest.fakeFee(reachable.net(), 1, linkFee);
+    static FeeInfo linkFee = FeeManagementTest.fakeFee(link.net());
+    static FeeInfo reachableFee = FeeManagementTest.fakeFee(reachable.net(), 1, linkFee);
     //for intermediate path test
     static BTPAddress secondLink = BTPIntegrationTest.Faker.btpLink();
-    static Fee secondLinkFee = FeeManagementTest.fakeFee(secondLink.net());
-    static Fee secondLinkToLinkInIntermediate = FeeManagementTest.fakeFee(
+    static FeeInfo secondLinkFee = FeeManagementTest.fakeFee(secondLink.net());
+    static FeeInfo secondLinkToLinkInIntermediate = FeeManagementTest.fakeFee(
             secondLink.net(),
             reverse(secondLinkFee.getValues()), linkFee.getValues());
 
@@ -131,6 +131,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
         byte[] payload = BTPIntegrationTest.Faker.btpLink().toBytes();
         FeeInfo feeInfo = new FeeInfo(btpAddress.net(), fee);
 
+        BigInteger nsn = bmc.getNetworkSn();
         BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
@@ -142,7 +143,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
             assertEquals(svc, btpMessage.getSvc());
             assertEquals(sn, btpMessage.getSn());
             assertArrayEquals(payload, btpMessage.getPayload());
-            assertEquals(bmc.getNetworkSn(), btpMessage.getNsn());
+            assertEquals(nsn.add(BigInteger.ONE), btpMessage.getNsn());
             MessageTest.assertEqualsFeeInfo(feeInfo, btpMessage.getFeeInfo());
         });
         System.out.println("pay:" + ArrayUtil.sum(feeInfo.getValues()));

@@ -47,7 +47,7 @@ public class RewardTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static String svc = MockBSHIntegrationTest.SERVICE;
     static Address relay = Address.of(bmc._wallet());
-    static Fee linkFee = FeeManagementTest.fakeFee(link.net());
+    static FeeInfo linkFee = FeeManagementTest.fakeFee(link.net());
 
     @BeforeAll
     static void beforeAll() {
@@ -109,18 +109,22 @@ public class RewardTest implements BMCIntegrationTest {
                 "handleRelayMessageShouldAccumulateRemainFee" :
                 "handleRelayMessageShouldAccumulateRewardIfClaimRewardMessage"));
         Address address = rewardAddress(isRemain);
-        BigInteger preReward = bmc.getReward(net, address);
-        if (preReward.compareTo(BigInteger.ZERO) < 1) {
+        BigInteger reward = bmc.getReward(net, address);
+        if (reward.compareTo(BigInteger.ZERO) <= 0) {
             BigInteger amount = BigInteger.ONE;
             BTPMessage msg = btpMessageForReward(net,
                     isRemain ? new BigInteger[]{BigInteger.ZERO, amount} : new BigInteger[]{amount});
             bmc.handleRelayMessage(link.toString(),
                     MessageTest.mockRelayMessage(msg).toBase64String());
-            BigInteger reward = bmc.getReward(net, address);
-            assertEquals(preReward.add(amount), reward);
-            return reward;
+            reward = bmc.getReward(net, address);
+            assertEquals(amount, reward);
         }
-        return preReward;
+        if (net.equals(btpAddress.net()) &&
+                client._balance(bmc._address()).compareTo(reward) < 0) {
+            client._transfer(bmc._address(), reward, null);
+            System.out.println("transferred " + bmc._address() + ":" + client._balance(bmc._address()));
+        }
+        return reward;
     }
 
     static Consumer<TransactionResult> rewardChecker(String net, Address address, BigInteger amount) {
@@ -133,10 +137,10 @@ public class RewardTest implements BMCIntegrationTest {
     static Consumer<TransactionResult> claimRewardMessageChecker(BigInteger amount, String receiver) {
         return (txr) -> {
             List<BMCMessage> bmcMessages = BMCIntegrationTest.bmcMessages(txr, null);
-            List<ClaimRewardMessage> rewardMessages = BMCIntegrationTest.internalMessages(
-                    bmcMessages, BTPMessageCenter.Internal.ClaimReward, ClaimRewardMessage::fromBytes);
+            List<ClaimMessage> rewardMessages = BMCIntegrationTest.internalMessages(
+                    bmcMessages, BTPMessageCenter.Internal.Claim, ClaimMessage::fromBytes);
             assertEquals(rewardMessages.size(), 1);
-            ClaimRewardMessage rewardMessage = rewardMessages.get(0);
+            ClaimMessage rewardMessage = rewardMessages.get(0);
             assertEquals(amount, rewardMessage.getAmount());
             assertEquals(receiver, rewardMessage.getReceiver());
         };
@@ -288,8 +292,8 @@ public class RewardTest implements BMCIntegrationTest {
     }
 
     static BTPMessage btpMessageForClaimReward(BigInteger amount, String receiver) {
-        ClaimRewardMessage claimRewardMessage = new ClaimRewardMessage(amount, receiver);
-        BMCMessage bmcMessage = new BMCMessage(BTPMessageCenter.Internal.ClaimReward.name(), claimRewardMessage.toBytes());
+        ClaimMessage claimMessage = new ClaimMessage(amount, receiver);
+        BMCMessage bmcMessage = new BMCMessage(BTPMessageCenter.Internal.Claim.name(), claimMessage.toBytes());
         BTPMessage msg = new BTPMessage();
         msg.setSrc(link.net());
         msg.setDst(btpAddress.net());
