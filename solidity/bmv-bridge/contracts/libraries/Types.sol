@@ -2,10 +2,6 @@
 pragma solidity >=0.8.0 <0.8.5;
 
 library Types {
-    /**
-     * @Notice List of ALL Struct being used to Encode and Decode RLP Messages
-     */
-
     struct ReceiptProof {
         uint256 index;
         MessageEvent[] events;
@@ -21,4 +17,5 @@ library Types {
     struct RelayMessage {
         ReceiptProof[] receiptProofs;
     }
+
 }

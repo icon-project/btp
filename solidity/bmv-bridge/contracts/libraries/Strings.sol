@@ -13,25 +13,6 @@ pragma solidity >=0.8.0 <0.8.5;
  * please check this link: https://github.com/willitscale/solidity-util.git
  */
 library Strings {
-    /**
-     * splitBTPAddress
-     *
-     * Split the BTP Address format i.e. btp://1234.iconee/0x123456789
-     * into Network_address (1234.iconee) and Server_address (0x123456789)
-     *
-     * @param _base String base BTP Address format to be split
-     * @dev _base must follow a BTP Address format
-     *
-     * @return string, string   The resulting strings of Network_address and Server_address
-     */
-    function splitBTPAddress(string memory _base)
-        internal
-        pure
-        returns (string memory, string memory)
-    {
-        string[] memory temp = split(_base, "/");
-        return (temp[2], temp[3]);
-    }
 
     function bytesToHex(bytes memory buffer) internal pure returns (string memory) {
         if (buffer.length == 0) {

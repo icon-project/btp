@@ -38,8 +38,8 @@ public interface MockBMVIntegrationTest {
 
     static BMVStatus getStatus() {
         try {
-            Tuple2<BigInteger, byte[]> tuple = mockBMV.getStatus().send();
-            return new BMVStatus(tuple.component1().longValue(), tuple.component2());
+            MockBMV.VerifierStatus status = mockBMV.getStatus().send();
+            return new BMVStatus(status.height.longValue(), status.extra);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

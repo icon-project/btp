@@ -76,12 +76,12 @@ contract BtpMessageVerifier is IBMV {
         );
     }
 
-    function getStatus() external view returns (uint256, bytes memory) {
+    function getStatus() external view returns (IBMV.VerifierStatus memory) {
         bytes[] memory extra = new bytes[](3);
         extra[0] = RLPEncode.encodeUint(sequenceOffset);
         extra[1] = RLPEncode.encodeUint(db.firstMessageSn);
         extra[2] = RLPEncode.encodeUint(db.messageCount);
-        return (db.height, RLPEncode.encodeList(extra));
+        return IBMV.VerifierStatus(db.height, RLPEncode.encodeList(extra));
     }
 
     function handleRelayMessage(

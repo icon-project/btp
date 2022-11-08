@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BMVIntegrationTest implements BTPIntegrationTest {
@@ -49,16 +50,15 @@ public class BMVIntegrationTest implements BTPIntegrationTest {
         ReceiptProof rp = new ReceiptProof(0, List.of(ed), height);
         RelayMessage rm = new RelayMessage(new ArrayList<>(List.of(rp)));
 
-
-        Consumer<TransactionReceipt> checker = MockBMCIntegrationTest.shouldSuccessHandleRelayMessage();
-        checker = checker.andThen(MockBMCIntegrationTest.handleRelayMessageEvent(
-                (el) -> {
-                    assertEquals(1, el._ret.size());
-                    assertEquals(msg, new String(el._ret.get(0)));
-                }
-        ));
+        Consumer<TransactionReceipt> checker = MockBMCIntegrationTest.handleRelayMessageEvent(
+                (el) -> assertArrayEquals(new byte[][]{msg.getBytes()}, el._ret.toArray(byte[][]::new)));
         checker.accept(MockBMCIntegrationTest.mockBMC.handleRelayMessage(
                 bmv.getContractAddress(),
-                prev.toString(), seq, RelayMessage.toBytes(rm)).send());
+                prev.toString(),
+                seq,
+                RelayMessage.toBytes(rm)).send());
+
+        BMV.VerifierStatus status = bmv.getStatus().send();
+        assertEquals(height, status.height);
     }
 }

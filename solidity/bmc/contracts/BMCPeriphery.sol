@@ -336,13 +336,12 @@ contract BMCPeriphery is IBMCPeriphery, ICCPeriphery, Initializable {
     ) external view override returns (
         Types.LinkStatus memory
     ) {
-        (uint256 height, bytes memory extra) = IBMV(
-            ICCManagement(bmcManagement).getVerifier(_link.networkAddress())
-        ).getStatus();
         return Types.LinkStatus(
             rxSeqMap[_link],
             txSeqMap[_link],
-            Types.VerifierStats(height, extra),
+            IBMV(
+                ICCManagement(bmcManagement).getVerifier(_link.networkAddress())
+            ).getStatus(),
             block.number
         );
     }

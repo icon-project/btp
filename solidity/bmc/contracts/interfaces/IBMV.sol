@@ -11,13 +11,13 @@ interface IBMV {
 
     /**
         @notice Gets status of BMV.
-        @return height Last verified block height
-        @return extra  extra rlp encoded bytes
+        @return Types.VerifierStatus
+                height Integer ( Last verified block height )
+                extra  Bytes ( extra rlp encoded bytes )
      */
-            uint256 height,
-            bytes memory extra
     function getStatus(
     ) external view returns (
+        VerifierStatus memory
     );
 
     /**
