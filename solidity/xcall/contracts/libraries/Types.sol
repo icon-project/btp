@@ -5,6 +5,9 @@ pragma solidity >=0.8.0 <0.8.5;
  * @notice List of ALL Struct being used to Encode and Decode RLP Messages
  */
 library Types {
+    // The name of CallService.
+    string constant NAME = "xcall";
+
     int constant CS_REQUEST = 1;
     int constant CS_RESPONSE = 2;
 
@@ -12,7 +15,7 @@ library Types {
         address from;
         string to;
         bytes rollback;
-        bool enabled;
+        bool enabled; //whether wait response or received
     }
 
     struct CSMessage {
@@ -36,15 +39,6 @@ library Types {
         uint256 sn;
         int code;
         string msg;
-    }
-
-    string constant FEE_RELAY = "relay";
-    string constant FEE_PROTOCOL = "protocol";
-
-    struct FeeConfig {
-        uint256 relay;
-        uint256 protocol;
-        bool exists;//only for null check
     }
 
 }

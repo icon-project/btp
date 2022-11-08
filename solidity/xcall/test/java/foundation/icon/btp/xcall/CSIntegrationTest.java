@@ -19,50 +19,63 @@ package foundation.icon.btp.xcall;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.EVMIntegrationTest;
+import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.util.function.Consumer;
 
 public interface CSIntegrationTest extends BTPIntegrationTest {
+    String NAME = "xcall";
+    int MAX_DATA_SIZE = 2048;
+    int MAX_ROLLBACK_SIZE = 1024;
+
     CallService callService = EVMIntegrationTest.deployWithInitialize(CallService.class,
             MockBMCIntegrationTest.mockBMC.getContractAddress());
+
+    IFeeManage feeManager = EVMIntegrationTest.load(IFeeManage.class, callService);
+
     DAppProxySample dAppProxySample = EVMIntegrationTest.deployWithInitialize(DAppProxySample.class,
             callService.getContractAddress());
 
     static Consumer<TransactionReceipt> callMessageEvent(
             Consumer<CallService.CallMessageEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                callService.getContractAddress(),
+        return eventLogChecker(
                 CallService::getCallMessageEvents,
                 consumer);
     }
 
     static Consumer<TransactionReceipt> rollbackMessageEvent(
             Consumer<CallService.RollbackMessageEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                callService.getContractAddress(),
+        return eventLogChecker(
                 CallService::getRollbackMessageEvents,
                 consumer);
     }
 
     static Consumer<TransactionReceipt> rollbackMessageEventShouldNotExists() {
-        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
-                callService.getContractAddress(),
-                CallService::getRollbackMessageEvents);
+        return eventLogShouldNotExistsChecker(CallService::getRollbackMessageEvents);
     }
 
     static Consumer<TransactionReceipt> callRequestClearedEvent(
             Consumer<CallService.CallRequestClearedEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                callService.getContractAddress(),
+        return eventLogChecker(
                 CallService::getCallRequestClearedEvents,
                 consumer);
     }
 
     static Consumer<TransactionReceipt> callRequestClearedEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallService::getCallRequestClearedEvents);
+    }
+
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                callService.getContractAddress(), supplier, consumer);
+    }
+
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogShouldNotExistsChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier) {
         return EVMIntegrationTest.eventLogShouldNotExistsChecker(
-                callService.getContractAddress(),
-                CallService::getCallRequestClearedEvents);
+                callService.getContractAddress(), supplier);
     }
 
     static Consumer<TransactionReceipt> messageReceivedEvent(
@@ -70,14 +83,6 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
         return EVMIntegrationTest.eventLogChecker(
                 dAppProxySample.getContractAddress(),
                 DAppProxySample::getMessageReceivedEvents,
-                consumer);
-    }
-
-    static Consumer<TransactionReceipt> fixedFeesUpdatedEvent(
-            Consumer<CallService.FixedFeesUpdatedEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                callService.getContractAddress(),
-                CallService::getFixedFeesUpdatedEvents,
                 consumer);
     }
 }

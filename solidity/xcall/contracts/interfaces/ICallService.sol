@@ -5,17 +5,19 @@ interface ICallService {
     /*======== At the source CALL_BSH ========*/
     /**
        @notice Sends a call message to the contract on the destination chain.
-       @dev Only allowed to be called from the contract.
+               Only allowed to be called from the contract.
        @param _to The BTP address of the callee on the destination chain
        @param _data The calldata specific to the target contract
        @param _rollback (Optional) The data for restoring the caller state when an error occurred
        @return The serial number of the request
      */
     function sendCallMessage(
-        string calldata _to,
-        bytes calldata _data,
-        bytes calldata _rollback
-    ) external payable returns (uint256);
+        string memory _to,
+        bytes memory _data,
+        bytes memory _rollback
+    ) external payable returns (
+        uint256
+    );
 
     /**
        @notice Notifies the user that a rollback operation is required for the request '_sn'.
@@ -31,7 +33,6 @@ interface ICallService {
 
     /**
        @notice Rollbacks the caller state of the request '_sn'.
-       @dev Caller should be ...
        @param _sn The serial number of the previous request
      */
     function executeRollback(
