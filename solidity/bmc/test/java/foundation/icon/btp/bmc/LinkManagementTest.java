@@ -39,7 +39,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static BTPAddress secondLinkBtpAddress = Faker.btpLink();
     static String secondLink = secondLinkBtpAddress.toString();
-    static String dst = Faker.btpLink().toString();
 
     static Consumer<List<BMCMessage>> initMessageChecker(List<String> links) {
         return (bmcMessages) -> {
@@ -118,50 +117,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    static List<BMCManagement.Route> getRoutes() {
-        try {
-            return bmcManagement.getRoutes().send();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static boolean isExistsRoute(String dst, String link) {
-        return getRoutes().stream()
-                .anyMatch((v) -> v.dst.equals(dst) && v.next.equals(link));
-    }
-
-    static boolean isExistsRoute(String dst) {
-        return getRoutes().stream()
-                .anyMatch((v) -> v.dst.equals(dst));
-    }
-
-    static void addRoute(String dst, String link) {
-        try {
-            bmcManagement.addRoute(dst, link).send();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        assertTrue(isExistsRoute(dst, link));
-    }
-
-    static void removeRoute(String dst) {
-        try {
-            bmcManagement.removeRoute(dst).send();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        assertFalse(isExistsRoute(dst));
-    }
-
-    static void clearRoute(String dst) {
-        if (isExistsRoute(dst)) {
-            System.out.println("clear route dst:" + dst);
-            removeRoute(dst);
-        }
-    }
-
     @BeforeAll
     static void beforeAll() {
         System.out.println("LinkManagementTest:beforeAll start");
@@ -182,18 +137,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     @Override
-    public void internalBeforeEach(TestInfo testInfo) {
-        beforeLinkRequiredTests(testInfo);
-    }
-
-//    @Override
-//    public void internalAfterEach(TestInfo testInfo) {
-//        afterLinkRequiredTests(testInfo);
-//    }
-
-    @Override
     public void clearIfExists(TestInfo testInfo) {
-        clearRoute(dst);
         clearLink(link);
         clearLink(secondLink);
     }
@@ -239,22 +183,13 @@ public class LinkManagementTest implements BMCIntegrationTest {
     }
 
     @Test
-    void removeLinkShouldRevertReferred() {
-        addLink(link);
-        addRoute(dst, link);
-
-        AssertBMCException.assertUnknown(() -> removeLink(link));
-    }
-
-    @Test
     void removeLinkShouldClearRelays() {
         addLink(link);
-
+        BMRManagementTest.addRelay(link, EVMIntegrationTest.Faker.address().toString());
         removeLink(link);
 
         //check relays of link is empty
         addLink(link);
-
         assertEquals(0, BMRManagementTest.getRelays(link).size());
     }
 
@@ -264,8 +199,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
 
         //addLinkShouldSendLinkMessage
         String secondLink = secondLinkBtpAddress.toString();
-        List<String> links = new ArrayList<>();
-        links.add(link);
+        List<String> links = new ArrayList<>(getLinks());
 
         Consumer<TransactionReceipt> linkMessageCheck = (txr) -> {
             initMessageChecker(links)
@@ -295,48 +229,6 @@ public class LinkManagementTest implements BMCIntegrationTest {
             throw new RuntimeException(e);
         }
         assertFalse(isExistsLink(secondLink));
-    }
-
-    static boolean isLinkRequiredTests(TestInfo testInfo) {
-        return !testInfo.getDisplayName().contains("LinkShould");
-    }
-
-    void beforeLinkRequiredTests(TestInfo testInfo) {
-        System.out.println("beforeLinkRequiredTests start on " + testInfo.getDisplayName());
-        if (isLinkRequiredTests(testInfo)) {
-            addLink(link);
-        }
-        System.out.println("beforeLinkRequiredTests end on " + testInfo.getDisplayName());
-    }
-
-    @Test
-    void addRouteShouldSuccess() {
-        addRoute(dst, link);
-    }
-
-    @Test
-    void addRouteShouldRevertAlreadyExists() {
-        addRoute(dst, link);
-
-        AssertBMCException.assertUnknown(() -> addRoute(dst, link));
-    }
-
-    @Test
-    void addRouteShouldRevertNotExistsLink() {
-        AssertBMCException.assertNotExistsLink(
-                () -> addRoute(dst, secondLink));
-    }
-
-    @Test
-    void removeRouteShouldSuccess() {
-        addRoute(dst, link);
-
-        removeRoute(dst);
-    }
-
-    @Test
-    void removeRouteShouldRevertNotExists() {
-        AssertBMCException.assertUnknown(() -> removeRoute(dst));
     }
 
 }

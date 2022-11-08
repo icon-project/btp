@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ICON Foundation
+ * Copyright 2022 ICON Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,63 +21,73 @@ import score.Context;
 import score.ObjectReader;
 import score.ObjectWriter;
 
-public class BTPErrorMessage {
-    private long code;
-    private String msg;
+import java.math.BigInteger;
 
-    public long getCode() {
-        return code;
+public class ClaimMessage {
+    private BigInteger amount;
+    private String receiver;
+
+    public ClaimMessage() {
     }
 
-    public void setCode(long code) {
-        this.code = code;
+    public ClaimMessage(BigInteger amount, String receiver) {
+        this.amount = amount;
+        this.receiver = receiver;
     }
 
-    public String getMsg() {
-        return msg;
+    public BigInteger getAmount() {
+        return amount;
     }
 
-    public void setMsg(String msg) {
-        this.msg = msg;
+    public void setAmount(BigInteger amount) {
+        this.amount = amount;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("BTPErrorMessage{");
-        sb.append("code=").append(code);
-        sb.append(", msg='").append(msg).append('\'');
+        final StringBuilder sb = new StringBuilder("ClaimMessage{");
+        sb.append("amount=").append(amount);
+        sb.append(", receiver='").append(receiver).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public static void writeObject(ObjectWriter writer, BTPErrorMessage obj) {
+    public static void writeObject(ObjectWriter writer, ClaimMessage obj) {
         obj.writeObject(writer);
     }
 
-    public static BTPErrorMessage readObject(ObjectReader reader) {
-        BTPErrorMessage obj = new BTPErrorMessage();
+    public static ClaimMessage readObject(ObjectReader reader) {
+        ClaimMessage obj = new ClaimMessage();
         reader.beginList();
-        obj.setCode(reader.readLong());
-        obj.setMsg(reader.readNullable(String.class));
+        obj.setAmount(reader.readBigInteger());
+        obj.setReceiver(reader.readString());
         reader.end();
         return obj;
     }
 
     public void writeObject(ObjectWriter writer) {
         writer.beginList(2);
-        writer.write(this.getCode());
-        writer.writeNullable(this.getMsg());
+        writer.write(this.getAmount());
+        writer.write(this.getReceiver());
         writer.end();
     }
 
-    public static BTPErrorMessage fromBytes(byte[] bytes) {
+    public static ClaimMessage fromBytes(byte[] bytes) {
         ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
-        return BTPErrorMessage.readObject(reader);
+        return ClaimMessage.readObject(reader);
     }
 
     public byte[] toBytes() {
         ByteArrayObjectWriter writer = Context.newByteArrayObjectWriter("RLPn");
-        BTPErrorMessage.writeObject(writer, this);
+        ClaimMessage.writeObject(writer, this);
         return writer.toByteArray();
     }
 }

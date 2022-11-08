@@ -21,6 +21,7 @@ import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.EVMIntegrationTest;
+import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.util.List;
@@ -35,13 +36,34 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
 
     static BMCManagement deployBMC() {
         BMCManagement bmcManagement = EVMIntegrationTest.deployWithInitialize(BMCManagement.class);
+        BMCService bmcService = EVMIntegrationTest.deployWithInitialize(BMCService.class,
+                bmcManagement.getContractAddress());
         BMCPeriphery bmcPeriphery = EVMIntegrationTest.deployWithInitialize(BMCPeriphery.class,
-                "0x" + EVMIntegrationTest.chainId.toString(16) + ".bsc", bmcManagement.getContractAddress());
+                "0x" + EVMIntegrationTest.chainId.toString(16) + ".bsc",
+                bmcManagement.getContractAddress(),
+                bmcService.getContractAddress());
         try {
             bmcManagement.setBMCPeriphery(bmcPeriphery.getContractAddress()).send();
             System.out.println("BMCIntegrationTest:beforeAll bmcManagement.setBMCPeriphery address:" +
                     bmcPeriphery.getContractAddress());
+            bmcManagement.setBMCService(bmcService.getContractAddress()).send();
+            System.out.println("BMCIntegrationTest:beforeAll bmcManagement.setBMCService address:" +
+                    bmcService.getContractAddress());
+            bmcService.setBMCPeriphery(bmcPeriphery.getContractAddress()).send();
+            System.out.println("BMCIntegrationTest:beforeAll bmcService.setBMCPeriphery address:" +
+                    bmcPeriphery.getContractAddress());
             return bmcManagement;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    BMCService bmcService = loadBMCService(bmcManagement);
+
+    static BMCService loadBMCService(BMCManagement bmcManagement) {
+        try {
+            String bmcServiceAddress = bmcManagement.getBMCService().send();
+            return BMCService.load(bmcServiceAddress, w3j, tm, cgp);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -58,12 +80,35 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
         }
     }
 
-    BMCManagement bmcWithTester = EVMIntegrationTest.load(bmcManagement, tester);
+    static BTPAddress btpAddress() {
+        try {
+            return BTPAddress.valueOf(bmcPeriphery.getBtpAddress().send());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    BTPAddress btpAddress = btpAddress();
+
+    BMCManagement bmcManagementWithTester = EVMIntegrationTest.load(bmcManagement, testerTm);
+    BMCService bmcServiceWithTester = EVMIntegrationTest.load(bmcService, testerTm);
+    BMCPeriphery bmcPeripheryWithTester = EVMIntegrationTest.load(bmcPeriphery, testerTm);
+
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                bmcPeriphery.getContractAddress(), supplier, consumer);
+    }
+
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogsChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
+        return EVMIntegrationTest.eventLogsChecker(
+                bmcPeriphery.getContractAddress(), supplier, consumer);
+    }
 
     static Consumer<TransactionReceipt> messageEvent(
             Consumer<BMCPeriphery.MessageEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                bmcPeriphery.getContractAddress(),
+        return eventLogChecker(
                 BMCPeriphery::getMessageEvents,
                 consumer);
     }
@@ -79,15 +124,18 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     }
 
     String INTERNAL_SERVICE = "bmc";
+    enum Internal {Init, Link, Unlink, Claim, Response}
 
     static List<BMCMessage> bmcMessages(TransactionReceipt txr, Predicate<String> nextPredicate) {
-        return btpMessages(txr, (el) -> nextPredicate.test(el._next)).stream()
-                .filter((msg) -> msg.getSvc().equals(INTERNAL_SERVICE))
+        Predicate<BMCPeriphery.MessageEventResponse> filter = (el) ->
+                BTPMessage.fromBytes(el._msg).getSvc().equals(INTERNAL_SERVICE);
+        if (nextPredicate != null) {
+            filter = filter.and((el) -> nextPredicate.test(el._next));
+        }
+        return btpMessages(txr, filter).stream()
                 .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
                 .collect(Collectors.toList());
     }
-
-    enum Internal {Init, Link, Unlink, Sack}
 
     static <T> List<T> internalMessages(
             List<BMCMessage> bmcMessages,
@@ -99,21 +147,36 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 .collect(Collectors.toList());
     }
 
+    static Consumer<TransactionReceipt> claimRewardEvent(
+            Consumer<BMCPeriphery.ClaimRewardEventResponse> consumer) {
+        return eventLogChecker(
+                BMCPeriphery::getClaimRewardEvents,
+                consumer);
+    }
+
+    static Consumer<TransactionReceipt> claimRewardResultEvent(
+            Consumer<BMCPeriphery.ClaimRewardResultEventResponse> consumer) {
+        return eventLogChecker(
+                BMCPeriphery::getClaimRewardResultEvents,
+                consumer);
+    }
+
     static Consumer<TransactionReceipt> messageDroppedEvent(
             Consumer<BMCPeriphery.MessageDroppedEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                bmcPeriphery.getContractAddress(),
+        return eventLogChecker(
                 BMCPeriphery::getMessageDroppedEvents,
                 consumer);
     }
 
-    static BTPAddress btpAddress() {
-        try {
-            return BTPAddress.valueOf(bmcPeriphery.getBmcBtpAddress().send());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    enum Event {SEND, DROP, ROUTE, ERROR, RECEIVE, REPLY}
+
+    static Consumer<TransactionReceipt> btpEvent(
+            Consumer<List<BMCPeriphery.BTPEventEventResponse>> consumer) {
+        return eventLogsChecker(
+                BMCPeriphery::getBTPEventEvents,
+                consumer);
     }
+
 
     static BMCStatus getStatus(String link) {
         try {

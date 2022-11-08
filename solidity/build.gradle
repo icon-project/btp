@@ -91,7 +91,7 @@ subprojects {
 
         def tc = [
                 source : "default",
-            version : "0.8.0",
+            version : "0.8.2",
             evmVersion : "petersburg",
             optimize : true,
             optimizeRuns : 200

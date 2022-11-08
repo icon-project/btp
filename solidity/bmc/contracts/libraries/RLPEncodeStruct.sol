@@ -15,14 +15,31 @@ library RLPEncodeStruct {
     uint8 internal constant LIST_SHORT_START = 0xc0;
     uint8 internal constant LIST_LONG_START = 0xf7;
 
-    function encodeBMCService(Types.BMCService memory _bs)
+    function encodeFeeInfo(Types.FeeInfo memory _fi)
+    internal
+    pure
+    returns (bytes memory)
+    {
+        bytes memory _rlpValues;
+        for (uint256 i = 0; i < _fi.values.length; i++) {
+            _rlpValues = abi.encodePacked(_rlpValues, _fi.values[i].encodeUint());
+        }
+        _rlpValues = abi.encodePacked(addLength(_rlpValues.length, false), _rlpValues);
+        bytes memory _rlp = abi.encodePacked(
+            _fi.network.encodeString(),
+            _rlpValues
+        );
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
+    function encodeBMCMessage(Types.BMCMessage memory _bs)
         internal
         pure
         returns (bytes memory)
     {
         bytes memory _rlp =
             abi.encodePacked(
-                _bs.serviceType.encodeString(),
+                _bs.msgType.encodeString(),
                 _bs.payload.encodeBytes());
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
@@ -38,12 +55,14 @@ library RLPEncodeStruct {
                 _bm.dst.encodeString(),
                 _bm.svc.encodeString(),
                 _bm.sn.encodeInt(),
-                _bm.message.encodeBytes()
+                _bm.message.encodeBytes(),
+                _bm.nsn.encodeInt(),
+                encodeFeeInfo(_bm.feeInfo)
             );
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 
-    function encodeErrorMessage(Types.ErrorMessage memory _res)
+    function encodeResponseMessage(Types.ResponseMessage memory _res)
         internal
         pure
         returns (bytes memory)
@@ -75,6 +94,18 @@ library RLPEncodeStruct {
         returns (bytes memory)
     {
         bytes memory _rlp = abi.encodePacked(_link.encodeString());
+        return abi.encodePacked(addLength(_rlp.length, false), _rlp);
+    }
+
+    function encodeClaimMessage(Types.ClaimMessage memory _cm)
+    internal
+    pure
+    returns (bytes memory)
+    {
+        bytes memory _rlp =
+        abi.encodePacked(
+            _cm.amount.encodeUint(),
+            _cm.receiver.encodeString());
         return abi.encodePacked(addLength(_rlp.length, false), _rlp);
     }
 

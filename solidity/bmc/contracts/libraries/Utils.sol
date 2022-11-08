@@ -6,7 +6,7 @@ import "./Strings.sol";
 library Utils {
     using Strings for string;
 
-    function removeFromStrings(string[] storage arr, string memory _str) internal {
+    function removeFromStrings(string[] storage arr, string memory _str) internal returns (bool) {
         uint256 last = arr.length - 1;
         for (uint256 i = 0; i <= last; i++) {
             if (arr[i].compareTo(_str)) {
@@ -14,9 +14,10 @@ library Utils {
                     arr[i] = arr[last];
                 }
                 arr.pop();
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     function containsFromStrings(string[] memory arr, string memory _str) internal pure returns (bool) {
@@ -41,6 +42,15 @@ library Utils {
         }
     }
 
+    function containsFromAddresses(address[] memory arr, address _addr) internal pure returns (bool) {
+        for (uint256 i = 0; i < arr.length; i++) {
+            if (arr[i] == _addr) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function removeFromUints(uint256[] storage arr, uint256 _value) internal returns (bool) {
         uint256 last = arr.length - 1;
         for (uint256 i = 0; i <= last; i++) {
@@ -62,5 +72,13 @@ library Utils {
             }
         }
         return false;
+    }
+
+    function sumFromUints(uint256[] memory arr) internal pure returns (uint256) {
+        uint256 sum = 0;
+        for (uint256 i = 0; i < arr.length; i++) {
+            sum += arr[i];
+        }
+        return sum;
     }
 }

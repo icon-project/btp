@@ -265,7 +265,8 @@ library ParseAddress {
     }
 
     function parseAddress(
-        string memory account
+        string memory account,
+        string memory revertMsg
     ) internal pure returns (address accountAddress)
     {
         bytes memory accountBytes = bytes(account);
@@ -273,7 +274,7 @@ library ParseAddress {
             accountBytes.length == 42 &&
             accountBytes[0] == bytes1("0") &&
             accountBytes[1] == bytes1("x"),
-            "Invalid address format"
+            revertMsg
         );
 
         // create a new fixed-size byte array for the ascii bytes of the address.
@@ -296,7 +297,7 @@ library ParseAddress {
             if (102 < b) isValidASCII = false; //bytes(hex"");
 
             // If string contains invalid ASCII characters, revert()
-            if (!isValidASCII) revert("Invalid address");
+            if (!isValidASCII) revert(revertMsg);
 
             // find the offset from ascii encoding to the nibble representation.
             if (b < 65) {
@@ -330,7 +331,7 @@ library ParseAddress {
         if (accountAddress == address(0)) {
             // ensure that provided address is not also the null address first.
             for (uint256 i = 2; i < accountBytes.length; i++)
-                require(accountBytes[i] == hex"30", "Invalid address");
+                require(accountBytes[i] == hex"30", revertMsg);
         }
     }
 }

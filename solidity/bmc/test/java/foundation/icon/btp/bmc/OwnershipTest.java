@@ -28,6 +28,7 @@ import org.web3j.utils.Convert;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,17 +73,13 @@ public class OwnershipTest implements BMCIntegrationTest {
     }
 
     @BeforeAll
-    static void beforeAll() throws Exception {
+    static void beforeAll() {
         System.out.println("OwnershipTest:beforeAll start");
-        BigInteger balance = w3j.ethGetBalance(tester.getAddress(), DefaultBlockParameterName.LATEST).send().getBalance();
-        if (balance.compareTo(BigInteger.ZERO) == 0) {
-            Transfer transfer = new Transfer(w3j, tm);
-            transfer.sendFunds(tester.getAddress(), BigDecimal.TEN, Convert.Unit.ETHER).send();
-
-            balance = w3j.ethGetBalance(tester.getAddress(), DefaultBlockParameterName.LATEST).send().getBalance();
-            System.out.println(tester.getAddress() + ":" + balance);
+        if (EVMIntegrationTest.getBalance(tester)
+                .compareTo(BigInteger.ZERO) <= 0) {
+            EVMIntegrationTest.transfer(tester, BigInteger.TEN);
         }
-        System.out.println("OwnershipTest:beforeAll start");
+        System.out.println("OwnershipTest:beforeAll end");
     }
 
     @Override
@@ -131,67 +128,70 @@ public class OwnershipTest implements BMCIntegrationTest {
 
     @Test
     void addOwnerShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addOwner(address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addOwner(address).send());
     }
 
     @Test
     void removeOwnerShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeOwner(address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeOwner(address).send());
     }
 
     @Test
     void addVerifierShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addVerifier(string, address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addVerifier(string, address).send());
     }
 
     @Test
     void removeVerifierShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeVerifier(string).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeVerifier(string).send());
     }
 
     @Test
     void addServiceShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addService(string, address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addService(string, address).send());
     }
 
     @Test
     void removeServiceShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeService(string).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeService(string).send());
     }
 
     @Test
     void addLinkShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addLink(btpAddress).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addLink(btpAddress).send());
     }
 
     @Test
     void removeLinkShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeLink(btpAddress).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeLink(btpAddress).send());
     }
 
     @Test
     void addRouteShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addRoute(btpAddress, btpAddress).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addRoute(btpAddress, btpAddress).send());
     }
 
     @Test
     void removeRouteShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeRoute(btpAddress).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeRoute(btpAddress).send());
     }
 
     @Test
     void addRelayShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.addRelay(btpAddress, address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.addRelay(btpAddress, address).send());
     }
 
     @Test
     void removeRelayShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.removeRelay(btpAddress, address).send());
+        assertUnauthorized(() -> bmcManagementWithTester.removeRelay(btpAddress, address).send());
     }
 
     @Test
     void dropMessageShouldRevertUnauthorized() {
-        assertUnauthorized(() -> bmcWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger).send());
+        assertUnauthorized(() -> bmcManagementWithTester.dropMessage(btpAddress, bigInteger, string, bigInteger, bigInteger, "", new ArrayList<>()).send());
+
+        System.out.println("BMCManagement.setPeripheryShouldRevertUnauthorized");
+        assertUnauthorized(() -> bmcManagementWithTester.setBMCPeriphery(address).send());
     }
 
 }

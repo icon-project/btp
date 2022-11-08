@@ -29,16 +29,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AssertBTPException {
+    public static final String REASON_PREFIX = "execution reverted: ";
+
     public static UserRevertedException toUserRevertedException(TransactionException e) {
         String reason = e.getTransactionReceipt().orElseThrow().getRevertReason();
-        if (reason.startsWith("execution reverted: ")) {
-            reason = reason.substring("execution reverted: ".length());
+        if (reason.startsWith(REASON_PREFIX)) {
+            reason = reason.substring(REASON_PREFIX.length());
         }
         int code = 0;
         int idx = reason.indexOf(":");
         if (idx >= 0) {
             try {
-                code = Integer.parseInt(reason.substring(0, idx));
+                code = Integer.parseInt(reason.substring(0, idx).trim());
                 reason = reason.substring(idx);
             } catch (NumberFormatException nfe) {
                 System.out.printf("not found code in \"%s\"\n", reason);

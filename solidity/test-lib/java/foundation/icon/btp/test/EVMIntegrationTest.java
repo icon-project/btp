@@ -16,47 +16,58 @@
 
 package foundation.icon.btp.test;
 
-import org.junit.jupiter.api.*;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.slf4j.LoggerFactory;
 import org.web3j.abi.datatypes.Address;
-import org.web3j.crypto.*;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Contract;
 import org.web3j.tx.FastRawTransactionManager;
 import org.web3j.tx.TransactionManager;
+import org.web3j.tx.Transfer;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.response.PollingTransactionReceiptProcessor;
+import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag("integration")
 @TestMethodOrder(value = MethodOrderer.OrderAnnotation.class)
 public interface EVMIntegrationTest {
-
-    default void internalBeforeEach(TestInfo testInfo) {
-    }
-
-    default void internalAfterEach(TestInfo testInfo) {
-    }
+    Level DEFAULT_LOG_LEVEL = Level.INFO;
 
     default void clearIfExists(TestInfo testInfo) {
     }
@@ -64,29 +75,40 @@ public interface EVMIntegrationTest {
     @BeforeEach
     default void beforeEach(TestInfo testInfo) {
         System.out.println("=".repeat(100));
-        System.out.println("beforeEach start " + testInfo.getTestMethod().orElseThrow());
-        System.out.println("clearIfExists start");
+        System.out.println("beforeEach clearIfExists start" + testInfo.getTestMethod().orElseThrow());
         clearIfExists(testInfo);
-        System.out.println("clearIfExists end");
-        internalBeforeEach(testInfo);
-        System.out.println("beforeEach end " + testInfo.getTestMethod().orElseThrow());
+        System.out.println("beforeEach clearIfExists end" + testInfo.getTestMethod().orElseThrow());
         System.out.println("-".repeat(100));
     }
 
     @AfterEach
     default void afterEach(TestInfo testInfo) {
         System.out.println("-".repeat(100));
-        System.out.println("afterEach start " + testInfo.getTestMethod().orElseThrow());
-        internalAfterEach(testInfo);
-        System.out.println("clearIfExists start");
+        System.out.println("afterEach clearIfExists start " + testInfo.getTestMethod().orElseThrow());
         clearIfExists(testInfo);
-        System.out.println("clearIfExists end");
-        System.out.println("afterEach end " + testInfo.getTestMethod().orElseThrow());
+        System.out.println("afterEach clearIfExists end " + testInfo.getTestMethod().orElseThrow());
         System.out.println("=".repeat(100));
     }
 
     int DEFAULT_RPC_PORT = 8545;
-    Web3j w3j = Web3j.build(new HttpService("http://localhost:" + DEFAULT_RPC_PORT));
+
+    static Web3j newWeb3j(String url) {
+        Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(HttpService.class);
+        boolean enabled = logger.isDebugEnabled();
+        Level level = logger.getLevel();
+        if (!enabled) {
+            logger.setLevel(Level.DEBUG);
+        }
+        Web3j w3j = Web3j.build(new HttpService(url));
+        if (enabled) {
+            System.out.println("HttpService logger level:" + level + " to INFO");
+            level = DEFAULT_LOG_LEVEL;
+        }
+        logger.setLevel(level);
+        return w3j;
+    }
+
+    Web3j w3j = newWeb3j("http://localhost:" + DEFAULT_RPC_PORT);
     ContractGasProvider cgp = new DefaultGasProvider();
     Credentials credentials = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63");
     BigInteger chainId = getChainId(w3j);
@@ -101,6 +123,13 @@ public interface EVMIntegrationTest {
                         w3j,
                         1000,
                         30));
+    }
+
+    static void setDumpJson(boolean enable) {
+        Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(HttpService.class);
+        if (logger.isDebugEnabled() != enable) {
+            logger.setLevel(enable ? Level.DEBUG : DEFAULT_LOG_LEVEL);
+        }
     }
 
     static BigInteger getChainId(Web3j w3j) {
@@ -169,6 +198,9 @@ public interface EVMIntegrationTest {
         return contract;
     }
 
+    static <T extends Contract> T load(Class<T> clazz, Contract contract) {
+        return load(clazz, contract.getContractAddress());
+    }
 
     static <T extends Contract> T load(Class<T> clazz, String address) {
         return load(clazz, address, tm);
@@ -176,7 +208,12 @@ public interface EVMIntegrationTest {
 
     @SuppressWarnings("unchecked")
     static <T extends Contract> T load(T contract, Credentials credentials) {
-        return (T) load(contract.getClass(), contract.getContractAddress(), newTransactionManager(credentials));
+        return (T) load(contract, newTransactionManager(credentials));
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T extends Contract> T load(T contract, TransactionManager tm) {
+        return (T) load(contract.getClass(), contract.getContractAddress(), tm);
     }
 
     @SuppressWarnings("unchecked")
@@ -191,6 +228,87 @@ public interface EVMIntegrationTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static BigInteger getBalance(Credentials credentials) {
+        return getBalance(credentials.getAddress());
+    }
+
+    static BigInteger getBalance(Contract contract) {
+        return getBalance(contract.getContractAddress());
+    }
+
+    static BigInteger getBalance(String address) {
+        try {
+            return w3j.ethGetBalance(address, DefaultBlockParameterName.LATEST).send().getBalance();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static Consumer<TransactionReceipt> balanceChecker(String address, BigInteger value) {
+        return balanceChecker(address, value, false);
+    }
+
+    static Consumer<TransactionReceipt> balanceChecker(String address, BigInteger value, boolean subtractTxFee) {
+        BigInteger preBalance = getBalance(address);
+        return (txr) -> {
+            BigInteger expectBalance = preBalance.add(value);
+            if (subtractTxFee) {
+                BigInteger gasPrice;
+                try {
+                    gasPrice = w3j.ethGetTransactionByHash(txr.getTransactionHash()).send()
+                            .getTransaction().orElseThrow()
+                            .getGasPrice();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                expectBalance = expectBalance.subtract(
+                        gasPrice.multiply(txr.getGasUsed()));
+            }
+            assertEquals(expectBalance, getBalance(address));
+        };
+    }
+
+    static BigInteger transfer(Credentials to, BigInteger value) {
+        return transfer(to.getAddress(), value);
+    }
+
+    static BigInteger transfer(Contract to, BigInteger value) {
+        return transfer(to.getContractAddress(), value);
+    }
+
+    static BigInteger transfer(String to, BigInteger value) {
+        //transfer to contract, if receive function is empty.
+        BigInteger TRANSFER_GAS_LIMIT = Transfer.GAS_LIMIT.add(BigInteger.valueOf(55));
+        Transfer transfer = new Transfer(w3j, tm);
+        try {
+            TransactionReceipt txr = transfer.sendFunds(
+                    to,
+                    new BigDecimal(value),
+                    Convert.Unit.ETHER,
+                    w3j.ethGasPrice().send().getGasPrice(),
+                    TRANSFER_GAS_LIMIT).send();
+            if (!txr.isStatusOK()) {
+                throw new TransactionException(
+                        String.format(
+                                "Transaction %s has failed with status: %s. "
+                                        + "Gas used: %s. "
+                                        + "Revert reason: '%s'.",
+                                txr.getTransactionHash(),
+                                txr.getStatus(),
+                                txr.getGasUsedRaw() != null
+                                        ? txr.getGasUsed().toString()
+                                        : "unknown",
+                                txr.getRevertReason()),
+                        txr);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        BigInteger balance = getBalance(to);
+        System.out.println("Transferred to:" + to + " value:" + new BigDecimal(value) + " balance:" + balance);
+        return balance;
     }
 
     @FunctionalInterface
@@ -253,6 +371,7 @@ public interface EVMIntegrationTest {
     }
 
     Credentials tester = Credentials.create("0xa6d23a0b704b649a92dd56bdff0f9874eeccc9746f10d78b683159af1617e08f");
+    TransactionManager testerTm = newTransactionManager(tester);
 
     static Credentials generateCredentials() {
         try {
@@ -277,6 +396,10 @@ public interface EVMIntegrationTest {
             byte[] bytes = new byte[length];
             random.nextBytes(bytes);
             return bytes;
+        }
+
+        static int positive(int bound) {
+            return random.nextInt(bound) + 1;
         }
     }
 

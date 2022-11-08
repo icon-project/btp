@@ -1,14 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.0 <0.8.5;
 
+import "../interfaces/IBMV.sol";
+
 library Types {
-    /**
-     * @Notice List of ALL Structs being used by a BMC contract
-     */
-    struct VerifierStats {
-        uint256 height; // Last verified block height
-        bytes extra;
-    }
+    string internal constant BMC_SERVICE = "bmc";
+
+    uint256 internal constant ECODE_NONE = 0;
+    uint256 internal constant ECODE_UNKNOWN = 1;
+    uint256 internal constant ECODE_NO_ROUTE = 2;
+    uint256 internal constant ECODE_NO_BSH = 3;
+    uint256 internal constant ECODE_BSH_REVERT = 4;
+
+    string internal constant BMC_INTERNAL_INIT = "Init";
+    string internal constant BMC_INTERNAL_LINK = "Link";
+    string internal constant BMC_INTERNAL_UNLINK = "Unlink";
+    string internal constant BMC_INTERNAL_CLAIM = "Claim";
+    string internal constant BMC_INTERNAL_RESPONSE = "Response";
+
+    uint256 internal constant ROUTE_TYPE_NONE = 0;
+    uint256 internal constant ROUTE_TYPE_LINK = 1;
+    uint256 internal constant ROUTE_TYPE_REACHABLE = 2;
+    uint256 internal constant ROUTE_TYPE_MANUAL = 3;
+
+    string internal constant BTP_EVENT_SEND = "SEND";
+    string internal constant BTP_EVENT_ROUTE = "ROUTE";
+    string internal constant BTP_EVENT_REPLY = "REPLY";
+    string internal constant BTP_EVENT_ERROR = "ERROR";
+    string internal constant BTP_EVENT_RECEIVE = "RECEIVE";
+    string internal constant BTP_EVENT_DROP = "DROP";
 
     struct Service {
         string svc;
@@ -21,46 +41,68 @@ library Types {
     }
 
     struct Route {
-        string dst; //  BTP Address of destination BMC
-        string next; //  BTP Address of a BMC before reaching dst BMC
+        string dst; //  Network Address of destination BMC
+        string next; //  Network Address of a BMC before reaching dst BMC
+    }
+
+    struct RouteInfo {
+        string dst; //  Network Address of destination BMC
+        string next; //  Network Address of a BMC before reaching dst BMC
+        uint256 reachable;
+        uint256 routeType;//{0:unregistered, 1:link, 2:reachable, 3:manual}
     }
 
     struct Link {
         string btpAddress;
-        uint256 rxSeq;
-        uint256 txSeq;
-        bool isConnected;
+        string[] reachable;
     }
 
-    struct LinkStats {
+    struct LinkStatus {
         uint256 rxSeq;
         uint256 txSeq;
-        VerifierStats verifier;
+        IBMV.VerifierStatus verifier;
         uint256 currentHeight;
     }
 
-    struct RelayStats {
-        address addr;
-        uint256 blockCount;
-        uint256 msgCount;
+    struct FeeInfo {
+        string network;
+        uint256[] values;
     }
 
     struct BTPMessage {
-        string src; //  an address of BMC (i.e. btp://1234.PARA/0x1234)
-        string dst; //  an address of destination BMC
-        string svc; //  service name of BSH
-        int256 sn; //  sequence number of BMC
-        bytes message; //  serialized Service Message from BSH
+        string src;
+        string dst;
+        string svc;
+        int256 sn;
+        bytes message;
+        int256 nsn;
+        FeeInfo feeInfo;
     }
 
-    struct ErrorMessage {
+    struct ResponseMessage {
         uint256 code;
         string message;
     }
 
-    struct BMCService {
-        string serviceType;
+    struct BMCMessage {
+        string msgType;
         bytes payload;
     }
 
+    struct Request {
+        int256 nsn;
+        string dst;
+        address caller;
+        uint256 amount;
+    }
+
+    struct ClaimMessage {
+        uint256 amount;
+        string receiver;
+    }
+
+    struct Response {
+        int256 nsn;
+        FeeInfo feeInfo;
+    }
 }

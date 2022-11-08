@@ -32,8 +32,31 @@ public class BMRManagementTest implements BMCIntegrationTest {
     static String net = linkBtpAddress.net();
     static String address = EVMIntegrationTest.Faker.address().toString();
 
+    @BeforeAll
+    static void beforeAll() {
+        System.out.println("BMRManagementTest:beforeAll start");
+        String mockBMVAddress = MockBMVIntegrationTest.mockBMV.getContractAddress();
+        BMVManagementTest.addVerifier(
+                linkBtpAddress.net(), mockBMVAddress);
+        LinkManagementTest.addLink(link);
+        System.out.println("BMRManagementTest:beforeAll end");
+    }
+
+    @AfterAll
+    static void afterAll() {
+        System.out.println("BMRManagementTest:afterAll start");
+        LinkManagementTest.clearLink(link);
+        BMVManagementTest.clearVerifier(net);
+        System.out.println("BMRManagementTest:afterAll end");
+    }
+
+    @Override
+    public void clearIfExists(TestInfo testInfo) {
+        clearRelay(link, address);
+    }
+
     @SuppressWarnings("unchecked")
-    static List<BMCManagement.RelayStats> getRelays(String link) {
+    static List<String> getRelays(String link) {
         try {
             return bmcManagement.getRelays(link).send();
         } catch (Exception e) {
@@ -43,7 +66,7 @@ public class BMRManagementTest implements BMCIntegrationTest {
 
     static boolean isExistsRelay(String link, String address) {
         return getRelays(link).stream()
-                .anyMatch((v) -> v.addr.equals(address));
+                .anyMatch((v) -> v.equals(address));
     }
 
     static void addRelay(String link, String address) {
@@ -69,29 +92,6 @@ public class BMRManagementTest implements BMCIntegrationTest {
             System.out.println("clear relay link:" + link + ", address:" + address);
             removeRelay(link, address);
         }
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        System.out.println("BMRManagementTest:beforeAll start");
-        String mockBMVAddress = MockBMVIntegrationTest.mockBMV.getContractAddress();
-        BMVManagementTest.addVerifier(
-                linkBtpAddress.net(), mockBMVAddress);
-        LinkManagementTest.addLink(link);
-        System.out.println("BMRManagementTest:beforeAll end");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        System.out.println("BMRManagementTest:afterAll start");
-        LinkManagementTest.clearLink(link);
-        BMVManagementTest.clearVerifier(net);
-        System.out.println("BMRManagementTest:afterAll end");
-    }
-
-    @Override
-    public void clearIfExists(TestInfo testInfo) {
-        clearRelay(link, address);
     }
 
     @Test

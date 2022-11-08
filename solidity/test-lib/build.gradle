@@ -5,10 +5,19 @@ web3j {
     // refer https://github.com/web3j/web3j/issues/935
 //    excludedContracts = []
     generatedPackageName = "foundation.icon.btp.mock"
+
+    //org.web3j.abi package
+    //fix that not support multi dimensional array problem
+    //org.web3j.tx.Contract:404
+    //fix NPE problem that
 }
 
 dependencies {
     compileOnly("foundation.icon:javaee-api:0.9.1")
+
+    //for dump jsonrpc, referred web3j
+    implementation("org.slf4j:slf4j-api:1.7.30")
+    implementation("ch.qos.logback:logback-classic:1.2.3")
 
     //for test package
     implementation("org.junit.jupiter:junit-jupiter-api:5.7.2")

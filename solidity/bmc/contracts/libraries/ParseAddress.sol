@@ -263,4 +263,75 @@ library ParseAddress {
 
         return string(asciiBytes);
     }
+
+    function parseAddress(
+        string memory account,
+        string memory revertMsg
+    ) internal pure returns (address accountAddress)
+    {
+        bytes memory accountBytes = bytes(account);
+        require(
+            accountBytes.length == 42 &&
+            accountBytes[0] == bytes1("0") &&
+            accountBytes[1] == bytes1("x"),
+            revertMsg
+        );
+
+        // create a new fixed-size byte array for the ascii bytes of the address.
+        bytes memory accountAddressBytes = new bytes(20);
+
+        // declare variable types.
+        uint8 b;
+        uint8 nibble;
+        uint8 asciiOffset;
+
+        for (uint256 i = 0; i < 40; i++) {
+            // get the byte in question.
+            b = uint8(accountBytes[i + 2]);
+
+            bool isValidASCII = true;
+            // ensure that the byte is a valid ascii character (0-9, A-F, a-f)
+            if (b < 48) isValidASCII = false;
+            if (57 < b && b < 65) isValidASCII = false;
+            if (70 < b && b < 97) isValidASCII = false;
+            if (102 < b) isValidASCII = false; //bytes(hex"");
+
+            // If string contains invalid ASCII characters, revert()
+            if (!isValidASCII) revert(revertMsg);
+
+            // find the offset from ascii encoding to the nibble representation.
+            if (b < 65) {
+                // 0-9
+                asciiOffset = 48;
+            } else if (70 < b) {
+                // a-f
+                asciiOffset = 87;
+            } else {
+                // A-F
+                asciiOffset = 55;
+            }
+
+            // store left nibble on even iterations, then store byte on odd ones.
+            if (i % 2 == 0) {
+                nibble = b - asciiOffset;
+            } else {
+                accountAddressBytes[(i - 1) / 2] = (
+                bytes1(16 * nibble + (b - asciiOffset))
+                );
+            }
+        }
+
+        // pack up the fixed-size byte array and cast it to accountAddress.
+        bytes memory packed = abi.encodePacked(accountAddressBytes);
+        assembly {
+            accountAddress := mload(add(packed, 20))
+        }
+
+        // return false in the event the account conversion returned null address.
+        if (accountAddress == address(0)) {
+            // ensure that provided address is not also the null address first.
+            for (uint256 i = 2; i < accountBytes.length; i++)
+                require(accountBytes[i] == hex"30", revertMsg);
+        }
+    }
 }

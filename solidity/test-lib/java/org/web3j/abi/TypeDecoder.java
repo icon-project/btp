@@ -1,17 +1,18 @@
 /*
  * Copyright 2022 ICON Foundation
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright 2019 Web3 Labs Ltd.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * This file has been modified by ICON Foundation.
  */
 package org.web3j.abi;
 
@@ -432,7 +433,67 @@ public class TypeDecoder {
 
         int valueOffset = offset + MAX_BYTE_LENGTH_FOR_HEX_STRING;
 
-        return decodeArrayElements(input, valueOffset, typeReference, length, function);
+        if (((ParameterizedType) typeReference.getType()).getActualTypeArguments()[0].getTypeName().startsWith(
+                DynamicArray.class.getName())) {
+            //only for DynamicArray in DynamicArray
+            String typeName = ((ParameterizedType) typeReference.getType()).getActualTypeArguments()[0].getTypeName();
+            try {
+                Class componentType = Class.forName(typeName.substring(
+                        DynamicArray.class.getName().length()+1,
+                        typeName.length() - 1));
+                List<DynamicArray<?>> elements = new ArrayList<>(length);
+                int currOffset = valueOffset;
+                for (int i = 0; i < length; i++) {
+                    int hexStringDataOffset = getDataOffset(input, currOffset, typeReference);
+                    DynamicArray<?> value = decodeDynamicArrayInDynamicArray(
+                            input, valueOffset + hexStringDataOffset, componentType);
+                    currOffset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                    elements.add(value);
+                }
+                return (T) new DynamicArray(DynamicArray.class, elements);
+            } catch (ClassNotFoundException e) {
+                throw new UnsupportedOperationException(
+                        "Unable to access DYNAMIC_ARRAY_IN_DYNAMIC_ARRAY parameterized type " + typeReference.getType().getTypeName(),
+                        e);
+            }
+        } else {
+            return decodeArrayElements(input, valueOffset, typeReference, length, function);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Type> DynamicArray<T> decodeDynamicArrayInDynamicArray(
+            String input,
+            int offset,
+            Class<T> componentType) throws ClassNotFoundException {
+        //only for DynamicArray in DynamicArray
+        if (StructType.class.isAssignableFrom(componentType) ||
+                Array.class.isAssignableFrom(componentType)) {
+            throw new UnsupportedOperationException("unsupported in decodeDynamicArrayInDynamicArray");
+        } else {
+            int length = decodeUintAsInt(input, offset);
+            List<T> elements = new ArrayList<>(length);
+            int currOffset = offset + MAX_BYTE_LENGTH_FOR_HEX_STRING;
+            TypeReference<?> typeReference = new TypeReference<DynamicArray<T>>(){};
+            for (int i = 0; i < length; i++) {
+                T value;
+                if (isDynamic(componentType)) {
+                    int hexStringDataOffset = getDataOffset(input, currOffset, typeReference);
+                    value = decode(input, offset + hexStringDataOffset, componentType);
+                    currOffset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                } else {
+                    value = decode(input, currOffset, componentType);
+                    currOffset +=
+                            getSingleElementLength(input, currOffset, componentType)
+                                    * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                }
+                elements.add(value);
+            }
+
+            String typeName = getSimpleTypeName(componentType);
+
+            return (DynamicArray<T>) new DynamicArray(AbiTypes.getType(typeName), elements);
+        }
     }
 
     static <T extends Type> T decodeDynamicStruct(

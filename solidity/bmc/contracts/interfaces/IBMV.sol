@@ -3,19 +3,22 @@ pragma solidity >=0.8.0 <0.8.5;
 pragma abicoder v2;
 
 interface IBMV {
+
+    struct VerifierStatus {
+        uint256 height; // Last verified block height
+        bytes extra;
+    }
+
     /**
-        @notice Used by the relay to resolve next BTP Message to send.
-                Called by BMC.
+        @notice Gets status of BMV.
         @return height Last verified block height
         @return extra  extra rlp encoded bytes
      */
-    function getStatus()
-        external
-        view
-        returns (
             uint256 height,
             bytes memory extra
-        );
+    function getStatus(
+    ) external view returns (
+    );
 
     /**
         @notice Decodes Relay Messages and process BTP Messages.
@@ -25,12 +28,14 @@ interface IBMV {
         @param _prev BTP Address of the previous BMC
         @param _seq next sequence number to get a message
         @param _msg serialized bytes of Relay Message
-        @return serializedMessages List of serialized bytes of a BTP Message
+        @return _serializedMessages List of serialized bytes of a BTP Message
      */
     function handleRelayMessage(
         string memory _bmc,
         string memory _prev,
         uint256 _seq,
         bytes calldata _msg
-    ) external returns (bytes[] memory);
+    ) external returns (
+        bytes[] memory _serializedMessages
+    );
 }

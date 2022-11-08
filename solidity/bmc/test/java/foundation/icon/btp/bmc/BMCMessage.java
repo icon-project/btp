@@ -26,6 +26,14 @@ public class BMCMessage {
     private String type;
     private byte[] payload;
 
+    public BMCMessage() {
+    }
+
+    public BMCMessage(String type, byte[] payload) {
+        this.type = type;
+        this.payload = payload;
+    }
+
     public String getType() {
         return type;
     }

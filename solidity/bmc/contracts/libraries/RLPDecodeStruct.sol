@@ -15,14 +15,42 @@ library RLPDecodeStruct {
     uint8 private constant LIST_SHORT_START = 0xc0;
     uint8 private constant LIST_LONG_START = 0xf7;
 
-    function decodeBMCService(bytes memory _rlp)
+    function _decodeFeeInfo(
+        RLPDecode.RLPItem memory item
+    ) private pure returns (
+        Types.FeeInfo memory
+    ) {
+        if (item.isNull()) {
+            return Types.FeeInfo("", new uint256[](0));
+        }
+        RLPDecode.RLPItem[] memory ls = item.toList();
+        RLPDecode.RLPItem[] memory rlpValues = ls[1].toList();
+        uint256[] memory _values = new uint256[](rlpValues.length);
+        for (uint256 i = 0; i < rlpValues.length; i++)
+            _values[i] = rlpValues[i].toUint();
+        return
+        Types.FeeInfo(
+            string(ls[0].toBytes()),
+            _values
+        );
+    }
+
+    function decodeFeeInfo(bytes memory _rlp)
+    internal
+    pure
+    returns (Types.FeeInfo memory)
+    {
+        return _decodeFeeInfo(_rlp.toRlpItem());
+    }
+
+    function decodeBMCMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.BMCService memory)
+        returns (Types.BMCMessage memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
         return
-            Types.BMCService(
+            Types.BMCMessage(
                 string(ls[0].toBytes()),
                 ls[1].toBytes() //  bytes array of RLPEncode(Data)
             );
@@ -61,17 +89,28 @@ library RLPDecodeStruct {
                 string(ls[1].toBytes()),
                 string(ls[2].toBytes()),
                 ls[3].toInt(),
-                ls[4].toBytes() //  bytes array of RLPEncode(ServiceMessage)
+                ls[4].toBytes(),
+                ls[5].toInt(),
+                _decodeFeeInfo(ls[6])
             );
     }
 
-    function decodeErrorMessage(bytes memory _rlp)
+    function decodeResponseMessage(bytes memory _rlp)
         internal
         pure
-        returns (Types.ErrorMessage memory)
+        returns (Types.ResponseMessage memory)
     {
         RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
-        return Types.ErrorMessage(ls[0].toUint(), string(ls[1].toBytes()));
+        return Types.ResponseMessage(ls[0].toUint(), string(ls[1].toBytes()));
+    }
+
+    function decodeClaimMessage(bytes memory _rlp)
+    internal
+    pure
+    returns (Types.ClaimMessage memory)
+    {
+        RLPDecode.RLPItem[] memory ls = _rlp.toRlpItem().toList();
+        return Types.ClaimMessage(ls[0].toUint(), string(ls[1].toBytes()));
     }
 
 }

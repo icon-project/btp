@@ -9,19 +9,24 @@ contract LibRLPStruct {
     using RLPEncodeStruct for *;
     using RLPDecodeStruct for *;
 
+    function encodeFeeInfo(Types.FeeInfo memory self)
+    external pure returns (bytes memory) {
+        return self.encodeFeeInfo();
+    }
+
     function encodeBTPMessage(Types.BTPMessage memory self)
     external pure returns (bytes memory) {
         return self.encodeBTPMessage();
     }
 
-    function encodeErrorMessage(Types.ErrorMessage memory self)
+    function encodeResponseMessage(Types.ResponseMessage memory self)
     external pure returns (bytes memory) {
-        return self.encodeErrorMessage();
+        return self.encodeResponseMessage();
     }
 
-    function encodeBMCService(Types.BMCService memory self)
+    function encodeBMCMessage(Types.BMCMessage memory self)
     external pure returns (bytes memory) {
-        return self.encodeBMCService();
+        return self.encodeBMCMessage();
     }
 
     function encodeInitMessage(string[] memory self)
@@ -34,6 +39,19 @@ contract LibRLPStruct {
         return self.encodePropagateMessage();
     }
 
+    function encodeClaimMessage(Types.ClaimMessage memory self)
+    external pure returns (bytes memory) {
+        return self.encodeClaimMessage();
+    }
+
+    function decodeFeeInfo(bytes memory rlpBytes)
+    external
+    pure
+    returns (Types.FeeInfo memory)
+    {
+        return rlpBytes.decodeFeeInfo();
+    }
+
     function decodeBTPMessage(bytes memory rlpBytes)
     external
     pure
@@ -42,20 +60,20 @@ contract LibRLPStruct {
         return rlpBytes.decodeBTPMessage();
     }
 
-    function decodeErrorMessage(bytes memory rlpBytes)
+    function decodeResponseMessage(bytes memory rlpBytes)
     external
     pure
-    returns (Types.ErrorMessage memory)
+    returns (Types.ResponseMessage memory)
     {
-        return rlpBytes.decodeErrorMessage();
+        return rlpBytes.decodeResponseMessage();
     }
 
-    function decodeBMCService(bytes memory rlpBytes)
+    function decodeBMCMessage(bytes memory rlpBytes)
     external
     pure
-    returns (Types.BMCService memory)
+    returns (Types.BMCMessage memory)
     {
-        return rlpBytes.decodeBMCService();
+        return rlpBytes.decodeBMCMessage();
     }
 
     function decodeInitMessage(bytes memory rlpBytes)
@@ -72,6 +90,14 @@ contract LibRLPStruct {
     returns (string memory)
     {
         return rlpBytes.decodePropagateMessage();
+    }
+
+    function decodeClaimMessage(bytes memory rlpBytes)
+    external
+    pure
+    returns (Types.ClaimMessage memory)
+    {
+        return rlpBytes.decodeClaimMessage();
     }
 
 }

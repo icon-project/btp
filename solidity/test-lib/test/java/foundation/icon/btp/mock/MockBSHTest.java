@@ -51,7 +51,8 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
                 });
         checker.accept(mockBSH.sendMessage(
                 MockBMCIntegrationTest.mockBMC.getContractAddress(),
-                to, svc, sn, msg).send());
+                to, svc, sn, msg,
+                BigInteger.ZERO).send());
     }
 
     @Test

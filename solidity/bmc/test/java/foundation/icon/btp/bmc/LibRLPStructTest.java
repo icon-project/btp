@@ -21,6 +21,7 @@ import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.EVMIntegrationTest;
 import foundation.icon.btp.test.LibRLPIntegrationTest;
 import foundation.icon.btp.util.StringUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,7 +47,7 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
         assertArrayEquals(o1.getPayload(), o2.getPayload());
     }
 
-    static void assertEqualsBTPErrorMessage(BTPErrorMessage o1, BTPErrorMessage o2) {
+    static void assertEqualsResponseMessage(ResponseMessage o1, ResponseMessage o2) {
         assertEquals(o1.getCode(), o2.getCode());
         assertEquals(o1.getMsg(), o2.getMsg());
     }
@@ -72,26 +73,35 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
         assertEquals(o1.getLink(), o2.getLink());
     }
 
+    static void assertEqualsClaimMessage(ClaimMessage o1, ClaimMessage o2) {
+        assertEquals(o1.getAmount(), o2.getAmount());
+        assertEquals(o1.getReceiver(), o2.getReceiver());
+    }
+
     static BTPMessage newBTPMessage(LibRLPStruct.BTPMessage s) {
         BTPMessage r = new BTPMessage();
-        r.setSrc(BTPAddress.parse(s.src));
-        r.setDst(BTPAddress.parse(s.dst));
+        r.setSrc(s.src);
+        r.setDst(s.dst);
         r.setSvc(s.svc);
         r.setSn(s.sn);
         r.setPayload(s.message);
+        r.setNsn(s.nsn);
+        r.setFeeInfo(new FeeInfo(
+                s.feeInfo.network,
+                s.feeInfo.values.toArray(BigInteger[]::new)));
         return r;
     }
 
-    static BTPErrorMessage newBTPErrorMessage(LibRLPStruct.ErrorMessage s) {
-        BTPErrorMessage r = new BTPErrorMessage();
+    static ResponseMessage newBTPErrorMessage(LibRLPStruct.ResponseMessage s) {
+        ResponseMessage r = new ResponseMessage();
         r.setCode(s.code.longValue());
         r.setMsg(s.message);
         return r;
     }
 
-    static BMCMessage newBMCMessage(LibRLPStruct.BMCService s) {
+    static BMCMessage newBMCMessage(LibRLPStruct.BMCMessage s) {
         BMCMessage r = new BMCMessage();
-        r.setType(s.serviceType);
+        r.setType(s.msgType);
         r.setPayload(s.payload);
         return r;
     }
@@ -115,14 +125,24 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
         return r;
     }
 
+    static ClaimMessage newClaimMessage(LibRLPStruct.ClaimMessage s) {
+        return new ClaimMessage(s.amount, s.receiver);
+    }
+
+    @Disabled("web3j not support array in Struct")
     @Test
     void testBTPMessage() throws Exception {
         BTPMessage expected = new BTPMessage();
-        expected.setSrc(BTPIntegrationTest.Faker.btpLink());
-        expected.setDst(BTPIntegrationTest.Faker.btpLink());
+        expected.setSrc(BTPIntegrationTest.Faker.btpNetwork());
+        expected.setDst(BTPIntegrationTest.Faker.btpNetwork());
         expected.setSn(BigInteger.ONE);
         expected.setSvc(BTPIntegrationTest.Faker.btpService());
         expected.setPayload(EVMIntegrationTest.Faker.bytes(1));
+        expected.setNsn(BigInteger.ONE);
+        expected.setFeeInfo(new FeeInfo(expected.getSrc(),
+                new BigInteger[]{BigInteger.ZERO}));
+//        expected.setFeeInfo(new FeeInfo(expected.getSrc(),
+//                new BigInteger[]{}));
 
         byte[] expectedBytes = expected.toBytes();
         System.out.println("expected:" + StringUtil.bytesToHex(expectedBytes));
@@ -130,39 +150,47 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
 
         byte[] encoded = libRLPStruct.encodeBTPMessage(
                 new LibRLPStruct.BTPMessage(
-                        expected.getSrc().toString(),
-                        expected.getDst().toString(),
+                        expected.getSrc(),
+                        expected.getDst(),
                         expected.getSvc(),
                         expected.getSn(),
-                        expected.getPayload())).send();
+                        expected.getPayload(),
+                        expected.getNsn(),
+                        new LibRLPStruct.FeeInfo(
+                                expected.getFeeInfo().getNetwork(),
+                                Arrays.asList(expected.getFeeInfo().getValues()))
+                )
+        ).send();
         System.out.println("encoded:" + StringUtil.bytesToHex(encoded));
         assertArrayEquals(expectedBytes, encoded);
 
+        //TODO fail to decode LibRLPStruct.BTPMessage.FeeInfo
+        //java.lang.UnsupportedOperationException: Array types must be wrapped in a TypeReference
         LibRLPStruct.BTPMessage decoded = libRLPStruct.decodeBTPMessage(encoded).send();
         System.out.println("decoded:" + newBTPMessage(decoded));
         assertEqualsBTPMessage(expected, newBTPMessage(decoded));
     }
 
     @Test
-    void testBTPErrorMessage() throws Exception {
-        BTPErrorMessage expected = new BTPErrorMessage();
+    void testResponseMessage() throws Exception {
+        ResponseMessage expected = new ResponseMessage();
         expected.setCode(BigInteger.ONE.intValue());
         expected.setMsg("");
 
         byte[] expectedBytes = expected.toBytes();
         System.out.println("expected:" + StringUtil.bytesToHex(expectedBytes));
-        assertEqualsBTPErrorMessage(expected, BTPErrorMessage.fromBytes(expectedBytes));
+        assertEqualsResponseMessage(expected, ResponseMessage.fromBytes(expectedBytes));
 
-        byte[] encoded = libRLPStruct.encodeErrorMessage(
-                new LibRLPStruct.ErrorMessage(
+        byte[] encoded = libRLPStruct.encodeResponseMessage(
+                new LibRLPStruct.ResponseMessage(
                         BigInteger.valueOf(expected.getCode()),
                         expected.getMsg())).send();
         System.out.println("encoded:" + StringUtil.bytesToHex(encoded));
         assertArrayEquals(expectedBytes, encoded);
 
-        LibRLPStruct.ErrorMessage decoded = libRLPStruct.decodeErrorMessage(encoded).send();
+        LibRLPStruct.ResponseMessage decoded = libRLPStruct.decodeResponseMessage(encoded).send();
         System.out.println("decoded:" + newBTPErrorMessage(decoded));
-        assertEqualsBTPErrorMessage(expected, newBTPErrorMessage(decoded));
+        assertEqualsResponseMessage(expected, newBTPErrorMessage(decoded));
     }
 
     @ParameterizedTest
@@ -176,14 +204,14 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
         System.out.println("expected:" + StringUtil.bytesToHex(expectedBytes));
         assertEqualsBMCMessage(expected, BMCMessage.fromBytes(expectedBytes));
 
-        byte[] encoded = libRLPStruct.encodeBMCService(
-                new LibRLPStruct.BMCService(
+        byte[] encoded = libRLPStruct.encodeBMCMessage(
+                new LibRLPStruct.BMCMessage(
                         expected.getType(),
                         expected.getPayload())).send();
         System.out.println("encoded:" + StringUtil.bytesToHex(encoded));
         assertArrayEquals(expectedBytes, encoded);
 
-        LibRLPStruct.BMCService decoded = libRLPStruct.decodeBMCService(encoded).send();
+        LibRLPStruct.BMCMessage decoded = libRLPStruct.decodeBMCMessage(encoded).send();
         System.out.println("decoded:" + newBMCMessage(decoded));
         assertEqualsBMCMessage(expected, newBMCMessage(decoded));
     }
@@ -241,22 +269,27 @@ public class LibRLPStructTest implements LibRLPIntegrationTest {
     }
 
     @Test
-    void decodeBTPMessage() throws Exception {
-        String hex = "f8dfb8396274703a2f2f3078332e69636f6e2f637862633462346162306461313638653563633533316437653863383362383432363237613233666536b8396274703a2f2f307836312e6273632f307830353931316534634345313931323931394641393943613833376136416538643834343630363334857863616c6c01b860f85e01b85bf859aa637834616637333562646461343566313437653432356535643661623330386538386533303234363235aa307864313330356636346230306162623035653965626535636135393561653133373731623564386665010031";
-        byte[] bytes = StringUtil.hexToBytes(hex);
-        BTPMessage expected = BTPMessage.fromBytes(bytes);
-        System.out.println("expected:" + expected);
-        assertArrayEquals(bytes, expected.toBytes());
+    void testClaimMessage() throws Exception {
+        ClaimMessage expected = new ClaimMessage(
+                BigInteger.ONE,
+                EVMIntegrationTest.Faker.address().toString()
+        );
 
-        LibRLPIntegrationTest.decode(expected.getSrc());
-        LibRLPIntegrationTest.decode(expected.getDst());
-        LibRLPIntegrationTest.decode(expected.getSvc());
-        LibRLPIntegrationTest.decode(expected.getSn());
-        LibRLPIntegrationTest.decode(expected.getPayload());
+        byte[] expectedBytes = expected.toBytes();
+        System.out.println("expected:" + StringUtil.bytesToHex(expectedBytes));
+        assertEqualsClaimMessage(expected, ClaimMessage.fromBytes(expectedBytes));
 
-        LibRLPStruct.BTPMessage decoded = libRLPStruct.decodeBTPMessage(bytes).send();
-        System.out.println("decoded:" + newBTPMessage(decoded));
+        byte[] encoded = libRLPStruct.encodeClaimMessage(
+                new LibRLPStruct.ClaimMessage(
+                    expected.getAmount(),
+                    expected.getReceiver()
+                )).send();
+        System.out.println("encoded:" + StringUtil.bytesToHex(encoded));
+        assertArrayEquals(expectedBytes, encoded);
+
+        LibRLPStruct.ClaimMessage decoded = libRLPStruct.decodeClaimMessage(encoded).send();
+        System.out.println("decoded:" + newClaimMessage(decoded));
+        assertEqualsClaimMessage(expected, newClaimMessage(decoded));
     }
-
 
 }

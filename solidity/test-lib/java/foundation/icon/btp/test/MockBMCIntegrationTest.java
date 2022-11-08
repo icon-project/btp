@@ -18,19 +18,21 @@ package foundation.icon.btp.test;
 
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.mock.MockBMC;
+import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public interface MockBMCIntegrationTest {
-    String NET = "0x"+EVMIntegrationTest.chainId.toString(16)+".bsc";
-    MockBMC mockBMC = EVMIntegrationTest.deploy(MockBMC.class, NET);
+    MockBMC mockBMC = EVMIntegrationTest.deploy(MockBMC.class,
+            "0x"+EVMIntegrationTest.chainId.toString(16)+".bsc");
 
     static BTPAddress btpAddress() {
         try {
-            return BTPAddress.valueOf(mockBMC.getBmcBtpAddress().send());
+            return BTPAddress.valueOf(mockBMC.getBtpAddress().send());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -45,19 +47,27 @@ public interface MockBMCIntegrationTest {
     }
 
     static Consumer<TransactionReceipt> sendMessageEventShouldNotExists() {
-        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
-                mockBMC.getContractAddress(),
-                MockBMC::getSendMessageEvents);
+        return eventLogShouldNotExistsChecker(MockBMC::getSendMessageEvents);
     }
 
     static Consumer<TransactionReceipt> handleRelayMessageEvent(
             Consumer<MockBMC.HandleRelayMessageEventResponse> consumer) {
-        return EVMIntegrationTest.eventLogChecker(
-                mockBMC.getContractAddress(),
+        return eventLogChecker(
                 MockBMC::getHandleRelayMessageEvents,
                 consumer);
     }
 
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                mockBMC.getContractAddress(), supplier, consumer);
+    }
+
+    static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogShouldNotExistsChecker(
+            EVMIntegrationTest.EventLogsSupplier<T> supplier) {
+        return EVMIntegrationTest.eventLogShouldNotExistsChecker(
+                mockBMC.getContractAddress(), supplier);
+    }
 
     static Consumer<TransactionReceipt> shouldSuccessHandleRelayMessage() {
         return EVMIntegrationTest.eventLogsChecker(
@@ -70,25 +80,25 @@ public interface MockBMCIntegrationTest {
                 });
     }
 
-    static Consumer<TransactionReceipt> shouldSuccessHandleBTPMessage() {
-        return EVMIntegrationTest.eventLogsChecker(
-                mockBMC.getContractAddress(),
-                MockBMC::getErrorHandleBTPMessageEvents, (l) -> {
-                    for (MockBMC.ErrorHandleBTPMessageEventResponse el : l) {
-                        System.out.println("ErrorHandleBTPMessage:" + el.err);
-                    }
-                    assertEquals(0, l.size());
-                });
-    }
-
-    static Consumer<TransactionReceipt> shouldSuccessHandleBTPError() {
-        return EVMIntegrationTest.eventLogsChecker(
-                mockBMC.getContractAddress(),
-                MockBMC::getErrorHandleBTPErrorEvents, (l) -> {
-                    for (MockBMC.ErrorHandleBTPErrorEventResponse el : l) {
-                        System.out.println("ErrorHandleBTPError:" + el.err);
-                    }
-                    assertEquals(0, l.size());
-                });
-    }
+//    static Consumer<TransactionReceipt> shouldSuccessHandleBTPMessage() {
+//        return EVMIntegrationTest.eventLogsChecker(
+//                mockBMC.getContractAddress(),
+//                MockBMC::getErrorHandleBTPMessageEvents, (l) -> {
+//                    for (MockBMC.ErrorHandleBTPMessageEventResponse el : l) {
+//                        System.out.println("ErrorHandleBTPMessage:" + el.err);
+//                    }
+//                    assertEquals(0, l.size());
+//                });
+//    }
+//
+//    static Consumer<TransactionReceipt> shouldSuccessHandleBTPError() {
+//        return EVMIntegrationTest.eventLogsChecker(
+//                mockBMC.getContractAddress(),
+//                MockBMC::getErrorHandleBTPErrorEvents, (l) -> {
+//                    for (MockBMC.ErrorHandleBTPErrorEventResponse el : l) {
+//                        System.out.println("ErrorHandleBTPError:" + el.err);
+//                    }
+//                    assertEquals(0, l.size());
+//                });
+//    }
 }
