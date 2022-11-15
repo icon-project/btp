@@ -180,7 +180,7 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
 
     static BMCStatus getStatus(String link) {
         try {
-            BMCPeriphery.LinkStats status = bmcPeriphery.getStatus(link).send();
+            BMCPeriphery.LinkStatus status = bmcPeriphery.getStatus(link).send();
             return new BMCStatus(
                     status.rxSeq,
                     status.txSeq,

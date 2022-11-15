@@ -103,23 +103,25 @@ subprojects {
             def nex = vc.computeNodeExec(ne, vc.computeNodeBinDir(vc.computeNodeDir(ne)))
             def sout = new ByteArrayOutputStream()
             def eout = new ByteArrayOutputStream()
-            exec {
-                standardOutput=sout
-                errorOutput=eout
-                executable = nex.orNull
-                args = ['-e','console.log(JSON.stringify(require("./truffle-config.js").compilers.solc))']
-                ignoreExitValue = true
-            }
-            if (sout.size() > 0) {
-                def tcJson = new groovy.json.JsonSlurper().parseText(sout.toString())
-                tc.source = "truffle-config.js"
-                tc.version = tcJson.version
-                tc.evmVersion = tcJson.settings.evmVersion
-                tc.optimize = tcJson.settings.optimizer.enabled
-                tc.optimizeRuns = tcJson.settings.optimizer.runs
-            }
-            if (eout.size() > 0) {
-                println eout
+            if (new File(nex.orNull).exists()) {
+                exec {
+                    standardOutput=sout
+                    errorOutput=eout
+                    executable = nex.orNull
+                    args = ['-e','console.log(JSON.stringify(require("./truffle-config.js").compilers.solc))']
+                    ignoreExitValue = true
+                }
+                if (sout.size() > 0) {
+                    def tcJson = new groovy.json.JsonSlurper().parseText(sout.toString())
+                    tc.source = "truffle-config.js"
+                    tc.version = tcJson.version
+                    tc.evmVersion = tcJson.settings.evmVersion
+                    tc.optimize = tcJson.settings.optimizer.enabled
+                    tc.optimizeRuns = tcJson.settings.optimizer.runs
+                }
+                if (eout.size() > 0) {
+                    println eout
+                }
             }
         }
         println "[$project.name] ${tc}"
