@@ -5,3 +5,4 @@ __pycache__
 build/
 bin/
 node_modules/
+solidity/**/coverage.json

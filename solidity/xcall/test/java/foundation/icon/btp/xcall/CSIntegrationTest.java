@@ -29,13 +29,20 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
     int MAX_DATA_SIZE = 2048;
     int MAX_ROLLBACK_SIZE = 1024;
 
-    CallService callService = EVMIntegrationTest.deployWithInitialize(CallService.class,
-            MockBMCIntegrationTest.mockBMC.getContractAddress());
-
+    CallService callService = deployCallService();
+    static CallService deployCallService() {
+        EVMIntegrationTest.replaceContractBinary(CallService.class, "xcall.", System.getProperties());
+        return EVMIntegrationTest.deployWithInitialize(CallService.class,
+                MockBMCIntegrationTest.mockBMC.getContractAddress());
+    }
     IFeeManage feeManager = EVMIntegrationTest.load(IFeeManage.class, callService);
 
-    DAppProxySample dAppProxySample = EVMIntegrationTest.deployWithInitialize(DAppProxySample.class,
-            callService.getContractAddress());
+    DAppProxySample dAppProxySample = deployDAppProxySample();
+    static DAppProxySample deployDAppProxySample() {
+        EVMIntegrationTest.replaceContractBinary(DAppProxySample.class, "sample.", System.getProperties());
+        return EVMIntegrationTest.deployWithInitialize(DAppProxySample.class,
+                callService.getContractAddress());
+    }
 
     static Consumer<TransactionReceipt> callMessageEvent(
             Consumer<CallService.CallMessageEventResponse> consumer) {

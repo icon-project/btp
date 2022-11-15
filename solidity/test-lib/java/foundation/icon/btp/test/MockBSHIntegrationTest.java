@@ -24,7 +24,11 @@ import java.util.function.Consumer;
 public interface MockBSHIntegrationTest {
     String SERVICE = "mock";
 
-    MockBSH mockBSH = EVMIntegrationTest.deploy(MockBSH.class);
+    MockBSH mockBSH = deployMockBSH();
+    static MockBSH deployMockBSH() {
+        EVMIntegrationTest.replaceContractBinary(MockBSH.class, "mock-bsh.", System.getProperties());
+        return EVMIntegrationTest.deploy(MockBSH.class);
+    }
 
     static Consumer<TransactionReceipt> handleBTPMessageEvent(
             Consumer<MockBSH.HandleBTPMessageEventResponse> consumer) {

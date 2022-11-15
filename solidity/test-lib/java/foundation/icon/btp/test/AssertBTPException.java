@@ -16,13 +16,16 @@
 
 package foundation.icon.btp.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import foundation.icon.btp.lib.BTPException;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.AssertionFailedError;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
 import score.UserRevertException;
 import score.UserRevertedException;
 
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +35,32 @@ public class AssertBTPException {
     public static final String REASON_PREFIX = "execution reverted: ";
 
     public static UserRevertedException toUserRevertedException(TransactionException e) {
-        String reason = e.getTransactionReceipt().orElseThrow().getRevertReason();
+        String reason = null;
+        if (e.getTransactionReceipt().isPresent()) {
+            reason = e.getTransactionReceipt().get().getRevertReason();
+        } else if (e.getMessage().startsWith("{")) {//for ganache
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                Map<String, ?> m = mapper.readValue(e.getMessage(), Map.class);
+                for (String k : m.keySet()) {
+                    if (k.equals("stack") || k.equals("name")) {
+                        continue;
+                    }
+                    Object v = m.get(k);
+                    if (v instanceof Map) {
+                        if (((Map<String, String>) v).containsKey("reason")) {
+                            reason = ((Map<String, String>) v).get("reason");
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                ;
+            }
+        }
+        if (reason == null) {
+            throw new RuntimeException("fail to get revert reason");
+        }
         if (reason.startsWith(REASON_PREFIX)) {
             reason = reason.substring(REASON_PREFIX.length());
         }

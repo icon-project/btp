@@ -34,10 +34,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class BMVIntegrationTest implements BTPIntegrationTest {
     static BTPAddress bmc = MockBMCIntegrationTest.btpAddress();
     static BTPAddress prev = BTPIntegrationTest.Faker.btpLink();
-    static BMV bmv = EVMIntegrationTest.deploy(BMV.class,
-            MockBMCIntegrationTest.mockBMC.getContractAddress(),
-            prev.net(),
-            BigInteger.ZERO);
+    static BMV bmv = deployBMV();
+
+    static BMV deployBMV() {
+        EVMIntegrationTest.replaceContractBinary(BMV.class, "bmv.", System.getProperties());
+        return EVMIntegrationTest.deploy(BMV.class,
+                MockBMCIntegrationTest.mockBMC.getContractAddress(),
+                prev.net(),
+                BigInteger.ZERO);
+    }
 
     @Test
     void handleRelayMessage() throws Exception {

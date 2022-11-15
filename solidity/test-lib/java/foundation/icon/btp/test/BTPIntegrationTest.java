@@ -27,7 +27,7 @@ public interface BTPIntegrationTest extends EVMIntegrationTest {
             return faker.name().firstName();
         }
 
-        String DEFAULT_TYPE = "bsc";
+        String DEFAULT_TYPE = "evm";
 
         static String btpNetwork() {
             return btpNetwork(DEFAULT_TYPE);

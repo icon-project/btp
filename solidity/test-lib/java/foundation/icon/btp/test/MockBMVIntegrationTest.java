@@ -19,15 +19,16 @@ package foundation.icon.btp.test;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.mock.MockBMV;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.tuples.generated.Tuple2;
 
-import java.math.BigInteger;
 import java.util.function.Consumer;
 
 public interface MockBMVIntegrationTest {
 
-    MockBMV mockBMV = EVMIntegrationTest.deploy(MockBMV.class);
-
+    MockBMV mockBMV = deployMockBMV();
+    static MockBMV deployMockBMV() {
+        EVMIntegrationTest.replaceContractBinary(MockBMV.class, "mock-bmv.", System.getProperties());
+        return EVMIntegrationTest.deploy(MockBMV.class);
+    }
     static Consumer<TransactionReceipt> handleRelayMessageEvent(
             Consumer<MockBMV.HandleRelayMessageEventResponse> consumer) {
         return EVMIntegrationTest.eventLogChecker(

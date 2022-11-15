@@ -27,8 +27,13 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public interface MockBMCIntegrationTest {
-    MockBMC mockBMC = EVMIntegrationTest.deploy(MockBMC.class,
-            "0x"+EVMIntegrationTest.chainId.toString(16)+".bsc");
+    MockBMC mockBMC = deployMockBMC();
+
+    static MockBMC deployMockBMC() {
+        EVMIntegrationTest.replaceContractBinary(MockBMC.class, "mock-bmc.", System.getProperties());
+        return EVMIntegrationTest.deploy(MockBMC.class,
+                "0x"+EVMIntegrationTest.chainId.toString(16)+".bsc");
+    }
 
     static BTPAddress btpAddress() {
         try {

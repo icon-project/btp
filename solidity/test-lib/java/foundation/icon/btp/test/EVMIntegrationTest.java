@@ -18,6 +18,7 @@ package foundation.icon.btp.test;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -43,12 +44,16 @@ import org.web3j.tx.TransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.tx.gas.StaticGasProvider;
 import org.web3j.tx.response.PollingTransactionReceiptProcessor;
 import org.web3j.utils.Convert;
 import org.web3j.utils.Numeric;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -57,6 +62,8 @@ import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -90,7 +97,7 @@ public interface EVMIntegrationTest {
         System.out.println("=".repeat(100));
     }
 
-    int DEFAULT_RPC_PORT = 8545;
+    String DEFAULT_URL = "http://localhost:8545";
 
     static Web3j newWeb3j(String url) {
         Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(HttpService.class);
@@ -108,8 +115,11 @@ public interface EVMIntegrationTest {
         return w3j;
     }
 
-    Web3j w3j = newWeb3j("http://localhost:" + DEFAULT_RPC_PORT);
-    ContractGasProvider cgp = new DefaultGasProvider();
+
+    Web3j w3j = newWeb3j(System.getProperty("url", DEFAULT_URL));
+//    ContractGasProvider cgp = new DefaultGasProvider();
+    ContractGasProvider cgp = new StaticGasProvider(DefaultGasProvider.GAS_PRICE,
+        BigInteger.valueOf(18_000_000));
     Credentials credentials = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63");
     BigInteger chainId = getChainId(w3j);
     TransactionManager tm = newTransactionManager(credentials);
@@ -140,32 +150,76 @@ public interface EVMIntegrationTest {
         }
     }
 
+    static void replaceContractBinary(Class<?> clazz, String prefix, Properties properties) {
+        String jsonFilePath = properties.getProperty(prefix+"jsonFilePath");
+        if (jsonFilePath != null && !jsonFilePath.isEmpty()) {
+            replaceContractBinary(clazz, jsonFilePath);
+        }
+    }
+
+    static void replaceContractBinary(Class<?> clazz, String jsonFilePath) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String bin = (String) mapper.readValue(new File(jsonFilePath), Map.class).get("bytecode");
+            System.out.println("replace binary "+clazz.getSimpleName() +
+                    " org:"+ ((String)clazz.getDeclaredField("BINARY").get(null)).length()+
+                    ",replace:"+bin.length());
+
+            Field field = clazz.getDeclaredField("BINARY");
+            field.setAccessible(true);
+
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+            field.set(null, bin);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     static <T extends Contract> T deploy(Class<T> clazz, Object... params) {
         T contract = null;
+
+        int contractLength;
         try {
             if (params != null && params.length > 0) {
                 List<Class<?>> parameterTypes = new ArrayList<>();
-                parameterTypes.add(Web3j.class);
-                parameterTypes.add(TransactionManager.class);
-                parameterTypes.add(ContractGasProvider.class);
                 for (Object param : params) {
                     parameterTypes.add(param.getClass());
                 }
-                Method method = clazz.getDeclaredMethod("deploy", parameterTypes.toArray(new Class[0]));
-                List<Object> parameters = new ArrayList<>(Arrays.asList(w3j, tm, cgp));
-                parameters.addAll(Arrays.asList(params));
-                RemoteCall<T> remoteCall = (RemoteCall<T>) method.invoke(null, parameters.toArray());
-                contract = remoteCall.send();
+                Method deployParamsMethod = null;
+                try {
+                    deployParamsMethod = clazz.getDeclaredMethod("encodeConstructorParams",parameterTypes.toArray(new Class[0]));
+                } catch (NoSuchMethodException ignored) {
+                }
+                if (deployParamsMethod != null) {
+                    String binary = (String) clazz.getDeclaredField("BINARY").get(null);
+                    contract = Contract.deployRemoteCall(clazz, w3j, tm, cgp, binary,
+                            (String) deployParamsMethod.invoke(null, params)).send();
+                } else {
+                    parameterTypes.addAll(0, List.of(
+                            Web3j.class, TransactionManager.class, ContractGasProvider.class));
+
+                    Method method = clazz.getDeclaredMethod("deploy", parameterTypes.toArray(new Class[0]));
+                    List<Object> parameters = new ArrayList<>(Arrays.asList(w3j, tm, cgp));
+                    parameters.addAll(Arrays.asList(params));
+                    RemoteCall<T> remoteCall = (RemoteCall<T>) method.invoke(null, parameters.toArray());
+                    contract = remoteCall.send();
+                }
             } else {
                 String binary = (String) clazz.getDeclaredField("BINARY").get(null);
                 contract = Contract.deployRemoteCall(clazz, w3j, tm, cgp, binary, "").send();
             }
+            contractLength = w3j.ethGetCode(contract.getContractAddress(), DefaultBlockParameterName.LATEST).send().getCode().length();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        System.out.printf("deploy %s address:%s%n",
-                clazz.getSimpleName(), contract.getContractAddress());
+        System.out.printf("deploy %s address:%s length:%d %n",
+                clazz.getSimpleName(), contract.getContractAddress(),
+                contractLength);
         return contract;
     }
 

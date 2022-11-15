@@ -35,6 +35,9 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     BMCManagement bmcManagement = deployBMC();
 
     static BMCManagement deployBMC() {
+        EVMIntegrationTest.replaceContractBinary(BMCManagement.class, "bmcm.", System.getProperties());
+        EVMIntegrationTest.replaceContractBinary(BMCService.class, "bmcs.", System.getProperties());
+        EVMIntegrationTest.replaceContractBinary(BMCPeriphery.class, "bmcp.", System.getProperties());
         BMCManagement bmcManagement = EVMIntegrationTest.deployWithInitialize(BMCManagement.class);
         BMCService bmcService = EVMIntegrationTest.deployWithInitialize(BMCService.class,
                 bmcManagement.getContractAddress());

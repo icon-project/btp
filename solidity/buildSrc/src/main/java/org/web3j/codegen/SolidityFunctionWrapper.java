@@ -657,6 +657,10 @@ public class SolidityFunctionWrapper extends Generator {
                                 TransactionManager.class,
                                 TRANSACTION_MANAGER,
                                 false));
+                methodSpecs.add(
+                        buildDeployParams(
+                                className,
+                                functionDefinition));
             }
         }
 
@@ -774,6 +778,22 @@ public class SolidityFunctionWrapper extends Generator {
         return toReturn.build();
     }
 
+    private MethodSpec buildDeployParams(
+            String className,
+            AbiDefinition functionDefinition) throws ClassNotFoundException {
+        MethodSpec.Builder methodBuilder =
+                MethodSpec.methodBuilder("encodeConstructorParams")
+                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                        .returns(String.class);
+        String inputParams = addParameters(methodBuilder, functionDefinition.getInputs());
+        methodBuilder.addStatement(
+                "return $T.encodeConstructor(" + "$T.<$T>asList($L)" + ")",
+                FunctionEncoder.class,
+                Arrays.class,
+                Type.class,
+                inputParams);
+        return methodBuilder.build();
+    }
     private MethodSpec buildDeploy(
             String className,
             AbiDefinition functionDefinition,
