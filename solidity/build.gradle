@@ -66,6 +66,8 @@ subprojects {
     }
 
     node {
+        workDir = file("${rootProject.projectDir}/.gradle/nodejs")
+        yarnWorkDir = file("${rootProject.projectDir}/.gradle/yarn")
         nodeProjectDir = project.projectDir
     }
 
