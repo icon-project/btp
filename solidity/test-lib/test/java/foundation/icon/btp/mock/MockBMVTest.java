@@ -18,6 +18,8 @@ package foundation.icon.btp.mock;
 
 import com.github.javafaker.Number;
 import foundation.icon.btp.lib.BMVStatus;
+import foundation.icon.btp.lib.BTPException;
+import foundation.icon.btp.test.AssertBTPException;
 import foundation.icon.btp.test.AssertTransactionException;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
@@ -60,8 +62,9 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         relayMessage.setRevertCode(1);
         relayMessage.setRevertMessage("handleRelayMessageShouldRevert");
         //noinspection ThrowableNotThrown
-        AssertTransactionException.assertRevertReason(relayMessage.getRevertMessage(), () ->
-                mockBMV.handleRelayMessage(
+        AssertBTPException.assertBTPException(
+                new BTPException.BMV(relayMessage.getRevertCode(), relayMessage.getRevertMessage()),
+                () -> mockBMV.handleRelayMessage(
                         bmc, prev, seq, relayMessage.toBytes()).send());
     }
 
@@ -103,11 +106,11 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         assertEquals(height, MockBMVIntegrationTest.getStatus().getHeight());
 
         long lastHeight = number.numberBetween(0, Long.MAX_VALUE);
-        mockBMV.setLastHeight(BigInteger.valueOf(lastHeight));
+        mockBMV.setLastHeight(BigInteger.valueOf(lastHeight)).send();
         assertEquals(lastHeight, getStatusExtra().getLastHeight());
 
         long offset = number.numberBetween(0, Long.MAX_VALUE);
-        mockBMV.setOffset(BigInteger.valueOf(offset));
+        mockBMV.setOffset(BigInteger.valueOf(offset)).send();
         assertEquals(offset, getStatusExtra().getOffset());
     }
 

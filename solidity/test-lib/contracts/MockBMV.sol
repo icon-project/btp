@@ -3,11 +3,18 @@ pragma solidity >=0.8.0 <0.8.5;
 pragma abicoder v2;
 
 import "./interfaces/IBMV.sol";
+import "./interfaces/IMockBMV.sol";
 import "./libraries/RLPEncode.sol";
 import "./libraries/RLPDecode.sol";
-import "./interfaces/IMockBMV.sol";
+import "./libraries/Integers.sol";
+import "./libraries/Strings.sol";
 
 contract MockBMV is IBMV, IMockBMV {
+    uint internal constant BMV_REVERT_OFFSET = 25;
+
+    using Integers for uint;
+    using Strings for string;
+
     uint256 private height;
     uint256 private offset;
     uint256 private lastHeight;
@@ -22,7 +29,8 @@ contract MockBMV is IBMV, IMockBMV {
     ) {
         MockRelayMessage memory rm = decodeMockRelayMessage(_msg);
         if (!rm.revertCode.isNull) {
-            revert(rm.revertMessage);
+            uint revertCode = BMV_REVERT_OFFSET + uint(rm.revertCode.value);
+            revert(revertCode.toString().concat(":").concat(rm.revertMessage));
         } else {
             if (!rm.offset.isNull) {
                 offset = uint256(rm.offset.value);
