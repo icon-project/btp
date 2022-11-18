@@ -1,4 +1,3 @@
-const { expect } = require("chai");
 const hre = require("hardhat");
 const { spawn } = require("child_process");
 
@@ -10,26 +9,58 @@ function jsonFilePath(contract, dir) {
 }
 
 function run(command, args) {
-   return new Promise((resolve,reject) => {
-      const p = spawn(command,args);
-      p.stdout.pipe(process.stdout);
-      p.stderr.pipe(process.stderr);
-      p.on('error', (err) => {
-        console.log(`error: ${err}`);
-        reject(err);
-      });
-      /*p.on('exit', (code) => {
-        console.log(`exit: ${code}`);
-        resolve(code);
-      });*/
-      p.on('close', (code) => {
-        if (code === 0) {
-            resolve(code);
-        } else {
-            reject(`close: ${code}`);
+    return new Promise((resolve,reject) => {
+        const p = spawn(command,args);
+        p.stdout.pipe(process.stdout);
+        p.stderr.pipe(process.stderr);
+        p.on('error', (err) => {
+            console.log(`error: ${err}`);
+            reject(err);
+        });
+        /*p.on('exit', (code) => {
+          console.log(`exit: ${code}`);
+          resolve(code);
+        });*/
+        p.on('close', (code) => {
+            if (code === 0) {
+                resolve(code);
+            } else {
+                reject(`close: ${code}`);
+            }
+        });
+    });
+}
+
+async function runGradleTest(projectName, contractNameMap) {
+    let url = hre.config.networks[hre.config.defaultNetwork].url || 'http://localhost:8545';
+    let accounts = hre.config.networks[hre.config.defaultNetwork].accounts;
+    if (!Array.isArray(accounts)) {
+        accounts = hre.userConfig.networks.hardhat.accounts.map((v) => {
+            return v.privateKey;
+        });
+    } else if (typeof accounts[0] === 'object'){
+        accounts = accounts.map((v) => {
+            return v.privateKey;
+        });
+    }
+    let args = [
+        'cleanTest',
+        `:${projectName}:test`,
+        `-Durl=${url}`,
+        `-DprivateKey=${accounts[0]}`,
+        `-Dtester.privateKey=${accounts[1]}`
+    ]
+    if (contractNameMap) {
+        for (let [prefix, contractName] of contractNameMap) {
+            if (Array.isArray(contractName)) {
+                args.push(`-D${prefix}.jsonFilePath=${jsonFilePath(contractName[0], contractName[1])}`)
+            } else {
+                args.push(`-D${prefix}.jsonFilePath=${jsonFilePath(contractName)}`)
+            }
         }
-      });
-  });
+    }
+    console.log(args)
+    await run("../gradlew",args)
 }
 
 describe("Test with gradle", function () {
@@ -41,15 +72,10 @@ describe("Test with gradle", function () {
         }
     });
     it("run test with gradle", async () => {
-        console.log(`-Dxcall.jsonFilePath=${jsonFilePath('CallService')}`)
-        console.log(`-Dsample.jsonFilePath=${jsonFilePath('DAppProxySample','test')}`)
-        await run("../gradlew",[
-            'cleanTest',
-            ':xcall:test',
-            `-Durl=${hre.config.networks[hre.config.defaultNetwork].url}`,
-            `-Dxcall.jsonFilePath=${jsonFilePath('CallService')}`,
-            `-Dsample.jsonFilePath=${jsonFilePath('DAppProxySample', 'test')}`
-        ])
+        await runGradleTest('xcall', [
+            ['xcall', 'CallService'],
+            ['sample', ['DAppProxySample', 'test']]
+        ]);
     });
 });
 

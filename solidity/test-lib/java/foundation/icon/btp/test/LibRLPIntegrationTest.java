@@ -28,7 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public interface LibRLPIntegrationTest {
-    LibRLP libRLP = EVMIntegrationTest.deploy(LibRLP.class);
+    LibRLP libRLP = deployLibRLP();
+
+    static LibRLP deployLibRLP() {
+        EVMIntegrationTest.replaceContractBinary(LibRLP.class, "lib-rlp.", System.getProperties());
+        return EVMIntegrationTest.deploy(LibRLP.class);
+    }
 
     @SuppressWarnings("unchecked")
     static <T> T decode(T obj) throws Exception {

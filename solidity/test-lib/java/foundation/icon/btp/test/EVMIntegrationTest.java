@@ -120,7 +120,7 @@ public interface EVMIntegrationTest {
 //    ContractGasProvider cgp = new DefaultGasProvider();
     ContractGasProvider cgp = new StaticGasProvider(DefaultGasProvider.GAS_PRICE,
         BigInteger.valueOf(18_000_000));
-    Credentials credentials = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63");
+    Credentials credentials = getOrGenerateCredentials("", System.getProperties());
     BigInteger chainId = getChainId(w3j);
     TransactionManager tm = newTransactionManager(credentials);
 
@@ -424,8 +424,13 @@ public interface EVMIntegrationTest {
         };
     }
 
-    Credentials tester = Credentials.create("0xa6d23a0b704b649a92dd56bdff0f9874eeccc9746f10d78b683159af1617e08f");
+    Credentials tester = getOrGenerateCredentials("tester.", System.getProperties());
     TransactionManager testerTm = newTransactionManager(tester);
+
+    static Credentials getOrGenerateCredentials(String prefix, Properties properties) {
+        String pk = properties.getProperty(prefix+"privateKey");
+        return pk == null ? generateCredentials() : Credentials.create(pk);
+    }
 
     static Credentials generateCredentials() {
         try {

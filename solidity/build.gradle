@@ -145,6 +145,11 @@ subprojects {
         testLogging {
             events "passed", "skipped", "failed"
             showStandardStreams = true
+            systemProperties(System.getProperties())
+            def props = project.getProperties()
+            systemProperty 'url', props.getOrDefault("url", "http://localhost:8545")
+            systemProperty 'privateKey', props.getOrDefault("privateKey", "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+            systemProperty 'tester.privateKey', props.getOrDefault("tester.privateKey", "0xa6d23a0b704b649a92dd56bdff0f9874eeccc9746f10d78b683159af1617e08f")
         }
     }
 

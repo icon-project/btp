@@ -9,26 +9,26 @@ function jsonFilePath(contract, dir) {
 }
 
 function run(command, args) {
-   return new Promise((resolve,reject) => {
-      const p = spawn(command,args);
-      p.stdout.pipe(process.stdout);
-      p.stderr.pipe(process.stderr);
-      p.on('error', (err) => {
-        console.log(`error: ${err}`);
-        reject(err);
-      });
-      /*p.on('exit', (code) => {
-        console.log(`exit: ${code}`);
-        resolve(code);
-      });*/
-      p.on('close', (code) => {
-        if (code === 0) {
-            resolve(code);
-        } else {
-            reject(`close: ${code}`);
-        }
-      });
-  });
+    return new Promise((resolve,reject) => {
+        const p = spawn(command,args);
+        p.stdout.pipe(process.stdout);
+        p.stderr.pipe(process.stderr);
+        p.on('error', (err) => {
+            console.log(`error: ${err}`);
+            reject(err);
+        });
+        /*p.on('exit', (code) => {
+          console.log(`exit: ${code}`);
+          resolve(code);
+        });*/
+        p.on('close', (code) => {
+            if (code === 0) {
+                resolve(code);
+            } else {
+                reject(`close: ${code}`);
+            }
+        });
+    });
 }
 
 async function runGradleTest(projectName, contractNameMap) {
@@ -72,10 +72,11 @@ describe("Test with gradle", function () {
         }
     });
     it("run test with gradle", async () => {
-        await runGradleTest('bmc', [
-            ['bmcm', 'BMCManagement'],
-            ['bmcs', 'BMCService'],
-            ['bmcp', 'BMCPeriphery']
+        await runGradleTest('test-lib', [
+            ['mock-bmc', 'MockBMC'],
+            ['mock-bmv', 'MockBMV'],
+            ['mock-bsh', 'MockBSH'],
+            ['lib-rlp', 'LibRLP']
         ]);
     });
 });

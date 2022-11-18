@@ -18,9 +18,5 @@ test {
     options {
         testLogging.showStandardStreams = true
         systemProperties(System.getProperties())
-//        systemProperty 'url', project.getProperties().getOrDefault('evm-test.url', 'http://localhost:8545')
-//        systemProperty 'bmcm.jsonFilePath', './build/hardhat/artifacts/contracts/BMCManagement.sol/BMCManagement.json'
-//        systemProperty 'bmcs.jsonFilePath', './build/hardhat/artifacts/contracts/BMCService.sol/BMCService.json'
-//        systemProperty 'bmcp.jsonFilePath', './build/hardhat/artifacts/contracts/BMCPeriphery.sol/BMCPeriphery.json'
     }
 }

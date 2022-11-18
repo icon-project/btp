@@ -8,6 +8,21 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      allowUnlimitedContractSize: true,
+      // blockGasLimit: 0x1fffffffffffff,
+      // gas:  0xffffffffff,
+      // gasPrice: 0x01,
+      initialBaseFeePerGas: 0,
+      accounts: [
+        {
+          privateKey: "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+          balance: "10000000000000000000000"
+        },
+        {
+          privateKey: "0xa6d23a0b704b649a92dd56bdff0f9874eeccc9746f10d78b683159af1617e08f",
+          balance: "10000000000000000000000"
+        }
+      ]
     },
     bscLocal: {
       url: "http://localhost:8545",
