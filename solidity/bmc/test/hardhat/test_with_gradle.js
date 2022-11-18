@@ -5,7 +5,7 @@ function jsonFilePath(contract, dir) {
     if (dir && !dir.endsWith("/")) {
         dir = dir+"/";
     }
-    return `${hre.config.artifactsDir}/contracts/${dir || ''}${contract}.sol/${contract}.json`;
+    return `${hre.config.paths.artifacts}/contracts/${dir || ''}${contract}.sol/${contract}.json`;
 }
 
 function run(command, args) {
