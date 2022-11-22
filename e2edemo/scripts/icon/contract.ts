@@ -94,6 +94,6 @@ export class Contract {
       if (result) return result
       await sleep(2000);
     }
-    throw new Error("Failed to get BMC deployment result");
+    throw new Error("Failed to get tx result");
   }
 }
