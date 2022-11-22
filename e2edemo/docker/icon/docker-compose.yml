@@ -1,0 +1,18 @@
+version: "3"
+services:
+  icon-node:
+    image: iconloop/goloop-icon:v1.3.0
+    container_name: "icon-node"
+    network_mode: host
+    environment:
+      GOLOOP_LOG_LEVEL: "trace"
+      GOLOOP_RPC_ADDR: ":9080"
+      GOLOOP_P2P_LISTEN: ":7080"
+      ICON_CONFIG: "/goloop/config/icon_config.json"
+    cap_add:
+      - SYS_TIME
+    volumes:
+      - ./config:/goloop/config
+      - ./data:/goloop/data
+      - ./logs:/goloop/logs
+    command: /bin/sh -c /goloop/config/start.sh
