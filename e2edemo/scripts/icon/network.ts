@@ -26,4 +26,8 @@ export class IconNetwork {
     }
     return this.instance;
   }
+
+  async getLastBlock() {
+    return this.iconService.getLastBlock().execute();
+  }
 }
