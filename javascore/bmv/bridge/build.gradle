@@ -25,6 +25,8 @@ dependencies {
 }
 
 optimizedJar {
+    dependsOn(project(':lib').jar)
+    dependsOn(project(':score-util').jar)
     mainClassName = 'foundation.icon.btp.bmv.bridge.BTPMessageVerifier'
     archivesBaseName = 'bmv-bridge'
     from {
