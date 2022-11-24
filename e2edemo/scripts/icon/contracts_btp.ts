@@ -40,6 +40,16 @@ export class BMC extends Contract {
       }
     })
   }
+
+  addService(service: string, address: string) {
+    return this.invoke({
+      method: 'addService',
+      params: {
+        _svc: service,
+        _addr: address
+      }
+    })
+  }
 }
 
 export class BMV extends Contract {
