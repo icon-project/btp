@@ -89,7 +89,13 @@ export class Contract {
           return res;
         })
         .catch((error) => {
-          console.log(error);
+          if (error.includes("Pending")) {
+            console.log("... pending");
+          } else if (error.includes("Executing")) {
+            console.log("... executing");
+          } else {
+            console.log(error);
+          }
         });
       if (result) return result
       await sleep(2000);
