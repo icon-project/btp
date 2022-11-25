@@ -21,8 +21,10 @@ async function main() {
   mods.forEach((m) => {
     const src = `../solidity/${m}/contracts`
     const dst = `./solidity/contracts/${m}`
-    console.log(`copy: ${src} => ${dst}`);
-    copyFolderSync(src, dst);
+    if (!fs.existsSync(dst)) {
+      console.log(`copy: ${src} => ${dst}`);
+      copyFolderSync(src, dst);
+    }
   })
 }
 

@@ -5,8 +5,8 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./solidity/contracts",
     tests: "./solidity/test",
-    cache: "./build/hardhat/cache",
-    artifacts: "./build/hardhat/artifacts"
+    cache: "./solidity/build/cache",
+    artifacts: "./solidity/build/artifacts"
   },
   solidity: {
     version: "0.8.2",
