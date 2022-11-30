@@ -2,7 +2,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import {Contract} from "./icon/contract";
 import {IconNetwork} from "./icon/network";
-import {BMC} from "./icon/contracts_btp";
+import {BMC} from "./icon/btp";
 const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
 
 const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`

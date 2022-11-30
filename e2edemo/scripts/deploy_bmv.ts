@@ -1,7 +1,8 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import {Contract} from "./icon/contract";
-import {BMC, BMV} from "./icon/contracts_btp";
+import {BMC, BMV} from "./icon/btp";
+import {Gov} from "./icon/system";
 import {IconNetwork} from "./icon/network";
 import IconService from "icon-sdk-js";
 const {IconConverter} = IconService;
@@ -92,6 +93,16 @@ async function setup_bmv() {
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to addRelay: ${result.txHash}`);
+      }
+    })
+  const netName = `hardhat-${icon.blockNum}`
+  console.log(`ICON: open BTP network for ${netName}`)
+  const gov = new Gov(iconNetwork);
+  await gov.openBTPNetwork(netName, bmc.address)
+    .then((txHash) => bmv.getTxResult(txHash))
+    .then((result) => {
+      if (result.status != 1) {
+        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
       }
     })
 

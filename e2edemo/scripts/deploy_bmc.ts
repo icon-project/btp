@@ -63,9 +63,6 @@ async function deploy_solidity() {
   console.log(`BMCService: deployed to ${bmcs.address}`);
   console.log(`BMCPeriphery: deployed to ${bmcp.address}`);
 
-  const btpAddress = await bmcp.getBtpAddress()
-  console.log(`BTP Address: ${btpAddress}`);
-
   deployments.set('hardhat', {
     'network': BMC_NETWORK_ID,
     'contracts': {

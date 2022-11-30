@@ -27,6 +27,10 @@ export class IconNetwork {
     return this.instance;
   }
 
+  async getTotalSupply() {
+    return this.iconService.getTotalSupply().execute();
+  }
+
   async getLastBlock() {
     return this.iconService.getLastBlock().execute();
   }
