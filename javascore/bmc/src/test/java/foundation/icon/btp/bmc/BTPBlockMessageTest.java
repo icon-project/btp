@@ -45,7 +45,7 @@ public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
     static void beforeAll() {
         System.out.println("BTPBlockMessageTest:beforeAll start");
         BMVManagementTest.addVerifier(net, MockBMVIntegrationTest.mockBMV._address());
-        networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
+        networkId = MockGovIntegrationTest.openBTPNetwork("eth", link, bmc._address());
         BTPLinkManagementTest.addBTPLink(link, networkId);
         BMRManagementTest.addRelay(link, relay);
 

@@ -37,6 +37,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
     static String link = linkBtpAddress.toString();
     static BTPAddress secondLinkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String secondLink = secondLinkBtpAddress.toString();
+    static String networkTypeName = "eth";
 
     static void addBTPLink(String link, long networkId) {
         List<String> links = Arrays.asList(bmc.getLinks());
@@ -74,7 +75,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void addBTPLinkAndRemoveLinkShouldSuccess() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork(networkTypeName, link, bmc._address());
         addBTPLink(link, networkId);
 
         LinkManagementTest.removeLink(link);
@@ -87,7 +88,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void addBTPLinkShouldRevertDuplicatedNetworkId() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork(networkTypeName, link, bmc._address());
         addBTPLink(link, networkId);
 
         AssertBMCException.assertUnknown(() -> iconSpecific.addBTPLink(secondLink, networkId));
@@ -98,7 +99,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
         LinkManagementTest.addLink(link);
         assertEquals(0, iconSpecific.getBTPLinkNetworkId(link));
 
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork(networkTypeName, link, bmc._address());
         iconSpecific.setBTPLinkNetworkId(link, networkId);
         assertEquals(networkId, iconSpecific.getBTPLinkNetworkId(link));
     }
@@ -111,7 +112,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
 
     @Test
     void setBTPLinkNetworkIdShouldRevertDuplicatedNetworkId() {
-        long networkId = MockGovIntegrationTest.openBTPNetwork("icon", link, bmc._address());
+        long networkId = MockGovIntegrationTest.openBTPNetwork(networkTypeName, link, bmc._address());
         addBTPLink(link, networkId);
 
         LinkManagementTest.addLink(secondLink);
