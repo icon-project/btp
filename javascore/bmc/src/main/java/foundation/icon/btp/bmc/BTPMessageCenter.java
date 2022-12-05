@@ -906,15 +906,16 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         logger.println("handleFragment", "_prev", _prev, "_idx:", _idx, "len(_msg):" + _msg.length());
         BTPAddress prev = BTPAddress.valueOf(_prev);
         Link link = getLink(prev);
+        Address caller = Context.getCaller();
         Relays relays = link.getRelays();
-        if (!relays.containsKey(Context.getOrigin())) {
+        if (!relays.containsKey(caller)) {
             throw BMCException.unauthorized("not registered relay");
         }
         byte[] fragmentBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
         final int INDEX_LAST = 0;
         final int INDEX_NEXT = 1;
         final int INDEX_OFFSET = 2;
-        ArrayDB<byte[]> fragments = this.fragments.at(_prev).at(Context.getOrigin());
+        ArrayDB<byte[]> fragments = this.fragments.at(_prev).at(caller);
         if (_idx < 0) {
             int last = _idx * -1;
             if (fragments.size() == 0) {
