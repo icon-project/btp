@@ -89,3 +89,8 @@ setup-node:
 	@ echo ">>> Setup ICON node" ; \
 	E2E_DEMO_PATH=$(PWD) \
 	$(TS_NODE) scripts/setup_node.ts
+
+run-demo:
+	@ echo ">>> Run demo_dapp.ts " ; \
+	E2E_DEMO_PATH=$(PWD) \
+	$(HARDHAT) $(NETWORK) run scripts/demo_dapp.ts

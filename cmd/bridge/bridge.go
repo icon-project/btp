@@ -315,6 +315,7 @@ func NewBridge(cfg *module.Config, ks, pw []byte, l log.Logger) (*bridge, error)
 const (
 	chainNameIcon = "icon"
 	chainNameBsc  = "bsc"
+	chainNameHhat = "hardhat"
 )
 
 func newWallet(cfg *module.Config, ks, pw []byte) (w module.Wallet, err error) {
@@ -322,6 +323,8 @@ func newWallet(cfg *module.Config, ks, pw []byte) (w module.Wallet, err error) {
 	case chainNameIcon:
 		return iconbridge.NewWallet(ks, pw)
 	case chainNameBsc:
+		fallthrough
+	case chainNameHhat:
 		return evmbridge.NewWallet(ks, pw)
 	default:
 		err = errors.Errorf("not supported wallet %s", cfg.Dst.Address.BlockChain())
@@ -334,6 +337,8 @@ func NewReceiver(cfg *module.Config, l log.Logger) (r module.Receiver, err error
 	case chainNameIcon:
 		r = iconbridge.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
 	case chainNameBsc:
+		fallthrough
+	case chainNameHhat:
 		r = evmbridge.NewReceiver(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, cfg.Src.Options, l)
 	default:
 		err = errors.Errorf("not supported receiver %s", cfg.Src.Address.BlockChain())
@@ -346,6 +351,8 @@ func NewSender(cfg *module.Config, w module.Wallet, l log.Logger) (s module.Send
 	case chainNameIcon:
 		s = iconbridge.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, cfg.Src.Options, l)
 	case chainNameBsc:
+		fallthrough
+	case chainNameHhat:
 		s = evmbridge.NewSender(cfg.Src.Address, cfg.Dst.Address, w, cfg.Dst.Endpoint, nil, l)
 	default:
 		err = errors.Errorf("not supported sender %s", cfg.Dst.Address.BlockChain())

@@ -4,6 +4,12 @@ import {IconNetwork} from "./network";
 
 const {IconBuilder, IconConverter, SignedTransaction} = IconService;
 
+class EventLog {
+  scoreAddress: string | undefined
+  indexed: string[] | undefined
+  data: string[] | undefined
+}
+
 export class Contract {
   protected iconService: IconService;
   protected nid: number;
@@ -101,5 +107,19 @@ export class Contract {
       await sleep(2000);
     }
     throw new Error("Failed to get tx result");
+  }
+
+  async filterEvent(eventLogs: any, sig: string, address?: string) {
+    const events = <EventLog[]> eventLogs
+    for (let i = 0; i < events.length; i++) {
+      const evt = events[i]
+      if (evt.indexed != undefined && evt.indexed[0] == sig) {
+        const _address = address ? address : ''
+        if (_address == '' || _address == evt.scoreAddress) {
+          return evt;
+        }
+      }
+    }
+    throw new Error(`Failed to get event: ${sig}`);
   }
 }
