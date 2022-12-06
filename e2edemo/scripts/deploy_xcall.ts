@@ -46,7 +46,7 @@ async function setup_xcall() {
   const icon = deployments.get('icon')
   const hardhat = deployments.get('hardhat')
 
-  console.log("ICON: Register XCall to BMC");
+  console.log("ICON: register xCall to BMC");
   const bmc = new BMC(iconNetwork, icon.contracts.bmc)
   await bmc.addService('xcall', icon.contracts.xcall)
     .then((txHash) => bmc.getTxResult(txHash))
@@ -56,7 +56,7 @@ async function setup_xcall() {
       }
     })
 
-  console.log("Hardhat: Register XCall to BMC");
+  console.log("Hardhat: register xCall to BMC");
   const bmcm = await ethers.getContractAt('BMCManagement', hardhat.contracts.bmcm)
   await bmcm.addService('xcall', hardhat.contracts.xcall);
 }

@@ -10,7 +10,7 @@ async function deploy_java() {
   const iconNetwork = IconNetwork.getDefault();
   const NID = iconNetwork.nid
   const BMC_NETWORK_ID = `0x${NID}.icon`
-  console.log(`>>> Deploy BMC for ${BMC_NETWORK_ID}`)
+  console.log(`ICON: deploy BMC for ${BMC_NETWORK_ID}`)
 
   const bmcJar = JAVASCORE_PATH + '/bmc/build/libs/bmc-0.1.0-optimized.jar'
   const content = fs.readFileSync(bmcJar).toString('hex')
@@ -25,7 +25,7 @@ async function deploy_java() {
   if (result.status != 1) {
     throw new Error(`BMC deployment failed: ${result.txHash}`);
   }
-  console.log(`BMC: deployed to ${bmc.address}`);
+  console.log(`ICON BMC: deployed to ${bmc.address}`);
 
   deployments.set('icon', {
     'network': BMC_NETWORK_ID,
@@ -38,30 +38,41 @@ async function deploy_java() {
 async function deploy_solidity() {
   const network = await ethers.provider.getNetwork()
   const BMC_NETWORK_ID = "0x" + network.chainId.toString(16) + ".hardhat"
-  console.log(`>>> Deploy BMC modules for ${BMC_NETWORK_ID}`)
+  console.log(`Hardhat: deploy BMC modules for ${BMC_NETWORK_ID}`)
 
   const BMCManagement = await ethers.getContractFactory("BMCManagement");
   const bmcm = await BMCManagement.deploy();
   await bmcm.deployed();
   await bmcm.initialize()
+  console.log(`BMCManagement: deployed to ${bmcm.address}`);
 
   const BMCService = await ethers.getContractFactory("BMCService");
   const bmcs = await BMCService.deploy();
   await bmcs.deployed();
   await bmcs.initialize(bmcm.address)
+  console.log(`BMCService: deployed to ${bmcs.address}`);
 
   const BMCPeriphery = await ethers.getContractFactory("BMCPeriphery");
   const bmcp = await BMCPeriphery.deploy();
   await bmcp.deployed();
   await bmcp.initialize(BMC_NETWORK_ID, bmcm.address, bmcs.address);
-
-  await bmcm.setBMCPeriphery(bmcp.address);
-  await bmcm.setBMCService(bmcs.address);
-  await bmcs.setBMCPeriphery(bmcp.address);
-
-  console.log(`BMCManagement: deployed to ${bmcm.address}`);
-  console.log(`BMCService: deployed to ${bmcs.address}`);
   console.log(`BMCPeriphery: deployed to ${bmcp.address}`);
+
+  console.log('Hardhat: management.setBMCPeriphery');
+  await bmcm.setBMCPeriphery(bmcp.address)
+    .then((tx) => {
+      return tx.wait(1)
+    });
+  console.log('Hardhat: management.setBMCService');
+  await bmcm.setBMCService(bmcs.address)
+    .then((tx) => {
+      return tx.wait(1)
+    });
+  console.log('Hardhat: service.setBMCPeriphery');
+  await bmcs.setBMCPeriphery(bmcp.address)
+    .then((tx) => {
+      return tx.wait(1)
+    });
 
   deployments.set('hardhat', {
     'network': BMC_NETWORK_ID,

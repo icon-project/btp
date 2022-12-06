@@ -42,14 +42,14 @@ async function deploy_bmv() {
     throw new Error(`BMV deployment failed: ${result.txHash}`);
   }
   icon.contracts.bmv = bmv.address
-  console.log(`BMV: deployed to ${bmv.address}`);
+  console.log(`ICON BMV: deployed to ${bmv.address}`);
 
   // deploy BMV-Bridge solidity module
   const BMVBridge = await ethers.getContractFactory("BMV")
   const bmvb = await BMVBridge.deploy(hardhat.contracts.bmcp, icon.network, icon.blockNum)
   await bmvb.deployed()
   hardhat.contracts.bmvb = bmvb.address
-  console.log(`BMV-Bridge: deployed to ${bmvb.address}`);
+  console.log(`Hardhat BMV: deployed to ${bmvb.address}`);
 
   // update deployments
   deployments.set('icon', icon)
@@ -73,23 +73,25 @@ async function setup_bmv() {
   const bmcHardhatAddr = await bmcp.getBtpAddress()
   console.log(`BTP address of Hardhat BMC: ${bmcHardhatAddr}`)
 
-  console.log(`ICON: register BMV to BMC`)
+  console.log(`ICON: addVerifier for ${hardhat.network}`)
   await bmc.addVerifier(hardhat.network, bmv.address)
-    .then((txHash) => bmv.getTxResult(txHash))
+    .then((txHash) => bmc.getTxResult(txHash))
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to register BMV to BMC: ${result.txHash}`);
       }
     })
+  console.log(`ICON: addLink for ${bmcHardhatAddr}`)
   await bmc.addLink(bmcHardhatAddr)
-    .then((txHash) => bmv.getTxResult(txHash))
+    .then((txHash) => bmc.getTxResult(txHash))
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to addLink: ${result.txHash}`);
       }
     })
+  console.log(`ICON: addRelay`)
   await bmc.addRelay(bmcHardhatAddr, iconNetwork.wallet.getAddress())
-    .then((txHash) => bmv.getTxResult(txHash))
+    .then((txHash) => bmc.getTxResult(txHash))
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to addRelay: ${result.txHash}`);
@@ -99,20 +101,29 @@ async function setup_bmv() {
   console.log(`ICON: open BTP network for ${netName}`)
   const gov = new Gov(iconNetwork);
   await gov.openBTPNetwork(netName, bmc.address)
-    .then((txHash) => bmv.getTxResult(txHash))
+    .then((txHash) => gov.getTxResult(txHash))
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
       }
     })
 
-  console.log(`Hardhat: register BMV to BMC`)
-  await bmcm.addVerifier(icon.network, bmvb.address);
-  // link target BMC
-  await bmcm.addLink(bmcIconAddr);
-  // register BMR by BMC-Owner
+  console.log(`Hardhat: addVerifier for ${icon.network}`)
+  await bmcm.addVerifier(icon.network, bmvb.address)
+    .then((tx) => {
+      return tx.wait(1)
+    });
+  console.log(`Hardhat: addLink: ${bmcIconAddr}`)
+  await bmcm.addLink(bmcIconAddr)
+    .then((tx) => {
+      return tx.wait(1)
+    });
+  console.log(`Hardhat: addRelay`)
   const signers = await ethers.getSigners()
   await bmcm.addRelay(bmcIconAddr, signers[0].getAddress())
+    .then((tx) => {
+      return tx.wait(1)
+    });
 }
 
 async function load_deployments() {
