@@ -1,6 +1,6 @@
 import IconService from "icon-sdk-js";
-import {IconNetwork} from "./icon/network";
-import {Chain, Gov} from "./icon/system";
+import {IconNetwork} from "../icon/network";
+import {Chain, Gov} from "../icon/system";
 
 const {IconAmount} = IconService;
 
@@ -24,7 +24,7 @@ async function ensure_decentralization() {
     console.log(`ICON: registerPRep`)
     const name = `node_${prepAddress}`
     await chain.registerPRep(name)
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to registerPrep: ${result.txHash}`);
@@ -33,7 +33,7 @@ async function ensure_decentralization() {
 
     console.log(`ICON: setStake`)
     await chain.setStake(minDelegated.plus(bondAmount))
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to setStake: ${result.txHash}`);
@@ -42,7 +42,7 @@ async function ensure_decentralization() {
 
     console.log(`ICON: setDelegation`)
     await chain.setDelegation(prepAddress, minDelegated)
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to setDelegation: ${result.txHash}`);
@@ -51,7 +51,7 @@ async function ensure_decentralization() {
 
     console.log(`ICON: setBonderList`)
     await chain.setBonderList(prepAddress)
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to setBonderList: ${result.txHash}`);
@@ -60,7 +60,7 @@ async function ensure_decentralization() {
 
     console.log(`ICON: setBond`)
     await chain.setBond(prepAddress, bondAmount)
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to setBond: ${result.txHash}`);
@@ -101,7 +101,7 @@ async function setup() {
     // prefixing "04" for indicating uncompressed format
     const pkey = '0x04' + iconNetwork.wallet.getPublicKey();
     await chain.registerPRepNodePublicKey(prepAddress, pkey)
-      .then((txHash) => gov.getTxResult(txHash))
+      .then((txHash) => chain.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
           throw new Error(`ICON: failed to registerPRepNodePublicKey: ${result.txHash}`);

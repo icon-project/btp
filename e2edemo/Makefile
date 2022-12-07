@@ -14,16 +14,22 @@ all:
 
 .PHONY: build clean deploy
 
-clean:
+clean-java:
+	(cd $(JAVASCORE_PATH); $(GRADLE) clean)
+	$(GRADLE) dapp-sample:clean
+
+clean-solidity:
 	$(HARDHAT) clean
 	$(RM) -rf \
 	    $(SOLIDITY_CONTRACTS)/bmc \
 	    $(SOLIDITY_CONTRACTS)/bmv* \
 	    $(SOLIDITY_CONTRACTS)/xcall
 
+clean: clean-java clean-solidity
+
 copy-src:
 	@ echo ">>> Copy BMC/BMV/xCall solidity codes" ; \
-	$(TS_NODE) scripts/copy_src.ts
+	$(TS_NODE) scripts/setup/copy_src.ts
 
 compile: copy-src
 	@ echo ">>> Compile solidity codes" ; \
@@ -51,25 +57,25 @@ build-dapp-java:
 build-all: compile build-bmc-java build-bmv-java build-xcall-java build-dapp-java
 
 deploy-bmc:
-	@ echo ">>> $(HARDHAT) $(NETWORK) run scripts/deploy_bmc.ts" ; \
+	@ echo ">>> Deploy BMC contracts" ; \
 	E2E_DEMO_PATH=$(PWD) \
 	JAVASCORE_PATH=$(JAVASCORE_PATH) \
-	$(HARDHAT) $(NETWORK) run scripts/deploy_bmc.ts
+	$(HARDHAT) $(NETWORK) run scripts/setup/deploy_bmc.ts
 
 deploy-bmv:
-	@ echo ">>> $(HARDHAT) $(NETWORK) run scripts/deploy_bmv.ts" ; \
+	@ echo ">>> Deploy BMV contracts" ; \
 	E2E_DEMO_PATH=$(PWD) \
 	JAVASCORE_PATH=$(JAVASCORE_PATH) \
-	$(HARDHAT) $(NETWORK) run scripts/deploy_bmv.ts
+	$(HARDHAT) $(NETWORK) run scripts/setup/deploy_bmv.ts
 
 deploy-xcall:
-	@ echo ">>> $(HARDHAT) $(NETWORK) run scripts/deploy_xcall.ts" ; \
+	@ echo ">>> Deploy xCall contracts" ; \
 	E2E_DEMO_PATH=$(PWD) \
 	JAVASCORE_PATH=$(JAVASCORE_PATH) \
-	$(HARDHAT) $(NETWORK) run scripts/deploy_xcall.ts
+	$(HARDHAT) $(NETWORK) run scripts/setup/deploy_xcall.ts
 
 deploy-dapp:
-	@ echo ">>> $(HARDHAT) $(NETWORK) run scripts/deploy_dapp.ts" ; \
+	@ echo ">>> Deploy DApp contracts" ; \
 	E2E_DEMO_PATH=$(PWD) \
 	$(HARDHAT) $(NETWORK) run scripts/deploy_dapp.ts
 
@@ -88,7 +94,7 @@ stop-nodes:
 setup-node:
 	@ echo ">>> Setup ICON node" ; \
 	E2E_DEMO_PATH=$(PWD) \
-	$(TS_NODE) scripts/setup_node.ts
+	$(TS_NODE) scripts/setup/setup_node.ts
 
 run-demo:
 	@ echo ">>> Run demo_dapp.ts " ; \

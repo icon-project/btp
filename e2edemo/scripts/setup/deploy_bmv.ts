@@ -1,9 +1,9 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
-import {Contract} from "./icon/contract";
-import {BMC, BMV} from "./icon/btp";
-import {Gov} from "./icon/system";
-import {IconNetwork} from "./icon/network";
+import {Contract} from "../icon/contract";
+import {BMC, BMV} from "../icon/btp";
+import {Gov} from "../icon/system";
+import {IconNetwork} from "../icon/network";
 import IconService from "icon-sdk-js";
 const {IconConverter} = IconService;
 const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env

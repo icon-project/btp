@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
-import {Contract} from "./icon/contract";
-import {IconNetwork} from "./icon/network";
+import {Contract} from "../icon/contract";
+import {IconNetwork} from "../icon/network";
 const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
 
 const deployments = new Map();
