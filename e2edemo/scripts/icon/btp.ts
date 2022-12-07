@@ -31,6 +31,16 @@ export class BMC extends Contract {
     })
   }
 
+  addBTPLink(link: string, netId: string) {
+    return this.invoke({
+      method: 'addBTPLink',
+      params: {
+        _link: link,
+        _networkId: netId
+      }
+    })
+  }
+
   addRelay(link: string, address: string) {
     return this.invoke({
       method: 'addRelay',

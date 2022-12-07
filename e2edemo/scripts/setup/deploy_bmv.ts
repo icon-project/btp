@@ -73,6 +73,26 @@ async function setup_bmv() {
   const bmcHardhatAddr = await bmcp.getBtpAddress()
   console.log(`BTP address of Hardhat BMC: ${bmcHardhatAddr}`)
 
+  // open BTP network first before calling addBTPLink
+  const netName = `hardhat-${icon.blockNum}`
+  console.log(`ICON: open BTP network for ${netName}`)
+  const gov = new Gov(iconNetwork);
+  let netId = '';
+  await gov.openBTPNetwork(netName, bmc.address)
+    .then((txHash) => gov.getTxResult(txHash))
+    .then((result) => {
+      if (result.status != 1) {
+        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
+      }
+      return gov.filterEvent(result.eventLogs,
+        'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
+    })
+    .then((event) => {
+      console.log(event);
+      netId = event.indexed ? event.indexed[2] : '0x0';
+    })
+  console.log(`networkId=${netId}`);
+
   console.log(`ICON: addVerifier for ${hardhat.network}`)
   await bmc.addVerifier(hardhat.network, bmv.address)
     .then((txHash) => bmc.getTxResult(txHash))
@@ -81,12 +101,12 @@ async function setup_bmv() {
         throw new Error(`ICON: failed to register BMV to BMC: ${result.txHash}`);
       }
     })
-  console.log(`ICON: addLink for ${bmcHardhatAddr}`)
-  await bmc.addLink(bmcHardhatAddr)
+  console.log(`ICON: addBTPLink for ${bmcHardhatAddr}`)
+  await bmc.addBTPLink(bmcHardhatAddr, netId)
     .then((txHash) => bmc.getTxResult(txHash))
     .then((result) => {
       if (result.status != 1) {
-        throw new Error(`ICON: failed to addLink: ${result.txHash}`);
+        throw new Error(`ICON: failed to addBTPLink: ${result.txHash}`);
       }
     })
   console.log(`ICON: addRelay`)
@@ -95,16 +115,6 @@ async function setup_bmv() {
     .then((result) => {
       if (result.status != 1) {
         throw new Error(`ICON: failed to addRelay: ${result.txHash}`);
-      }
-    })
-  const netName = `hardhat-${icon.blockNum}`
-  console.log(`ICON: open BTP network for ${netName}`)
-  const gov = new Gov(iconNetwork);
-  await gov.openBTPNetwork(netName, bmc.address)
-    .then((txHash) => gov.getTxResult(txHash))
-    .then((result) => {
-      if (result.status != 1) {
-        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
       }
     })
 
