@@ -1,0 +1,4 @@
+rootProject.name = 'e2edemo'
+include (
+    'dapp-sample'
+)
