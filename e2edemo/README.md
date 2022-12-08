@@ -105,3 +105,14 @@ You can now run the demo scenario script via the following command.
 ```
 make run-demo
 ```
+
+## Appendix
+
+### Directory layout
+| Directory                       | Description                                      |
+|:--------------------------------|:-------------------------------------------------|
+| dapp-sample                     | Java contract for DApp sample                    |
+| docker                          | Docker-related files for ICON and Hardhat chains |
+| scripts                         | Scripts for setup, deployment and demo scenarios |
+| solidity                        | Root directory for compiling Solidity contracts  |
+| solidity/contracts/dapp-sample  | Solidity contract for DApp sample                |
