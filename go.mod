@@ -8,7 +8,7 @@ require (
 	github.com/bshuster-repo/logrus-logstash-hook v0.4.1
 	github.com/dgraph-io/badger v1.5.4
 	github.com/dgryski/go-farm v0.0.0-20190416075124-e1214b5e05dc // indirect
-	github.com/ethereum/go-ethereum v1.10.2
+	github.com/ethereum/go-ethereum v1.10.5
 	github.com/evalphobia/logrus_fluent v0.5.4
 	github.com/fluent/fluent-logger-golang v1.4.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible
