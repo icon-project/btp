@@ -47,11 +47,11 @@ function hexToString(data: string) {
 }
 
 function isIconChain(chain: any) {
-  return chain.network.indexOf('icon') != -1;
+  return chain.network.includes('icon');
 }
 
 function isHardhatChain(chain: any) {
-  return chain.network.indexOf('hardhat') != -1;
+  return chain.network.includes('hardhat');
 }
 
 async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string) {
@@ -153,14 +153,13 @@ async function verifyReceivedMessage(dstChain: any, msg: string) {
   let _from, _data;
   if (isHardhatChain(dstChain)) {
     const dappDst = await ethers.getContractAt('DAppProxySample', dstChain.contracts.dapp);
-    const filterMR = dappDst.filters.MessageReceived();
-    const logs2 = await dappDst.queryFilter(filterMR, -5, "latest");
-    if (logs2.length == 0) {
+    const logs = await dappDst.queryFilter(dappDst.filters.MessageReceived(), -5, "latest");
+    if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "MessageReceived"`);
     }
-    console.log(logs2)
-    _from = logs2[0].args._from;
-    _data = logs2[0].args._data;
+    console.log(logs)
+    _from = logs[0].args._from;
+    _data = logs[0].args._data;
   } else if (isIconChain(dstChain)) {
     const dappDst = new DAppProxy(iconNetwork, dstChain.contracts.dapp);
     const logs = await dappDst.queryFilter("MessageReceived(str,bytes)", -5, "latest");
