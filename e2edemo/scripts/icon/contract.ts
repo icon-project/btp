@@ -1,6 +1,8 @@
 import IconService from 'icon-sdk-js';
 import Wallet from "icon-sdk-js/build/Wallet";
 import {IconNetwork} from "./network";
+import Block from "icon-sdk-js/build/data/Formatter/Block";
+import BigNumber from "bignumber.js";
 
 const {IconBuilder, IconConverter, SignedTransaction} = IconService;
 
@@ -121,5 +123,79 @@ export class Contract {
       }
     }
     throw new Error(`Failed to get event: ${sig}`);
+  }
+
+  async getBlock(
+      param: string | number | BigNumber | undefined
+  ) : Promise<Block> {
+    if (param === undefined || param === "latest") {
+      return this.iconService.getLastBlock().execute();
+    } else if (typeof param === "string") {
+      return this.iconService.getBlockByHash(param).execute();
+    } else {
+      let height: BigNumber;
+      if (typeof param === "number") {
+        height = new BigNumber(param);
+      } else {
+        height = param;
+      }
+      // @ts-ignore
+      return this.iconService.getBlockByHeight(height).execute();
+    }
+  }
+
+  async filterEvents(
+      block: string | number | BigNumber | undefined,
+      sig: string,
+      address?: string | undefined
+  ) : Promise<EventLog[]> {
+    const blk = await this.getBlock(block);
+    return this.filterEventFromBlock(blk, sig, address);
+  }
+
+  async filterEventFromBlock(
+      block: Block,
+      sig: string,
+      address?: string | undefined
+  ) : Promise<EventLog[]> {
+    return Promise.all(
+      block.getTransactions()
+        .map((tx) =>
+            this.iconService.getTransactionResult(tx.txHash).execute()
+        )
+    ).then((results) => {
+      return results.map((result) => {
+        const eventLogs = <EventLog[]> result.eventLogs;
+        return eventLogs.filter((eventLog) =>
+            eventLog.indexed && eventLog.indexed[0] === sig &&
+            (address == undefined || address === eventLog.scoreAddress)
+        )
+      }).flat();
+    })
+  }
+
+  async queryFilter(
+      sig: string,
+      fromBlockOrBlockhash?: string | number | BigNumber | undefined,
+      toBlock?: string | number | BigNumber | undefined
+  ): Promise<EventLog[]> {
+    if (fromBlockOrBlockhash === toBlock) {
+      return this.filterEvents(fromBlockOrBlockhash, sig, this.address);
+    } else {
+      let from: Block;
+      const to = await this.getBlock(toBlock);
+      if (typeof fromBlockOrBlockhash === "number" && <number>fromBlockOrBlockhash < 0) {
+        from = await this.getBlock(to.height + <number>fromBlockOrBlockhash);
+      } else {
+        from = await this.getBlock(fromBlockOrBlockhash);
+      }
+      let eventLogs = await this.filterEventFromBlock(from, sig, this.address);
+      for (let height = from.height + 1; height < to.height; height++) {
+        eventLogs = eventLogs.concat(await this.filterEvents(height, sig, this.address));
+      }
+      return new Promise((resolve, reject) => {
+        resolve(eventLogs);
+      });
+    }
   }
 }
