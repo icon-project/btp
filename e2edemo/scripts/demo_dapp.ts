@@ -2,7 +2,7 @@ import fs from 'fs';
 import IconService from 'icon-sdk-js';
 import {ethers} from 'hardhat';
 import {IconNetwork} from "./icon/network";
-import {Contract} from "./icon/contract";
+import {DAppProxy} from "./icon/dapp_proxy";
 import {XCall} from "./icon/xcall";
 import {BigNumber} from "ethers";
 const {IconConverter} = IconService;
@@ -11,23 +11,6 @@ const {E2E_DEMO_PATH} = process.env
 const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
 const deployments = new Map();
 const iconNetwork = IconNetwork.getDefault();
-
-class DAppProxy extends Contract {
-  constructor(iconNetwork: IconNetwork, address: string) {
-    super(iconNetwork, address)
-  }
-
-  sendMessage(to: string, data: string, value?: string) {
-    return this.invoke({
-      method: 'sendMessage',
-      value: value ? value : '0x0',
-      params: {
-        _to: to,
-        _data: data
-      }
-    })
-  }
-}
 
 function getBtpAddress(network: string, dapp: string) {
   return `btp://${network}/${dapp}`;
