@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package chain
+package types
 
 import (
 	"fmt"

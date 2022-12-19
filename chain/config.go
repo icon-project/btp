@@ -20,10 +20,11 @@ import (
 	"encoding/json"
 
 	"github.com/icon-project/btp/common/config"
+	"github.com/icon-project/btp/common/types"
 )
 
 type BaseConfig struct {
-	Address      BtpAddress             `json:"address"`
+	Address      types.BtpAddress       `json:"address"`
 	Endpoint     string                 `json:"endpoint"`
 	Nid          int64                  `json:"nid"`
 	BridgeMode   bool                   `json:"bridgeMode"`
