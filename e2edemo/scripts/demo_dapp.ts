@@ -37,7 +37,8 @@ function isHardhatChain(chain: any) {
   return chain.network.includes('hardhat');
 }
 
-async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string) {
+async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string,
+                                   rollback?: string) {
   let sn;
   if (isIconChain(srcChain)) {
     const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
@@ -47,8 +48,9 @@ async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string) {
     const dappSrc = new DAppProxy(iconNetwork, srcChain.contracts.dapp);
     const to = getBtpAddress(dstChain.network, dstChain.contracts.dapp);
     const data = IconConverter.toHex(msg);
+    const rbData = rollback ? IconConverter.toHex(rollback) : undefined;
 
-    sn = await dappSrc.sendMessage(to, data, fee)
+    sn = await dappSrc.sendMessage(to, data, rbData, fee)
       .then((txHash) => dappSrc.getTxResult(txHash))
       .then((result) => {
         if (result.status != 1) {
@@ -69,8 +71,9 @@ async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string) {
     const dappSrc = await ethers.getContractAt('DAppProxySample', srcChain.contracts.dapp);
     const to = getBtpAddress(dstChain.network, dstChain.contracts.dapp);
     const data = IconConverter.toHex(msg);
+    const rbData = rollback ? IconConverter.toHex(rollback) : "0x";
 
-    sn = await dappSrc.sendMessage(to, data, "0x", {value: fee})
+    sn = await dappSrc.sendMessage(to, data, rbData, {value: fee})
       .then((tx) => tx.wait(1))
       .then((receipt) => {
         if (receipt.status != 1) {
@@ -89,6 +92,7 @@ async function sendMessageFromDApp(srcChain: any, dstChain: any, msg: string) {
     throw new Error(`DApp: unknown source chain: ${srcChain}`);
   }
   console.log(`serialNum=${sn}`);
+  return BigNumber.from(sn);
 }
 
 async function checkCallMessage(srcChain: any, dstChain: any) {
@@ -168,16 +172,43 @@ async function verifyReceivedMessage(dstChain: any, msg: string) {
   }
 }
 
-async function sendMessageWithoutRollback(src: string, dst: string) {
+async function confirmMessageCleanup(srcChain: any, sn: BigNumber) {
+  let _recvSn: number | BigNumber;
+  if (isIconChain(srcChain)) {
+    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
+    const logs = await xcallSrc.queryFilter("CallRequestCleared(int)", -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
+    }
+    console.log(logs[0]);
+    _recvSn = logs[0].indexed ? parseInt(logs[0].indexed[1], 16) : -1;
+  } else if (isHardhatChain(srcChain)) {
+    const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
+    const logs = await xcallSrc.queryFilter(xcallSrc.filters.CallRequestCleared(), -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
+    }
+    console.log(logs)
+    _recvSn = logs[0].args._sn;
+  } else {
+    throw new Error(`DApp: unknown source chain: ${srcChain}`);
+  }
+  if (!sn.eq(_recvSn)) {
+    throw new Error(`DApp: received serial number (${_recvSn}) is different from the sent one (${sn})`);
+  }
+}
+
+async function sendCallMessage(src: string, dst: string, needRollback?: boolean) {
   const srcChain = deployments.get(src);
   const dstChain = deployments.get(dst);
 
-  const funcName = sendMessageWithoutRollback.name
-  console.log(`\n### ${funcName}: ${src} => ${dst}`);
-  const msgData = `${funcName}_${src}_${dst}`;
+  const testName = sendCallMessage.name + (needRollback ? "WithRollback" : "");
+  console.log(`\n### ${testName}: ${src} => ${dst}`);
+  const msgData = `${testName}_${src}_${dst}`;
+  const rollback = needRollback ? `ThisIsRollbackMessage_${src}_${dst}` : undefined;
 
   console.log(`[1] send message from DApp`);
-  await sendMessageFromDApp(srcChain, dstChain, msgData);
+  const sn = await sendMessageFromDApp(srcChain, dstChain, msgData, rollback);
 
   console.log('[-] wait some time for the message delivery...');
   await sleep(5000);
@@ -189,7 +220,15 @@ async function sendMessageWithoutRollback(src: string, dst: string) {
   await invokeExecuteCall(dstChain, reqId);
 
   console.log(`[4] verify the received message`);
-  await verifyReceivedMessage(dstChain, msgData)
+  await verifyReceivedMessage(dstChain, msgData);
+
+  if (needRollback) {
+    console.log('[-] wait some time for the message delivery...');
+    await sleep(5000);
+
+    console.log(`[5] confirm message cleanup on ${src}`);
+    await confirmMessageCleanup(srcChain, sn);
+  }
 }
 
 async function load_deployments() {
@@ -200,8 +239,10 @@ async function load_deployments() {
 }
 
 load_deployments()
-  .then(() => sendMessageWithoutRollback('icon', 'hardhat'))
-  .then(() => sendMessageWithoutRollback('hardhat', 'icon'))
+  .then(() => sendCallMessage('icon', 'hardhat'))
+  .then(() => sendCallMessage('hardhat', 'icon'))
+  .then(() => sendCallMessage('icon', 'hardhat', true))
+  .then(() => sendCallMessage('hardhat', 'icon', true))
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;
