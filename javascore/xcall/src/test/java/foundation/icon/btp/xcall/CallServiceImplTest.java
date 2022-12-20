@@ -41,6 +41,7 @@ class CallServiceImplTest implements CSIntegrationTest {
     static String linkNet = BTPIntegrationTest.Faker.btpNetwork();
     static BTPAddress to = new BTPAddress(linkNet, sampleAddress.toString());
     static BTPAddress fakeTo = new BTPAddress(linkNet, fakeAddress.toString());
+    static BTPAddress bmcBtpAddress;
     static BigInteger srcSn = BigInteger.ZERO;
     static BigInteger reqId = BigInteger.ZERO;
     static Map<BigInteger, MessageRequest> requestMap = new HashMap<>();
@@ -76,6 +77,8 @@ class CallServiceImplTest implements CSIntegrationTest {
         protocolFee = BigInteger.valueOf(3);
         feeManager.setProtocolFee(protocolFee);
         assertNull(feeManager.getProtocolFeeHandler());
+
+        bmcBtpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
     }
 
     private BigInteger getNextSn() {
@@ -267,6 +270,17 @@ class CallServiceImplTest implements CSIntegrationTest {
         );
     }
 
+    @Order(12)
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    void handleCallMessageFromInvalidCaller() {
+        var from = new BTPAddress(bmcBtpAddress.net(), csAddress.toString());
+        byte[] fakeRollback = "ThisIsFakeRollback".getBytes();
+        AssertRevertedException.assertUserReverted(0, () ->
+                sampleClient.handleCallMessage(from.toString(), fakeRollback)
+        );
+    }
+
     @Order(13)
     @Test
     void handleBTPMessageWithFailureResponse() {
@@ -285,8 +299,7 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Order(14)
     @Test
     void executeRollbackWithFailureResponse() {
-        var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
-        var from = new BTPAddress(btpAddress.net(), csAddress.toString());
+        var from = new BTPAddress(bmcBtpAddress.net(), csAddress.toString());
         var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
             assertEquals(from.toString(), el.getFrom());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getData());
@@ -351,17 +364,15 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.getSn());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
-        var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
         MockBMCIntegrationTest.mockBMC.handleBTPError(
                 checker, csAddress,
-                btpAddress.toString(), CallService.NAME, srcSn, 1, "BTPError");
+                bmcBtpAddress.toString(), CallService.NAME, srcSn, 1, "BTPError");
     }
 
     @Order(21)
     @Test
     void executeRollbackWithBTPError() {
-        var btpAddress = BTPAddress.valueOf(MockBMCIntegrationTest.mockBMC.getBtpAddress());
-        var from = new BTPAddress(btpAddress.net(), csAddress.toString());
+        var from = new BTPAddress(bmcBtpAddress.net(), csAddress.toString());
         var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
             assertEquals(from.toString(), el.getFrom());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getData());

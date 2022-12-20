@@ -12,6 +12,11 @@ contract DAppProxySample is ICallServiceReceiver, Initializable {
     address private callSvc;
     mapping(uint256 => Types.CallRequest) private requests;
 
+    modifier onlyCallService() {
+        require(msg.sender == callSvc, "OnlyCallService");
+        _;
+    }
+
     function initialize(
         address _callService
     ) public initializer {
@@ -45,7 +50,7 @@ contract DAppProxySample is ICallServiceReceiver, Initializable {
     function handleCallMessage(
         string calldata _from,
         bytes calldata _data
-    ) external override {
+    ) external override onlyCallService {
         emit MessageReceived(_from, _data);
     }
 

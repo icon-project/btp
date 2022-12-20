@@ -39,6 +39,10 @@ public class DAppProxySample implements CallServiceReceiver {
         this.callSvc = _callService;
     }
 
+    private void onlyCallService() {
+        Context.require(Context.getCaller().equals(this.callSvc), "onlyCallService");
+    }
+
     @Payable
     @External
     public void sendMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
@@ -60,6 +64,7 @@ public class DAppProxySample implements CallServiceReceiver {
     @Override
     @External
     public void handleCallMessage(String _from, byte[] _data) {
+        onlyCallService();
         MessageReceived(_from, _data);
         Context.println("handleCallMessage: from=" + _from + ", data=" + new String(_data));
     }
