@@ -289,7 +289,6 @@ class CallServiceImplTest implements CSIntegrationTest {
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
         var checker = CSIntegrationTest.rollbackMessageEvent((el) -> {
             assertEquals(srcSn, el.getSn());
-            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
@@ -300,9 +299,10 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Test
     void executeRollbackWithFailureResponse() {
         var from = new BTPAddress(bmcBtpAddress.net(), csAddress.toString());
-        var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
+        var checker = CSIntegrationTest.rollbackDataReceivedEvent((el) -> {
             assertEquals(from.toString(), el.getFrom());
-            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getData());
+            assertEquals(srcSn, el.getSsn());
+            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
             assertEquals(srcSn, el.getSn());
         }));
@@ -362,7 +362,6 @@ class CallServiceImplTest implements CSIntegrationTest {
         // check the BTP error message
         var checker = CSIntegrationTest.rollbackMessageEvent((el) -> {
             assertEquals(srcSn, el.getSn());
-            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPError(
                 checker, csAddress,
@@ -373,9 +372,9 @@ class CallServiceImplTest implements CSIntegrationTest {
     @Test
     void executeRollbackWithBTPError() {
         var from = new BTPAddress(bmcBtpAddress.net(), csAddress.toString());
-        var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
+        var checker = CSIntegrationTest.rollbackDataReceivedEvent((el) -> {
             assertEquals(from.toString(), el.getFrom());
-            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getData());
+            assertArrayEquals(requestMap.get(srcSn).getRollback(), el.getRollback());
         }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
             assertEquals(srcSn, el.getSn());
         }));

@@ -16,13 +16,13 @@
 
 package foundation.icon.btp.xcall.sample;
 
-import foundation.icon.btp.xcall.CallRequest;
 import foundation.icon.btp.xcall.CallServiceReceiver;
 import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.Context;
 import score.DictDB;
 import score.UserRevertedException;
+import score.VarDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -33,22 +33,42 @@ import java.math.BigInteger;
 @ScoreClient
 public class DAppProxySample implements CallServiceReceiver {
     private final Address callSvc;
-    private final DictDB<BigInteger, CallRequest> requests = Context.newDictDB("requests", CallRequest.class);
+    private final String callSvcBtpAddr;
+    private final VarDB<BigInteger> id = Context.newVarDB("id", BigInteger.class);
+    private final DictDB<BigInteger, RollbackData> rollbacks = Context.newDictDB("rollbacks", RollbackData.class);
 
     public DAppProxySample(Address _callService) {
         this.callSvc = _callService;
+        this.callSvcBtpAddr = Context.call(String.class, this.callSvc, "getBtpAddress");
     }
 
     private void onlyCallService() {
         Context.require(Context.getCaller().equals(this.callSvc), "onlyCallService");
     }
 
+    private BigInteger getNextId() {
+        BigInteger _id = this.id.getOrDefault(BigInteger.ZERO);
+        _id = _id.add(BigInteger.ONE);
+        this.id.set(_id);
+        return _id;
+    }
+
     @Payable
     @External
     public void sendMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
-        var sn = _sendCallMessage(Context.getValue(), _to, _data, _rollback);
-        CallRequest req = new CallRequest(Context.getCaller(), _to, _rollback);
-        requests.set(sn, req);
+        if (_rollback != null) {
+            // The code below is not actually necessary because the _rollback data is stored on the xCall side,
+            // but in this example, it is needed for testing to compare the _rollback data later.
+            var id = getNextId();
+            Context.println("DAppProxy: store rollback data with id=" + id);
+            RollbackData rbData = new RollbackData(id, _rollback);
+            var ssn = _sendCallMessage(Context.getValue(), _to, _data, rbData.toBytes());
+            rbData.setSvcSn(ssn);
+            rollbacks.set(id, rbData);
+        } else {
+            // This is for one-way message
+            _sendCallMessage(Context.getValue(), _to, _data, null);
+        }
     }
 
     private BigInteger _sendCallMessage(BigInteger value, String to, byte[] data, byte[] rollback) {
@@ -65,10 +85,26 @@ public class DAppProxySample implements CallServiceReceiver {
     @External
     public void handleCallMessage(String _from, byte[] _data) {
         onlyCallService();
-        MessageReceived(_from, _data);
         Context.println("handleCallMessage: from=" + _from + ", data=" + new String(_data));
+        if (callSvcBtpAddr.equals(_from)) {
+            // handle rollback data here
+            // In this example, just compare it with the stored one.
+            RollbackData received = RollbackData.fromBytes(_data);
+            var id = received.getId();
+            RollbackData stored = rollbacks.get(id);
+            Context.require(stored != null, "invalid received id");
+            Context.require(received.equals(stored), "rollbackData mismatch");
+            rollbacks.set(id, null); // cleanup
+            RollbackDataReceived(_from, stored.getSvcSn(), received.getRollback());
+        } else {
+            // normal message delivery
+            MessageReceived(_from, _data);
+        }
     }
 
     @EventLog
     public void MessageReceived(String _from, byte[] _data) {}
+
+    @EventLog
+    public void RollbackDataReceived(String _from, BigInteger _ssn, byte[] _rollback) {}
 }

@@ -39,7 +39,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
     private final VarDB<Address> bmc = Context.newVarDB("bmc", Address.class);
-    private final VarDB<String> net = Context.newVarDB("net", String.class);
+    private final VarDB<BTPAddress> btpAddress = Context.newVarDB("btpAddress", BTPAddress.class);
     private final VarDB<BigInteger> sn = Context.newVarDB("sn", BigInteger.class);
     private final VarDB<BigInteger> reqId = Context.newVarDB("reqId", BigInteger.class);
 
@@ -56,9 +56,15 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
         if (bmc.get() == null) {
             bmc.set(_bmc);
             BMCScoreInterface bmcInterface = new BMCScoreInterface(_bmc);
-            BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
-            net.set(btpAddress.net());
+            BTPAddress bmcAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
+            btpAddress.set(new BTPAddress(bmcAddress.net(), Context.getAddress().toString()));
         }
+    }
+
+    /* Implementation-specific external */
+    @External(readonly=true)
+    public String getBtpAddress() {
+        return btpAddress.get().toString();
     }
 
     private void checkCallerOrThrow(Address caller, String errMsg) {
@@ -175,9 +181,8 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
         cleanupCallRequest(_sn);
 
         try {
-            BTPAddress callSvc = new BTPAddress(net.get(), Context.getAddress().toString());
             DAppProxy proxy = new DAppProxy(req.getFrom());
-            proxy.handleCallMessage(callSvc.toString(), req.getRollback());
+            proxy.handleCallMessage(btpAddress.get().toString(), req.getRollback());
         } catch (Exception e) {
             logger.println("executeRollback", "Exception:", e.toString());
         }

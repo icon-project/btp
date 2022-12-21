@@ -87,4 +87,12 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 MessageReceivedEventLog::eventLogs,
                 consumer);
     }
+
+    static Consumer<TransactionResult> rollbackDataReceivedEvent (
+            Consumer<RollbackDataReceivedEventLog> consumer) {
+        return ScoreIntegrationTest.eventLogChecker(
+                sampleClient._address(),
+                RollbackDataReceivedEventLog::eventLogs,
+                consumer);
+    }
 }
