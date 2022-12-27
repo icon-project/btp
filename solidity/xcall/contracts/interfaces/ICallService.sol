@@ -2,6 +2,14 @@
 pragma solidity >=0.8.0 <0.8.5;
 
 interface ICallService {
+    /**
+       @notice Get BTP address of Call Service
+     */
+    function getBtpAddress(
+    ) external view returns (
+        string memory
+    );
+
     /*======== At the source CALL_BSH ========*/
     /**
        @notice Sends a call message to the contract on the destination chain.

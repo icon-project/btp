@@ -69,6 +69,14 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         btpAddress = _net.btpAddress(address(this).toString());
     }
 
+    /* Implementation-specific external */
+    function getBtpAddress(
+    ) external view override returns (
+        string memory
+    ) {
+        return btpAddress;
+    }
+
     function checkService(
         string calldata _svc
     ) internal pure {
