@@ -79,6 +79,7 @@ contract DAppProxySample is ICallServiceReceiver, Initializable {
     ) external override onlyCallService {
         if (compareTo(_from, callSvcBtpAddr)) {
             // handle rollback data here
+            // In this example, just compare it with the stored one.
             (uint256 id, bytes memory received) = abi.decode(_data, (uint256, bytes));
             RollbackData memory stored = rollbacks[id];
             require(compareTo(string(received), string(stored.rollback)), "rollbackData mismatch");
@@ -86,6 +87,10 @@ contract DAppProxySample is ICallServiceReceiver, Initializable {
             emit RollbackDataReceived(_from, stored.ssn, received);
         } else {
             // normal message delivery
+            string memory msgData = string(_data);
+            if (compareTo("revertMessage", msgData)) {
+                revert("revertFromDApp");
+            }
             emit MessageReceived(_from, _data);
         }
     }

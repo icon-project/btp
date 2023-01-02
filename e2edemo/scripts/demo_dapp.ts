@@ -198,19 +198,97 @@ async function confirmMessageCleanup(srcChain: any, sn: BigNumber) {
   }
 }
 
-async function sendCallMessage(src: string, dst: string, needRollback?: boolean) {
+async function checkRollbackMessage(srcChain: any) {
+  if (isHardhatChain(srcChain)) {
+    const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
+    const logs = await xcallSrc.queryFilter(xcallSrc.filters.RollbackMessage(), -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackMessage"`);
+    }
+    console.log(logs[0]);
+    return logs[0].args._sn;
+  } else if (isIconChain(srcChain)) {
+    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
+    const logs = await xcallSrc.queryFilter("RollbackMessage(int,bytes,str)", -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackMessage"`);
+    }
+    console.log(logs[0]);
+    const hexSn = logs[0].indexed && logs[0].indexed[1];
+    return BigNumber.from(hexSn);
+  } else {
+    throw new Error(`DApp: unknown source chain: ${srcChain}`);
+  }
+}
+
+async function invokeExecuteRollback(srcChain: any, sn: BigNumber) {
+  if (isHardhatChain(srcChain)) {
+    const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
+    await xcallSrc.executeRollback(sn)
+      .then((tx) => tx.wait(1));
+  } else if (isIconChain(srcChain)) {
+    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
+    await xcallSrc.executeRollback(sn.toHexString())
+      .then((txHash) => xcallSrc.getTxResult(txHash));
+  } else {
+    throw new Error(`DApp: unknown source chain: ${srcChain}`);
+  }
+}
+
+async function verifyRollbackDataReceivedMessage(srcChain: any, rollback: string | undefined) {
+  let _from, _data, _ssn;
+  if (isHardhatChain(srcChain)) {
+    const dappSrc = await ethers.getContractAt('DAppProxySample', srcChain.contracts.dapp);
+    const logs = await dappSrc.queryFilter(dappSrc.filters.RollbackDataReceived(), -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackDataReceived"`);
+    }
+    console.log(logs)
+    _from = logs[0].args._from;
+    _ssn = logs[0].args._ssn;
+    _data = logs[0].args._rollback;
+  } else if (isIconChain(srcChain)) {
+    const dappSrc = new DAppProxy(iconNetwork, srcChain.contracts.dapp);
+    const logs = await dappSrc.queryFilter("RollbackDataReceived(str,int,bytes)", -5, "latest");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackDataReceived"`);
+    }
+    console.log(logs)
+    if (logs[0].data === undefined) {
+      throw new Error("invalid eventlog \"RollbackDataReceived\"");
+    }
+    _from = logs[0].data[0];
+    _ssn = logs[0].data[1];
+    _data = logs[0].data[2];
+  } else {
+    throw new Error(`DApp: unknown source chain: ${srcChain}`);
+  }
+
+  const receivedRollback = hexToString(_data)
+  console.log(`From: ${_from}`);
+  console.log(`Ssn: ${_ssn}`);
+  console.log(`Data: ${_data}`);
+  console.log(`Rollback: ${receivedRollback}`);
+  if (rollback !== receivedRollback) {
+    throw new Error(`DApp: received rollback is different from the sent data`);
+  }
+}
+
+async function sendCallMessage(src: string, dst: string, msgData?: string, needRollback?: boolean) {
   const srcChain = deployments.get(src);
   const dstChain = deployments.get(dst);
 
   const testName = sendCallMessage.name + (needRollback ? "WithRollback" : "");
   console.log(`\n### ${testName}: ${src} => ${dst}`);
-  const msgData = `${testName}_${src}_${dst}`;
+  if (!msgData) {
+    msgData = `${testName}_${src}_${dst}`;
+  }
   const rollback = needRollback ? `ThisIsRollbackMessage_${src}_${dst}` : undefined;
 
   console.log(`[1] send message from DApp`);
   const sn = await sendMessageFromDApp(srcChain, dstChain, msgData, rollback);
 
-  console.log('[-] wait some time for the message delivery...');
+  console.log(`[-] wait some time for the message delivery on ${dst}...`);
   await sleep(5000);
 
   console.log(`[2] check CallMessage event on ${dst} chain`);
@@ -219,14 +297,28 @@ async function sendCallMessage(src: string, dst: string, needRollback?: boolean)
   console.log(`[3] invoke executeCall with reqId=${reqId}`);
   await invokeExecuteCall(dstChain, reqId);
 
-  console.log(`[4] verify the received message`);
-  await verifyReceivedMessage(dstChain, msgData);
+  let step = 4;
+  if (msgData !== "revertMessage") {
+    console.log(`[${step++}] verify the received message`);
+    await verifyReceivedMessage(dstChain, msgData);
+  }
 
   if (needRollback) {
-    console.log('[-] wait some time for the message delivery...');
+    console.log(`[-] wait some time for the message delivery on ${src}...`);
     await sleep(5000);
 
-    console.log(`[5] confirm message cleanup on ${src}`);
+    if (msgData === "revertMessage") {
+      console.log(`[${step++}] check RollbackMessage event on ${src} chain`);
+      const sn = await checkRollbackMessage(srcChain);
+
+      console.log(`[${step++}] invoke executeRollback with sn=${sn}`);
+      await invokeExecuteRollback(srcChain, sn);
+
+      console.log(`[${step++}] verify rollback data received message`);
+      await verifyRollbackDataReceivedMessage(srcChain, rollback);
+    }
+
+    console.log(`[${step++}] confirm message cleanup on ${src}`);
     await confirmMessageCleanup(srcChain, sn);
   }
 }
@@ -241,8 +333,10 @@ async function load_deployments() {
 load_deployments()
   .then(() => sendCallMessage('icon', 'hardhat'))
   .then(() => sendCallMessage('hardhat', 'icon'))
-  .then(() => sendCallMessage('icon', 'hardhat', true))
-  .then(() => sendCallMessage('hardhat', 'icon', true))
+  .then(() => sendCallMessage('icon', 'hardhat', "checkMessageCleanup", true))
+  .then(() => sendCallMessage('hardhat', 'icon', "checkMessageCleanup", true))
+  .then(() => sendCallMessage('icon', 'hardhat', "revertMessage", true))
+  .then(() => sendCallMessage('hardhat', 'icon', "revertMessage", true))
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

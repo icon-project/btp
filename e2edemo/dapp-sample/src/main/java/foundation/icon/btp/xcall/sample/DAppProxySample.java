@@ -83,7 +83,7 @@ public class DAppProxySample implements CallServiceReceiver {
     @External
     public void handleCallMessage(String _from, byte[] _data) {
         onlyCallService();
-        Context.println("handleCallMessage: from=" + _from + ", data=" + new String(_data));
+        Context.println("handleCallMessage: from=" + _from);
         if (callSvcBtpAddr.equals(_from)) {
             // handle rollback data here
             // In this example, just compare it with the stored one.
@@ -96,6 +96,11 @@ public class DAppProxySample implements CallServiceReceiver {
             RollbackDataReceived(_from, stored.getSvcSn(), received.getRollback());
         } else {
             // normal message delivery
+            String msgData = new String(_data);
+            Context.println("handleCallMessage: msgData=" + msgData);
+            if ("revertMessage".equals(msgData)) {
+                Context.revert("revertFromDApp");
+            }
             MessageReceived(_from, _data);
         }
     }
