@@ -12,6 +12,37 @@ const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
 const deployments = new Map();
 const iconNetwork = IconNetwork.getDefault();
 
+let netTypeId = '';
+let netId = '';
+
+async function open_btp_network() {
+  // open BTP network first before deploying BMV
+  const icon = deployments.get('icon')
+  const lastBlock = await iconNetwork.getLastBlock();
+  const netName = `hardhat-${lastBlock.height}`
+  console.log(`ICON: open BTP network for ${netName}`)
+  const gov = new Gov(iconNetwork);
+  await gov.openBTPNetwork(netName, icon.contracts.bmc)
+    .then((txHash) => gov.getTxResult(txHash))
+    .then((result) => {
+      if (result.status != 1) {
+        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
+      }
+      return gov.filterEvent(result.eventLogs,
+        'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
+    })
+    .then((event) => {
+      console.log(event);
+      if (!event.indexed) {
+        throw new Error(`ICON: failed to find networkId`);
+      }
+      netTypeId = event.indexed[1];
+      netId = event.indexed[2];
+    })
+  console.log(`networkTypeId=${netTypeId}`);
+  console.log(`networkId=${netId}`);
+}
+
 async function deploy_bmv() {
   // get last block number of ICON
   const lastBlock = await iconNetwork.getLastBlock();
@@ -73,26 +104,6 @@ async function setup_bmv() {
   const bmcHardhatAddr = await bmcp.getBtpAddress()
   console.log(`BTP address of Hardhat BMC: ${bmcHardhatAddr}`)
 
-  // open BTP network first before calling addBTPLink
-  const netName = `hardhat-${icon.blockNum}`
-  console.log(`ICON: open BTP network for ${netName}`)
-  const gov = new Gov(iconNetwork);
-  let netId = '';
-  await gov.openBTPNetwork(netName, bmc.address)
-    .then((txHash) => gov.getTxResult(txHash))
-    .then((result) => {
-      if (result.status != 1) {
-        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
-      }
-      return gov.filterEvent(result.eventLogs,
-        'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
-    })
-    .then((event) => {
-      console.log(event);
-      netId = event.indexed ? event.indexed[2] : '0x0';
-    })
-  console.log(`networkId=${netId}`);
-
   console.log(`ICON: addVerifier for ${hardhat.network}`)
   await bmc.addVerifier(hardhat.network, bmv.address)
     .then((txHash) => bmc.getTxResult(txHash))
@@ -148,6 +159,7 @@ async function save_deployments() {
 }
 
 load_deployments()
+  .then(open_btp_network)
   .then(deploy_bmv)
   .then(setup_bmv)
   .then(save_deployments)
