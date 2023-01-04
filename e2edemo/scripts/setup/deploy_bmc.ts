@@ -2,9 +2,10 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import {Contract} from "../icon/contract";
 import {IconNetwork} from "../icon/network";
-const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
+import {Deployments} from "./config";
+const {JAVASCORE_PATH} = process.env
 
-const deployments = new Map();
+const deployments = new Deployments();
 
 async function deploy_java() {
   const iconNetwork = IconNetwork.getDefault();
@@ -82,16 +83,11 @@ async function deploy_solidity() {
       'bmcp': bmcp.address,
     }
   })
-}
-
-async function save_deployments() {
-  const path = `${E2E_DEMO_PATH}/deployments.json`
-  fs.writeFileSync(path, JSON.stringify(Object.fromEntries(deployments)), 'utf-8')
+  deployments.save();
 }
 
 deploy_java()
   .then(deploy_solidity)
-  .then(save_deployments)
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

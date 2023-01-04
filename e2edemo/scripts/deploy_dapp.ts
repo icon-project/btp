@@ -2,10 +2,10 @@ import fs from 'fs';
 import {ethers} from 'hardhat';
 import {Contract} from "./icon/contract";
 import {IconNetwork} from "./icon/network";
-
+import {Deployments} from "./setup/config";
 const {E2E_DEMO_PATH} = process.env
-const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
-const deployments = new Map();
+
+const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 
 async function deploy_dapp() {
@@ -39,22 +39,10 @@ async function deploy_dapp() {
   // update deployments
   deployments.set('icon', icon)
   deployments.set('hardhat', hardhat)
+  deployments.save();
 }
 
-async function load_deployments() {
-  const data = fs.readFileSync(DEPLOYMENTS_PATH);
-  const json = JSON.parse(data.toString());
-  deployments.set('icon', json.icon)
-  deployments.set('hardhat', json.hardhat)
-}
-
-async function save_deployments() {
-  fs.writeFileSync(DEPLOYMENTS_PATH, JSON.stringify(Object.fromEntries(deployments)), 'utf-8')
-}
-
-load_deployments()
-  .then(deploy_dapp)
-  .then(save_deployments)
+deploy_dapp()
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

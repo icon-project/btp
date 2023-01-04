@@ -5,11 +5,11 @@ import {BMC, BMV} from "../icon/btp";
 import {Gov} from "../icon/system";
 import {IconNetwork} from "../icon/network";
 import IconService from "icon-sdk-js";
+import {Deployments} from "./config";
 const {IconConverter} = IconService;
-const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
+const {JAVASCORE_PATH} = process.env
 
-const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
-const deployments = new Map();
+const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 
 let netTypeId = '';
@@ -85,6 +85,7 @@ async function deploy_bmv() {
   // update deployments
   deployments.set('icon', icon)
   deployments.set('hardhat', hardhat)
+  deployments.save();
 }
 
 async function setup_bmv() {
@@ -147,22 +148,9 @@ async function setup_bmv() {
     });
 }
 
-async function load_deployments() {
-  const data = fs.readFileSync(DEPLOYMENTS_PATH);
-  const json = JSON.parse(data.toString());
-  deployments.set('icon', json.icon)
-  deployments.set('hardhat', json.hardhat)
-}
-
-async function save_deployments() {
-  fs.writeFileSync(DEPLOYMENTS_PATH, JSON.stringify(Object.fromEntries(deployments)), 'utf-8')
-}
-
-load_deployments()
-  .then(open_btp_network)
+open_btp_network()
   .then(deploy_bmv)
   .then(setup_bmv)
-  .then(save_deployments)
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

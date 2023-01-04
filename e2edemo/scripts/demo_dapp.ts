@@ -1,15 +1,13 @@
-import fs from 'fs';
 import IconService from 'icon-sdk-js';
 import {ethers} from 'hardhat';
 import {IconNetwork} from "./icon/network";
 import {DAppProxy} from "./icon/dapp_proxy";
 import {XCall} from "./icon/xcall";
 import {BigNumber} from "ethers";
+import {Deployments} from "./setup/config";
 const {IconConverter} = IconService;
-const {E2E_DEMO_PATH} = process.env
 
-const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
-const deployments = new Map();
+const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 
 function getBtpAddress(network: string, dapp: string) {
@@ -323,14 +321,18 @@ async function sendCallMessage(src: string, dst: string, msgData?: string, needR
   }
 }
 
-async function load_deployments() {
-  const data = fs.readFileSync(DEPLOYMENTS_PATH);
-  const json = JSON.parse(data.toString());
-  deployments.set('icon', json.icon);
-  deployments.set('hardhat', json.hardhat);
+async function show_banner() {
+  const banner = `
+       ___           __
+  ___ |__ \\___  ____/ /__  ____ ___  ____
+ / _ \\__/ / _ \\/ __  / _ \\/ __ \`__ \\/ __ \\
+/  __/ __/  __/ /_/ /  __/ / / / / / /_/ /
+\\___/____\\___/\\__,_/\\___/_/ /_/ /_/\\____/
+`;
+  console.log(banner);
 }
 
-load_deployments()
+show_banner()
   .then(() => sendCallMessage('icon', 'hardhat'))
   .then(() => sendCallMessage('hardhat', 'icon'))
   .then(() => sendCallMessage('icon', 'hardhat', "checkMessageCleanup", true))
