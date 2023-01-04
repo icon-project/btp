@@ -19,15 +19,22 @@ package foundation.icon.btp.mock;
 import score.Address;
 import score.annotation.External;
 
+import java.math.BigInteger;
+
 public class MockGovImpl implements MockGov {
 
     static ChainScore chainScore() {
-        return new ChainScoreInterface(ChainScore.ADDRESS);
+        return new ChainScoreInterface(Address.fromString(ChainScore.ADDRESS));
     }
 
     @External
     public void setRevision(int code) {
         chainScore().setRevision(code);
+    }
+
+    @External
+    public void setMaxStepLimit(String contextType, BigInteger limit) {
+        chainScore().setMaxStepLimit(contextType, limit);
     }
 
     @External

@@ -16,35 +16,18 @@
 
 package foundation.icon.btp.mock;
 
-import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.jsonrpc.IconJsonModule;
-import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.ScoreClient;
 import foundation.icon.score.client.ScoreInterface;
-import foundation.icon.score.test.ScoreIntegrationTest;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
 
 import java.math.BigInteger;
-import java.util.List;
 
 @ScoreClient(suffix = "Client")
 @ScoreInterface(suffix = "Interface")
 public interface ChainScore {
-    enum RevertCode {
-        StatusIllegalArgument,
-        StatusNotFound;
-        public RevertCode codeOf(int code) {
-            RevertCode[] values = values();
-            if (code < 0 || code >= values.length) {
-                throw new IllegalArgumentException();
-            }
-            return values[code];
-        }
-    }
-
-    Address ADDRESS = Address.fromString("cx0000000000000000000000000000000000000000");
+    String ADDRESS = "cx0000000000000000000000000000000000000000";
 
     @External
     void setRevision(int code);
@@ -54,6 +37,12 @@ public interface ChainScore {
 
     @External(readonly = true)
     BigInteger getStepCost(String type);
+
+    @External
+    void setMaxStepLimit(String contextType, BigInteger limit);
+
+    @External(readonly = true)
+    BigInteger getMaxStepLimit(String contextType);
 
     @External
     long openBTPNetwork(String networkTypeName, String name, Address owner);

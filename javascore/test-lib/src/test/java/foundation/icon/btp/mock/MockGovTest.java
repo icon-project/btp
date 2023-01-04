@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MockGovTest implements MockGovIntegrationTest {
-    static final String NETWORK_TYPE_NAME = "icon";
+    static final String NETWORK_TYPE_NAME = "eth";
     static final String NETWORK_NAME = "0x1.icon";
 
     @BeforeAll

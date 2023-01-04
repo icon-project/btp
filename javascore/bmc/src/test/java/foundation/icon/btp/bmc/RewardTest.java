@@ -67,7 +67,7 @@ public class RewardTest implements BMCIntegrationTest {
                 client.endpoint(),
                 client._nid(),
                 client._wallet(),
-                new Address(ChainScore.ADDRESS.toString()));
+                new Address(ChainScore.ADDRESS));
         BigInteger stepPrice = chainScore.getStepPrice();
         BigInteger minBalance = chainScore.getStepCost("contractCall").multiply(stepPrice);
         if (client._balance(bmc._address()).compareTo(minBalance) < 0) {

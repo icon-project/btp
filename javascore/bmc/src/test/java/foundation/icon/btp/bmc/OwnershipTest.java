@@ -70,7 +70,7 @@ public class OwnershipTest implements BMCIntegrationTest {
                 client.endpoint(),
                 client._nid(),
                 client._wallet(),
-                new Address(ChainScore.ADDRESS.toString()));
+                new Address(ChainScore.ADDRESS));
         BigInteger stepPrice = chainScore.getStepPrice();
         BigInteger minBalance = client._stepLimit().multiply(stepPrice);
         Address testerAddress = Address.of(tester);

@@ -45,7 +45,7 @@ public class BTPNetworkClosedEventLog {
             TransactionResult txr) {
         return ScoreIntegrationTest.eventLogs(txr,
                 BTPNetworkClosedEventLog.SIGNATURE,
-                new foundation.icon.jsonrpc.Address(ChainScore.ADDRESS.toString()),
+                new foundation.icon.jsonrpc.Address(ChainScore.ADDRESS),
                 BTPNetworkClosedEventLog::new,
                 null);
     }

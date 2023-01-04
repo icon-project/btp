@@ -44,7 +44,7 @@ public interface MockGovIntegrationTest {
     MockGov mockGov = mockGovClient;
     KeyWallet validatorWallet = (KeyWallet) DefaultScoreClient.wallet("validator.", System.getProperties());
     ChainScoreClient chainScoreClient = new ChainScoreClient(mockGovClient.endpoint(), mockGovClient._nid(), validatorWallet,
-            new Address(ChainScore.ADDRESS.toString()));
+            new Address(ChainScore.ADDRESS));
     ChainScore chainScore = chainScoreClient;
     IconService iconService = new IconService(new HttpProvider(mockGovClient.endpoint()));
 
