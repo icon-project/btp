@@ -9,7 +9,7 @@ const config: HardhatUserConfig = {
     artifacts: "./solidity/build/artifacts"
   },
   solidity: {
-    version: "0.8.2",
+    version: "0.8.12",
     settings: {
       optimizer: {
         enabled: true,
