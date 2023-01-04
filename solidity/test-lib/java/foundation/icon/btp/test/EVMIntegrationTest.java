@@ -376,7 +376,7 @@ public interface EVMIntegrationTest {
             EventLogsSupplier<T> supplier,
             Predicate<T> filter) {
         Predicate<T> predicate = address == null ? null :
-                (el) -> el.log.getAddress().equals(address);
+                (el) -> el.log.getAddress().equalsIgnoreCase(address);
         if (filter != null) {
             predicate = predicate == null ? filter : predicate.and(filter);
         }
@@ -393,7 +393,7 @@ public interface EVMIntegrationTest {
             String address, EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return (txr) -> {
             List<T> eventLogs = supplier.apply(txr).stream()
-                    .filter((el) -> el.log.getAddress().equals(address))
+                    .filter((el) -> el.log.getAddress().equalsIgnoreCase(address))
                     .collect(Collectors.toList());
             assertEquals(1, eventLogs.size());
             if (consumer != null) {
@@ -406,7 +406,7 @@ public interface EVMIntegrationTest {
             String address, EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
         return (txr) -> {
             List<T> eventLogs = supplier.apply(txr).stream()
-                    .filter((el) -> el.log.getAddress().equals(address))
+                    .filter((el) -> el.log.getAddress().equalsIgnoreCase(address))
                     .collect(Collectors.toList());
             if (consumer != null) {
                 consumer.accept(eventLogs);
@@ -418,7 +418,7 @@ public interface EVMIntegrationTest {
             String address, EventLogsSupplier<T> supplier) {
         return (txr) -> {
             List<T> eventLogs = supplier.apply(txr).stream()
-                    .filter((el) -> el.log.getAddress().equals(address))
+                    .filter((el) -> el.log.getAddress().equalsIgnoreCase(address))
                     .collect(Collectors.toList());
             assertEquals(0, eventLogs.size());
         };
