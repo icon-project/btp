@@ -34,4 +34,42 @@ export class IconNetwork {
   async getLastBlock() {
     return this.iconService.getLastBlock().execute();
   }
+
+  async request(method: string, params: any) {
+    return fetch('http://localhost:9080/api/v3', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "id": 100,
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params
+      })
+    })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error(`${response.status}: ${response.statusText}`);
+    })
+    .then((data) => data.result)
+    .catch((error) => {
+      console.error(error);
+    })
+  }
+
+  async getBTPNetworkInfo(nid: string) {
+    return this.request("btp_getNetworkInfo", {
+      "id": nid
+    })
+  }
+
+  async getBTPHeader(nid: string, height: string) {
+    return this.request("btp_getHeader", {
+      "networkID": nid,
+      "height": height,
+    })
+  }
 }

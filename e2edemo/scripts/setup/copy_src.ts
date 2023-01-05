@@ -17,7 +17,7 @@ function copyFolderSync(from: string, to: string) {
 }
 
 async function main() {
-  const mods = ['bmc', 'bmv-bridge', 'xcall']
+  const mods = ['bmc', 'bmv', 'bmv-bridge', 'xcall']
   mods.forEach((m) => {
     const src = `../solidity/${m}/contracts`
     const dst = `./solidity/contracts/${m}`

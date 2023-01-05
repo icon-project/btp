@@ -7,8 +7,9 @@ import {IconNetwork} from "../icon/network";
 import IconService from "icon-sdk-js";
 import {Deployments} from "./config";
 const {IconConverter} = IconService;
-const {JAVASCORE_PATH} = process.env
+const {JAVASCORE_PATH, BMV_BTP_BLOCK} = process.env
 
+const bridgeMode = !BMV_BTP_BLOCK || BMV_BTP_BLOCK !== "true";
 const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 
@@ -73,14 +74,33 @@ async function deploy_bmv() {
     throw new Error(`BMV deployment failed: ${result.txHash}`);
   }
   icon.contracts.bmv = bmv.address
-  console.log(`ICON BMV: deployed to ${bmv.address}`);
+  console.log(`ICON BMV-Bridge: deployed to ${bmv.address}`);
 
-  // deploy BMV-Bridge solidity module
-  const BMVBridge = await ethers.getContractFactory("BMV")
-  const bmvb = await BMVBridge.deploy(hardhat.contracts.bmcp, icon.network, icon.blockNum)
-  await bmvb.deployed()
-  hardhat.contracts.bmvb = bmvb.address
-  console.log(`Hardhat BMV: deployed to ${bmvb.address}`);
+  if (bridgeMode) {
+    // deploy BMV-Bridge solidity module
+    const BMVBridge = await ethers.getContractFactory("BMV")
+    const bmvb = await BMVBridge.deploy(hardhat.contracts.bmcp, icon.network, icon.blockNum)
+    await bmvb.deployed()
+    hardhat.contracts.bmvb = bmvb.address
+    console.log(`Hardhat BMV-Bridge: deployed to ${bmvb.address}`);
+  } else {
+    // get firstBlockHeader via btp2 API
+    const networkInfo = await iconNetwork.getBTPNetworkInfo(netId);
+    console.log('networkInfo:', networkInfo);
+    const startHeight = parseInt(networkInfo.startHeight, 16);
+    console.log('startHeight:', startHeight);
+    const receiptHeight = IconConverter.toHex(startHeight + 1);
+    const header = await iconNetwork.getBTPHeader(netId, receiptHeight);
+    const firstBlockHeader = '0x' + Buffer.from(header, 'base64').toString('hex');
+    console.log('firstBlockHeader:', firstBlockHeader);
+
+    // deploy BMV-BtpBlock solidity module
+    const BMVBtp = await ethers.getContractFactory("BtpMessageVerifier")
+    const bmvBtp = await BMVBtp.deploy(hardhat.contracts.bmcp, icon.network, netTypeId, firstBlockHeader, '0x0')
+    await bmvBtp.deployed()
+    hardhat.contracts.bmv = bmvBtp.address
+    console.log(`Hardhat BMV: deployed to ${bmvBtp.address}`);
+  }
 
   // update deployments
   deployments.set('icon', icon)
@@ -101,7 +121,6 @@ async function setup_bmv() {
   // get the BTP address of hardhat BMC
   const bmcm = await ethers.getContractAt('BMCManagement', hardhat.contracts.bmcm)
   const bmcp = await ethers.getContractAt('BMCPeriphery', hardhat.contracts.bmcp)
-  const bmvb = await ethers.getContractAt('BMV', hardhat.contracts.bmvb)
   const bmcHardhatAddr = await bmcp.getBtpAddress()
   console.log(`BTP address of Hardhat BMC: ${bmcHardhatAddr}`)
 
@@ -131,7 +150,15 @@ async function setup_bmv() {
     })
 
   console.log(`Hardhat: addVerifier for ${icon.network}`)
-  await bmcm.addVerifier(icon.network, bmvb.address)
+  let bmvAddress;
+  if (bridgeMode) {
+    const bmvb = await ethers.getContractAt('BMV', hardhat.contracts.bmvb)
+    bmvAddress = bmvb.address;
+  } else {
+    const bmvBtp = await ethers.getContractAt('BtpMessageVerifier', hardhat.contracts.bmv)
+    bmvAddress = bmvBtp.address;
+  }
+  await bmcm.addVerifier(icon.network, bmvAddress)
     .then((tx) => {
       return tx.wait(1)
     });
