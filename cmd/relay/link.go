@@ -38,7 +38,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, srcWallet, linkErrCh); err != nil {
+		if _, err = newChain(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, dstWallet, linkErrCh); err != nil {
 			return err
 		}
 
@@ -53,7 +53,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Dst.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, dstWallet, linkErrCh); err != nil {
+		if _, err = newChain(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, srcWallet, linkErrCh); err != nil {
 			return err
 		}
 	case BothDirection:
