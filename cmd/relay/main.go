@@ -124,17 +124,17 @@ var logoLines = []string{
 }
 
 func main() {
-	rootCmd, rootVc := cli.NewCommand(nil, nil, "btp2", "BTP Relay CLI")
+	rootCmd, rootVc := cli.NewCommand(nil, nil, "relay", "BTP Relay CLI")
 	cfg := &Config{}
 	rootCmd.Long = "Command Line Interface of Relay for Blockchain Transmission Protocol"
 	cli.SetEnvKeyReplacer(rootVc, strings.NewReplacer(".", "_"))
 	//rootVc.Debug()
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
-		Short: "Print btp2 version",
+		Short: "Print relay version",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("btp2 version", version, build)
+			fmt.Println("relay version", version, build)
 		},
 	})
 
@@ -169,22 +169,22 @@ func main() {
 	rootPFlags.String("src.address", "", "BTP Address of source blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("src.endpoint", "", "Endpoint of source blockchain")
 	rootPFlags.StringToString("src.options", nil, "Options, comma-separated 'key=value'")
-	rootPFlags.Int64("src.nid", 1, "source network id")
-	rootPFlags.Bool("src.bridgeMode", false, "bridge mode( trustless )")
-	rootPFlags.String("src.key_store", "", "Source network id")
+	rootPFlags.Int64("src.nid", 1, "Source network id")
+	rootPFlags.Bool("src.bridgeMode", false, "Bridge mode")
+	rootPFlags.String("src.key_store", "", "Source keyStore")
 	rootPFlags.String("src.key_password", "", "Source password of keyStore")
-	rootPFlags.String("src.key_secret", "", "Source Secret(password) file for keyStore")
+	rootPFlags.String("src.key_secret", "", "Source secret file for keyStore")
 
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
 	rootPFlags.StringToString("dst.options", nil, "Options, comma-separated 'key=value'")
 	rootPFlags.Int64("dst.nid", 1, "Destination network id")
-	rootPFlags.Bool("dst.bridgeMode", false, "bridge mode( trustless )")
-	rootPFlags.String("dst.key_store", "", "Source network id")
-	rootPFlags.String("dst.key_password", "", "Source password of keyStore")
-	rootPFlags.String("dst.key_secret", "", "Source Secret(password) file for keyStore")
+	rootPFlags.Bool("dst.bridgeMode", false, "Bridge mode")
+	rootPFlags.String("dst.key_store", "", "Destination keyStore")
+	rootPFlags.String("dst.key_password", "", "Destination password of keyStore")
+	rootPFlags.String("dst.key_secret", "", "Destination secret file for keyStore")
 
-	rootPFlags.String("direction", "both", "btp2.0 network direction ( both, front, reverse)")
+	rootPFlags.String("direction", "both", "BTP2.0 network direction (both, front, reverse)")
 	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
 
 	rootPFlags.Int64("offset", 0, "Offset of MTA")
