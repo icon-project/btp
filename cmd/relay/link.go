@@ -22,7 +22,6 @@ import (
 
 	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/chain/bsc"
-	bscChain "github.com/icon-project/btp/chain/bsc"
 	"github.com/icon-project/btp/chain/icon"
 	"github.com/icon-project/btp/common/log"
 	"github.com/icon-project/btp/common/wallet"
@@ -101,7 +100,9 @@ func newChain(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, link
 	case ICON:
 		chain = icon.NewChain(&cfg, l)
 	case ETH:
-		chain = bscChain.NewChain(&cfg, l)
+		fallthrough
+	case HARDHAT:
+		chain = bsc.NewChain(&cfg, l)
 	default:
 		return nil, fmt.Errorf("Not supported for chain:%s", name)
 	}
@@ -124,6 +125,8 @@ func newSender(s string, srcCfg chain.BaseConfig, dstCfg chain.BaseConfig, w wal
 	case ICON:
 		sender = icon.NewSender(srcCfg.Address, dstCfg.Address, w, dstCfg.Endpoint, srcCfg.Options, l)
 	case ETH:
+		fallthrough
+	case HARDHAT:
 		sender = bsc.NewSender(srcCfg.Address, dstCfg.Address, w, dstCfg.Endpoint, nil, l)
 	default:
 		l.Fatalf("Not supported for chain:%s", s)
