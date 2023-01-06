@@ -47,7 +47,6 @@ func (c *btp) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader, msgs []str
 	var err error
 
 	if len(msgs) > 0 {
-		var m [][]byte
 		result := make([][]byte, 0)
 		for _, mg := range msgs {
 			m, err := base64.StdEncoding.DecodeString(mg)
@@ -58,7 +57,7 @@ func (c *btp) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader, msgs []str
 		}
 
 		//TODO refactoring networkTypeId
-		if mt, err = mbt.NewMerkleBinaryTree(mbt.HashFuncByUID("eth"), m); err != nil {
+		if mt, err = mbt.NewMerkleBinaryTree(mbt.HashFuncByUID("eth"), result); err != nil {
 			return nil, err
 		}
 	}
@@ -71,24 +70,25 @@ func (c *btp) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader, msgs []str
 	return btpBlock, nil
 }
 
-func (c *btp) segment(bd *BTPBlockData, bh *BTPBlockHeader, ss []*chain.Segment) error {
+func (c *btp) segment(bd *BTPBlockData, bh *BTPBlockHeader, ss *[]*chain.Segment) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
 	//blockUpdate
-	if bd.Bu != nil && bh.MessageCount == int64(bd.Mt.Len()) {
+	if bd.Bu != nil {
 		c.blockUpdateSegment(bd.Bu, bd.Height, ss)
 	}
 	//messageProof
 	if bd.Mt != nil {
 		c.messageSegment(bd, ss)
 	}
+
 	return nil
 }
 
-func (c *btp) addSegment(ss []*chain.Segment) error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+func (c *btp) addSegment(ss *[]*chain.Segment) error {
+	//c.mtx.Lock()
+	//defer c.mtx.Unlock()
 
 	b, err := codec.RLP.MarshalToBytes(c.rm)
 	if err != nil {
@@ -100,22 +100,19 @@ func (c *btp) addSegment(ss []*chain.Segment) error {
 		EventSequence:    big.NewInt(int64(c.rm.MessageSeq())), //TODO refactoring type convert
 	}
 
-	ss = append(ss, s)
+	*ss = append(*ss, s)
 	c.rm.Messages = c.rm.Messages[:0]
 	c.rmSize = 0
 	return nil
 }
 
-func (c *btp) blockUpdateSegment(bu *BTPBlockUpdate, heightOfSrc int64, ss []*chain.Segment) error {
+func (c *btp) blockUpdateSegment(bu *BTPBlockUpdate, heightOfSrc int64, ss *[]*chain.Segment) error {
 	tpm, err := NewTypePrefixedMessage(bu)
 	size, err := sizeOfTypePrefixedMessage(tpm)
 	if err != nil {
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
 	if c.isOverLimit(c.rmSize + size) {
 		c.addSegment(ss)
 	}
@@ -125,7 +122,7 @@ func (c *btp) blockUpdateSegment(bu *BTPBlockUpdate, heightOfSrc int64, ss []*ch
 	return nil
 }
 
-func (c *btp) messageSegment(bd *BTPBlockData, ss []*chain.Segment) error {
+func (c *btp) messageSegment(bd *BTPBlockData, ss *[]*chain.Segment) error {
 	var endIndex int
 	for endIndex = bd.PartialOffset + 1; endIndex < bd.Mt.Len(); endIndex++ {
 		//TODO refactoring
@@ -173,7 +170,7 @@ func (c *btp) messageSegment(bd *BTPBlockData, ss []*chain.Segment) error {
 }
 
 func (c *btp) Segments(bu *BTPBlockUpdate, seq int64, maxSizeTx bool,
-	msgs []string, offset int64, ss []*chain.Segment) error {
+	msgs []string, offset int64, ss *[]*chain.Segment) error {
 
 	bh := &BTPBlockHeader{}
 	_, err := codec.RLP.UnmarshalFromBytes(bu.BTPBlockHeader, bh)

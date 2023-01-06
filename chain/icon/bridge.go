@@ -88,7 +88,7 @@ func (c *bridge) isOverLimit(size int) bool {
 	return c.txSizeLimit < size
 }
 
-func (c *bridge) addSegment(ss []*chain.Segment) error {
+func (c *bridge) addSegment(ss *[]*chain.Segment) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -129,7 +129,7 @@ func (c *bridge) addSegment(ss []*chain.Segment) error {
 		EventSequence:    le.Sequence,
 		NumberOfEvent:    numOfEvents,
 	}
-	ss = append(ss, s)
+	*ss = append(*ss, s)
 	lrp.Events = lrp.Events[:0]
 	c.rm.ReceiptProofs[0] = lrp
 	c.rm.ReceiptProofs = c.rm.ReceiptProofs[:1]
@@ -139,7 +139,7 @@ func (c *bridge) addSegment(ss []*chain.Segment) error {
 
 //TODO rename func
 func (c *bridge) Segments(bu *BTPBlockUpdate, seq int64, maxSizeTx bool,
-	msgs []string, offset int64, ss []*chain.Segment) error {
+	msgs []string, offset int64, ss *[]*chain.Segment) error {
 	var err error
 	rps, err := c.makeReceiptProofList(bu, seq, msgs, offset)
 
