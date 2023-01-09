@@ -4,11 +4,11 @@ const { expect } = require('chai');
 const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
 const { ZB32, toStr } = require('./utils');
 const Errors = {
-    ERR_UNKNOWN: "bmv: Unknown|25",
-    ERR_NOT_VERIFIABLE: "bmv: NotVerifiable|26",
-    ERR_ALREADY_VERIFIED: "bmv: AlreadyVerified|27",
+    ERR_UNKNOWN: "25:Unknown",
+    ERR_NOT_VERIFIABLE: "26:NotVerifiable",
+    ERR_ALREADY_VERIFIED: "27:AlreadyVerified",
 
-    ERR_UNAUTHORIZED: "bmv: Unauthorized",
+    ERR_UNAUTHORIZED: "Unauthorized",
 }
 
 contract('BtpMessageVerifier', (accounts) => {

@@ -32,8 +32,8 @@ contract BtpMessageVerifier is IBMV {
         address[] validators;
     }
 
-    string private constant ERR_UNAUTHORIZED = "bmv: Unauthorized";
-    string private constant ERR_INVALID_ARGS = "bmv: InvalidArgs";
+    string private constant ERR_UNAUTHORIZED = "Unauthorized";
+    string private constant ERR_INVALID_ARGS = "InvalidArgs";
 
     modifier onlyBmc() {
         require(msg.sender == bmc, ERR_UNAUTHORIZED);
