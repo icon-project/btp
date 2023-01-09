@@ -32,4 +32,6 @@ library Errors {
     string internal constant BMC_REVERT_NOT_EXISTS_REWARD = "10:NotExistsReward";
     string internal constant BMC_REVERT_NOT_EXISTS_REQUEST = "10:NotExistsRequest";
     string internal constant BMC_REVERT_NOT_EXISTS_RESPONSE = "10:NotExistsResponse";
+    string internal constant BMC_REVERT_ERROR_HANDLE_FEE = "10:ErrHandleFee";
+    string internal constant BMV_REVERT_UNKNOWN = "25:Unknown";
 }
