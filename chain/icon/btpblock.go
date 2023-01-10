@@ -40,7 +40,7 @@ func (c *btp) isOverLimit(size int) bool {
 	return c.txSizeLimit < size
 }
 
-func (c *btp) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader, msgs []string) (*BTPBlockData, error) {
+func (c *btp) addRelayMessage(bu *BTPBlockUpdate, height int64, msgs []string) (*BTPBlockData, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	var mt *mbt.MerkleBinaryTree
@@ -65,12 +65,12 @@ func (c *btp) addRelayMessage(bu *BTPBlockUpdate, bh *BTPBlockHeader, msgs []str
 	btpBlock := &BTPBlockData{
 		Bu: bu,
 		Mt: mt, PartialOffset: 0,
-		Height: bh.MainHeight}
+		Height: height}
 
 	return btpBlock, nil
 }
 
-func (c *btp) segment(bd *BTPBlockData, bh *BTPBlockHeader, ss *[]*chain.Segment) error {
+func (c *btp) segment(bd *BTPBlockData, ss *[]*chain.Segment) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -89,7 +89,6 @@ func (c *btp) segment(bd *BTPBlockData, bh *BTPBlockHeader, ss *[]*chain.Segment
 func (c *btp) addSegment(ss *[]*chain.Segment) error {
 	//c.mtx.Lock()
 	//defer c.mtx.Unlock()
-
 	b, err := codec.RLP.MarshalToBytes(c.rm)
 	if err != nil {
 		return err
@@ -124,7 +123,9 @@ func (c *btp) blockUpdateSegment(bu *BTPBlockUpdate, heightOfSrc int64, ss *[]*c
 
 func (c *btp) messageSegment(bd *BTPBlockData, ss *[]*chain.Segment) error {
 	var endIndex int
-	for endIndex = bd.PartialOffset + 1; endIndex < bd.Mt.Len(); endIndex++ {
+	c.rm.SetHeight(bd.Height)
+
+	for endIndex = bd.PartialOffset + 1; endIndex <= bd.Mt.Len(); endIndex++ {
 		//TODO refactoring
 		p, err := bd.Mt.Proof(bd.PartialOffset+1, endIndex)
 		if err != nil {
@@ -138,52 +139,35 @@ func (c *btp) messageSegment(bd *BTPBlockData, ss *[]*chain.Segment) error {
 		if err != nil {
 			return err
 		}
+
 		if c.isOverLimit(c.rmSize + size) {
 			c.addSegment(ss)
+			c.rm.SetMessageSeq(endIndex)
+			c.rm.AppendMessage(tpm)
 			bd.PartialOffset = endIndex
+			c.rmSize += size
 		}
 
-		c.rm.SetHeight(bd.Height)
-		c.rm.SetMessageSeq(endIndex)
-		c.rm.AppendMessage(tpm)
-	}
-
-	if bd.PartialOffset != bd.Mt.Len() {
-		p, err := bd.Mt.Proof(bd.PartialOffset+1, endIndex)
-		if err != nil {
-			return err
+		if bd.Mt.Len() == endIndex && bd.PartialOffset != endIndex {
+			c.rm.SetMessageSeq(endIndex)
+			c.rm.AppendMessage(tpm)
+			bd.PartialOffset = bd.Mt.Len()
+			c.rmSize += size
 		}
 
-		tpm, err := NewTypePrefixedMessage(*p)
-		if err != nil {
-			return err
-		}
-
-		size, err := sizeOfTypePrefixedMessage(tpm)
-		c.rm.SetHeight(bd.Height)
-		c.rm.SetMessageSeq(endIndex)
-		c.rm.AppendMessage(tpm)
-		c.rmSize += size
-		bd.PartialOffset = bd.Mt.Len()
 	}
 	return nil
 }
 
-func (c *btp) Segments(bu *BTPBlockUpdate, seq int64, maxSizeTx bool,
+func (c *btp) Segments(bu *BTPBlockUpdate, height, seq int64, maxSizeTx bool,
 	msgs []string, offset int64, ss *[]*chain.Segment) error {
 
-	bh := &BTPBlockHeader{}
-	_, err := codec.RLP.UnmarshalFromBytes(bu.BTPBlockHeader, bh)
-	if err != nil {
-		return err
-	}
-
-	bd, err := c.addRelayMessage(bu, bh, msgs)
+	bd, err := c.addRelayMessage(bu, height, msgs)
 	if err != nil {
 		return nil
 	}
 
-	if err = c.segment(bd, bh, ss); err != nil {
+	if err = c.segment(bd, ss); err != nil {
 		return err
 	}
 

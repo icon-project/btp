@@ -138,7 +138,7 @@ func (c *bridge) addSegment(ss *[]*chain.Segment) error {
 }
 
 //TODO rename func
-func (c *bridge) Segments(bu *BTPBlockUpdate, seq int64, maxSizeTx bool,
+func (c *bridge) Segments(bu *BTPBlockUpdate, height, seq int64, maxSizeTx bool,
 	msgs []string, offset int64, ss *[]*chain.Segment) error {
 	var err error
 	rps, err := c.makeReceiptProofList(bu, seq, msgs, offset)

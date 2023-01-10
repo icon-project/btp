@@ -91,13 +91,14 @@ func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
 	}
 
 	var tx *types.Transaction
+
 	tx, err = s.bmc.HandleRelayMessage(t, s.src.String(), p[:])
 	if err != nil {
 		s.l.Errorf("handleRelayMessage: ", err.Error())
 		return nil, err
 	}
 	txh := tx.Hash()
-	return txh, nil
+	return &TransactionHashParam{txh}, nil
 
 }
 
@@ -122,11 +123,17 @@ func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, err
 				if err != nil {
 					return nil, err
 				}
-				code, err := strconv.Atoi(strings.Split(revertMsg, "|")[1])
-				if err != nil {
-					return nil, err
+				msgs := strings.Split(revertMsg, ":")
+				if len(msgs) > 2 {
+					code, err := strconv.Atoi(strings.TrimLeft(msgs[1], " "))
+					if err != nil {
+						return nil, err
+					}
+					return tx, NewRevertError(code)
+				} else {
+					return nil, NewRevertError(25)
 				}
-				return tx, NewRevertError(code)
+
 			}
 			return tx, nil
 		}
@@ -149,6 +156,7 @@ func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
 	ls.Verifier.Height = status.Verifier.Height.Int64()
 	ls.Verifier.Extra = status.Verifier.Extra
 	ls.CurrentHeight = status.CurrentHeight.Int64()
+
 	return ls, nil
 }
 

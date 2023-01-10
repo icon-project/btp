@@ -54,7 +54,7 @@ type SimpleChain struct {
 
 //TODO refactoring rename
 type ChainSegment interface {
-	Segments(bu *BTPBlockUpdate, seq int64, maxSizeTx bool,
+	Segments(bu *BTPBlockUpdate, height, seq int64, maxSizeTx bool,
 		msgs []string, offset int64, ss *[]*chain.Segment) error
 	RemoveSegment(bs *chain.BMCLinkStatus, ss []*chain.Segment)
 	UpdateSegment(bs *chain.BMCLinkStatus, ss []*chain.Segment) error
@@ -181,7 +181,7 @@ func (s *SimpleChain) OnBlockOfSrc(bu *BTPBlockUpdate) error {
 			offset = o
 		}
 
-		s.cs.Segments(bu, s.bs.RxSeq.Int64(), s.cfg.MaxSizeTx, msgs, offset, &s.ss)
+		s.cs.Segments(bu, bh.MainHeight, s.bs.RxSeq.Int64(), s.cfg.MaxSizeTx, msgs, offset, &s.ss)
 		s.relay()
 	}
 	return nil
@@ -225,10 +225,8 @@ func (s *SimpleChain) receiveHeight() (int64, error) {
 				return 0, err
 			}
 
-			s.cs.Segments(&BTPBlockUpdate{BTPBlockHeader: h},
-				s.bs.RxSeq.Int64(), s.cfg.MaxSizeTx, m[:index], offset, &s.ss)
-			//s.MessageSegment(bd)
-			//s.relay()
+			s.cs.Segments(nil, s.bs.Verifier.Height,
+				s.bs.RxSeq.Int64(), s.cfg.MaxSizeTx, m[index:], offset, &s.ss)
 		}
 		return bh.MainHeight + 1, nil
 	}
