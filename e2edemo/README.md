@@ -76,6 +76,12 @@ If no build errors were found, then you can deploy all the contracts using the f
 ```
 make deploy-all
 ```
+> **Note**
+> By default, above command uses BMV for Bridge.
+> If you want to use BMV for BTPBlock, add `BMV_BTP_BLOCK=true` environment variable as follows.
+> ```
+> BMV_BTP_BLOCK=true make deploy-all
+> ```
 
 All contracts (BMC, BMV, xCall and DApp) have now been successfully deployed and linked on both the ICON and Hardhat chains.
 The generated file, `deployments.json`, contains information needed to interact with the relays,
@@ -99,6 +105,11 @@ Open a different terminal window and run the following command to start the brid
 ```
 ./bridge.sh hardhat
 ```
+> **Note**
+> If you deployed BMV for BTPBlock in the previous step, you need to run `relay.sh` as follows.
+> ```
+> ./relay.sh hardhat
+> ```
 
 You can now run the demo scenario script via the following command.
 

@@ -42,6 +42,7 @@ async function open_btp_network() {
     })
   console.log(`networkTypeId=${netTypeId}`);
   console.log(`networkId=${netId}`);
+  icon.networkId = netId;
 }
 
 async function deploy_bmv() {
