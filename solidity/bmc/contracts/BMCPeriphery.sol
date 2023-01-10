@@ -369,7 +369,7 @@ contract BMCPeriphery is IBMCPeriphery, ICCPeriphery, Initializable {
         requireBMCManagementAccess();
         _sendMessage(_next,
             Types.BTPMessage(
-                btpAddress,
+                network,
                 _next.networkAddress(),
                 Types.BMC_SERVICE,
                 0,
