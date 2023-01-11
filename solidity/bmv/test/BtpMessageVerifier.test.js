@@ -5,10 +5,9 @@ const BtpMessageVerifier = artifacts.require('BtpMessageVerifier');
 const { ZB32, toStr } = require('./utils');
 const Errors = {
     ERR_UNKNOWN: "25:Unknown",
+    ERR_UNAUTHORIZED: "25:Unauthorized",
     ERR_NOT_VERIFIABLE: "26:NotVerifiable",
     ERR_ALREADY_VERIFIED: "27:AlreadyVerified",
-
-    ERR_UNAUTHORIZED: "Unauthorized",
 }
 
 contract('BtpMessageVerifier', (accounts) => {
@@ -423,7 +422,7 @@ contract('BtpMessageVerifier', (accounts) => {
             it('revert', async () => {
                 await expectRevert(this.instance.handleRelayMessage.call(
                     '', SRC_BMC_BTP_ADDR, 0, RELAY_MESSAGE, { from: accounts[1] }),
-                    "bmv: Unauthorized"
+                    Errors.ERR_UNAUTHORIZED
                 );
             });
         });

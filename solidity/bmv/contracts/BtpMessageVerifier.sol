@@ -32,11 +32,8 @@ contract BtpMessageVerifier is IBMV {
         address[] validators;
     }
 
-    string private constant ERR_UNAUTHORIZED = "Unauthorized";
-    string private constant ERR_INVALID_ARGS = "InvalidArgs";
-
     modifier onlyBmc() {
-        require(msg.sender == bmc, ERR_UNAUTHORIZED);
+        require(msg.sender == bmc, Errors.ERR_UNAUTHORIZED);
         _;
     }
 
@@ -44,7 +41,7 @@ contract BtpMessageVerifier is IBMV {
         (string memory network, ) = _from.splitBTPAddress();
         require(
             keccak256(abi.encodePacked(srcNetworkId)) == keccak256(abi.encodePacked(network)),
-            ERR_UNAUTHORIZED
+            Errors.ERR_UNAUTHORIZED
         );
         _;
     }
@@ -91,7 +88,7 @@ contract BtpMessageVerifier is IBMV {
         bytes memory _msg
     ) external onlyBmc onlyBtpNetwork(_prev) returns (bytes[] memory messages) {
         StateDB memory _db = db;
-        require(_db.nextMessageSn == _sn - sequenceOffset, ERR_INVALID_ARGS);
+        require(_db.nextMessageSn == _sn - sequenceOffset, Errors.ERR_INVALID_ARGS);
         uint256 remainMessageCount = _db.messageCount - (_db.nextMessageSn - _db.firstMessageSn);
         RelayMessage[] memory rms = RelayMessageLib.decode(_msg);
 
