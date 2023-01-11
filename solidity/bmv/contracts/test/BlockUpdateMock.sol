@@ -3,13 +3,13 @@ pragma solidity ^0.8.12;
 
 import "../libraries/MerkleTreeLib.sol";
 import "../libraries/BlockUpdateLib.sol";
-import "../libraries/RLPReader.sol";
+import "../libraries/RLPDecode.sol";
 import "../libraries/RLPEncode.sol";
 
 contract BlockUpdateMock {
     using BlockUpdateLib for Header;
-    using RLPReader for bytes;
-    using RLPReader for RLPReader.RLPItem;
+    using RLPDecode for bytes;
+    using RLPDecode for RLPDecode.RLPItem;
 
     function decodeHeader(bytes calldata enc) public pure returns (Header memory) {
         return BlockUpdateLib.decodeHeader(enc);
