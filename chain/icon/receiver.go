@@ -66,6 +66,24 @@ func (r *Receiver) GetBTPMessage(height int64, nid int64) ([]string, error) {
 	return mgs, nil
 }
 
+func (r *Receiver) getBTPLinkNetworkId() (networkId int64, err error) { //FIXME ADD used by chainInfo
+	p := &CallParam{
+		ToAddress: Address(r.src.Account()),
+		DataType:  "call",
+		Data: CallData{
+			Method: "getBTPLinkNetworkId",
+			Params: BMCStatusParams{
+				Target: r.dst.String(),
+			},
+		},
+	}
+	var ret HexInt
+	if err = r.c.Call(p, &ret); err != nil {
+		return
+	}
+	return ret.Value()
+}
+
 func (r *Receiver) getBTPLinkOffset() (offset int64, err error) {
 	p := &CallParam{
 		ToAddress: Address(r.src.Account()),
@@ -98,7 +116,7 @@ func (r *Receiver) GetBTPProof(height int64, nid int64) ([]byte, error) {
 	return proof, nil
 }
 
-func (r *Receiver) GetBTPNetworkInfo(nid int64) (*NetworkInfo, error) {
+func (r *Receiver) GetBTPNetworkInfo(nid int64) (*BTPNetworkInfo, error) {
 	p := &BTPNetworkInfoParam{Id: HexInt(intconv.FormatInt(nid))}
 	b, err := r.c.GetBTPNetworkInfo(p)
 	if err != nil {
