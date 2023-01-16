@@ -32,13 +32,14 @@ async function open_btp_network() {
       return gov.filterEvent(result.eventLogs,
         'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
     })
-    .then((event) => {
-      console.log(event);
-      if (!event.indexed) {
+    .then((events) => {
+      console.log(events);
+      if (events.length == 0) {
         throw new Error(`ICON: failed to find networkId`);
       }
-      netTypeId = event.indexed[1];
-      netId = event.indexed[2];
+      const indexed = events[0].indexed || [];
+      netTypeId = indexed[1];
+      netId = indexed[2];
     })
   console.log(`networkTypeId=${netTypeId}`);
   console.log(`networkId=${netId}`);
