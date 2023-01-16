@@ -27,6 +27,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/tools v0.5.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
