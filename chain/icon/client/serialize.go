@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package icon
+package client
 
 import (
 	"bytes"

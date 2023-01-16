@@ -21,16 +21,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/gorilla/websocket"
-
-	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/common"
+	"github.com/icon-project/btp/chain/icon/client"
+	"github.com/icon-project/btp/common/errors"
 	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/btp/common/types"
 )
 
 const (
@@ -46,27 +44,157 @@ var (
 )
 
 type sender struct {
-	c   *Client
-	src chain.BtpAddress
-	dst chain.BtpAddress
-	w   Wallet
+	c   *client.Client
+	src types.BtpAddress
+	dst types.BtpAddress
+	w   client.Wallet
 	l   log.Logger
 	opt struct {
 		StepLimit int64
 	}
+	sc                 chan types.SenderChannel
 	isFoundOffsetBySeq bool
-	cb                 chain.ReceiveCallback
 }
 
-func (s *sender) newTransactionParam(method string, params interface{}) *TransactionParam {
-	p := &TransactionParam{
-		Version:     NewHexInt(JsonrpcApiVersion),
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.Account()),
-		NetworkID:   HexInt(s.dst.NetworkID()),
-		StepLimit:   NewHexInt(s.opt.StepLimit),
+func NewSender(src, dst types.BtpAddress, w client.Wallet, endpoint string, opt map[string]interface{}, l log.Logger) types.Sender {
+	s := &sender{
+		src: src,
+		dst: dst,
+		w:   w,
+		l:   l,
+		sc:  make(chan types.SenderChannel),
+	}
+	b, err := json.Marshal(opt)
+	if err != nil {
+		l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
+	}
+	if err = json.Unmarshal(b, &s.opt); err != nil {
+		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
+	}
+	if s.opt.StepLimit <= 0 {
+		s.opt.StepLimit = DefaultStepLimit
+	}
+	s.c = client.NewClient(endpoint, l)
+	return s
+}
+
+func (s *sender) Start() (<-chan types.SenderChannel, error) {
+	go func() {
+		s.SendStatus()
+	}()
+
+	return s.sc, nil
+}
+
+func (s *sender) Stop() {
+	close(s.sc)
+}
+
+func (s *sender) Relay(rm types.RelayMessage) (int, error) {
+	thp, err := s._relay(rm)
+	if err != nil {
+		return 0, err
+	}
+	go s.result(rm.Id(), thp)
+	return rm.Id(), nil
+}
+
+func (s *sender) _relay(rm types.RelayMessage) (*client.TransactionHashParam, error) {
+	msg := rm.Bytes()
+	idx := len(msg) / txSizeLimit
+	if idx == 0 {
+		rmp := &client.BMCRelayMethodParams{
+			Prev:     s.src.String(),
+			Messages: base64.URLEncoding.EncodeToString(msg),
+		}
+		return s.sendTransaction(s.newTransactionParam(client.BMCRelayMethod, rmp))
+	} else {
+		thp, err := s.sendFragment(msg[:txSizeLimit], idx*-1)
+		if err != nil {
+			return nil, err
+		}
+		msg = msg[txSizeLimit:]
+		for idx--; idx > 0; idx-- {
+			if thp, err = s.sendFragment(msg[:txSizeLimit], idx); err != nil {
+				return thp, err
+			}
+			msg = msg[txSizeLimit:]
+		}
+		if thp, err = s.sendFragment(msg[:], idx); err != nil {
+			return nil, err
+		}
+		return thp, err
+	}
+}
+
+func (s *sender) result(id int, txh *client.TransactionHashParam) {
+	_, err := s.GetResult(txh)
+	if err != nil {
+		s.l.Debugf("result fail rm id : %d ", id)
+
+		if ec, ok := errors.CoderOf(err); ok {
+			s.sc <- &types.RelayResult{
+				Id:  id,
+				Err: ec.ErrorCode(),
+			}
+		}
+	} else {
+		s.l.Debugf("result success rm id : %d ", id)
+	}
+	s.SendStatus()
+}
+
+func (s *sender) SendStatus() {
+	bs, _ := s.GetStatus()
+	s.sc <- bs
+}
+
+func (s *sender) TxSizeLimit() int {
+	return txSizeLimit
+}
+
+func (s *sender) GetStatus() (*types.BMCLinkStatus, error) {
+	p := &client.CallParam{
+		FromAddress: client.Address(s.w.Address()),
+		ToAddress:   client.Address(s.dst.Account()),
 		DataType:    "call",
-		Data: &CallData{
+		Data: client.CallData{
+			Method: client.BMCGetStatusMethod,
+			Params: client.BMCStatusParams{
+				Target: s.src.String(),
+			},
+		},
+	}
+	bs := &client.BMCStatus{}
+	err := client.MapError(s.c.Call(p, bs))
+	if err != nil {
+		return nil, err
+	}
+	ls := &types.BMCLinkStatus{}
+	if ls.TxSeq, err = bs.TxSeq.Value(); err != nil {
+		return nil, err
+	}
+	if ls.RxSeq, err = bs.RxSeq.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Height, err = bs.Verifier.Height.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Extra, err = bs.Verifier.Extra.Value(); err != nil {
+		return nil, err
+	}
+	return ls, nil
+}
+
+func (s *sender) newTransactionParam(method string, params interface{}) *client.TransactionParam {
+	p := &client.TransactionParam{
+		Version:     client.NewHexInt(client.JsonrpcApiVersion),
+		FromAddress: client.Address(s.w.Address()),
+		ToAddress:   client.Address(s.dst.Account()),
+		NetworkID:   client.HexInt(s.dst.NetworkID()),
+		StepLimit:   client.NewHexInt(s.opt.StepLimit),
+		DataType:    "call",
+		Data: &client.CallData{
 			Method: method,
 			Params: params,
 		},
@@ -74,50 +202,18 @@ func (s *sender) newTransactionParam(method string, params interface{}) *Transac
 	return p
 }
 
-type transactionParamMessage struct {
-	messages string
-}
-
-func (s *sender) sendFragment(msg []byte, idx int) (chain.GetResultParam, error) {
-	fmp := &BMCFragmentMethodParams{
+func (s *sender) sendFragment(msg []byte, idx int) (*client.TransactionHashParam, error) {
+	fmp := &client.BMCFragmentMethodParams{
 		Prev:     s.src.String(),
 		Messages: base64.URLEncoding.EncodeToString(msg),
-		Index:    NewHexInt(int64(idx)),
+		Index:    client.NewHexInt(int64(idx)),
 	}
-	p := s.newTransactionParam(BMCFragmentMethod, fmp)
+	p := s.newTransactionParam(client.BMCFragmentMethod, fmp)
 	return s.sendTransaction(p)
 }
 
-func (s *sender) Relay(segment *chain.Segment) (chain.GetResultParam, error) {
-	msg := segment.TransactionParam.([]byte)
-	idx := len(msg) / txSizeLimit
-	if idx == 0 {
-		rmp := &BMCRelayMethodParams{
-			Prev:     s.src.String(),
-			Messages: base64.URLEncoding.EncodeToString(msg),
-		}
-		return s.sendTransaction(s.newTransactionParam(BMCRelayMethod, rmp))
-	} else {
-		ret, err := s.sendFragment(msg[:txSizeLimit], idx*-1)
-		if err != nil {
-			return nil, err
-		}
-		msg = msg[txSizeLimit:]
-		for idx--; idx > 0; idx-- {
-			if ret, err = s.sendFragment(msg[:txSizeLimit], idx); err != nil {
-				return ret, err
-			}
-			msg = msg[txSizeLimit:]
-		}
-		if ret, err = s.sendFragment(msg[:], idx); err != nil {
-			return ret, err
-		}
-		return ret, err
-	}
-}
-
-func (s *sender) sendTransaction(p *TransactionParam) (chain.GetResultParam, error) {
-	thp := &TransactionHashParam{}
+func (s *sender) sendTransaction(p *client.TransactionParam) (*client.TransactionHashParam, error) {
+	thp := &client.TransactionHashParam{}
 SignLoop:
 	for {
 		if err := s.c.SignTransaction(s.w, p); err != nil {
@@ -132,186 +228,53 @@ SignLoop:
 			if err != nil {
 				if je, ok := err.(*jsonrpc.Error); ok {
 					switch je.Code {
-					case JsonrpcErrorCodeTxPoolOverflow:
+					case client.JsonrpcErrorCodeTxPoolOverflow:
 						<-time.After(DefaultRelayReSendInterval)
 						continue SendLoop
-					case JsonrpcErrorCodeSystem:
+					case client.JsonrpcErrorCodeSystem:
 						if subEc, err := strconv.ParseInt(je.Message[1:5], 0, 32); err == nil {
 							switch subEc {
-							case DuplicateTransactionError:
+							case client.DuplicateTransactionError:
 								s.l.Debugf("DuplicateTransactionError txh:%v", txh)
 								return thp, nil
-							case ExpiredTransactionError:
+							case client.ExpiredTransactionError:
 								continue SignLoop
 							}
 						}
 					}
 				}
-				return nil, mapError(err)
+				return nil, client.MapError(err)
 			}
 			return thp, nil
 		}
 	}
 }
 
-func (s *sender) GetResult(p chain.GetResultParam) (chain.TransactionResult, error) {
-	if txh, ok := p.(*TransactionHashParam); ok {
-		for {
-			txr, err := s.c.GetTransactionResult(txh)
-			if err != nil {
-				if je, ok := err.(*jsonrpc.Error); ok {
-					switch je.Code {
-					case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-						<-time.After(DefaultGetRelayResultInterval)
-						continue
-					}
+func (s *sender) GetResult(txh *client.TransactionHashParam) (*client.TransactionResult, error) {
+	for {
+		txr, err := s.c.GetTransactionResult(txh)
+		if err != nil {
+			if je, ok := err.(*jsonrpc.Error); ok {
+				switch je.Code {
+				case client.JsonrpcErrorCodePending, client.JsonrpcErrorCodeExecuting:
+					<-time.After(DefaultGetRelayResultInterval)
+					continue
 				}
 			}
-			return txr, mapErrorWithTransactionResult(txr, err)
 		}
-	} else {
-		return nil, fmt.Errorf("fail to cast *TransactionHashParam %T", p)
+		return txr, mapErrorWithTransactionResult(txr, err)
 	}
 }
 
-func (s *sender) GetStatus() (*chain.BMCLinkStatus, error) {
-	p := &CallParam{
-		FromAddress: Address(s.w.Address()),
-		ToAddress:   Address(s.dst.Account()),
-		DataType:    "call",
-		Data: CallData{
-			Method: BMCGetStatusMethod,
-			Params: BMCStatusParams{
-				Target: s.src.String(),
-			},
-		},
-	}
-	bs := &BMCStatus{}
-	err := mapError(s.c.Call(p, bs))
-	if err != nil {
-		return nil, err
-	}
-	ls := &chain.BMCLinkStatus{}
-	if ls.TxSeq, err = bs.TxSeq.BigInt(); err != nil {
-		return nil, err
-	}
-	if ls.RxSeq, err = bs.RxSeq.BigInt(); err != nil {
-		return nil, err
-	}
-	if ls.Verifier.Height, err = bs.Verifier.Height.Value(); err != nil {
-		return nil, err
-	}
-	if ls.Verifier.Extra, err = bs.Verifier.Extra.Value(); err != nil {
-		return nil, err
-	}
-	if ls.CurrentHeight, err = bs.CurrentHeight.Value(); err != nil {
-		return nil, err
-	}
-	return ls, nil
-}
-
-func (s *sender) MonitorLoop(height int64, cb chain.MonitorCallback, scb func()) error {
-	br := &BlockRequest{
-		Height: NewHexInt(height),
-	}
-	return s.c.MonitorBlock(br,
-		func(conn *websocket.Conn, v *BlockNotification) error {
-			if h, err := v.Height.Value(); err != nil {
-				return err
-			} else {
-				return cb(h)
-			}
-		},
-		func(conn *websocket.Conn) {
-			s.l.Debugf("MonitorLoop connected %s", conn.LocalAddr().String())
-			if scb != nil {
-				scb()
-			}
-		},
-		func(conn *websocket.Conn, err error) {
-			s.l.Debugf("onError %s err:%+v", conn.LocalAddr().String(), err)
-			_ = conn.Close()
-		})
-}
-
-func (s *sender) StopMonitorLoop() {
-	s.c.CloseAllMonitor()
-}
-func (s *sender) FinalizeLatency() int {
-	//on-the-next
-	return 1
-}
-
-func (s *sender) TxSizeLimit() int {
-	return txSizeLimit
-}
-
-func NewSender(src, dst chain.BtpAddress, w Wallet, endpoint string, opt map[string]interface{}, l log.Logger) chain.Sender {
-	s := &sender{
-		src: src,
-		dst: dst,
-		w:   w,
-		l:   l,
-	}
-	b, err := json.Marshal(opt)
-	if err != nil {
-		l.Panicf("fail to marshal opt:%#v err:%+v", opt, err)
-	}
-	if err = json.Unmarshal(b, &s.opt); err != nil {
-		l.Panicf("fail to unmarshal opt:%#v err:%+v", opt, err)
-	}
-	if s.opt.StepLimit <= 0 {
-		s.opt.StepLimit = DefaultStepLimit
-	}
-	s.c = NewClient(endpoint, l)
-	return s
-}
-
-func mapError(err error) error {
-	if err != nil {
-		switch re := err.(type) {
-		case *jsonrpc.Error:
-			//fmt.Printf("jrResp.Error:%+v", re)
-			switch re.Code {
-			case JsonrpcErrorCodeTxPoolOverflow:
-				return ErrSendFailByOverflow
-			case JsonrpcErrorCodeSystem:
-				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
-					//TODO return JsonRPC Error
-					switch subEc {
-					case ExpiredTransactionError:
-						return ErrSendFailByExpired
-					case FutureTransactionError:
-						return ErrSendFailByFuture
-					case TransactionPoolOverflowError:
-						return ErrSendFailByOverflow
-					}
-				}
-			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
-				return ErrGetResultFailByPending
-			}
-		case *common.HttpError:
-			fmt.Printf("*common.HttpError:%+v", re)
-			return ErrConnectFail
-		case *url.Error:
-			if common.IsConnectRefusedError(re.Err) {
-				//fmt.Printf("*url.Error:%+v", re)
-				return ErrConnectFail
-			}
-		}
-	}
-	return err
-}
-
-func mapErrorWithTransactionResult(txr *TransactionResult, err error) error {
-	err = mapError(err)
-	if err == nil && txr != nil && txr.Status != ResultStatusSuccess {
+func mapErrorWithTransactionResult(txr *client.TransactionResult, err error) error {
+	err = client.MapError(err)
+	if err == nil && txr != nil && txr.Status != client.ResultStatusSuccess {
 		fc, _ := txr.Failure.CodeValue.Value()
-		if fc < ResultStatusFailureCodeRevert || fc > ResultStatusFailureCodeEnd {
+		if fc < client.ResultStatusFailureCodeRevert || fc > client.ResultStatusFailureCodeEnd {
 			err = fmt.Errorf("failure with code:%s, message:%s",
 				txr.Failure.CodeValue, txr.Failure.MessageValue)
 		} else {
-			err = NewRevertError(int(fc - ResultStatusFailureCodeRevert))
+			err = client.NewRevertError(int(fc - client.ResultStatusFailureCodeRevert))
 		}
 	}
 	return err
