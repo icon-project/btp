@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// Package sort provides primitives for sorting slices and user-defined
+// collections.
 package link
 
 import "github.com/icon-project/btp/common/types"
@@ -26,33 +28,42 @@ const (
 	TypeMessageProof
 )
 
+type ReceiveStatus interface {
+	Height() int64
+	Seq() int64
+}
+
 type RelayMessageItem interface {
 	Type() MessageItemType
-	Precedency() int
 	Bytes() []byte
 	Len() int64
 }
 
 type BlockUpdate interface {
-	RelayMessageItem
+	BlockProof
 	SrcHeight() int64
 	TargetHeight() int64
 }
 
 type BlockProof interface {
 	RelayMessageItem
-	TargetHeight() int64
+	ProofHeight() int64
 }
 
 type MessageProof interface {
 	RelayMessageItem
+	StartSeqNum() int64
+	LastSeqNum() int64
 }
 
-type RelayMessageList []RelayMessageItem
-type ReceiveCallback func(bml RelayMessageList) error
-
 type Receiver interface {
+	Start(bs *types.BMCLinkStatus) (<-chan ReceiveStatus, error)
+	Stop()
+	GetStatus() (ReceiveStatus, error)
+	GetMarginForLimit() int64
 	BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]BlockUpdate, error)
-	BuildBlockProof(height int64) (BlockProof, error)
-	BuildMessageProof(bs *types.BMCLinkStatus, limit int64) ([]MessageProof, error)
+	BuildBlockProof(bs *types.BMCLinkStatus, height int64) (BlockProof, error)
+	BuildMessageProof(seq int64, limit int64) (MessageProof, error)
+	GetHeightForSeq(seq int64) int64
+	BuildRelayMessage(rmis []RelayMessageItem) ([]byte, error)
 }

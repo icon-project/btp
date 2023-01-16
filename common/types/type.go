@@ -18,39 +18,17 @@ package types
 
 import (
 	"math/big"
+
+	"github.com/icon-project/btp/common/errors"
 )
 
 var BigIntOne = big.NewInt(1)
 
 type RelayMessage interface {
+	Id() int
 	Bytes() []byte
 	Size() int64
 }
-
-type Segment struct {
-	TransactionParam  TransactionParam //possible byte array
-	GetResultParam    GetResultParam
-	TransactionResult TransactionResult
-
-	Height              int64
-	NumberOfBlockUpdate int
-	EventSequence       *big.Int
-	NumberOfEvent       int
-}
-
-type BMCLinkStatus struct {
-	TxSeq    int64
-	RxSeq    int64
-	Verifier struct {
-		Height int64
-		Extra  []byte
-	}
-	CurrentHeight int64
-}
-
-type TransactionParam interface{}
-type GetResultParam interface{}
-type TransactionResult interface{}
 
 type Wallet interface {
 	Address() string
@@ -63,13 +41,25 @@ type Link interface {
 	Stop()
 }
 
-type SenderCallback interface {
-	OnStatusUpdate(bs *BMCLinkStatus)
-	OnRelayResult(id int, err error)
+type BMCLinkStatus struct {
+	TxSeq    int64
+	RxSeq    int64
+	Verifier struct {
+		Height int64
+		Extra  []byte
+	}
 }
 
+type RelayResult struct {
+	Id  int
+	Err errors.Code
+}
+
+// BMCLinkStatus, RelayResult
+type SenderChannel interface{}
+
 type Sender interface {
-	Start(cb SenderCallback)
+	Start() (<-chan SenderChannel, error)
 	Stop()
 	Relay(rm RelayMessage) (int, error)
 	TxSizeLimit() int
