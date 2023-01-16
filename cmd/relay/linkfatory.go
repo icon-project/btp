@@ -1,19 +1,3 @@
-/*
- * Copyright 2021 ICON Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package main
 
 import (
@@ -21,10 +5,12 @@ import (
 	"path"
 
 	"github.com/icon-project/btp/chain"
-	"github.com/icon-project/btp/chain/bsc"
-	bscChain "github.com/icon-project/btp/chain/bsc"
 	"github.com/icon-project/btp/chain/icon"
+	"github.com/icon-project/btp/chain/icon/bridge"
+	"github.com/icon-project/btp/chain/icon/btp2"
+	"github.com/icon-project/btp/common/link"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/btp/common/types"
 	"github.com/icon-project/btp/common/wallet"
 )
 
@@ -39,7 +25,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, srcWallet, linkErrCh); err != nil {
+		if _, err = newLink(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, dstWallet, linkErrCh); err != nil {
 			return err
 		}
 
@@ -54,7 +40,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Dst.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, dstWallet, linkErrCh); err != nil {
+		if _, err = newLink(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, srcWallet, linkErrCh); err != nil {
 			return err
 		}
 	case BothDirection:
@@ -63,7 +49,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Src.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, srcWallet, linkErrCh); err != nil {
+		if _, err = newLink(cfg.Src.Address.BlockChain(), cfg.Config, srcLog, srcWallet, linkErrCh); err != nil {
 			return err
 		}
 
@@ -77,7 +63,7 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 		if cfg.BaseDir == "" {
 			cfg.BaseDir = path.Join(".", ".btp2", cfg.Dst.Address.NetworkAddress())
 		}
-		if _, err = newChain(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, dstWallet, linkErrCh); err != nil {
+		if _, err = newLink(cfg.Dst.Address.BlockChain(), dstCfg, dstLog, dstWallet, linkErrCh); err != nil {
 			return err
 		}
 	default:
@@ -95,36 +81,49 @@ func NewLink(cfg *Config, srcWallet wallet.Wallet, dstWallet wallet.Wallet, modL
 	return nil
 }
 
-func newChain(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, linkErrCh chan error) (chain.Chain, error) {
-	var chain chain.Chain
+func newLink(name string, cfg chain.Config, l log.Logger, w wallet.Wallet, linkErrCh chan error) (types.Link, error) {
+	var lk types.Link
 	switch name {
 	case ICON:
-		chain = icon.NewChain(&cfg, l)
-	case ETH:
-		chain = bscChain.NewChain(&cfg, l)
+		r := newReceiver("BTP2", cfg, l)
+		lk = link.NewLink(&cfg, r, l)
 	default:
 		return nil, fmt.Errorf("Not supported for chain:%s", name)
 	}
 
 	go func() {
-		err := chain.Serve(newSender(cfg.Dst.Address.BlockChain(), cfg.Src, cfg.Dst, w, l))
+		err := lk.Start(newSender(cfg.Dst.Address.BlockChain(), cfg.Src, cfg.Dst, w, l))
 		select {
 		case linkErrCh <- err:
 		default:
 		}
 	}()
 
-	return chain, nil
+	return lk, nil
 }
 
-func newSender(s string, srcCfg chain.BaseConfig, dstCfg chain.BaseConfig, w wallet.Wallet, l log.Logger) chain.Sender {
-	var sender chain.Sender
+func newReceiver(s string, cfg chain.Config, l log.Logger) link.Receiver {
+	var receiver link.Receiver
+
+	switch s {
+	case "BTP2":
+		receiver = btp2.NewBTP2(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, l)
+	case "BRIDGE":
+		receiver = bridge.NewBridge(cfg.Src.Address, cfg.Dst.Address, cfg.Src.Endpoint, l)
+	default:
+		l.Fatalf("Not supported for chain:%s", s)
+		return nil
+	}
+
+	return receiver
+}
+
+func newSender(s string, srcCfg chain.BaseConfig, dstCfg chain.BaseConfig, w wallet.Wallet, l log.Logger) types.Sender {
+	var sender types.Sender
 
 	switch s {
 	case ICON:
 		sender = icon.NewSender(srcCfg.Address, dstCfg.Address, w, dstCfg.Endpoint, srcCfg.Options, l)
-	case ETH:
-		sender = bsc.NewSender(srcCfg.Address, dstCfg.Address, w, dstCfg.Endpoint, nil, l)
 	default:
 		l.Fatalf("Not supported for chain:%s", s)
 		return nil

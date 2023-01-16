@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package icon
+package client
 
 import (
 	"encoding/hex"
@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/icon-project/btp/chain"
 	"github.com/icon-project/btp/common/intconv"
 	"github.com/icon-project/btp/common/jsonrpc"
+	"github.com/icon-project/btp/common/types"
 )
 
 const (
@@ -85,7 +85,7 @@ type BlockHeader struct {
 	NormalTransactionsHash []byte
 	LogsBloom              []byte
 	Result                 []byte
-	serialized             []byte
+	Serialized             []byte
 }
 
 type ReceiptData struct {
@@ -358,31 +358,46 @@ func NewAddress(b []byte) Address {
 	}
 }
 
-//T_SIG
-type Signature string
-
-type BlockUpdate struct {
+type BlockVoteUpdate struct {
 	BlockHeader []byte
 	Votes       []byte
 	Validators  []byte
 }
 
-type RelayMessage struct {
-	BlockUpdates  [][]byte
-	BlockProof    []byte
-	ReceiptProofs [][]byte
-	//
-	height              int64
-	numberOfBlockUpdate int
-	eventSequence       *big.Int
-	numberOfEvent       int
+type BlockWitness struct {
+	Height  int64
+	Witness [][]byte
 }
-
+type BlockUpdate struct {
+	Height    int64
+	BlockHash []byte
+	Header    []byte
+	Proof     []byte
+}
+type BlockProof struct {
+	Header       []byte
+	BlockWitness *BlockWitness
+}
 type ReceiptProof struct {
 	Index       int
 	Proof       []byte
-	EventProofs []*chain.EventProof
+	EventProofs []*EventProof
+	Events      []*Event
 }
+
+type EventProof struct {
+	Index int
+	Proof []byte
+}
+
+type Event struct {
+	Next     types.BtpAddress
+	Sequence int64
+	Message  []byte
+}
+
+//T_SIG
+type Signature string
 
 type Block struct {
 	//BlockHash              HexBytes  `json:"block_hash" validate:"required,t_hash"`

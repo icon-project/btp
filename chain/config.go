@@ -26,8 +26,6 @@ import (
 type BaseConfig struct {
 	Address      types.BtpAddress       `json:"address"`
 	Endpoint     string                 `json:"endpoint"`
-	Nid          int64                  `json:"nid"`
-	BridgeMode   bool                   `json:"bridgeMode"`
 	KeyStoreData json.RawMessage        `json:"key_store"`
 	KeyStorePass string                 `json:"key_password,omitempty"`
 	KeySecret    string                 `json:"key_secret,omitempty"`

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package icon
+package client
 
 import (
 	"encoding/base64"
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -30,9 +31,11 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"github.com/icon-project/btp/common"
 	"github.com/icon-project/btp/common/crypto"
 	"github.com/icon-project/btp/common/jsonrpc"
 	"github.com/icon-project/btp/common/log"
+	"github.com/icon-project/btp/common/types"
 )
 
 const (
@@ -107,6 +110,25 @@ func (c *Client) Call(p *CallParam, r interface{}) error {
 	_, err := c.Do("icx_call", p, r)
 	return err
 }
+
+func (c *Client) GetBTPLinkNetworkId(src types.BtpAddress, dst types.BtpAddress) (networkId int64, err error) {
+	p := &CallParam{
+		ToAddress: Address(src.Account()),
+		DataType:  "call",
+		Data: CallData{
+			Method: "getBTPLinkNetworkId",
+			Params: BMCStatusParams{
+				Target: dst.String(),
+			},
+		},
+	}
+	var ret HexInt
+	if err = c.Call(p, &ret); err != nil {
+		return
+	}
+	return ret.Value()
+}
+
 func (c *Client) SendTransactionAndGetResult(p *TransactionParam) (*HexBytes, *TransactionResult, error) {
 	thp := &TransactionHashParam{}
 txLoop:
@@ -161,6 +183,24 @@ txrLoop:
 		c.l.Debugf("GetTransactionResult hash:%v, txr:%+v, err:%+v", thp.Hash, txr, err)
 		return &thp.Hash, txr, err
 	}
+}
+
+func (c *Client) GetBTPLinkOffset(src types.BtpAddress, dst types.BtpAddress) (offset int64, err error) {
+	p := &CallParam{
+		ToAddress: Address(src.Account()),
+		DataType:  "call",
+		Data: CallData{
+			Method: "getBTPLinkOffset",
+			Params: BMCStatusParams{
+				Target: dst.String(),
+			},
+		},
+	}
+	var ret HexInt
+	if err = c.Call(p, &ret); err != nil {
+		return
+	}
+	return ret.Value()
 }
 
 func (c *Client) GetBTPHeader(p *BTPBlockParam) (string, error) {
@@ -238,6 +278,39 @@ func (c *Client) GetProofForEvents(p *ProofEventsParam) ([][][]byte, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (c *Client) GetStatus(fromAddress string, src types.BtpAddress, dst types.BtpAddress) (*types.BMCLinkStatus, error) {
+	p := &CallParam{
+		FromAddress: Address(fromAddress),
+		ToAddress:   Address(dst.Account()),
+		DataType:    "call",
+		Data: CallData{
+			Method: BMCGetStatusMethod,
+			Params: BMCStatusParams{
+				Target: src.String(),
+			},
+		},
+	}
+	bs := &BMCStatus{}
+	err := c.Call(p, bs)
+	if err != nil {
+		return nil, err
+	}
+	ls := &types.BMCLinkStatus{}
+	if ls.TxSeq, err = bs.TxSeq.Value(); err != nil {
+		return nil, err
+	}
+	if ls.RxSeq, err = bs.RxSeq.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Height, err = bs.Verifier.Height.Value(); err != nil {
+		return nil, err
+	}
+	if ls.Verifier.Extra, err = bs.Verifier.Extra.Value(); err != nil {
+		return nil, err
+	}
+	return ls, nil
 }
 
 func (c *Client) MonitorBTP(p *BTPRequest, cb func(conn *websocket.Conn, v *BTPNotification) error, scb func(conn *websocket.Conn), errCb func(*websocket.Conn, error)) error {
@@ -441,6 +514,42 @@ func (c *Client) wsReadJSONLoop(conn *websocket.Conn, respPtr interface{}, cb ws
 	}
 }
 
+func MapError(err error) error {
+	if err != nil {
+		switch re := err.(type) {
+		case *jsonrpc.Error:
+			//fmt.Printf("jrResp.Error:%+v", re)
+			switch re.Code {
+			case JsonrpcErrorCodeTxPoolOverflow:
+				return ErrSendFailByOverflow
+			case JsonrpcErrorCodeSystem:
+				if subEc, err := strconv.ParseInt(re.Message[1:5], 0, 32); err == nil {
+					//TODO return JsonRPC Error
+					switch subEc {
+					case ExpiredTransactionError:
+						return ErrSendFailByExpired
+					case FutureTransactionError:
+						return ErrSendFailByFuture
+					case TransactionPoolOverflowError:
+						return ErrSendFailByOverflow
+					}
+				}
+			case JsonrpcErrorCodePending, JsonrpcErrorCodeExecuting:
+				return ErrGetResultFailByPending
+			}
+		case *common.HttpError:
+			fmt.Printf("*common.HttpError:%+v", re)
+			return ErrConnectFail
+		case *url.Error:
+			if common.IsConnectRefusedError(re.Err) {
+				//fmt.Printf("*url.Error:%+v", re)
+				return ErrConnectFail
+			}
+		}
+	}
+	return err
+}
+
 func NewClient(uri string, l log.Logger) *Client {
 	//TODO options {MaxRetrySendTx, MaxRetryGetResult, MaxIdleConnsPerHost, Debug, Dump}
 	tr := &http.Transport{MaxIdleConnsPerHost: 1000}
@@ -453,23 +562,6 @@ func NewClient(uri string, l log.Logger) *Client {
 	opts.SetBool(IconOptionsDebug, true)
 	c.CustomHeader[HeaderKeyIconOptions] = opts.ToHeaderValue()
 
-	//c.Pre = func(req *http.Request) error {
-	//	b, err := req.GetBody()
-	//	if err != nil {
-	//		return err
-	//	}
-	//	defer b.Close()
-	//	m := make(map[string]interface{})
-	//	if err = json.NewDecoder(b).Decode(&m); err != nil {
-	//		return err
-	//	}
-	//	var bs []byte
-	//	if bs, err = json.MarshalIndent(m, "", "  "); err != nil {
-	//		return err
-	//	}
-	//	_, err = fmt.Fprintln(l.Writer(), string(bs))
-	//	return err
-	//}
 	return c
 }
 
