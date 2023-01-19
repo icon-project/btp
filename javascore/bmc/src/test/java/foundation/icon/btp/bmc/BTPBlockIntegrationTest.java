@@ -66,9 +66,9 @@ public interface BTPBlockIntegrationTest extends BMCIntegrationTest {
     static Stream<BTPMessage> btpMessages(TransactionResult txr, long networkId) {
         Base64[] messages = null;
         try {
-            messages = iconService.btpGetMessages(
-                    txr.getBlockHeight().add(BigInteger.ONE),
-                    BigInteger.valueOf(networkId)).execute();
+            messages = iconService.getBTPMessages(
+                    BigInteger.valueOf(networkId),
+                    txr.getBlockHeight().add(BigInteger.ONE)).execute();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -78,9 +78,9 @@ public interface BTPBlockIntegrationTest extends BMCIntegrationTest {
 
     static BigInteger nextMessageSn(TransactionResult txr, long networkId) {
         try {
-            return BTPBlockIntegrationTest.iconService.btpGetNetworkInfo(
-                    txr.getBlockHeight().add(BigInteger.ONE),
-                    BigInteger.valueOf(networkId)).execute().getNextMessageSN();
+            return BTPBlockIntegrationTest.iconService.getBTPNetworkInfo(
+                    BigInteger.valueOf(networkId),
+                    txr.getBlockHeight().add(BigInteger.ONE)).execute().getNextMessageSN();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

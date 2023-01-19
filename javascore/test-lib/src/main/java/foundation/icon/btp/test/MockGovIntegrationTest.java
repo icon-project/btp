@@ -89,9 +89,9 @@ public interface MockGovIntegrationTest {
 
     static byte[][] getMessages(long height, long networkId) {
         try {
-            Base64[] base64Messages = iconService.btpGetMessages(
-                    BigInteger.valueOf(height),
-                    BigInteger.valueOf(networkId)).execute();
+            Base64[] base64Messages = iconService.getBTPMessages(
+                    BigInteger.valueOf(networkId),
+                    BigInteger.valueOf(height)).execute();
             byte[][] messages = new byte[base64Messages.length][];
             for (int i = 0; i < base64Messages.length; i++) {
                 messages[i] = base64Messages[i].decode();

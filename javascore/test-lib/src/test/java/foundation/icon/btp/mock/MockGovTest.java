@@ -17,24 +17,12 @@
 package foundation.icon.btp.mock;
 
 import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.icx.IconService;
 import foundation.icon.icx.data.BTPNetworkInfo;
-import foundation.icon.icx.data.Base64;
-import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.jsonrpc.Address;
-import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import score.ByteArrayObjectWriter;
-import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
-import score.annotation.Keep;
-import scorex.util.ArrayList;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,7 +40,7 @@ public class MockGovTest implements MockGovIntegrationTest {
     void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() throws Exception {
         long networkId = MockGovIntegrationTest.openBTPNetwork(
                 NETWORK_TYPE_NAME, NETWORK_NAME, Address.of(chainScoreClient._wallet()));
-        BTPNetworkInfo btpNetworkInfo = iconService.btpGetNetworkInfo(BigInteger.valueOf(networkId)).execute();
+        BTPNetworkInfo btpNetworkInfo = iconService.getBTPNetworkInfo(BigInteger.valueOf(networkId)).execute();
         assertEquals(NETWORK_TYPE_NAME, btpNetworkInfo.getNetworkTypeName());
         assertEquals(NETWORK_NAME, btpNetworkInfo.getNetworkName());
 

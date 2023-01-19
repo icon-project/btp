@@ -15,14 +15,15 @@ dependencies {
     runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
-    implementation("foundation.icon:javaee-score-client:$scoreClientVersion")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-//    implementation("foundation.icon:icon-sdk:$iconsdkVersion")
-    implementation project(':icon-sdk-java')
+    compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
+    compileOnly("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    compileOnly("foundation.icon:icon-sdk:$iconsdkVersion")
     implementation("com.github.javafaker:javafaker:1.0.2")
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
     testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
+    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
 }
 
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar

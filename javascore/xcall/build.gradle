@@ -9,7 +9,7 @@ dependencies {
     compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     compileOnly("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    compileOnly project(':icon-sdk-java')
+    compileOnly("foundation.icon:icon-sdk:$iconsdkVersion")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
