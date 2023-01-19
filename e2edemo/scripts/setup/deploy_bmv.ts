@@ -89,9 +89,9 @@ async function deploy_bmv() {
     // get firstBlockHeader via btp2 API
     const networkInfo = await iconNetwork.getBTPNetworkInfo(netId);
     console.log('networkInfo:', networkInfo);
-    const startHeight = parseInt(networkInfo.startHeight, 16);
-    console.log('startHeight:', startHeight);
-    const receiptHeight = IconConverter.toHex(startHeight + 1);
+    console.log('startHeight:', '0x' + networkInfo.startHeight.toString(16));
+    const receiptHeight = '0x' + networkInfo.startHeight.plus(1).toString(16);
+    console.log('receiptHeight:', receiptHeight);
     const header = await iconNetwork.getBTPHeader(netId, receiptHeight);
     const firstBlockHeader = '0x' + Buffer.from(header, 'base64').toString('hex');
     console.log('firstBlockHeader:', firstBlockHeader);
