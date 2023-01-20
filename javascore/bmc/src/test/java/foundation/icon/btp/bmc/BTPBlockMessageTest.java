@@ -17,6 +17,7 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.test.BTPBlockIntegrationTest;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
@@ -28,12 +29,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
+public class BTPBlockMessageTest implements BMCIntegrationTest {
     static BTPAddress linkBtpAddress = BTPIntegrationTest.Faker.btpLink();
     static String link = linkBtpAddress.toString();
     static String net = linkBtpAddress.net();
@@ -65,6 +71,40 @@ public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
         System.out.println("BTPBlockMessageTest:afterAll end");
     }
 
+    static Consumer<TransactionResult> btpMessageChecker(
+            long networkId, Consumer<List<BTPMessage>> consumer) {
+        return (txr) -> {
+            consumer.accept(
+                    btpMessages(txr, networkId)
+                            .collect(Collectors.toList()));
+        };
+    }
+
+    static <T> Consumer<TransactionResult> svcMessageChecker(
+            long networkId, String svc, Function<BTPMessage, T> mapperFunc, Consumer<List<T>> consumer) {
+        return (txr) -> {
+            consumer.accept(
+                    btpMessages(txr, networkId)
+                            .filter((m) -> m.getSvc().equals(svc))
+                            .map(mapperFunc)
+                            .collect(Collectors.toList()));
+        };
+    }
+
+    static <T> Consumer<TransactionResult> bmcMessageChecker(
+            long networkId, Consumer<List<BMCMessage>> consumer) {
+        return svcMessageChecker(networkId,
+                BTPMessageCenter.INTERNAL_SERVICE,
+                (m) -> BMCMessage.fromBytes(m.getPayload()),
+                consumer);
+    }
+
+    static Stream<BTPMessage> btpMessages(TransactionResult txr, long networkId) {
+        return Arrays.stream(BTPBlockIntegrationTest.messages(
+                        networkId, txr.getBlockHeight().add(BigInteger.ONE)))
+                .map(BTPMessage::fromBytes);
+    }
+
     @Test
     void sendMessageShouldSuccess() {
         //BSHMock.sendMessage -> ChainSCORE.sendBTPMessage
@@ -76,9 +116,11 @@ public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
                 .getTx_seq();
         Consumer<TransactionResult> checker = (txr) -> {
             assertEquals(txSeq.add(BigInteger.ONE),
-                    BTPBlockIntegrationTest.nextMessageSn(txr, networkId));
+                    BTPBlockIntegrationTest.nextMessageSN(
+                            networkId,
+                            txr.getBlockHeight().add(BigInteger.ONE)));
         };
-        checker = checker.andThen(BTPBlockIntegrationTest.btpMessageChecker(networkId, (msgList) -> {
+        checker = checker.andThen(btpMessageChecker(networkId, (msgList) -> {
             assertEquals(1, msgList.size());
             BTPMessage btpMessage = msgList.get(0);
             assertEquals(btpAddress.net(), btpMessage.getSrc());

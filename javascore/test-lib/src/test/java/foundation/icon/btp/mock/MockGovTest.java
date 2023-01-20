@@ -16,13 +16,14 @@
 
 package foundation.icon.btp.mock;
 
+import foundation.icon.btp.test.BTPBlockIntegrationTest;
 import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.icx.data.BTPNetworkInfo;
 import foundation.icon.jsonrpc.Address;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,18 +38,22 @@ public class MockGovTest implements MockGovIntegrationTest {
     }
 
     @Test
-    void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() throws Exception {
+    void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() {
         long networkId = MockGovIntegrationTest.openBTPNetwork(
                 NETWORK_TYPE_NAME, NETWORK_NAME, Address.of(chainScoreClient._wallet()));
-        BTPNetworkInfo btpNetworkInfo = iconService.getBTPNetworkInfo(BigInteger.valueOf(networkId)).execute();
-        assertEquals(NETWORK_TYPE_NAME, btpNetworkInfo.getNetworkTypeName());
-        assertEquals(NETWORK_NAME, btpNetworkInfo.getNetworkName());
+
+        @SuppressWarnings("rawtypes")
+        Map result = chainScoreClient.request(Map.class, "btp_getNetworkInfo",
+                Map.of("id", networkId));
+        assertEquals(NETWORK_TYPE_NAME, result.get("networkTypeName"));
+        assertEquals(NETWORK_NAME, result.get("networkName"));
 
         byte[] message = "testMessage".getBytes();
         chainScoreClient.sendBTPMessage(
                 (txr) -> {
-                    long height = txr.getBlockHeight().longValue() + 1;
-                    byte[][] messages = MockGovIntegrationTest.getMessages(height, networkId);
+                    byte[][] messages = BTPBlockIntegrationTest.messages(
+                            networkId,
+                            txr.getBlockHeight().add(BigInteger.ONE));
                     assertEquals(1, messages.length);
                     assertArrayEquals(message, messages[0]);
                 },
