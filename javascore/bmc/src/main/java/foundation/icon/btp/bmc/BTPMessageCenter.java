@@ -17,6 +17,7 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
+import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BMRStatus;
 import foundation.icon.btp.lib.BMVScoreInterface;
 import foundation.icon.btp.lib.BMVStatus;
@@ -257,16 +258,16 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     }
 
     @External(readonly = true)
-    public Map getStatus(String _link) {
+    public BMCStatus getStatus(String _link) {
         BTPAddress target = BTPAddress.valueOf(_link);
         Link link = getLink(target.net());
-        Map<String, Object> map = new HashMap<>();
-        map.put("tx_seq", link.getTxSeq());
-        map.put("rx_seq", link.getRxSeq());
+        BMCStatus status = new BMCStatus();
+        status.setTx_seq(link.getTxSeq());
+        status.setRx_seq(link.getRxSeq());
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
-        map.put("verifier", verifier.getStatus());
-        map.put("cur_height", Context.getBlockHeight());
-        return map;
+        status.setVerifier(verifier.getStatus());
+        status.setCur_height(Context.getBlockHeight());
+        return status;
     }
 
     @External(readonly = true)

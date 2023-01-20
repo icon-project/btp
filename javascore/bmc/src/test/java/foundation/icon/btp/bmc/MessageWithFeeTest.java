@@ -132,7 +132,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
         FeeInfo feeInfo = new FeeInfo(btpAddress.net(), fee);
 
         BigInteger nsn = bmc.getNetworkSn();
-        BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, next.toString())
+        BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
             assertEquals(next.toString(), el.getNext());
@@ -459,7 +459,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
                         FeeManagementTest.backward(linkFee.getValues())));
 
         System.out.println("dropMessageShouldIncreaseRxSeqAndDrop");
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
+        BigInteger rxSeq = bmc.getStatus(link.toString())
                 .getRx_seq();
         Consumer<TransactionResult> checker = MessageTest.rxSeqChecker(link);
         if (sn.compareTo(BigInteger.ZERO) > 0) {

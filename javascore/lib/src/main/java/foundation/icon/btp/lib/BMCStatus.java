@@ -24,7 +24,7 @@ import java.util.Map;
 public class BMCStatus {
     private BigInteger rx_seq;
     private BigInteger tx_seq;
-    private Map verifier;
+    private BMVStatus verifier;
 
     private long cur_height;
 
@@ -49,12 +49,12 @@ public class BMCStatus {
     }
 
     @Keep
-    public Map getVerifier() {
+    public BMVStatus getVerifier() {
         return verifier;
     }
 
     @Keep
-    public void setVerifier(Map verifier) {
+    public void setVerifier(BMVStatus verifier) {
         this.verifier = verifier;
     }
 

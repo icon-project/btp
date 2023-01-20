@@ -16,17 +16,13 @@
 
 package foundation.icon.btp.bmc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import foundation.icon.btp.lib.BMC;
 import foundation.icon.btp.lib.BMCScoreClient;
-import foundation.icon.btp.lib.BMCStatus;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.OwnerManagerScoreClient;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.test.ScoreIntegrationTest;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -119,12 +115,4 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
-    static BMCStatus getStatus(BMC bmc, String _link) {
-        ObjectMapper mapper = client.mapper();
-        try {
-            return mapper.readValue(mapper.writeValueAsString(bmc.getStatus(_link)), BMCStatus.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

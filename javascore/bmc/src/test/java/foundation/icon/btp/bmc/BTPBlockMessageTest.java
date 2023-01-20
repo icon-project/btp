@@ -72,7 +72,7 @@ public class BTPBlockMessageTest implements BTPBlockIntegrationTest {
         byte[] payload = Faker.btpLink().toBytes();
         BigInteger nsn = bmc.getNetworkSn();
 
-        BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, link)
+        BigInteger txSeq = bmc.getStatus(link)
                 .getTx_seq();
         Consumer<TransactionResult> checker = (txr) -> {
             assertEquals(txSeq.add(BigInteger.ONE),

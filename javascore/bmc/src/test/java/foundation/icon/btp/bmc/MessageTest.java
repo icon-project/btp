@@ -163,7 +163,7 @@ public class MessageTest implements BMCIntegrationTest {
         FeeInfo feeInfo = new FeeInfo(btpAddress.net(), emptyFeeValues);
 
         BigInteger nsn = bmc.getNetworkSn();
-        BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, next.toString())
+        BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
             assertEquals(next.toString(), el.getNext());
@@ -306,11 +306,11 @@ public class MessageTest implements BMCIntegrationTest {
 
     static Consumer<TransactionResult> rxSeqChecker(
             final BTPAddress prev) {
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, prev.toString())
+        BigInteger rxSeq = bmc.getStatus(prev.toString())
                 .getRx_seq();
         return (txr) -> {
             assertEquals(rxSeq.add(BigInteger.ONE),
-                    BMCIntegrationTest.getStatus(bmc, prev.toString()).getRx_seq());
+                    bmc.getStatus(prev.toString()).getRx_seq());
         };
     }
 
@@ -326,7 +326,7 @@ public class MessageTest implements BMCIntegrationTest {
 
     static Consumer<TransactionResult> sendMessageChecker(
             final BTPAddress next, final BTPMessage msg) {
-        BigInteger txSeq = BMCIntegrationTest.getStatus(bmc, next.toString())
+        BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         return BMCIntegrationTest.messageEvent((el) -> {
             assertEquals(next.toString(), el.getNext());
@@ -410,7 +410,7 @@ public class MessageTest implements BMCIntegrationTest {
 
     static Consumer<TransactionResult> dropChecker(
             final BTPAddress prev, final BTPMessage msg, final BTPException e) {
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, prev.toString())
+        BigInteger rxSeq = bmc.getStatus(prev.toString())
                 .getRx_seq();
         return BMCIntegrationTest.messageDroppedEvent((el) -> {
             assertEquals(prev.toString(), el.getPrev());
@@ -587,7 +587,7 @@ public class MessageTest implements BMCIntegrationTest {
                 link.net(), emptyFeeValues));
 
         System.out.println("dropMessageShouldIncreaseRxSeqAndDrop");
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
+        BigInteger rxSeq = bmc.getStatus(link.toString())
                 .getRx_seq();
         Consumer<TransactionResult> checker = rxSeqChecker(link);
         if (sn.compareTo(BigInteger.ZERO) > 0) {
@@ -626,7 +626,7 @@ public class MessageTest implements BMCIntegrationTest {
             BTPException exception,
             String src, BigInteger diffSeq, String svc, BigInteger sn, BigInteger nsn) {
         System.out.println(display);
-        BigInteger rxSeq = BMCIntegrationTest.getStatus(bmc, link.toString())
+        BigInteger rxSeq = bmc.getStatus(link.toString())
                 .getRx_seq();
         AssertBTPException.assertBTPException(exception, () ->
                 iconSpecific.dropMessage(
