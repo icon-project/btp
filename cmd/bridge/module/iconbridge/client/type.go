@@ -379,16 +379,15 @@ type Block struct {
 	//Signature              HexBytes  `json:"signature" validate:"optional,t_hash"`
 }
 
-//icon2 relaymessage
 type BTPNotification struct {
-	Header HexBytes `json:"header"`
-	Proof  string   `json:"proof"`
+	Header string `json:"header"`
+	Proof  string `json:"proof,omitempty"`
 }
 
 type BTPRequest struct {
 	Height    HexInt `json:"height"`
 	NetworkID HexInt `json:"networkID"`
-	ProofFlag bool   `json:"proofFlag"`
+	ProofFlag HexInt `json:"proofFlag"`
 }
 
 type BTPNetworkInfo struct {

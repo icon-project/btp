@@ -89,7 +89,7 @@ func (r *Receiver) monitorBTPBlock(req *client.BTPRequest, seq int64,
 	//BMC.seq starts with 1 and BTPBlock.FirstMessageSN starts with 0
 	offset += 1
 	return r.c.MonitorBTP(req, func(conn *websocket.Conn, v *client.BTPNotification) error {
-		b, err := v.Header.Value()
+		b, err := base64.StdEncoding.DecodeString(v.Header)
 		if err != nil {
 			return err
 		}
@@ -239,8 +239,9 @@ func (r *Receiver) ReceiveLoop(height, seq int64,
 	}
 	if networkId, err := r.getBTPLinkNetworkId(); err == nil && networkId > 0 {
 		req := &client.BTPRequest{
-			Height:    client.HexInt(intconv.FormatInt(height)),
-			NetworkID: client.HexInt(intconv.FormatInt(networkId)),
+			Height:    client.NewHexInt(height),
+			NetworkID: client.NewHexInt(networkId),
+			ProofFlag: client.NewHexInt(0),
 		}
 		onConn := func(conn *websocket.Conn) {
 			r.l.Debugf("ReceiveLoop monitorBTPBlock height:%d seq:%d networkId:%d connected %s",

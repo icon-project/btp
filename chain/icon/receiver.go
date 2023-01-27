@@ -126,11 +126,10 @@ func (r *Receiver) GetBTPNetworkInfo(nid int64) (*BTPNetworkInfo, error) {
 }
 
 func (r *Receiver) ReceiveLoop(height int64, networkId int64, cb func(bu *BTPBlockUpdate) error, scb func()) error {
-	//s := r.dst.String()
 	r.req = &BTPRequest{
-		Height:    HexInt(intconv.FormatInt(height)),
-		NetworkID: HexInt(intconv.FormatInt(networkId)),
-		ProofFlag: false,
+		Height:    NewHexInt(height),
+		NetworkID: NewHexInt(networkId),
+		ProofFlag: NewHexInt(0),
 	}
 
 	if height < 1 {
@@ -140,7 +139,7 @@ func (r *Receiver) ReceiveLoop(height int64, networkId int64, cb func(bu *BTPBlo
 	return r.c.MonitorBTP(r.req,
 		func(conn *websocket.Conn, v *BTPNotification) error {
 			var p []byte
-			h, err := v.Header.Value()
+			h, err := base64.StdEncoding.DecodeString(v.Header)
 			if err != nil {
 				return err
 			}
