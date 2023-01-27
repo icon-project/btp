@@ -13,7 +13,6 @@ interface ICallService {
     /*======== At the source CALL_BSH ========*/
     /**
        @notice Sends a call message to the contract on the destination chain.
-               Only allowed to be called from the contract.
        @param _to The BTP address of the callee on the destination chain
        @param _data The calldata specific to the target contract
        @param _rollback (Optional) The data for restoring the caller state when an error occurred

@@ -107,7 +107,8 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
     @External
     public BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         Address caller = Context.getCaller();
-        Context.require(caller.isContract(), "SenderNotAContract");
+        // check if caller is a contract or rollback data is null in case of EOA
+        Context.require(caller.isContract() || _rollback == null, "RollbackNotPossible");
 
         // check size of payloads to avoid abusing
         Context.require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");

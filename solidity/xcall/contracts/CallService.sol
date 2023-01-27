@@ -115,8 +115,8 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
     ) external payable override returns (
         uint256
     ) {
-        // Note if caller is a contract in construction, will revert
-        require(msg.sender.code.length > 0, "SenderNotAContract");
+        // check if caller is a contract or rollback data is null in case of EOA
+        require(msg.sender.code.length > 0 || _rollback.length == 0, "RollbackNotPossible");
 
         // check size of payloads to avoid abusing
         require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");

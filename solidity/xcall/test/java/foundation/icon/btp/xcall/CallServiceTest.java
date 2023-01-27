@@ -132,7 +132,7 @@ public class CallServiceTest implements CSIntegrationTest {
     @Order(1)
     @Test
     void handleBTPMessageShouldEmitCallMessage() throws Exception {
-        var from = new BTPAddress(linkNet, sampleAddress.toString());
+        var from = new BTPAddress(linkNet, sampleAddress);
         var reqId = getNextReqId();
         byte[] data = requestMap.get(srcSn).getData();
         var request = new CSMessageRequest(from.account(), to.account(), srcSn, false, data);
@@ -203,6 +203,55 @@ public class CallServiceTest implements CSIntegrationTest {
         }
     }
 
+    @Order(6)
+    @Test
+    void sendCallMessageFromEOA() throws Exception {
+        byte[] data = "sendCallMessageFromEOA".getBytes();
+        var sn = getNextSn();
+        requestMap.put(sn, new MessageRequest(data, null));
+        var caller = EVMIntegrationTest.credentials.getAddress();
+        var request = new CSMessageRequest(caller, to.account(), sn, false, data);
+        var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
+            assertEquals(linkNet, el._to);
+            assertEquals(NAME, el._svc);
+            assertEquals(BigInteger.ZERO, el._sn);
+            CSMessage csMessage = CSMessage.fromBytes(el._msg);
+            assertEquals(CSMessage.REQUEST, csMessage.getType());
+            AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
+        });
+        BigInteger fee = getFee(to.net(), false);
+        assertEquals(forwardFee.add(protocolFee), fee);
+        accumulateFee(fee, protocolFee);
+
+        // fail if rollback is provided
+        AssertTransactionException.assertRevertReason(null, () ->
+                callService.sendCallMessage(to.toString(), data, "fakeRollback".getBytes(), fee).send()
+        );
+        // success if rollback is null
+        checker.accept(callService.sendCallMessage(to.toString(), data, new byte[]{}, fee).send());
+    }
+
+    @Order(7)
+    @Test
+    void handleBTPMessageShouldEmitCallMessageFromEOA() throws Exception {
+        var caller = EVMIntegrationTest.credentials.getAddress();
+        var from = new BTPAddress(linkNet, caller);
+        var reqId = getNextReqId();
+        byte[] data = requestMap.get(srcSn).getData();
+        var request = new CSMessageRequest(from.account(), to.account(), srcSn, false, data);
+        var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
+        var checker = CSIntegrationTest.callMessageEvent((el) -> {
+            assertEquals(Hash.sha3String(from.toString()), StringUtil.bytesToHex(el._from));
+            assertEquals(Hash.sha3String(to.account()), StringUtil.bytesToHex(el._to));
+            assertEquals(srcSn, el._sn);
+            assertEquals(reqId, el._reqId);
+            assertArrayEquals(request.getData(), el._data);
+        });
+        checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
+                csAddress,
+                linkNet, NAME, srcSn, csMsg.toBytes()).send());
+    }
+
     @Order(10)
     @Test
     void sendCallMessageWithRollback() throws Exception {
@@ -214,7 +263,7 @@ public class CallServiceTest implements CSIntegrationTest {
         byte[] rollback = "ThisIsRollbackMessage".getBytes();
         var sn = getNextSn(inc);
         requestMap.put(sn, new MessageRequest(data, rollback));
-        var request = new CSMessageRequest(sampleAddress.toString(), fakeTo.account(), sn, true, data);
+        var request = new CSMessageRequest(sampleAddress, fakeTo.account(), sn, true, data);
         var checker = MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
                     assertEquals(linkNet, el._to);
@@ -235,9 +284,8 @@ public class CallServiceTest implements CSIntegrationTest {
     @Test
     void executeCallWithFailureResponse() throws Exception {
         // relay the message first
-        var from = new BTPAddress(linkNet, sampleAddress.toString());
-//        byte[] data = requestMap.get(srcSn).getData();
-        byte[] data = "sendCallMessageWithRollback".getBytes();
+        var from = new BTPAddress(linkNet, sampleAddress);
+        byte[] data = requestMap.get(srcSn).getData();
         var request = new CSMessageRequest(from.account(), fakeTo.account(), srcSn, true, data);
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(

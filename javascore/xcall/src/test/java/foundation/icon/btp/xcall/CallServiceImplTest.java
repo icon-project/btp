@@ -139,7 +139,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
         var checker = CSIntegrationTest.callMessageEvent((el) -> {
             assertEquals(from.toString(), el.getFrom());
-            assertEquals(sampleAddress.toString(), el.getTo());
+            assertEquals(to.account(), el.getTo());
             assertEquals(srcSn, el.getSn());
             assertEquals(reqId, el.getReqId());
             assertArrayEquals(request.getData(), el.getData());
@@ -204,6 +204,55 @@ class CallServiceImplTest implements CSIntegrationTest {
                     sampleClient._send(fee, "sendMessage", params)
             );
         }
+    }
+
+    @Order(6)
+    @Test
+    void sendCallMessageFromEOA() {
+        byte[] data = "sendCallMessageFromEOA".getBytes();
+        var sn = getNextSn();
+        requestMap.put(sn, new MessageRequest(data, null));
+        Address caller = Address.of(callSvc._wallet());
+        var request = new CSMessageRequest(caller.toString(), to.account(), sn, false, data);
+        var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
+            assertEquals(linkNet, el.getTo());
+            assertEquals(CallService.NAME, el.getSvc());
+            assertEquals(BigInteger.ZERO, el.getSn()); // one-way message
+            CSMessage csMessage = CSMessage.fromBytes(el.getMsg());
+            assertEquals(CSMessage.REQUEST, csMessage.getType());
+            AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
+        });
+        BigInteger fee = getFee(to.net(), false);
+        assertEquals(forwardFee.add(protocolFee), fee);
+        accumulateFee(fee, protocolFee);
+
+        // fail if rollback is provided
+        AssertRevertedException.assertUserReverted(0, () ->
+                callSvc.sendCallMessage(fee, to.toString(), data, "fakeRollback".getBytes())
+        );
+        // success if rollback is null
+        callSvc.sendCallMessage(checker, fee, to.toString(), data, null);
+    }
+
+    @Order(7)
+    @Test
+    void handleBTPMessageShouldEmitCallMessageFromEOA() {
+        Address caller = Address.of(callSvc._wallet());
+        var from = new BTPAddress(linkNet, caller.toString());
+        var reqId = getNextReqId();
+        byte[] data = requestMap.get(srcSn).getData();
+        var request = new CSMessageRequest(from.account(), to.account(), srcSn, false, data);
+        var csMsg = new CSMessage(CSMessage.REQUEST, request.toBytes());
+        var checker = CSIntegrationTest.callMessageEvent((el) -> {
+            assertEquals(from.toString(), el.getFrom());
+            assertEquals(to.account(), el.getTo());
+            assertEquals(srcSn, el.getSn());
+            assertEquals(reqId, el.getReqId());
+            assertArrayEquals(request.getData(), el.getData());
+        });
+        MockBMCIntegrationTest.mockBMC.handleBTPMessage(
+                checker, csAddress,
+                linkNet, CallService.NAME, srcSn, csMsg.toBytes());
     }
 
     @Order(10)
