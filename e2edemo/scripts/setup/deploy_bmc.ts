@@ -9,8 +9,7 @@ const deployments = new Deployments();
 
 async function deploy_java() {
   const iconNetwork = IconNetwork.getDefault();
-  const NID = iconNetwork.nid
-  const BMC_NETWORK_ID = `0x${NID}.icon`
+  const BMC_NETWORK_ID = "0x" + iconNetwork.nid.toString(16) + ".icon"
   console.log(`ICON: deploy BMC for ${BMC_NETWORK_ID}`)
 
   const bmcJar = JAVASCORE_PATH + '/bmc/build/libs/bmc-0.1.0-optimized.jar'
