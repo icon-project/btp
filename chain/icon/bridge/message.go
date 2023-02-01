@@ -3,6 +3,7 @@ package bridge
 import (
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/link"
+	"github.com/icon-project/btp/common/types"
 )
 
 type ReceiptProof struct {
@@ -29,17 +30,13 @@ type Event struct { //EventDataBTPMessage
 
 type relayMessageItem struct {
 	it      link.MessageItemType
-	pd      int
 	rp      *ReceiptProof
+	bls     *types.BMCLinkStatus
 	payload []byte
 }
 
 func (c *relayMessageItem) Type() link.MessageItemType {
 	return c.it
-}
-
-func (c *relayMessageItem) Precedency() int {
-	return c.pd
 }
 
 func (c *relayMessageItem) Bytes() []byte {
@@ -48,6 +45,10 @@ func (c *relayMessageItem) Bytes() []byte {
 
 func (c *relayMessageItem) Len() int64 {
 	return int64(len(c.payload))
+}
+
+func (c *relayMessageItem) UpdateBMCLinkStatus(status *types.BMCLinkStatus) error {
+	return nil
 }
 
 func (c *relayMessageItem) ReceiptProof() *ReceiptProof {
@@ -74,7 +75,6 @@ func NewMessageProof(ss, ls int64, pd int, rp *ReceiptProof) *MessageProof {
 		lastSeq:  ls,
 		relayMessageItem: relayMessageItem{
 			it:      link.TypeMessageProof,
-			pd:      pd,
 			payload: codec.RLP.MustMarshalToBytes(rp.Events),
 			rp:      rp,
 		},

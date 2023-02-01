@@ -118,10 +118,6 @@ func (b *bridge) GetHeightForSeq(seq int64) int64 {
 	return b.GetReceiveHeightForSequence(seq).height
 }
 
-func (b *bridge) GetMarginForLimit() int64 {
-	return 0
-}
-
 func (b *bridge) BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]link.BlockUpdate, error) {
 	return nil, nil
 }
@@ -130,14 +126,14 @@ func (b *bridge) BuildBlockProof(bs *types.BMCLinkStatus, height int64) (link.Bl
 	return nil, nil
 }
 
-func (b *bridge) BuildMessageProof(seq int64, limit int64) (link.MessageProof, error) {
+func (b *bridge) BuildMessageProof(bs *types.BMCLinkStatus, limit int64) (link.MessageProof, error) {
 	var offset int
 	var rmSize int
-	rs := b.GetReceiveHeightForSequence(seq)
+	rs := b.GetReceiveHeightForSequence(bs.RxSeq)
 	if rs == nil {
 		return nil, nil
 	}
-	offset = int(rs.seq - seq)
+	offset = int(rs.seq - bs.RxSeq)
 	trp := &ReceiptProof{
 		Index:  rs.ReceiptProof().Index,
 		Events: make([]*Event, 0),
@@ -147,14 +143,14 @@ func (b *bridge) BuildMessageProof(seq int64, limit int64) (link.MessageProof, e
 	for i := offset; i < eventLen; i++ {
 		size := sizeOfEvent(rs.ReceiptProof().Events[i])
 		if limit < int64(rmSize+size) {
-			return NewMessageProof(seq, seq+int64(i), i, trp), nil
+			return NewMessageProof(bs.RxSeq, bs.RxSeq+int64(i), i, trp), nil
 		}
 		trp.Events = append(trp.Events, rs.ReceiptProof().Events[i])
 		rmSize += size
 	}
 
 	//last event
-	return NewMessageProof(seq, seq+int64(eventLen), eventLen, trp), nil
+	return NewMessageProof(bs.RxSeq, bs.RxSeq+int64(eventLen), eventLen, trp), nil
 
 }
 
@@ -170,7 +166,7 @@ func (b *bridge) BuildRelayMessage(rmis []link.RelayMessageItem) ([]byte, error)
 	for _, rmi := range rmis {
 		r := &Receipt{
 			Index:  rmi.(*relayMessageItem).ReceiptProof().Index,
-			Events: rmi.Bytes(),
+			Events: rmi.(*relayMessageItem).Bytes(),
 			Height: rmi.(*relayMessageItem).ReceiptProof().Height,
 		}
 		if rb, err = codec.RLP.MarshalToBytes(r); err != nil {

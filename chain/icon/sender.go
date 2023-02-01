@@ -52,7 +52,7 @@ type sender struct {
 	opt struct {
 		StepLimit int64
 	}
-	sc                 chan types.SenderChannel
+	sc                 chan types.SenderMessage
 	isFoundOffsetBySeq bool
 }
 
@@ -62,7 +62,7 @@ func NewSender(src, dst types.BtpAddress, w client.Wallet, endpoint string, opt 
 		dst: dst,
 		w:   w,
 		l:   l,
-		sc:  make(chan types.SenderChannel),
+		sc:  make(chan types.SenderMessage),
 	}
 	b, err := json.Marshal(opt)
 	if err != nil {
@@ -78,7 +78,7 @@ func NewSender(src, dst types.BtpAddress, w client.Wallet, endpoint string, opt 
 	return s
 }
 
-func (s *sender) Start() (<-chan types.SenderChannel, error) {
+func (s *sender) Start() (<-chan types.SenderMessage, error) {
 	go func() {
 		s.SendStatus()
 	}()
@@ -97,6 +97,10 @@ func (s *sender) Relay(rm types.RelayMessage) (int, error) {
 	}
 	go s.result(rm.Id(), thp)
 	return rm.Id(), nil
+}
+
+func (s *sender) GetMarginForLimit() int64 {
+	return 0
 }
 
 func (s *sender) _relay(rm types.RelayMessage) (*client.TransactionHashParam, error) {

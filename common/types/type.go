@@ -56,11 +56,13 @@ type RelayResult struct {
 }
 
 // BMCLinkStatus, RelayResult
-type SenderChannel interface{}
+type SenderMessage interface{}
 
 type Sender interface {
-	Start() (<-chan SenderChannel, error)
+	Start() (<-chan SenderMessage, error)
 	Stop()
+	GetStatus() (*BMCLinkStatus, error)
 	Relay(rm RelayMessage) (int, error)
+	GetMarginForLimit() int64
 	TxSizeLimit() int
 }

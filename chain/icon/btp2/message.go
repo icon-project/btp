@@ -5,6 +5,7 @@ import (
 
 	"github.com/icon-project/btp/common/codec"
 	"github.com/icon-project/btp/common/link"
+	"github.com/icon-project/btp/common/types"
 )
 
 type BTPRelayMessage struct {
@@ -13,7 +14,6 @@ type BTPRelayMessage struct {
 
 type relayMessageItem struct {
 	it      link.MessageItemType
-	pd      int
 	payload []byte
 }
 
@@ -21,16 +21,16 @@ func (c *relayMessageItem) Type() link.MessageItemType {
 	return c.it
 }
 
-func (c *relayMessageItem) Precedency() int {
-	return c.pd
-}
-
-func (c *relayMessageItem) Bytes() []byte {
-	return c.payload
-}
-
 func (c *relayMessageItem) Len() int64 {
 	return int64(len(c.payload))
+}
+
+func (c *relayMessageItem) UpdateBMCLinkStatus(status *types.BMCLinkStatus) error {
+	return nil
+}
+
+func (c *relayMessageItem) Payload() []byte {
+	return c.payload
 }
 
 type blockProof struct {
@@ -56,14 +56,13 @@ func (c *blockUpdate) TargetHeight() int64 {
 	return c.targetHeight
 }
 
-func NewBlockUpdate(srcHeight, targetHeight int64, pd int, v interface{}) *blockUpdate {
+func NewBlockUpdate(srcHeight, targetHeight int64, v interface{}) *blockUpdate {
 	return &blockUpdate{
 		srcHeight:    srcHeight,
 		targetHeight: targetHeight,
 		blockProof: blockProof{
 			relayMessageItem: relayMessageItem{
 				it:      link.TypeBlockUpdate,
-				pd:      pd,
 				payload: codec.RLP.MustMarshalToBytes(v),
 			},
 			ph: targetHeight,
@@ -85,13 +84,12 @@ func (m *MessageProof) LastSeqNum() int64 {
 	return m.lastSeq
 }
 
-func NewMessageProof(ss, ls int64, pd int, v interface{}) *MessageProof {
+func NewMessageProof(ss, ls int64, v interface{}) *MessageProof {
 	return &MessageProof{
 		startSeq: ss,
 		lastSeq:  ls,
 		relayMessageItem: relayMessageItem{
 			it:      link.TypeMessageProof,
-			pd:      pd,
 			payload: codec.RLP.MustMarshalToBytes(v),
 		},
 	}
@@ -121,6 +119,6 @@ func NewTypePrefixedMessage(rmi link.RelayMessageItem) (*TypePrefixedMessage, er
 	}
 	return &TypePrefixedMessage{
 		Type:    mt,
-		Payload: rmi.Bytes(),
+		Payload: rmi.(*relayMessageItem).Payload(),
 	}, nil
 }
