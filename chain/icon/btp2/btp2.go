@@ -136,7 +136,6 @@ func (b *btp2) Start(bs *types.BMCLinkStatus) (<-chan link.ReceiveStatus, error)
 		return nil, err
 	}
 
-	//TODO refactoring
 	go func() {
 		b.Monitoring(bs)
 	}()
@@ -156,14 +155,10 @@ func (b *btp2) GetHeightForSeq(seq int64) int64 {
 	return b.GetReceiveHeightForSequence(seq).height
 }
 
-func (b *btp2) GetMarginForLimit() int64 {
-	return 0
-}
-
 func (b *btp2) BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]link.BlockUpdate, error) {
 	b.updateReceiveStatus(bs)
 	bus := make([]link.BlockUpdate, 0)
-	for i, rs := range b.rss {
+	for _, rs := range b.rss {
 
 		h, p, err := b.getBtpHeader(rs.Height())
 		if err != nil {
@@ -179,7 +174,7 @@ func (b *btp2) BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]link.Bl
 			return bus, nil
 		}
 
-		bu := NewBlockUpdate(bs.Verifier.Height, bh.MainHeight, i, bbu)
+		bu := NewBlockUpdate(bs.Verifier.Height, bh.MainHeight, bbu)
 		bus = append(bus, bu)
 
 	}
@@ -190,35 +185,38 @@ func (b *btp2) BuildBlockProof(bs *types.BMCLinkStatus, height int64) (link.Bloc
 	return nil, nil
 }
 
-func (b *btp2) BuildMessageProof(seq int64, limit int64) (link.MessageProof, error) {
+func (b *btp2) BuildMessageProof(bs *types.BMCLinkStatus, limit int64) (link.MessageProof, error) {
 	//b.updateReceiveStatus(bs)
-	var offset int
-	rs := b.GetReceiveHeightForSequence(seq)
+	rs := b.GetReceiveHeightForSequence(bs.RxSeq)
+
 	if rs == nil {
 		return nil, nil
 	}
-
+	offset := rs.Seq() - bs.RxSeq
+	if offset == 0 {
+		return nil, nil
+	}
 	//TODO refactoring
-	messageCnt := rs.MerkleBinaryTree().Len()
+	messageCnt := int64(rs.MerkleBinaryTree().Len())
 	if messageCnt > 0 {
 		for i := offset + 1; i < messageCnt; i++ {
-			p, err := rs.MerkleBinaryTree().Proof(offset+1, i)
+			p, err := rs.MerkleBinaryTree().Proof(int(offset+1), int(i))
 			if err != nil {
 				return nil, err
 			}
 
 			if limit < int64(len(codec.RLP.MustMarshalToBytes(p))) {
-				mp := NewMessageProof(seq, seq+int64(i), 1, *p)
+				mp := NewMessageProof(bs.RxSeq, bs.RxSeq+i, *p)
 				return mp, nil
 			}
 		}
 	}
 
-	p, err := rs.MerkleBinaryTree().Proof(1, messageCnt)
+	p, err := rs.MerkleBinaryTree().Proof(1, int(messageCnt))
 	if err != nil {
 		return nil, err
 	}
-	mp := NewMessageProof(seq, seq+int64(messageCnt), 1, *p)
+	mp := NewMessageProof(bs.RxSeq, bs.RxSeq+messageCnt, *p)
 	return mp, nil
 }
 
@@ -314,6 +312,15 @@ func (b *btp2) monitorBTP2Block(req *client.BTPRequest, scb func(conn *websocket
 func (b *btp2) GetReceiveHeightForSequence(seq int64) *receiveStatus {
 	for _, rs := range b.rss {
 		if seq <= rs.Seq() && seq >= rs.Seq() {
+			return rs
+		}
+	}
+	return nil
+}
+
+func (b *btp2) GetReceiveHeightForHeight(height int64) *receiveStatus {
+	for _, rs := range b.rss {
+		if rs.Height() == height {
 			return rs
 		}
 	}

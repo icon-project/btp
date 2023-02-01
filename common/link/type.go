@@ -35,8 +35,8 @@ type ReceiveStatus interface {
 
 type RelayMessageItem interface {
 	Type() MessageItemType
-	Bytes() []byte
 	Len() int64
+	UpdateBMCLinkStatus(bls *types.BMCLinkStatus) error
 }
 
 type BlockUpdate interface {
@@ -57,13 +57,12 @@ type MessageProof interface {
 }
 
 type Receiver interface {
-	Start(bs *types.BMCLinkStatus) (<-chan ReceiveStatus, error)
+	Start(bls *types.BMCLinkStatus) (<-chan ReceiveStatus, error)
 	Stop()
 	GetStatus() (ReceiveStatus, error)
-	GetMarginForLimit() int64
-	BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]BlockUpdate, error)
-	BuildBlockProof(bs *types.BMCLinkStatus, height int64) (BlockProof, error)
-	BuildMessageProof(seq int64, limit int64) (MessageProof, error)
+	BuildBlockUpdate(bls *types.BMCLinkStatus, limit int64) ([]BlockUpdate, error)
+	BuildBlockProof(bls *types.BMCLinkStatus, height int64) (BlockProof, error)
+	BuildMessageProof(bls *types.BMCLinkStatus, limit int64) (MessageProof, error)
 	GetHeightForSeq(seq int64) int64
 	BuildRelayMessage(rmis []RelayMessageItem) ([]byte, error)
 }
