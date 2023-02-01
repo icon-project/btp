@@ -5,11 +5,9 @@ dependencies {
     implementation project(':score-util')
     implementation project(':lib')
 
-    //for generate ScoreClient
-    compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
+    // for generating ScoreClient
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
-    compileOnly("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    compileOnly("foundation.icon:icon-sdk:$iconsdkVersion")
+    compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
@@ -18,9 +16,6 @@ dependencies {
     testImplementation project(':test-lib')
     testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
-    testImplementation("com.github.javafaker:javafaker:1.0.2")
 }
 
 optimizedJar {

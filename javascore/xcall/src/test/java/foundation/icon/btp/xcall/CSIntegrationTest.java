@@ -40,32 +40,32 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                             "_callService", callSvc._address())));
 
     static Consumer<TransactionResult> callMessageEvent(
-            Consumer<CallMessageEventLog> consumer) {
+            Consumer<CallServiceScoreClient.CallMessage> consumer) {
         return eventLogChecker(
-                CallMessageEventLog::eventLogs,
+                CallServiceScoreClient.CallMessage::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> rollbackMessageEvent(
-            Consumer<RollbackMessageEventLog> consumer) {
+            Consumer<CallServiceScoreClient.RollbackMessage> consumer) {
         return eventLogChecker(
-                RollbackMessageEventLog::eventLogs,
+                CallServiceScoreClient.RollbackMessage::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(RollbackMessageEventLog::eventLogs);
+        return eventLogShouldNotExistsChecker(CallServiceScoreClient.RollbackMessage::eventLogs);
     }
 
     static Consumer<TransactionResult> callRequestClearedEvent(
-            Consumer<CallRequestClearedEventLog> consumer) {
+            Consumer<CSImplEventScoreClient.CallRequestCleared> consumer) {
         return eventLogChecker(
-                CallRequestClearedEventLog::eventLogs,
+                CSImplEventScoreClient.CallRequestCleared::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> callRequestClearedEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CallRequestClearedEventLog::eventLogs);
+        return eventLogShouldNotExistsChecker(CSImplEventScoreClient.CallRequestCleared::eventLogs);
     }
 
     static <T> Consumer<TransactionResult> eventLogChecker(
@@ -81,18 +81,18 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
     }
 
     static Consumer<TransactionResult> messageReceivedEvent(
-            Consumer<MessageReceivedEventLog> consumer) {
+            Consumer<DAppProxySampleScoreClient.MessageReceived> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
                 sampleClient._address(),
-                MessageReceivedEventLog::eventLogs,
+                DAppProxySampleScoreClient.MessageReceived::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> rollbackDataReceivedEvent (
-            Consumer<RollbackDataReceivedEventLog> consumer) {
+            Consumer<DAppProxySampleScoreClient.RollbackDataReceived> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
                 sampleClient._address(),
-                RollbackDataReceivedEventLog::eventLogs,
+                DAppProxySampleScoreClient.RollbackDataReceived::eventLogs,
                 consumer);
     }
 }
