@@ -8,7 +8,6 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
     testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
-    testImplementation 'com.squareup.okhttp3:okhttp:3.11.0'
     testImplementation 'foundation.icon:javaee-integration-test:0.9.0'
 }
 

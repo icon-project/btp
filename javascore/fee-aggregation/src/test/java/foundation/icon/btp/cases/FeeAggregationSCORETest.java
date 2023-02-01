@@ -12,7 +12,6 @@ import foundation.icon.test.Env;
 import foundation.icon.test.Log;
 import foundation.icon.test.TestBase;
 import foundation.icon.test.TransactionHandler;
-import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -39,8 +38,7 @@ public class FeeAggregationSCORETest extends TestBase {
     @BeforeAll
     static void setup() throws Exception {
         Env.Chain chain = Env.getDefaultChain();
-        OkHttpClient ohc = new OkHttpClient.Builder().build();
-        iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3)));
+        iconService = new IconService(new HttpProvider(chain.getEndpointURL(3)));
         txHandler = new TransactionHandler(iconService, chain);
 
         // init wallets

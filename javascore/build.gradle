@@ -16,10 +16,9 @@ subprojects {
         mavenCentral()
     }
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
             cacheChangingModulesFor 1, 'minutes'
-            force 'com.squareup.okhttp3:okhttp:3.11.0'
         }
     }
 
