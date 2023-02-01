@@ -21,7 +21,6 @@ import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPException;
 import foundation.icon.btp.test.AssertBTPException;
 import foundation.icon.btp.test.BTPIntegrationTest;
-import foundation.icon.btp.test.HandleRelayMessageEventLog;
 import foundation.icon.btp.test.MockBMVIntegrationTest;
 import org.junit.jupiter.api.Test;
 
@@ -47,8 +46,8 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         relayMessage.setBtpMessages(btpMessages.toArray(new byte[btpMessages.size()][]));
 
         mockBMV.handleRelayMessage(
-                MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
-                    assertArrayEquals(relayMessage.getBtpMessages(), el.getRet());
+                MockBMVIntegrationTest.handleRelayMessageEvent((el) -> {
+                    assertArrayEquals(MockRelayMessage.toBytes(relayMessage.getBtpMessages()), el.get_ret());
                 }),
                 bmc, prev, seq, relayMessage.toBytes());
     }
@@ -75,8 +74,8 @@ class MockBMVTest implements BTPIntegrationTest, MockBMVIntegrationTest {
         relayMessage.setOffset(1L);
 
         mockBMV.handleRelayMessage(
-                MockBMVIntegrationTest.eventLogChecker(HandleRelayMessageEventLog::eventLogs, (el) -> {
-                    assertArrayEquals(new byte[][]{}, el.getRet());
+                MockBMVIntegrationTest.handleRelayMessageEvent((el) -> {
+                    assertArrayEquals(MockRelayMessage.toBytes(new byte[][]{}), el.get_ret());
                 }),
                 bmc, prev, seq, relayMessage.toBytes());
 

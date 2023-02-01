@@ -42,37 +42,41 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     OwnerManagerScoreClient ownerManagerWithTester = new OwnerManagerScoreClient(bmcWithTester);
 
     static <T> Consumer<TransactionResult> eventLogChecker(
-            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer, Predicate<T> filter) {
         return ScoreIntegrationTest.eventLogChecker(
-                bmc._address(), supplier, consumer);
+                bmc._address(), supplier, consumer, filter);
     }
 
     static <T> Consumer<TransactionResult> eventLogsChecker(
-            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
+            ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<List<T>> consumer, Predicate<T> filter) {
         return ScoreIntegrationTest.eventLogsChecker(
-                bmc._address(), supplier, consumer);
+                bmc._address(), supplier, consumer, filter);
     }
 
     static Consumer<TransactionResult> messageEvent(
-            Consumer<MessageEventLog> consumer) {
-        return eventLogChecker(
-                MessageEventLog::eventLogs,
-                consumer);
+            Consumer<BMCScoreClient.Message> consumer) {
+        return messageEvent(consumer, null);
     }
 
-    static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<MessageEventLog> filter) {
-        return MessageEventLog.eventLogs(txr, bmc._address(), filter).stream()
-                .map(MessageEventLog::getMsg)
+    static Consumer<TransactionResult> messageEvent(
+            Consumer<BMCScoreClient.Message> consumer, Predicate<BMCScoreClient.Message> filter) {
+        return eventLogChecker(
+                BMCScoreClient.Message::eventLogs,
+                consumer,
+                filter);
+    }
+
+    static List<BTPMessage> btpMessages(TransactionResult txr, Predicate<BMCScoreClient.Message> filter) {
+        return BMCScoreClient.Message.eventLogs(txr, bmc._address(), filter).stream()
+                .map((el) -> BTPMessage.fromBytes(el.get_msg()))
                 .collect(Collectors.toList());
     }
 
     static List<BMCMessage> bmcMessages(TransactionResult txr, Predicate<String> nextPredicate) {
-        Predicate<MessageEventLog> filter = (el) ->
-                el.getMsg().getSvc().equals(BTPMessageCenter.INTERNAL_SERVICE);
-        if (nextPredicate != null) {
-            filter = filter.and((el) -> nextPredicate.test(el.getNext()));
-        }
+        Predicate<BMCScoreClient.Message> filter = nextPredicate != null ?
+                (el) -> nextPredicate.test(el.get_next()) : null;
         return btpMessages(txr, filter).stream()
+                .filter((msg) -> msg.getSvc().equals(BTPMessageCenter.INTERNAL_SERVICE))
                 .map((msg) -> BMCMessage.fromBytes(msg.getPayload()))
                 .collect(Collectors.toList());
     }
@@ -88,31 +92,31 @@ public interface BMCIntegrationTest extends BTPIntegrationTest {
     }
 
     static Consumer<TransactionResult> claimRewardEvent(
-            Consumer<ClaimRewardEventLog> consumer) {
+            Consumer<BMCScoreClient.ClaimReward> consumer) {
         return eventLogChecker(
-                ClaimRewardEventLog::eventLogs,
-                consumer);
+                BMCScoreClient.ClaimReward::eventLogs,
+                consumer, null);
     }
 
     static Consumer<TransactionResult> claimRewardResultEvent(
-            Consumer<ClaimRewardResultEventLog> consumer) {
+            Consumer<BMCScoreClient.ClaimRewardResult> consumer) {
         return eventLogChecker(
-                ClaimRewardResultEventLog::eventLogs,
-                consumer);
+                BMCScoreClient.ClaimRewardResult::eventLogs,
+                consumer, null);
     }
 
     static Consumer<TransactionResult> messageDroppedEvent(
-            Consumer<MessageDroppedEventLog> consumer) {
+            Consumer<ICONSpecificScoreClient.MessageDropped> consumer) {
         return eventLogChecker(
-                MessageDroppedEventLog::eventLogs,
-                consumer);
+                ICONSpecificScoreClient.MessageDropped::eventLogs,
+                consumer, null);
     }
 
     static Consumer<TransactionResult> btpEvent(
-            Consumer<List<BTPEventEventLog>> consumer) {
+            Consumer<List<BMCScoreClient.BTPEvent>> consumer) {
         return eventLogsChecker(
-                BTPEventEventLog::eventLogs,
-                consumer);
+                BMCScoreClient.BTPEvent::eventLogs,
+                consumer, null);
     }
 
 }

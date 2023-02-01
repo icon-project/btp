@@ -26,7 +26,6 @@ import foundation.icon.btp.test.MockBMVIntegrationTest;
 import foundation.icon.btp.test.MockBSHIntegrationTest;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
-import foundation.icon.score.test.ICXTransferEventLog;
 import foundation.icon.score.test.ScoreIntegrationTest;
 import foundation.icon.score.util.ArrayUtil;
 import org.junit.jupiter.api.AfterAll;
@@ -46,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RewardTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static String svc = MockBSHIntegrationTest.SERVICE;
-    static Address relay = Address.of(bmc._wallet());
+    static Address relay = bmc._wallet().getAddress();
     static FeeInfo linkFee = FeeManagementTest.fakeFee(link.net());
 
     @BeforeAll
@@ -150,11 +149,11 @@ public class RewardTest implements BMCIntegrationTest {
             Address sender, String net, String receiver, BigInteger amount, BigInteger nsn) {
         return BMCIntegrationTest.claimRewardEvent(
                 (el) -> {
-                    assertEquals(sender, el.getSender());
-                    assertEquals(net, el.getNetwork());
-                    assertEquals(receiver, el.getReceiver());
-                    assertEquals(amount, el.getAmount());
-                    assertEquals(nsn, el.getNsn());
+                    assertEquals(sender, el.get_sender());
+                    assertEquals(net, el.get_network());
+                    assertEquals(receiver, el.get_receiver());
+                    assertEquals(amount, el.get_amount());
+                    assertEquals(nsn, el.get_nsn());
                 });
     }
 
@@ -162,9 +161,9 @@ public class RewardTest implements BMCIntegrationTest {
             BigInteger nsn, String net, BigInteger result) {
         return BMCIntegrationTest.claimRewardResultEvent(
                 (el) -> {
-                    assertEquals(nsn, el.getNsn());
-                    assertEquals(net, el.getNetwork());
-                    assertEquals(result, el.getResult());
+                    assertEquals(nsn, el.get_nsn());
+                    assertEquals(net, el.get_network());
+                    assertEquals(result, el.get_result());
                 });
     }
 
@@ -200,7 +199,7 @@ public class RewardTest implements BMCIntegrationTest {
             BTPException error) {
         System.out.println(display);
         if (isRemain) {
-            Address feeHandler = Address.of(tester);
+            Address feeHandler = tester.getAddress();
             bmc.setFeeHandler(feeHandler);
             assertEquals(feeHandler, bmc.getFeeHandler());
         }
@@ -212,14 +211,13 @@ public class RewardTest implements BMCIntegrationTest {
         Consumer<TransactionResult> checker = rewardChecker(feeNetwork, sender, reward.negate());
         if (feeNetwork.equals(btpAddress.net())) {
             System.out.println("claimRewardShouldTransfer");
-            receiver = Address.of(tester);
+            receiver = tester.getAddress();
             pay = BigInteger.ZERO;
             checker = checker.andThen(claimRewardEventChecker(
                             sender, feeNetwork, receiver.toString(), reward, BigInteger.ZERO))
                     .andThen(ScoreIntegrationTest.balanceChecker(receiver, reward, isRemain))
-                    .andThen(ScoreIntegrationTest.eventLogChecker(
+                    .andThen(ScoreIntegrationTest.icxTransferEvent(
                             bmc._address(),
-                            ICXTransferEventLog::eventLogs,
                             (el) -> {
                                 assertEquals(bmc._address(), el.getFrom());
                                 assertEquals(receiver, el.getTo());

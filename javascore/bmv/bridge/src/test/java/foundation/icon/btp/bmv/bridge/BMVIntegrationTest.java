@@ -20,6 +20,7 @@ import foundation.icon.btp.lib.BMV;
 import foundation.icon.btp.lib.BMVScoreClient;
 import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BTPAddress;
+import foundation.icon.btp.mock.MockRelayMessage;
 import foundation.icon.btp.test.BTPIntegrationTest;
 import foundation.icon.btp.test.MockBMCIntegrationTest;
 import foundation.icon.jsonrpc.model.TransactionResult;
@@ -57,7 +58,7 @@ public class BMVIntegrationTest implements BTPIntegrationTest {
         RelayMessage rm = new RelayMessage(new ArrayList<>(List.of(rp)));
 
         Consumer<TransactionResult> checker = MockBMCIntegrationTest.handleRelayMessageEvent(
-                (el) -> assertArrayEquals(new byte[][]{msg.getBytes()}, el.getRet()));
+                (el) -> assertArrayEquals(MockRelayMessage.toBytes(new byte[][]{msg.getBytes()}), el.get_ret()));
         MockBMCIntegrationTest.mockBMC.handleRelayMessage(
                 checker,
                 bmvClient._address(),

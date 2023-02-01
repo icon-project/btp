@@ -26,6 +26,13 @@ public interface MockBMVIntegrationTest {
 
     MockBMVScoreClient mockBMV = MockBMVScoreClient._of("bmv-mock.", System.getProperties());
 
+    static Consumer<TransactionResult> handleRelayMessageEvent(
+            Consumer<MockBMVScoreClient.HandleRelayMessage> consumer) {
+        return eventLogChecker(
+                MockBMVScoreClient.HandleRelayMessage::eventLogs,
+                consumer);
+    }
+
     static <T> Consumer<TransactionResult> eventLogChecker(
             ScoreIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(

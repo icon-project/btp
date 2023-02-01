@@ -169,7 +169,7 @@ public class LinkManagementTest implements BMCIntegrationTest {
     @Test
     void removeLinkShouldClearRelays() {
         addLink(link);
-        BMRManagementTest.addRelay(link, Address.of(defaultWallet));
+        BMRManagementTest.addRelay(link, bmc._wallet().getAddress());
         removeLink(link);
 
         //check relays of link is empty

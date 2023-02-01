@@ -59,7 +59,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
         relayMessage.setBtpMessages(msgs);
 
         Consumer<TransactionResult> checker = MockBMCIntegrationTest.handleRelayMessageEvent(
-                (el) -> assertArrayEquals(msgs, el.getRet()));
+                (el) -> {
+                    assertArrayEquals(MockRelayMessage.toBytes(msgs), el.get_ret());
+                }
+        );
+
         mockBMC.handleRelayMessage(
                 checker,
                 MockBMVIntegrationTest.mockBMV._address(),
@@ -70,11 +74,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     void sendMessageShouldMakeEventLog() {
         Consumer<TransactionResult> checker = MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
-                    assertEquals(mockBMC.getNetworkSn(), el.getNsn());
-                    assertEquals(to, el.getTo());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
+                    assertEquals(mockBMC.getNetworkSn(), el.get_nsn());
+                    assertEquals(to, el.get_to());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(sn, el.get_sn());
+                    assertArrayEquals(msg, el.get_msg());
                 }
         );
         mockBMC.sendMessage(
@@ -93,11 +97,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
         Consumer<TransactionResult> checker = MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
-                    assertEquals(mockBMC.getNetworkSn(), el.getNsn());
-                    assertEquals(to, el.getTo());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
+                    assertEquals(mockBMC.getNetworkSn(), el.get_nsn());
+                    assertEquals(to, el.get_to());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(sn, el.get_sn());
+                    assertArrayEquals(msg, el.get_msg());
                 }
         );
         mockBMC.sendMessage(
@@ -107,11 +111,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
         checker = MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
-                    assertEquals(mockBMC.getNetworkSn(), el.getNsn());
-                    assertEquals(to, el.getTo());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(BigInteger.ZERO, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
+                    assertEquals(mockBMC.getNetworkSn(), el.get_nsn());
+                    assertEquals(to, el.get_to());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(BigInteger.ZERO, el.get_sn());
+                    assertArrayEquals(msg, el.get_msg());
                 }
         );
         mockBMC.sendMessage(
@@ -145,11 +149,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
 
         Consumer<TransactionResult> checker = MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
-                    assertEquals(mockBMC.getNetworkSn(), el.getNsn());
-                    assertEquals(to, el.getTo());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(BigInteger.ZERO, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
+                    assertEquals(mockBMC.getNetworkSn(), el.get_nsn());
+                    assertEquals(to, el.get_to());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(BigInteger.ZERO, el.get_sn());
+                    assertArrayEquals(msg, el.get_msg());
                 }
         );
         mockBMC.sendMessage(
@@ -173,10 +177,10 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     void handleBTPMessage() {
         Consumer<TransactionResult> checker = MockBSHIntegrationTest.handleBTPMessageEvent(
                 (el) -> {
-                    assertEquals(to, el.getFrom());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertArrayEquals(msg, el.getMsg());
+                    assertEquals(to, el.get_from());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(sn, el.get_sn());
+                    assertArrayEquals(msg, el.get_msg());
                 }
         );
         mockBMC.handleBTPMessage(
@@ -189,11 +193,11 @@ class MockBMCTest implements BTPIntegrationTest, MockBMCIntegrationTest {
     void handleBTPError() {
         Consumer<TransactionResult> checker = MockBSHIntegrationTest.handleBTPErrorEvent(
                 (el) -> {
-                    assertEquals(prev, el.getSrc());
-                    assertEquals(svc, el.getSvc());
-                    assertEquals(sn, el.getSn());
-                    assertEquals(errCode, el.getCode());
-                    assertEquals(errMsg, el.getMsg());
+                    assertEquals(prev, el.get_src());
+                    assertEquals(svc, el.get_svc());
+                    assertEquals(sn, el.get_sn());
+                    assertEquals(errCode, el.get_code());
+                    assertEquals(errMsg, el.get_msg());
                 }
         );
         mockBMC.handleBTPError(

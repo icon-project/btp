@@ -73,10 +73,10 @@ public class OwnershipTest implements BMCIntegrationTest {
                 new Address(ChainScore.ADDRESS));
         BigInteger stepPrice = chainScore.getStepPrice();
         BigInteger minBalance = client._stepLimit().multiply(stepPrice);
-        Address testerAddress = Address.of(tester);
+        Address testerAddress = tester.getAddress();
         if (client._balance(testerAddress).compareTo(minBalance) < 0) {
             client._transfer(testerAddress, minBalance.multiply(BigInteger.TEN), null);
-            System.out.println("transferred "+tester.getAddress() + ":" + client._balance(testerAddress));
+            System.out.println("transferred "+testerAddress + ":" + client._balance(testerAddress));
         }
         System.out.println("OwnershipTest:beforeAll start");
     }

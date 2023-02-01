@@ -16,7 +16,7 @@
 
 package foundation.icon.btp.test;
 
-import foundation.icon.jsonrpc.IconJsonModule;
+import foundation.icon.jsonrpc.IconStringConverter;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -29,7 +29,7 @@ public interface BTPBlockIntegrationTest extends BTPIntegrationTest {
         @SuppressWarnings("rawtypes")
         Map result = client.request(Map.class, "btp_getNetworkInfo",
                 Map.of("id", networkId, "height", height));
-        return IconJsonModule.NumberDeserializer.BIG_INTEGER.convert((String) result.get("nextMessageSN"));
+        return IconStringConverter.toBigInteger((String) result.get("nextMessageSN"));
     }
 
     static byte[][] messages(long networkId, BigInteger height) {

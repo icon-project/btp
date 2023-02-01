@@ -16,14 +16,12 @@ dependencies {
 
     annotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     compileOnly("foundation.icon:javaee-score-client:$scoreClientVersion")
-    compileOnly("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    compileOnly("foundation.icon:icon-sdk:$iconsdkVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.github.javafaker:javafaker:1.0.2")
 
     testImplementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
     testAnnotationProcessor("foundation.icon:javaee-score-client:$scoreClientVersion")
     testImplementation("foundation.icon:javaee-score-client:$scoreClientVersion")
-    testImplementation("foundation.icon:icon-sdk:$iconsdkVersion")
 }
 
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
@@ -100,7 +98,7 @@ test {
             excludeTags("integration")
         }
     }
-    
+
     options {
         testLogging.showStandardStreams = true
         //for ScoreIntegrationTest.client

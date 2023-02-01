@@ -18,7 +18,6 @@ package foundation.icon.btp.mock;
 
 import foundation.icon.btp.test.BTPBlockIntegrationTest;
 import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.jsonrpc.Address;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +39,7 @@ public class MockGovTest implements MockGovIntegrationTest {
     @Test
     void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() {
         long networkId = MockGovIntegrationTest.openBTPNetwork(
-                NETWORK_TYPE_NAME, NETWORK_NAME, Address.of(chainScoreClient._wallet()));
+                NETWORK_TYPE_NAME, NETWORK_NAME, chainScoreClient._wallet().getAddress());
 
         @SuppressWarnings("rawtypes")
         Map result = chainScoreClient.request(Map.class, "btp_getNetworkInfo",

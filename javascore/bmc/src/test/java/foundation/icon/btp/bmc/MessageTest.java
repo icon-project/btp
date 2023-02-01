@@ -45,7 +45,7 @@ public class MessageTest implements BMCIntegrationTest {
     static BTPAddress link = Faker.btpLink();
     static BTPAddress reachable = Faker.btpLink();
     static String svc = MockBSHIntegrationTest.SERVICE;
-    static Address relay = Address.of(bmc._wallet());
+    static Address relay = bmc._wallet().getAddress();
     static BigInteger[] emptyFeeValues = new BigInteger[]{};
     //for intermediate path test
     static BTPAddress secondLink = Faker.btpLink();
@@ -144,10 +144,10 @@ public class MessageTest implements BMCIntegrationTest {
             String src, BigInteger nsn, BTPAddress next, BTPMessageCenter.Event event) {
         return BMCIntegrationTest.btpEvent(
                 (l) -> assertTrue(l.stream().anyMatch((el) ->
-                        el.getSrc().equals(src) &&
-                                el.getNsn().equals(nsn) &&
-                                el.getNext().equals(next == null ? "" : next.toString()) &&
-                                el.getEvent().equals(event.name())
+                        el.get_src().equals(src) &&
+                                el.get_nsn().equals(nsn) &&
+                                el.get_next().equals(next == null ? "" : next.toString()) &&
+                                el.get_event().equals(event.name())
                 )));
     }
 
@@ -164,9 +164,9 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
-            assertEquals(next.toString(), el.getNext());
-            assertEquals(txSeq.add(BigInteger.ONE), el.getSeq());
-            BTPMessage btpMessage = el.getMsg();
+            assertEquals(next.toString(), el.get_next());
+            assertEquals(txSeq.add(BigInteger.ONE), el.get_seq());
+            BTPMessage btpMessage = BTPMessage.fromBytes(el.get_msg());
             assertEquals(btpAddress.net(), btpMessage.getSrc());
             assertEquals(dst.net(), btpMessage.getDst());
             assertEquals(svc, btpMessage.getSvc());
@@ -315,10 +315,10 @@ public class MessageTest implements BMCIntegrationTest {
     static Consumer<TransactionResult> handleBTPMessageChecker(
             final BTPMessage msg) {
         return MockBSHIntegrationTest.handleBTPMessageEvent((el) -> {
-            assertEquals(msg.getSrc(), el.getFrom());
-            assertEquals(msg.getSvc(), el.getSvc());
-            assertEquals(msg.getSn(), el.getSn());
-            assertArrayEquals(msg.getPayload(), el.getMsg());
+            assertEquals(msg.getSrc(), el.get_from());
+            assertEquals(msg.getSvc(), el.get_svc());
+            assertEquals(msg.getSn(), el.get_sn());
+            assertArrayEquals(msg.getPayload(), el.get_msg());
         }).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.RECEIVE));
     }
 
@@ -327,9 +327,9 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         return BMCIntegrationTest.messageEvent((el) -> {
-            assertEquals(next.toString(), el.getNext());
-            assertEquals(txSeq.add(BigInteger.ONE), el.getSeq());
-            assertEqualsBTPMessage(msg, el.getMsg());
+            assertEquals(next.toString(), el.get_next());
+            assertEquals(txSeq.add(BigInteger.ONE), el.get_seq());
+            assertEqualsBTPMessage(msg, BTPMessage.fromBytes(el.get_msg()));
         });
     }
 
@@ -411,11 +411,11 @@ public class MessageTest implements BMCIntegrationTest {
         BigInteger rxSeq = bmc.getStatus(prev.toString())
                 .getRx_seq();
         return BMCIntegrationTest.messageDroppedEvent((el) -> {
-            assertEquals(prev.toString(), el.getPrev());
-            assertEquals(rxSeq.add(BigInteger.ONE), el.getSeq());
-            assertEqualsBTPMessage(msg, el.getMsg());
-            assertEquals(BigInteger.valueOf(e.getCode()), el.getEcode());
-            assertEquals(e.getMessage(), el.getEmsg());
+            assertEquals(prev.toString(), el.get_prev());
+            assertEquals(rxSeq.add(BigInteger.ONE), el.get_seq());
+            assertEqualsBTPMessage(msg, BTPMessage.fromBytes(el.get_msg()));
+            assertEquals(e.getCode(), el.get_ecode());
+            assertEquals(e.getMessage(), el.get_emsg());
         }).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.DROP));
     }
 
@@ -473,11 +473,11 @@ public class MessageTest implements BMCIntegrationTest {
                 btpAddress.net(), emptyFeeValues));
         Consumer<TransactionResult> checker = MockBSHIntegrationTest.handleBTPErrorEvent(
                 (el) -> {
-                    assertEquals(msg.getSrc(), el.getSrc());
-                    assertEquals(msg.getSvc(), el.getSvc());
-                    assertEquals(msg.getSn().negate(), el.getSn());
-                    assertEquals(responseMsg.getCode(), el.getCode());
-                    assertEquals(responseMsg.getMsg(), el.getMsg());
+                    assertEquals(msg.getSrc(), el.get_src());
+                    assertEquals(msg.getSvc(), el.get_svc());
+                    assertEquals(msg.getSn().negate(), el.get_sn());
+                    assertEquals(responseMsg.getCode(), el.get_code());
+                    assertEquals(responseMsg.getMsg(), el.get_msg());
                 }
         ).andThen(btpEventChecker(msg, null, BTPMessageCenter.Event.RECEIVE));
         bmc.handleRelayMessage(

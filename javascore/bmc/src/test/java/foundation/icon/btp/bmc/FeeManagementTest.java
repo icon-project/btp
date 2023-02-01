@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class FeeManagementTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static BTPAddress reachable = BTPIntegrationTest.Faker.btpLink();
-    static Address relay = Address.of(bmc._wallet());
+    static Address relay = bmc._wallet().getAddress();
     static int MAX_FEE_VALUE = 10;
     static FeeInfo linkFee = fakeFee(link.net());
     static FeeInfo reachableFee = fakeFee(reachable.net(), 1, linkFee);

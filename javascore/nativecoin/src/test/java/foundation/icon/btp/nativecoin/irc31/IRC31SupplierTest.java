@@ -20,12 +20,17 @@ import com.iconloop.score.token.irc31.IRC31Basic;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.RevertedException;
+import foundation.icon.score.util.ArrayUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.function.Executable;
+import score.Context;
+import score.ObjectReader;
 import score.UserRevertedException;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -33,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class IRC31SupplierTest implements IRC31IntegrationTest {
 
-    static Address caller = Address.of(irc31Supplier._wallet());
+    static Address caller = irc31Supplier._wallet().getAddress();
     static Address owner = caller;
     static BigInteger id = BigInteger.ONE;
     static BigInteger value = BigInteger.ONE;
@@ -44,75 +49,86 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
 
     public static Consumer<TransactionResult> mintChecker(
             Address caller, Address to, BigInteger id, BigInteger value) {
-        return IRC31IntegrationTest.eventLogChecker(TransferSingleEventLog::eventLogs, (el) -> {
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferSingle::eventLogs, (el) -> {
             //caller must be registered owner of OwnerBasedIRC31Supplier
 //            assertEquals(caller, el.getOperator());
-            assertEquals(to, el.getOperator());//IRC31 must be fixed
-            assertEquals(IRC31Basic.ZERO_ADDRESS, el.getFrom());
-            assertEquals(to, el.getTo());
-            assertEquals(id, el.getId());
-            assertEquals(value, el.getValue());
+            assertEquals(to, el.get_operator());//IRC31 must be fixed
+            assertEquals(IRC31Basic.ZERO_ADDRESS, el.get_from());
+            assertEquals(to, el.get_to());
+            assertEquals(id, el.get_id());
+            assertEquals(value, el.get_value());
         });
     }
 
     public static Consumer<TransactionResult> transferFromChecker(
             Address caller, Address from, Address to, BigInteger id, BigInteger value) {
-        return IRC31IntegrationTest.eventLogChecker(TransferSingleEventLog::eventLogs, (el) -> {
-            assertEquals(caller, el.getOperator());
-            assertEquals(from, el.getFrom());
-            assertEquals(to, el.getTo());
-            assertEquals(id, el.getId());
-            assertEquals(value, el.getValue());
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferSingle::eventLogs, (el) -> {
+            assertEquals(caller, el.get_operator());
+            assertEquals(from, el.get_from());
+            assertEquals(to, el.get_to());
+            assertEquals(id, el.get_id());
+            assertEquals(value, el.get_value());
         });
     }
 
     public static Consumer<TransactionResult> burnChecker(
             Address caller, Address from, BigInteger id, BigInteger value) {
-        return IRC31IntegrationTest.eventLogChecker(TransferSingleEventLog::eventLogs, (el) -> {
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferSingle::eventLogs, (el) -> {
             //caller must be registered owner of OwnerBasedIRC31Supplier
 //            assertEquals(caller, el.getOperator());
-            assertEquals(from, el.getOperator());//IRC31 must be fixed
-            assertEquals(from, el.getFrom());
-            assertEquals(IRC31Basic.ZERO_ADDRESS, el.getTo());
-            assertEquals(id, el.getId());
-            assertEquals(value, el.getValue());
+            assertEquals(from, el.get_operator());//IRC31 must be fixed
+            assertEquals(from, el.get_from());
+            assertEquals(IRC31Basic.ZERO_ADDRESS, el.get_to());
+            assertEquals(id, el.get_id());
+            assertEquals(value, el.get_value());
         });
+    }
+
+    public static BigInteger[] toBigIntegerArray(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        reader.beginList();
+        List<BigInteger> list = new ArrayList<>();
+        while(reader.hasNext()) {
+            list.add(reader.readBigInteger());
+        }
+        reader.end();
+        return ArrayUtil.toBigIntegerArray(list);
     }
 
     public static Consumer<TransactionResult> mintBatchChecker(
             Address caller, Address to, BigInteger[] ids, BigInteger[] values) {
-        return IRC31IntegrationTest.eventLogChecker(TransferBatchEventLog::eventLogs, (el) -> {
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferBatch::eventLogs, (el) -> {
             //caller must be registered owner of OwnerBasedIRC31Supplier
 //            assertEquals(caller, el.getOperator());
-            assertEquals(to, el.getOperator());//IRC31 must be fixed
-            assertEquals(IRC31Basic.ZERO_ADDRESS, el.getFrom());
-            assertEquals(to, el.getTo());
-            assertArrayEquals(ids, el.getIds());
-            assertArrayEquals(values, el.getValues());
+            assertEquals(to, el.get_operator());//IRC31 must be fixed
+            assertEquals(IRC31Basic.ZERO_ADDRESS, el.get_from());
+            assertEquals(to, el.get_to());
+            assertArrayEquals(ids, toBigIntegerArray(el.get_ids()));
+            assertArrayEquals(values, toBigIntegerArray(el.get_values()));
         });
     }
 
     public static Consumer<TransactionResult> transferFromBatchChecker(
             Address caller, Address from, Address to, BigInteger[] ids, BigInteger[] values) {
-        return IRC31IntegrationTest.eventLogChecker(TransferBatchEventLog::eventLogs, (el) -> {
-            assertEquals(caller, el.getOperator());
-            assertEquals(from, el.getFrom());
-            assertEquals(to, el.getTo());
-            assertArrayEquals(ids, el.getIds());
-            assertArrayEquals(values, el.getValues());
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferBatch::eventLogs, (el) -> {
+            assertEquals(caller, el.get_operator());
+            assertEquals(from, el.get_from());
+            assertEquals(to, el.get_to());
+            assertArrayEquals(ids, toBigIntegerArray(el.get_ids()));
+            assertArrayEquals(values, toBigIntegerArray(el.get_values()));
         });
     }
 
     public static Consumer<TransactionResult> burnBatchChecker(
             Address caller, Address from, BigInteger[] ids, BigInteger[] values) {
-        return IRC31IntegrationTest.eventLogChecker(TransferBatchEventLog::eventLogs, (el) -> {
+        return IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.TransferBatch::eventLogs, (el) -> {
             //caller must be registered owner of OwnerBasedIRC31Supplier
 //            assertEquals(caller, el.getOperator());
-            assertEquals(from, el.getOperator());//IRC31 must be fixed
-            assertEquals(from, el.getFrom());
-            assertEquals(IRC31Basic.ZERO_ADDRESS, el.getTo());
-            assertArrayEquals(ids, el.getIds());
-            assertArrayEquals(values, el.getValues());
+            assertEquals(from, el.get_operator());//IRC31 must be fixed
+            assertEquals(from, el.get_from());
+            assertEquals(IRC31Basic.ZERO_ADDRESS, el.get_to());
+            assertArrayEquals(ids, toBigIntegerArray(el.get_ids()));
+            assertArrayEquals(values, toBigIntegerArray(el.get_values()));
         });
     }
 
@@ -214,9 +230,9 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
     @Test
     void setTokenURI() {
         irc31Supplier.setTokenURI(
-                IRC31IntegrationTest.eventLogChecker(URIEventLog::eventLogs, (el) -> {
-                    assertEquals(id, el.getId());
-                    assertEquals(uri, el.getValue());
+                IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.URI::eventLogs, (el) -> {
+                    assertEquals(id, el.get_id());
+                    assertEquals(uri, el.get_value());
                 }),
                 id, uri);
         assertEquals(uri, irc31Supplier.tokenURI(id));
@@ -239,11 +255,11 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
 
     public static void setApprovalForAll(Address operator, boolean approved) {
         irc31Supplier.setApprovalForAll(
-                IRC31IntegrationTest.eventLogChecker(ApprovalForAllEventLog::eventLogs, (el) -> {
+                IRC31IntegrationTest.eventLogChecker(IRC31SupplierScoreClient.ApprovalForAll::eventLogs, (el) -> {
                     //caller must be registered owner of OwnerBasedIRC31Supplier
-                    assertEquals(caller, el.getOwner());
-                    assertEquals(operator, el.getOperator());
-                    assertEquals(approved, el.isApproved());
+                    assertEquals(caller, el.get_owner());
+                    assertEquals(operator, el.get_operator());
+                    assertEquals(approved, el.get_approved());
                 }),
                 operator, approved);
         assertEquals(approved, isApprovalForAll(operator));
@@ -265,14 +281,14 @@ public class IRC31SupplierTest implements IRC31IntegrationTest {
     void transferFrom() {
         mint(owner, id, value);
 
-        transferFrom(owner, Address.of(tester), id, value);
+        transferFrom(owner, tester.getAddress(), id, value);
     }
 
     @Test
     void transferFromBatch() {
         mintBatch(owner, ids, values);
 
-        transferFromBatch(owner, Address.of(tester), ids, values);
+        transferFromBatch(owner, tester.getAddress(), ids, values);
     }
 
     @Test

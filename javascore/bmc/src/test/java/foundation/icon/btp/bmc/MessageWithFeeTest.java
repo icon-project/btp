@@ -48,7 +48,7 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static BTPAddress reachable = BTPIntegrationTest.Faker.btpLink();
     static String svc = MockBSHIntegrationTest.SERVICE;
-    static Address relay = Address.of(bmc._wallet());
+    static Address relay = bmc._wallet().getAddress();
 
     static FeeInfo linkFee = FeeManagementTest.fakeFee(link.net());
     static FeeInfo reachableFee = FeeManagementTest.fakeFee(reachable.net(), 1, linkFee);
@@ -135,9 +135,9 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
         BigInteger txSeq = bmc.getStatus(next.toString())
                 .getTx_seq();
         Consumer<TransactionResult> checker = BMCIntegrationTest.messageEvent((el) -> {
-            assertEquals(next.toString(), el.getNext());
-            assertEquals(txSeq.add(BigInteger.ONE), el.getSeq());
-            BTPMessage btpMessage = el.getMsg();
+            assertEquals(next.toString(), el.get_next());
+            assertEquals(txSeq.add(BigInteger.ONE), el.get_seq());
+            BTPMessage btpMessage = BTPMessage.fromBytes(el.get_msg());
             assertEquals(btpAddress.net(), btpMessage.getSrc());
             assertEquals(dst.net(), btpMessage.getDst());
             assertEquals(svc, btpMessage.getSvc());
@@ -410,11 +410,11 @@ public class MessageWithFeeTest implements BMCIntegrationTest {
                 btpAddress.net(), FeeManagementTest.backward(linkFee.getValues())));
         Consumer<TransactionResult> checker = MockBSHIntegrationTest.handleBTPErrorEvent(
                 (el) -> {
-                    assertEquals(msg.getSrc(), el.getSrc());
-                    assertEquals(msg.getSvc(), el.getSvc());
-                    assertEquals(msg.getSn().negate(), el.getSn());
-                    assertEquals(responseMsg.getCode(), el.getCode());
-                    assertEquals(responseMsg.getMsg(), el.getMsg());
+                    assertEquals(msg.getSrc(), el.get_src());
+                    assertEquals(msg.getSvc(), el.get_svc());
+                    assertEquals(msg.getSn().negate(), el.get_sn());
+                    assertEquals(responseMsg.getCode(), el.get_code());
+                    assertEquals(responseMsg.getMsg(), el.get_msg());
                 }
         );
         bmc.handleRelayMessage(

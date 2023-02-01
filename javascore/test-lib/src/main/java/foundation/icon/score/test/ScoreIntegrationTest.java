@@ -16,13 +16,12 @@
 
 package foundation.icon.score.test;
 
-import foundation.icon.icx.KeyWallet;
-import foundation.icon.icx.Wallet;
 import foundation.icon.jsonrpc.Address;
-import foundation.icon.jsonrpc.IconJsonModule;
+import foundation.icon.jsonrpc.IconStringConverter;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import foundation.icon.score.client.DefaultScoreClient;
 import foundation.icon.score.client.RevertedException;
+import foundation.icon.score.client.Wallet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -33,9 +32,6 @@ import org.junit.jupiter.api.function.Executable;
 import score.UserRevertedException;
 
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -176,8 +172,13 @@ public interface ScoreIntegrationTest {
 
     static <T> Consumer<TransactionResult> eventLogChecker(
             Address address, EventLogsSupplier<T> supplier, Consumer<T> consumer) {
+        return eventLogChecker(address, supplier, consumer, null);
+    }
+
+    static <T> Consumer<TransactionResult> eventLogChecker(
+            Address address, EventLogsSupplier<T> supplier, Consumer<T> consumer, Predicate<T> filter) {
         return (txr) -> {
-            List<T> eventLogs = supplier.apply(txr, address, null);
+            List<T> eventLogs = supplier.apply(txr, address, filter);
             assertEquals(1, eventLogs.size());
             if (consumer != null) {
                 consumer.accept(eventLogs.get(0));
@@ -195,26 +196,27 @@ public interface ScoreIntegrationTest {
 
     static <T> Consumer<TransactionResult> eventLogsChecker(
             Address address, EventLogsSupplier<T> supplier, Consumer<List<T>> consumer) {
+        return eventLogsChecker(address, supplier, consumer, null);
+    }
+    static <T> Consumer<TransactionResult> eventLogsChecker(
+            Address address, EventLogsSupplier<T> supplier, Consumer<List<T>> consumer, Predicate<T> filter) {
         return (txr) -> {
-            List<T> eventLogs = supplier.apply(txr, address, null);
+            List<T> eventLogs = supplier.apply(txr, address, filter);
             if (consumer != null) {
                 consumer.accept(eventLogs);
             }
         };
     }
 
+    static <T> Consumer<TransactionResult> icxTransferEvent(
+            Address address, Consumer<ICXTransferEventLog> consumer) {
+        return eventLogChecker(address, ICXTransferEventLog::eventLogs, consumer);
+    }
+
     Wallet tester = getOrGenerateWallet("tester.", System.getProperties());
     static Wallet getOrGenerateWallet(String prefix, Properties properties) {
         Wallet wallet = DefaultScoreClient.wallet(prefix, properties);
-        return wallet == null ? generateWallet() : wallet;
-    }
-
-    static KeyWallet generateWallet() {
-        try {
-            return KeyWallet.create();
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            throw new RuntimeException(e);
-        }
+        return wallet == null ? Wallet.generate() : wallet;
     }
 
     interface Faker {
@@ -222,7 +224,7 @@ public interface ScoreIntegrationTest {
         Random random = new Random();
 
         static Address address(Address.Type type) {
-            byte[] body = IconJsonModule.hexToBytes(
+            byte[] body = IconStringConverter.toBytes(
                     faker.crypto().sha256().substring(0, (Address.LENGTH - 1) * 2));
             return new Address(type, body);
         }
