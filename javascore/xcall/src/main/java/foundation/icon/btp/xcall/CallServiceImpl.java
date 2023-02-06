@@ -249,11 +249,11 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         String to = msgReq.getTo();
 
         BigInteger reqId = getNextReqId();
-        CSMessageRequest req = new CSMessageRequest(from.toString(), to, sn, msgReq.needRollback(), msgReq.getData());
+        CSMessageRequest req = new CSMessageRequest(from.toString(), to, msgReq.getSn(), msgReq.needRollback(), msgReq.getData());
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user
-        CallMessage(from.toString(), to, sn, reqId, msgReq.getData());
+        CallMessage(from.toString(), to, msgReq.getSn(), reqId, msgReq.getData());
     }
 
     private void handleResponse(String netFrom, BigInteger sn, byte[] data) {

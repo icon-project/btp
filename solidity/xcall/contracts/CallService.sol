@@ -300,11 +300,11 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         proxyReqs[reqId] = Types.CSMessageRequest(
             from,
             req.to,
-            sn,
+            req.sn,
             req.rollback,
             req.data
         );
-        emit CallMessage(from, req.to, sn, reqId, req.data);
+        emit CallMessage(from, req.to, req.sn, reqId, req.data);
     }
 
     function handleResponse(

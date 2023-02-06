@@ -162,7 +162,7 @@ async function verifyCallMessageSent(srcChain: any, receipt: any, msg: string) {
   return event._sn;
 }
 
-async function checkCallMessage(srcChain: any, dstChain: any) {
+async function checkCallMessage(srcChain: any, dstChain: any, sn: BigNumber) {
   if (isHardhatChain(dstChain)) {
     const xcallDst = await ethers.getContractAt('CallService', dstChain.contracts.xcall);
     const filterCM = xcallDst.filters.CallMessage(
@@ -174,6 +174,10 @@ async function checkCallMessage(srcChain: any, dstChain: any) {
       throw new Error(`DApp: could not find event: "CallMessage"`);
     }
     console.log(logs[0]);
+    const reqSn = logs[0].args._sn
+    if (!sn.eq(reqSn)) {
+      throw new Error(`DApp: serial number mismatch (${sn} != ${reqSn})`);
+    }
     return logs[0].args._reqId;
   } else if (isIconChain(dstChain)) {
     const xcallDst = new XCall(iconNetwork, dstChain.contracts.xcall);
@@ -182,6 +186,11 @@ async function checkCallMessage(srcChain: any, dstChain: any) {
       throw new Error(`DApp: could not find event: "CallMessage"`);
     }
     console.log(logs[0]);
+    const indexed = logs[0].indexed || [];
+    const reqSn = BigNumber.from(indexed[3]);
+    if (!sn.eq(reqSn)) {
+      throw new Error(`DApp: serial number mismatch (${sn} != ${reqSn})`);
+    }
     const data = logs[0].data || [];
     return BigNumber.from(data[0]);
   } else {
@@ -404,7 +413,7 @@ async function sendCallMessage(src: string, dst: string, msgData?: string, needR
   const sn = await verifyCallMessageSent(srcChain, sendMessageReceipt, msgData);
 
   console.log(`[2] check CallMessage event on ${dst} chain`);
-  const reqId = await checkCallMessage(srcChain, dstChain);
+  const reqId = await checkCallMessage(srcChain, dstChain, sn);
 
   console.log(`[3] invoke executeCall with reqId=${reqId}`);
   const executeCallReceipt = await invokeExecuteCall(dstChain, reqId);

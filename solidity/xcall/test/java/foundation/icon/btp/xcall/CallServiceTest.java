@@ -146,7 +146,8 @@ public class CallServiceTest implements CSIntegrationTest {
         });
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
-                linkNet, NAME, srcSn, csMsg.toBytes()).send());
+                // _sn field should be zero since this is a one-way message
+                linkNet, NAME, BigInteger.ZERO, csMsg.toBytes()).send());
     }
 
     @Order(2)
@@ -249,7 +250,8 @@ public class CallServiceTest implements CSIntegrationTest {
         });
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
-                linkNet, NAME, srcSn, csMsg.toBytes()).send());
+                // _sn field should be zero since this is a one-way message
+                linkNet, NAME, BigInteger.ZERO, csMsg.toBytes()).send());
     }
 
     @Order(10)
