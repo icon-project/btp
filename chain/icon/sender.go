@@ -79,10 +79,6 @@ func NewSender(src, dst types.BtpAddress, w client.Wallet, endpoint string, opt 
 }
 
 func (s *sender) Start() (<-chan types.SenderMessage, error) {
-	go func() {
-		s.SendStatus()
-	}()
-
 	return s.sc, nil
 }
 
