@@ -14,6 +14,7 @@ type BTPRelayMessage struct {
 
 type relayMessageItem struct {
 	it      link.MessageItemType
+	nextBls *types.BMCLinkStatus
 	payload []byte
 }
 
@@ -25,7 +26,10 @@ func (c *relayMessageItem) Len() int64 {
 	return int64(len(c.payload))
 }
 
-func (c *relayMessageItem) UpdateBMCLinkStatus(status *types.BMCLinkStatus) error {
+func (c *relayMessageItem) UpdateBMCLinkStatus(bls *types.BMCLinkStatus) error {
+	bls.Verifier.Height = c.nextBls.Verifier.Height
+	bls.RxSeq = c.nextBls.RxSeq
+	bls.TxSeq = c.nextBls.TxSeq
 	return nil
 }
 
@@ -56,14 +60,19 @@ func (c *blockUpdate) TargetHeight() int64 {
 	return c.targetHeight
 }
 
-func NewBlockUpdate(srcHeight, targetHeight int64, v interface{}) *blockUpdate {
+func NewBlockUpdate(bs *types.BMCLinkStatus, targetHeight int64, v interface{}) *blockUpdate {
+	nextBls := &types.BMCLinkStatus{}
+	nextBls.Verifier.Height = targetHeight
+	nextBls.TxSeq = bs.TxSeq
+	nextBls.RxSeq = bs.RxSeq
 	return &blockUpdate{
-		srcHeight:    srcHeight,
+		srcHeight:    bs.Verifier.Height,
 		targetHeight: targetHeight,
 		blockProof: blockProof{
 			relayMessageItem: relayMessageItem{
 				it:      link.TypeBlockUpdate,
 				payload: codec.RLP.MustMarshalToBytes(v),
+				nextBls: nextBls,
 			},
 			ph: targetHeight,
 		},
@@ -84,13 +93,19 @@ func (m *MessageProof) LastSeqNum() int64 {
 	return m.lastSeq
 }
 
-func NewMessageProof(ss, ls int64, v interface{}) *MessageProof {
+func NewMessageProof(bs *types.BMCLinkStatus, ls int64, v interface{}) *MessageProof {
+	nextBls := &types.BMCLinkStatus{}
+	nextBls.Verifier.Height = bs.Verifier.Height
+	nextBls.TxSeq = bs.TxSeq
+	nextBls.RxSeq = ls
+
 	return &MessageProof{
-		startSeq: ss,
+		startSeq: bs.RxSeq,
 		lastSeq:  ls,
 		relayMessageItem: relayMessageItem{
 			it:      link.TypeMessageProof,
 			payload: codec.RLP.MustMarshalToBytes(v),
+			nextBls: nextBls,
 		},
 	}
 }
@@ -108,17 +123,18 @@ type TypePrefixedMessage struct {
 }
 
 func NewTypePrefixedMessage(rmi link.RelayMessageItem) (*TypePrefixedMessage, error) {
-	mt := RelayMessageTypeReserved
+	tpm := &TypePrefixedMessage{}
 	switch rmi.Type() {
 	case link.TypeBlockUpdate:
-		mt = RelayMessageTypeBlockUpdate
+		bn := rmi.(*blockUpdate)
+		tpm.Type = RelayMessageTypeBlockUpdate
+		tpm.Payload = bn.Payload()
 	case link.TypeMessageProof:
-		mt = RelayMessageTypeMessageProof
+		bn := rmi.(*MessageProof)
+		tpm.Type = RelayMessageTypeMessageProof
+		tpm.Payload = bn.Payload()
 	default:
-		return nil, fmt.Errorf("invalid valud")
+		return nil, fmt.Errorf("in valid valud")
 	}
-	return &TypePrefixedMessage{
-		Type:    mt,
-		Payload: rmi.(*relayMessageItem).Payload(),
-	}, nil
+	return tpm, nil
 }

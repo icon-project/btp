@@ -59,7 +59,7 @@ func (r *relayMessage) RelayMessageItems() []RelayMessageItem {
 }
 
 type relayMessageItem struct {
-	rmis []RelayMessageItem
+	rmis [][]RelayMessageItem
 	size int64
 }
 type Link struct {
@@ -88,29 +88,34 @@ func NewLink(cfg *chain.Config, r Receiver, l log.Logger) types.Link {
 		rms: make([]*relayMessage, 0),
 		rss: make([]ReceiveStatus, 0),
 		rmi: &relayMessageItem{
-			rmis: make([]RelayMessageItem, 0),
+			rmis: make([][]RelayMessageItem, 0),
 			size: 0,
 		},
 	}
+	link.rmi.rmis = append(link.rmi.rmis, make([]RelayMessageItem, 0))
 	return link
 }
 
 func (l *Link) Start(sender types.Sender) error {
 	l.s = sender
-
-	if err := l.senderChannel(); err != nil {
-		return errors.Errorf("sender error message err=%+v", err)
-	}
+	errCh := make(chan error)
+	l.senderChannel(errCh)
 
 	bls, err := l.s.GetStatus()
 	if err != nil {
 		return err
 	}
 
-	if err := l.receiverChannel(bls); err != nil {
-		return errors.Errorf("receive failed err=%+v", err)
-	}
+	l.receiverChannel(bls, errCh)
 
+	for {
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -119,51 +124,78 @@ func (l *Link) Stop() {
 	l.r.Stop()
 }
 
-func (l *Link) senderChannel() error {
-	l.limitSize = int64(l.s.TxSizeLimit()) - l.s.GetMarginForLimit()
-	scc, err := l.s.Start()
-	if err != nil {
-		return err
-	}
+func (l *Link) receiverChannel(bls *types.BMCLinkStatus, errCh chan error) {
 
-	for {
-		select {
-		case sc := <-scc:
-			switch t := sc.(type) {
-			case *types.RelayResult:
-				l.result(t)
-			case *types.BMCLinkStatus:
-				//TODO clear rms ( relayMessage slice )
-			default:
-				//TODO exception
+	go func() {
+		rsc, err := l.r.Start(bls)
+		err = l.checkStatus(bls)
+
+		for {
+			select {
+			case rs := <-rsc:
+				l.rss = append(l.rss, rs)
+				l.BuildRelayMessage(bls)
 			}
+		}
+
+		select {
+		case errCh <- err:
+		default:
+		}
+	}()
+}
+
+func (l *Link) senderChannel(errCh chan error) {
+	go func() {
+		l.limitSize = int64(l.s.TxSizeLimit()) - l.s.GetMarginForLimit()
+		scc, err := l.s.Start()
+
+		for {
+			select {
+			case sc := <-scc:
+				switch t := sc.(type) {
+				case *types.RelayResult:
+					err := l.result(t)
+					errCh <- err
+				case *types.BMCLinkStatus:
+					l.clearRelayMessage(t)
+					l.clearReceiveStatus(t)
+				default:
+					//TODO exception
+				}
+			}
+		}
+
+		select {
+		case errCh <- err:
+		default:
+		}
+	}()
+
+}
+
+func (l *Link) clearRelayMessage(bls *types.BMCLinkStatus) {
+	for i, rm := range l.rms {
+		if rm.bls.Verifier.Height <= bls.Verifier.Height && rm.bls.RxSeq <= bls.RxSeq {
+			l.rms = l.rms[i+1:]
+			break
 		}
 	}
 }
 
-func (l *Link) receiverChannel(bls *types.BMCLinkStatus) error {
-	rsc, err := l.r.Start(bls)
-
-	err = l.checkStatus(bls)
-	if err != nil {
-		return err
-	}
-
-	if err != nil {
-		return err
-	}
-	for {
-		select {
-		case rs := <-rsc:
-			l.rss = append(l.rss, rs)
-			l.BuildRelayMessage(bls)
+func (l *Link) clearReceiveStatus(bls *types.BMCLinkStatus) {
+	for i, rs := range l.rss {
+		if rs.Height() <= bls.Verifier.Height && rs.Seq() <= bls.RxSeq {
+			l.rss = l.rss[i+1:]
+			break
 		}
 	}
 }
 
 func (l *Link) BuildRelayMessage(bls *types.BMCLinkStatus) error {
-	l.rmsMtx.Lock()
-	defer l.rmsMtx.Lock()
+	if len(l.rmi.rmis) == 0 {
+		l.createRelayMessageItem()
+	}
 
 	//Get Block
 	bus, err := l.getHeader(bls)
@@ -173,7 +205,7 @@ func (l *Link) BuildRelayMessage(bls *types.BMCLinkStatus) error {
 
 	if len(bus) != 0 {
 		for _, bu := range bus {
-			l.rmi.rmis = append(l.rmi.rmis, bu)
+			l.rmi.rmis[len(l.rmi.rmis)-1] = append(l.rmi.rmis[len(l.rmi.rmis)-1], bu)
 			l.rmi.size += bu.Len()
 			err := bu.UpdateBMCLinkStatus(bls)
 			if err != nil {
@@ -198,12 +230,15 @@ func (l *Link) BuildRelayMessage(bls *types.BMCLinkStatus) error {
 }
 
 func (l *Link) sendRelayMessage(bls *types.BMCLinkStatus) error {
-	rm, err := l.appendRelayMessage(bls)
+	rms, err := l.appendRelayMessage(bls)
 	if err != nil {
 		return err
 	}
-	l.rms = append(l.rms, rm)
-	l.s.Relay(rm)
+
+	for _, rm := range rms {
+		l.rms = append(l.rms, rm)
+		l.s.Relay(rm)
+	}
 	return nil
 }
 
@@ -223,6 +258,9 @@ func (l *Link) checkStatus(bls *types.BMCLinkStatus) error {
 	lastSeq := bls.RxSeq
 	for {
 		h := l.r.GetHeightForSeq(lastSeq)
+		if h == 0 {
+			break
+		}
 		if h == bls.Verifier.Height {
 			mp, err := l.r.BuildMessageProof(bls, l.limitSize-l.rmi.size)
 			if err != nil {
@@ -230,7 +268,7 @@ func (l *Link) checkStatus(bls *types.BMCLinkStatus) error {
 			}
 
 			if mp.Len() != 0 || bls.RxSeq < mp.LastSeqNum() {
-				l.rmi.rmis = append(l.rmi.rmis, mp)
+				l.rmi.rmis[len(l.rmi.rmis)-1] = append(l.rmi.rmis[len(l.rmi.rmis)-1], mp)
 				l.rmi.size += mp.Len()
 			}
 			break
@@ -243,58 +281,107 @@ func (l *Link) checkStatus(bls *types.BMCLinkStatus) error {
 			break
 		}
 	}
+	if l.rmi.size > 0 {
+		l.sendRelayMessage(bls)
+	}
 	return nil
 }
 
 func (l *Link) buildProof(bls *types.BMCLinkStatus, bu BlockUpdate) error {
-	if l.isOverLimit(l.rmi.size) {
-		l.sendRelayMessage(bls)
-		mp, err := l.r.BuildMessageProof(bls, l.limitSize-l.rmi.size)
-		if err != nil {
-			return err
+	rs := l.getReceiveStatusForHeight(bls)
+	if rs == nil {
+		return nil
+	}
+	for {
+		if rs.Seq() <= bls.RxSeq {
+			break
 		}
-		if mp != nil {
-			bf, err := l.r.BuildBlockProof(bls, bls.Verifier.Height)
-			if err != nil {
-				return err
+		if l.isOverLimit(l.rmi.size) {
+			l.sendRelayMessage(bls)
+			if bu.ProofHeight() != 0 {
+				mh := l.r.GetHeightForSeq(bls.RxSeq)
+				if err := l.buildBlockProof(bls, mh); err != nil {
+					return err
+				}
 			}
+			l.buildMessageProof(bls)
 
-			if bf != nil {
-				l.rmi.rmis = append(l.rmi.rmis, bf)
-				l.rmi.size += bf.Len()
+		} else {
+			if bu.ProofHeight() == -1 {
+				mh := l.r.GetHeightForSeq(bls.RxSeq)
+				if err := l.buildBlockProof(bls, mh); err != nil {
+					return err
+				}
 			}
+			l.buildMessageProof(bls)
 
-			l.rmi.rmis = append(l.rmi.rmis, mp)
-			l.rmi.size += mp.Len()
-		}
-	} else {
-		mp, err := l.r.BuildMessageProof(bls, l.limitSize-l.rmi.size)
-		if err != nil {
-			return err
-		}
-		if mp != nil {
-			l.rmi.rmis = append(l.rmi.rmis, mp)
-			l.rmi.size += mp.Len()
 		}
 	}
 	return nil
 }
 
-func (l *Link) appendRelayMessage(bls *types.BMCLinkStatus) (*relayMessage, error) {
-	m, err := l.r.BuildRelayMessage(l.rmi.rmis)
+func (l *Link) getReceiveStatusForHeight(bls *types.BMCLinkStatus) ReceiveStatus {
+	for _, rs := range l.rss {
+		if rs.Height() == bls.Verifier.Height {
+			return rs
+		}
+	}
+	return nil
+}
+
+func (l *Link) buildMessageProof(bls *types.BMCLinkStatus) error {
+	mp, err := l.r.BuildMessageProof(bls, l.limitSize-l.rmi.size)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if mp != nil {
+		l.rmi.rmis[len(l.rmi.rmis)-1] = append(l.rmi.rmis[len(l.rmi.rmis)-1], mp)
+		l.rmi.size += mp.Len()
+		if err := mp.UpdateBMCLinkStatus(bls); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (l *Link) buildBlockProof(bls *types.BMCLinkStatus, height int64) error {
+	bf, err := l.r.BuildBlockProof(bls, height)
+	if err != nil {
+		return err
 	}
 
-	rm := &relayMessage{
-		id:       rand.Int(),
-		bls:      bls,
-		bpHeight: l.r.GetHeightForSeq(bls.RxSeq),
-		message:  m,
-		rmis:     l.rmi.rmis,
-	}
+	if bf != nil {
+		l.rmi.rmis[len(l.rmi.rmis)-1] = append(l.rmi.rmis[len(l.rmi.rmis)-1], bf)
+		l.rmi.size += bf.Len()
+		if err := bf.UpdateBMCLinkStatus(bls); err != nil {
+			return err
+		}
 
-	return rm, nil
+	}
+	return nil
+}
+
+func (l *Link) appendRelayMessage(bls *types.BMCLinkStatus) ([]*relayMessage, error) {
+	rms := make([]*relayMessage, 0)
+	for _, rmi := range l.rmi.rmis {
+		m, err := l.r.BuildRelayMessage(rmi)
+		if err != nil {
+			return nil, err
+		}
+
+		rm := &relayMessage{
+			id:       rand.Int(),
+			bls:      bls,
+			bpHeight: l.r.GetHeightForSeq(bls.RxSeq),
+			message:  m,
+			rmis:     rmi,
+		}
+		rms = append(rms, rm)
+	}
+	l.rmi.rmis = l.rmi.rmis[:0]
+	l.rmi.size = 0
+
+	return rms, nil
 }
 
 func (l *Link) removeRelayMessage(id int) {
@@ -321,6 +408,15 @@ func (l *Link) updateBlockProof(id int) error {
 	return nil
 }
 
+func (l *Link) searchReceiveStatusForHeight(height int64) ReceiveStatus {
+	for _, rs := range l.rss {
+		if rs.Height() == height {
+			return rs
+		}
+	}
+	return nil
+}
+
 func (l *Link) searchRelayMessage(id int) *relayMessage {
 	for _, rm := range l.rms {
 		if rm.Id() == id {
@@ -331,12 +427,22 @@ func (l *Link) searchRelayMessage(id int) *relayMessage {
 }
 
 func (l *Link) isOverLimit(size int64) bool {
-	return int64(l.s.TxSizeLimit()) > size
+	if int64(l.s.TxSizeLimit()) < size {
+		l.createRelayMessageItem()
+		return true
+	}
+	return false
+}
+
+func (l *Link) createRelayMessageItem() {
+	l.rmi.rmis = append(l.rmi.rmis, make([]RelayMessageItem, 0))
+	l.rmi.size = 0
 }
 
 func (l *Link) result(rr *types.RelayResult) error {
 	l.rmsMtx.Lock()
 	defer l.rmsMtx.Lock()
+
 	switch rr.Err {
 	case BMVUnknown:
 		l.l.Panicf("BMVUnknown Revert : ErrorCoder:%+v", rr.Err)
