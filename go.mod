@@ -28,6 +28,6 @@ require (
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.11
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/tools v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
