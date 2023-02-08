@@ -28,6 +28,8 @@ import foundation.icon.score.test.ScoreIntegrationTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import score.Context;
+import score.ObjectReader;
 import score.UserRevertedException;
 
 import java.math.BigInteger;
@@ -43,10 +45,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class NativeCoinServiceTest implements NCSIntegrationTest {
 
     static Address ncsAddress = ncs._address();
-    static Address owner = Address.of(ncs._wallet());
+    static Address owner = ncs._wallet().getAddress();
     static BTPAddress link = BTPIntegrationTest.Faker.btpLink();
     static String linkNet = BTPIntegrationTest.Faker.btpNetwork();
-    static Address testerAddress = Address.of(tester);
+    static Address testerAddress = tester.getAddress();
     static BTPAddress to = new BTPAddress(BTPAddress.PROTOCOL_BTP, linkNet, testerAddress.toString());
     static String nativeCoinName = ncs.coinNames()[0];
     static BigInteger nativeValue = BigInteger.valueOf(10);
@@ -134,21 +136,32 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 BalanceCheckType.refund);
     }
 
+    public static AssetTransferDetail[] toAssetTransferDetailArray(byte[] bytes) {
+        ObjectReader reader = Context.newByteArrayObjectReader("RLPn", bytes);
+        reader.beginList();
+        List<AssetTransferDetail> list = new ArrayList<>();
+        while (reader.hasNext()) {
+            list.add(reader.read(AssetTransferDetail.class));
+        }
+        reader.end();
+        return list.toArray(new AssetTransferDetail[]{});
+    }
+
     static Consumer<TransactionResult> transferStartEventLogChecker(TransferTransaction transaction) {
-        return NCSIntegrationTest.eventLogChecker(TransferStartEventLog::eventLogs, (el) -> {
+        return NCSIntegrationTest.eventLogChecker(NCSScoreClient.TransferStart::eventLogs, (el) -> {
             System.out.println(el);
-            assertEquals(transaction.getFrom(), el.getFrom().toString());
-            assertEquals(transaction.getTo(), el.getTo());
-            AssertNCS.assertEqualsAssetTransferDetails(transaction.getAssets(), el.getAssets());
+            assertEquals(transaction.getFrom(), el.get_from().toString());
+            assertEquals(transaction.getTo(), el.get_to());
+            AssertNCS.assertEqualsAssetTransferDetails(transaction.getAssets(), toAssetTransferDetailArray(el.get_assets()));
         });
     }
 
     static Consumer<TransactionResult> transferEndEventLogChecker(Address from, BigInteger sn, TransferResponse response) {
-        return NCSIntegrationTest.eventLogChecker(TransferEndEventLog::eventLogs, (el) -> {
-            assertEquals(from, el.getFrom());
-            assertEquals(sn, el.getSn());
-            assertEquals(response.getCode(), el.getCode());
-            assertEquals(response.getMessage(), new String(el.getMsg()));
+        return NCSIntegrationTest.eventLogChecker(NCSScoreClient.TransferEnd::eventLogs, (el) -> {
+            assertEquals(from, el.get_sender());
+            assertEquals(sn, el.get_sn());
+            assertEquals(response.getCode(), el.get_code());
+            assertEquals(response.getMessage(), new String(el.get_msg()));
         });
     }
 
@@ -159,13 +172,13 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
     static Consumer<TransactionResult> sendMessageEventLogChecker(TransferTransaction transaction, BigInteger[] snContainer) {
         return MockBMCIntegrationTest.sendMessageEvent(
                 (el) -> {
-                    assertEquals(BTPAddress.valueOf(transaction.getTo()).net(), el.getTo());
-                    assertEquals(NativeCoinService.SERVICE, el.getSvc());
+                    assertEquals(BTPAddress.valueOf(transaction.getTo()).net(), el.get_to());
+                    assertEquals(NativeCoinService.SERVICE, el.get_svc());
                     if (snContainer != null) {
-                        snContainer[0] = el.getSn();
+                        snContainer[0] = el.get_sn();
                     }
 //                  assertEquals(sn, el.getSn());
-                    NCSMessage ncsMessage = NCSMessage.fromBytes(el.getMsg());
+                    NCSMessage ncsMessage = NCSMessage.fromBytes(el.get_msg());
                     assertEquals(NCSMessage.REQUEST_COIN_TRANSFER, ncsMessage.getServiceType());
                     AssertNCS.assertEqualsTransferRequest(transaction, TransferRequest.fromBytes(ncsMessage.getData()));
                 });
@@ -411,10 +424,10 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
                 ncsAddress, to, coinIds, coinValues).andThen(
                 MockBMCIntegrationTest.sendMessageEvent(
                         (el) -> {
-                            assertEquals(linkNet, el.getTo());
-                            assertEquals(NativeCoinService.SERVICE, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            NCSMessage ncsMsg = NCSMessage.fromBytes(el.getMsg());
+                            assertEquals(linkNet, el.get_to());
+                            assertEquals(NativeCoinService.SERVICE, el.get_svc());
+                            assertEquals(sn, el.get_sn());
+                            NCSMessage ncsMsg = NCSMessage.fromBytes(el.get_msg());
                             assertEquals(NCSMessage.REPONSE_HANDLE_SERVICE, ncsMsg.getServiceType());
                             TransferResponse response = TransferResponse.fromBytes(ncsMsg.getData());
                             assertEquals(TransferResponse.RC_OK, response.getCode());
@@ -454,9 +467,9 @@ class NativeCoinServiceTest implements NCSIntegrationTest {
 
         BigInteger sn = BigInteger.ONE;
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
-                NCSIntegrationTest.eventLogChecker(UnknownResponseEventLog::eventLogs, (el) -> {
-                    assertEquals(linkNet, el.getFrom());
-                    assertEquals(sn, el.getSn());
+                NCSIntegrationTest.eventLogChecker(NCSScoreClient.UnknownResponse::eventLogs, (el) -> {
+                    assertEquals(linkNet, el.get_from());
+                    assertEquals(sn, el.get_sn());
                 }),
                 ncsAddress, linkNet, NativeCoinService.SERVICE, sn, ncsMessage.toBytes());
     }

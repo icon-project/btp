@@ -43,10 +43,10 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
         mockBSH.sendMessage(
                 MockBMCIntegrationTest.sendMessageEvent(
                         (el) -> {
-                            assertEquals(to, el.getTo());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(msg, el.getMsg());
+                            assertEquals(to, el.get_to());
+                            assertEquals(svc, el.get_svc());
+                            assertEquals(sn, el.get_sn());
+                            assertArrayEquals(msg, el.get_msg());
                         }
                 ),
                 MockBMCIntegrationTest.mockBMC._address(),
@@ -58,10 +58,10 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
         mockBSH.handleBTPMessage(
                 MockBSHIntegrationTest.handleBTPMessageEvent(
                         (el) -> {
-                            assertEquals(to, el.getFrom());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertArrayEquals(msg, el.getMsg());
+                            assertEquals(to, el.get_from());
+                            assertEquals(svc, el.get_svc());
+                            assertEquals(sn, el.get_sn());
+                            assertArrayEquals(msg, el.get_msg());
                         }
                 ),
                 to, svc, sn, msg);
@@ -72,11 +72,11 @@ class MockBSHTest implements BTPIntegrationTest, MockBSHIntegrationTest {
         mockBSH.handleBTPError(
                 MockBSHIntegrationTest.handleBTPErrorEvent(
                         (el) -> {
-                            assertEquals(prev, el.getSrc());
-                            assertEquals(svc, el.getSvc());
-                            assertEquals(sn, el.getSn());
-                            assertEquals(errCode, el.getCode());
-                            assertEquals(errMsg, el.getMsg());
+                            assertEquals(prev, el.get_src());
+                            assertEquals(svc, el.get_svc());
+                            assertEquals(sn, el.get_sn());
+                            assertEquals(errCode, el.get_code());
+                            assertEquals(errMsg, el.get_msg());
                         }
                 ),
                 prev, svc, sn, errCode, errMsg);

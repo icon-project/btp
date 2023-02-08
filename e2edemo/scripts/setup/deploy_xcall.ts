@@ -3,10 +3,10 @@ import { ethers } from 'hardhat';
 import {Contract} from "../icon/contract";
 import {IconNetwork} from "../icon/network";
 import {BMC} from "../icon/btp";
-const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
+import {Deployments} from "./config";
+const {JAVASCORE_PATH} = process.env
 
-const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
-const deployments = new Map();
+const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 
 async function deploy_xcall() {
@@ -40,6 +40,7 @@ async function deploy_xcall() {
   // update deployments
   deployments.set('icon', icon)
   deployments.set('hardhat', hardhat)
+  deployments.save();
 }
 
 async function setup_xcall() {
@@ -61,21 +62,8 @@ async function setup_xcall() {
   await bmcm.addService('xcall', hardhat.contracts.xcall);
 }
 
-async function load_deployments() {
-  const data = fs.readFileSync(DEPLOYMENTS_PATH);
-  const json = JSON.parse(data.toString());
-  deployments.set('icon', json.icon)
-  deployments.set('hardhat', json.hardhat)
-}
-
-async function save_deployments() {
-  fs.writeFileSync(DEPLOYMENTS_PATH, JSON.stringify(Object.fromEntries(deployments)), 'utf-8')
-}
-
-load_deployments()
-  .then(deploy_xcall)
+deploy_xcall()
   .then(setup_xcall)
-  .then(save_deployments)
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

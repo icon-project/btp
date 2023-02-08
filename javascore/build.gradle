@@ -10,14 +10,16 @@ buildscript {
     }
 }
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 1, 'minutes'
-}
-
 subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+    }
+
+    configurations.configureEach {
+        resolutionStrategy {
+            cacheChangingModulesFor 1, 'minutes'
+        }
     }
 
     apply plugin: 'java'

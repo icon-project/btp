@@ -20,17 +20,12 @@ import foundation.icon.btp.mock.ChainScore;
 import foundation.icon.btp.mock.ChainScoreClient;
 import foundation.icon.btp.mock.MockGov;
 import foundation.icon.btp.mock.MockGovScoreClient;
-import foundation.icon.icx.IconService;
-import foundation.icon.icx.KeyWallet;
-import foundation.icon.icx.data.Base64;
-import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.jsonrpc.Address;
 import foundation.icon.score.client.DefaultScoreClient;
+import foundation.icon.score.client.Wallet;
 import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.Tag;
 
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,30 +37,31 @@ public interface MockGovIntegrationTest {
     MockGovScoreClient mockGovClient = new MockGovScoreClient(
             DefaultScoreClient.of("gov-mock.", System.getProperties()));
     MockGov mockGov = mockGovClient;
-    KeyWallet validatorWallet = (KeyWallet) DefaultScoreClient.wallet("validator.", System.getProperties());
+    Wallet validatorWallet = DefaultScoreClient.wallet("validator.", System.getProperties());
     ChainScoreClient chainScoreClient = new ChainScoreClient(mockGovClient.endpoint(), mockGovClient._nid(), validatorWallet,
-            new Address(ChainScore.ADDRESS.toString()));
+            new Address(ChainScore.ADDRESS));
     ChainScore chainScore = chainScoreClient;
-    IconService iconService = new IconService(new HttpProvider(mockGovClient.endpoint()));
 
     static long openBTPNetwork(String networkTypeName, String name, score.Address owner) {
         ensureRevision();
         ensureBTPPublicKey();
         AtomicLong networkId = new AtomicLong();
-        mockGovClient.openBTPNetwork((txr) -> {
-                    List<BTPNetworkOpenedEventLog> l = BTPNetworkOpenedEventLog.eventLogs(txr);
-                    networkId.set(l.get(0).getNetworkId());
-                }
-                , networkTypeName, name, owner);
+
+        mockGovClient.openBTPNetwork(chainScoreClient.BTPNetworkOpened((l) -> {
+                    assertEquals(1, l.size());
+                    networkId.set(l.get(0).getNetworkID());
+                }, null),
+                networkTypeName, name, owner);
         return networkId.get();
     }
 
     static void closeBTPNetwork(long networkId) {
-        mockGovClient.closeBTPNetwork((txr) -> {
-                    List<BTPNetworkClosedEventLog> l = BTPNetworkClosedEventLog.eventLogs(txr);
-                    assertEquals(networkId, l.get(0).getNetworkId());
-                }
-                , networkId);
+        mockGovClient.closeBTPNetwork(
+                chainScoreClient.BTPNetworkClosed((l) -> {
+                    assertEquals(1, l.size());
+                    assertEquals(networkId, l.get(0).getNetworkID());
+                }, null),
+                networkId);
     }
 
     static void ensureRevision() {
@@ -77,29 +73,15 @@ public interface MockGovIntegrationTest {
 
     static void ensureBTPPublicKey() {
         String DSA = "ecdsa/secp256k1";
-        Address address = Address.of(validatorWallet);
+        Address address = validatorWallet.getAddress();
         byte[] pubKey = chainScore.getBTPPublicKey(address, DSA);
         System.out.println("getPublicKey:" + StringUtil.bytesToHex(pubKey));
         if (pubKey == null) {
-            pubKey = validatorWallet.getPublicKey().toByteArray();
+            pubKey = validatorWallet.getPublicKey();
             System.out.println("setBTPPublicKey:" + StringUtil.bytesToHex(pubKey));
             chainScore.setBTPPublicKey(DSA, pubKey);
         }
     }
 
-    static byte[][] getMessages(long height, long networkId) {
-        try {
-            Base64[] base64Messages = iconService.btpGetMessages(
-                    BigInteger.valueOf(height),
-                    BigInteger.valueOf(networkId)).execute();
-            byte[][] messages = new byte[base64Messages.length][];
-            for (int i = 0; i < base64Messages.length; i++) {
-                messages[i] = base64Messages[i].decode();
-            }
-            return messages;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
-    }
 }

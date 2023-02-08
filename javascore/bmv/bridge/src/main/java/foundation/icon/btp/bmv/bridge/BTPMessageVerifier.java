@@ -29,9 +29,10 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class BTPMessageVerifier implements BMV {
-    private VarDB<Address> varBMCAddress = Context.newVarDB("bmcAddress", Address.class);
-    private VarDB<String> varNetAddress = Context.newVarDB("netAddress", String.class);
-    private VarDB<BigInteger> varHeight = Context.newVarDB("height", BigInteger.class);
+    static final String DB_PREFIX="bmv-bridge.";
+    private final VarDB<Address> varBMCAddress = Context.newVarDB(DB_PREFIX+"bmcAddress", Address.class);
+    private final VarDB<String> varNetAddress = Context.newVarDB(DB_PREFIX+"netAddress", String.class);
+    private final VarDB<BigInteger> varHeight = Context.newVarDB(DB_PREFIX+"height", BigInteger.class);
 
     public BTPMessageVerifier(Address _bmc, String _net, BigInteger _offset) {
         varBMCAddress.set(_bmc);

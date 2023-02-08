@@ -18,6 +18,7 @@ package foundation.icon.btp.lib;
 
 import score.UserRevertException;
 import score.UserRevertedException;
+import score.annotation.Keep;
 
 public class BTPException extends UserRevertException {
     /**
@@ -120,6 +121,7 @@ public class BTPException extends UserRevertException {
         return type;
     }
 
+    @Keep
     @Override
     public int getCode() {
         return code;

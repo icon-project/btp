@@ -424,26 +424,29 @@ type Block struct {
 	//Signature              HexBytes  `json:"signature" validate:"optional,t_hash"`
 }
 
-//icon2 relaymessage
 type BTPNotification struct {
-	Header HexBytes `json:"header"`
-	Proof  string   `json:"proof"`
+	Header string `json:"header"`
+	Proof  string `json:"proof,omitempty"`
 }
 
 type BTPRequest struct {
 	Height    HexInt `json:"height"`
 	NetworkID HexInt `json:"networkID"`
-	ProofFlag bool   `json:"proofFlag"`
+	ProofFlag HexInt `json:"proofFlag"`
 }
 
-type NetworkInfo struct {
-	StartHeight     HexInt   `json:"startHeight"`
-	NetworkTypeID   HexInt   `json:"networkTypeID"`
-	NetworkTypeName string   `json:"networkTypeName"`
-	NetworkID       HexInt   `json:"networkID"`
-	NextMessageSN   HexInt   `json:"nextMessageSN"`
-	PrevNSHash      HexBytes `json:"prevNSHash"`
-	LastNSHash      HexBytes `json:"lastNSHash"`
+type BTPNetworkInfo struct {
+	StartHeight             HexInt   `json:"startHeight"`
+	NetworkTypeID           HexInt   `json:"networkTypeID"`
+	NetworkName             string   `json:"networkName"`
+	Open                    HexInt   `json:"open"`
+	Owner                   Address  `json:"owner"`
+	NextMessageSN           HexInt   `json:"nextMessageSN"`
+	NextProofContextChanged HexInt   `json:"nextProofContextChanged"`
+	PrevNSHash              HexBytes `json:"prevNSHash"`
+	LastNSHash              HexBytes `json:"lastNSHash"`
+	NetworkID               HexInt   `json:"networkID"`
+	NetworkTypeName         string   `json:"networkTypeName"`
 }
 
 type BTPBlockUpdate struct {

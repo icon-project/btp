@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {Path, MerkleTreeLib} from "./MerkleTreeLib.sol";
 import "./RLPEncode.sol";
-import "./RLPReader.sol";
+import "./RLPDecode.sol";
 
 struct Header {
     uint256 mainHeight;
@@ -24,18 +24,18 @@ struct Proof {
 }
 
 library BlockUpdateLib {
-    using RLPReader for bytes;
-    using RLPReader for RLPReader.RLPItem;
+    using RLPDecode for bytes;
+    using RLPDecode for RLPDecode.RLPItem;
 
     function decode(bytes memory enc) internal pure returns (Header memory header, Proof memory proof) {
-        RLPReader.RLPItem memory i = enc.toRlpItem();
-        RLPReader.RLPItem[] memory l = i.toList();
+        RLPDecode.RLPItem memory i = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory l = i.toList();
         return (decodeHeader(l[0].toBytes()), decodeProof(l[1].toBytes()));
     }
 
     function decodeHeader(bytes memory enc) internal pure returns (Header memory header) {
-        RLPReader.RLPItem memory i = enc.toRlpItem();
-        RLPReader.RLPItem[] memory l = i.toList();
+        RLPDecode.RLPItem memory i = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory l = i.toList();
 
         return
             Header(
@@ -54,8 +54,8 @@ library BlockUpdateLib {
     }
 
     function decodeProof(bytes memory enc) internal pure returns (Proof memory) {
-        RLPReader.RLPItem memory ti = enc.toRlpItem();
-        RLPReader.RLPItem[] memory tl = ti.toList();
+        RLPDecode.RLPItem memory ti = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory tl = ti.toList();
 
         ti = tl[0];
         tl = ti.toList();
@@ -73,11 +73,11 @@ library BlockUpdateLib {
         ns[1] = RLPEncode.encodeUint((self.messageSn << 1) | (self.hasNextValidators ? 1 : 0));
         ns[2] = self.prevNetworkSectionHash != bytes32(0)
             ? RLPEncode.encodeBytes(abi.encodePacked(self.prevNetworkSectionHash))
-            : RLPEncode.encodeNil();
+            : RLPEncode.encodeNull();
         ns[3] = RLPEncode.encodeUint(self.messageCount);
         ns[4] = self.messageRoot != bytes32(0)
             ? RLPEncode.encodeBytes(abi.encodePacked(self.messageRoot))
-            : RLPEncode.encodeNil();
+            : RLPEncode.encodeNull();
         return keccak256(RLPEncode.encodeList(ns));
     }
 
@@ -107,18 +107,18 @@ library BlockUpdateLib {
     }
 
     function decodeNSRootPath(bytes memory enc) private pure returns (Path[] memory) {
-        RLPReader.RLPItem[] memory tl = enc.toRlpItem().toList();
+        RLPDecode.RLPItem[] memory tl = enc.toRlpItem().toList();
         Path[] memory pathes = new Path[](tl.length);
         for (uint256 i = 0; i < tl.length; i++) {
-            RLPReader.RLPItem[] memory tm = tl[i].toList();
+            RLPDecode.RLPItem[] memory tm = tl[i].toList();
             pathes[i] = Path(tm[0].toUint(), bytes32(tm[1].toBytes()));
         }
         return pathes;
     }
 
     function decodeValidators(bytes memory enc) private pure returns (address[] memory) {
-        RLPReader.RLPItem memory ti = enc.toRlpItem();
-        RLPReader.RLPItem[] memory tl = ti.toList();
+        RLPDecode.RLPItem memory ti = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory tl = ti.toList();
         tl = tl[0].toList();
 
         address[] memory validators = new address[](tl.length);

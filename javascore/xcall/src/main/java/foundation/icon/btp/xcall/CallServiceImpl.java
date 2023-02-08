@@ -33,13 +33,13 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
-public class CallServiceImpl implements BSH, CallService, FeeManage {
+public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent {
     private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
     public static final int MAX_DATA_SIZE = 2048;
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
     private final VarDB<Address> bmc = Context.newVarDB("bmc", Address.class);
-    private final VarDB<String> net = Context.newVarDB("net", String.class);
+    private final VarDB<BTPAddress> btpAddress = Context.newVarDB("btpAddress", BTPAddress.class);
     private final VarDB<BigInteger> sn = Context.newVarDB("sn", BigInteger.class);
     private final VarDB<BigInteger> reqId = Context.newVarDB("reqId", BigInteger.class);
 
@@ -56,9 +56,15 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
         if (bmc.get() == null) {
             bmc.set(_bmc);
             BMCScoreInterface bmcInterface = new BMCScoreInterface(_bmc);
-            BTPAddress btpAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
-            net.set(btpAddress.net());
+            BTPAddress bmcAddress = BTPAddress.valueOf(bmcInterface.getBtpAddress());
+            btpAddress.set(new BTPAddress(bmcAddress.net(), Context.getAddress().toString()));
         }
+    }
+
+    /* Implementation-specific external */
+    @External(readonly=true)
+    public String getBtpAddress() {
+        return btpAddress.get().toString();
     }
 
     private void checkCallerOrThrow(Address caller, String errMsg) {
@@ -101,7 +107,8 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
     @External
     public BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback) {
         Address caller = Context.getCaller();
-        Context.require(caller.isContract(), "SenderNotAContract");
+        // check if caller is a contract or rollback data is null in case of EOA
+        Context.require(caller.isContract() || _rollback == null, "RollbackNotPossible");
 
         // check size of payloads to avoid abusing
         Context.require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");
@@ -175,9 +182,8 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
         cleanupCallRequest(_sn);
 
         try {
-            BTPAddress callSvc = new BTPAddress(net.get(), Context.getAddress().toString());
             DAppProxy proxy = new DAppProxy(req.getFrom());
-            proxy.handleCallMessage(callSvc.toString(), req.getRollback());
+            proxy.handleCallMessage(btpAddress.get().toString(), req.getRollback());
         } catch (Exception e) {
             logger.println("executeRollback", "Exception:", e.toString());
         }
@@ -193,11 +199,11 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=3)
-    private void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data) {}
+    public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data) {}
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=1)
-    private void CallRequestCleared(BigInteger _sn) {}
+    public void CallRequestCleared(BigInteger _sn) {}
 
     /* ========== Interfaces with BMC ========== */
     @Override
@@ -243,11 +249,11 @@ public class CallServiceImpl implements BSH, CallService, FeeManage {
         String to = msgReq.getTo();
 
         BigInteger reqId = getNextReqId();
-        CSMessageRequest req = new CSMessageRequest(from.toString(), to, sn, msgReq.needRollback(), msgReq.getData());
+        CSMessageRequest req = new CSMessageRequest(from.toString(), to, msgReq.getSn(), msgReq.needRollback(), msgReq.getData());
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user
-        CallMessage(from.toString(), to, sn, reqId, msgReq.getData());
+        CallMessage(from.toString(), to, msgReq.getSn(), reqId, msgReq.getData());
     }
 
     private void handleResponse(String netFrom, BigInteger sn, byte[] data) {

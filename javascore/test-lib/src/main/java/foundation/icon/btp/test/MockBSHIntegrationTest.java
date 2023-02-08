@@ -28,16 +28,16 @@ public interface MockBSHIntegrationTest {
     MockBSHScoreClient mockBSH = MockBSHScoreClient._of("bsh-mock.", System.getProperties());
 
     static Consumer<TransactionResult> handleBTPMessageEvent(
-            Consumer<HandleBTPMessageEventLog> consumer) {
+            Consumer<MockBSHScoreClient.HandleBTPMessage> consumer) {
         return eventLogChecker(
-                HandleBTPMessageEventLog::eventLogs,
+                MockBSHScoreClient.HandleBTPMessage::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> handleBTPErrorEvent(
-            Consumer<HandleBTPErrorEventLog> consumer) {
+            Consumer<MockBSHScoreClient.HandleBTPError> consumer) {
         return eventLogChecker(
-                HandleBTPErrorEventLog::eventLogs,
+                MockBSHScoreClient.HandleBTPError::eventLogs,
                 consumer);
     }
 

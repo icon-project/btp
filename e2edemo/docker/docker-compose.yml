@@ -6,7 +6,7 @@ services:
       - 8545:8545
     command: -b 3 -l 15000000 -p 8545 -m "test test test test test test test test test test test junk"
   icon-node:
-    image: iconloop/goloop-icon:v1.3.2
+    image: iconloop/goloop-icon:v1.3.3
     container_name: "icon-node"
     environment:
       GOLOOP_LOG_LEVEL: "trace"

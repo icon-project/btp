@@ -92,4 +92,12 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 DAppProxySample::getMessageReceivedEvents,
                 consumer);
     }
+
+    static Consumer<TransactionReceipt> rollbackDataReceivedEvent(
+            Consumer<DAppProxySample.RollbackDataReceivedEventResponse> consumer) {
+        return EVMIntegrationTest.eventLogChecker(
+                dAppProxySample.getContractAddress(),
+                DAppProxySample::getRollbackDataReceivedEvents,
+                consumer);
+    }
 }

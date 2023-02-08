@@ -20,12 +20,17 @@ import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.External;
 
+import java.math.BigInteger;
+
 @ScoreClient
 public interface MockGov {
-    Address ADDRESS = Address.fromString("cx0000000000000000000000000000000000000001");
+    String ADDRESS = "cx0000000000000000000000000000000000000001";
 
     @External
     void setRevision(int code);
+
+    @External
+    void setMaxStepLimit(String contextType, BigInteger limit);
 
     @External
     long openBTPNetwork(String networkTypeName, String name, Address owner);

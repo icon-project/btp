@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "./RLPReader.sol";
+import "./RLPDecode.sol";
 import "./Errors.sol";
 
 struct MessageProof {
@@ -17,8 +17,8 @@ struct MessageProofNode {
 }
 
 library MessageProofLib {
-    using RLPReader for bytes;
-    using RLPReader for RLPReader.RLPItem;
+    using RLPDecode for bytes;
+    using RLPDecode for RLPDecode.RLPItem;
     using MessageProofLib for Queue;
 
     struct Queue {
@@ -29,10 +29,10 @@ library MessageProofLib {
     }
 
     function decode(bytes memory enc) internal pure returns (MessageProof memory) {
-        RLPReader.RLPItem memory ti = enc.toRlpItem();
-        RLPReader.RLPItem[] memory tl = ti.toList();
+        RLPDecode.RLPItem memory ti = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory tl = ti.toList();
 
-        RLPReader.RLPItem[] memory ms = tl[1].toList();
+        RLPDecode.RLPItem[] memory ms = tl[1].toList();
         MessageProofNode[] memory lefts = toMessageProofNodes(tl[0].toList());
         MessageProofNode[] memory rights = toMessageProofNodes(tl[2].toList());
 
@@ -152,8 +152,8 @@ library MessageProofLib {
         return queue;
     }
 
-    function toMessageProofNodes(RLPReader.RLPItem[] memory items) private pure returns (MessageProofNode[] memory) {
-        RLPReader.RLPItem[] memory tmp;
+    function toMessageProofNodes(RLPDecode.RLPItem[] memory items) private pure returns (MessageProofNode[] memory) {
+        RLPDecode.RLPItem[] memory tmp;
         MessageProofNode[] memory nodes = new MessageProofNode[](items.length);
         for (uint256 i = 0; i < items.length; i++) {
             tmp = items[i].toList();

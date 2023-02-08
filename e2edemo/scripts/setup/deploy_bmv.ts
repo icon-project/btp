@@ -5,12 +5,46 @@ import {BMC, BMV} from "../icon/btp";
 import {Gov} from "../icon/system";
 import {IconNetwork} from "../icon/network";
 import IconService from "icon-sdk-js";
+import {Deployments} from "./config";
 const {IconConverter} = IconService;
-const {JAVASCORE_PATH, E2E_DEMO_PATH} = process.env
+const {JAVASCORE_PATH, BMV_BTP_BLOCK} = process.env
 
-const DEPLOYMENTS_PATH = `${E2E_DEMO_PATH}/deployments.json`
-const deployments = new Map();
+const bridgeMode = !BMV_BTP_BLOCK || BMV_BTP_BLOCK !== "true";
+const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
+
+let netTypeId = '';
+let netId = '';
+
+async function open_btp_network() {
+  // open BTP network first before deploying BMV
+  const icon = deployments.get('icon')
+  const lastBlock = await iconNetwork.getLastBlock();
+  const netName = `hardhat-${lastBlock.height}`
+  console.log(`ICON: open BTP network for ${netName}`)
+  const gov = new Gov(iconNetwork);
+  await gov.openBTPNetwork(netName, icon.contracts.bmc)
+    .then((txHash) => gov.getTxResult(txHash))
+    .then((result) => {
+      if (result.status != 1) {
+        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
+      }
+      return gov.filterEvent(result.eventLogs,
+        'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
+    })
+    .then((events) => {
+      console.log(events);
+      if (events.length == 0) {
+        throw new Error(`ICON: failed to find networkId`);
+      }
+      const indexed = events[0].indexed || [];
+      netTypeId = indexed[1];
+      netId = indexed[2];
+    })
+  console.log(`networkTypeId=${netTypeId}`);
+  console.log(`networkId=${netId}`);
+  icon.networkId = netId;
+}
 
 async function deploy_bmv() {
   // get last block number of ICON
@@ -42,18 +76,38 @@ async function deploy_bmv() {
     throw new Error(`BMV deployment failed: ${result.txHash}`);
   }
   icon.contracts.bmv = bmv.address
-  console.log(`ICON BMV: deployed to ${bmv.address}`);
+  console.log(`ICON BMV-Bridge: deployed to ${bmv.address}`);
 
-  // deploy BMV-Bridge solidity module
-  const BMVBridge = await ethers.getContractFactory("BMV")
-  const bmvb = await BMVBridge.deploy(hardhat.contracts.bmcp, icon.network, icon.blockNum)
-  await bmvb.deployed()
-  hardhat.contracts.bmvb = bmvb.address
-  console.log(`Hardhat BMV: deployed to ${bmvb.address}`);
+  if (bridgeMode) {
+    // deploy BMV-Bridge solidity module
+    const BMVBridge = await ethers.getContractFactory("BMV")
+    const bmvb = await BMVBridge.deploy(hardhat.contracts.bmcp, icon.network, icon.blockNum)
+    await bmvb.deployed()
+    hardhat.contracts.bmvb = bmvb.address
+    console.log(`Hardhat BMV-Bridge: deployed to ${bmvb.address}`);
+  } else {
+    // get firstBlockHeader via btp2 API
+    const networkInfo = await iconNetwork.getBTPNetworkInfo(netId);
+    console.log('networkInfo:', networkInfo);
+    console.log('startHeight:', '0x' + networkInfo.startHeight.toString(16));
+    const receiptHeight = '0x' + networkInfo.startHeight.plus(1).toString(16);
+    console.log('receiptHeight:', receiptHeight);
+    const header = await iconNetwork.getBTPHeader(netId, receiptHeight);
+    const firstBlockHeader = '0x' + Buffer.from(header, 'base64').toString('hex');
+    console.log('firstBlockHeader:', firstBlockHeader);
+
+    // deploy BMV-BtpBlock solidity module
+    const BMVBtp = await ethers.getContractFactory("BtpMessageVerifier")
+    const bmvBtp = await BMVBtp.deploy(hardhat.contracts.bmcp, icon.network, netTypeId, firstBlockHeader, '0x0')
+    await bmvBtp.deployed()
+    hardhat.contracts.bmv = bmvBtp.address
+    console.log(`Hardhat BMV: deployed to ${bmvBtp.address}`);
+  }
 
   // update deployments
   deployments.set('icon', icon)
   deployments.set('hardhat', hardhat)
+  deployments.save();
 }
 
 async function setup_bmv() {
@@ -69,29 +123,8 @@ async function setup_bmv() {
   // get the BTP address of hardhat BMC
   const bmcm = await ethers.getContractAt('BMCManagement', hardhat.contracts.bmcm)
   const bmcp = await ethers.getContractAt('BMCPeriphery', hardhat.contracts.bmcp)
-  const bmvb = await ethers.getContractAt('BMV', hardhat.contracts.bmvb)
   const bmcHardhatAddr = await bmcp.getBtpAddress()
   console.log(`BTP address of Hardhat BMC: ${bmcHardhatAddr}`)
-
-  // open BTP network first before calling addBTPLink
-  const netName = `hardhat-${icon.blockNum}`
-  console.log(`ICON: open BTP network for ${netName}`)
-  const gov = new Gov(iconNetwork);
-  let netId = '';
-  await gov.openBTPNetwork(netName, bmc.address)
-    .then((txHash) => gov.getTxResult(txHash))
-    .then((result) => {
-      if (result.status != 1) {
-        throw new Error(`ICON: failed to openBTPNetwork: ${result.txHash}`);
-      }
-      return gov.filterEvent(result.eventLogs,
-        'BTPNetworkOpened(int,int)', 'cx0000000000000000000000000000000000000000')
-    })
-    .then((event) => {
-      console.log(event);
-      netId = event.indexed ? event.indexed[2] : '0x0';
-    })
-  console.log(`networkId=${netId}`);
 
   console.log(`ICON: addVerifier for ${hardhat.network}`)
   await bmc.addVerifier(hardhat.network, bmv.address)
@@ -119,7 +152,15 @@ async function setup_bmv() {
     })
 
   console.log(`Hardhat: addVerifier for ${icon.network}`)
-  await bmcm.addVerifier(icon.network, bmvb.address)
+  let bmvAddress;
+  if (bridgeMode) {
+    const bmvb = await ethers.getContractAt('BMV', hardhat.contracts.bmvb)
+    bmvAddress = bmvb.address;
+  } else {
+    const bmvBtp = await ethers.getContractAt('BtpMessageVerifier', hardhat.contracts.bmv)
+    bmvAddress = bmvBtp.address;
+  }
+  await bmcm.addVerifier(icon.network, bmvAddress)
     .then((tx) => {
       return tx.wait(1)
     });
@@ -136,21 +177,9 @@ async function setup_bmv() {
     });
 }
 
-async function load_deployments() {
-  const data = fs.readFileSync(DEPLOYMENTS_PATH);
-  const json = JSON.parse(data.toString());
-  deployments.set('icon', json.icon)
-  deployments.set('hardhat', json.hardhat)
-}
-
-async function save_deployments() {
-  fs.writeFileSync(DEPLOYMENTS_PATH, JSON.stringify(Object.fromEntries(deployments)), 'utf-8')
-}
-
-load_deployments()
+open_btp_network()
   .then(deploy_bmv)
   .then(setup_bmv)
-  .then(save_deployments)
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

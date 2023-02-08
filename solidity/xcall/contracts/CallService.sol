@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.8.0 <0.8.5;
+pragma solidity >=0.8.0;
 pragma abicoder v2;
 
 import "./interfaces/IBMC.sol";
@@ -69,6 +69,14 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         btpAddress = _net.btpAddress(address(this).toString());
     }
 
+    /* Implementation-specific external */
+    function getBtpAddress(
+    ) external view override returns (
+        string memory
+    ) {
+        return btpAddress;
+    }
+
     function checkService(
         string calldata _svc
     ) internal pure {
@@ -107,8 +115,8 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
     ) external payable override returns (
         uint256
     ) {
-        // Note if caller is a contract in construction, will revert
-        require(msg.sender.code.length > 0, "SenderNotAContract");
+        // check if caller is a contract or rollback data is null in case of EOA
+        require(msg.sender.code.length > 0 || _rollback.length == 0, "RollbackNotPossible");
 
         // check size of payloads to avoid abusing
         require(_data.length <= MAX_DATA_SIZE, "MaxDataSizeExceeded");
@@ -292,11 +300,11 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         proxyReqs[reqId] = Types.CSMessageRequest(
             from,
             req.to,
-            sn,
+            req.sn,
             req.rollback,
             req.data
         );
-        emit CallMessage(from, req.to, sn, reqId, req.data);
+        emit CallMessage(from, req.to, req.sn, reqId, req.data);
     }
 
     function handleResponse(

@@ -34,4 +34,12 @@ export class IconNetwork {
   async getLastBlock() {
     return this.iconService.getLastBlock().execute();
   }
+
+  async getBTPNetworkInfo(nid: string) {
+    return this.iconService.getBTPNetworkInfo(nid).execute();
+  }
+
+  async getBTPHeader(nid: string, height: string) {
+    return this.iconService.getBTPHeader(nid, height).execute();
+  }
 }

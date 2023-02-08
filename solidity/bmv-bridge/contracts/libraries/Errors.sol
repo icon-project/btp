@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.8.0 <0.8.5;
+pragma solidity >=0.8.0;
 
 library Errors {
     string internal constant BMV_REVERT_NOT_VERIFIABLE = "26:NotVerifiable";

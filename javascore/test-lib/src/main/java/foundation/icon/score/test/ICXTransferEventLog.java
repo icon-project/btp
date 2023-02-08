@@ -16,7 +16,7 @@
 
 package foundation.icon.score.test;
 
-import foundation.icon.jsonrpc.IconJsonModule;
+import foundation.icon.jsonrpc.IconStringConverter;
 import foundation.icon.jsonrpc.model.TransactionResult;
 import score.Address;
 
@@ -26,14 +26,15 @@ import java.util.function.Predicate;
 
 public class ICXTransferEventLog {
     static final String SIGNATURE = "ICXTransfer(Address,Address,int)";
-    private Address from;
-    private Address to;
-    private BigInteger amount;
+    private final Address from;
+    private final Address to;
+    private final BigInteger amount;
 
     public ICXTransferEventLog(TransactionResult.EventLog el) {
-        this.from = IconJsonModule.AddressDeserializer.SCORE_ADDRESS.convert(el.getIndexed().get(1));
-        this.to = IconJsonModule.AddressDeserializer.SCORE_ADDRESS.convert(el.getIndexed().get(2));
-        this.amount = IconJsonModule.NumberDeserializer.BIG_INTEGER.convert(el.getIndexed().get(3));
+        List<String> indexed = el.getIndexed();
+        this.from = IconStringConverter.toAddress(indexed.get(1));
+        this.to = IconStringConverter.toAddress(indexed.get(2));
+        this.amount = IconStringConverter.toBigInteger(indexed.get(3));
     }
 
     public Address getFrom() {

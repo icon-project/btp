@@ -15,5 +15,6 @@ deployments.json
 
 # solidity copied src
 solidity/contracts/bmc
+solidity/contracts/bmv
 solidity/contracts/bmv-bridge
 solidity/contracts/xcall

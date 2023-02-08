@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.8.0 <0.8.5;
+pragma solidity >=0.8.0;
 pragma abicoder v2;
 
 import "./interfaces/IBMCPeriphery.sol";
@@ -81,16 +81,32 @@ contract BMCPeriphery is IBMCPeriphery, ICCPeriphery, Initializable {
         uint256 rxSeq = rxSeqMap[_prev];
 
         // decode and verify relay message
-        bytes[] memory serializedMsgs = IBMV(
-            ICCManagement(bmcManagement).getVerifier(prevNet)
-        ).handleRelayMessage(btpAddress, _prev, rxSeq, _msg);
+        bytes[] memory serializedMsgs;
+        address bmv = ICCManagement(bmcManagement).getVerifier(prevNet);
+        try IBMV(bmv).handleRelayMessage(btpAddress, _prev, rxSeq, _msg) returns (
+            bytes[] memory _ret
+        ) {
+            serializedMsgs = _ret;
+        } catch Error(string memory reason) {
+            revert(reason);
+        } catch (bytes memory) {
+            revert(Errors.BMV_REVERT_UNKNOWN);
+        }
+
         require(ICCManagement(bmcManagement).isLinkRelay(_prev, msg.sender), Errors.BMC_REVERT_UNAUTHORIZED);
         // dispatch BTP Messages
         Types.BTPMessage memory btpMsg;
         for (uint256 i = 0; i < serializedMsgs.length; i++) {
             rxSeq++;
-            btpMsg = ICCService(bmcService).handleFee(
-                msg.sender, serializedMsgs[i]);
+            try ICCService(bmcService).handleFee(msg.sender, serializedMsgs[i]) returns (
+                Types.BTPMessage memory _ret
+            ) {
+                btpMsg = _ret;
+            } catch Error(string memory reason) {
+                revert(reason);
+            } catch (bytes memory) {
+                revert(Errors.BMC_REVERT_ERROR_HANDLE_FEE);
+            }
             if (btpMsg.dst.compareTo(network)) {
                 (uint256 ecode, string memory emsg) = handleMessage(_prev, btpMsg);
                 if (ecode == Types.ECODE_NONE) {
@@ -353,7 +369,7 @@ contract BMCPeriphery is IBMCPeriphery, ICCPeriphery, Initializable {
         requireBMCManagementAccess();
         _sendMessage(_next,
             Types.BTPMessage(
-                btpAddress,
+                network,
                 _next.networkAddress(),
                 Types.BMC_SERVICE,
                 0,

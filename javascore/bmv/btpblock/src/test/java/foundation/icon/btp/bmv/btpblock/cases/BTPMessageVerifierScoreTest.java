@@ -25,7 +25,6 @@ import foundation.icon.icx.data.Bytes;
 import foundation.icon.icx.transport.http.HttpProvider;
 import foundation.icon.score.util.StringUtil;
 import foundation.icon.test.*;
-import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
@@ -66,8 +65,7 @@ public class BTPMessageVerifierScoreTest extends TestBase {
     @BeforeAll
     static void setup() throws Exception {
         Env.Chain chain = Env.getDefaultChain();
-        OkHttpClient ohc = new OkHttpClient.Builder().build();
-        IconService iconService = new IconService(new HttpProvider(ohc, chain.getEndpointURL(3)));
+        IconService iconService = new IconService(new HttpProvider(chain.getEndpointURL(3)));
         txHandler = new TransactionHandler(iconService, chain);
 
         // init wallets

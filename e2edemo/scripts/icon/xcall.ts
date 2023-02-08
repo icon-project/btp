@@ -24,4 +24,13 @@ export class XCall extends Contract {
       }
     })
   }
+
+  executeRollback(sn: string) {
+    return this.invoke({
+      method: 'executeRollback',
+      params: {
+        _sn: sn
+      }
+    })
+  }
 }

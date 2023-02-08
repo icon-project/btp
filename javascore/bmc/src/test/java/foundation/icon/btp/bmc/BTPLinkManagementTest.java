@@ -42,7 +42,7 @@ public class BTPLinkManagementTest implements BMCIntegrationTest {
     static void addBTPLink(String link, long networkId) {
         List<String> links = Arrays.asList(bmc.getLinks());
         iconSpecific.addBTPLink(
-                BTPBlockIntegrationTest.bmcMessageChecker(
+                BTPBlockMessageTest.bmcMessageChecker(
                         networkId,
                         LinkManagementTest.initMessageChecker(links)),
                 link, networkId);

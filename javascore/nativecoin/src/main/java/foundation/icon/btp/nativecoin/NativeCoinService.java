@@ -20,7 +20,6 @@ import com.iconloop.score.token.irc31.IRC31Receiver;
 import foundation.icon.btp.lib.*;
 import foundation.icon.btp.nativecoin.irc31.IRC31SupplierScoreInterface;
 import foundation.icon.score.util.ArrayUtil;
-import foundation.icon.score.util.BigIntegerUtil;
 import foundation.icon.score.util.Logger;
 import foundation.icon.score.util.StringUtil;
 import score.*;
@@ -32,7 +31,7 @@ import scorex.util.ArrayList;
 import java.math.BigInteger;
 import java.util.List;
 
-public class NativeCoinService implements NCS, NCSEvents, IRC31Receiver, BSH, OwnerManager {
+public class NativeCoinService implements NCS, IRC31Receiver, BSH, OwnerManager {
     private static final Logger logger = Logger.getLogger(NativeCoinService.class);
 
     public static final String SERVICE = "nativecoin";

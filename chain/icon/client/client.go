@@ -227,8 +227,8 @@ func (c *Client) GetBTPProof(p *BTPBlockParam) (string, error) {
 	return result, nil
 }
 
-func (c *Client) GetBTPNetworkInfo(p *BTPNetworkInfoParam) (*NetworkInfo, error) {
-	result := &NetworkInfo{}
+func (c *Client) GetBTPNetworkInfo(p *BTPNetworkInfoParam) (*BTPNetworkInfo, error) {
+	result := &BTPNetworkInfo{}
 	if _, err := c.Do("btp_getNetworkInfo", p, &result); err != nil {
 		return nil, err
 	}

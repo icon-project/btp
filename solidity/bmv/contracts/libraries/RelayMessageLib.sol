@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {Header, Proof, BlockUpdateLib} from "./BlockUpdateLib.sol";
 import {MessageProof, MessageProofLib} from "./MessageProofLib.sol";
-import "./RLPReader.sol";
+import "./RLPDecode.sol";
 
 struct RelayMessage {
     uint256 typ;
@@ -11,20 +11,20 @@ struct RelayMessage {
 }
 
 library RelayMessageLib {
-    using RLPReader for bytes;
-    using RLPReader for RLPReader.RLPItem;
+    using RLPDecode for bytes;
+    using RLPDecode for RLPDecode.RLPItem;
 
     uint256 constant TYPE_BLOCK_UPDATE = 1;
     uint256 constant TYPE_MESSAGE_PROOF = 2;
 
     function decode(bytes memory enc) internal pure returns (RelayMessage[] memory) {
-        RLPReader.RLPItem memory ti = enc.toRlpItem();
-        RLPReader.RLPItem[] memory tl = ti.toList();
+        RLPDecode.RLPItem memory ti = enc.toRlpItem();
+        RLPDecode.RLPItem[] memory tl = ti.toList();
         tl = tl[0].toList();
 
         RelayMessage[] memory rms = new RelayMessage[](tl.length);
         for (uint256 i = 0; i < tl.length; i++) {
-            RLPReader.RLPItem[] memory ms = tl[i].toList();
+            RLPDecode.RLPItem[] memory ms = tl[i].toList();
             rms[i].typ = ms[0].toUint();
             rms[i].mesg = ms[1].toBytes();
         }

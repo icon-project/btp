@@ -27,20 +27,20 @@ public interface MockBMCIntegrationTest {
     MockBMCScoreClient mockBMC = MockBMCScoreClient._of("bmc-mock.", System.getProperties());
 
     static Consumer<TransactionResult> sendMessageEvent(
-            Consumer<SendMessageEventLog> consumer) {
+            Consumer<MockBMCScoreClient.SendMessage> consumer) {
         return eventLogChecker(
-                SendMessageEventLog::eventLogs,
+                MockBMCScoreClient.SendMessage::eventLogs,
                 consumer);
     }
 
     static Consumer<TransactionResult> sendMessageEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(SendMessageEventLog::eventLogs);
+        return eventLogShouldNotExistsChecker(MockBMCScoreClient.SendMessage::eventLogs);
     }
 
     static Consumer<TransactionResult> handleRelayMessageEvent(
-            Consumer<HandleRelayMessageEventLog> consumer) {
+            Consumer<MockBMCScoreClient.HandleRelayMessage> consumer) {
         return eventLogChecker(
-                HandleRelayMessageEventLog::eventLogs,
+                MockBMCScoreClient.HandleRelayMessage::eventLogs,
                 consumer);
     }
 

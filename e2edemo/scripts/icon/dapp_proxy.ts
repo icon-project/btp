@@ -6,14 +6,14 @@ export class DAppProxy extends Contract {
     super(iconNetwork, address)
   }
 
-  sendMessage(to: string, data: string, value?: string) {
+  sendMessage(to: string, data: string, rollback?: string, value?: string) {
+    const _params = rollback
+      ? {_to: to, _data: data, _rollback: rollback}
+      : {_to: to, _data: data}
     return this.invoke({
       method: 'sendMessage',
       value: value ? value : '0x0',
-      params: {
-        _to: to,
-        _data: data
-      }
+      params: _params
     })
   }
 }

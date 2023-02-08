@@ -11,15 +11,3 @@ dependencies {
     testImplementation project(":test-lib")
     testImplementation("foundation.icon:javaee-unittest:0.9.4")
 }
-
-test {
-    useJUnitPlatform {
-    }
-    options {
-        testLogging.showStandardStreams = true
-        systemProperties(System.getProperties())
-//        systemProperty 'url', project.getProperties().getOrDefault('evm-test.url', 'http://localhost:8545')
-//        systemProperty 'xcall.jsonFilePath', './build/hardhat/artifacts/contracts/CallService.sol/CallService.json'
-//        systemProperty 'sample.jsonFilePath', './build/hardhat/artifacts/contracts/DAppProxySample.sol/DAppProxySample.json'
-    }
-}

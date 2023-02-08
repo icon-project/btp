@@ -16,31 +16,19 @@
 
 package foundation.icon.btp.mock;
 
+import foundation.icon.btp.test.BTPBlockIntegrationTest;
 import foundation.icon.btp.test.MockGovIntegrationTest;
-import foundation.icon.icx.IconService;
-import foundation.icon.icx.data.BTPNetworkInfo;
-import foundation.icon.icx.data.Base64;
-import foundation.icon.icx.transport.http.HttpProvider;
-import foundation.icon.jsonrpc.Address;
-import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import score.ByteArrayObjectWriter;
-import score.Context;
-import score.ObjectReader;
-import score.ObjectWriter;
-import score.annotation.Keep;
-import scorex.util.ArrayList;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MockGovTest implements MockGovIntegrationTest {
-    static final String NETWORK_TYPE_NAME = "icon";
+    static final String NETWORK_TYPE_NAME = "eth";
     static final String NETWORK_NAME = "0x1.icon";
 
     @BeforeAll
@@ -49,18 +37,22 @@ public class MockGovTest implements MockGovIntegrationTest {
     }
 
     @Test
-    void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() throws Exception {
+    void openBTPNetworkAndSendBTPMessageAndCloseBTPNetwork() {
         long networkId = MockGovIntegrationTest.openBTPNetwork(
-                NETWORK_TYPE_NAME, NETWORK_NAME, Address.of(chainScoreClient._wallet()));
-        BTPNetworkInfo btpNetworkInfo = iconService.btpGetNetworkInfo(BigInteger.valueOf(networkId)).execute();
-        assertEquals(NETWORK_TYPE_NAME, btpNetworkInfo.getNetworkTypeName());
-        assertEquals(NETWORK_NAME, btpNetworkInfo.getNetworkName());
+                NETWORK_TYPE_NAME, NETWORK_NAME, chainScoreClient._wallet().getAddress());
+
+        @SuppressWarnings("rawtypes")
+        Map result = chainScoreClient.request(Map.class, "btp_getNetworkInfo",
+                Map.of("id", networkId));
+        assertEquals(NETWORK_TYPE_NAME, result.get("networkTypeName"));
+        assertEquals(NETWORK_NAME, result.get("networkName"));
 
         byte[] message = "testMessage".getBytes();
         chainScoreClient.sendBTPMessage(
                 (txr) -> {
-                    long height = txr.getBlockHeight().longValue() + 1;
-                    byte[][] messages = MockGovIntegrationTest.getMessages(height, networkId);
+                    byte[][] messages = BTPBlockIntegrationTest.messages(
+                            networkId,
+                            txr.getBlockHeight().add(BigInteger.ONE));
                     assertEquals(1, messages.length);
                     assertArrayEquals(message, messages[0]);
                 },

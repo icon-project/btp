@@ -1,4 +1,0 @@
-[submodule "icon-sdk-java"]
-	path = icon-sdk-java
-	url = git@github.com:icon-project/icon-sdk-java.git
-	branch = btp2
