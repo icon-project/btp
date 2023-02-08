@@ -78,6 +78,10 @@ func NewSender(src, dst types.BtpAddress, w wallet.Wallet, endpoint string, opt 
 	if err != nil {
 		l.Panicf("fail to connect to %s, %v", endpoint, err)
 	}
+	s.bmc, err = client.NewBMC(common.HexToAddress(s.dst.ContractAddress()), s.c.GetBackend())
+	if err != nil {
+		l.Panicf("fail to get instance of BMC %s, %v", s.dst.ContractAddress(), err)
+	}
 	return s
 }
 
