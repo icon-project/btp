@@ -197,8 +197,9 @@ func (b *bridge) Monitoring(bs *types.BMCLinkStatus) error {
 	}
 
 	req := &client.BTPRequest{
-		Height:    client.HexInt(intconv.FormatInt(bs.Verifier.Height)),
-		NetworkID: client.HexInt(intconv.FormatInt(b.nid)),
+		Height:    client.NewHexInt(bs.Verifier.Height),
+		NetworkID: client.NewHexInt(b.nid),
+		ProofFlag: client.NewHexInt(0),
 	}
 
 	onErr := func(conn *websocket.Conn, err error) {
@@ -225,7 +226,7 @@ func (b *bridge) monitorBTP2Block(req *client.BTPRequest, scb func(conn *websock
 	//BMC.seq starts with 1 and BTPBlock.FirstMessageSN starts with 0
 	offset += 1
 	return b.c.MonitorBTP(req, func(conn *websocket.Conn, v *client.BTPNotification) error {
-		h, err := v.Header.Value()
+		h, err := base64.StdEncoding.DecodeString(v.Header)
 		if err != nil {
 			return err
 		}
