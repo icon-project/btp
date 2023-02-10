@@ -27,11 +27,6 @@ optimizedJar {
     }
 }
 
-// need to add this option to retrieve formal parameter names
-compileTestJava {
-    options.compilerArgs += ['-parameters']
-}
-
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar
 
 task optimizedJarSample(type: OptimizedJar) {
