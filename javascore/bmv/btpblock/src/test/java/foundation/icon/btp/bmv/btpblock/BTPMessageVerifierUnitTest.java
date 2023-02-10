@@ -26,6 +26,8 @@ import foundation.icon.score.util.StringUtil;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import score.Address;
+import score.RevertedException;
+import score.UserRevertedException;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -99,29 +101,29 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 BigInteger.ZERO
         );
         var validMsg = "cecdcc028ac9f800c483646f67f800";
-        AssertionError invalidCurrent = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidCurrent = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         prev.toString(), prev.toString(), BigInteger.valueOf(0), StringUtil.hexToBytes(validMsg))
         );
         assertTrue(invalidCurrent.getMessage().contains("invalid current"));
 
-        AssertionError invalidCaller = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidCaller = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         prevAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         prev.toString(), prev.toString(), BigInteger.valueOf(0), StringUtil.hexToBytes(validMsg))
         );
         assertTrue(invalidCaller.getMessage().contains("invalid caller"));
 
         var invalidPrev = assertThrows(
-                AssertionError.class, () -> sm.call(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), bmc.toString(), BigInteger.valueOf(0), StringUtil.hexToBytes(validMsg))
         );
         assertTrue(invalidPrev.getMessage().contains("invalid prev"));
 
         var invalidSeq = assertThrows(
-                AssertionError.class, () -> sm.call(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(validMsg))
         );
@@ -140,8 +142,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Test
     public void scenario3() {
         var blockUpdateMsg = "f9020cf90209f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01";
-        AssertionError invalidRemainCnt = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidRemainCnt = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(0), StringUtil.hexToBytes(blockUpdateMsg))
         );
@@ -152,24 +154,24 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 bmc.toString(), prev.toString(), BigInteger.valueOf(0), StringUtil.hexToBytes(remainMessage)));
 
         var invalidNidMsg = "f9020cf90209f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0303a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01";
-        AssertionError invalidNid = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidNid = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(invalidNidMsg))
         );
         assertTrue(invalidNid.getMessage().contains("invalid network id"));
 
         var invalidFirstSNMsg = "f9020cf90209f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0205a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01";
-        AssertionError invalidFirstSN = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidFirstSN = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(invalidFirstSNMsg))
         );
         assertTrue(invalidFirstSN.getMessage().contains("not verifiable"));
 
         var invalidPrevHashMsg = "f9020cf90209f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0000000000000000000000000000000000000000000000000000000000000000003a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01";
-        AssertionError invalidPrev = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidPrev = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(invalidPrevHashMsg))
         );
@@ -184,20 +186,20 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Test
     public void scenario4() {
         var duplicatedSignatureMsg = "f9020cf90209f9020601b90202f901ffb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83ab90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301";
-        AssertionError duplicated = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var duplicated = assertThrows(
+                RevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(duplicatedSignatureMsg))
         );
         assertTrue(duplicated.getMessage().contains("duplicated"));
 
         var proofNullMsg = "f8f5f8f3f8f101b8eef8ecb8e8f8e61400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd26b858f856f85494911ac74dd9ff8f4cdd91e747afcfdc9410a926e99497e36fb88560a3023c509704801eb1149acecf4394a9b0a74b2b63ab9cd20c6e38c88195c8175beb4694432b6448f3471aef190819b3c4f549a3a689d83af800";
-        AssertionError proofNull = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var proofNull = assertThrows(
+                RevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(proofNullMsg))
         );
-        assertTrue(proofNull.getMessage().contains("null"));
+        assertNull(proofNull.getMessage());
     }
 
     /***
@@ -207,8 +209,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Test
     public void scenario5() {
         var hashMismatchMsg = "f901b5f901b2f901af01b901abf901a8b891f88f1400a0d643eeba45acdab7b4fd65ecdb8622e67243cb264251917f845ba014c57c15cfe3e201a0a4997d283af68023f69666832df08cafb4b91789b10438f13b48bdfbaa03e4ac0203a0b01a7e90a687b64b58e2410a31e1b2e8e131672563c6c52db84eeadd15b6956403a04eaeed1d1e8444f108a0f79abbc5150dd768bbda89279c2e4a301fe8c4e5dd2682c1c0b90112f9010ff9010cb8411c8e1c4e89ea6f2a22c06d49984d8088f40b5d8bc1ff547d790df8374454f9ff73f4324168cb68a1c78d74ee05a2cccb1a471c26c3dcd05af4c21241d31a8fd301b8411f915ae7f047db8fee3fec42882a1747aa898c5149e8751e479235f33779fd414f52c3a63d0dd24953f3e8ed77eb06965410c2c365f669abc74d0239dbc7052a01b841d21638f8aee5194920df53652adc906f66944044e1d9176e45b9d3d80d010ded7967ff4dd944b6f9214794f0c967529663eeda3d3b51c2b7bcd56ff8f6a41d3800b8416be3ab56807f762f262a9feb819aa1aac1e83330e1568764bb9e766519135fb64f72adef323187c700e6b30b3a44e766ecb8885f1290074c43f7bd3bb06f56dc01";
-        AssertionError hashMismatched = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var hashMismatched = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(hashMismatchMsg))
         );
@@ -228,8 +230,8 @@ public class BTPMessageVerifierUnitTest extends TestBase {
     @Test
     public void scenario6() {
         var proofMessageMsg = "dcdbda0298d7f800d28363617488656c657068616e748462697264f800";
-        AssertionError invalidRemainCnt = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidRemainCnt = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(proofMessageMsg))
         );
@@ -241,40 +243,40 @@ public class BTPMessageVerifierUnitTest extends TestBase {
                 bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(validBlockUpdate));
 
         var mismatchLeftNumMsg = "f83cf83af83802b6f5e3e201a052763589e772702fa7977a28b3cfb6ca534f0208a2b2d55f7558af664eac478ace88656c657068616e748462697264f800";
-        AssertionError mismatchLeftNum = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var mismatchLeftNum = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(mismatchLeftNumMsg))
         );
         assertTrue(mismatchLeftNum.getMessage().contains("invalid ProofInLeft.NumberOfLeaf"));
 
         var invalidNumOfLeafMsg = "f842f840f83e02b83bf839e3e203a0468412432735e704136dcef80532ffc5db671fd0361b59f77d1462bcb83995e9d28363617488656c657068616e748462697264f800";
-        AssertionError invalidNumOfLeaf = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidNumOfLeaf = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(invalidNumOfLeafMsg))
         );
         assertTrue(invalidNumOfLeaf.getMessage().contains("invalid numOfLeaf, expected : 4, value : 3"));
 
         var invalidLevelMsg = "f0efee02acebf800c483636174e3e202a0468412432735e704136dcef80532ffc5db671fd0361b59f77d1462bcb83995e9";
-        AssertionError invalidLevel = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var invalidLevel = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(invalidLevelMsg))
         );
         assertTrue(invalidLevel.getMessage().contains("invalid level left : 1 right : 2"));
 
         var mismatchCountMsg = "f856f854f85202b84ff84df800f847b84052763589e772702fa7977a28b3cfb6ca534f0208a2b2d55f7558af664eac478a468412432735e704136dcef80532ffc5db671fd0361b59f77d1462bcb83995e98462697264f800";
-        AssertionError mismatchCount = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var mismatchCount = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(mismatchCountMsg))
                 );
         assertTrue(mismatchCount.getMessage().contains("mismatch MessageCount offset:0, expected:3, count :2"));
 
         var mismatchRootMsg = "f85ff85df85b02b858f856f800f850b84452763589e772702fa7977a28b3cfb6ca534f0208a2b2d55f7558af664eac478a468412432735e704136dcef80532ffc5db671fd0361b59f77d1462bcb83995e97465737484626972648462697264f800";
-        AssertionError mismatchRoot = assertThrows(
-                AssertionError.class, () -> sm.call(
+        var mismatchRoot = assertThrows(
+                UserRevertedException.class, () -> sm.call(
                         bmcAccount, BigInteger.ZERO, score.getAddress(), "handleRelayMessage",
                         bmc.toString(), prev.toString(), BigInteger.valueOf(1), StringUtil.hexToBytes(mismatchRootMsg))
                 );

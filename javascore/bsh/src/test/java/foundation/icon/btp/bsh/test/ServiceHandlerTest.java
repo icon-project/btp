@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import score.ByteArrayObjectWriter;
 import score.Context;
+import score.RevertedException;
+import score.UserRevertedException;
 import scorex.util.ArrayList;
 
 import java.math.BigInteger;
@@ -111,7 +113,7 @@ class ServiceHandlerTest extends TestBase {
         String _from = "0x12345678";
         String _to = "0x1234567890123456789";
         bmc.invoke(owners[0], "addService", _svc, bsh.getAddress());
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(RevertedException.class, () ->
                 bmc.invoke(owners[0], "handleBTPMessage", _from, _svc, BigInteger.ZERO, handleBTPRequestBtpMsg(_from, _to))
         );
         assertTrue(thrown.getMessage().contains("Invalid Address format"));
@@ -124,7 +126,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     public void scenario2() {
         String _to = owners[0].getAddress().toString();
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to)
         );
         assertTrue(thrown.getMessage().contains("Token not registered"));
@@ -137,7 +139,7 @@ class ServiceHandlerTest extends TestBase {
     @Order(3)
     @Test
     public void scenario3() {
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[1], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress()));
         assertTrue(thrown.getMessage().contains("No Permission"));
     }
@@ -160,7 +162,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     public void scenario5() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[0], "register", tokenName, symbol, BigInteger.valueOf(decimals), fees, token.getAddress()));
         assertTrue(thrown.getMessage().contains("Token with same name exists already"));
     }
@@ -173,7 +175,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     public void scenario6() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to)
         );
         assertTrue(thrown.getMessage().contains("Overdrawn"));
@@ -188,7 +190,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     public void scenario7() {
         String _to = "btp://bsc/0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, BigInteger.ZERO, _to)
         );
         assertTrue(thrown.getMessage().contains("Invalid amount specified"));
@@ -214,7 +216,7 @@ class ServiceHandlerTest extends TestBase {
     public void scenario9() {
         String _to = "btp://0x1.bsc:0xa36a32c114ee13090e35cb086459a690f5c1f8e8";
         //bsh.invoke(owners[0],"transfer", tokenName, transferAmount,_to);
-        assertThrows(AssertionError.class, () ->
+        assertThrows(RevertedException.class, () ->
                 bsh.invoke(owners[0], "transfer", tokenName, transferAmount, _to)
         );
     }
@@ -288,7 +290,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     @Order(14)
     public void scenario14() {
-        assertThrows(AssertionError.class, () ->
+        assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[0], "removeOwner", owners[0].getAddress())
         );
     }
@@ -299,7 +301,7 @@ class ServiceHandlerTest extends TestBase {
     @Test
     @Order(15)
     public void scenario15() {
-        AssertionError thrown = assertThrows(AssertionError.class, () ->
+        var thrown = assertThrows(UserRevertedException.class, () ->
                 bsh.invoke(owners[1], "addOwner", owners[1].getAddress())
         );
         assertTrue(thrown.getMessage().contains("No Permission"));

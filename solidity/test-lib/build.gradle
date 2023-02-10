@@ -13,7 +13,7 @@ web3j {
 }
 
 dependencies {
-    compileOnly("foundation.icon:javaee-api:0.9.1")
+    compileOnly("foundation.icon:javaee-api:0.9.3")
 
     //for dump jsonrpc, referred web3j
     implementation("org.slf4j:slf4j-api:1.7.30")
@@ -26,5 +26,5 @@ dependencies {
 
     implementation("com.github.javafaker:javafaker:1.0.2")
 
-    testImplementation("foundation.icon:javaee-unittest:0.9.4")
+    testImplementation("foundation.icon:javaee-unittest:0.10.0")
 }
