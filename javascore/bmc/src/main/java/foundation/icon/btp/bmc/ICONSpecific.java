@@ -17,7 +17,6 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
-import foundation.icon.btp.lib.BMRStatus;
 import foundation.icon.score.client.ScoreClient;
 import score.Address;
 import score.annotation.EventLog;
@@ -67,10 +66,10 @@ public interface ICONSpecific {
      * Get status of registered relays by link..
      *
      * @param _link String (BTP Address of connected BMC)
-     * @return The object contains followings fields.
+     * @return A list of address of relay
      */
     @External(readonly = true)
-    BMRStatus[] getRelays(String _link);
+    Address[] getRelays(String _link);
 
     /**
      * (EventLog) Drops the next message that to be relayed from a specific network

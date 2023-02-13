@@ -18,9 +18,7 @@ package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BMC;
 import foundation.icon.btp.lib.BMCStatus;
-import foundation.icon.btp.lib.BMRStatus;
 import foundation.icon.btp.lib.BMVScoreInterface;
-import foundation.icon.btp.lib.BMVStatus;
 import foundation.icon.btp.lib.BSHScoreInterface;
 import foundation.icon.btp.lib.BTPAddress;
 import foundation.icon.btp.lib.BTPException;
@@ -81,6 +79,8 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     private final Services services = new Services("services");
     private final Routes routes = new Routes("routes");
     private final Links links = new Links("links");
+
+    private final BranchDB<String, ArrayDB<Address>> relays = Context.newBranchDB("relays", Address.class);
     private final DictDB<String, BigInteger> btpLinkNetworkIds = Context.newDictDB("btpLinkNetworkIds", BigInteger.class);
     private final DictDB<BigInteger, BigInteger> btpLinkOffset = Context.newDictDB("btpLinkOffset", BigInteger.class);
     private final VarDB<BigInteger> networkSn = Context.newVarDB("networkSn", BigInteger.class);
@@ -243,8 +243,10 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         if (routes.containsValue(net)) {
             throw BMCException.unknown("could not remove, referred by route");
         }
-
-        link.getRelays().clear();
+        ArrayDB<Address> arrayDB = relays.at(_link);
+        for(int i = 0; i < arrayDB.size(); i++ ) {
+            arrayDB.removeLast();
+        }
         BigInteger networkId = btpLinkNetworkIds.get(_link);
         if (networkId != null) {
             btpLinkNetworkIds.set(_link, null);
@@ -508,8 +510,6 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         BigInteger rxSeq = link.getRxSeq();
 
         BMVScoreInterface verifier = getVerifier(link.getAddr().net());
-        BMVStatus prevStatus = verifier.getStatus();
-
         // decode and verify relay message
         byte[][] serializedMsgs;
         try {
@@ -521,15 +521,9 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         long msgCount = serializedMsgs.length;
 
         Address caller = Context.getCaller();
-        Relays relays = link.getRelays();
-        Relay relay = relays.get(caller);
-        if (relay == null) {
+        if (getRelayIndex(_prev, caller) < 0) {
             throw BMCException.unauthorized("not registered relay");
         }
-        BMVStatus status = verifier.getStatus();
-        relay.setBlockCount(relay.getBlockCount() + status.getHeight() - prevStatus.getHeight());
-        relay.setMsgCount(relay.getMsgCount().add(BigInteger.valueOf(msgCount)));
-        relays.put(relay.getAddress(), relay);
         if (msgCount > 0) {
             link.setRxSeq(rxSeq.add(BigInteger.valueOf(msgCount)));
         }
@@ -905,11 +899,9 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     @External
     public void handleFragment(String _prev, String _msg, int _idx) {
         logger.println("handleFragment", "_prev", _prev, "_idx:", _idx, "len(_msg):" + _msg.length());
-        BTPAddress prev = BTPAddress.valueOf(_prev);
-        Link link = getLink(prev);
+        getLink(BTPAddress.valueOf(_prev));
         Address caller = Context.getCaller();
-        Relays relays = link.getRelays();
-        if (!relays.containsKey(caller)) {
+        if (getRelayIndex(_prev, caller) < 0) {
             throw BMCException.unauthorized("not registered relay");
         }
         byte[] fragmentBytes = Base64.getUrlDecoder().decode(_msg.getBytes());
@@ -1021,45 +1013,53 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     public void MessageDropped(String _prev, BigInteger _seq, byte[] _msg, long _ecode, String _emsg) {
     }
 
+    private int getRelayIndex(String _link, Address _addr) {
+        ArrayDB<Address> arrayDB = relays.at(_link);
+        for (int i = 0 ; i < arrayDB.size(); i++) {
+            if (arrayDB.get(i).equals(_addr)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @External
     public void addRelay(String _link, Address _addr) {
         requireOwnerAccess();
-
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Relays relays = getLink(target).getRelays();
-        if (relays.containsKey(_addr)) {
+        getLink(BTPAddress.valueOf(_link));
+        if (getRelayIndex(_link, _addr) >= 0) {
             throw BMCException.alreadyExistsBMR();
         }
-        Relay relay = new Relay();
-        relay.setAddress(_addr);
-        relay.setMsgCount(BigInteger.ZERO);
-        relays.put(_addr, relay);
+        relays.at(_link).add(_addr);
     }
 
     @External
     public void removeRelay(String _link, Address _addr) {
         requireOwnerAccess();
-
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Relays relays = getLink(target).getRelays();
-        if (!relays.containsKey(_addr)) {
+        getLink(BTPAddress.valueOf(_link));
+        ArrayDB<Address> arrayDB = relays.at(_link);
+        if (arrayDB.size() == 0) {
             throw BMCException.notExistsBMR();
         }
-        relays.remove(_addr);
+        Address last = arrayDB.pop();
+        if (!last.equals(_addr)) {
+            for (int i = 0 ; i < arrayDB.size(); i++) {
+                if (arrayDB.get(i).equals(_addr)) {
+                    arrayDB.set(i, last);
+                    return;
+                }
+            }
+            throw BMCException.notExistsBMR();
+        }
     }
 
     @External(readonly = true)
-    public BMRStatus[] getRelays(String _link) {
-        BTPAddress target = BTPAddress.valueOf(_link);
-        Relays relays = getLink(target).getRelays();
-        BMRStatus[] arr = new BMRStatus[relays.size()];
-        int i = 0;
-        for (Relay relay : relays.values()) {
-            BMRStatus s = new BMRStatus();
-            s.setAddress(relay.getAddress());
-            s.setBlock_count(relay.getBlockCount());
-            s.setMsg_count(relay.getMsgCount());
-            arr[i++] = s;
+    public Address[] getRelays(String _link) {
+        getLink(BTPAddress.valueOf(_link));
+        ArrayDB<Address> arrayDB = relays.at(_link);
+        Address[] arr = new Address[arrayDB.size()];
+        for (int i = 0 ; i < arrayDB.size(); i++) {
+            arr[i] = arrayDB.get(i);
         }
         return arr;
     }

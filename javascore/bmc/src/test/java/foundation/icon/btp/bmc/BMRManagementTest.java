@@ -61,8 +61,7 @@ public class BMRManagementTest implements BMCIntegrationTest {
     }
 
     static boolean isExistsRelay(String link, Address address) {
-        return Arrays.stream(iconSpecific.getRelays(link))
-                .anyMatch((v) -> v.getAddress().equals(address));
+        return Arrays.asList(iconSpecific.getRelays(link)).contains(address);
     }
 
     static void addRelay(String link, Address address) {
