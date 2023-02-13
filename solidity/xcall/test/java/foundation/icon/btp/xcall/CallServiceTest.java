@@ -154,12 +154,14 @@ public class CallServiceTest implements CSIntegrationTest {
     @Test
     void executeCallWithoutSuccessResponse() throws Exception {
         var from = new BTPAddress(linkNet, sampleAddress);
-        var checker = CSIntegrationTest.messageReceivedEvent(
-                (el) -> {
-                    assertEquals(from.toString(), el._from);
-                    assertArrayEquals(requestMap.get(srcSn).getData(), el._data);
-                });
-        checker = checker.andThen(MockBMCIntegrationTest.sendMessageEventShouldNotExists());
+        var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
+            assertEquals(from.toString(), el._from);
+            assertArrayEquals(requestMap.get(srcSn).getData(), el._data);
+        }).andThen(CSIntegrationTest.callExecutedEvent((el) -> {
+            assertEquals(reqId, el._reqId);
+            assertEquals(BigInteger.ZERO, el._code);
+            assertEquals("", el._msg);
+        })).andThen(MockBMCIntegrationTest.sendMessageEventShouldNotExists());
         checker.accept(callService.executeCall(reqId).send());
     }
 
@@ -306,7 +308,11 @@ public class CallServiceTest implements CSIntegrationTest {
             assertEquals(CSMessage.RESPONSE, csMessage.getType());
             AssertCallService.assertEqualsCSMessageResponse(
                     response, CSMessageResponse.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callExecutedEvent((el) -> {
+            assertEquals(reqId, el._reqId);
+            assertEquals(BigInteger.valueOf(CSMessageResponse.FAILURE), el._code);
+            assertEquals(response.getMsg(), el._msg);
+        }));
         checker.accept(callService.executeCall(reqId).send());
     }
 

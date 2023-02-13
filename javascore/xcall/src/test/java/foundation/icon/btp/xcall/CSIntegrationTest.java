@@ -53,6 +53,13 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionResult> callExecutedEvent(
+            Consumer<CallServiceScoreClient.CallExecuted> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.CallExecuted::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {
         return eventLogShouldNotExistsChecker(CallServiceScoreClient.RollbackMessage::eventLogs);
     }

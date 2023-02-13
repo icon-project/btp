@@ -155,7 +155,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         try {
             DAppProxy proxy = new DAppProxy(Address.fromString(req.getTo()));
             proxy.handleCallMessage(req.getFrom(), req.getData());
-            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, null);
+            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, "");
         } catch (UserRevertedException e) {
             int code = e.getCode() == 0 ? CSMessageResponse.FAILURE : e.getCode();
             String msg = "UserReverted(" + code + ")";
@@ -165,6 +165,10 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
             logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
         } finally {
+            if (msgRes == null) {
+                msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, "UnknownFailure");
+            }
+            CallExecuted(_reqId, msgRes.getCode(), msgRes.getMsg());
             // send response only when there was a rollback
             if (req.needRollback()) {
                 BigInteger sn = req.getSn().negate();
@@ -192,6 +196,10 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
     @Override
     @EventLog(indexed=3)
     public void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId, byte[] _data) {}
+
+    @Override
+    @EventLog(indexed=1)
+    public void CallExecuted(BigInteger _reqId, int _code, String _msg) {}
 
     @Override
     @EventLog(indexed=1)

@@ -171,6 +171,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         } catch (bytes memory) {
             msgRes = Types.CSMessageResponse(msgReq.sn, Types.CS_RESP_FAILURE, "unknownError");
         }
+        emit CallExecuted(_reqId, msgRes.code, msgRes.msg);
 
         // send response only when there was a rollback
         if (msgReq.rollback) {

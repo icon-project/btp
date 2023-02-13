@@ -64,11 +64,23 @@ interface ICallService {
     );
 
     /**
-       @notice Executes the requested call.
-       @dev Caller should be ...
-       @param _reqId The request Id
+       @notice Executes the requested call message.
+       @param _reqId The request id
      */
     function executeCall(
         uint256 _reqId
     ) external;
+
+    /**
+       @notice Notifies that the call message has been executed.
+       @param _reqId The request id for the call message
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure)
+       @param _msg The result message if any
+     */
+    event CallExecuted(
+        uint256 _reqId,
+        int _code,
+        string _msg
+    );
 }

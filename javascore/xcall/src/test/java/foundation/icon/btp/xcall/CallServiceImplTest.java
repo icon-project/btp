@@ -157,7 +157,11 @@ class CallServiceImplTest implements CSIntegrationTest {
         var checker = CSIntegrationTest.messageReceivedEvent((el) -> {
             assertEquals(from.toString(), el.get_from());
             assertArrayEquals(requestMap.get(srcSn).getData(), el.get_data());
-        }).andThen(MockBMCIntegrationTest.sendMessageEventShouldNotExists());
+        }).andThen(CSIntegrationTest.callExecutedEvent((el) -> {
+            assertEquals(reqId, el.get_reqId());
+            assertEquals(CSMessageResponse.SUCCESS, el.get_code());
+            assertEquals("", el.get_msg());
+        })).andThen(MockBMCIntegrationTest.sendMessageEventShouldNotExists());
         callSvc.executeCall(checker, reqId);
     }
 
@@ -309,7 +313,11 @@ class CallServiceImplTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el.get_msg());
             assertEquals(CSMessage.RESPONSE, csMessage.getType());
             AssertCallService.assertEqualsCSMessageResponse(response, CSMessageResponse.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callExecutedEvent((el) -> {
+            assertEquals(reqId, el.get_reqId());
+            assertEquals(CSMessageResponse.FAILURE, el.get_code());
+            assertEquals(response.getMsg(), el.get_msg());
+        }));
         callSvc.executeCall(checker, reqId);
     }
 

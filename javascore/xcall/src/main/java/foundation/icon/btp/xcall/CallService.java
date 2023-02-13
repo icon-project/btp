@@ -76,10 +76,21 @@ public interface CallService {
     void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId, byte[] _data);
 
     /**
-     * Executes the requested call.
+     * Executes the requested call message.
      *
-     * @param _reqId The request Id
+     * @param _reqId The request id
      */
     @External
     void executeCall(BigInteger _reqId);
+
+    /**
+     * Notifies that the call message has been executed.
+     *
+     * @param _reqId The request id for the call message
+     * @param _code The execution result code
+     *              (0: Success, -1: Unknown generic failure, >=1: User defined error code)
+     * @param _msg The result message if any
+     */
+    @EventLog(indexed=1)
+    void CallExecuted(BigInteger _reqId, int _code, String _msg);
 }
