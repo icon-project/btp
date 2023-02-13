@@ -183,6 +183,13 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
         }
     }
 
+    private void requireLink(BTPAddress address) {
+        Link link = links.get(address.net());
+        if (link == null || !link.getAddr().equals(address)) {
+            throw BMCException.notExistsLink();
+        }
+    }
+
     private Link getLink(String net) {
         Link link = links.get(net);
         if (link == null) {
@@ -899,7 +906,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     @External
     public void handleFragment(String _prev, String _msg, int _idx) {
         logger.println("handleFragment", "_prev", _prev, "_idx:", _idx, "len(_msg):" + _msg.length());
-        getLink(BTPAddress.valueOf(_prev));
+        requireLink(BTPAddress.valueOf(_prev));
         Address caller = Context.getCaller();
         if (getRelayIndex(_prev, caller) < 0) {
             throw BMCException.unauthorized("not registered relay");
@@ -1026,7 +1033,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     @External
     public void addRelay(String _link, Address _addr) {
         requireOwnerAccess();
-        getLink(BTPAddress.valueOf(_link));
+        requireLink(BTPAddress.valueOf(_link));
         if (getRelayIndex(_link, _addr) >= 0) {
             throw BMCException.alreadyExistsBMR();
         }
@@ -1036,7 +1043,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
     @External
     public void removeRelay(String _link, Address _addr) {
         requireOwnerAccess();
-        getLink(BTPAddress.valueOf(_link));
+        requireLink(BTPAddress.valueOf(_link));
         ArrayDB<Address> arrayDB = relays.at(_link);
         if (arrayDB.size() == 0) {
             throw BMCException.notExistsBMR();
@@ -1055,7 +1062,7 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
 
     @External(readonly = true)
     public Address[] getRelays(String _link) {
-        getLink(BTPAddress.valueOf(_link));
+        requireLink(BTPAddress.valueOf(_link));
         ArrayDB<Address> arrayDB = relays.at(_link);
         Address[] arr = new Address[arrayDB.size()];
         for (int i = 0 ; i < arrayDB.size(); i++) {
@@ -1138,13 +1145,13 @@ public class BTPMessageCenter implements BMC, ICONSpecific, OwnerManager {
 
     @External(readonly = true)
     public long getBTPLinkNetworkId(String _link) {
-        getLink(BTPAddress.valueOf(_link));
+        requireLink(BTPAddress.valueOf(_link));
         return btpLinkNetworkIds.getOrDefault(_link, BigInteger.ZERO).longValue();
     }
 
     @External(readonly = true)
     public long getBTPLinkOffset(String _link) {
-        getLink(BTPAddress.valueOf(_link));
+        requireLink(BTPAddress.valueOf(_link));
         BigInteger networkId = btpLinkNetworkIds.get(_link);
         if (networkId == null) {
             throw BMCException.unknown("not exists networkId");
