@@ -29,6 +29,7 @@ type BaseConfig struct {
 	KeyStoreData json.RawMessage        `json:"key_store"`
 	KeyStorePass string                 `json:"key_password,omitempty"`
 	KeySecret    string                 `json:"key_secret,omitempty"`
+	BridgeMode   bool                   `json:"bridge_mode"`
 	Options      map[string]interface{} `json:"options,omitempty"`
 }
 

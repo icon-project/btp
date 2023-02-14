@@ -172,6 +172,7 @@ func main() {
 	rootPFlags.String("src.key_store", "", "Source network id")
 	rootPFlags.String("src.key_password", "", "Source password of keyStore")
 	rootPFlags.String("src.key_secret", "", "Source Secret(password) file for keyStore")
+	rootPFlags.Bool("src.bridge_mode", false, "bridge mode")
 
 	rootPFlags.String("dst.address", "", "BTP Address of destination blockchain (PROTOCOL://NID.BLOCKCHAIN/BMC)")
 	rootPFlags.String("dst.endpoint", "", "Endpoint of destination blockchain")
@@ -179,6 +180,7 @@ func main() {
 	rootPFlags.String("dst.key_store", "", "Source network id")
 	rootPFlags.String("dst.key_password", "", "Source password of keyStore")
 	rootPFlags.String("dst.key_secret", "", "Source Secret(password) file for keyStore")
+	rootPFlags.Bool("dst.bridge_mode", false, "bridge mode")
 
 	rootPFlags.String("direction", "both", "btp2.0 network direction ( both, front, reverse)")
 	rootPFlags.Bool("maxSizeTx", false, "Send when the maximum transaction size is reached")
