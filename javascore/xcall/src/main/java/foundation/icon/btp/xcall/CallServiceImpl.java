@@ -19,7 +19,6 @@ package foundation.icon.btp.xcall;
 import foundation.icon.btp.lib.BMCScoreInterface;
 import foundation.icon.btp.lib.BSH;
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.score.util.Logger;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -34,7 +33,6 @@ import score.annotation.Payable;
 import java.math.BigInteger;
 
 public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent {
-    private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
     public static final int MAX_DATA_SIZE = 2048;
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
@@ -159,10 +157,8 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         } catch (UserRevertedException e) {
             int code = e.getCode();
             String msg = "UserReverted(" + code + ")";
-            logger.println("executeCall", "code:", code, "msg:", msg);
             msgRes = new CSMessageResponse(req.getSn(), code == 0 ? CSMessageResponse.FAILURE : code, msg);
         } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
         } finally {
             if (msgRes == null) {
@@ -288,7 +284,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         BigInteger resSn = msgRes.getSn();
         CallRequest req = requests.get(resSn);
         if (req == null) {
-            logger.println("handleResponse", "No request for", resSn);
+            Context.println("handleResponse: no request for " + resSn);
             return; // just ignore
         }
         String errMsg = msgRes.getMsg();
@@ -300,7 +296,6 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
             case CSMessageResponse.FAILURE:
             case CSMessageResponse.BTP_ERROR:
             default:
-                logger.println("handleResponse", "code:", msgRes.getCode(), "msg:", msgRes.getMsg());
                 // emit rollback event
                 Context.require(req.getRollback() != null, "NoRollbackData");
                 req.setEnabled();

@@ -2,7 +2,6 @@ version = '0.1.0'
 
 dependencies {
     compileOnly("foundation.icon:javaee-api:$javaeeVersion")
-    implementation project(':score-util')
     implementation project(':lib')
 
     // for generating ScoreClient
