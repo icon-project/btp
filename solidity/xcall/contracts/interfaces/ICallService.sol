@@ -27,15 +27,24 @@ interface ICallService {
     );
 
     /**
+       @notice Notifies that a response message has arrived for the `_sn` if the request was a two-way message.
+       @param _sn The serial number of the previous request
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure, >=1: User defined error code)
+       @param _msg The result message if any
+     */
+    event ResponseMessage(
+        uint256 indexed _sn,
+        int _code,
+        string _msg
+    );
+
+    /**
        @notice Notifies the user that a rollback operation is required for the request '_sn'.
        @param _sn The serial number of the previous request
-       @param _rollback The data for recovering that was given by the caller
-       @param _reason The error message that caused this rollback
      */
     event RollbackMessage(
-        uint256 indexed _sn,
-        bytes _rollback,
-        string _reason
+        uint256 indexed _sn
     );
 
     /**
@@ -45,6 +54,19 @@ interface ICallService {
     function executeRollback(
         uint256 _sn
     ) external;
+
+    /**
+       @notice Notifies that the rollback has been executed.
+       @param _sn The serial number for the rollback
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure)
+       @param _msg The result message if any
+     */
+    event RollbackExecuted(
+        uint256 indexed _sn,
+        int _code,
+        string _msg
+    );
 
     /*======== At the destination CALL_BSH ========*/
     /**
@@ -79,7 +101,7 @@ interface ICallService {
        @param _msg The result message if any
      */
     event CallExecuted(
-        uint256 _reqId,
+        uint256 indexed _reqId,
         int _code,
         string _msg
     );

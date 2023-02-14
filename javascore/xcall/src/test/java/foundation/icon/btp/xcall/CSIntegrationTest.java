@@ -46,6 +46,13 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionResult> responseMessageEvent(
+            Consumer<CallServiceScoreClient.ResponseMessage> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.ResponseMessage::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> rollbackMessageEvent(
             Consumer<CallServiceScoreClient.RollbackMessage> consumer) {
         return eventLogChecker(
@@ -58,6 +65,17 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
         return eventLogChecker(
                 CallServiceScoreClient.CallExecuted::eventLogs,
                 consumer);
+    }
+
+    static Consumer<TransactionResult> rollbackExecutedEvent(
+            Consumer<CallServiceScoreClient.RollbackExecuted> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.RollbackExecuted::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> responseMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallServiceScoreClient.ResponseMessage::eventLogs);
     }
 
     static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {

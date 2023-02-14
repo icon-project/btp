@@ -201,15 +201,21 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         require(req.enabled, "RollbackNotEnabled");
         cleanupCallRequest(_sn);
 
+        Types.CSMessageResponse memory msgRes;
+
         try this.tryHandleCallMessage(
             req.from,
             "",
             btpAddress,
             req.rollback
-        ){
-        } catch {
-            //ignore failure
+        ) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_SUCCESS, "");
+        } catch Error(string memory reason) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_FAILURE, reason);
+        } catch (bytes memory) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_FAILURE, "unknownError");
         }
+        emit RollbackExecuted(_sn, msgRes.code, msgRes.msg);
     }
 
     /* Implementation-specific eventlog */
@@ -313,6 +319,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
     ) internal {
         Types.CallRequest memory req = requests[res.sn];
         if (req.from != address(0)) {
+            emit ResponseMessage(res.sn, res.code, res.msg);
             if (res.code == Types.CS_RESP_SUCCESS){
                 cleanupCallRequest(res.sn);
             } else {
@@ -320,7 +327,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
                 require(req.rollback.length > 0, "NoRollbackData");
                 req.enabled=true;
                 requests[res.sn]=req;
-                emit RollbackMessage(res.sn, req.rollback, res.msg);
+                emit RollbackMessage(res.sn);
             }
         }
     }

@@ -45,14 +45,23 @@ public interface CallService {
     BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback);
 
     /**
+     * Notifies that a response message has arrived for the `_sn` if the request was a two-way message.
+     *
+     * @param _sn The serial number of the previous request
+     * @param _code The response code
+     *              (0: Success, -1: Unknown generic failure, >=1: User defined error code)
+     * @param _msg The result message if any
+     */
+    @EventLog(indexed=1)
+    void ResponseMessage(BigInteger _sn, int _code, String _msg);
+
+    /**
      * Notifies the user that a rollback operation is required for the request '_sn'.
      *
      * @param _sn The serial number of the previous request
-     * @param _rollback The data for recovering that was given by the caller
-     * @param _reason The error message that caused this rollback
      */
     @EventLog(indexed=1)
-    void RollbackMessage(BigInteger _sn, byte[] _rollback, String _reason);
+    void RollbackMessage(BigInteger _sn);
 
     /**
      * Rollbacks the caller state of the request '_sn'.
@@ -61,6 +70,17 @@ public interface CallService {
      */
     @External
     void executeRollback(BigInteger _sn);
+
+    /**
+     * Notifies that the rollback has been executed.
+     *
+     * @param _sn The serial number for the rollback
+     * @param _code The execution result code
+     *              (0: Success, -1: Unknown generic failure, >=1: User defined error code)
+     * @param _msg The result message if any
+     */
+    @EventLog(indexed=1)
+    void RollbackExecuted(BigInteger _sn, int _code, String _msg);
 
     /*======== At the destination CALL_BSH ========*/
     /**

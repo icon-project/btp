@@ -33,6 +33,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CallServiceImplTest implements CSIntegrationTest {
     static Address csAddress = callSvc._address();
@@ -171,7 +172,7 @@ class CallServiceImplTest implements CSIntegrationTest {
         var dstSn = BigInteger.ONE;
         var response = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
-        var checker = CSIntegrationTest.callRequestClearedEventShouldNotExists();
+        var checker = CSIntegrationTest.responseMessageEventShouldNotExists();
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallService.NAME, dstSn, csMsg.toBytes());
@@ -347,9 +348,13 @@ class CallServiceImplTest implements CSIntegrationTest {
         var dstSn = BigInteger.TWO;
         var response = new CSMessageResponse(srcSn, CSMessageResponse.FAILURE, "java.lang.IllegalArgumentException");
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
-        var checker = CSIntegrationTest.rollbackMessageEvent((el) -> {
+        var checker = CSIntegrationTest.responseMessageEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
-        }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
+            assertEquals(CSMessageResponse.FAILURE, el.get_code());
+            assertEquals(response.getMsg(), el.get_msg());
+        }).andThen(CSIntegrationTest.rollbackMessageEvent((el) -> {
+            assertEquals(srcSn, el.get_sn());
+        })).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallService.NAME, dstSn, csMsg.toBytes());
@@ -363,7 +368,11 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(from.toString(), el.get_from());
             assertEquals(srcSn, el.get_ssn());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.get_rollback());
-        }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
+        }).andThen(CSIntegrationTest.rollbackExecutedEvent((el) -> {
+            assertEquals(srcSn, el.get_sn());
+            assertEquals(CSMessageResponse.SUCCESS, el.get_code());
+            assertEquals("", el.get_msg());
+        })).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
         }));
         callSvc.executeRollback(checker, srcSn);
@@ -386,13 +395,16 @@ class CallServiceImplTest implements CSIntegrationTest {
         // prepare another call request
         _sendCallMessageWithRollback(BigInteger.ONE);
 
-        // check the CallRequestCleared event
         var dstSn = BigInteger.TEN;
         var response = new CSMessageResponse(srcSn, CSMessageResponse.SUCCESS, null);
         var csMsg = new CSMessage(CSMessage.RESPONSE, response.toBytes());
-        var checker = CSIntegrationTest.callRequestClearedEvent((el) -> {
+        var checker = CSIntegrationTest.responseMessageEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
-        }).andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
+            assertEquals(CSMessageResponse.SUCCESS, el.get_code());
+            assertEquals("", el.get_msg());
+        }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
+            assertEquals(srcSn, el.get_sn());
+        })).andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallService.NAME, dstSn, csMsg.toBytes());
@@ -420,9 +432,13 @@ class CallServiceImplTest implements CSIntegrationTest {
         _sendCallMessageWithRollback(BigInteger.ONE);
 
         // check the BTP error message
-        var checker = CSIntegrationTest.rollbackMessageEvent((el) -> {
+        var checker = CSIntegrationTest.responseMessageEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
-        }).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
+            assertEquals(CSMessageResponse.BTP_ERROR, el.get_code());
+            assertTrue(el.get_msg().startsWith("BTPError"));
+        }).andThen(CSIntegrationTest.rollbackMessageEvent((el) -> {
+            assertEquals(srcSn, el.get_sn());
+        })).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPError(
                 checker, csAddress,
                 bmcBtpAddress.toString(), CallService.NAME, srcSn, 1, "BTPError");
@@ -435,7 +451,11 @@ class CallServiceImplTest implements CSIntegrationTest {
         var checker = CSIntegrationTest.rollbackDataReceivedEvent((el) -> {
             assertEquals(from.toString(), el.get_from());
             assertArrayEquals(requestMap.get(srcSn).getRollback(), el.get_rollback());
-        }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
+        }).andThen(CSIntegrationTest.rollbackExecutedEvent((el) -> {
+            assertEquals(srcSn, el.get_sn());
+            assertEquals(CSMessageResponse.SUCCESS, el.get_code());
+            assertEquals("", el.get_msg());
+        })).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
         }));
         callSvc.executeRollback(checker, srcSn);
