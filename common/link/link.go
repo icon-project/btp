@@ -125,14 +125,15 @@ func (l *Link) Stop() {
 }
 
 func (l *Link) receiverChannel(bls *types.BMCLinkStatus, errCh chan error) {
-
+	once := new(sync.Once)
 	go func() {
 		rsc, err := l.r.Start(bls)
-		err = l.checkStatus(bls)
-
 		for {
 			select {
 			case rs := <-rsc:
+				once.Do(func() {
+					err = l.checkStatus(bls)
+				})
 				l.rss = append(l.rss, rs)
 				l.BuildRelayMessage(bls)
 			}
@@ -292,29 +293,37 @@ func (l *Link) buildProof(bls *types.BMCLinkStatus, bu BlockUpdate) error {
 	if rs == nil {
 		return nil
 	}
+	var mh int64
 	for {
+		//TODO refactoring
 		if rs.Seq() <= bls.RxSeq {
 			break
 		}
 		if l.isOverLimit(l.rmi.size) {
 			l.sendRelayMessage(bls)
-			if bu.ProofHeight() != 0 {
-				mh := l.r.GetHeightForSeq(bls.RxSeq)
+			if bu != nil || bu.ProofHeight() != 0 {
+				h := l.r.GetHeightForSeq(bls.RxSeq)
+				mh = h
 				if err := l.buildBlockProof(bls, mh); err != nil {
 					return err
 				}
 			}
-			l.buildMessageProof(bls)
-
+			if err := l.buildMessageProof(bls); err != nil {
+				return err
+			}
 		} else {
-			if bu.ProofHeight() == -1 {
-				mh := l.r.GetHeightForSeq(bls.RxSeq)
-				if err := l.buildBlockProof(bls, mh); err != nil {
-					return err
+			if bu == nil || bu.ProofHeight() == -1 {
+				h := l.r.GetHeightForSeq(bls.RxSeq)
+				mh = h
+				if mh != h {
+					if err := l.buildBlockProof(bls, mh); err != nil {
+						return err
+					}
 				}
 			}
-			l.buildMessageProof(bls)
-
+			if err := l.buildMessageProof(bls); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
