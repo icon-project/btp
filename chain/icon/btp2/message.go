@@ -130,9 +130,9 @@ func NewTypePrefixedMessage(rmi link.RelayMessageItem) (*TypePrefixedMessage, er
 		tpm.Type = RelayMessageTypeBlockUpdate
 		tpm.Payload = bn.Payload()
 	case link.TypeMessageProof:
-		bn := rmi.(*MessageProof)
+		mp := rmi.(*MessageProof)
 		tpm.Type = RelayMessageTypeMessageProof
-		tpm.Payload = bn.Payload()
+		tpm.Payload = mp.Payload()
 	default:
 		return nil, fmt.Errorf("in valid valud")
 	}

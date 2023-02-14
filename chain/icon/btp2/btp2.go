@@ -138,8 +138,6 @@ func (b *btp2) Start(bs *types.BMCLinkStatus) (<-chan link.ReceiveStatus, error)
 		b.Monitoring(bs)
 	}()
 
-	//b.Monitoring(bs)
-
 	return b.rsc, nil
 }
 
@@ -158,11 +156,10 @@ func (b *btp2) GetHeightForSeq(seq int64) int64 {
 	} else {
 		return 0
 	}
-
 }
 
-func (b *btp2) BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]link.BlockUpdate, error) {
-	b.updateReceiveStatus(bs)
+func (b *btp2) BuildBlockUpdate(bls *types.BMCLinkStatus, limit int64) ([]link.BlockUpdate, error) {
+	b.updateReceiveStatus(bls)
 	bus := make([]link.BlockUpdate, 0)
 	for _, rs := range b.rss {
 
@@ -180,26 +177,26 @@ func (b *btp2) BuildBlockUpdate(bs *types.BMCLinkStatus, limit int64) ([]link.Bl
 			return bus, nil
 		}
 
-		bu := NewBlockUpdate(bs, bh.MainHeight, bbu)
+		bu := NewBlockUpdate(bls, bh.MainHeight, bbu)
 		bus = append(bus, bu)
 
 	}
 	return bus, nil
 }
 
-func (b *btp2) BuildBlockProof(bs *types.BMCLinkStatus, height int64) (link.BlockProof, error) {
+func (b *btp2) BuildBlockProof(bls *types.BMCLinkStatus, height int64) (link.BlockProof, error) {
 	return nil, nil
 }
 
-func (b *btp2) BuildMessageProof(bs *types.BMCLinkStatus, limit int64) (link.MessageProof, error) {
-	rs := b.GetReceiveHeightForHeight(bs.Verifier.Height)
+func (b *btp2) BuildMessageProof(bls *types.BMCLinkStatus, limit int64) (link.MessageProof, error) {
+	rs := b.GetReceiveHeightForHeight(bls.Verifier.Height)
 
 	if rs == nil {
 		return nil, nil
 	}
 	messageCnt := int64(rs.MerkleBinaryTree().Len())
-	offset := bs.RxSeq - (rs.Seq() - messageCnt)
-	if (bs.RxSeq - rs.seq) == 0 {
+	offset := bls.RxSeq - (rs.Seq() - messageCnt)
+	if (bls.RxSeq - rs.seq) == 0 {
 		return nil, nil
 	}
 	if messageCnt > 0 {
@@ -210,7 +207,7 @@ func (b *btp2) BuildMessageProof(bs *types.BMCLinkStatus, limit int64) (link.Mes
 			}
 
 			if limit < int64(len(codec.RLP.MustMarshalToBytes(p))) {
-				mp := NewMessageProof(bs, bs.RxSeq+i, *p)
+				mp := NewMessageProof(bls, bls.RxSeq+i, *p)
 				return mp, nil
 			}
 		}
@@ -220,7 +217,7 @@ func (b *btp2) BuildMessageProof(bs *types.BMCLinkStatus, limit int64) (link.Mes
 	if err != nil {
 		return nil, err
 	}
-	mp := NewMessageProof(bs, bs.RxSeq+messageCnt, *p)
+	mp := NewMessageProof(bls, bls.RxSeq+messageCnt, *p)
 	return mp, nil
 }
 
