@@ -49,6 +49,7 @@ const (
 	ReverseDirection    = "reverse"
 	ICON                = "icon"
 	ETH                 = "eth"
+	HARDHAT             = "hardhat"
 )
 
 type Config struct {
