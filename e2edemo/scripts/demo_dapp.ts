@@ -256,11 +256,17 @@ async function verifyReceivedMessage(dstChain: any, receipt: any, msg: string) {
   }
 }
 
-async function checkCallRequestCleared(srcChain: any, sn: BigNumber) {
+async function checkCallRequestCleared(srcChain: any, sn: BigNumber, receipt?: any) {
   let event;
   if (isIconChain(srcChain)) {
     const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
-    const logs = await xcallSrc.waitEvent("CallRequestCleared(int)");
+    const eventSig = "CallRequestCleared(int)";
+    let logs;
+    if (receipt) {
+      logs = xcallSrc.filterEvent(receipt.eventLogs, eventSig, xcallSrc.address);
+    } else {
+      logs = await xcallSrc.waitEvent(eventSig);
+    }
     if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "CallRequestCleared"`);
     }
@@ -271,7 +277,12 @@ async function checkCallRequestCleared(srcChain: any, sn: BigNumber) {
     }
   } else if (isHardhatChain(srcChain)) {
     const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
-    const logs = await waitEvent(xcallSrc, xcallSrc.filters.CallRequestCleared());
+    let logs;
+    if (receipt) {
+      logs = filterEvent(xcallSrc, xcallSrc.filters.CallRequestCleared(), receipt);
+    } else {
+      logs = await waitEvent(xcallSrc, xcallSrc.filters.CallRequestCleared());
+    }
     if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "CallRequestCleared"`);
     }
@@ -367,36 +378,6 @@ async function verifyRollbackDataReceivedMessage(srcChain: any, receipt: any, ro
   }
 }
 
-async function verifyCallRequestCleared(srcChain: any, receipt: any, sn: BigNumber) {
-  let event;
-  if (isIconChain(srcChain)) {
-    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
-    const logs = xcallSrc.filterEvent(receipt.eventLogs,
-        "CallRequestCleared(int)", xcallSrc.address);
-    if (logs.length == 0) {
-      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
-    }
-    console.log(logs);
-    const indexed = logs[0].indexed || [];
-    event = {
-      _sn: BigNumber.from(indexed[1])
-    }
-  } else if (isHardhatChain(srcChain)) {
-    const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
-    const logs = filterEvent(xcallSrc, xcallSrc.filters.CallRequestCleared(), receipt);
-    if (logs.length == 0) {
-      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
-    }
-    console.log(logs)
-    event = logs[0].args;
-  } else {
-    throw new Error(`DApp: unknown source chain: ${srcChain}`);
-  }
-  if (!sn.eq(event._sn)) {
-    throw new Error(`DApp: received serial number (${event._sn}) is different from the sent one (${sn})`);
-  }
-}
-
 async function sendCallMessage(src: string, dst: string, msgData?: string, needRollback?: boolean) {
   const srcChain = deployments.get(src);
   const dstChain = deployments.get(dst);
@@ -436,7 +417,7 @@ async function sendCallMessage(src: string, dst: string, msgData?: string, needR
       await verifyRollbackDataReceivedMessage(srcChain, executeRollbackReceipt, rollbackData);
 
       console.log(`[${step++}] verify message cleanup on ${src}`);
-      await verifyCallRequestCleared(srcChain, executeRollbackReceipt, sn);
+      await checkCallRequestCleared(srcChain, sn, executeRollbackReceipt);
     } else {
       console.log(`[${step++}] check CallRequestCleared event on ${src} chain`);
       await checkCallRequestCleared(srcChain, sn);
