@@ -307,7 +307,7 @@ async function checkRollbackMessage(srcChain: any) {
     return logs[0].args._sn;
   } else if (isIconChain(srcChain)) {
     const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
-    const logs = await xcallSrc.waitEvent("RollbackMessage(int,bytes,str)");
+    const logs = await xcallSrc.waitEvent("RollbackMessage(int)");
     if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "RollbackMessage"`);
     }
