@@ -17,21 +17,12 @@
 package foundation.icon.btp.xcall;
 
 import foundation.icon.score.client.ScoreClient;
-import score.Address;
 import score.annotation.EventLog;
 
 import java.math.BigInteger;
 
 @ScoreClient
 public interface CSImplEvent {
-    /**
-     * Notifies that the requested call message has been sent.
-     *
-     * @implNote Implementation-specific eventlog
-     */
-    @EventLog(indexed=3)
-    void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data);
-
     /**
      * Notifies that the call request data (including rollback) has been cleared.
      *

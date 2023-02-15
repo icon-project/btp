@@ -17,6 +17,7 @@
 package foundation.icon.btp.xcall;
 
 import foundation.icon.score.client.ScoreClient;
+import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -43,6 +44,17 @@ public interface CallService {
     @Payable
     @External
     BigInteger sendCallMessage(String _to, byte[] _data, @Optional byte[] _rollback);
+
+    /**
+     * Notifies that the requested call message has been sent.
+     *
+     * @param _from The chain-specific address of the caller
+     * @param _to The BTP address of the callee on the destination chain
+     * @param _sn The serial number of the request
+     * @param _nsn The network serial number of the BTP message
+     */
+    @EventLog(indexed=3)
+    void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn);
 
     /**
      * Notifies that a response message has arrived for the `_sn` if the request was a two-way message.
@@ -90,10 +102,9 @@ public interface CallService {
      * @param _to A string representation of the callee address
      * @param _sn The serial number of the request from the source
      * @param _reqId The request id of the destination chain
-     * @param _data The calldata
      */
     @EventLog(indexed=3)
-    void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId, byte[] _data);
+    void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId);
 
     /**
      * Executes the requested call message.

@@ -144,7 +144,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
             msg.sender.toString(), dstAccount, sn, needResponse, _data);
 
         int256 nsn = sendBTPMessage(msg.value - protocolFee, netTo, Types.CS_REQUEST, msgSn, reqMsg.encodeCSMessageRequest());
-        emit CallMessageSent(msg.sender, _to, sn, nsn, _data);
+        emit CallMessageSent(msg.sender, _to, sn, nsn);
         return sn;
     }
 
@@ -217,15 +217,6 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         }
         emit RollbackExecuted(_sn, msgRes.code, msgRes.msg);
     }
-
-    /* Implementation-specific eventlog */
-    event CallMessageSent(
-        address indexed _from,
-        string indexed _to,
-        uint256 indexed _sn,
-        int256 _nsn,
-        bytes _data
-    );
 
     /* Implementation-specific eventlog */
     event CallRequestCleared(
@@ -311,7 +302,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
             req.rollback,
             req.data
         );
-        emit CallMessage(from, req.to, req.sn, reqId, req.data);
+        emit CallMessage(from, req.to, req.sn, reqId);
     }
 
     function handleResponse(

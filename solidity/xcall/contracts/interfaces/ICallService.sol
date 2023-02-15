@@ -27,6 +27,20 @@ interface ICallService {
     );
 
     /**
+       @notice Notifies that the requested call message has been sent.
+       @param _from The chain-specific address of the caller
+       @param _to The BTP address of the callee on the destination chain
+       @param _sn The serial number of the request
+       @param _nsn The network serial number of the BTP message
+     */
+    event CallMessageSent(
+        address indexed _from,
+        string indexed _to,
+        uint256 indexed _sn,
+        int256 _nsn
+    );
+
+    /**
        @notice Notifies that a response message has arrived for the `_sn` if the request was a two-way message.
        @param _sn The serial number of the previous request
        @param _code The execution result code
@@ -75,14 +89,12 @@ interface ICallService {
        @param _to A string representation of the callee address
        @param _sn The serial number of the request from the source
        @param _reqId The request id of the destination chain
-       @param _data The calldata
      */
     event CallMessage(
         string indexed _from,
         string indexed _to,
         uint256 indexed _sn,
-        uint256 _reqId,
-        bytes _data
+        uint256 _reqId
     );
 
     /**

@@ -46,6 +46,13 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionResult> callMessageSentEvent(
+            Consumer<CallServiceScoreClient.CallMessageSent> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.CallMessageSent::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> responseMessageEvent(
             Consumer<CallServiceScoreClient.ResponseMessage> consumer) {
         return eventLogChecker(

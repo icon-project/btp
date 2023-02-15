@@ -120,7 +120,12 @@ class CallServiceImplTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el.get_msg());
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(sampleAddress, el.get_from());
+            assertEquals(to.toString(), el.get_to());
+            assertEquals(sn, el.get_sn());
+            assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn(), el.get_nsn());
+        }));
         BigInteger fee = getFee(to.net(), false);
         assertEquals(forwardFee.add(protocolFee), fee);
         accumulateFee(fee, protocolFee);
@@ -143,7 +148,6 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(to.account(), el.get_to());
             assertEquals(srcSn, el.get_sn());
             assertEquals(reqId, el.get_reqId());
-            assertArrayEquals(request.getData(), el.get_data());
         });
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
@@ -227,7 +231,12 @@ class CallServiceImplTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el.get_msg());
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(caller, el.get_from());
+            assertEquals(to.toString(), el.get_to());
+            assertEquals(sn, el.get_sn());
+            assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn(), el.get_nsn());
+        }));
         BigInteger fee = getFee(to.net(), false);
         assertEquals(forwardFee.add(protocolFee), fee);
         accumulateFee(fee, protocolFee);
@@ -254,7 +263,6 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(to.account(), el.get_to());
             assertEquals(srcSn, el.get_sn());
             assertEquals(reqId, el.get_reqId());
-            assertArrayEquals(request.getData(), el.get_data());
         });
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
@@ -281,7 +289,12 @@ class CallServiceImplTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el.get_msg());
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(sampleAddress, el.get_from());
+            assertEquals(fakeTo.toString(), el.get_to());
+            assertEquals(sn, el.get_sn());
+            assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn(), el.get_nsn());
+        }));
         BigInteger fee = getFee(to.net(), true);
         accumulateFee(fee, protocolFee);
         Map<String, Object> params = new HashMap<>();

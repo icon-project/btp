@@ -136,7 +136,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), sn, needResponse, _data);
         BigInteger nsn = sendBTPMessage(relayFee, dst.net(), CSMessage.REQUEST,
                 needResponse ? sn : BigInteger.ZERO, msgReq.toBytes());
-        CallMessageSent(caller, dst.toString(), sn, nsn, _data);
+        CallMessageSent(caller, dst.toString(), sn, nsn);
         return sn;
     }
 
@@ -202,7 +202,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
 
     @Override
     @EventLog(indexed=3)
-    public void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId, byte[] _data) {}
+    public void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId) {}
 
     @Override
     @EventLog(indexed=1)
@@ -220,9 +220,9 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
     @EventLog(indexed=1)
     public void RollbackExecuted(BigInteger _sn, int _code, String _msg) {}
 
-    /* Implementation-specific eventlog */
+    @Override
     @EventLog(indexed=3)
-    public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data) {}
+    public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn) {}
 
     /* Implementation-specific eventlog */
     @EventLog(indexed=1)
@@ -276,7 +276,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user
-        CallMessage(from.toString(), to, msgReq.getSn(), reqId, msgReq.getData());
+        CallMessage(from.toString(), to, msgReq.getSn(), reqId);
     }
 
     private void handleResponse(String netFrom, BigInteger sn, byte[] data) {

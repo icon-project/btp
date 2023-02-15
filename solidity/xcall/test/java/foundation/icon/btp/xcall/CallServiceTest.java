@@ -120,8 +120,16 @@ public class CallServiceTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el._msg);
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
-        });
-        //TODO callMessageSentEvent
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(sampleAddress, el._from);
+            assertEquals(Hash.sha3String(to.toString()), StringUtil.bytesToHex(el._to));
+            assertEquals(sn, el._sn);
+            try {
+                assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn().send(), el._nsn);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }));
         BigInteger fee = getFee(to.net(), false);
         assertEquals(forwardFee.add(protocolFee), fee);
         accumulateFee(fee, protocolFee);
@@ -142,7 +150,6 @@ public class CallServiceTest implements CSIntegrationTest {
             assertEquals(Hash.sha3String(sampleAddress), StringUtil.bytesToHex(el._to));
             assertEquals(srcSn, el._sn);
             assertEquals(reqId, el._reqId);
-            assertArrayEquals(request.getData(), el._data);
         });
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
@@ -221,7 +228,16 @@ public class CallServiceTest implements CSIntegrationTest {
             CSMessage csMessage = CSMessage.fromBytes(el._msg);
             assertEquals(CSMessage.REQUEST, csMessage.getType());
             AssertCallService.assertEqualsCSMessageRequest(request, CSMessageRequest.fromBytes(csMessage.getData()));
-        });
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(caller, el._from);
+            assertEquals(Hash.sha3String(to.toString()), StringUtil.bytesToHex(el._to));
+            assertEquals(sn, el._sn);
+            try {
+                assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn().send(), el._nsn);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }));
         BigInteger fee = getFee(to.net(), false);
         assertEquals(forwardFee.add(protocolFee), fee);
         accumulateFee(fee, protocolFee);
@@ -248,7 +264,6 @@ public class CallServiceTest implements CSIntegrationTest {
             assertEquals(Hash.sha3String(to.account()), StringUtil.bytesToHex(el._to));
             assertEquals(srcSn, el._sn);
             assertEquals(reqId, el._reqId);
-            assertArrayEquals(request.getData(), el._data);
         });
         checker.accept(MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 csAddress,
@@ -268,16 +283,24 @@ public class CallServiceTest implements CSIntegrationTest {
         var sn = getNextSn(inc);
         requestMap.put(sn, new MessageRequest(data, rollback));
         var request = new CSMessageRequest(sampleAddress, fakeTo.account(), sn, true, data);
-        var checker = MockBMCIntegrationTest.sendMessageEvent(
-                (el) -> {
-                    assertEquals(linkNet, el._to);
-                    assertEquals(NAME, el._svc);
-                    assertEquals(sn, el._sn);
-                    CSMessage csMessage = CSMessage.fromBytes(el._msg);
-                    assertEquals(CSMessage.REQUEST, csMessage.getType());
-                    AssertCallService.assertEqualsCSMessageRequest(
-                            request, CSMessageRequest.fromBytes(csMessage.getData()));
-                });
+        var checker = MockBMCIntegrationTest.sendMessageEvent((el) -> {
+            assertEquals(linkNet, el._to);
+            assertEquals(NAME, el._svc);
+            assertEquals(sn, el._sn);
+            CSMessage csMessage = CSMessage.fromBytes(el._msg);
+            assertEquals(CSMessage.REQUEST, csMessage.getType());
+            AssertCallService.assertEqualsCSMessageRequest(
+                    request, CSMessageRequest.fromBytes(csMessage.getData()));
+        }).andThen(CSIntegrationTest.callMessageSentEvent((el) -> {
+            assertEquals(sampleAddress, el._from);
+            assertEquals(Hash.sha3String(fakeTo.toString()), StringUtil.bytesToHex(el._to));
+            assertEquals(sn, el._sn);
+            try {
+                assertEquals(MockBMCIntegrationTest.mockBMC.getNetworkSn().send(), el._nsn);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }));
         BigInteger fee = getFee(to.net(), true);
         accumulateFee(fee, protocolFee);
         checker.accept(dAppProxySample.sendMessage(
