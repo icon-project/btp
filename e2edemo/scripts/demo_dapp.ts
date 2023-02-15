@@ -133,7 +133,7 @@ async function verifyCallMessageSent(srcChain: any, receipt: any, msg: string) {
   if (isIconChain(srcChain)) {
     const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
     const logs = xcallSrc.filterEvent(receipt.eventLogs,
-        'CallMessageSent(Address,str,int,int,bytes)', xcallSrc.address);
+        'CallMessageSent(Address,str,int,int)', xcallSrc.address);
     if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "CallMessageSent"`);
     }
@@ -144,8 +144,7 @@ async function verifyCallMessageSent(srcChain: any, receipt: any, msg: string) {
       _from: indexed[1],
       _to: indexed[2],
       _sn: BigNumber.from(indexed[3]),
-      _nsn: BigNumber.from(data[0]),
-      _data: data[1]
+      _nsn: BigNumber.from(data[0])
     };
   } else if (isHardhatChain(srcChain)) {
     const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
@@ -181,18 +180,23 @@ async function checkCallMessage(srcChain: any, dstChain: any, sn: BigNumber) {
     return logs[0].args._reqId;
   } else if (isIconChain(dstChain)) {
     const xcallDst = new XCall(iconNetwork, dstChain.contracts.xcall);
-    const logs = await xcallDst.waitEvent("CallMessage(str,str,int,int,bytes)");
+    const logs = await xcallDst.waitEvent("CallMessage(str,str,int,int)");
     if (logs.length == 0) {
       throw new Error(`DApp: could not find event: "CallMessage"`);
     }
     console.log(logs[0]);
     const indexed = logs[0].indexed || [];
-    const reqSn = BigNumber.from(indexed[3]);
-    if (!sn.eq(reqSn)) {
-      throw new Error(`DApp: serial number mismatch (${sn} != ${reqSn})`);
-    }
     const data = logs[0].data || [];
-    return BigNumber.from(data[0]);
+    const event = {
+      _from: indexed[1],
+      _to: indexed[2],
+      _sn: BigNumber.from(indexed[3]),
+      _reqId: BigNumber.from(data[0])
+    };
+    if (!sn.eq(event._sn)) {
+      throw new Error(`DApp: serial number mismatch (${sn} != ${event._sn})`);
+    }
+    return event._reqId;
   } else {
     throw new Error(`DApp: unknown destination chain: ${dstChain}`);
   }
