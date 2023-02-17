@@ -260,35 +260,60 @@ async function verifyReceivedMessage(dstChain: any, receipt: any, msg: string) {
   }
 }
 
-async function checkCallRequestCleared(srcChain: any, sn: BigNumber, receipt?: any) {
+async function checkCallExecuted(dstChain: any, receipt: any, reqId: BigNumber, expectRevert: boolean) {
   let event;
-  if (isIconChain(srcChain)) {
-    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
-    const eventSig = "CallRequestCleared(int)";
-    let logs;
-    if (receipt) {
-      logs = xcallSrc.filterEvent(receipt.eventLogs, eventSig, xcallSrc.address);
-    } else {
-      logs = await xcallSrc.waitEvent(eventSig);
-    }
+  if (isHardhatChain(dstChain)) {
+    const xcallDst = await ethers.getContractAt('CallService', dstChain.contracts.xcall);
+    const logs = filterEvent(xcallDst, xcallDst.filters.CallExecuted(), receipt);
     if (logs.length == 0) {
-      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
+      throw new Error(`DApp: could not find event: "CallExecuted"`);
+    }
+    console.log(logs);
+    event = logs[0].args;
+  } else if (isIconChain(dstChain)) {
+    const xcallDst = new XCall(iconNetwork, dstChain.contracts.xcall);
+    const logs = xcallDst.filterEvent(receipt.eventLogs,'CallExecuted(int,int,str)', xcallDst.address);
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "CallExecuted"`);
     }
     console.log(logs);
     const indexed = logs[0].indexed || [];
+    const data = logs[0].data || [];
     event = {
-      _sn: BigNumber.from(indexed[1])
+      _reqId: BigNumber.from(indexed[1]),
+      _code: BigNumber.from(data[0]),
+      _msg: data[1]
+    }
+  } else {
+    throw new Error(`DApp: unknown destination chain: ${dstChain}`);
+  }
+  if (!reqId.eq(event._reqId) ||
+    (expectRevert && event._code.isZero()) || (!expectRevert && !event._code.isZero())) {
+    throw new Error(`DApp: not the expected execution result`);
+  }
+}
+
+async function checkResponseMessage(srcChain: any, sn: BigNumber, expectRevert: boolean) {
+  let event;
+  if (isIconChain(srcChain)) {
+    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
+    const logs = await xcallSrc.waitEvent("ResponseMessage(int,int,str)");
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "ResponseMessage"`);
+    }
+    console.log(logs);
+    const indexed = logs[0].indexed || [];
+    const data = logs[0].data || [];
+    event = {
+      _sn: BigNumber.from(indexed[1]),
+      _code: BigNumber.from(data[0]),
+      _msg: data[1]
     }
   } else if (isHardhatChain(srcChain)) {
     const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
-    let logs;
-    if (receipt) {
-      logs = filterEvent(xcallSrc, xcallSrc.filters.CallRequestCleared(), receipt);
-    } else {
-      logs = await waitEvent(xcallSrc, xcallSrc.filters.CallRequestCleared());
-    }
+    const logs = await waitEvent(xcallSrc, xcallSrc.filters.ResponseMessage());
     if (logs.length == 0) {
-      throw new Error(`DApp: could not find event: "CallRequestCleared"`);
+      throw new Error(`DApp: could not find event: "ResponseMessage"`);
     }
     console.log(logs)
     event = logs[0].args;
@@ -297,6 +322,9 @@ async function checkCallRequestCleared(srcChain: any, sn: BigNumber, receipt?: a
   }
   if (!sn.eq(event._sn)) {
     throw new Error(`DApp: received serial number (${event._sn}) is different from the sent one (${sn})`);
+  }
+  if ((expectRevert && event._code.isZero()) || (!expectRevert && !event._code.isZero())) {
+    throw new Error(`DApp: not the expected response message`);
   }
 }
 
@@ -382,6 +410,41 @@ async function verifyRollbackDataReceivedMessage(srcChain: any, receipt: any, ro
   }
 }
 
+async function checkRollbackExecuted(srcChain: any, receipt: any, sn: BigNumber) {
+  let event;
+  if (isIconChain(srcChain)) {
+    const xcallSrc = new XCall(iconNetwork, srcChain.contracts.xcall);
+    const logs = xcallSrc.filterEvent(receipt.eventLogs, "RollbackExecuted(int,int,str)", xcallSrc.address);
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackExecuted"`);
+    }
+    console.log(logs);
+    const indexed = logs[0].indexed || [];
+    const data = logs[0].data || [];
+    event = {
+      _sn: BigNumber.from(indexed[1]),
+      _code: BigNumber.from(data[0]),
+      _msg: data[1]
+    }
+  } else if (isHardhatChain(srcChain)) {
+    const xcallSrc = await ethers.getContractAt('CallService', srcChain.contracts.xcall);
+    const logs = filterEvent(xcallSrc, xcallSrc.filters.RollbackExecuted(), receipt);
+    if (logs.length == 0) {
+      throw new Error(`DApp: could not find event: "RollbackExecuted"`);
+    }
+    console.log(logs)
+    event = logs[0].args;
+  } else {
+    throw new Error(`DApp: unknown source chain: ${srcChain}`);
+  }
+  if (!sn.eq(event._sn)) {
+    throw new Error(`DApp: received serial number (${event._sn}) is different from the sent one (${sn})`);
+  }
+  if (!event._code.isZero()) {
+    throw new Error(`DApp: not the expected execution result`);
+  }
+}
+
 async function sendCallMessage(src: string, dst: string, msgData?: string, needRollback?: boolean) {
   const srcChain = deployments.get(src);
   const dstChain = deployments.get(dst);
@@ -392,25 +455,31 @@ async function sendCallMessage(src: string, dst: string, msgData?: string, needR
     msgData = `${testName}_${src}_${dst}`;
   }
   const rollbackData = needRollback ? `ThisIsRollbackMessage_${src}_${dst}` : undefined;
+  const expectRevert = (msgData === "revertMessage");
+  let step = 1;
 
-  console.log(`[1] send message from DApp`);
+  console.log(`[${step++}] send message from DApp`);
   const sendMessageReceipt = await sendMessageFromDApp(srcChain, dstChain, msgData, rollbackData);
   const sn = await verifyCallMessageSent(srcChain, sendMessageReceipt, msgData);
 
-  console.log(`[2] check CallMessage event on ${dst} chain`);
+  console.log(`[${step++}] check CallMessage event on ${dst} chain`);
   const reqId = await checkCallMessage(srcChain, dstChain, sn);
 
-  console.log(`[3] invoke executeCall with reqId=${reqId}`);
+  console.log(`[${step++}] invoke executeCall with reqId=${reqId}`);
   const executeCallReceipt = await invokeExecuteCall(dstChain, reqId);
 
-  let step = 4;
-  if (msgData !== "revertMessage") {
+  if (!expectRevert) {
     console.log(`[${step++}] verify the received message`);
     await verifyReceivedMessage(dstChain, executeCallReceipt, msgData);
   }
+  console.log(`[${step++}] check CallExecuted event on ${dst} chain`);
+  await checkCallExecuted(dstChain, executeCallReceipt, reqId, expectRevert);
 
   if (needRollback) {
-    if (msgData === "revertMessage") {
+    console.log(`[${step++}] check ResponseMessage event on ${src} chain`);
+    await checkResponseMessage(srcChain, sn, expectRevert);
+
+    if (expectRevert) {
       console.log(`[${step++}] check RollbackMessage event on ${src} chain`);
       const sn = await checkRollbackMessage(srcChain);
 
@@ -420,11 +489,8 @@ async function sendCallMessage(src: string, dst: string, msgData?: string, needR
       console.log(`[${step++}] verify rollback data received message`);
       await verifyRollbackDataReceivedMessage(srcChain, executeRollbackReceipt, rollbackData);
 
-      console.log(`[${step++}] verify message cleanup on ${src}`);
-      await checkCallRequestCleared(srcChain, sn, executeRollbackReceipt);
-    } else {
-      console.log(`[${step++}] check CallRequestCleared event on ${src} chain`);
-      await checkCallRequestCleared(srcChain, sn);
+      console.log(`[${step++}] check RollbackExecuted event on ${src} chain`);
+      await checkRollbackExecuted(srcChain, executeRollbackReceipt, sn);
     }
   }
 }
@@ -443,8 +509,8 @@ async function show_banner() {
 show_banner()
   .then(() => sendCallMessage('icon', 'hardhat'))
   .then(() => sendCallMessage('hardhat', 'icon'))
-  .then(() => sendCallMessage('icon', 'hardhat', "checkMessageCleanup", true))
-  .then(() => sendCallMessage('hardhat', 'icon', "checkMessageCleanup", true))
+  .then(() => sendCallMessage('icon', 'hardhat', "checkSuccessResponse", true))
+  .then(() => sendCallMessage('hardhat', 'icon', "checkSuccessResponse", true))
   .then(() => sendCallMessage('icon', 'hardhat', "revertMessage", true))
   .then(() => sendCallMessage('hardhat', 'icon', "revertMessage", true))
   .catch((error) => {
