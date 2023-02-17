@@ -32,7 +32,7 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
-public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent {
+public class CallServiceImpl implements BSH, CallService, FeeManage {
     public static final int MAX_DATA_SIZE = 2048;
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
@@ -97,7 +97,6 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
 
     private void cleanupCallRequest(BigInteger sn) {
         requests.set(sn, null);
-        CallRequestCleared(sn);
     }
 
     @Override
@@ -223,10 +222,6 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
     @Override
     @EventLog(indexed=3)
     public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn) {}
-
-    /* Implementation-specific eventlog */
-    @EventLog(indexed=1)
-    public void CallRequestCleared(BigInteger _sn) {}
 
     /* ========== Interfaces with BMC ========== */
     @Override

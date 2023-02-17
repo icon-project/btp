@@ -94,17 +94,6 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
         return eventLogShouldNotExistsChecker(CallService::getRollbackMessageEvents);
     }
 
-    static Consumer<TransactionReceipt> callRequestClearedEvent(
-            Consumer<CallService.CallRequestClearedEventResponse> consumer) {
-        return eventLogChecker(
-                CallService::getCallRequestClearedEvents,
-                consumer);
-    }
-
-    static Consumer<TransactionReceipt> callRequestClearedEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CallService::getCallRequestClearedEvents);
-    }
-
     static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(
             EVMIntegrationTest.EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return EVMIntegrationTest.eventLogChecker(

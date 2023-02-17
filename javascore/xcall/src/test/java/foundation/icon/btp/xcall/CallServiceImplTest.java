@@ -367,7 +367,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(response.getMsg(), el.get_msg());
         }).andThen(CSIntegrationTest.rollbackMessageEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
-        })).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
+        }));
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallService.NAME, dstSn, csMsg.toBytes());
@@ -385,8 +385,6 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.get_sn());
             assertEquals(CSMessageResponse.SUCCESS, el.get_code());
             assertEquals("", el.get_msg());
-        })).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
-            assertEquals(srcSn, el.get_sn());
         }));
         callSvc.executeRollback(checker, srcSn);
     }
@@ -415,9 +413,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.get_sn());
             assertEquals(CSMessageResponse.SUCCESS, el.get_code());
             assertEquals("", el.get_msg());
-        }).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
-            assertEquals(srcSn, el.get_sn());
-        })).andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
+        }).andThen(CSIntegrationTest.rollbackMessageEventShouldNotExists());
         MockBMCIntegrationTest.mockBMC.handleBTPMessage(
                 checker, csAddress,
                 linkNet, CallService.NAME, dstSn, csMsg.toBytes());
@@ -451,7 +447,7 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertTrue(el.get_msg().startsWith("BTPError"));
         }).andThen(CSIntegrationTest.rollbackMessageEvent((el) -> {
             assertEquals(srcSn, el.get_sn());
-        })).andThen(CSIntegrationTest.callRequestClearedEventShouldNotExists());
+        }));
         MockBMCIntegrationTest.mockBMC.handleBTPError(
                 checker, csAddress,
                 bmcBtpAddress.toString(), CallService.NAME, srcSn, 1, "BTPError");
@@ -468,8 +464,6 @@ class CallServiceImplTest implements CSIntegrationTest {
             assertEquals(srcSn, el.get_sn());
             assertEquals(CSMessageResponse.SUCCESS, el.get_code());
             assertEquals("", el.get_msg());
-        })).andThen(CSIntegrationTest.callRequestClearedEvent((el) -> {
-            assertEquals(srcSn, el.get_sn());
         }));
         callSvc.executeRollback(checker, srcSn);
     }

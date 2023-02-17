@@ -99,7 +99,6 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         uint256 sn
     ) internal {
         delete requests[sn];
-        emit CallRequestCleared(sn);
     }
 
     function isNullCallRequest(
@@ -217,11 +216,6 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         }
         emit RollbackExecuted(_sn, msgRes.code, msgRes.msg);
     }
-
-    /* Implementation-specific eventlog */
-    event CallRequestCleared(
-        uint256 indexed _sn
-    );
 
     /* ========== Interfaces with BMC ========== */
     function handleBTPMessage(

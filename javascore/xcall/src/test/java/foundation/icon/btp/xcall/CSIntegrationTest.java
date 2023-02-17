@@ -89,17 +89,6 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
         return eventLogShouldNotExistsChecker(CallServiceScoreClient.RollbackMessage::eventLogs);
     }
 
-    static Consumer<TransactionResult> callRequestClearedEvent(
-            Consumer<CSImplEventScoreClient.CallRequestCleared> consumer) {
-        return eventLogChecker(
-                CSImplEventScoreClient.CallRequestCleared::eventLogs,
-                consumer);
-    }
-
-    static Consumer<TransactionResult> callRequestClearedEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CSImplEventScoreClient.CallRequestCleared::eventLogs);
-    }
-
     static <T> Consumer<TransactionResult> eventLogChecker(
             EventLogsSupplier<T> supplier, Consumer<T> consumer) {
         return ScoreIntegrationTest.eventLogChecker(
