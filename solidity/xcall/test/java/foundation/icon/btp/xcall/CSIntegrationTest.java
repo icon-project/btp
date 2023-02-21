@@ -51,6 +51,20 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionReceipt> callMessageSentEvent(
+            Consumer<CallService.CallMessageSentEventResponse> consumer) {
+        return eventLogChecker(
+                CallService::getCallMessageSentEvents,
+                consumer);
+    }
+
+    static Consumer<TransactionReceipt> responseMessageEvent(
+            Consumer<CallService.ResponseMessageEventResponse> consumer) {
+        return eventLogChecker(
+                CallService::getResponseMessageEvents,
+                consumer);
+    }
+
     static Consumer<TransactionReceipt> rollbackMessageEvent(
             Consumer<CallService.RollbackMessageEventResponse> consumer) {
         return eventLogChecker(
@@ -58,19 +72,26 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
-    static Consumer<TransactionReceipt> rollbackMessageEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CallService::getRollbackMessageEvents);
-    }
-
-    static Consumer<TransactionReceipt> callRequestClearedEvent(
-            Consumer<CallService.CallRequestClearedEventResponse> consumer) {
+    static Consumer<TransactionReceipt> callExecutedEvent(
+            Consumer<CallService.CallExecutedEventResponse> consumer) {
         return eventLogChecker(
-                CallService::getCallRequestClearedEvents,
+                CallService::getCallExecutedEvents,
                 consumer);
     }
 
-    static Consumer<TransactionReceipt> callRequestClearedEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CallService::getCallRequestClearedEvents);
+    static Consumer<TransactionReceipt> rollbackExecutedEvent(
+            Consumer<CallService.RollbackExecutedEventResponse> consumer) {
+        return eventLogChecker(
+                CallService::getRollbackExecutedEvents,
+                consumer);
+    }
+
+    static Consumer<TransactionReceipt> responseMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallService::getResponseMessageEvents);
+    }
+
+    static Consumer<TransactionReceipt> rollbackMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallService::getRollbackMessageEvents);
     }
 
     static <T extends BaseEventResponse> Consumer<TransactionReceipt> eventLogChecker(

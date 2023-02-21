@@ -9,5 +9,5 @@ web3j {
 
 dependencies {
     testImplementation project(":test-lib")
-    testImplementation("foundation.icon:javaee-unittest:0.9.4")
+    testImplementation("foundation.icon:javaee-unittest:0.10.0")
 }

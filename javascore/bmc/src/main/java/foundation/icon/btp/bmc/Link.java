@@ -17,6 +17,8 @@
 package foundation.icon.btp.bmc;
 
 import foundation.icon.btp.lib.BTPAddress;
+import score.Address;
+import score.ArrayDB;
 import score.ByteArrayObjectWriter;
 import score.Context;
 import score.ObjectReader;
@@ -27,8 +29,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class Link {
-    private Relays relays;
-
     private BTPAddress addr; //primary key
     private BigInteger rxSeq;
     private BigInteger txSeq;
@@ -68,19 +68,10 @@ public class Link {
         this.reachable = reachable;
     }
 
-    public Relays getRelays() {
-        return relays;
-    }
-
-    public void setRelays(Relays relays) {
-        this.relays = relays;
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Link{");
-        sb.append("relays=").append(relays);
-        sb.append(", addr=").append(addr);
+        sb.append("addr=").append(addr);
         sb.append(", rxSeq=").append(rxSeq);
         sb.append(", txSeq=").append(txSeq);
         sb.append(", reachable=").append(reachable);

@@ -46,6 +46,20 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
+    static Consumer<TransactionResult> callMessageSentEvent(
+            Consumer<CallServiceScoreClient.CallMessageSent> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.CallMessageSent::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> responseMessageEvent(
+            Consumer<CallServiceScoreClient.ResponseMessage> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.ResponseMessage::eventLogs,
+                consumer);
+    }
+
     static Consumer<TransactionResult> rollbackMessageEvent(
             Consumer<CallServiceScoreClient.RollbackMessage> consumer) {
         return eventLogChecker(
@@ -53,19 +67,26 @@ public interface CSIntegrationTest extends BTPIntegrationTest {
                 consumer);
     }
 
-    static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CallServiceScoreClient.RollbackMessage::eventLogs);
-    }
-
-    static Consumer<TransactionResult> callRequestClearedEvent(
-            Consumer<CSImplEventScoreClient.CallRequestCleared> consumer) {
+    static Consumer<TransactionResult> callExecutedEvent(
+            Consumer<CallServiceScoreClient.CallExecuted> consumer) {
         return eventLogChecker(
-                CSImplEventScoreClient.CallRequestCleared::eventLogs,
+                CallServiceScoreClient.CallExecuted::eventLogs,
                 consumer);
     }
 
-    static Consumer<TransactionResult> callRequestClearedEventShouldNotExists() {
-        return eventLogShouldNotExistsChecker(CSImplEventScoreClient.CallRequestCleared::eventLogs);
+    static Consumer<TransactionResult> rollbackExecutedEvent(
+            Consumer<CallServiceScoreClient.RollbackExecuted> consumer) {
+        return eventLogChecker(
+                CallServiceScoreClient.RollbackExecuted::eventLogs,
+                consumer);
+    }
+
+    static Consumer<TransactionResult> responseMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallServiceScoreClient.ResponseMessage::eventLogs);
+    }
+
+    static Consumer<TransactionResult> rollbackMessageEventShouldNotExists() {
+        return eventLogShouldNotExistsChecker(CallServiceScoreClient.RollbackMessage::eventLogs);
     }
 
     static <T> Consumer<TransactionResult> eventLogChecker(

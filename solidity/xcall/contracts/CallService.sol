@@ -99,7 +99,6 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         uint256 sn
     ) internal {
         delete requests[sn];
-        emit CallRequestCleared(sn);
     }
 
     function isNullCallRequest(
@@ -144,7 +143,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
             msg.sender.toString(), dstAccount, sn, needResponse, _data);
 
         int256 nsn = sendBTPMessage(msg.value - protocolFee, netTo, Types.CS_REQUEST, msgSn, reqMsg.encodeCSMessageRequest());
-        emit CallMessageSent(msg.sender, _to, sn, nsn, _data);
+        emit CallMessageSent(msg.sender, _to, sn, nsn);
         return sn;
     }
 
@@ -171,6 +170,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         } catch (bytes memory) {
             msgRes = Types.CSMessageResponse(msgReq.sn, Types.CS_RESP_FAILURE, "unknownError");
         }
+        emit CallExecuted(_reqId, msgRes.code, msgRes.msg);
 
         // send response only when there was a rollback
         if (msgReq.rollback) {
@@ -200,30 +200,22 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
         require(req.enabled, "RollbackNotEnabled");
         cleanupCallRequest(_sn);
 
+        Types.CSMessageResponse memory msgRes;
+
         try this.tryHandleCallMessage(
             req.from,
             "",
             btpAddress,
             req.rollback
-        ){
-        } catch {
-            //ignore failure
+        ) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_SUCCESS, "");
+        } catch Error(string memory reason) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_FAILURE, reason);
+        } catch (bytes memory) {
+            msgRes = Types.CSMessageResponse(_sn, Types.CS_RESP_FAILURE, "unknownError");
         }
+        emit RollbackExecuted(_sn, msgRes.code, msgRes.msg);
     }
-
-    /* Implementation-specific eventlog */
-    event CallMessageSent(
-        address indexed _from,
-        string indexed _to,
-        uint256 indexed _sn,
-        int256 _nsn,
-        bytes _data
-    );
-
-    /* Implementation-specific eventlog */
-    event CallRequestCleared(
-        uint256 indexed _sn
-    );
 
     /* ========== Interfaces with BMC ========== */
     function handleBTPMessage(
@@ -304,7 +296,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
             req.rollback,
             req.data
         );
-        emit CallMessage(from, req.to, req.sn, reqId, req.data);
+        emit CallMessage(from, req.to, req.sn, reqId);
     }
 
     function handleResponse(
@@ -312,6 +304,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
     ) internal {
         Types.CallRequest memory req = requests[res.sn];
         if (req.from != address(0)) {
+            emit ResponseMessage(res.sn, res.code, res.msg);
             if (res.code == Types.CS_RESP_SUCCESS){
                 cleanupCallRequest(res.sn);
             } else {
@@ -319,7 +312,7 @@ contract CallService is IBSH, ICallService, IFeeManage, Initializable {
                 require(req.rollback.length > 0, "NoRollbackData");
                 req.enabled=true;
                 requests[res.sn]=req;
-                emit RollbackMessage(res.sn, req.rollback, res.msg);
+                emit RollbackMessage(res.sn);
             }
         }
     }

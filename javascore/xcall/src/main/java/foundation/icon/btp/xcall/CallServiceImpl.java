@@ -19,7 +19,6 @@ package foundation.icon.btp.xcall;
 import foundation.icon.btp.lib.BMCScoreInterface;
 import foundation.icon.btp.lib.BSH;
 import foundation.icon.btp.lib.BTPAddress;
-import foundation.icon.score.util.Logger;
 import score.Address;
 import score.Context;
 import score.DictDB;
@@ -33,8 +32,7 @@ import score.annotation.Payable;
 
 import java.math.BigInteger;
 
-public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent {
-    private static final Logger logger = Logger.getLogger(CallServiceImpl.class);
+public class CallServiceImpl implements BSH, CallService, FeeManage {
     public static final int MAX_DATA_SIZE = 2048;
     public static final int MAX_ROLLBACK_SIZE = 1024;
 
@@ -99,7 +97,6 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
 
     private void cleanupCallRequest(BigInteger sn) {
         requests.set(sn, null);
-        CallRequestCleared(sn);
     }
 
     @Override
@@ -138,7 +135,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         CSMessageRequest msgReq = new CSMessageRequest(caller.toString(), dst.account(), sn, needResponse, _data);
         BigInteger nsn = sendBTPMessage(relayFee, dst.net(), CSMessage.REQUEST,
                 needResponse ? sn : BigInteger.ZERO, msgReq.toBytes());
-        CallMessageSent(caller, dst.toString(), sn, nsn, _data);
+        CallMessageSent(caller, dst.toString(), sn, nsn);
         return sn;
     }
 
@@ -155,16 +152,18 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         try {
             DAppProxy proxy = new DAppProxy(Address.fromString(req.getTo()));
             proxy.handleCallMessage(req.getFrom(), req.getData());
-            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, null);
+            msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.SUCCESS, "");
         } catch (UserRevertedException e) {
-            int code = e.getCode() == 0 ? CSMessageResponse.FAILURE : e.getCode();
+            int code = e.getCode();
             String msg = "UserReverted(" + code + ")";
-            logger.println("executeCall", "code:", code, "msg:", msg);
-            msgRes = new CSMessageResponse(req.getSn(), code, msg);
+            msgRes = new CSMessageResponse(req.getSn(), code == 0 ? CSMessageResponse.FAILURE : code, msg);
         } catch (IllegalArgumentException | RevertedException e) {
-            logger.println("executeCall", "Exception:", e.toString(), "msg:", e.getMessage());
             msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, e.toString());
         } finally {
+            if (msgRes == null) {
+                msgRes = new CSMessageResponse(req.getSn(), CSMessageResponse.FAILURE, "UnknownFailure");
+            }
+            CallExecuted(_reqId, msgRes.getCode(), msgRes.getMsg());
             // send response only when there was a rollback
             if (req.needRollback()) {
                 BigInteger sn = req.getSn().negate();
@@ -181,29 +180,48 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         Context.require(req.enabled(), "RollbackNotEnabled");
         cleanupCallRequest(_sn);
 
+        CSMessageResponse msgRes = null;
         try {
             DAppProxy proxy = new DAppProxy(req.getFrom());
             proxy.handleCallMessage(btpAddress.get().toString(), req.getRollback());
-        } catch (Exception e) {
-            logger.println("executeRollback", "Exception:", e.toString());
+            msgRes = new CSMessageResponse(_sn, CSMessageResponse.SUCCESS, "");
+        } catch (UserRevertedException e) {
+            int code = e.getCode();
+            String msg = "UserReverted(" + code + ")";
+            msgRes = new CSMessageResponse(_sn, code == 0 ? CSMessageResponse.FAILURE : code, msg);
+        } catch (IllegalArgumentException | RevertedException e) {
+            msgRes = new CSMessageResponse(_sn, CSMessageResponse.FAILURE, e.toString());
+        } finally {
+            if (msgRes == null) {
+                msgRes = new CSMessageResponse(_sn, CSMessageResponse.FAILURE, "UnknownFailure");
+            }
+            RollbackExecuted(_sn, msgRes.getCode(), msgRes.getMsg());
         }
     }
 
     @Override
     @EventLog(indexed=3)
-    public void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId, byte[] _data) {}
+    public void CallMessage(String _from, String _to, BigInteger _sn, BigInteger _reqId) {}
 
     @Override
     @EventLog(indexed=1)
-    public void RollbackMessage(BigInteger _sn, byte[] _rollback, String _reason) {}
+    public void CallExecuted(BigInteger _reqId, int _code, String _msg) {}
 
-    /* Implementation-specific eventlog */
-    @EventLog(indexed=3)
-    public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn, byte[] _data) {}
-
-    /* Implementation-specific eventlog */
+    @Override
     @EventLog(indexed=1)
-    public void CallRequestCleared(BigInteger _sn) {}
+    public void ResponseMessage(BigInteger _sn, int _code, String _msg) {}
+
+    @Override
+    @EventLog(indexed=1)
+    public void RollbackMessage(BigInteger _sn) {}
+
+    @Override
+    @EventLog(indexed=1)
+    public void RollbackExecuted(BigInteger _sn, int _code, String _msg) {}
+
+    @Override
+    @EventLog(indexed=3)
+    public void CallMessageSent(Address _from, String _to, BigInteger _sn, BigInteger _nsn) {}
 
     /* ========== Interfaces with BMC ========== */
     @Override
@@ -253,7 +271,7 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         proxyReqs.set(reqId, req);
 
         // emit event to notify the user
-        CallMessage(from.toString(), to, msgReq.getSn(), reqId, msgReq.getData());
+        CallMessage(from.toString(), to, msgReq.getSn(), reqId);
     }
 
     private void handleResponse(String netFrom, BigInteger sn, byte[] data) {
@@ -261,9 +279,11 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
         BigInteger resSn = msgRes.getSn();
         CallRequest req = requests.get(resSn);
         if (req == null) {
-            logger.println("handleResponse", "No request for", resSn);
+            Context.println("handleResponse: no request for " + resSn);
             return; // just ignore
         }
+        String errMsg = msgRes.getMsg();
+        ResponseMessage(resSn, msgRes.getCode(), errMsg != null ? errMsg : "");
         switch (msgRes.getCode()) {
             case CSMessageResponse.SUCCESS:
                 cleanupCallRequest(resSn);
@@ -271,12 +291,11 @@ public class CallServiceImpl implements BSH, CallService, FeeManage, CSImplEvent
             case CSMessageResponse.FAILURE:
             case CSMessageResponse.BTP_ERROR:
             default:
-                logger.println("handleResponse", "code:", msgRes.getCode(), "msg:", msgRes.getMsg());
                 // emit rollback event
                 Context.require(req.getRollback() != null, "NoRollbackData");
                 req.setEnabled();
                 requests.set(resSn, req);
-                RollbackMessage(resSn, req.getRollback(), msgRes.getMsg());
+                RollbackMessage(resSn);
         }
     }
 

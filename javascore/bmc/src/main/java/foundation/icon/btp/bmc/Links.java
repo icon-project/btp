@@ -27,36 +27,4 @@ public class Links extends EnumerableDictDB<String, Link> {
     public Links(String id) {
         super(id, String.class, Link.class);
     }
-
-    public Link ensureRelays(Link link) {
-        if (link != null && link.getRelays() == null) {
-            String linkId = super.concatId(link.getAddr());
-            link.setRelays(new Relays(concatId(linkId, "relays")));
-        }
-        return link;
-    }
-
-    @Override
-    public Link get(String key) {
-        return ensureRelays(super.get(key));
-    }
-
-    @Override
-    public Link put(String key, Link value) {
-        return ensureRelays(super.put(key, value));
-    }
-
-    @Override
-    public Link remove(String key) {
-        return ensureRelays(super.remove(key));
-    }
-
-    @Override
-    public Map<String, Link> toMap() {
-        Map<String, Link> map = super.toMap();
-        for(Map.Entry<String, Link> entry : map.entrySet()) {
-            ensureRelays(entry.getValue());
-        }
-        return map;
-    }
 }

@@ -2,7 +2,6 @@ version = '0.1.0'
 
 dependencies {
     compileOnly("foundation.icon:javaee-api:$javaeeVersion")
-    implementation project(':score-util')
     implementation project(':lib')
 
     // for generating ScoreClient
@@ -25,11 +24,6 @@ optimizedJar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-}
-
-// need to add this option to retrieve formal parameter names
-compileTestJava {
-    options.compilerArgs += ['-parameters']
 }
 
 import foundation.icon.gradle.plugins.javaee.task.OptimizedJar

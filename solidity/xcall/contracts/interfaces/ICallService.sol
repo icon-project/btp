@@ -27,15 +27,38 @@ interface ICallService {
     );
 
     /**
+       @notice Notifies that the requested call message has been sent.
+       @param _from The chain-specific address of the caller
+       @param _to The BTP address of the callee on the destination chain
+       @param _sn The serial number of the request
+       @param _nsn The network serial number of the BTP message
+     */
+    event CallMessageSent(
+        address indexed _from,
+        string indexed _to,
+        uint256 indexed _sn,
+        int256 _nsn
+    );
+
+    /**
+       @notice Notifies that a response message has arrived for the `_sn` if the request was a two-way message.
+       @param _sn The serial number of the previous request
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure, >=1: User defined error code)
+       @param _msg The result message if any
+     */
+    event ResponseMessage(
+        uint256 indexed _sn,
+        int _code,
+        string _msg
+    );
+
+    /**
        @notice Notifies the user that a rollback operation is required for the request '_sn'.
        @param _sn The serial number of the previous request
-       @param _rollback The data for recovering that was given by the caller
-       @param _reason The error message that caused this rollback
      */
     event RollbackMessage(
-        uint256 indexed _sn,
-        bytes _rollback,
-        string _reason
+        uint256 indexed _sn
     );
 
     /**
@@ -46,6 +69,19 @@ interface ICallService {
         uint256 _sn
     ) external;
 
+    /**
+       @notice Notifies that the rollback has been executed.
+       @param _sn The serial number for the rollback
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure)
+       @param _msg The result message if any
+     */
+    event RollbackExecuted(
+        uint256 indexed _sn,
+        int _code,
+        string _msg
+    );
+
     /*======== At the destination CALL_BSH ========*/
     /**
        @notice Notifies the user that a new call message has arrived.
@@ -53,22 +89,32 @@ interface ICallService {
        @param _to A string representation of the callee address
        @param _sn The serial number of the request from the source
        @param _reqId The request id of the destination chain
-       @param _data The calldata
      */
     event CallMessage(
         string indexed _from,
         string indexed _to,
         uint256 indexed _sn,
-        uint256 _reqId,
-        bytes _data
+        uint256 _reqId
     );
 
     /**
-       @notice Executes the requested call.
-       @dev Caller should be ...
-       @param _reqId The request Id
+       @notice Executes the requested call message.
+       @param _reqId The request id
      */
     function executeCall(
         uint256 _reqId
     ) external;
+
+    /**
+       @notice Notifies that the call message has been executed.
+       @param _reqId The request id for the call message
+       @param _code The execution result code
+                    (0: Success, -1: Unknown generic failure)
+       @param _msg The result message if any
+     */
+    event CallExecuted(
+        uint256 indexed _reqId,
+        int _code,
+        string _msg
+    );
 }
