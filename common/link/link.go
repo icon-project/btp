@@ -268,6 +268,10 @@ func (l *Link) checkStatus(bls *types.BMCLinkStatus) error {
 				return err
 			}
 
+			if mp == nil {
+				break
+			}
+
 			if mp.Len() != 0 || bls.RxSeq < mp.LastSeqNum() {
 				l.rmi.rmis[len(l.rmi.rmis)-1] = append(l.rmi.rmis[len(l.rmi.rmis)-1], mp)
 				l.rmi.size += mp.Len()
