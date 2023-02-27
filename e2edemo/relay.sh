@@ -27,6 +27,7 @@ else
     TARGET=$1
 fi
 
+
 case ${TARGET} in
   hardhat)
     SRC_ADDRESS=btp://${ICON_NETWORK}/${ICON_BMC_ADDRESS}
@@ -44,11 +45,26 @@ case ${TARGET} in
     exit 1
 esac
 
+if [ "$BMV_BRIDGE" = true ] ; then
+  echo "Using Bridge mode"
 ${RELAY_BIN} \
-    --direction front \
+    --direction both \
     --src.address ${SRC_ADDRESS} \
     --src.endpoint ${SRC_ENDPOINT} \
-    --src.nid ${SRC_NETWORK_ID} \
+    --src.key_store ${SRC_KEY_STORE} \
+    --src.key_password ${SRC_KEY_PASSWORD} \
+    --src.bridge_mode "$true" \
+    --dst.address ${DST_ADDRESS} \
+    --dst.endpoint ${DST_ENDPOINT} \
+    --dst.key_store ${DST_KEY_STORE} \
+    --dst.key_password ${DST_KEY_PASSWORD} \
+    start
+else
+  echo "Using BTPBlock mode"
+  ${RELAY_BIN} \
+    --direction both \
+    --src.address ${SRC_ADDRESS} \
+    --src.endpoint ${SRC_ENDPOINT} \
     --src.key_store ${SRC_KEY_STORE} \
     --src.key_password ${SRC_KEY_PASSWORD} \
     --dst.address ${DST_ADDRESS} \
@@ -56,4 +72,4 @@ ${RELAY_BIN} \
     --dst.key_store ${DST_KEY_STORE} \
     --dst.key_password ${DST_KEY_PASSWORD} \
     start
-
+fi

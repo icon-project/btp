@@ -7,9 +7,9 @@ import {IconNetwork} from "../icon/network";
 import IconService from "icon-sdk-js";
 import {Deployments} from "./config";
 const {IconConverter} = IconService;
-const {JAVASCORE_PATH, BMV_BTP_BLOCK} = process.env
+const {JAVASCORE_PATH, BMV_BRIDGE} = process.env
 
-const bridgeMode = !BMV_BTP_BLOCK || BMV_BTP_BLOCK !== "true";
+const bridgeMode = BMV_BRIDGE == "true";
 const deployments = Deployments.getDefault();
 const iconNetwork = IconNetwork.getDefault();
 

@@ -77,10 +77,10 @@ If no build errors were found, then you can deploy all the contracts using the f
 make deploy-all
 ```
 > **Note**
-> By default, above command uses BMV for Bridge.
-> If you want to use BMV for BTPBlock, add `BMV_BTP_BLOCK=true` environment variable as follows.
+> By default, above command uses BMV for BTPBlock.
+> If you want to use BMV for Bridge, add `BMV_BRIDGE=true` environment variable as follows.
 > ```
-> BMV_BTP_BLOCK=true make deploy-all
+> BMV_BRIDGE=true make deploy-all
 > ```
 
 All contracts (BMC, BMV, xCall and DApp) have now been successfully deployed and linked on both the ICON and Hardhat chains.
@@ -91,24 +91,20 @@ The next step is to run a demo scenario script to verify the message delivery be
 
 ## Run Demo scenarios
 
-Before running the demo scenario script, you need to spin up two bridge (relay) servers to forward BTP messages to each chain.
+Before running the demo scenario script, you need to spin up relay server to forward BTP messages to each chain.
 Multiple terminal windows are required to complete these next steps.
 
-Open a terminal window and run the following command to start the bridge from Hardhat to ICON.
+Open a terminal window and run the following command to start the relay.
 
 ```
-./bridge.sh icon
+./relay.sh hardhat
 ```
 
-Open a different terminal window and run the following command to start the bridge from ICON to Hardhat.
 
-```
-./bridge.sh hardhat
-```
 > **Note**
-> If you deployed BMV for BTPBlock in the previous step, you need to run `relay.sh` as follows.
+> If you deployed BMV for Bridge in the previous step, add `BMV_BRIDGE=true` environment variable as follows.
 > ```
-> ./relay.sh hardhat
+> BMV_BRIDGE=true ./relay.sh hardhat
 > ```
 
 You can now run the demo scenario script via the following command.
