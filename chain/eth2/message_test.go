@@ -98,7 +98,7 @@ func TestMessage_BlockUpdateData(t *testing.T) {
 
 func TestMessage_BlockProofData(t *testing.T) {
 	bp := &blockProofData{
-		Header: lightClientHeader,
+		Header: lightClientHeader.Beacon,
 		Proof:  sszProof,
 	}
 
@@ -112,7 +112,7 @@ func TestMessage_BlockProofData(t *testing.T) {
 
 func TestMessage_MessageProofData(t *testing.T) {
 	mp := &messageProofData{
-		Slot:              phase0.Slot(10),
+		Slot:              int64(10),
 		ReceiptsRootProof: sszProof,
 		ReceiptProofs: []*receiptProof{
 			{

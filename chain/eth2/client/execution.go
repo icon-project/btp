@@ -82,6 +82,12 @@ func (c *ExecutionLayer) TransactionReceipt(txHash common.Hash) (*types.Receipt,
 	return c.client.TransactionReceipt(ctx, txHash)
 }
 
+func (c *ExecutionLayer) FilterLogs(fq ethereum.FilterQuery) ([]types.Log, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
+	defer cancel()
+	return c.client.FilterLogs(ctx, fq)
+}
+
 func (c *ExecutionLayer) GetRevertMessage(txHash common.Hash) (string, error) {
 	tx, _, err := c.client.TransactionByHash(context.Background(), txHash)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	nhttp "net/http"
+	"strconv"
 
 	eth2client "github.com/attestantio/go-eth2-client"
 	api "github.com/attestantio/go-eth2-client/api/v1"
@@ -17,10 +18,16 @@ import (
 	"github.com/icon-project/btp/common/log"
 )
 
+const (
+	TopicLCOptimisticUpdate = "light_client_optimistic_update"
+	TopicLCFinalityUpdate   = "light_client_finality_update"
+)
+
 type ConsensusLayer struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	service eth2client.Service
+	uri     string
 	log     log.Logger
 }
 
@@ -61,15 +68,45 @@ func (c *ConsensusLayer) LightClientFinalityUpdate() (*altair.LightClientFinalit
 }
 
 func (c *ConsensusLayer) GetStateProofWithPath(stateId, path string) ([]byte, error) {
-	// TODO this api is not public
-	url := fmt.Sprintf("https://lodestar-mainnet.chainsafe.io/eth/v0/beacon/proof/state/%s?paths=[%s]",
-		stateId, path)
+	// TODO this api is not public, so do not query via go-eth2-client
+	url := fmt.Sprintf("%s/eth/v0/beacon/proof/state/%s?paths=[%s]", c.uri, stateId, path)
 	resp, err := nhttp.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)
+}
+
+func (c *ConsensusLayer) GetReceiptsRootProof(slot int64) ([]byte, error) {
+	// TODO this api is not public, so do not query via go-eth2-client
+	url := fmt.Sprintf("%s/eth/v0/beacon/proof/state/receiptsRoot/%d", c.uri, slot)
+	resp, err := nhttp.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func (c *ConsensusLayer) SlotToBlockNumber(slot phase0.Slot) (uint64, error) {
+	var sn phase0.Slot
+	if slot == 0 {
+		// get slot from finalized header
+		fu, err := c.LightClientFinalityUpdate()
+		if err != nil {
+			return 0, err
+		}
+		sn = fu.FinalizedHeader.Beacon.Slot
+	} else {
+		sn = slot
+	}
+
+	block, err := c.BeaconBlock(strconv.FormatInt(int64(sn), 10))
+	if err != nil {
+		return 0, err
+	}
+	return block.BlockNumber()
 }
 
 func (c *ConsensusLayer) Term() {
@@ -91,6 +128,7 @@ func NewConsensusLayer(uri string, log log.Logger) (*ConsensusLayer, error) {
 		ctx:     ctx,
 		cancel:  cancel,
 		service: service,
+		uri:     uri,
 		log:     log,
 	}, nil
 }

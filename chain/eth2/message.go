@@ -17,8 +17,6 @@
 package eth2
 
 import (
-	"fmt"
-
 	"github.com/attestantio/go-eth2-client/spec/altair"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	ssz "github.com/ferranbt/fastssz"
@@ -34,7 +32,7 @@ type BTPRelayMessage struct {
 
 type relayMessageItem struct {
 	it      link.MessageItemType
-	pd      int
+	nextBls *types.BMCLinkStatus
 	payload []byte
 }
 
@@ -47,7 +45,6 @@ func (c *relayMessageItem) Len() int64 {
 }
 
 func (c *relayMessageItem) UpdateBMCLinkStatus(status *types.BMCLinkStatus) error {
-	// TODO overwrite at bu, bp, mp if necessary
 	return nil
 }
 
@@ -55,40 +52,49 @@ func (c *relayMessageItem) Payload() []byte {
 	return c.payload
 }
 
-type blockProof struct {
+type BlockProof struct {
 	relayMessageItem
 	ph int64
 }
 
-func (c *blockProof) ProofHeight() int64 {
+func (c *BlockProof) ProofHeight() int64 {
 	return c.ph
 }
 
-type blockUpdate struct {
-	blockProof
+type BlockUpdate struct {
+	BlockProof
 	srcHeight    int64
 	targetHeight int64
 }
 
-func (c *blockUpdate) SrcHeight() int64 {
+func (c *BlockUpdate) UpdateBMCLinkStatus(bls *types.BMCLinkStatus) error {
+	if c.nextBls != nil {
+		bls.Verifier.Height = c.nextBls.Verifier.Height
+	}
+	return nil
+}
+
+func (c *BlockUpdate) SrcHeight() int64 {
 	return c.srcHeight
 }
 
-func (c *blockUpdate) TargetHeight() int64 {
+func (c *BlockUpdate) TargetHeight() int64 {
 	return c.targetHeight
 }
 
-func NewBlockUpdate(srcHeight, targetHeight int64, pd int, v interface{}) *blockUpdate {
-	return &blockUpdate{
-		srcHeight:    srcHeight,
+func NewBlockUpdate(bls *types.BMCLinkStatus, targetHeight int64, v interface{}) *BlockUpdate {
+	nextBls := &types.BMCLinkStatus{}
+	nextBls.Verifier.Height = targetHeight
+	return &BlockUpdate{
+		srcHeight:    bls.Verifier.Height,
 		targetHeight: targetHeight,
-		blockProof: blockProof{
+		BlockProof: BlockProof{
 			relayMessageItem: relayMessageItem{
 				it:      link.TypeBlockUpdate,
-				pd:      pd,
+				nextBls: nextBls,
 				payload: codec.RLP.MustMarshalToBytes(v),
 			},
-			ph: targetHeight,
+			ph: -1, // to make BlockProof
 		},
 	}
 }
@@ -99,6 +105,13 @@ type MessageProof struct {
 	lastSeq  int64
 }
 
+func (m *MessageProof) UpdateBMCLinkStatus(bls *types.BMCLinkStatus) error {
+	if m.nextBls != nil {
+		bls.RxSeq = m.nextBls.RxSeq
+	}
+	return nil
+}
+
 func (m *MessageProof) StartSeqNum() int64 {
 	return m.startSeq
 }
@@ -107,42 +120,28 @@ func (m *MessageProof) LastSeqNum() int64 {
 	return m.lastSeq
 }
 
-func NewMessageProof(ss, ls int64, pd int, v interface{}) *MessageProof {
+func NewMessageProof(bls *types.BMCLinkStatus, ls int64, v interface{}) *MessageProof {
+	nextBls := &types.BMCLinkStatus{}
+	nextBls.RxSeq = ls
 	return &MessageProof{
-		startSeq: ss,
+		startSeq: bls.RxSeq,
 		lastSeq:  ls,
 		relayMessageItem: relayMessageItem{
 			it:      link.TypeMessageProof,
-			pd:      pd,
+			nextBls: nextBls,
 			payload: codec.RLP.MustMarshalToBytes(v),
 		},
 	}
 }
 
-const (
-	RelayMessageTypeReserved = iota
-	RelayMessageTypeBlockUpdate
-	RelayMessageTypeMessageProof
-	RelayMessageTypeBlockProof
-)
-
 type TypePrefixedMessage struct {
-	Type    int
+	Type    link.MessageItemType
 	Payload []byte
 }
 
 func NewTypePrefixedMessage(rmi link.RelayMessageItem) (*TypePrefixedMessage, error) {
-	mt := RelayMessageTypeReserved
-	switch rmi.Type() {
-	case link.TypeBlockUpdate:
-		mt = RelayMessageTypeBlockUpdate
-	case link.TypeMessageProof:
-		mt = RelayMessageTypeMessageProof
-	default:
-		return nil, fmt.Errorf("invalid valud")
-	}
 	return &TypePrefixedMessage{
-		Type:    mt,
+		Type:    rmi.Type(),
 		Payload: rmi.(*relayMessageItem).Payload(),
 	}, nil
 }
@@ -221,7 +220,7 @@ func (b *blockUpdateData) RLPDecodeSelf(d codec.Decoder) error {
 }
 
 type blockProofData struct {
-	Header *altair.LightClientHeader
+	Header *phase0.BeaconBlockHeader
 	Proof  *ssz.Proof // proof for BeaconState.BlockRoots or BeaconState.HistoricalRoots
 }
 
@@ -249,7 +248,7 @@ func (b *blockProofData) RLPDecodeSelf(d codec.Decoder) error {
 	if _, err = d2.DecodeMulti(&bs, &b.Proof); err != nil {
 		return err
 	}
-	b.Header = new(altair.LightClientHeader)
+	b.Header = new(phase0.BeaconBlockHeader)
 	err = b.Header.UnmarshalSSZ(bs)
 	if err != nil {
 		return err
@@ -258,11 +257,21 @@ func (b *blockProofData) RLPDecodeSelf(d codec.Decoder) error {
 }
 
 type messageProofData struct {
-	Slot              phase0.Slot
+	Slot              int64
 	ReceiptsRootProof *ssz.Proof
 	ReceiptProofs     []*receiptProof
 
-	header *altair.LightClientHeader
+	Header   *phase0.BeaconBlockHeader
+	StartSeq int64
+	EndSeq   int64
+}
+
+func (m *messageProofData) Height() int64 {
+	return int64(m.Header.Slot)
+}
+
+func (m *messageProofData) Seq() int64 {
+	return m.EndSeq
 }
 
 func (m *messageProofData) RLPEncodeSelf(e codec.Encoder) error {
@@ -290,4 +299,8 @@ func (m *messageProofData) RLPDecodeSelf(d codec.Decoder) error {
 type receiptProof struct {
 	Key   []byte `json:"key"`   // rlp.encode(receipt index)
 	Proof []byte `json:"proof"` // proof for receipt
+}
+
+type BMVExtra struct {
+	targetSeq int64
 }
