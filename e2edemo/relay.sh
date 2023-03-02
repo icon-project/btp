@@ -14,7 +14,6 @@ HARDHAT_KEYSTORE=./docker/hardhat/keystore0.json
 HARDHAT_KEYPASS=hardhat
 
 ICON_NETWORK=$(cat ${DEPLOYMENTS} | jq -r .icon.network)
-ICON_NETWORK_ID=$(cat ${DEPLOYMENTS} | jq -r .icon.networkId)
 ICON_BMC_ADDRESS=$(cat ${DEPLOYMENTS} | jq -r .icon.contracts.bmc)
 ICON_ENDPOINT=http://localhost:9080/api/v3/icon_dex
 ICON_KEYSTORE=./docker/icon/config/keystore.json
@@ -27,12 +26,10 @@ else
     TARGET=$1
 fi
 
-
 case ${TARGET} in
   hardhat)
     SRC_ADDRESS=btp://${ICON_NETWORK}/${ICON_BMC_ADDRESS}
     SRC_ENDPOINT=${ICON_ENDPOINT}
-    SRC_NETWORK_ID=${ICON_NETWORK_ID}
     SRC_KEY_STORE=${ICON_KEYSTORE}
     SRC_KEY_PASSWORD=${ICON_KEYPASS}
     DST_ADDRESS=btp://${HARDHAT_NETWORK}/${HARDHAT_BMC_ADDRESS}
@@ -45,31 +42,22 @@ case ${TARGET} in
     exit 1
 esac
 
-if [ "$BMV_BRIDGE" = true ] ; then
+if [ "x$BMV_BRIDGE" = xtrue ]; then
   echo "Using Bridge mode"
+else
+  echo "Using BTPBlock mode"
+  BMV_BRIDGE=false
+fi
+
 ${RELAY_BIN} \
     --direction both \
     --src.address ${SRC_ADDRESS} \
     --src.endpoint ${SRC_ENDPOINT} \
     --src.key_store ${SRC_KEY_STORE} \
     --src.key_password ${SRC_KEY_PASSWORD} \
-    --src.bridge_mode "$true" \
+    --src.bridge_mode=${BMV_BRIDGE} \
     --dst.address ${DST_ADDRESS} \
     --dst.endpoint ${DST_ENDPOINT} \
     --dst.key_store ${DST_KEY_STORE} \
     --dst.key_password ${DST_KEY_PASSWORD} \
     start
-else
-  echo "Using BTPBlock mode"
-  ${RELAY_BIN} \
-    --direction both \
-    --src.address ${SRC_ADDRESS} \
-    --src.endpoint ${SRC_ENDPOINT} \
-    --src.key_store ${SRC_KEY_STORE} \
-    --src.key_password ${SRC_KEY_PASSWORD} \
-    --dst.address ${DST_ADDRESS} \
-    --dst.endpoint ${DST_ENDPOINT} \
-    --dst.key_store ${DST_KEY_STORE} \
-    --dst.key_password ${DST_KEY_PASSWORD} \
-    start
-fi
