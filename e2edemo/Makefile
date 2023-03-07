@@ -84,12 +84,12 @@ deploy-all: deploy-bmc deploy-bmv deploy-xcall deploy-dapp
 start-nodes:
 	@ echo ">>> Start nodes" ; \
 	cd docker; \
-	docker-compose up -d
+	docker compose up -d
 
 stop-nodes:
 	@ echo ">>> Stop nodes" ; \
 	cd docker; \
-	docker-compose down
+	docker compose down
 
 setup-node:
 	@ echo ">>> Setup ICON node" ; \
