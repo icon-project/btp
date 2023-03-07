@@ -1,3 +1,8 @@
+> **Note**
+> The ongoing development of this project has migrated to [btp2](https://github.com/icon-project/btp2) and other repositories ([btp2-java](https://github.com/icon-project/btp2-java), [btp2-solidity](https://github.com/icon-project/btp2-solidity)).
+> Please use those repositories instead of this repository.
+
+
 # BTP (Block Transmission Protocol) Relay System
 
 ## Introduction
